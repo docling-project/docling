@@ -774,7 +774,9 @@ class _DocumentConversionInput(BaseModel):
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
             mime = filetype.guess_mime(str(obj))
-            obj_ext = obj.suffix[1:] if obj.suffix else ""
+            # Lower-cased so that an upper-case extension (NOTES.VTT, page.HTML)
+            # maps to its format the same way it does for a DocumentStream.
+            obj_ext = obj.suffix[1:].lower() if obj.suffix else ""
             if mime is None:
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext)
             needs_content_sniff = mime is None or (
