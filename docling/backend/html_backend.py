@@ -1977,10 +1977,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     annotated_text_list, doc, force=force_inline_group
                 ) as inline_ref:
                     for annotated_text, source_tag_ids in compacted_parts:
-                        if annotated_text.text.strip():
-                            seg_clean = HTMLDocumentBackend._clean_unicode(
-                                annotated_text.text.strip()
-                            )
+                        if seg := annotated_text.text.strip():
+                            seg_clean = HTMLDocumentBackend._clean_unicode(seg)
                             if annotated_text.code:
                                 prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
@@ -1990,6 +1988,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 docling_code2 = doc.add_code(
                                     parent=self.parents[self.level],
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -2007,6 +2006,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[self.level],
                                     label=DocItemLabel.TEXT,
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -2708,6 +2708,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         doc.add_code(
                             parent=self.parents[self.level],
                             text=clean_text,
+                            orig=text_part,
                             content_layer=self.content_layer,
                             formatting=formatting,
                             hyperlink=annotated_text.hyperlink,
@@ -2718,6 +2719,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             parent=self.parents[self.level],
                             label=DocItemLabel.TEXT,
                             text=clean_text,
+                            orig=text_part,
                             content_layer=self.content_layer,
                             formatting=formatting,
                             hyperlink=annotated_text.hyperlink,
@@ -3069,6 +3071,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 docling_code = doc.add_code(
                                     parent=self.parents[self.level],
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -3086,6 +3089,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[self.level],
                                     label=DocItemLabel.TEXT,
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -3151,8 +3155,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     ],
                 ),
             )
-            text = HTMLDocumentBackend._clean_unicode(self.get_text(tag).strip())
-            doc.add_text(label=DocItemLabel.TEXT, text=text, parent=placeholder)
+            text = self.get_text(tag).strip()
+            doc.add_text(
+                label=DocItemLabel.TEXT,
+                text=HTMLDocumentBackend._clean_unicode(text),
+                orig=text,
+                parent=placeholder,
+            )
 
         elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).
@@ -3163,9 +3172,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
-                    text_clean = HTMLDocumentBackend._clean_unicode(
-                        annotated_text.text.strip()
-                    )
+                    text_orig = annotated_text.text.strip()
+                    text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
                     prov = self._make_prov(
                         text=text_clean,
                         tag=tag,
@@ -3174,6 +3182,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     docling_code2 = doc.add_code(
                         parent=self.parents[self.level],
                         text=text_clean,
+                        orig=text_orig,
                         code_language=detect_code_language(
                             text_clean, hint=language_hint
                         ),

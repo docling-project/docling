@@ -449,6 +449,33 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+def test_orig_keeps_source_text():
+    """Regression for #4423: `text` is sanitized, `orig` keeps the source text."""
+    html = (
+        "<html><body>"
+        "<p>See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept.</p>"
+        "<ul><li>Item 3\u20135 with <b>bold</b> \u201ctext\u201d</li></ul>"
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    items = {item.text: item for item in doc.texts if item.text}
+
+    paragraph = items['See §§ 3-5 and "quoted" text ... it\'s kept.']
+    assert (
+        paragraph.orig
+        == "See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept."
+    )
+    assert items["Item 3-5 with"].orig == "Item 3\u20135 with"
+    assert items['"text"'].orig == "\u201ctext\u201d"
+
+
 def test_nested_table_in_list_item():
     """Regression for #3508: a <table> nested inside an <ol>/<li> must be parsed
     as a table instead of being flattened into the list item's text.
