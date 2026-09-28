@@ -1121,9 +1121,23 @@ def _odf_chart_classification(chart_content: Any) -> PictureClassificationLabel:
     return PictureClassificationLabel.OTHER_CHART
 
 
+def _odf_chart_title(chart_content: Any) -> str | None:
+    """Return the chart's title text, or None when it shows none.
+
+    The title sits in the embedded object's ``chart:title`` element as one or
+    more ``text:p`` paragraphs, the ODF counterpart of the ``c:title`` element
+    the Word backend reads off a native chart part.
+    """
+    for title in chart_content.get_elements("descendant::chart:title"):
+        text = "\n".join(_clean_odf_text_lines(title.inner_text))
+        if text:
+            return text
+    return None
+
+
 def _chart_data_from_frame(
     frame: Frame, odf_obj: OdfDocument | None
-) -> tuple[TableData, PictureClassificationLabel] | None:
+) -> tuple[TableData, PictureClassificationLabel, str | None] | None:
     if odf_obj is None:
         return None
 
@@ -1140,6 +1154,7 @@ def _chart_data_from_frame(
         # odfdo resolves XML parts lazily, so a reference to a part that is missing
         # from the package only fails once the part is actually read.
         chart_classification = _odf_chart_classification(chart_content)
+        chart_title = _odf_chart_title(chart_content)
         chart_tables = chart_content.get_elements("descendant::table:table")
     except Exception as e:
         _log.warning(
@@ -1150,7 +1165,7 @@ def _chart_data_from_frame(
         if isinstance(table, OdfTable) and table.name == "local-table":
             table_data = _table_data_from_odf(table)
             if table_data is not None:
-                return table_data, chart_classification
+                return table_data, chart_classification, chart_title
     return None
 
 
@@ -1176,8 +1191,20 @@ def _add_odf_charts(
         chart_result = _chart_data_from_frame(frame, odf_obj)
         if chart_result is None:
             continue
-        chart_data, chart_classification = chart_result
-        chart = doc.add_picture(parent=parent, content_layer=content_layer)
+        chart_data, chart_classification, chart_title = chart_result
+        caption = (
+            doc.add_text(
+                label=DocItemLabel.CAPTION,
+                text=chart_title,
+                parent=parent,
+                content_layer=content_layer,
+            )
+            if chart_title
+            else None
+        )
+        chart = doc.add_picture(
+            parent=parent, content_layer=content_layer, caption=caption
+        )
         chart.label = DocItemLabel.PICTURE
         chart.meta = PictureMeta(
             classification=PictureClassificationMetaField(
@@ -1185,7 +1212,9 @@ def _add_odf_charts(
                     PictureClassificationPrediction(class_name=chart_classification)
                 ]
             ),
-            tabular_chart=TabularChartMetaField(chart_data=chart_data),
+            tabular_chart=TabularChartMetaField(
+                title=chart_title, chart_data=chart_data
+            ),
         )
         chart_count += 1
     return chart_count

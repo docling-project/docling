@@ -852,6 +852,9 @@ def test_odt_text_document_embedded_chart():
     )
     assert chart.meta.tabular_chart is not None
 
+    # This fixture's chart carries no <chart:title>, and none must be invented.
+    assert chart.meta.tabular_chart.title is None
+
     table_data = chart.meta.tabular_chart.chart_data
     assert table_data.num_rows == 5
     assert table_data.num_cols == 4
@@ -1130,6 +1133,109 @@ def test_odp_presentation_with_mixed_slide_content():
         and table.data.table_cells[0].text == ""
         for table in doc.tables
     )
+
+
+def _build_odp_with_titled_chart(path: Path) -> Path:
+    """Build a minimal ODP whose slide embeds a chart showing a title.
+
+    The chart lives in the sub-package ``Object 1/content.xml`` as a
+    ``chart:chart`` carrying a ``chart:title`` and its local data table, the
+    shape LibreOffice writes when a chart with the default "Chart Title" is
+    saved as .odp.
+    """
+    content_xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        "<office:document-content"
+        ' xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"'
+        ' xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"'
+        ' xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"'
+        ' xmlns:xlink="http://www.w3.org/1999/xlink" office:version="1.2">'
+        "<office:body><office:presentation>"
+        '<draw:page draw:name="page1">'
+        '<draw:frame svg:width="10cm" svg:height="8cm">'
+        '<draw:object xlink:href="./Object 1" xlink:type="simple"/>'
+        "</draw:frame>"
+        "</draw:page>"
+        "</office:presentation></office:body>"
+        "</office:document-content>"
+    )
+    chart_xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        "<office:document-content"
+        ' xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"'
+        ' xmlns:chart="urn:oasis:names:tc:opendocument:xmlns:chart:1.0"'
+        ' xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"'
+        ' xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"'
+        ' office:version="1.2">'
+        "<office:body><office:chart>"
+        '<chart:chart chart:class="chart:bar">'
+        "<chart:title><text:p>Chart Title</text:p></chart:title>"
+        "<chart:plot-area>"
+        '<table:table table:name="local-table">'
+        "<table:table-row>"
+        '<table:table-cell office:value-type="string">'
+        "<text:p>Category</text:p></table:table-cell>"
+        '<table:table-cell office:value-type="string">'
+        "<text:p>Series 1</text:p></table:table-cell>"
+        "</table:table-row>"
+        "<table:table-row>"
+        '<table:table-cell office:value-type="string">'
+        "<text:p>2024</text:p></table:table-cell>"
+        '<table:table-cell office:value-type="float" office:value="10">'
+        "<text:p>10</text:p></table:table-cell>"
+        "</table:table-row>"
+        "</table:table>"
+        "</chart:plot-area>"
+        "</chart:chart>"
+        "</office:chart></office:body>"
+        "</office:document-content>"
+    )
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/vnd.oasis.opendocument.presentation")
+        z.writestr("content.xml", content_xml)
+        z.writestr("Object 1/content.xml", chart_xml)
+    return path
+
+
+def test_odp_chart_title_reaches_meta_and_caption(tmp_path: Path):
+    """The embedded chart's ``chart:title`` must not be dropped (issue #4368).
+
+    The OpenDocument backend reads the chart's local table into
+    ``tabular_chart.chart_data`` but historically left ``tabular_chart.title``
+    as None even when the chart object carries a ``chart:title``, and the title
+    appeared nowhere else in the document. It must reach both, the shape the
+    PowerPoint backend gives a native chart's title.
+    """
+    path = _build_odp_with_titled_chart(tmp_path / "titled_chart.odp")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
+    doc = res.document
+    charts = [
+        item
+        for item in doc.pictures
+        if isinstance(item, PictureItem)
+        and item.meta is not None
+        and item.meta.tabular_chart is not None
+    ]
+
+    assert len(charts) == 1
+    chart = charts[0]
+    assert chart.meta is not None
+    assert chart.meta.classification is not None
+    assert (
+        chart.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+
+    tabular = chart.meta.tabular_chart
+    assert tabular is not None
+    assert tabular.title == "Chart Title"
+    assert (tabular.chart_data.num_rows, tabular.chart_data.num_cols) == (2, 2)
+
+    assert chart.caption_text(doc) == "Chart Title"
+    assert any("Chart Title" in item.text for item in doc.texts)
 
 
 def test_odt_mime_detection_without_extension(odt_path: Path):
