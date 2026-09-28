@@ -228,6 +228,38 @@ def test_table_zero_span_defaults_to_one():
     ]
 
 
+@pytest.mark.parametrize(
+    "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
+)
+def test_table_oversized_spans_clamped_to_table_size(huge: str):
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    src = (
+        f'<table><tr><td rowspan="{huge}">A</td><td colspan="{huge}">B</td></tr>'
+        "<tr><td>C</td></tr></table>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
+    ]
+
+
 def test_table_inside_figure_is_parsed():
     """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
     html = (
