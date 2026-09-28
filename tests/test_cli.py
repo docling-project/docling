@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 import typer
 from docling_core.types.doc import ImageRefMode
+from docling_core.utils import file as file_utils
 from PIL import Image
 from typer.main import get_command
 from typer.testing import CliRunner
@@ -28,6 +29,7 @@ from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import OcrMode, PdfBackend, VlmPipelineOptions
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, PageRange
 from docling.document_converter import PdfFormatOption
+from tests.fakes.image_server import SERVER_IP, local_server, use_test_network
 
 runner = CliRunner()
 
@@ -418,74 +420,79 @@ def test_cli_html_directory_matches_mixed_case_extensions(tmp_path):
     _assert_markdown_embeds_png(output / "Case.md")
 
 
-def test_cli_html_fetches_remote_images_with_separate_headers(tmp_path, monkeypatch):
-    source_url = "https://example.com/docs/page.html"
-    image_url = "https://example.com/docs/pixel.png"
+@pytest.mark.parametrize("image_origin_flag", [None, "https://cdn.example.com"])
+def test_cli_html_fetches_remote_images_with_separate_headers(
+    tmp_path, monkeypatch, image_origin_flag
+):
+    use_test_network(monkeypatch, {"docs.test": [SERVER_IP]})
+    # The source document itself is downloaded by docling-core, which has its
+    # own allowlist for non-public addresses.
+    monkeypatch.setattr(file_utils.settings, "allowed_private_ips", [SERVER_IP])
     output = tmp_path / "out"
-    calls: list[tuple[str, dict]] = []
+    extra_args = (
+        ["--html-image-headers-origin", image_origin_flag] if image_origin_flag else []
+    )
 
-    class FakeResponse:
-        def __init__(self, url: str, content: bytes):
-            self.url = url
-            self.content = content
-            self.headers: dict[str, str] = {}
-            self.is_redirect = False
-            self.is_permanent_redirect = False
+    with local_server() as server:
+        server.files = {
+            "/docs/page.html": b"<html><body><p>Remote</p>"
+            b"<img src='pixel.png'></body></html>",
+            "/docs/pixel.png": PNG_BYTES,
+        }
+        result = runner.invoke(
+            app,
+            [
+                server.url("docs.test", "/docs/page.html"),
+                "--from",
+                "html",
+                "--to",
+                "md",
+                "--output",
+                str(output),
+                "--image-export-mode",
+                "embedded",
+                "--headers",
+                '{"Authorization": "Bearer source-token"}',
+                "--html-image-headers",
+                '{"X-Image-Token": "image-token"}',
+                "--html-image-fetch",
+                "remote",
+                *extra_args,
+            ],
+        )
 
-        def raise_for_status(self):
-            return None
+    assert result.exit_code == 0
+    source_request, image_request = server.requests
+    assert source_request.path == "/docs/page.html"
+    assert source_request.headers["Authorization"] == "Bearer source-token"
+    assert image_request.path == "/docs/pixel.png"
+    assert "Authorization" not in image_request.headers
+    if image_origin_flag is None:
+        # By default the image headers go to the source document's origin.
+        _assert_markdown_embeds_png(output / "page.md")
+        assert image_request.headers["X-Image-Token"] == "image-token"
+    else:
+        assert "X-Image-Token" not in image_request.headers
 
-        def iter_content(self, chunk_size: int):
-            yield self.content
 
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *exc):
-            return False
-
-    def fake_get(self, url: str, **kwargs):
-        calls.append((url, kwargs))
-        if url == source_url:
-            return FakeResponse(
-                url,
-                b"<html><body><p>Remote</p><img src='pixel.png'></body></html>",
-            )
-        if url == image_url:
-            return FakeResponse(url, PNG_BYTES)
-        raise AssertionError(f"Unexpected URL fetched: {url}")
-
-    monkeypatch.setattr("requests.Session.get", fake_get)
+def test_cli_html_image_headers_origin_requires_headers(tmp_path):
+    source = _write_html_image_case(tmp_path / "source", "index.html", "Local")
 
     result = runner.invoke(
         app,
         [
-            source_url,
+            str(source),
             "--from",
             "html",
-            "--to",
-            "md",
-            "--output",
-            str(output),
-            "--image-export-mode",
-            "embedded",
-            "--headers",
-            '{"Authorization": "Bearer source-token"}',
-            "--html-image-headers",
-            '{"X-Image-Token": "image-token"}',
             "--html-image-fetch",
             "remote",
+            "--html-image-headers-origin",
+            "https://cdn.example.com",
         ],
     )
 
-    assert result.exit_code == 0
-    _assert_markdown_embeds_png(output / "page.md")
-    source_call = next(kwargs for url, kwargs in calls if url == source_url)
-    image_call = next(kwargs for url, kwargs in calls if url == image_url)
-    assert source_call["headers"]["authorization"] == "Bearer source-token"
-    assert "Authorization" not in image_call["headers"]
-    assert "authorization" not in image_call["headers"]
-    assert image_call["headers"]["X-Image-Token"] == "image-token"
+    assert result.exit_code != 0
+    assert "--html-image-headers-origin requires --html-image-headers" in result.output
 
 
 def test_cli_html_image_headers_require_remote_fetch(tmp_path):
