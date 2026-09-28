@@ -91,6 +91,38 @@ _log = logging.getLogger(__name__)
 
 XML_DECLARATION: Final[str] = '<?xml version="1.0" encoding="UTF-8"?>'
 
+_TABLE_START: Final = re.compile(r"^<table ", re.MULTILINE)
+_TABLE_END: Final[str] = "</table>"
+
+
+def _extract_raw_tables(content: str) -> list[str]:
+    """Extract the raw ``<table>`` elements that start at the beginning of a line.
+
+    Each table spans from a line-leading ``<table `` to the first following
+    ``</table>``. The search runs in linear time: once no closing tag is left, no
+    further table can be completed, so the scan stops instead of rescanning the
+    remaining content for every unterminated opening tag.
+
+    Args:
+        content: The raw patent XML content.
+
+    Returns:
+        The table strings, in document order.
+    """
+    tables: list[str] = []
+    pos = 0
+    for match in _TABLE_START.finditer(content):
+        start = match.start()
+        if start < pos:
+            continue
+        end = content.find(_TABLE_END, match.end())
+        if end == -1:
+            break
+        pos = end + len(_TABLE_END)
+        tables.append(content[start:pos])
+
+    return tables
+
 
 @unique
 class PatentHeading(Enum):
@@ -231,7 +263,6 @@ class PatentUsptoIce(PatentUspto):
     def __init__(self) -> None:
         """Build an instance of PatentUsptoIce class."""
         self.handler = PatentUsptoIce.PatentHandler()
-        self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
     def parse(self, patent_content: str) -> DoclingDocument | None:
         try:
@@ -257,7 +288,7 @@ class PatentUsptoIce(PatentUspto):
 
         doc = self.handler.doc
         if doc:
-            raw_tables = re.findall(self.pattern, patent_content)
+            raw_tables = _extract_raw_tables(patent_content)
             parsed_tables: list[TableData] = []
             _log.debug(f"Found {len(raw_tables)} tables to be parsed with XmlTable.")
             for table in raw_tables:
@@ -581,7 +612,6 @@ class PatentUsptoGrantV2(PatentUspto):
     def __init__(self) -> None:
         """Build an instance of PatentUsptoGrantV2 class."""
         self.handler = PatentUsptoGrantV2.PatentHandler()
-        self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
     @override
     def parse(self, patent_content: str) -> DoclingDocument | None:
@@ -608,7 +638,7 @@ class PatentUsptoGrantV2(PatentUspto):
 
         doc = self.handler.doc
         if doc:
-            raw_tables = re.findall(self.pattern, patent_content)
+            raw_tables = _extract_raw_tables(patent_content)
             parsed_tables: list[TableData] = []
             _log.debug(f"Found {len(raw_tables)} tables to be parsed with XmlTable.")
             for table in raw_tables:
@@ -1156,7 +1186,6 @@ class PatentUsptoAppV1(PatentUspto):
     def __init__(self) -> None:
         """Build an instance of PatentUsptoAppV1 class."""
         self.handler = PatentUsptoAppV1.PatentHandler()
-        self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
     @override
     def parse(self, patent_content: str) -> DoclingDocument | None:
@@ -1183,7 +1212,7 @@ class PatentUsptoAppV1(PatentUspto):
 
         doc = self.handler.doc
         if doc:
-            raw_tables = re.findall(self.pattern, patent_content)
+            raw_tables = _extract_raw_tables(patent_content)
             parsed_tables: list[TableData] = []
             _log.debug(f"Found {len(raw_tables)} tables to be parsed with XmlTable.")
             for table in raw_tables:
