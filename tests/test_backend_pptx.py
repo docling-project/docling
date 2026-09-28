@@ -103,11 +103,18 @@ def test_e2e_pptx_conversions():
     converter = get_converter()
 
     for pptx_path in pptx_paths:
-        # print(f"converting {pptx_path}")
-
         gt_path = pptx_path.parent.parent / "groundtruth" / pptx_path.name
 
-        conv_result: ConversionResult = converter.convert(pptx_path)
+        # Two source files intentionally contain picture shapes the backend
+        # cannot decode and skips with a UserWarning
+        if pptx_path.stem in {
+            "powerpoint_malformed_pictures",  # structurally broken <p:pic>
+            "powerpoint_with_image",  # externally linked (r:link) image
+        }:
+            with pytest.warns(UserWarning, match="Skipping malformed picture shape"):
+                conv_result = converter.convert(pptx_path)
+        else:
+            conv_result = converter.convert(pptx_path)
 
         doc: DoclingDocument = conv_result.document
 
