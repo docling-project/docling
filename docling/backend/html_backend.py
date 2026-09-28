@@ -17,6 +17,7 @@ from email.message import Message
 from email.parser import BytesParser
 from functools import cache
 from io import BytesIO
+from itertools import takewhile
 from pathlib import Path, PureWindowsPath
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
 from urllib.parse import unquote, urljoin, urlparse
@@ -2055,7 +2056,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
         return data
 
-    def _walk(  # noqa: C901
+    def _walk(
         self,
         element: Tag,
         doc: DoclingDocument,
@@ -2070,6 +2071,23 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             element: The XML tag to parse.
             doc: The Docling document to be updated with the parsed content.
             skip_tags: Names of direct children to leave out of the walk.
+        """
+        return self._walk_nodes(element, element.contents, doc, skip_tags)
+
+    def _walk_nodes(  # noqa: C901
+        self,
+        element: Tag,
+        nodes: list[PageElement],
+        doc: DoclingDocument,
+        skip_tags: frozenset[str] = frozenset(),
+    ) -> list[RefItem]:
+        """Parse some children of an XML tag, like `_walk` does for all of them.
+
+        Args:
+            element: The XML tag whose children are parsed.
+            nodes: The children of `element` to parse.
+            doc: The Docling document to be updated with the parsed content.
+            skip_tags: Names of the children to leave out of the walk.
         """
         added_refs: list[RefItem] = []
         buffer: AnnotatedTextList = AnnotatedTextList()
@@ -2137,7 +2155,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if inline_ref is not None:
                         added_refs.append(inline_ref)
 
-        for node in element.contents:
+        for node in nodes:
             if isinstance(node, Tag):
                 name = node.name.lower()
                 if name in skip_tags:
@@ -2932,6 +2950,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         else:
             name = "list"
 
+        # Children of <ul>/<ol> other than <li> are invalid HTML, but common in CMS
+        # output. Browsers render them in place: those before the first <li> precede
+        # the list, the others are nested under the preceding list item.
+        leading: list[PageElement] = []
+        if not is_description:
+            leading = list(
+                takewhile(
+                    lambda node: not (isinstance(node, Tag) and node.name == "li"),
+                    tag.contents,
+                )
+            )
+            self._walk_nodes(tag, leading, doc)
+
         # Create the list container
         list_group = doc.add_list_group(
             name=name,
@@ -3018,15 +3049,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level -= 1
             return list_group.get_ref()
 
-        # For each top-level <li> in this list (ul/ol)
-        for li in tag.find_all({"li", "ul", "ol"}, recursive=False):
-            if not isinstance(li, Tag):
-                continue
-
-            # sub-list items should be indented under main list items, but temporarily
-            # addressing invalid HTML (docling-core/issues/357)
-            if li.name in {"ul", "ol"}:
-                self._handle_block(li, doc)
+        # For each child of this list (ul/ol) after the leading content
+        prev_item: Optional[RefItem] = None
+        for li in tag.contents[len(leading) :]:
+            if not (isinstance(li, Tag) and li.name == "li"):
+                with self._use_list_item_context(prev_item):
+                    self._walk_nodes(tag, [li], doc)
 
             else:
                 # 1) determine the marker using the counter
@@ -3075,6 +3103,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 # Increment counter only when a list item is actually added
                 if list_item:
                     list_item_counter += 1
+                    prev_item = list_item
 
                 if list_item or inputs_in_li or custom_checkboxes_in_li:
                     if task_list_inputs:

@@ -672,6 +672,45 @@ def test_nested_table_in_list_item():
     assert md.count("Fault type.") == 1
 
 
+def test_list_non_li_children():
+    """Regression for #4424: children of <ul>/<ol> other than <li> are kept in
+    document order. They are invalid HTML, but common in CMS output.
+
+    Previously <p> and <table> children were dropped, and a <ol> child was added
+    directly to the parent list group, which broke the numbering.
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<p>Intro.</p>"
+        b"<li>First.</li>"
+        b"<p>About the first.</p>"
+        b"<li>Second.</li>"
+        b"<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>"
+        b"<ol><li>Nested.</li></ol>"
+        b"<li>Third.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    # Content before the first <li> precedes the list.
+    assert texts["Intro."].parent.resolve(doc) == doc.body
+    # Other content is nested under the preceding list item.
+    assert texts["About the first."].parent.cref == texts["First."].self_ref
+    assert doc.tables[0].parent.cref == texts["Second."].self_ref
+    nested_list = texts["Nested."].parent.resolve(doc)
+    assert nested_list.parent.cref == texts["Second."].self_ref
+
+    assert "3. Third." in doc.export_to_markdown()
+
+
 @pytest.mark.parametrize(
     "inner",
     [
