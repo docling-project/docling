@@ -593,3 +593,36 @@ def test_heading_flushes_pending_paragraph() -> None:
         if item.label.value == "paragraph"
     }
     assert paras == {"body": "S1.1", "body2": "S2"}
+
+
+def test_block_title_without_floating_target_keeps_content() -> None:
+    # A block title followed by a paragraph used to absorb every following
+    # line as "multiline caption" and drop all of it at EOF.
+    src = b"para one\n\n.Procedure\nDo the thing.\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="block-title-paragraph.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert "para one" in texts
+    assert any("Do the thing." in t for t in texts)
+
+
+def test_block_title_blank_line_separates_paragraphs() -> None:
+    src = b".Overview\n\nBody text.\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="block-title-blank.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert "Overview" in texts
+    assert "Body text." in texts
+

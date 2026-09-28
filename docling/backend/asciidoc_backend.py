@@ -115,6 +115,46 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return doc
 
+    def _flush_blank_line(
+        self,
+        doc: DoclingDocument,
+        caption_data: list[str],
+        text_data: list[str],
+        parent: Union[GroupItem, None],
+    ) -> tuple[list[str], list[str]]:
+        """End a block title's association at a blank line.
+
+        Pending caption text is emitted as its own paragraph instead of
+        silently absorbing every following line and being dropped at EOF;
+        accumulated plain text is flushed as usual.
+        """
+        if caption_data:
+            caption_data = self._flush_caption_as_paragraph(doc, caption_data, parent)
+        elif text_data:
+            doc.add_text(
+                text=" ".join(text_data),
+                label=DocItemLabel.PARAGRAPH,
+                parent=parent,
+            )
+            text_data = []
+        return caption_data, text_data
+
+    def _flush_caption_as_paragraph(
+        self,
+        doc: DoclingDocument,
+        caption_data: list[str],
+        parent: Union[GroupItem, None],
+    ) -> list[str]:
+        """Emit a pending block title as a bold paragraph, per the parsing
+        contract for titles whose target is not a floating item."""
+        doc.add_text(
+            text=" ".join(caption_data),
+            label=DocItemLabel.PARAGRAPH,
+            parent=parent,
+            formatting=Formatting(bold=True),
+        )
+        return []
+
     def _parse(self, doc: DoclingDocument):
         """Orchestrate parsing and populate `doc` from the source lines.
 
@@ -364,14 +404,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_text(line)
                 caption_data.append(item["text"])
 
-            # Plain text
-            elif len(line.strip()) == 0 and len(text_data) > 0:
-                doc.add_text(
-                    text=" ".join(text_data),
-                    label=DocItemLabel.PARAGRAPH,
-                    parent=self._get_current_parent(parents),
+            elif len(line.strip()) == 0:
+                caption_data, text_data = self._flush_blank_line(
+                    doc,
+                    caption_data,
+                    text_data,
+                    self._get_current_parent(parents),
                 )
-                text_data = []
 
             elif len(line.strip()) > 0:  # allow multiline texts
                 item = self._parse_text(line)
@@ -386,8 +425,15 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             text_data = []
 
         if in_table:
+            # An unclosed table still consumes its pending caption below.
             self._add_table_if_nonempty(
                 doc, table_data, caption_data, self._get_current_parent(parents)
+            )
+        elif caption_data:
+            # A block title never followed by a floating element must still
+            # reach the document; it used to be discarded entirely.
+            self._flush_caption_as_paragraph(
+                doc, caption_data, self._get_current_parent(parents)
             )
 
         return doc
