@@ -11,6 +11,7 @@ crashing.
 """
 
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 from docling_core.types.doc import DocItemLabel
@@ -108,19 +109,33 @@ def test_layout_write_back_guarded_without_parsed_page() -> None:
     assert page.parsed_page is None  # nothing to write back, and no crash
 
 
-def test_shape_geometry_is_retained_without_cell_extraction() -> None:
-    page = _page()
+@pytest.mark.parametrize("capture", [True, False])
+def test_shape_geometry_capture_without_cell_extraction(capture: bool) -> None:
     line = BoundingBox(l=10, t=20, r=590, b=20)
     shape_box = BoundingBox(l=10, t=20, r=590, b=21)
+    page = _page()
+    # No get_segmented_page: skipping cell extraction must not decode cells.
     page._backend = SimpleNamespace(
-        get_shape_lines=lambda: [line],
-        get_connected_shape_bounding_boxes=lambda: [shape_box],
+        is_valid=lambda: True,
+        get_page_image=lambda scale: None,
+        get_shape_lines=Mock(return_value=[line]),
+        get_connected_shape_bounding_boxes=Mock(return_value=[shape_box]),
     )  # type: ignore[assignment]
     model = PagePreprocessingModel(
-        PagePreprocessingOptions(images_scale=None, skip_cell_extraction=True)
+        PagePreprocessingOptions(
+            images_scale=None,
+            skip_cell_extraction=True,
+            capture_reading_order_separators=capture,
+        )
     )
 
-    result = model._capture_shape_geometry(page)
+    (result,) = model(SimpleNamespace(timings={}), [page])
 
-    assert result._shape_lines == [line]
-    assert result._shape_bounding_boxes == [shape_box]
+    if capture:
+        assert result._shape_lines == [line]
+        assert result._shape_bounding_boxes == [shape_box]
+    else:
+        assert result._shape_lines is None
+        assert result._shape_bounding_boxes is None
+        page._backend.get_shape_lines.assert_not_called()
+        page._backend.get_connected_shape_bounding_boxes.assert_not_called()

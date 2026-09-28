@@ -993,3 +993,142 @@ def test_vertical_separator_clamps_horizontal_dilation() -> None:
 
     assert x0 == 80
     assert x1 == 250
+
+
+def _text(cid: int, b: float, t: float, l: float, r: float) -> PageElement:  # noqa: E741
+    return _box(cid, DocItemLabel.TEXT, b, t, l, r).model_copy(update={"text": "text"})
+
+
+def _hline(l: float, r: float, y: float) -> BoundingBox:  # noqa: E741
+    return BoundingBox(l=l, r=r, b=y, t=y, coord_origin=CoordOrigin.BOTTOMLEFT)
+
+
+def _page_separators(
+    elements: list[PageElement], lines: list[BoundingBox]
+) -> list[SeparatorElement]:
+    return build_page_separators(
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        page_elements=elements,
+        shape_lines=lines,
+        shape_bounding_boxes=None,
+    )
+
+
+def test_build_page_separators_joins_fragmented_rule() -> None:
+    elements = [_text(0, 500, 600, 40, 560), _text(1, 200, 300, 40, 560)]
+    # One rule drawn as three collinear pieces with sub-point gaps.
+    lines = [_hline(381, 560, 400), _hline(40, 200, 400), _hline(200.5, 380, 400)]
+
+    separators = _page_separators(elements, lines)
+
+    assert [(s.l, s.r, s.b) for s in separators] == [(40, 560, 400)]
+
+
+def test_build_page_separators_merges_until_no_rules_overlap() -> None:
+    # One greedy pass merged (60..280) into (40..100) and (250..360 @ 400.5)
+    # into (300..360 @ 399.5), leaving two overlapping rules at y=400. Each
+    # was then strictly above the other, and the reading order never ended.
+    elements = [_text(0, 500, 600, 40, 360), _text(1, 200, 300, 40, 360)]
+    lines = [
+        _hline(300, 360, 399.5),
+        _hline(40, 100, 400),
+        _hline(60, 280, 400),
+        _hline(250, 360, 400.5),
+    ]
+
+    separators = _page_separators(elements, lines)
+
+    assert [(s.l, s.r, s.b) for s in separators] == [(40, 360, 400)]
+
+
+def test_build_page_separators_rejects_rule_through_graphic() -> None:
+    # 2206.01062 p9: a chart rule overshoots the predicted picture box, so it
+    # is not inside it, yet it runs through it and must not split the page.
+    elements = [
+        _box(0, DocItemLabel.PICTURE, 343, 707, 54, 549),
+        _text(1, 720, 750, 54, 549),
+        _text(2, 100, 320, 54, 549),
+    ]
+    through = _hline(53.0, 575.4, 530.9)
+    below = _hline(53.0, 575.4, 331.0)
+
+    separators = _page_separators(elements, [through, below])
+
+    assert [s.b for s in separators] == [331.0]
+
+
+def test_build_page_separators_rejects_graphic_frame_and_one_sided_rules() -> None:
+    elements = [
+        _text(0, 600, 700, 100, 500),
+        _box(1, DocItemLabel.PICTURE, 300, 500, 100, 500),
+    ]
+    between = _hline(100, 500, 550)
+    # A rule strictly inside a graphic already crosses it; this check is what
+    # drops the graphic's own frame.
+    frame = _hline(100, 500, 500)
+    # Nothing below it to separate from.
+    trailing = _hline(100, 500, 200)
+
+    separators = _page_separators(elements, [between, frame, trailing])
+
+    assert [s.b for s in separators] == [550]
+
+
+def test_vertical_separator_blocks_left_to_right_link() -> None:
+    elements = [
+        _text(0, 600, 700, 40, 280),
+        _text(1, 600, 700, 320, 560),
+        _text(2, 400, 580, 40, 280),
+    ]
+    separator = SeparatorElement(
+        cid=-1,
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        orientation="vertical",
+        l=300,
+        r=300,
+        b=380,
+        t=720,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+    baseline = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements)
+    )
+    separated = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements), page_separators=[separator]
+    )
+
+    # 0 -> 1 is a same-row continuation until the rule divides the columns.
+    assert [element.cid for element in baseline] == [0, 1, 2]
+    assert [element.cid for element in separated] == [0, 2, 1]
+
+
+def test_consecutive_text_overlapping_slightly_stays_in_sequence() -> None:
+    # 1 continues 0 in the left column but its top pokes 1pt into 0, so 0 is
+    # not strictly above it; without the link, 0 flows into the right column
+    # (2) first.
+    elements = [
+        _text(0, 600, 700, 40, 560),
+        _text(1, 200, 601, 40, 280),
+        _text(2, 500, 590, 320, 560),
+    ]
+    assert not elements[0].is_strictly_above(elements[1])
+
+    result = ReadingOrderPredictor().predict_reading_order(page_elements=elements)
+
+    assert [element.cid for element in result] == [0, 1, 2]
+
+
+def test_upward_walk_stops_on_up_map_cycle() -> None:
+    from docling.models.postprocessing.reading_order_rb import (
+        _ReadingOrderPredictorState,
+    )
+
+    # Each node above the other, as two overlapping rules at one height were.
+    state = _ReadingOrderPredictorState(up_map={0: [1], 1: [0]})
+
+    top = ReadingOrderPredictor()._depth_first_search_upwards(0, [False, False], state)
+
+    assert top == 1
