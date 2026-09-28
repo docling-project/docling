@@ -388,6 +388,30 @@ for i, pic in enumerate(doc.pictures):
         img.save(f"figure_{i}.png")
 ```
 
+## HTML: images on remote hosts
+
+HTML image downloads are off by default. Enable them on the HTML backend
+options; downloads only connect to public addresses, re-check every redirect
+and stop at `max_remote_image_bytes`.
+
+```python
+from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, HTMLFormatOption
+
+html_options = HTMLBackendOptions(
+    fetch_images=True,
+    enable_remote_fetch=True,
+    headers={"Authorization": "Bearer TOKEN"},  # optional
+    # Origins that receive `headers`. Default (None): only the source page's
+    # origin; local files/streams then get no headers.
+    headers_allowed_origins=["https://example.com", "https://cdn.example.com"],
+)
+converter = DocumentConverter(
+    format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
+)
+```
+
 ## Offline / air-gapped models
 
 Pre-download model artifacts, then point conversions at them so no network is

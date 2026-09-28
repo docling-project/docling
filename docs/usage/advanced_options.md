@@ -290,6 +290,52 @@ doc_converter = DocumentConverter(
 )
 ```
 
+### Fetch HTML images from remote hosts
+
+The HTML backend only downloads images referenced by a page when you opt in with
+`fetch_images=True` and `enable_remote_fetch=True` (the CLI equivalent is
+`--html-image-fetch remote`). Downloads connect only to public, globally
+routable addresses: every address of a host is checked, every redirect is
+checked again before it is followed (up to `max_redirects`), and downloads stop
+at `max_remote_image_bytes`. When `render_page=True`, the browser requests
+remote resources through the same download path, and navigating the page away
+from the source document is refused.
+
+`headers` adds HTTP headers, such as credentials, to these downloads. They are
+sent only to the origin of the source document and dropped on redirects to
+other origins. To send them to other hosts, such as a CDN, list the allowed
+origins in `headers_allowed_origins` (this replaces the default, so include the
+source origin too if it needs the headers). For a local file or a stream
+without a remote `source_uri`, headers are only sent when
+`headers_allowed_origins` is set.
+
+```python
+from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, HTMLFormatOption
+
+html_options = HTMLBackendOptions(
+    fetch_images=True,
+    enable_remote_fetch=True,
+    headers={"Authorization": "Bearer TOKEN"},
+    headers_allowed_origins=["https://example.com", "https://cdn.example.com"],
+)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.HTML: HTMLFormatOption(backend_options=html_options)
+    }
+)
+result = converter.convert("https://example.com/page.html")
+```
+
+On the CLI, pass `--html-image-headers` with a JSON object and repeat
+`--html-image-headers-origin` for each allowed origin.
+
+When a proxy is configured through the `HTTP_PROXY` / `HTTPS_PROXY`
+environment variables, downloads go through the proxy and Docling does not check
+the destination addresses; the proxy is then responsible for restricting which
+destinations it connects to.
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:
