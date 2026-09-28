@@ -15,8 +15,8 @@ from docling.document_converter import PdfFormatOption
 @pytest.mark.parametrize(
     ("pipeline_options", "expected_scale"),
     [
-        (PdfPipelineOptions(), 3.0),
-        (PdfPipelineOptions(do_ocr=False), 2.0),
+        (PdfPipelineOptions(), 1.0),
+        (PdfPipelineOptions(do_ocr=False), 1.0),
         (
             PdfPipelineOptions(
                 do_ocr=False,
