@@ -201,40 +201,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         for block in self._iter_blocks(self.lines):
             # line = line.strip()
             if isinstance(block, _LiteralBlock):
-                in_list, last_list_item, list_continuation = self._close_list_if_needed(
-                    line="<literal-block>",
-                    in_list=in_list,
-                    parents=parents,
-                    last_list_item=last_list_item,
-                    list_continuation=list_continuation,
-                    is_continuation_block=True,
-                )
-                text_data = self._flush_text_data(
-                    doc=doc,
-                    text_data=text_data,
-                    parent=self._get_current_parent(parents),
-                )
-                caption: Optional[TextItem] = None
-                if caption_data:
-                    caption = doc.add_text(
-                        text=" ".join(caption_data),
-                        label=DocItemLabel.CAPTION,
+                text_data, caption_data, in_list, last_list_item, list_continuation = (
+                    self._add_literal_block(
+                        doc=doc,
+                        block=block,
+                        text_data=text_data,
+                        caption_data=caption_data,
+                        in_list=in_list,
+                        last_list_item=last_list_item,
+                        list_continuation=list_continuation,
+                        parents=parents,
                     )
-                    caption_data = []
-                code_language = (
-                    detect_code_language(block.text, hint=block.language)
-                    if block.language is not None
-                    else None
                 )
-                doc.add_code(
-                    text=block.text,
-                    code_language=code_language,
-                    caption=caption,
-                    parent=(
-                        last_list_item if in_list else self._get_current_parent(parents)
-                    ),
-                )
-                list_continuation = False
                 continue
 
             line = block
@@ -371,30 +349,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Picture
             elif self._is_picture(line):
-                caption = None
-                if len(caption_data) > 0:
-                    caption = doc.add_text(
-                        text=" ".join(caption_data), label=DocItemLabel.CAPTION
-                    )
-
-                caption_data = []
-
-                item = self._parse_picture(line)
-
-                image: Optional[ImageRef] = None
-                if "uri" in item and self.options.fetch_images:
-                    base_path = (
-                        str(self.options.source_uri)
-                        if self.options.source_uri is not None
-                        else None
-                    )
-                    image = self._image_loader.load_image_ref(item["uri"], base_path)
-                doc.add_picture(
-                    image=image,
-                    caption=caption,
-                    parent=last_list_item
-                    if in_list
-                    else self._get_current_parent(parents),
+                caption_data, in_list, last_list_item = self._add_picture_item(
+                    doc=doc,
+                    line=line,
+                    caption_data=caption_data,
+                    in_list=in_list,
+                    last_list_item=last_list_item,
+                    parents=parents,
                 )
                 list_continuation = False
 
@@ -562,6 +523,90 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         if block_data is not None:
             yield _LiteralBlock(text="\n".join(block_data), language=block_language)
+
+    def _add_picture_item(
+        self,
+        *,
+        doc: DoclingDocument,
+        line: str,
+        caption_data: list[str],
+        in_list: bool,
+        last_list_item: ListItem | None,
+        parents: dict[int, GroupItem | None],
+    ) -> tuple[list[str], bool, ListItem | None]:
+        """Add a picture with its pending caption, if any."""
+        caption: Optional[TextItem] = None
+        if len(caption_data) > 0:
+            caption = doc.add_text(
+                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+            )
+
+        caption_data = []
+
+        item = self._parse_picture(line)
+
+        image: Optional[ImageRef] = None
+        if "uri" in item and self.options.fetch_images:
+            base_path = (
+                str(self.options.source_uri)
+                if self.options.source_uri is not None
+                else None
+            )
+            image = self._image_loader.load_image_ref(item["uri"], base_path)
+        doc.add_picture(
+            image=image,
+            caption=caption,
+            parent=last_list_item
+            if in_list
+            else self._get_current_parent(parents),
+        )
+        return caption_data, in_list, last_list_item
+
+    def _add_literal_block(
+        self,
+        *,
+        doc: DoclingDocument,
+        block: _LiteralBlock,
+        text_data: list[str],
+        caption_data: list[str],
+        in_list: bool,
+        last_list_item: ListItem | None,
+        list_continuation: bool,
+        parents: dict[int, GroupItem | None],
+    ) -> tuple[list[str], list[str], bool, ListItem | None, bool]:
+        """Add a literal/listing block, flushing pending text and captions."""
+        in_list, last_list_item, list_continuation = self._close_list_if_needed(
+            line="<literal-block>",
+            in_list=in_list,
+            parents=parents,
+            last_list_item=last_list_item,
+            list_continuation=list_continuation,
+            is_continuation_block=True,
+        )
+        text_data = self._flush_text_data(
+            doc=doc,
+            text_data=text_data,
+            parent=self._get_current_parent(parents),
+        )
+        caption: Optional[TextItem] = None
+        if caption_data:
+            caption = doc.add_text(
+                text=" ".join(caption_data),
+                label=DocItemLabel.CAPTION,
+            )
+            caption_data = []
+        code_language = (
+            detect_code_language(block.text, hint=block.language)
+            if block.language is not None
+            else None
+        )
+        doc.add_code(
+            text=block.text,
+            code_language=code_language,
+            caption=caption,
+            parent=(last_list_item if in_list else self._get_current_parent(parents)),
+        )
+        return text_data, caption_data, in_list, last_list_item, False
 
     @classmethod
     def _close_list_if_needed(
