@@ -348,6 +348,25 @@ class IWorkBackendOptions(BaseBackendOptions):
     max_member_count: Annotated[
         PositiveInt, Field(description="Maximum number of archive members to inspect")
     ] = 5000
+    render_chart_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to render an image for each chart in a Keynote "
+                "presentation and attach it to the chart PictureItem. Keynote "
+                "stores no picture of a chart and LibreOffice cannot read one "
+                "out of a .key, so the chart is rebuilt from the data read out "
+                "of the presentation as a single-chart Office document and "
+                "rasterized with LibreOffice, the route the Office backends "
+                "render their charts by. The image has the chart's kind, data "
+                "and title but not its colours or fonts, and a chart with no "
+                "Office equivalent (mixed, two-axis, bubble or interactive) "
+                "gets none. Opt-in (default False) because it requires "
+                "LibreOffice and inflates the output size. Charts always keep "
+                "their classification and data regardless of this option."
+            )
+        ),
+    ] = False
 
 
 class MsExcelBackendOptions(BaseBackendOptions):

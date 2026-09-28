@@ -145,11 +145,14 @@ def decode_text(
     guessed. Without it, a byte-order mark is honoured, then UTF-8 is tried,
     then cp1252; input that is none of those raises ``DocumentLoadError``
     rather than being re-decoded into mojibake.
-    """
-    if isinstance(path_or_stream, BytesIO):
-        return _decode_bytes(path_or_stream.getvalue(), encoding)
 
-    # Paths were read through open() in text mode, which translates line
-    # endings. Keep that, so only the set of accepted encodings changes.
-    text = _decode_bytes(path_or_stream.read_bytes(), encoding)
+    Line endings are translated as text-mode ``open()`` does, so a document
+    converts the same way whether it arrives as a path or as a stream.
+    """
+    raw = (
+        path_or_stream.getvalue()
+        if isinstance(path_or_stream, BytesIO)
+        else path_or_stream.read_bytes()
+    )
+    text = _decode_bytes(raw, encoding)
     return text.replace("\r\n", "\n").replace("\r", "\n")

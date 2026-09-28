@@ -1453,7 +1453,7 @@ class ConvertPipelineOptions(PipelineOptions):
             description=(
                 "Configuration for picture description model. Uses new preset system (recommended). "
                 "Default: 'smolvlm' preset. Only applicable when `do_picture_description=True`. "
-                "Example: PictureDescriptionVlmOptions.from_preset('granite_vision')"
+                "Example: PictureDescriptionVlmEngineOptions.from_preset('granite_vision')"
             ),
         ),
     ] = _default_picture_description_options

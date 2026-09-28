@@ -939,6 +939,64 @@ def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
     assert "Content after the blocked figure." in doc.export_to_markdown()
 
 
+def test_jats_element_citation_surname_only_does_not_crash():
+    """Citations with only a surname are rendered with that surname."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname></name>"
+        "<article-title>Only a surname</article-title>"
+        "<year>2020</year>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Smith" in markdown
+    assert "Only a surname" in markdown
+
+
+def test_jats_element_citation_empty_name_parts_are_omitted():
+    """Citations with empty surname and given-names elements omit that author."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname></surname><given-names></given-names></name>"
+        "<article-title>Empty name parts</article-title>"
+        "</element-citation></ref></ref-list>"
+    )
+    citations = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
+    ]
+    assert len(citations) == 1
+    assert citations[0].text == "Empty name parts. "
+
+
+def test_jats_element_citation_given_names_only():
+    """Citations with only given-names are rendered with that name."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><given-names>Ada</given-names></name>"
+        "<article-title>Given names only</article-title>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Ada" in markdown
+    assert "Given names only" in markdown
+
+
+def test_jats_element_citation_empty_year_does_not_crash():
+    """Citations with an empty year element are rendered without a year."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname><given-names>Jane</given-names></name>"
+        "<article-title>Empty year</article-title>"
+        "<year></year>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Smith Jane" in markdown
+    assert "Empty year" in markdown
+
+
 @pytest.mark.parametrize(
     ("contrib", "expected"),
     [
@@ -1036,3 +1094,13 @@ def test_e2e_jats_conversions_stream():
 
 def test_e2e_jats_conversions_no_stream():
     test_e2e_jats_conversions(use_stream=False)
+
+
+def test_jats_empty_article_title_does_not_crash():
+    """An empty article-title element produces an empty document title without aborting conversion."""
+    doc = convert_jats_article_meta(
+        "<title-group><article-title></article-title></title-group>"
+    )
+    exported = doc.export_to_markdown()
+    # Empty title is serialized as an H1 with no text.
+    assert exported == "# "

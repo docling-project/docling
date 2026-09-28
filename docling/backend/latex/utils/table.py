@@ -12,6 +12,7 @@ from docling.backend.latex.constants import (
     TABLE_MACROS_IGNORE,
     TABLE_MACROS_RULE,
 )
+from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 
 if TYPE_CHECKING:
     from typing import Any
@@ -57,7 +58,11 @@ class TableHelperMixin:
                     content_text = args[2]
                     if content_text:
                         try:
-                            w = LatexWalker(content_text, tolerant_parsing=True)
+                            w = LatexWalker(
+                                content_text,
+                                tolerant_parsing=True,
+                                latex_context=LATEX_CONTEXT_DB,
+                            )
                             parsed, _, _ = w.get_latex_nodes()
                             current_cell_nodes.extend(parsed)
                         except LatexWalkerParseError:
@@ -82,7 +87,11 @@ class TableHelperMixin:
                     content_text = args[2]
                     if content_text:
                         try:
-                            w = LatexWalker(content_text, tolerant_parsing=True)
+                            w = LatexWalker(
+                                content_text,
+                                tolerant_parsing=True,
+                                latex_context=LATEX_CONTEXT_DB,
+                            )
                             parsed, _, _ = w.get_latex_nodes()
                             current_cell_nodes.extend(parsed)
                         except LatexWalkerParseError:

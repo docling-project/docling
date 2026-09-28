@@ -19,6 +19,8 @@
 
 [author: Jane Editor]: Which libraries are you referring to?
 
+[author: Jane Smith (JS), time: 2026-06-18T17:12:37.410]: Minimum number of saltwater ducks
+
 [author: Marcus Sterling (MS), time: 2026-06-18T17:15:52.310]: I never thought it would be so low
 
 [author: Jane Smith (JS), time: 2026-06-18T17:12:57.350]: Maximum number of ducks

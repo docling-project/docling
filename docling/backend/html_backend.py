@@ -2759,6 +2759,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             return list_item
 
+    def _emit_task_list_inputs(
+        self, inputs_in_li: list[Tag], doc: DoclingDocument
+    ) -> None:
+        """Emit the checkbox items of a task-list <li> under the list group."""
+        for input_tag in inputs_in_li:
+            if isinstance(input_tag, Tag):
+                self._emit_input(input_tag, doc)
+
+    def _is_task_list_item(
+        self, li: Tag, inputs_in_li: list[Tag], custom_checkboxes_in_li: list[Tag]
+    ) -> bool:
+        """Whether the <li> is the pure GFM task-list form: bare checkbox
+        input(s) plus inline text, with no block content."""
+        if not inputs_in_li or custom_checkboxes_in_li:
+            return False
+        if not all(self._is_input_checkbox_or_radio_tag(t) for t in inputs_in_li):
+            return False
+        return li.find(_BLOCK_TAGS) is None
+
     def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
         tag_name = tag.name.lower()
         start: Optional[int] = None
@@ -2896,20 +2915,35 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if checkbox_tag.find_parent("li") is li
                 ]
 
-                # 3) Add the list item using the helper function
-                list_item = self._add_list_item_with_content(
-                    tag=li,
-                    doc=doc,
-                    parent=list_group,
-                    enumerated=is_ordered,
-                    marker=marker,
+                # GFM task-list form: the whole <li> is a bare checkbox input
+                # plus inline text (e.g. <li><input checked>done</li>). The text
+                # belongs to the checkbox item, so no separate list item is
+                # created for it - that used to render the checkbox on its own
+                # bullet *after* the text.
+                task_list_inputs = self._is_task_list_item(
+                    li, inputs_in_li, custom_checkboxes_in_li
                 )
+
+                # 3) Add the list item using the helper function
+                list_item = None
+                if not task_list_inputs:
+                    list_item = self._add_list_item_with_content(
+                        tag=li,
+                        doc=doc,
+                        parent=list_group,
+                        enumerated=is_ordered,
+                        marker=marker,
+                    )
 
                 # Increment counter only when a list item is actually added
                 if list_item:
                     list_item_counter += 1
 
                 if list_item or inputs_in_li or custom_checkboxes_in_li:
+                    if task_list_inputs:
+                        self._emit_task_list_inputs(inputs_in_li, doc)
+                        continue
+
                     with self._use_list_item_context(list_item):
                         # Handle inputs and checkboxes
                         if inputs_in_li or custom_checkboxes_in_li:
@@ -4910,6 +4944,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 _,
                 checkbox_label_tags,
             ) = self._extract_checkbox_text_and_consumed_label_obj_ids(input_tag)
+            if not text_clean:
+                # GFM task-list form: a bare <input type="checkbox"> followed by
+                # sibling text inside its list item, e.g. <li><input checked>done</li>.
+                # That text is the checkbox's label. Only plain-list parents are
+                # considered, so nested blocks cannot leak into the label.
+                input_parent = input_tag.parent
+                if (
+                    isinstance(input_parent, Tag)
+                    and input_parent.name == "li"
+                    and input_parent.find(_BLOCK_TAGS) is None
+                ):
+                    text_clean = self._normalize_checkbox_text(
+                        self._extract_text_excluding_tag_obj_ids(
+                            input_parent, {id(input_tag)}
+                        )
+                    )
         else:
             text = self._get_attr_as_string(input_tag, "value").strip()
             if not text:
