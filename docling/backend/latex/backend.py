@@ -13,7 +13,7 @@ from docling_core.types.doc import ContentLayer, DocItemLabel, DoclingDocument, 
 from docling_core.types.doc.document import Formatting, InlineGroup
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
-from docling.backend.latex.constants import MACROS_IGNORED
+from docling.backend.latex.constants import MACROS_IGNORED, SPECIALS_TEXT
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin
 from docling.backend.latex.handlers.macros import MacroHandlerMixin
 from docling.backend.latex.handlers.math import InlineFormula, MathHandlerMixin
@@ -38,6 +38,7 @@ try:  # pragma: no cover - import-time guard
         LatexGroupNode,
         LatexMacroNode,
         LatexMathNode,
+        LatexSpecialsNode,
         LatexWalker,
     )
     from pylatexenc.macrospec import MacroSpec
@@ -424,6 +425,9 @@ class LatexDocumentBackend(
                     self._process_math_node(
                         node, doc, parent, text_buffer, flush_text_buffer
                     )
+
+                elif isinstance(node, LatexSpecialsNode):
+                    text_buffer.append(SPECIALS_TEXT.get(node.specials_chars, ""))
 
                 elif isinstance(node, LatexGroupNode):
                     self._process_group_node(

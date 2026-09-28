@@ -26,6 +26,7 @@ from docling.backend.latex.constants import (
     MACROS_STRUCTURAL,
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
+    SPECIALS_TEXT,
 )
 from docling.backend.latex.handlers.math import InlineFormula
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
@@ -540,6 +541,8 @@ class TextHelperMixin:
                     text_parts.append(text)
             elif isinstance(node, LatexMathNode):
                 text_parts.append(self._expand_macros(node.latex_verbatim()))
+            elif isinstance(node, LatexSpecialsNode):
+                text_parts.append(SPECIALS_TEXT.get(node.specials_chars, ""))
             elif isinstance(node, LatexEnvironmentNode):
                 if node.envname in ["equation", "align", "gather"]:
                     text_parts.append(node.latex_verbatim())
