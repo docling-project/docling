@@ -14,7 +14,6 @@ Orchestrates three steps:
 
 import logging
 import shutil
-import subprocess
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -34,6 +33,7 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VideoPipelineOptions
@@ -48,11 +48,16 @@ from docling.utils.speaker_diarization import (
     diarize,
 )
 from docling.utils.video_frame_sampling import (
-    FFMPEG_TIMEOUT_SECONDS,
+    FfmpegRunner,
     FixedIntervalFrameSampler,
     SimpleSceneChangeFrameSampler,
     VideoFrame,
     VideoFrameSamplingMode,
+    ffmpeg_base_args,
+    ffmpeg_demuxer_for,
+    ffmpeg_input_args,
+    probe_duration,
+    unsupported_container_message,
 )
 
 _log = logging.getLogger(__name__)
@@ -78,19 +83,11 @@ def _video_mimetype(filename: str) -> str:
     return _VIDEO_SUFFIX_TO_MIMETYPE.get(suffix, "video/mp4")
 
 
-def _extract_audio_cmd(video_path: Path, wav_path: Path) -> list[str]:
-    """Build the ffmpeg argv for audio extraction.
-
-    ``-protocol_whitelist file,pipe`` precedes ``-i`` so that only the ``file``
-    and ``pipe`` protocols are allowed for the input and anything it references.
-    """
-    return [
-        "ffmpeg",
-        "-nostdin",
-        "-protocol_whitelist",
-        "file,pipe",
-        "-i",
-        str(video_path),
+def _extract_audio(video_path: Path, wav_path: Path, runner: FfmpegRunner) -> bool:
+    """Extract audio track from video to a 16kHz mono WAV. Returns True on success."""
+    argv = [
+        *ffmpeg_base_args(),
+        *ffmpeg_input_args(video_path),
         "-vn",
         "-acodec",
         "pcm_s16le",
@@ -101,32 +98,7 @@ def _extract_audio_cmd(video_path: Path, wav_path: Path) -> list[str]:
         "-y",
         str(wav_path),
     ]
-
-
-def _extract_audio(video_path: Path, wav_path: Path) -> bool:
-    """Extract audio track from video to a 16kHz mono WAV. Returns True on success."""
-    try:
-        result = subprocess.run(
-            _extract_audio_cmd(video_path, wav_path),
-            capture_output=True,
-            check=False,
-            timeout=FFMPEG_TIMEOUT_SECONDS,
-        )
-    except subprocess.TimeoutExpired:
-        _log.warning(
-            "Audio extraction timed out after %ss for %s",
-            FFMPEG_TIMEOUT_SECONDS,
-            video_path,
-        )
-        return False
-    if result.returncode != 0:
-        _log.debug(
-            "Audio extraction failed (rc=%s): %s",
-            result.returncode,
-            result.stderr.decode("utf-8", "replace")[-300:],
-        )
-        return False
-    return True
+    return runner.run(argv, "Audio extraction")
 
 
 class VideoPipeline(BasePipeline):
@@ -154,8 +126,14 @@ class VideoPipeline(BasePipeline):
         return isinstance(backend, NoOpBackend)
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
-        if conv_res.status == ConversionStatus.FAILURE or conv_res.errors:
+        if conv_res.status == ConversionStatus.FAILURE:
             return ConversionStatus.FAILURE
+        if any(e.category != FailureCategory.TIMEOUT for e in conv_res.errors):
+            return ConversionStatus.FAILURE
+        if conv_res.errors:
+            # Only time-budget errors: keep what was produced, as other
+            # pipelines do when document_timeout is exceeded.
+            return ConversionStatus.PARTIAL_SUCCESS
         has_text = conv_res.document and any(
             t.text and t.text.strip() for t in (conv_res.document.texts or [])
         )
@@ -211,13 +189,30 @@ class VideoPipeline(BasePipeline):
                 conv_res.status = ConversionStatus.FAILURE
                 return
 
+            if ffmpeg_demuxer_for(video_path) is None:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name="VideoPipeline",
+                        error_message=unsupported_container_message(video_path),
+                    )
+                )
+                conv_res.status = ConversionStatus.FAILURE
+                return
+
+            # One time budget for all ffmpeg calls of this document.
+            runner = FfmpegRunner(
+                document_timeout=self.pipeline_options.document_timeout
+            )
+            runner.scale_to_duration(probe_duration(video_path, runner))
+
             # 3. Extract audio and transcribe
             transcript_items = []
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as wf:
                 wav_path = Path(wf.name)
 
             try:
-                audio_ok = _extract_audio(video_path, wav_path)
+                audio_ok = _extract_audio(video_path, wav_path, runner)
                 if audio_ok and wav_path.exists() and wav_path.stat().st_size > 0:
                     transcript_items = self._asr_model.transcribe(wav_path)
                     transcript_items = _merge_into_sentences(transcript_items)
@@ -259,16 +254,31 @@ class VideoPipeline(BasePipeline):
                         min_scene_duration_seconds=opts.min_scene_duration_seconds,
                         max_frames=opts.max_sampled_frames,
                         smooth_window=opts.scene_change_smooth_window,
+                        runner=runner,
                     )
                 else:
                     sampler = FixedIntervalFrameSampler(
                         interval_seconds=opts.frame_interval_seconds,
                         max_frames=opts.max_sampled_frames,
+                        runner=runner,
                     )
                 try:
                     frames = sampler.sample(video_path)
                 except Exception as exc:
                     _log.warning("Frame sampling failed: %s", exc)
+
+            if runner.timeouts:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name="VideoPipeline",
+                        error_message=(
+                            f"Video processing incomplete: {runner.timeouts[0]} "
+                            f"({len(runner.timeouts)} ffmpeg call(s) out of time)."
+                        ),
+                        category=FailureCategory.TIMEOUT,
+                    )
+                )
 
             # 5. Build DoclingDocument
             filename = conv_res.input.file.name or "video.mp4"

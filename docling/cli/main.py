@@ -1691,6 +1691,7 @@ def convert(  # noqa: C901
             # --video-cuts-per-minute is given (see _auto_prominence).
             video_pipeline_options = VideoPipelineOptions()
             video_pipeline_options.enable_diarization = video_diarization
+            video_pipeline_options.document_timeout = document_timeout
             video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
             if video_sampling_mode == "scene":
                 video_pipeline_options.frame_sampling_mode = (

@@ -9,9 +9,11 @@ the core CI lane without downloading models or requiring video extras.
 
 from __future__ import annotations
 
+import shutil
+import subprocess
+import wave
 from io import BytesIO
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
@@ -30,7 +32,37 @@ from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import VideoPipelineOptions
 from docling.pipeline.asr_transcriber import _ConversationItem
 from docling.utils.speaker_diarization import DiarizationResult, SpeakerSegment
-from docling.utils.video_frame_sampling import VideoFrame, VideoFrameSamplingMode
+from docling.utils.video_frame_sampling import (
+    FfmpegRunner,
+    VideoFrame,
+    VideoFrameSamplingMode,
+)
+
+_HAS_FFMPEG = shutil.which("ffmpeg") is not None
+
+
+def _encode_clip(path: Path) -> None:
+    """Render a 2s test pattern with a sine audio track into ``path``."""
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=s=96x64:d=2:r=10",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=d=2",
+            "-c:v",
+            "mpeg4",
+            "-shortest",
+            str(path),
+        ],
+        capture_output=True,
+        check=True,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -75,7 +107,7 @@ def _make_video_conv_res(
     return ConversionResult(input=input_doc)
 
 
-def _fake_extract_audio(_video_path: Path, wav_path: Path) -> bool:
+def _fake_extract_audio(_video_path: Path, wav_path: Path, _runner) -> bool:
     wav_path.write_bytes(b"fake-audio")
     return True
 
@@ -219,42 +251,67 @@ def test_process_video_unsupported_input_type_records_failure(
     )
 
 
-def test_extract_audio_returns_false_when_ffmpeg_fails(
-    video_pipeline_module, tmp_path: Path, monkeypatch
-) -> None:
-    monkeypatch.setattr(
-        video_pipeline_module.subprocess,
-        "run",
-        lambda *_args, **_kwargs: SimpleNamespace(returncode=1, stderr=b"boom"),
-    )
-
-    assert (
-        video_pipeline_module._extract_audio(
-            tmp_path / "clip.mp4", tmp_path / "out.wav"
-        )
-        is False
-    )
-
-
-def test_extract_audio_invokes_ffmpeg_for_16khz_mono_wav(
-    video_pipeline_module, tmp_path: Path, monkeypatch
-) -> None:
-    captured: dict[str, list[str]] = {}
-
-    def fake_run(args, **kwargs):
-        captured["args"] = list(args)
-        return SimpleNamespace(returncode=0, stderr=b"")
-
-    monkeypatch.setattr(video_pipeline_module.subprocess, "run", fake_run)
-
-    video_path = tmp_path / "clip.mp4"
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+def test_extract_audio_writes_16khz_mono_wav(video_pipeline_module, tmp_path: Path):
+    video_path = tmp_path / "clip.mkv"
+    _encode_clip(video_path)
     wav_path = tmp_path / "out.wav"
-    assert video_pipeline_module._extract_audio(video_path, wav_path) is True
-    assert captured["args"][:2] == ["ffmpeg", "-nostdin"]
-    assert captured["args"][captured["args"].index("-ar") + 1] == "16000"
-    assert captured["args"][captured["args"].index("-ac") + 1] == "1"
-    assert str(video_path) in captured["args"]
-    assert str(wav_path) in captured["args"]
+
+    assert video_pipeline_module._extract_audio(video_path, wav_path, FfmpegRunner())
+    with wave.open(str(wav_path)) as wav:
+        assert wav.getframerate() == 16000
+        assert wav.getnchannels() == 1
+        assert wav.getnframes() > 0
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+def test_extract_audio_fails_on_invalid_container(
+    video_pipeline_module, tmp_path: Path
+) -> None:
+    video_path = tmp_path / "clip.mp4"
+    video_path.write_bytes(b"not a video")
+
+    assert not video_pipeline_module._extract_audio(
+        video_path, tmp_path / "out.wav", FfmpegRunner()
+    )
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+def test_document_timeout_reports_partial_result(
+    video_pipeline_module, mock_asr_factory, tmp_path: Path
+) -> None:
+    """Running out of document_timeout during ffmpeg work is reported, not hidden."""
+    video_path = tmp_path / "clip.mp4"
+    _encode_clip(video_path)
+    pipeline = video_pipeline_module.VideoPipeline(
+        VideoPipelineOptions(
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            document_timeout=0.001,
+        )
+    )
+    in_doc = InputDocument(
+        path_or_stream=video_path, format=InputFormat.VIDEO, backend=NoOpBackend
+    )
+
+    conv_res = pipeline.execute(in_doc, raises_on_error=False)
+
+    assert conv_res.status == ConversionStatus.PARTIAL_SUCCESS
+    assert conv_res.has_timeout_errors()
+
+
+def test_unknown_container_extension_fails_conversion(
+    video_pipeline, video_pipeline_module, tmp_path: Path, monkeypatch
+) -> None:
+    conv_res = _make_video_conv_res(tmp_path, filename="clip.ts")
+    _stub_ffmpeg(video_pipeline_module, monkeypatch)
+
+    video_pipeline._process_video(conv_res)
+
+    assert conv_res.status == ConversionStatus.FAILURE
+    assert any(
+        "Unsupported video container" in error.error_message
+        for error in conv_res.errors
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -441,44 +498,3 @@ def test_process_video_runs_diarization_when_enabled(
     assert conv_res.document is not None
     assert conv_res.document.texts[0].text == "hello"
     assert conv_res.document.texts[0].source[0].voice == "SPEAKER_00"
-
-
-# --- Audio extraction protocol whitelist and timeout -------------------------
-
-
-def test_extract_audio_cmd_whitelists_protocols_before_input():
-    from docling.pipeline.video_pipeline import _extract_audio_cmd
-
-    argv = _extract_audio_cmd(Path("/tmp/in.mp4"), Path("/tmp/out.wav"))
-    assert "-protocol_whitelist" in argv
-    wl = argv.index("-protocol_whitelist")
-    assert argv[wl + 1] == "file,pipe"
-    assert wl < argv.index("-i"), f"-protocol_whitelist must precede -i: {argv}"
-    assert "-nostdin" in argv
-
-
-def test_extract_audio_passes_timeout():
-    from docling.pipeline import video_pipeline as vp
-
-    captured: dict = {}
-
-    def _fake_run(*args, **kwargs):
-        captured.update(kwargs)
-        return SimpleNamespace(returncode=0, stderr=b"")
-
-    with patch.object(vp.subprocess, "run", side_effect=_fake_run):
-        assert vp._extract_audio(Path("/tmp/in.mp4"), Path("/tmp/out.wav")) is True
-    assert captured.get("timeout") == vp.FFMPEG_TIMEOUT_SECONDS
-
-
-def test_extract_audio_handles_timeout():
-    import subprocess
-
-    from docling.pipeline import video_pipeline as vp
-
-    with patch.object(
-        vp.subprocess,
-        "run",
-        side_effect=subprocess.TimeoutExpired(cmd="ffmpeg", timeout=1),
-    ):
-        assert vp._extract_audio(Path("/tmp/in.mp4"), Path("/tmp/out.wav")) is False

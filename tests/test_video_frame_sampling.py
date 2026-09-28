@@ -10,16 +10,19 @@ pixel-diff tests run without ffmpeg using synthetic PIL images.
 
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from PIL import Image
 
 from docling.utils.video_frame_sampling import (
+    FfmpegRunner,
     FixedIntervalFrameSampler,
     SimpleSceneChangeFrameSampler,
     VideoFrame,
     VideoScene,
+    probe_duration,
 )
 
 _HAS_FFMPEG = shutil.which("ffmpeg") is not None
@@ -207,85 +210,110 @@ def test_scene_change_respects_min_duration(three_scene_video: Path):
     assert len(scenes) == 1
 
 
-# --- ffmpeg/ffprobe protocol whitelist and timeout ---------------------------
+# --- ffmpeg input handling and time limits (requires ffmpeg) -----------------
 
 
-def _assert_whitelist_before_input(argv: list[str]) -> None:
-    """The protocol whitelist must be present and precede ``-i``."""
-    assert "-protocol_whitelist" in argv
-    wl = argv.index("-protocol_whitelist")
-    assert argv[wl + 1] == "file,pipe"
-    assert "-i" in argv
-    assert wl < argv.index("-i"), f"-protocol_whitelist must precede -i: {argv}"
-
-
-def test_ffprobe_duration_cmd_whitelists_protocols():
-    from docling.utils.video_frame_sampling import _ffprobe_duration_cmd
-
-    _assert_whitelist_before_input(_ffprobe_duration_cmd(Path("/tmp/in.mp4")))
-
-
-def test_ffmpeg_argv_builders_whitelist_protocols():
-    from docling.utils.video_frame_sampling import (
-        _ffmpeg_extract_frame_cmd,
-        _ffmpeg_extract_grid_cmd,
-        _ffmpeg_extract_range_cmd,
+def _encode_clip(path: Path, video_codec: str) -> None:
+    """Render a 2s test pattern with a sine audio track into ``path``."""
+    proc = subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=s=96x64:d=2:r=10",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=d=2",
+            "-c:v",
+            video_codec,
+            "-shortest",
+            str(path),
+        ],
+        capture_output=True,
+        check=False,
     )
-
-    p = Path("/tmp/in.mp4")
-    _assert_whitelist_before_input(_ffmpeg_extract_frame_cmd(p, 1.0))
-    _assert_whitelist_before_input(_ffmpeg_extract_range_cmd(p, 0.0, 2.0, 5.0))
-    _assert_whitelist_before_input(_ffmpeg_extract_grid_cmd(p, 1.0, 64))
+    if proc.returncode != 0:
+        pytest.skip(f"ffmpeg cannot encode {video_codec} into {path.suffix}")
 
 
-def test_ffmpeg_builders_keep_nostdin():
-    from docling.utils.video_frame_sampling import (
-        _ffmpeg_extract_frame_cmd,
-        _ffmpeg_extract_grid_cmd,
-        _ffmpeg_extract_range_cmd,
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+@pytest.mark.parametrize(
+    ("filename", "video_codec"),
+    [
+        ("clip.mp4", "mpeg4"),
+        ("clip.mov", "mpeg4"),
+        ("clip.mkv", "mpeg4"),
+        ("clip.webm", "libvpx"),
+        ("clip.avi", "mpeg4"),
+        pytest.param(
+            "take:1.mp4",
+            "mpeg4",
+            marks=pytest.mark.skipif(
+                sys.platform == "win32", reason="':' not allowed in file names"
+            ),
+        ),
+    ],
+)
+def test_every_container_samples_frames(tmp_path: Path, filename: str, video_codec):
+    video = tmp_path / filename
+    _encode_clip(video, video_codec)
+
+    frames = FixedIntervalFrameSampler(interval_seconds=0.5).sample(video)
+    assert len(frames) >= 4
+    assert frames[0].image.size == (96, 64)
+    assert len(SimpleSceneChangeFrameSampler().sample(video)) >= 1
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+@pytest.mark.parametrize(
+    "script",
+    [
+        "ffconcat version 1.0\nfile real.mkv\n",
+        "#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2.0,\nreal.mkv\n#EXT-X-ENDLIST\n",
+    ],
+    ids=["concat", "hls"],
+)
+def test_text_script_named_mp4_is_not_followed(tmp_path: Path, script: str):
+    """A script saved as .mp4 must not be read as a list of other media files."""
+    _encode_clip(tmp_path / "real.mkv", "mpeg4")
+    disguised = tmp_path / "clip.mp4"
+    disguised.write_text(script)
+
+    runner = FfmpegRunner()
+    assert probe_duration(disguised, runner) == 0.0
+    assert FixedIntervalFrameSampler(runner=runner).sample(disguised) == []
+    assert SimpleSceneChangeFrameSampler(runner=runner).sample(disguised) == []
+
+
+def test_unknown_container_extension_is_refused(tmp_path: Path):
+    with pytest.raises(ValueError, match="Unsupported video container"):
+        FixedIntervalFrameSampler().sample(tmp_path / "clip.ts")
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+def test_runner_stops_decode_at_time_limit():
+    """An endless decode is killed at the call limit and reported."""
+    runner = FfmpegRunner(call_timeout=0.5)
+    received = bytearray()
+    argv = ["ffmpeg", "-nostdin", "-f", "lavfi", "-i", "testsrc", "-f", "rawvideo", "-"]
+
+    assert runner.run(argv, "Endless decode", received.extend) is False
+    assert len(runner.timeouts) == 1
+    assert received  # output produced before the limit was kept
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+def test_runner_stops_decode_at_output_limit():
+    runner = FfmpegRunner()
+    received = bytearray()
+    argv = ["ffmpeg", "-nostdin", "-f", "lavfi", "-i", "testsrc", "-f", "rawvideo", "-"]
+
+    assert (
+        runner.run(argv, "Endless decode", received.extend, max_output_bytes=10**6)
+        is False
     )
-
-    p = Path("/tmp/in.mp4")
-    for argv in (
-        _ffmpeg_extract_frame_cmd(p, 1.0),
-        _ffmpeg_extract_range_cmd(p, 0.0, 2.0, 5.0),
-        _ffmpeg_extract_grid_cmd(p, 1.0, 64),
-    ):
-        assert "-nostdin" in argv
-
-
-def test_probe_duration_passes_timeout():
-    """_probe_duration must pass a timeout= to subprocess.run."""
-    from unittest.mock import patch
-
-    from docling.utils import video_frame_sampling as vfs
-
-    captured: dict = {}
-
-    class _Out:
-        stdout = "3.0"
-
-    def _fake_run(*args, **kwargs):
-        captured.update(kwargs)
-        return _Out()
-
-    with (
-        patch.object(vfs.shutil, "which", return_value="/usr/bin/ffprobe"),
-        patch.object(vfs.subprocess, "run", side_effect=_fake_run),
-    ):
-        assert vfs._probe_duration(Path("/tmp/in.mp4")) == 3.0
-    assert captured.get("timeout") == vfs.FFMPEG_TIMEOUT_SECONDS
-
-
-def test_extract_frame_handles_timeout():
-    """A TimeoutExpired during frame extraction returns None, not a raise."""
-    from unittest.mock import patch
-
-    from docling.utils import video_frame_sampling as vfs
-
-    with patch.object(
-        vfs.subprocess,
-        "run",
-        side_effect=subprocess.TimeoutExpired(cmd="ffmpeg", timeout=1),
-    ):
-        assert vfs._extract_frame(Path("/tmp/in.mp4"), 1.0) is None
+    assert len(received) <= 10**6
+    assert runner.timeouts == []
