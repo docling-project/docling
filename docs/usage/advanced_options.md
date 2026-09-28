@@ -290,6 +290,39 @@ doc_converter = DocumentConverter(
 )
 ```
 
+### Docling JSON input
+
+A `DoclingDocument` JSON file can be converted again, e.g. to re-export it to
+another format. Image references in that JSON which point at local files (bare
+paths, relative paths or `file:` URIs, for pictures, tables and page images
+alike) are ignored by default and a warning is logged: the images are dropped
+from the loaded document, together with their size and resolution. Embedded
+`data:` images and `http(s)` URLs are kept.
+
+This also applies to a document saved with `ImageRefMode.REFERENCED`, whose
+images are separate files. To load those images again from a JSON file you
+trust, enable local fetching on the backend options:
+
+```python
+from docling.datamodel.backend_options import DeclarativeBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, DoclingJSONFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.JSON_DOCLING: DoclingJSONFormatOption(
+            backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+        )
+    }
+)
+doc = converter.convert("saved_document.json").document
+```
+
+Relative image paths are resolved against the current working directory. The
+`docling` CLI has no option for this and always ignores local image references
+in JSON input; save the document with `ImageRefMode.EMBEDDED` if it has to go
+through the CLI again with its images.
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:

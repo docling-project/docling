@@ -388,6 +388,28 @@ for i, pic in enumerate(doc.pictures):
         img.save(f"figure_{i}.png")
 ```
 
+### Re-converting a saved DoclingDocument JSON
+
+Converting a `.json` DoclingDocument again (e.g. to re-export it) ignores image
+references to local files (paths, `file:` URIs), with a warning; embedded
+`data:` images and `http(s)` URLs are kept. So a document saved with
+`ImageRefMode.REFERENCED` comes back without its images. For a trusted file,
+opt in (SDK only; the CLI always ignores them):
+
+```python
+from docling.datamodel.backend_options import DeclarativeBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, DoclingJSONFormatOption
+
+converter = DocumentConverter(format_options={
+    InputFormat.JSON_DOCLING: DoclingJSONFormatOption(
+        backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+    ),
+})
+```
+
+Or save with `ImageRefMode.EMBEDDED` so the JSON carries its images.
+
 ## Offline / air-gapped models
 
 Pre-download model artifacts, then point conversions at them so no network is
