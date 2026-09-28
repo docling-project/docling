@@ -9,10 +9,19 @@ import pytest
 @pytest.mark.parametrize(
     ("module_name", "class_name"),
     [
-        ("docling.models.inference_engines.vlm.api_openai_compatible_engine", "ApiVlmEngine"),
-        ("docling.models.inference_engines.vlm.auto_inline_engine", "AutoInlineVlmEngine"),
+        (
+            "docling.models.inference_engines.vlm.api_openai_compatible_engine",
+            "ApiVlmEngine",
+        ),
+        (
+            "docling.models.inference_engines.vlm.auto_inline_engine",
+            "AutoInlineVlmEngine",
+        ),
         ("docling.models.inference_engines.vlm.mlx_engine", "MlxVlmEngine"),
-        ("docling.models.inference_engines.vlm.transformers_engine", "TransformersVlmEngine"),
+        (
+            "docling.models.inference_engines.vlm.transformers_engine",
+            "TransformersVlmEngine",
+        ),
         ("docling.models.inference_engines.vlm.vllm_engine", "VllmVlmEngine"),
     ],
 )
