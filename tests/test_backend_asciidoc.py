@@ -677,6 +677,7 @@ def test_stray_delimiter_without_closer_kept() -> None:
     assert "changelog" in texts
     assert "note" in texts
 
+
 def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
     # "**" and "***" mark nested bullet items, the same way ".." does for
     # ordered lists. They used to fall through to paragraph text, which lost the

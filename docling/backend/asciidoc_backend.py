@@ -501,9 +501,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 yield ""
                 continue
 
-            if stripped == "--" and not cls._has_matching_closer(
-                lines, i, stripped
-            ):
+            if stripped == "--" and not cls._has_matching_closer(lines, i, stripped):
                 # A stray "--" with no closer (e.g. a changelog separator)
                 # breaks the paragraph instead of rendering as text.
                 yield ""
@@ -556,9 +554,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         doc.add_picture(
             image=image,
             caption=caption,
-            parent=last_list_item
-            if in_list
-            else self._get_current_parent(parents),
+            parent=last_list_item if in_list else self._get_current_parent(parents),
         )
         return caption_data, in_list, last_list_item
 
