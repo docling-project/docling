@@ -427,3 +427,37 @@ def test_utf8_bom_does_not_hide_the_document_title(tmp_path: Path) -> None:
     for doc in (stream_doc, file_doc):
         assert doc.texts[0].label == "title"
         assert doc.texts[0].text == "Document Title"
+
+
+def test_conditional_directives_not_body_text() -> None:
+    # ifdef/ifndef/ifeval/endif lines are preprocessor directives; they used
+    # to leak into paragraphs as literal "ifdef::linux" text.
+    src = b"para\n\nifdef::linux\nlinux only\nendif::linux\nafter\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="conditional.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert not any("ifdef" in t or "endif" in t for t in texts)
+    assert "para" in texts
+    assert any("linux only" in t for t in texts)
+    assert any("after" in t for t in texts)
+
+
+def test_conditional_directives_kept_inside_literal_blocks() -> None:
+    src = b"....\nifdef::shown as code\n....\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="conditional-literal.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    code_items = [item for item, _ in doc.iterate_items() if item.label.value == "code"]
+    assert len(code_items) == 1
+    assert "ifdef::shown as code" in code_items[0].text

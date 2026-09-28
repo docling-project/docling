@@ -48,6 +48,11 @@ class _LiteralBlock:
     text: str
 
 
+# Preprocessor conditionals (ifdef::attr, ifndef::attr, ifeval::[...],
+# endif::attr) are directives, never body content.
+_CONDITIONAL_DIRECTIVE_RE = re.compile(r"^(?:ifdef|ifndef|ifeval|endif)::")
+
+
 class AsciiDocBackend(DeclarativeDocumentBackend):
     def __init__(
         self,
@@ -390,6 +395,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 continue
 
             if literal_data is None:
+                if _CONDITIONAL_DIRECTIVE_RE.match(line):
+                    continue
                 yield line
             else:
                 literal_data.append(line.rstrip("\r\n"))
