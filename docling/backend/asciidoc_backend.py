@@ -40,7 +40,7 @@ _log = logging.getLogger(__name__)
 # "+" or "*", and either number may be omitted, so ".2+" is a rowspan on its
 # own. Requiring at least one of the two keeps a bare "+" from matching.
 _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
-_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*|-|\.+|\d+\.|\w+\.)\s+(.*)"
+_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|\w+\.)\s+(.*)"
 
 
 @dataclass(frozen=True)
@@ -478,10 +478,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             marker = match.group(2)  # The list marker (e.g., "*", "-", "1.")
             text = match.group(3)  # The actual text of the list item
             indent_width = len(indent)
-            if marker.startswith("."):
+            if marker.startswith((".", "*")):
                 indent_width += len(marker) - 1
 
-            if marker == "*" or marker == "-":
+            if marker.startswith("*") or marker == "-":
                 return {
                     "type": "list_item",
                     "marker": marker,

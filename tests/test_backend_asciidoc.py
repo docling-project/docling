@@ -131,6 +131,45 @@ If the installer fails, check the log file.
     assert "If the installer fails, check the log file." in doc.export_to_markdown()
 
 
+def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
+    # "**" and "***" mark nested bullet items, the same way ".." does for
+    # ordered lists. They used to fall through to paragraph text, which lost the
+    # nesting and moved that text after the rest of the list.
+    source = b"""* apple
+* banana
+** banana split
+*** with cherries
+** banana bread
+* cherry
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="nested-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == [
+        "apple",
+        "banana",
+        "banana split",
+        "with cherries",
+        "banana bread",
+        "cherry",
+    ]
+    assert not any(item.enumerated for item in list_items)
+    assert doc.export_to_markdown() == (
+        "- apple\n"
+        "- banana\n"
+        "    - banana split\n"
+        "        - with cherries\n"
+        "    - banana bread\n"
+        "- cherry"
+    )
+
+
 def test_literal_block_keeps_its_content_and_following_text() -> None:
     source = b"""= Guide
 
