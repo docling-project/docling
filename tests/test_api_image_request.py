@@ -157,6 +157,46 @@ class TestApiImageRequest:
         assert response.num_tokens == 100
         assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
 
+    @pytest.mark.parametrize(
+        ("content", "reasoning_content", "expected_text"),
+        [
+            (
+                "",
+                "<div data-label='Text'>hello</div>",
+                "<div data-label='Text'>hello</div>",
+            ),
+            ("answer", "thinking...", "answer"),
+        ],
+    )
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_content_or_reasoning_content(
+        self,
+        mock_session_factory,
+        sample_image,
+        mock_response_factory,
+        content,
+        reasoning_content,
+        expected_text,
+    ):
+        """Content wins, unless it is empty and reasoning_content holds the answer."""
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_response_factory(
+                message={
+                    "role": "assistant",
+                    "content": content,
+                    "reasoning_content": reasoning_content,
+                }
+            )
+        )
+
+        response = api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+        assert response.text == expected_text
+
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_exposes_full_usage_payload(
         self, mock_session_factory, sample_image, mock_response_factory

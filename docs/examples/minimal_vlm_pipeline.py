@@ -16,8 +16,8 @@
 #
 # Notes
 # - `source` may be a local path or a URL to a PDF.
-# - For the LEGACY approach (backward compatibility), see `docs/examples/minimal_vlm_pipeline_legacy.py`.
-# - For more preset examples and runtime options, see `docs/examples/vlm_presets_and_runtimes.py`.
+# - For the LEGACY approach (backward compatibility), see `docs/examples/legacy/minimal_vlm_pipeline_legacy.py`.
+# - For more preset examples and runtime options, see `docs/usage/vision_models.md`.
 
 # %%
 

@@ -333,3 +333,61 @@ def test_vlm_owns_requested_page_and_picture_images_after_release(
     assert all(page.image is not None for page in conv_res.document.pages.values())
     assert conv_res.document.pictures
     assert all(picture.image is not None for picture in conv_res.document.pictures)
+
+
+def test_chandra_page_assembly_preserves_source_provenance_and_reports_bad_responses():
+    tracker = _Tracker()
+    pipeline = VlmPipeline.__new__(VlmPipeline)
+    pipeline.pipeline_options = SimpleNamespace(
+        generate_page_images=True,
+        generate_picture_images=False,
+        images_scale=1.0,
+        vlm_options=InlineVlmOptions(
+            prompt="",
+            repo_id="test",
+            response_format=ResponseFormat.CHANDRA_HTML,
+            inference_framework=InferenceFramework.TRANSFORMERS,
+        ),
+    )
+    pipeline.force_backend_text = False
+    conv_res = SimpleNamespace(
+        input=SimpleNamespace(file=PurePath("test.pdf")),
+        errors=[],
+        pages=[],
+        status=ConversionStatus.STARTED,
+    )
+    page_documents = []
+    for page_no, content in [
+        (
+            5,
+            '<div data-label="Figure" data-bbox="0 0 800 800"><img alt="Chart"><p>Picture text</p><table><tr><td><b>Cell</b></td></tr></table></div><div data-label="Page-Footer" data-bbox="0 900 1000 1000">Footer</div>',
+        ),
+        (6, "A prose response instead of a transcription."),
+    ]:
+        page = Page(
+            page_no=page_no,
+            size=Size(width=100, height=100),
+            predictions=PagePredictions(vlm_response=VlmPrediction(text=content)),
+        )
+        page._backend = _PageBackend(page_no, tracker)
+        page._default_image_scale = 1.0
+        conv_res.pages.append(page)
+        page_documents.append(
+            (page_no, pipeline._finalize_page_document(conv_res, page))
+        )
+        pipeline._release_page_resources(page)
+    document = pipeline._concatenate_page_documents(page_documents)
+    assert sorted(document.pages) == [5, 6]
+    assert all(item.prov[0].page_no == 5 for item in document.texts if item.prov)
+    assert all(
+        not item.prov
+        for item in document.texts
+        if item.text in {"Picture text", "Cell"}
+    )
+    assert document.pictures[0].prov[0].page_no == 5
+    assert document.pictures[0].get_image(document) is not None
+    assert [(error.page_no, error.category) for error in conv_res.errors] == [
+        (6, FailureCategory.INFERENCE_FAILURE)
+    ]
+    assert pipeline._determine_status(conv_res) == ConversionStatus.PARTIAL_SUCCESS
+    assert tracker.live == 0

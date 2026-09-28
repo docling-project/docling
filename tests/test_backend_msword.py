@@ -3,6 +3,8 @@
 
 import logging
 import os
+import re
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -12,6 +14,8 @@ from docling_core.types.doc import (
     ContentLayer,
     DocItemLabel,
     GroupItem,
+    ListGroup,
+    ListItem,
     PictureClassificationLabel,
     PictureItem,
     TableItem,
@@ -29,7 +33,7 @@ import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.backend_options import MsWordBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -87,7 +91,13 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
 
         gt_path = docx_path.parent.parent / "groundtruth" / docx_path.name
 
-        conv_result: ConversionResult = converter.convert(docx_path)
+        warning_context = (
+            pytest.warns(UserWarning, match="Skipping external image reference")
+            if docx_path.name == "docx_external_image.docx"
+            else nullcontext()
+        )
+        with warning_context:
+            conv_result: ConversionResult = converter.convert(docx_path)
 
         doc: DoclingDocument = conv_result.document
 
@@ -320,6 +330,80 @@ def test_chart_image_opt_out_keeps_no_image():
     assert chart.meta.tabular_chart is not None
 
 
+def _docx_with_titled_chart_under_a_heading(title: str):
+    """Build a copy of CHART_DOCX whose chart has a title and sits under a heading.
+
+    The chart in drawingml.docx carries an empty ``c:title`` placeholder with no
+    ``a:t`` runs, so no caption is produced, and it sits at the top level, where
+    its parent is the body. Both are needed to observe the caption's parent: a
+    title so that a caption exists at all, and a heading so that the expected
+    parent is something other than the body.
+    """
+    import zipfile
+    from io import BytesIO
+
+    with zipfile.ZipFile(CHART_DOCX) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+
+    chart = entries["word/charts/chart1.xml"].decode("utf-8")
+    insert_at = chart.index("</a:p>", chart.index("<c:title>"))
+    entries["word/charts/chart1.xml"] = (
+        chart[:insert_at] + f"<a:r><a:t>{title}</a:t></a:r>" + chart[insert_at:]
+    ).encode("utf-8")
+
+    document = entries["word/document.xml"].decode("utf-8")
+    drawing_at = document.index("<w:drawing>", document.index("<w:body>"))
+    while "chart" not in document[drawing_at : drawing_at + 600]:
+        drawing_at = document.index("<w:drawing>", drawing_at + 1)
+    paragraph_at = max(
+        m.start() for m in re.finditer(r"<w:p[ >]", document) if m.start() < drawing_at
+    )
+    heading = (
+        '<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr>'
+        "<w:r><w:t>Revenue section</w:t></w:r></w:p>"
+    )
+    entries["word/document.xml"] = (
+        document[:paragraph_at] + heading + document[paragraph_at:]
+    ).encode("utf-8")
+
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    buffer.seek(0)
+    return buffer
+
+
+def test_chart_caption_is_parented_to_the_chart_container():
+    """A chart caption belongs to whatever holds the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so a chart nested under a
+    heading had its caption surface outside that heading.
+    """
+    title = "Quarterly Revenue"
+    stream = DocumentStream(
+        name="chart_with_title.docx",
+        stream=_docx_with_titled_chart_under_a_heading(title),
+    )
+    doc = _chart_converter(render_chart_images=False).convert(stream).document
+
+    picture = _single_chart_picture(doc)
+    caption = picture.captions[0].resolve(doc)
+
+    assert caption.text == title
+    assert picture.parent.cref != "#/body", (
+        "fixture should nest the chart under a heading"
+    )
+    assert caption.parent.cref == picture.parent.cref, (
+        f"caption is parented to {caption.parent.cref}, expected {picture.parent.cref}"
+    )
+    container = picture.parent.resolve(doc)
+    assert caption.self_ref in [child.cref for child in container.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+
 def test_is_rich_table_cell(docx_paths):
     """Test the function is_rich_table_cell."""
 
@@ -523,6 +607,7 @@ def test_comments_extraction(documents):
         ("Heading 2", "Heading", 2),
         ("Heading 9", "Heading", 9),
         ("Heading 0", "Heading", 1),  # Custom style - level 0 should be clamped to 1
+        ("Heading 111", "Heading", 9),  # Above schema max; clamp to OOXML heading 9
         ("1 Heading", "Heading", 1),  # Number before text
         ("0 Heading", "Heading", 1),  # Zero before text should be clamped to 1
         ("Normal", "Normal", None),  # Non-heading style
@@ -548,6 +633,25 @@ def test_get_heading_and_level(docx_paths, style_label, expected_label, expected
     assert level == expected_level, (
         f"Expected level {expected_level} for '{style_label}', got {level}"
     )
+
+
+def test_heading_style_above_schema_max_converts(tmp_path):
+    """A Heading 111 style converts at heading level 9 instead of aborting."""
+    document = Document()
+    document.styles.add_style("Heading 111", WD_STYLE_TYPE.PARAGRAPH)
+    document.add_paragraph("Deep heading", style="Heading 111")
+    path = tmp_path / "heading-111.docx"
+    document.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(path)
+    exported = result.document.export_to_markdown()
+    assert "Deep heading" in exported
+    headers = [
+        item for item in result.document.texts if isinstance(item, SectionHeaderItem)
+    ]
+    assert len(headers) == 1
+    assert headers[0].level == 9
+    assert headers[0].text == "Deep heading"
 
 
 def test_get_outline_level_from_style():
@@ -911,6 +1015,97 @@ def test_vertical_merge_survives_grid_before_row(tmp_path):
     assert merged.text.startswith("X")
     assert merged.row_span == 2
     assert merged.end_row_offset_idx == 2
+
+
+def _wrap_cell_in_content_control(table, row: int, col: int) -> None:
+    """Move a ``docx.table.Table`` cell under ``w:sdt``/``w:sdtContent``.
+
+    Word produces this shape for date pickers and for cells bound to document
+    properties: the ``w:tc`` is no longer a direct child of the ``w:tr``.
+    """
+    tc = table.cell(row, col)._tc
+    tr = tc.getparent()
+    position = list(tr).index(tc)
+    sdt = tr.makeelement(qn("w:sdt"), {})
+    sdt_content = tr.makeelement(qn("w:sdtContent"), {})
+    tr.remove(tc)
+    sdt_content.append(tc)
+    sdt.append(sdt_content)
+    tr.insert(position, sdt)
+
+
+def test_table_cells_inside_a_content_control_keep_their_grid_column(tmp_path):
+    """A content-control cell must be parsed, and must not shift the row left.
+
+    Only direct ``w:tc`` children of a ``w:tr`` used to be visited, so a cell
+    Word had wrapped in a content control was dropped -- and because the grid
+    column advances once per emitted cell, every later cell in the row moved
+    into the vacated column and lined up under the wrong header.
+    """
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    header = ["Date", "Version", "Author", "Note"]
+    row = ["1.2.2015", "1", "Acme s.r.o.", "Created"]
+
+    def build(wrapped_columns: tuple[int, ...]) -> list[str]:
+        doc = Document()
+        table = doc.add_table(rows=2, cols=len(header))
+        for col, value in enumerate(header):
+            table.cell(0, col).text = value
+        for col, value in enumerate(row):
+            table.cell(1, col).text = value
+        for col in wrapped_columns:
+            _wrap_cell_in_content_control(table, 1, col)
+
+        path = tmp_path / f"content_control_{'_'.join(map(str, wrapped_columns))}.docx"
+        doc.save(str(path))
+
+        data = converter.convert(path).document.tables[0].data
+        grid = [""] * data.num_cols
+        for cell in data.table_cells or []:
+            if cell.start_row_offset_idx == 1:
+                grid[cell.start_col_offset_idx] = cell.text or ""
+        return grid
+
+    assert build(()) == row
+    # A single wrapped cell in the first column: previously dropped, shifting
+    # the rest one column left.
+    assert build((0,)) == row
+    # Only a middle column wrapped: the grid-shift must be caught independently
+    # of the first cell being wrapped.
+    assert build((2,)) == row
+    # Two wrapped cells in the same row, one of them not the first.
+    assert build((0, 2)) == row
+
+
+def test_single_cell_layout_table_wrapped_in_content_control(tmp_path):
+    """A one-cell layout table whose only cell is content-control wrapped.
+
+    A ``1x1`` table is treated as furniture and its cell is walked as body
+    content. That shortcut used ``table.rows[0].cells[0]``, which walks only
+    direct ``w:tc`` children, so when the lone cell is wrapped in a ``w:sdt``
+    (the shape Word emits for cover-page and document-property controls) the
+    row had no cells, ``cells[0]`` raised ``IndexError``, and the caller's
+    ``except`` silently dropped the cell's content.
+    """
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = Document()
+    doc.add_paragraph("before")
+    table = doc.add_table(rows=1, cols=1)
+    table.cell(0, 0).text = "Cover value"
+    _wrap_cell_in_content_control(table, 0, 0)
+    doc.add_paragraph("after")
+
+    path = tmp_path / "single_cell_content_control.docx"
+    doc.save(str(path))
+
+    texts = [
+        item.text
+        for item, _ in converter.convert(path).document.iterate_items()
+        if isinstance(item, TextItem)
+    ]
+    assert "Cover value" in texts
 
 
 def test_list_counter_and_enum_marker(docx_paths):
@@ -1640,3 +1835,145 @@ def test_content_control_text_survives_a_picture_in_the_same_control(tmp_path):
     assert "COVER TITLE INSIDE SDT" in from_file
     assert "BODY TEXT OUTSIDE SDT" in from_file
     assert from_file.count("<!-- image -->") == 1
+
+
+def _list_items_in_section(doc, heading_text: str) -> list[ListItem]:
+    """Return the ListItems nested under a section header whose text matches."""
+
+    items: list[ListItem] = []
+    capturing = False
+    for item, _ in doc.iterate_items():
+        if isinstance(item, TextItem) and item.label == DocItemLabel.SECTION_HEADER:
+            capturing = heading_text in item.text
+        elif capturing and isinstance(item, ListItem):
+            items.append(item)
+    return items
+
+
+def test_list_returning_to_starting_level_above_zero_keeps_items(documents):
+    """A list at levels 1, 2, 1 must not drop the item returning to level 1.
+
+    Regression for #4185: a numbered list that starts at ``w:ilvl`` 1 (never
+    touching level 0) used to lose the third item, because the level-1 slot
+    between the list base and the level-2 sub-list group was left empty.
+    """
+
+    doc = next(item[1] for item in documents if item[0].name == "docx_lists.docx")
+
+    list_items = _list_items_in_section(doc, "List starting above indent level 0")
+    # All three items must survive, in order.
+    assert [item.text for item in list_items] == ["Item A", "Item B", "Item C"]
+
+    # The item that returns to the starting level must rejoin the starting
+    # level's ListGroup (the same one Item A lives in) -- not be dropped.
+    group_of_a = list_items[0].parent.resolve(doc)
+    group_of_c = list_items[2].parent.resolve(doc)
+    assert isinstance(group_of_a, ListGroup)
+    assert group_of_c.get_ref() == group_of_a.get_ref()
+
+    # The deeper item must nest inside the same list (as a sub-group of the
+    # outer ListGroup), not become a sibling top-level list -- which is what
+    # the bug produced for Item A/Item B.
+    group_of_b = list_items[1].parent.resolve(doc)
+    assert isinstance(group_of_b, ListGroup)
+    assert group_of_b.parent == group_of_a.get_ref()
+
+    # The markdown must reflect a single nested list, not two separate lists.
+    markdown = doc.export_to_markdown()
+    lines = [line for line in markdown.splitlines() if line.strip()]
+    heading_idx = next(
+        i
+        for i, line in enumerate(lines)
+        if "List starting above indent level 0" in line
+    )
+    # Item B is rendered indented under Item A; Item C returns to the top level.
+    assert (
+        lines[heading_idx + 1].startswith("- ") and "Item A" in lines[heading_idx + 1]
+    )
+    assert (
+        lines[heading_idx + 2].startswith("    - ")
+        and "Item B" in lines[heading_idx + 2]
+    )
+    assert (
+        lines[heading_idx + 3].startswith("- ") and "Item C" in lines[heading_idx + 3]
+    )
+
+
+def test_list_returning_to_starting_level_zero_still_works(documents):
+    """Control case: levels 0, 1, 2, 1 must keep working unchanged."""
+
+    doc = next(item[1] for item in documents if item[0].name == "docx_lists.docx")
+
+    list_items = _list_items_in_section(doc, "List starting at indent level 0")
+    assert [item.text for item in list_items] == [
+        "Item A",
+        "Item B",
+        "Item C",
+        "Item D",
+    ]
+
+    # Item D (level 1) rejoins Item B's (level 1) group.
+    group_of_b = list_items[1].parent.resolve(doc)
+    group_of_d = list_items[3].parent.resolve(doc)
+    assert group_of_d.get_ref() == group_of_b.get_ref()
+
+
+def _docx_with_fragment_only_rel():
+    """Build a minimal DOCX whose ``word/_rels/document.xml.rels`` contains a
+    fragment-only ``Target`` (``#bookmark``).
+
+    The standard ``python-docx`` parser tries to resolve every relationship
+    target as a zip member and raises ``KeyError`` for such entries.  The
+    backend must sanitize the archive before handing it to ``python-docx``.
+    """
+    import zipfile
+    from io import BytesIO
+
+    doc = Document()
+    doc.add_paragraph("Hello, world!")
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    with zipfile.ZipFile(buf) as src:
+        entries = {name: src.read(name) for name in src.namelist()}
+
+    # Inject a fragment-only relationship into ``word/_rels/document.xml.rels``.
+    rels_key = "word/_rels/document.xml.rels"
+    rels_xml = entries[rels_key].decode("utf-8")
+    fragment_rel = (
+        '<Relationship Id="rId999" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" '
+        'Target="#_Proc%C3%A9dures_sp%C3%A9ciales"/>'
+    )
+    rels_xml = rels_xml.replace("</Relationships>", fragment_rel + "</Relationships>")
+    entries[rels_key] = rels_xml.encode("utf-8")
+
+    out = BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as dst:
+        for name, data in entries.items():
+            dst.writestr(name, data)
+    out.seek(0)
+    return out
+
+
+def test_fragment_only_rel_does_not_crash_backend():
+    """Regression test: a DOCX whose .rels contains a ``Target`` starting with
+    ``#`` (internal bookmark anchor) must load successfully.
+
+    Before the fix, ``python-docx`` tried to open the anchor as a zip member
+    and raised ``KeyError``, causing the backend to fail the entire document.
+    """
+    stream = DocumentStream(
+        name="fragment_rel.docx",
+        stream=_docx_with_fragment_only_rel(),
+    )
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(stream, raises_on_error=True)
+    texts = [
+        item.text
+        for item, _ in result.document.iterate_items()
+        if isinstance(item, TextItem)
+    ]
+    assert any("Hello, world!" in t for t in texts)

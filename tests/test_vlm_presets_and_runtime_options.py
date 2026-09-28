@@ -256,6 +256,76 @@ class TestRuntimeOptions:
             expected_dtype_arg == "torch_dtype"
         )
 
+    @pytest.mark.parametrize(
+        ("transformers_version", "expected_trust_remote_code"),
+        [("5.7.0", True), ("5.8.0", False), ("5.16.1", False)],
+    )
+    def test_transformers_engine_loads_granite_vision_4_natively(
+        self, monkeypatch, transformers_version, expected_trust_remote_code
+    ):
+        """Granite Vision 4 skips its bundled code where transformers ships it."""
+        import docling.models.inference_engines.vlm.transformers_engine as tf_engine
+
+        processor_kwargs = {}
+        model_kwargs = {}
+
+        class FakeProcessor:
+            tokenizer = None
+
+        class FakeModel:
+            @classmethod
+            def from_pretrained(cls, *args, **kwargs):
+                model_kwargs.update(kwargs)
+                return cls()
+
+            def eval(self):
+                return None
+
+        def fake_processor_from_pretrained(*args, **kwargs):
+            processor_kwargs.update(kwargs)
+            return FakeProcessor()
+
+        monkeypatch.setattr(
+            tf_engine.importlib.metadata,
+            "version",
+            lambda package: (
+                transformers_version if package == "transformers" else "0.0.0"
+            ),
+        )
+        monkeypatch.setattr(
+            tf_engine,
+            "resolve_model_artifacts_path",
+            lambda **kwargs: "artifacts",
+        )
+        monkeypatch.setattr(
+            tf_engine.AutoProcessor, "from_pretrained", fake_processor_from_pretrained
+        )
+        monkeypatch.setattr(tf_engine, "AutoModelForImageTextToText", FakeModel)
+        monkeypatch.setattr(
+            tf_engine.GenerationConfig,
+            "from_pretrained",
+            lambda *args, **kwargs: object(),
+        )
+
+        engine = TransformersVlmEngine(
+            options=TransformersVlmEngineOptions(
+                trust_remote_code=True,
+                compile_model=False,
+            ),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            artifacts_path=None,
+        )
+        engine.device = "cpu"
+
+        engine._load_model_for_repo(
+            "ibm-granite/granite-vision-4.1-4b",
+            model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+        )
+
+        assert processor_kwargs["trust_remote_code"] is expected_trust_remote_code
+        assert model_kwargs["trust_remote_code"] is expected_trust_remote_code
+        assert model_kwargs["_attn_implementation"] is None
+
     def test_dots_mocr_requires_flash_attn(self, monkeypatch):
         """dots.mocr remote code imports flash_attn even when SDPA is selected."""
         import docling.models.inference_engines.vlm.transformers_engine as tf_engine
@@ -670,6 +740,8 @@ class TestPresetEngineIntegration:
             ResponseFormat.PLAINTEXT,
             ResponseFormat.CHANDRA_HTML,
             ResponseFormat.DOTS_JSON,
+            ResponseFormat.NEMOTRON_PARSE_V2,
+            ResponseFormat.MINERU2,
         ]
 
         # Check VlmConvert presets

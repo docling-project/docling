@@ -204,34 +204,88 @@ doc_converter = DocumentConverter(
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
 
-### Apple Pages options
+### Apple iWork options
 
-Headers, footers and footnotes go into the `furniture` content layer, and
-comments into `notes`, so they stay out of the reading order by default. To
-include them in an export, pass the extra layers explicitly (this applies to
-any `DoclingDocument`, not just Pages):
+Pages (`.pages`) and Keynote (`.key`) share their options, since they share
+their container.
+
+In a Pages document, headers, footers and footnotes go into the `furniture`
+content layer and comments into `notes`. In a Keynote presentation, each slide
+becomes a chapter group holding what is on it, and the presenter notes and
+comments of that slide go into `notes` under it. Either way those layers stay
+out of the reading order by default; to include them in an export, pass the
+extra layers explicitly (this applies to any `DoclingDocument`, not just these):
 
 ```python
 from docling_core.types.doc import ContentLayer
 from docling.document_converter import DocumentConverter
 
-doc = DocumentConverter().convert("report.pages").document
-print(doc.export_to_markdown(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}))
+converter = DocumentConverter()
+
+# Pages: headers, footers and footnotes are furniture, comments are notes.
+report = converter.convert("report.pages").document
+print(report.export_to_markdown(
+    included_content_layers={
+        ContentLayer.BODY,
+        ContentLayer.FURNITURE,
+        ContentLayer.NOTES,
+    }
+))
+
+# Keynote: the presenter notes and comments of each slide are notes.
+deck = converter.convert("deck.key").document
+print(deck.export_to_markdown(
+    included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
+))
 ```
 
-The container is untrusted input, so size limits apply. They can be tuned with
-`IWorkBackendOptions`:
+A chart on a Keynote slide becomes a picture classified by its kind, with the
+data it plots in the picture's `meta.tabular_chart` and its title as the
+caption, which is the shape the PowerPoint backend gives a chart. Keynote keeps
+no picture of a chart, so the picture itself is empty unless you opt into
+`render_chart_images`. That rebuilds each chart from its data as an Office chart
+and draws it with LibreOffice, so it needs a LibreOffice installation. The image
+has the chart's kind, data and title but not its colours or fonts, and a mixed,
+two-axis, bubble or interactive chart gets none:
 
 ```python
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.document_converter import DocumentConverter, IWorkPagesFormatOption
+from docling.document_converter import DocumentConverter, IWorkKeynoteFormatOption
 
+converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(
+            backend_options=IWorkBackendOptions(render_chart_images=True)
+        )
+    }
+)
+deck = converter.convert("deck.key").document
+for picture in deck.pictures:
+    if picture.meta is not None and picture.meta.tabular_chart is not None:
+        print(picture.caption_text(deck), picture.meta.tabular_chart.chart_data)
+```
+
+Charts are read from Keynote 6 and later; a chart in an iWork '09 presentation
+is not read.
+
+The container is untrusted input, so size limits apply. They can be tuned with
+`IWorkBackendOptions`, which both formats take:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import (
+    DocumentConverter,
+    IWorkKeynoteFormatOption,
+    IWorkPagesFormatOption,
+)
+
+limits = IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
 doc_converter = DocumentConverter(
     format_options={
-        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(
-            backend_options=IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
-        )
+        InputFormat.IWORK_PAGES: IWorkPagesFormatOption(backend_options=limits),
+        InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(backend_options=limits),
     }
 )
 ```

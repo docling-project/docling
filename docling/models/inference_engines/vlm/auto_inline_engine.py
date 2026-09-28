@@ -268,5 +268,4 @@ class AutoInlineVlmEngine(BaseVlmEngine):
             self.actual_engine.cleanup()
             self.actual_engine = None
 
-        if _log is not None:
-            _log.info("Auto-inline engine cleaned up")
+        if _log is not None:\n            _log.info("Auto-inline engine cleaned up")

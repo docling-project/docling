@@ -3,6 +3,7 @@
 
 import logging
 from collections.abc import Iterator
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
@@ -29,6 +30,7 @@ from docling.backend.msexcel_backend import (
     ExcelCell,
     ExcelTable,
     MsExcelDocumentBackend,
+    _order_comment_thread,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -181,6 +183,61 @@ def test_comment_cell_coordinates(documents) -> None:
     assert any("G12" in name for name in comment_names), (
         "Expected threaded comment for cell G12"
     )
+
+
+def test_threaded_comment_keeps_root_and_replies(documents) -> None:
+    """Test that a comment thread keeps its root comment and replies in order."""
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
+
+    thread = next(g for g in doc.groups if g.name.endswith("-F7"))
+    texts = [child.resolve(doc).text for child in thread.children]
+
+    assert len(texts) == 2
+    assert "Minimum number of saltwater ducks" in texts[0]
+    assert "I never thought it would be so low" in texts[1]
+
+
+@pytest.mark.parametrize(
+    ("entries", "expected"),
+    [
+        pytest.param(
+            [("c", "a", 3), ("b", "a", 2), ("a", None, 1)],
+            ["a", "b", "c"],
+            id="reversed-order",
+        ),
+        pytest.param(
+            [("p", "q", 1), ("q", "p", 2), ("a", None, 3)],
+            ["a", "p", "q"],
+            id="cycle",
+        ),
+        pytest.param(
+            [("r", "a", 3), ("a", None, 2), ("o", "gone", 1)],
+            ["o", "a", "r"],
+            id="orphaned-parent",
+        ),
+        pytest.param(
+            [("r2", "b", 4), ("b", None, 2), ("r1", "a", 3), ("a", None, 1)],
+            ["a", "r1", "b", "r2"],
+            id="multi-root",
+        ),
+    ],
+)
+def test_order_comment_thread(
+    entries: list[tuple[str, str | None, int]], expected: list[str]
+) -> None:
+    """Test that each comment comes before its replies, whatever the XML order."""
+    thread = _order_comment_thread(
+        [
+            (
+                comment_id,
+                parent_id,
+                ("Author", comment_id, datetime(2024, 1, 1, 0, minute)),
+            )
+            for comment_id, parent_id, minute in entries
+        ]
+    )
+
+    assert [text for _, text, _ in thread] == expected
 
 
 def test_e2e_excel_conversions(documents, libreoffice_available) -> None:
@@ -676,7 +733,7 @@ def test_merged_cells_are_indexed_once_and_preserve_semantics(tmp_path: Path) ->
     assert [(cell.row_span, cell.col_span) for cell in table.data if cell.col == 0] == [
         (1, 3)
     ] * 10
-    assert comment_map[(3, 3)] == ("Codex", "Synthetic note", None)
+    assert comment_map[(3, 3)] == [("Codex", "Synthetic note", None)]
 
 
 def test_split_leading_section_label_helper() -> None:
@@ -834,6 +891,35 @@ def test_edge_cases_merging() -> None:
     assert len(tables_by_page.get(3, [])) == 2, (
         "Page 3 (Diagonal) should have 2 separate tables"
     )
+
+
+def test_sparse_table_cells_inside_bbox_are_not_duplicated(tmp_path: Path) -> None:
+    """Sparse cells already included in a table bbox must not become extra tables.
+
+    Regression test for #4230. The Note column is disconnected from the rest
+    of the table below the header, but those cells are already included in the
+    rectangular table that spans A1:C4.
+    """
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["ID", "Name", "Note"])
+    sheet.append([1, "alpha", None])
+    sheet.append([2, None, "foo"])
+    sheet.append([3, None, "bar"])
+
+    file_path = tmp_path / "sparse_sheet.xlsx"
+    workbook.save(file_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(file_path).document
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (4, 3)
+
+    texts = [cell.text for cell in table.data.table_cells]
+    assert texts.count("foo") == 1
+    assert texts.count("bar") == 1
 
 
 def test_gap_tolerance_comparison() -> None:
@@ -999,3 +1085,27 @@ def test_emf_images_in_xlsx(libreoffice_available):
             f"Page {page_no}: picture (idx {pic_indices}) should come before "
             f"table (idx {tbl_indices}) in document order"
         )
+
+
+def test_chart_caption_is_parented_to_its_sheet(documents) -> None:
+    """A chart caption belongs to the sheet holding the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so it surfaced outside its
+    sheet group and carried no provenance.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+
+    picture = doc.pictures[0]
+    sheet = picture.parent.resolve(doc)
+    caption = picture.captions[0].resolve(doc)
+
+    assert caption.parent.cref == sheet.self_ref, (
+        f"caption is parented to {caption.parent.cref}, expected {sheet.self_ref}"
+    )
+    assert caption.self_ref in [child.cref for child in sheet.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+    assert len(caption.prov) == 1
+    assert caption.prov[0].charspan == (0, len(caption.text))
