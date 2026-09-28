@@ -830,17 +830,20 @@ def test_pptx_emf_picture_survives_without_pillow_metafile_support(
     load. Dropping the shape there loses the picture -- commonly a chart pasted
     in from Excel -- from an otherwise successful conversion, and does so on
     Linux only. Clearing the handler reproduces a non-Windows Pillow, and
-    emptying PATH reproduces a machine without LibreOffice, so the picture has
-    to survive on structure alone.
+    patching get_libreoffice_cmd to return None reproduces a machine without
+    LibreOffice, so the picture has to survive on structure alone.
     """
     from PIL import WmfImagePlugin
+
+    import docling.backend.mspowerpoint_backend as _pptx_backend
 
     # The plugin registers a GDI-backed handler at import time on Windows only;
     # on other platforms this attribute is already None.
     monkeypatch.setattr(WmfImagePlugin, "_handler", None)
-    # LibreOffice is found with shutil.which, so an empty PATH hides it whether
-    # or not the machine running the tests happens to have it installed.
-    monkeypatch.setenv("PATH", str(tmp_path))
+    # Patch get_docx_to_pdf_converter in the pptx backend's own namespace so
+    # LibreOffice is reported as unavailable regardless of PATH, environment
+    # variables, or hardcoded install paths on the test machine.
+    monkeypatch.setattr(_pptx_backend, "get_docx_to_pdf_converter", lambda: None)
 
     deck_path = _deck_with_picture(tmp_path, _emf_bytes(), ".emf")
 
