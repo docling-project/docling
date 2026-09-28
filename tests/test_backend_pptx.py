@@ -1061,3 +1061,37 @@ def test_pptx_indented_paragraphs_become_nested_lists(tmp_path: Path):
     sub_item = next(t for t in doc.texts if t.text == "Background")
     intro = next(t for t in doc.texts if t.text == "Intro")
     assert sub_item.parent.resolve(doc).parent.cref == intro.self_ref
+
+
+def test_pptx_numbered_list_honors_start_at(tmp_path: Path):
+    """A numbered list starts from its ``a:buAutoNum/@startAt`` value.
+
+    A list continued from a previous slide is numbered from "Start at" in
+    PowerPoint, but its items used to be renumbered from 1.
+    """
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    steps = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(2))
+    steps.text_frame.text = "Step four"
+    for text, level in [("Sub a", 1), ("Step five", 0)]:
+        paragraph = steps.text_frame.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+    for paragraph in steps.text_frame.paragraphs:
+        attrs = {"type": "arabicPeriod"}
+        if paragraph.level == 0:
+            attrs["startAt"] = "4"
+        paragraph._p.get_or_add_pPr().append(
+            paragraph._p.makeelement(qn("a:buAutoNum"), attrs)
+        )
+
+    pptx_path = tmp_path / "start_at.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert doc.export_to_markdown() == "4. Step four\n    1. Sub a\n5. Step five"
