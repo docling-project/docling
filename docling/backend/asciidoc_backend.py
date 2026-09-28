@@ -34,13 +34,18 @@ from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
 
+# A line starting with // is a comment and never body content. //// opens a
+# delimited comment block: every line up to the matching //// is hidden.
+_LINE_COMMENT_RE = re.compile(r"^//")
+_COMMENT_BLOCK_DELIMITER = "////"
+
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
 # (a/d/e/h/l/m/s). AsciiDoc writes the span as [colspan][.rowspan] followed by
 # "+" or "*", and either number may be omitted, so ".2+" is a rowspan on its
 # own. Requiring at least one of the two keeps a bare "+" from matching.
 _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
-_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*|-|\.+|\d+\.|\w+\.)\s+(.*)"
+_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|\w+\.)\s+(.*)"
 
 
 @dataclass(frozen=True)
@@ -379,9 +384,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _iter_blocks(lines: list[str]) -> Iterator[str | _LiteralBlock]:
         literal_data: list[str] | None = None
+        in_comment_block = False
 
         for line in lines:
             if line.strip() == "....":
+                if in_comment_block:
+                    continue
                 if literal_data is None:
                     literal_data = []
                 else:
@@ -389,7 +397,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     literal_data = None
                 continue
 
+            if in_comment_block:
+                if line.strip() == _COMMENT_BLOCK_DELIMITER:
+                    in_comment_block = False
+                continue
+
             if literal_data is None:
+                if line.strip() == _COMMENT_BLOCK_DELIMITER:
+                    in_comment_block = True
+                    continue
+                if _LINE_COMMENT_RE.match(line):
+                    continue
                 yield line
             else:
                 literal_data.append(line.rstrip("\r\n"))
@@ -478,10 +496,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             marker = match.group(2)  # The list marker (e.g., "*", "-", "1.")
             text = match.group(3)  # The actual text of the list item
             indent_width = len(indent)
-            if marker.startswith("."):
+            if marker.startswith((".", "*")):
                 indent_width += len(marker) - 1
 
-            if marker == "*" or marker == "-":
+            if marker.startswith("*") or marker == "-":
                 return {
                     "type": "list_item",
                     "marker": marker,
