@@ -1,13 +1,13 @@
 # Separator-aware rule-based reading order
 
-**Status:** implemented as an experimental, opt-in PDF pipeline feature.
+**Status:** implemented and enabled by default in the standard PDF pipeline.
 
 ## Implementation result
 
 `PdfPipelineOptions.use_reading_order_separators` enables separator-aware
-ordering and defaults to `False`. When enabled, page preprocessing retains
+ordering and defaults to `True`. When enabled, page preprocessing retains
 visible shape geometry in private, non-serialized `Page` attributes before the
-backend is released. No shape-query overhead is added while the option is off.
+backend is released. No shape-query overhead is added when the option is off.
 
 The CLI exposes the option as
 `--reading-order-separators/--no-reading-order-separators`. For controlled
@@ -20,8 +20,11 @@ rules. The latter refinement is required by `Elsevier.pdf`, whose important
 horizontal rules are filled paths rather than strokes. It does not synthesize
 rectangle edges from a region bbox.
 
-Candidates are clipped, length-filtered, merged, rejected when they cross text
-or sit inside a graphic, and required to have content on both relevant sides.
+Candidates are clipped, length-filtered, merged until no further merge applies,
+rejected when they cross text or a graphic (table, picture, code) or sit inside
+a graphic, and required to have content on both relevant sides. The graphic
+crossing check catches chart and table rules that overshoot the predicted
+graphic box.
 Horizontal separators enter the graph as transient barrier nodes; vertical
 separators constrain same-band links and horizontal dilation. All separator
 nodes are removed before captions, footnotes, merges, or document construction.
@@ -35,8 +38,8 @@ Page-1 evaluation produced:
 - `2603.16056.pdf`: one accepted horizontal separator. Output order is
   unchanged.
 
-The comparison Markdown and accepted-separator overlays are under
-`debug/reading_order_separators/`.
+The comparison Markdown and accepted-separator overlays were produced locally
+under `debug/reading_order_separators/` and are not committed.
 
 ## Objective
 
@@ -171,10 +174,9 @@ produce a clear improvement, retain only separator-aware constraints.
    - `_find_to_footnotes`;
    - `predict_merges`;
    - `DoclingDocument` construction.
-3. Keep separator support behind a `ReadingOrderOptions` switch during
-   evaluation.
-4. Decide separately, after corpus evaluation, whether the option should
-   become public and whether it is safe to enable by default.
+3. Expose separator support as `PdfPipelineOptions.use_reading_order_separators`
+   (CLI: `--reading-order-separators/--no-reading-order-separators`).
+4. Enable it by default; the corpus checks below remain follow-up work.
 
 ## Phase 5: raster fallback
 
@@ -213,8 +215,9 @@ Evaluate on:
 4. PDFs with no useful rules.
 
 Measure pairwise reading-order accuracy, full-order rank correlation, changed
-documents, and runtime. Enabling the feature by default requires improvement
-on separator-bearing pages with no material regression on the control corpus.
+documents, and runtime. Keeping the feature enabled by default requires
+improvement on separator-bearing pages with no material regression on the
+control corpus.
 
 Run targeted reading-order and backend tests, followed by `make validate`.
 
@@ -227,7 +230,7 @@ Resolved before implementation:
   `PageElement` behavior;
 - the three supplied PDFs provide the initial reproducible evaluation cases.
 
-Before enabling by default:
+Follow-up checks now that the feature is enabled by default:
 
 - review the accepted/rejected-line overlays;
 - review corpus-level ordering deltas;

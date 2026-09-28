@@ -53,11 +53,10 @@ docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
 
-For PDFs with visible horizontal or vertical rules, the experimental
-rule-based reading-order separator support can improve ordering:
+For PDFs, visible horizontal and vertical rules are used as reading-order
+signals by default. Disable this to compare against rule-free ordering:
 
 ```bash
-docling report.pdf --from pdf --reading-order-separators --output /tmp/
 docling report.pdf --from pdf --no-reading-order-separators --output /tmp/
 ```
 

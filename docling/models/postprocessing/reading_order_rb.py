@@ -134,6 +134,20 @@ def _candidate_separator(
 def _merge_separator_candidates(
     candidates: list[SeparatorElement],
 ) -> list[SeparatorElement]:
+    # A merge widens its target, which can make it mergeable with a separator
+    # kept earlier in the pass. Repeat until stable: two zero-height
+    # separators left overlapping at the same height would each count as
+    # strictly above the other and form a cycle in the ordering graph.
+    while True:
+        merged = _merge_separator_candidates_once(candidates)
+        if len(merged) == len(candidates):
+            return merged
+        candidates = merged
+
+
+def _merge_separator_candidates_once(
+    candidates: list[SeparatorElement],
+) -> list[SeparatorElement]:
     merged: list[SeparatorElement] = []
     ordered = sorted(
         candidates,
@@ -189,11 +203,13 @@ def _separator_candidates_can_merge(
     )
 
 
-def _separator_crosses_text(
+def _separator_crosses_content(
     separator: SeparatorElement, page_elements: list[PageElement]
 ) -> bool:
+    # Graphics carry no text, but a rule through one is part of the graphic
+    # (a chart axis, a table rule) even where it overshoots the predicted box.
     for element in page_elements:
-        if not element.text.strip():
+        if not element.text.strip() and element.label not in GRAPHIC_LABELS:
             continue
         if separator.orientation == "horizontal":
             if (
@@ -306,7 +322,7 @@ def build_page_separators(
     accepted = [
         separator
         for separator in _merge_separator_candidates(candidates)
-        if not _separator_crosses_text(separator, bottom_left_elements)
+        if not _separator_crosses_content(separator, bottom_left_elements)
         and not _separator_is_inside_graphic(separator, bottom_left_elements)
         and _separator_has_content_on_both_sides(separator, bottom_left_elements)
     ]
@@ -1056,12 +1072,15 @@ class ReadingOrderPredictor:
     ) -> int:
         """depth_first_search_upwards without recursion"""
         k = j
+        # Nodes on this walk; a cycle in up_map would otherwise loop forever.
+        walked = {j}
         while True:
             inds: List[int] = state.up_map[k]
             found_not_visited = False
             for ind in inds:
-                if not visited[ind]:
+                if not visited[ind] and ind not in walked:
                     k = ind
+                    walked.add(ind)
                     found_not_visited = True
                     break
 
