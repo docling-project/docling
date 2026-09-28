@@ -87,6 +87,19 @@ opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())      # macOS
 
 Each engine is an optional dependency — see [slim-packaging.md](slim-packaging.md).
 
+OCR can also run on a remote KServe v2 / Triton server. Page crops are sent to
+that server, so `enable_remote_services=True` is required:
+
+```python
+from docling.datamodel.pipeline_options import KserveV2OcrOptions
+
+opts = PdfPipelineOptions(
+    do_ocr=True,
+    enable_remote_services=True,   # REQUIRED for KserveV2OcrOptions
+    ocr_options=KserveV2OcrOptions(url="localhost:8001", model_name="rapidocr"),
+)
+```
+
 ### Recovering heading levels
 
 PDF headings all come out at `level=1` unless this stage is enabled. It infers the level from the

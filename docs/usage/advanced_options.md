@@ -95,6 +95,11 @@ _Note: This option is only related to the system sending user data to remote ser
 The options in this list require the explicit `enable_remote_services=True` when processing the documents.
 
 - `PictureDescriptionApiOptions`: Using vision models via API calls.
+- `KserveV2OcrOptions`: OCR on a KServe v2 inference server (e.g. Triton).
+- `ApiKserveV2ObjectDetectionEngineOptions`: Object-detection layout models served by a KServe v2 inference server, set as the layout `engine_options`.
+- `ApiKserveV2ImageClassificationEngineOptions`: Picture classification served by a KServe v2 inference server, set as the classifier `engine_options`.
+- `ApiVlmEngineOptions`: VLM stages (VLM conversion, code/formula enrichment, picture description) calling an OpenAI-compatible API, set as the stage `engine_options`.
+- `ApiVlmOptions`: VLM pipeline models calling an OpenAI-compatible API.
 
 
 ## Adjust pipeline features
