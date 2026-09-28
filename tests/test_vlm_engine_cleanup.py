@@ -6,6 +6,15 @@ import importlib
 import pytest
 
 
+class _Logger:
+    def info(self, *args, **kwargs):
+        pass
+
+    def warning(self, *args, **kwargs):
+        pass
+
+
+@pytest.mark.parametrize("logger", [None, _Logger()])
 @pytest.mark.parametrize(
     ("module_name", "class_name"),
     [
@@ -26,7 +35,7 @@ import pytest
     ],
 )
 def test_engine_cleanup_handles_unavailable_module_logger(
-    monkeypatch, module_name, class_name
+    monkeypatch, module_name, class_name, logger
 ):
     module = importlib.import_module(module_name)
     engine_cls = getattr(module, class_name)
@@ -47,10 +56,11 @@ def test_engine_cleanup_handles_unavailable_module_logger(
         engine.llm = None
         engine.processor = None
 
-    monkeypatch.setattr(module, "_log", None)
+    monkeypatch.setattr(module, "_log", logger)
     engine.cleanup()
 
 
+@pytest.mark.parametrize("logger", [None, _Logger()])
 @pytest.mark.parametrize(
     ("module_name", "class_name"),
     [
@@ -62,7 +72,7 @@ def test_engine_cleanup_handles_unavailable_module_logger(
     ],
 )
 def test_model_destructor_handles_unavailable_module_logger(
-    monkeypatch, module_name, class_name
+    monkeypatch, module_name, class_name, logger
 ):
     module = importlib.import_module(module_name)
     model_cls = getattr(module, class_name)
@@ -73,7 +83,7 @@ def test_model_destructor_handles_unavailable_module_logger(
 
     model = object.__new__(model_cls)
     model.engine = FailingEngine()
-    monkeypatch.setattr(module, "_log", None)
+    monkeypatch.setattr(module, "_log", logger)
 
     model_cls.__del__(model)
 
