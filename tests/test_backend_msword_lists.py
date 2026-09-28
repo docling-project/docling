@@ -15,7 +15,6 @@ from docling_core.types.doc import (
     DocumentOrigin,
     ListGroup,
     ListItem,
-    SectionHeaderItem,
 )
 from docx import Document
 from docx.oxml import OxmlElement
