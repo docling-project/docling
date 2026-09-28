@@ -199,10 +199,11 @@ def test_stray_dashes_are_not_swallowed() -> None:
     )
     doc = in_doc._backend.convert()
 
-    # the content after the stray "--" must survive (joined into one paragraph,
-    # as there was no blank line between the lines)
+    # the content after the stray "--" must survive; the unmatched open-block
+    # marker breaks the paragraph instead of rendering as text (matching
+    # asciidoctor, where an unclosed open block starts a separate block)
     texts = [item.text for item in doc.texts]
-    assert len(texts) == 1 and "before" in texts[0] and "after" in texts[0]
+    assert texts == ["before", "after"]
 
 
 def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
@@ -625,4 +626,54 @@ def test_block_title_blank_line_separates_paragraphs() -> None:
     texts = [item.text for item, _ in doc.iterate_items()]
     assert "Overview" in texts
     assert "Body text." in texts
+
+
+def test_content_block_delimiters_not_leaked() -> None:
+    # paired example/sidebar/open/passthrough/quote/listing delimiters used
+    # to render as literal text around their content
+    src = b"====\nexample content\n====\nafter\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="example-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert any("example content" in t for t in texts)
+    assert not any("====" in t for t in texts)
+    assert "after" in texts
+
+
+def test_content_block_delimiter_variants() -> None:
+    for delim in (b"----", b"****", b"____", b"++++"):
+        src = delim + b"\ninner\n" + delim + b"\n"
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(src),
+            format=InputFormat.ASCIIDOC,
+            backend=AsciiDocBackend,
+            filename="delim.adoc",
+        )
+        doc = in_doc._backend.convert()
+        texts = [item.text for item, _ in doc.iterate_items()]
+        assert any("inner" in t for t in texts), f"{delim!r}: {texts}"
+        assert not any(delim.decode() in t for t in texts), f"{delim!r}: {texts}"
+
+
+def test_stray_delimiter_without_closer_kept() -> None:
+    # a "--" line with no matching closer (e.g. inside a changelog) must not
+    # swallow the rest of the document
+    src = b"changelog\n--\nnote\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="stray.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert "changelog" in texts
+    assert "note" in texts
 

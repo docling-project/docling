@@ -455,7 +455,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return None
 
     _SOURCE_ATTR_RE = re.compile(r"^\[source(?:,\s*([\w+#.-]+))?[^\]]*\]$")
-    _CONTENT_BLOCK_DELIMITERS = ("====", "****", "____", "--", "+++")
+    _CONTENT_BLOCK_DELIMITERS = ("====", "****", "____", "--", "++++")
 
     @staticmethod
     def _has_matching_closer(lines: list[str], open_idx: int, delimiter: str) -> bool:
@@ -508,11 +508,23 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 # delimiter lines themselves so they do not leak into the
                 # text, and re-emit the inner lines unchanged. The closer look-
                 # ahead keeps stray separator lines (e.g. "--" in a changelog)
-                # from swallowing the rest of the document.
+                # from swallowing the rest of the document. The empty line
+                # after the block ends the paragraph, so text following the
+                # block does not merge with the block's last line.
                 i += 1
                 while i < n and lines[i].strip() != stripped:
                     yield lines[i]
                     i += 1
+                i += 1
+                yield ""
+                continue
+
+            if stripped == "--" and not cls._has_matching_closer(
+                lines, i, stripped
+            ):
+                # A stray "--" with no closer (e.g. a changelog separator)
+                # breaks the paragraph instead of rendering as text.
+                yield ""
                 i += 1
                 continue
 
