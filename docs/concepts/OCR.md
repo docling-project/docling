@@ -11,6 +11,40 @@ Docling supports multiple OCR engines that can be installed as extra packages:
 - [tesseract-CLI](https://github.com/tesseract-ocr/tesseract)
 - [tesserocr](https://github.com/sirfz/tesserocr)
 
+## Detector input size on large pages
+
+OCR engines can downscale a page or crop before detecting text. The OCR rendering
+scale (`ocr_options.scale`) and the detector's maximum image size are separate
+settings; increasing the render scale alone may not preserve small lettering if
+the detector subsequently shrinks the image.
+
+For EasyOCR, specify `EasyOcrOptions(canvas_size=4000)` to raise the detector
+input limit from EasyOCR's default (currently 2560 pixels). Omitting
+`canvas_size` preserves the engine default:
+
+```python
+from docling.datamodel.pipeline_options import EasyOcrOptions, PdfPipelineOptions
+
+pipeline_options = PdfPipelineOptions(
+    ocr_options=EasyOcrOptions(canvas_size=4000),
+)
+```
+
+For RapidOCR, the existing engine parameter pass-through provides the
+corresponding control:
+
+```python
+from docling.datamodel.pipeline_options import RapidOcrOptions
+
+ocr_options = RapidOcrOptions(
+    rapidocr_params={"Global.max_side_len": 4000},
+)
+```
+
+Larger detector inputs increase processing time and memory use. Choose a limit
+appropriate for your document size and available hardware. These settings
+apply only when the corresponding OCR engine is selected.
+
 ## Language selection
 
 Every OCR engine takes its languages through the same field, `OcrOptions.lang`.

@@ -336,7 +336,12 @@ class EasyOcrModel(BaseOcrModel):
                                     "ignore", message=".*pin_memory.*MPS.*"
                                 )
 
-                            result = self.reader.readtext(im)
+                            if self.options.canvas_size is None:
+                                result = self.reader.readtext(im)
+                            else:
+                                result = self.reader.readtext(
+                                    im, canvas_size=self.options.canvas_size
+                                )
 
                         del high_res_image
                         del im

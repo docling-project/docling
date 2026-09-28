@@ -593,6 +593,18 @@ class EasyOcrOptions(OcrOptions):
             )
         ),
     ] = True
+    canvas_size: Annotated[
+        int | None,
+        Field(
+            description=(
+                "Maximum image side length passed to EasyOCR's text detector, in pixels. "
+                "Set a larger value to avoid aggressive downscaling on large pages, "
+                "at the cost of additional memory and processing time. "
+                "If None, use EasyOCR's own default (currently 2560 pixels)."
+            ),
+            gt=0,
+        ),
+    ] = None
     model_config = ConfigDict(
         extra="forbid",
         protected_namespaces=(),
