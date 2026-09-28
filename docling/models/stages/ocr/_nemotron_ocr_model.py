@@ -114,14 +114,12 @@ class NemotronOcrModel(BaseOcrModel):
         artifacts_path: Optional[Path],
         options: NemotronOcrOptions,
         accelerator_options: AcceleratorOptions,
-        enable_remote_services: bool = False,
     ):
         super().__init__(
             enabled=enabled,
             artifacts_path=artifacts_path,
             options=options,
             accelerator_options=accelerator_options,
-            enable_remote_services=enable_remote_services,
         )
         self.options: NemotronOcrOptions
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.

@@ -73,7 +73,6 @@ class KserveV2OcrModel(BaseOcrModel):
             artifacts_path=artifacts_path,
             options=options,
             accelerator_options=accelerator_options,
-            enable_remote_services=enable_remote_services,
         )
         self.options: KserveV2OcrOptions
         self._kserve_client: Optional[KserveV2Client] = None
@@ -82,7 +81,7 @@ class KserveV2OcrModel(BaseOcrModel):
             # Checked before the client is created.
             if not enable_remote_services:
                 raise OperationNotAllowed(
-                    "Connections to remote services is only allowed when set explicitly. "
+                    "Connections to remote services are only allowed when set explicitly. "
                     "pipeline_options.enable_remote_services=True."
                 )
 

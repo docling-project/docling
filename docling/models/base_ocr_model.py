@@ -147,11 +147,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         artifacts_path: Path | None,
         options: OcrOptions,
         accelerator_options: AcceleratorOptions,
-        enable_remote_services: bool = False,
     ):
         self.enabled = enabled
         self.options = options
-        self.enable_remote_services = enable_remote_services
 
         # Translate options.lang into a list of OcrLanguage
         self.languages: list[OcrLanguage] = (

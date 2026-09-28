@@ -50,6 +50,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
+    KserveV2OcrOptions,
     LayoutPostprocessorOptions,
     ThreadedPdfPipelineOptions,
 )
@@ -689,12 +690,19 @@ class StandardPdfPipeline(ConvertPipeline):
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
+        # Only engines that call a remote service take this flag; other OCR
+        # engines, including external plugins, keep the base constructor.
+        extra: dict[str, bool] = {}
+        if isinstance(self.pipeline_options.ocr_options, KserveV2OcrOptions):
+            extra["enable_remote_services"] = (
+                self.pipeline_options.enable_remote_services
+            )
         return factory.create_instance(
             options=self.pipeline_options.ocr_options,
             enabled=self.pipeline_options.do_ocr,
-            enable_remote_services=self.pipeline_options.enable_remote_services,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            **extra,
         )
 
     def _release_page_resources(self, item: ThreadedItem) -> None:
