@@ -7,8 +7,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
 
-from docling_core.types.doc import DoclingDocument
-from pydantic import AnyUrl
+from docling_core.types.doc import DoclingDocument, ImageRef
+from pydantic import AnyUrl, BaseModel
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -17,6 +17,38 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+_KEPT_IMAGE_URI_SCHEMES = frozenset({"data", "http", "https"})
+
+
+def _is_kept_image_uri(uri: AnyUrl | Path) -> bool:
+    return isinstance(uri, AnyUrl) and uri.scheme.lower() in _KEPT_IMAGE_URI_SCHEMES
+
+
+def _clear_local_image_refs(node: object) -> int:
+    """Set every ``ImageRef`` field below ``node`` whose URI is local to ``None``.
+
+    The whole model tree is walked, rather than a fixed list of item
+    collections, so image fields on any item type (pictures, tables, code,
+    forms, pages, ...) are covered, including ones added in future
+    docling-core releases. Returns the number of references cleared.
+    """
+    cleared = 0
+    if isinstance(node, BaseModel):
+        for name, value in node:
+            if isinstance(value, ImageRef):
+                if not _is_kept_image_uri(value.uri):
+                    setattr(node, name, None)
+                    cleared += 1
+            else:
+                cleared += _clear_local_image_refs(value)
+    elif isinstance(node, (list, tuple)):
+        for child in node:
+            cleared += _clear_local_image_refs(child)
+    elif isinstance(node, dict):
+        for child in node.values():
+            cleared += _clear_local_image_refs(child)
+    return cleared
 
 
 class DoclingJSONBackend(DeclarativeDocumentBackend):
@@ -72,36 +104,24 @@ class DoclingJSONBackend(DeclarativeDocumentBackend):
     def _drop_local_image_refs(self, doc: DoclingDocument) -> None:
         """Remove image references that point at the local filesystem.
 
-        ``ImageRef.uri`` is document content. A JSON document supplied by an
-        untrusted party can name any path on the converting host, and later
-        stages (picture enrichment, embedded-image export) would open it and
-        return its bytes. Embedded ``data:`` URIs are kept; remote URLs are kept
-        because docling-core never fetches them; ``file://`` URIs and bare paths
-        are dropped unless the caller opts in with ``enable_local_fetch``.
+        ``ImageRef.uri`` is document content, so a JSON input can name any
+        file on the converting host, which later stages (picture enrichment,
+        embedded-image export) would open. Only ``data:`` URIs and ``http(s)``
+        URLs (never fetched by docling-core) are kept; bare paths, ``file:``
+        URIs and any other scheme are dropped unless the caller sets
+        ``enable_local_fetch`` on the backend options.
+
+        A dropped reference is replaced by ``None``, so the image's size, dpi
+        and mimetype are lost along with its URI.
         """
-        dropped = 0
-        holders = [
-            *doc.pictures,
-            *doc.tables,
-            *doc.key_value_items,
-            *doc.form_items,
-            *doc.pages.values(),
-        ]
-        for holder in holders:
-            image = getattr(holder, "image", None)
-            if image is None:
-                continue
-            uri = image.uri
-            is_local = isinstance(uri, Path) or (
-                isinstance(uri, AnyUrl) and uri.scheme == "file"
-            )
-            if is_local:
-                holder.image = None
-                dropped += 1
+        dropped = _clear_local_image_refs(doc)
         if dropped:
             _log.warning(
-                "%s: dropped %d local image reference(s) from the JSON input; "
-                "set enable_local_fetch=True on the backend options to keep them.",
+                "%s: ignored %d image reference(s) pointing at local files. "
+                "To load them from a trusted JSON input, pass "
+                "DoclingJSONFormatOption(backend_options="
+                "DeclarativeBackendOptions(enable_local_fetch=True)) for "
+                "InputFormat.JSON_DOCLING in DocumentConverter(format_options=...).",
                 self.file.name,
                 dropped,
             )
