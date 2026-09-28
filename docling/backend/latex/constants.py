@@ -7,6 +7,19 @@ MACROS_PREAMBLE_METADATA = frozenset(["title", "author", "date"])
 
 MACROS_INLINE_VERBATIM = frozenset(["%", "$", "&", "#", "_", "{", "}", "~"])
 
+# Text typeset for the characters pylatexenc parses as specials rather than as
+# plain chars: a non-breaking space, dashes and quotation marks. "&" is only
+# meaningful as a column separator and is left out.
+SPECIALS_TEXT = {
+    "~": " ",
+    "--": "\u2013",
+    "---": "\u2014",
+    "``": "\u201c",
+    "''": "\u201d",
+    "!`": "\u00a1",
+    "?`": "\u00bf",
+}
+
 MACROS_TEXT_FORMATTING = frozenset(["textbf", "textit", "emph", "texttt", "underline"])
 
 MACROS_CITATION = frozenset(["cite", "citep", "citet", "ref", "eqref"])

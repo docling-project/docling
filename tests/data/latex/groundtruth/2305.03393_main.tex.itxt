@@ -38,7 +38,7 @@ IBM Research
   item-32 at level 1: section_header: OTSLOptimised Table Structure Language
   item-33 at level 1: text: To mitigate the issues with HTML ...  time in the TableFormer architecture.
   item-34 at level 1: section_header: Language Definition
-  item-35 at level 1: text: In Figure[OTSL_PROOF], we illust ...  structure based on an atomic 2D grid.
+  item-35 at level 1: text: In Figure [OTSL_PROOF], we illus ...  structure based on an atomic 2D grid.
   item-36 at level 1: section: group figure
     item-37 at level 2: text: OTSL description of table struct ... ding; E - explanation on cell encoding
     item-38 at level 2: picture
@@ -68,7 +68,7 @@ Only "U" cell ... cells are allowed in the first column.
     item-57 at level 2: list_item: Rectangular rule:
 The table repr ... of tokens, terminated with "NL" token.
   item-58 at level 1: paragraph: The application of these rules g ... icted sequence is syntactically valid.
-  item-59 at level 1: text: These characteristics can be eas ... odels (see Figure[OTSLvHTML_compare]).
+  item-59 at level 1: text: These characteristics can be eas ... dels (see Figure [OTSLvHTML_compare]).
   item-60 at level 1: section_header: Error-detection and -mitigation
   item-61 at level 1: paragraph: The design of OTSL allows to val ... idence until OTSL rules are satisfied.
   item-62 at level 1: section_header: ResultsExperiments
@@ -102,7 +102,7 @@ The table repr ... of tokens, terminated with "NL" token.
   item-87 at level 1: caption: Image: ./figs/otsl_vs_html_ex3_v2.pdf
   item-88 at level 1: section_header: ConConclusion
   item-89 at level 1: text: We demonstrated that representin ... e languages, has several key benefits.
-  item-90 at level 1: text: First and foremost, given the sa ...  trained on HTML (see Table[tab:HPO]).
+  item-90 at level 1: text: First and foremost, given the sa ... trained on HTML (see Table [tab:HPO]).
   item-91 at level 1: text: Secondly, OTSL has more inherent ... on-the-fly during sequence generation.
   item-92 at level 1: text: splncs04
   item-93 at level 1: text: papers

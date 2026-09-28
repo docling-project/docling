@@ -9,11 +9,11 @@ S ... 3400 N Charles St, Baltimore, MD 21218
   item-7 at level 1: text: Galaxies (573), Astronomy image  ... , Convolutional neural networks (1938)
   item-8 at level 1: section_header: Introduction
   item-9 at level 1: text: Galaxies have spectacularly info ... ution with their detailed appearances.
-  item-10 at level 1: text: Deep neural networks that exploi ...  imagingbut what about us astronomers?
+  item-10 at level 1: text: Deep neural networks that exploi ... imaging—but what about us astronomers?
   item-11 at level 1: text: Two major challenges arise when  ... ind the patterns that ML models learn.
   item-12 at level 1: text: Fortunately, there exists a stra ... ics of how deep neural networks learn.
   item-13 at level 1: text: We introduce a novel, interpreta ... ro extra computational cost or memory.
-  item-14 at level 1: text: We train the SFNet to predict ga ... r conclusions in Section[sec:summary].
+  item-14 at level 1: text: We train the SFNet to predict ga ...  conclusions in Section [sec:summary].
   item-15 at level 1: section: group figure
     item-16 at level 2: picture
       item-16 at level 3: caption: Image: SFNet_ResNet18-TopK.pdf
@@ -28,7 +28,7 @@ S ... 3400 N Charles St, Baltimore, MD 21218
   item-25 at level 1: section_header: Emission line fluxes
   item-26 at level 1: text: We train a SFNet to predict the  ...  physical state, and dust attenuation.
   item-27 at level 1: text: The eight most frequently activa ... eatures SL17, SL138, SL157, and SL322.
-  item-28 at level 1: text: In Figure[fig:bpt-interpretation ... al interpretations for these features.
+  item-28 at level 1: text: In Figure [fig:bpt-interpretatio ... al interpretations for these features.
   item-29 at level 1: section: group figure
     item-30 at level 2: picture
       item-30 at level 3: caption: Image: 17-bpt_scatter_examples_3x3.pdf
@@ -51,7 +51,7 @@ S ... 3400 N Charles St, Baltimore, MD 21218
   ...   blue, edge-on disks  low metallicity
   item-42 at level 1: section_header: Gas metallicity
   item-43 at level 1: text: We separately train a SFNet to p ... rpretability] for further discussion).
-  item-44 at level 1: text: In the bottom two rows of Table[ ... morphological features that it learns.
+  item-44 at level 1: text: In the bottom two rows of Table  ... morphological features that it learns.
   item-45 at level 1: section_header: Discussion
   item-46 at level 1: section_header: Physical laws from galaxy images
   item-47 at level 1: text: Because the SFNet learns a linea ... led by their activated feature index).
@@ -64,9 +64,9 @@ S ... 3400 N Charles St, Baltimore, MD 21218
   item-53 at level 1: text: The model is only able to learn  ... ionships that govern galaxy evolution.
   item-54 at level 1: section_header: Performance versus interpretability
   item-55 at level 1: text: Previous works have found that a ... accuracy of 0.85 and F1 score of 0.72.
-  item-56 at level 1: footnote: If we use all non-zero SFNet fea ... uces noiseanother benefit of sparsity.
+  item-56 at level 1: footnote: If we use all non-zero SFNet fea ... ces noise—another benefit of sparsity.
   item-57 at level 1: text: In comparison, the highly tuned  ... ble to state-of-the-art ML algorithms.
-  item-58 at level 1: text: In Section[ssec:metallicity], we ... nce in order to gain interpretability.
+  item-58 at level 1: text: In Section [ssec:metallicity], w ... nce in order to gain interpretability.
   item-59 at level 1: section_header: Comparison to PCA
   item-60 at level 1: text: While the SFNet produces interpr ... a smaller space of sparse activations.
   item-61 at level 1: section: group figure
@@ -75,8 +75,8 @@ S ... 3400 N Charles St, Baltimore, MD 21218
     item-63 at level 2: text: SFNet comparison against a CNN w ... sparsity or number of PCA components).
   item-64 at level 1: caption: Image: pca-comparison.pdf
   item-65 at level 1: text: We test whether this smaller set ... standard error on the prediction RMSE.
-  item-66 at level 1: footnote: We use the same training/validat ...  reported in Section\ref{sec:results}.
-  item-67 at level 1: text: The results are shown in Figure[ ... values are given in Table[tab:dimred].
+  item-66 at level 1: footnote: We use the same training/validat ... reported in Section \ref{sec:results}.
+  item-67 at level 1: text: The results are shown in Figure  ... alues are given in Table [tab:dimred].
   item-68 at level 1: text: l cc cc[t!]
 5
   item-69 at level 1: text: Comparison of performance using  ... th PCA-based dimensionality reduction.
@@ -99,7 +99,7 @@ S ... 3400 N Charles St, Baltimore, MD 21218
   item-85 at level 1: text: Moreover, interpretation for cla ...  classification problems is different.
   item-86 at level 1: text: Other interpretability methods l ... rpretable ML in the physical sciences.
   item-87 at level 1: section_header: Conclusions
-  item-88 at level 1: text: We present a novel method for le ... ures (see Figure[fig:pca-comparison]).
+  item-88 at level 1: text: We present a novel method for le ... res (see Figure [fig:pca-comparison]).
   item-89 at level 1: text: We do not imply that astrophysic ... ned features and predicted quantities.
   item-90 at level 1: text: This work represents important p ... activating features [olah2017feature].
   item-91 at level 1: section_header: Acknowledgments.
@@ -110,7 +110,7 @@ S ... 3400 N Charles St, Baltimore, MD 21218
   item-96 at level 1: text: However, it is challenging to de ... n and polysemanticity [superposition].
   item-97 at level 1: list: group list
     item-98 at level 2: list_item: Superposition is where semantic  ... rons (in one or even multiple layers).
-    item-99 at level 2: list_item: Polysemanticity means that any g ... ight bleed from nearby saturated star.
+    item-99 at level 2: list_item: Polysemanticity means that any g ... ght bleed from nearby saturated star.”
   item-100 at level 1: text: So rather than a one-to-one mapp ... networks, even in just a single layer.
   item-101 at level 1: section_header: Sparse autoencoders and SFNets
   item-102 at level 1: text: Originally motivated by biologic ... s represented by deep neural networks.
