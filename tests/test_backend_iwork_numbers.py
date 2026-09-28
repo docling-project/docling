@@ -361,43 +361,98 @@ def _chart_grid(picture: PictureItem) -> list[list[str]]:
 
 @BOTH_GENERATIONS
 def test_charts_carry_the_data_they_plot(source: Path):
-    """Numbers renders no image for a chart, so what a reader can be given is
-    the data it draws. Both generations cache that beside the chart, one in the
-    chart archive and one in a property list of its own, and the summary table
-    on the same sheet is what says whether it was read correctly."""
+    """Numbers renders no image for a chart, so what a reader can be given is the
+    data it draws. Both generations cache that beside the chart — one in the chart
+    archive, one in a property list of its own — and the summary table on the same
+    sheet is what says whether it was read correctly.
+
+    The two orient it differently, so the values are what is compared rather than
+    the grid: see
+    :func:`test_the_two_generations_orient_the_chart_differently`.
+    """
     doc = _backend(source).convert()
     pictures = list(doc.pictures)
     assert len(pictures) == 1
 
-    assert _chart_grid(pictures[0]) == [
-        ["", "Amount"],
-        ["Home", "-872.4"],
-        ["Food", "-226"],
-        ["Gas", "-137.5"],
-        ["Credit Card", "-1095"],
-        ["Entertainment", "-245"],
+    grid = _chart_grid(pictures[0])
+    plotted = {text for row in grid for text in row if text}
+    assert plotted == {
+        "Amount",
+        "Home",
+        "Food",
+        "Gas",
+        "Credit Card",
+        "Entertainment",
+        "-872.4",
+        "-226",
+        "-137.5",
+        "-1095",
+        "-245",
+    }
+
+
+def test_the_two_generations_orient_the_chart_differently():
+    """A 2013+ chart records which way round its data is plotted and an iWork '09
+    one does not, so the same chart comes out transposed between them.
+
+    The modern file says the rows of its grid are the series, which is what the
+    shared reader honours; the '09 share has no such flag, only a list of series
+    and a list of categories. Both carry the same numbers, which is what
+    :func:`test_charts_carry_the_data_they_plot` holds them to.
+    """
+    modern = _chart_grid(next(iter(_backend(NUMBERS_2013).convert().pictures)))
+    legacy = _chart_grid(next(iter(_backend(NUMBERS_IWORK09).convert().pictures)))
+
+    # Series run across the header, categories down the first column.
+    assert modern[0] == ["", "Home", "Food", "Gas", "Credit Card", "Entertainment"]
+    assert legacy[0] == ["", "Amount"]
+    assert [row[0] for row in legacy[1:]] == [
+        "Home",
+        "Food",
+        "Gas",
+        "Credit Card",
+        "Entertainment",
     ]
 
-    prediction = pictures[0].meta.classification.predictions[0]
-    assert prediction.class_name == PictureClassificationLabel.OTHER_CHART
+
+def test_a_chart_is_classified_by_its_kind():
+    """A 2013+ chart says what kind it is in the enum every iWork app shares, so
+    the summary pie is classified as one. iWork '09 numbers the kinds its own way
+    and that numbering has not been established against real documents, so a
+    chart from one is left as a chart of unspecified kind."""
+    modern = next(iter(_backend(NUMBERS_2013).convert().pictures))
+    legacy = next(iter(_backend(NUMBERS_IWORK09).convert().pictures))
+
+    assert modern.meta is not None and modern.meta.classification is not None
+    assert (
+        modern.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.PIE_CHART
+    )
+    assert legacy.meta is not None and legacy.meta.classification is not None
+    assert (
+        legacy.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.OTHER_CHART
+    )
 
 
 def test_a_chart_is_captioned_with_its_title():
-    """Only the iWork '09 fixture still has a title on its chart; the 2013 one
-    was saved after it was taken off, so its picture goes uncaptioned rather
-    than captioned with something invented."""
+    """Both fixtures title the chart, and the title is reached differently in
+    each — from the archive that holds a modern chart's non-style settings, and
+    from ``sf:chart-name`` in an iWork '09 one — so both are worth pinning."""
     legacy = _backend(NUMBERS_IWORK09).convert()
     modern = _backend(NUMBERS_2013).convert()
 
     assert next(iter(legacy.pictures)).caption_text(legacy) == (
         "Expenditure by Category"
     )
-    assert next(iter(modern.pictures)).caption_text(modern) == ""
+    assert next(iter(modern.pictures)).caption_text(modern) == (
+        "Expenditure by Category"
+    )
 
 
 @BOTH_GENERATIONS
 def test_tables_and_charts_are_interleaved_down_the_sheet(source: Path):
-    """A Numbers sheet is a canvas, so a chart can sit between two archives. The
+    """A Numbers sheet is a canvas, so a chart can sit between two tables. The
     two fixtures place theirs differently, which is the point: the order has to
     come from the document rather than from the kind of thing being placed."""
     doc = _backend(source).convert()

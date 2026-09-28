@@ -21,12 +21,13 @@ from decimal import Decimal
 
 from docling.backend.iwork import archives, cells
 from docling.backend.iwork.archives import drawable_geometry, read_objects
+from docling.backend.iwork.charts import TSCH_CHART_DRAWABLE, iwa_chart
 from docling.backend.iwork.content import Geometry
 from docling.backend.iwork.iwa import IWAObject, read_reference
 from docling.backend.iwork.numbers_content import (
     Cell,
-    Chart,
     Comment,
+    PlacedChart,
     Sheet,
     Table,
     format_bool,
@@ -49,12 +50,6 @@ TN_DOCUMENT_ARCHIVE = 1
 TN_SHEET_ARCHIVE = 2
 """Message type of ``TN.SheetArchive``, one tab of the document."""
 
-TN_CHART_INFO = 5021
-"""Message type of the archive placing a chart on a sheet.
-
-Its drawable half carries the frame; the chart itself rides along in the
-extension field the writer appends after the numbered ones.
-"""
 
 TN_COMMENT_INFO = 2014
 """Message type of the archive placing a comment on a sheet.
@@ -101,28 +96,6 @@ POINT_X_FIELD = 1
 
 POINT_Y_FIELD = 2
 """Fields leading from a drawable to where it sits on the sheet, in points."""
-
-INFO_CHART_FIELD = 10000
-"""Extension field of a chart's archive holding the chart itself."""
-
-CHART_DATA_FIELD = 7
-
-CHART_CATEGORY_FIELD = 1
-
-CHART_SERIES_FIELD = 2
-
-CHART_ROW_FIELD = 3
-
-CHART_POINT_FIELD = 1
-
-CHART_VALUE_FIELD = 1
-"""Fields of a chart's cached data.
-
-The data is stored the way the chart reads it rather than the way the table it
-came from is laid out: the category names, then the series names, then one entry
-per category holding one point per series. A point wraps its value rather than
-being one, so a gap in a series is a point with nothing in it.
-"""
 
 COMMENT_ANNOTATION_FIELD = 2
 
@@ -192,7 +165,7 @@ def read_sheet(sheet: IWAObject, objects: dict[int, IWAObject]) -> Sheet:
     fields = archives.safe_fields(sheet.payload)
 
     sheet_tables: list[Table] = []
-    charts: list[Chart] = []
+    charts: list[PlacedChart] = []
     comments: list[Comment] = []
     for reference in fields.get(SHEET_DRAWABLES_FIELD, []):
         drawable = dereference(reference, objects)
@@ -202,8 +175,8 @@ def read_sheet(sheet: IWAObject, objects: dict[int, IWAObject]) -> Sheet:
             table = read_table(drawable, objects)
             if table is not None:
                 sheet_tables.append(table)
-        elif drawable.message_type == TN_CHART_INFO:
-            chart = read_chart(drawable)
+        elif drawable.message_type == TSCH_CHART_DRAWABLE:
+            chart = read_chart(drawable, objects)
             if chart is not None:
                 charts.append(chart)
         elif drawable.message_type == TN_COMMENT_INFO:
@@ -325,48 +298,31 @@ def render(decoded: cells.Cell | None) -> str | None:
     return None
 
 
-def read_chart(info: IWAObject) -> Chart | None:
-    """Read one chart and the data Numbers cached for it.
+def read_chart(
+    drawable: IWAObject, objects: dict[int, IWAObject]
+) -> PlacedChart | None:
+    """Read one chart on a sheet, and where it sits.
 
-    A chart keeps its own copy of what it plots, so its numbers can be read
-    without following the formula back to the table they came from — and are
-    still there when that table has since been deleted.
+    The chart itself is read by :func:`~docling.backend.iwork.charts.iwa_chart`,
+    which every iWork app shares: a chart on a Numbers sheet and one on a Keynote
+    slide are the same archives, down to the kind of chart and the data it was
+    last drawn from.
 
     Args:
-        info: The archive placing the chart on its sheet.
+        drawable: The archive placing the chart on its sheet.
+        objects: Every object in the document, keyed by identifier.
 
     Returns:
-        The chart, or None when it carries no data to plot.
+        The chart and its frame, or None when it carries nothing to plot.
     """
-    fields = archives.safe_fields(info.payload)
-    chart = nested(fields, INFO_CHART_FIELD)
-    data = nested(chart, CHART_DATA_FIELD)
-
-    categories = [text_of(name) or "" for name in data.get(CHART_CATEGORY_FIELD, [])]
-    series = [text_of(name) or "" for name in data.get(CHART_SERIES_FIELD, [])]
-    if not categories and not series:
+    chart = iwa_chart(drawable, objects)
+    if chart is None:
         return None
-
-    values: list[list[Decimal | float | None]] = []
-    for row in data.get(CHART_ROW_FIELD, []):
-        if not isinstance(row, bytes):
-            continue
-        points: list[Decimal | float | None] = []
-        for point in archives.safe_fields(row).get(CHART_POINT_FIELD, []):
-            raw = (
-                archives.safe_fields(point).get(CHART_VALUE_FIELD, [None])[0]
-                if isinstance(point, bytes)
-                else None
-            )
-            points.append(read_fixed64(raw) if isinstance(raw, bytes) else None)
-        values.append(points)
-
-    return Chart(
-        name="",
-        categories=categories,
-        series=series,
-        values=values,
-        geometry=drawable_frame(fields.get(INFO_SUPER_FIELD, [None])[0]),
+    return PlacedChart(
+        chart=chart,
+        geometry=drawable_frame(
+            archives.safe_fields(drawable.payload).get(INFO_SUPER_FIELD, [None])[0]
+        ),
     )
 
 

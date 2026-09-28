@@ -45,10 +45,13 @@
           "$ref": "#/tables/0"
         },
         {
+          "$ref": "#/texts/1"
+        },
+        {
           "$ref": "#/pictures/0"
         },
         {
-          "$ref": "#/texts/1"
+          "$ref": "#/texts/2"
         },
         {
           "$ref": "#/tables/1"
@@ -65,7 +68,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/2"
+          "$ref": "#/texts/3"
         }
       ],
       "content_layer": "notes",
@@ -79,7 +82,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/3"
+          "$ref": "#/texts/4"
         },
         {
           "$ref": "#/tables/2"
@@ -111,12 +114,39 @@
       "children": [],
       "content_layer": "body",
       "label": "caption",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 96.2,
+            "t": 78.2,
+            "r": 238.2,
+            "b": 220.2,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            23
+          ]
+        }
+      ],
+      "orig": "Expenditure by Category",
+      "text": "Expenditure by Category"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
       "prov": [],
       "orig": "Transactions",
       "text": "Transactions"
     },
     {
-      "self_ref": "#/texts/2",
+      "self_ref": "#/texts/3",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -128,7 +158,7 @@
       "text": "[author: Author, time: 2016-05-04T13:08:26.653+00:00]: Try adding your own account transactions to this table. To automatically add data to a table, drag an OFX file to the table. Most banking and credit card websites let you download OFX files for your accounts."
     },
     {
-      "self_ref": "#/texts/3",
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -152,7 +182,7 @@
         "classification": {
           "predictions": [
             {
-              "class_name": "other_chart"
+              "class_name": "pie_chart"
             }
           ]
         },
@@ -179,7 +209,59 @@
                 "end_row_offset_idx": 1,
                 "start_col_offset_idx": 1,
                 "end_col_offset_idx": 2,
-                "text": "Amount",
+                "text": "Home",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false,
+                "fillable": false
+              },
+              {
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 2,
+                "end_col_offset_idx": 3,
+                "text": "Food",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false,
+                "fillable": false
+              },
+              {
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 3,
+                "end_col_offset_idx": 4,
+                "text": "Gas",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false,
+                "fillable": false
+              },
+              {
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 4,
+                "end_col_offset_idx": 5,
+                "text": "Credit Card",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false,
+                "fillable": false
+              },
+              {
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 5,
+                "end_col_offset_idx": 6,
+                "text": "Entertainment",
                 "column_header": true,
                 "row_header": false,
                 "row_section": false,
@@ -192,7 +274,7 @@
                 "end_row_offset_idx": 2,
                 "start_col_offset_idx": 0,
                 "end_col_offset_idx": 1,
-                "text": "Home",
+                "text": "Amount",
                 "column_header": false,
                 "row_header": true,
                 "row_section": false,
@@ -214,23 +296,10 @@
               {
                 "row_span": 1,
                 "col_span": 1,
-                "start_row_offset_idx": 2,
-                "end_row_offset_idx": 3,
-                "start_col_offset_idx": 0,
-                "end_col_offset_idx": 1,
-                "text": "Food",
-                "column_header": false,
-                "row_header": true,
-                "row_section": false,
-                "fillable": false
-              },
-              {
-                "row_span": 1,
-                "col_span": 1,
-                "start_row_offset_idx": 2,
-                "end_row_offset_idx": 3,
-                "start_col_offset_idx": 1,
-                "end_col_offset_idx": 2,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 2,
+                "end_col_offset_idx": 3,
                 "text": "-226",
                 "column_header": false,
                 "row_header": false,
@@ -240,23 +309,10 @@
               {
                 "row_span": 1,
                 "col_span": 1,
-                "start_row_offset_idx": 3,
-                "end_row_offset_idx": 4,
-                "start_col_offset_idx": 0,
-                "end_col_offset_idx": 1,
-                "text": "Gas",
-                "column_header": false,
-                "row_header": true,
-                "row_section": false,
-                "fillable": false
-              },
-              {
-                "row_span": 1,
-                "col_span": 1,
-                "start_row_offset_idx": 3,
-                "end_row_offset_idx": 4,
-                "start_col_offset_idx": 1,
-                "end_col_offset_idx": 2,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 3,
+                "end_col_offset_idx": 4,
                 "text": "-137.5",
                 "column_header": false,
                 "row_header": false,
@@ -266,23 +322,10 @@
               {
                 "row_span": 1,
                 "col_span": 1,
-                "start_row_offset_idx": 4,
-                "end_row_offset_idx": 5,
-                "start_col_offset_idx": 0,
-                "end_col_offset_idx": 1,
-                "text": "Credit Card",
-                "column_header": false,
-                "row_header": true,
-                "row_section": false,
-                "fillable": false
-              },
-              {
-                "row_span": 1,
-                "col_span": 1,
-                "start_row_offset_idx": 4,
-                "end_row_offset_idx": 5,
-                "start_col_offset_idx": 1,
-                "end_col_offset_idx": 2,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 4,
+                "end_col_offset_idx": 5,
                 "text": "-1095",
                 "column_header": false,
                 "row_header": false,
@@ -292,23 +335,10 @@
               {
                 "row_span": 1,
                 "col_span": 1,
-                "start_row_offset_idx": 5,
-                "end_row_offset_idx": 6,
-                "start_col_offset_idx": 0,
-                "end_col_offset_idx": 1,
-                "text": "Entertainment",
-                "column_header": false,
-                "row_header": true,
-                "row_section": false,
-                "fillable": false
-              },
-              {
-                "row_span": 1,
-                "col_span": 1,
-                "start_row_offset_idx": 5,
-                "end_row_offset_idx": 6,
-                "start_col_offset_idx": 1,
-                "end_col_offset_idx": 2,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 5,
+                "end_col_offset_idx": 6,
                 "text": "-245",
                 "column_header": false,
                 "row_header": false,
@@ -316,8 +346,8 @@
                 "fillable": false
               }
             ],
-            "num_rows": 6,
-            "num_cols": 2,
+            "num_rows": 2,
+            "num_cols": 6,
             "orientation": "rot_0",
             "grid": [
               [
@@ -341,7 +371,59 @@
                   "end_row_offset_idx": 1,
                   "start_col_offset_idx": 1,
                   "end_col_offset_idx": 2,
-                  "text": "Amount",
+                  "text": "Home",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false,
+                  "fillable": false
+                },
+                {
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 2,
+                  "end_col_offset_idx": 3,
+                  "text": "Food",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false,
+                  "fillable": false
+                },
+                {
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 3,
+                  "end_col_offset_idx": 4,
+                  "text": "Gas",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false,
+                  "fillable": false
+                },
+                {
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 4,
+                  "end_col_offset_idx": 5,
+                  "text": "Credit Card",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false,
+                  "fillable": false
+                },
+                {
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 5,
+                  "end_col_offset_idx": 6,
+                  "text": "Entertainment",
                   "column_header": true,
                   "row_header": false,
                   "row_section": false,
@@ -356,7 +438,7 @@
                   "end_row_offset_idx": 2,
                   "start_col_offset_idx": 0,
                   "end_col_offset_idx": 1,
-                  "text": "Home",
+                  "text": "Amount",
                   "column_header": false,
                   "row_header": true,
                   "row_section": false,
@@ -374,113 +456,53 @@
                   "row_header": false,
                   "row_section": false,
                   "fillable": false
-                }
-              ],
-              [
-                {
-                  "row_span": 1,
-                  "col_span": 1,
-                  "start_row_offset_idx": 2,
-                  "end_row_offset_idx": 3,
-                  "start_col_offset_idx": 0,
-                  "end_col_offset_idx": 1,
-                  "text": "Food",
-                  "column_header": false,
-                  "row_header": true,
-                  "row_section": false,
-                  "fillable": false
                 },
                 {
                   "row_span": 1,
                   "col_span": 1,
-                  "start_row_offset_idx": 2,
-                  "end_row_offset_idx": 3,
-                  "start_col_offset_idx": 1,
-                  "end_col_offset_idx": 2,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 2,
+                  "end_col_offset_idx": 3,
                   "text": "-226",
                   "column_header": false,
                   "row_header": false,
                   "row_section": false,
                   "fillable": false
-                }
-              ],
-              [
-                {
-                  "row_span": 1,
-                  "col_span": 1,
-                  "start_row_offset_idx": 3,
-                  "end_row_offset_idx": 4,
-                  "start_col_offset_idx": 0,
-                  "end_col_offset_idx": 1,
-                  "text": "Gas",
-                  "column_header": false,
-                  "row_header": true,
-                  "row_section": false,
-                  "fillable": false
                 },
                 {
                   "row_span": 1,
                   "col_span": 1,
-                  "start_row_offset_idx": 3,
-                  "end_row_offset_idx": 4,
-                  "start_col_offset_idx": 1,
-                  "end_col_offset_idx": 2,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 3,
+                  "end_col_offset_idx": 4,
                   "text": "-137.5",
                   "column_header": false,
                   "row_header": false,
                   "row_section": false,
                   "fillable": false
-                }
-              ],
-              [
-                {
-                  "row_span": 1,
-                  "col_span": 1,
-                  "start_row_offset_idx": 4,
-                  "end_row_offset_idx": 5,
-                  "start_col_offset_idx": 0,
-                  "end_col_offset_idx": 1,
-                  "text": "Credit Card",
-                  "column_header": false,
-                  "row_header": true,
-                  "row_section": false,
-                  "fillable": false
                 },
                 {
                   "row_span": 1,
                   "col_span": 1,
-                  "start_row_offset_idx": 4,
-                  "end_row_offset_idx": 5,
-                  "start_col_offset_idx": 1,
-                  "end_col_offset_idx": 2,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 4,
+                  "end_col_offset_idx": 5,
                   "text": "-1095",
                   "column_header": false,
                   "row_header": false,
                   "row_section": false,
                   "fillable": false
-                }
-              ],
-              [
-                {
-                  "row_span": 1,
-                  "col_span": 1,
-                  "start_row_offset_idx": 5,
-                  "end_row_offset_idx": 6,
-                  "start_col_offset_idx": 0,
-                  "end_col_offset_idx": 1,
-                  "text": "Entertainment",
-                  "column_header": false,
-                  "row_header": true,
-                  "row_section": false,
-                  "fillable": false
                 },
                 {
                   "row_span": 1,
                   "col_span": 1,
-                  "start_row_offset_idx": 5,
-                  "end_row_offset_idx": 6,
-                  "start_col_offset_idx": 1,
-                  "end_col_offset_idx": 2,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 5,
+                  "end_col_offset_idx": 6,
                   "text": "-245",
                   "column_header": false,
                   "row_header": false,
@@ -509,7 +531,11 @@
           ]
         }
       ],
-      "captions": [],
+      "captions": [
+        {
+          "$ref": "#/texts/1"
+        }
+      ],
       "references": [],
       "footnotes": [],
       "annotations": []
@@ -962,7 +988,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/1"
+          "$ref": "#/texts/2"
         }
       ],
       "references": [],
@@ -3164,7 +3190,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/3"
+          "$ref": "#/texts/4"
         }
       ],
       "references": [],
@@ -3909,7 +3935,7 @@
     "1": {
       "size": {
         "width": 764.0,
-        "height": 461.96
+        "height": 681.0
       },
       "page_no": 1
     },

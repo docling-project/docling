@@ -20,6 +20,7 @@ import zipfile
 from decimal import Decimal
 from xml.etree.ElementTree import Element
 
+from docling.backend.iwork.content import Chart, ChartKind, ChartSeries
 from docling.backend.iwork.legacy import (
     SF_ATTR_HEADER_ROWS,
     SF_ATTR_NUMCOLS,
@@ -36,8 +37,8 @@ from docling.backend.iwork.legacy import (
 )
 from docling.backend.iwork.numbers_content import (
     Cell,
-    Chart,
     Comment,
+    PlacedChart,
     Sheet,
     Table,
     format_bool,
@@ -451,23 +452,29 @@ def formula_text(cell: Element) -> str | None:
     return None
 
 
-def read_chart(info: Element, shares: dict[str, dict]) -> Chart | None:
-    """Build one chart from an ``sf:chart-info``.
+def read_chart(info: Element, shares: dict[str, dict]) -> PlacedChart | None:
+    """Build one chart from an ``sf:chart-info``, and say where it sits.
 
     A chart bound to a table leaves ``sf:chart-data`` empty and keeps the values
     it last plotted in a share of its own, so the names come from the chart and
     the numbers from the share.
+
+    The share stores a row per category, each holding that category's value in
+    every series, which is the transpose of what a
+    :class:`~docling.backend.iwork.content.Chart` holds — so the values are
+    turned on their side here.
 
     Args:
         info: The chart element.
         shares: The cached chart data, keyed by chart entity id.
 
     Returns:
-        The chart, or None when it names neither a category nor a series.
+        The chart and its frame, or None when it names neither a category nor a
+        series.
     """
     categories = strings(info.find(f".//{SF_CHART_ROW_NAMES}"))
-    series = strings(info.find(f".//{SF_CHART_COLUMN_NAMES}"))
-    values: list[list[Decimal | float | None]] = []
+    names = strings(info.find(f".//{SF_CHART_COLUMN_NAMES}"))
+    by_category: list[list[float | None]] = []
 
     entity = info.find(f".//{SF_ENTITY_ID}")
     key = entity.get(SFA_ATTR_TEXT) if entity is not None else None
@@ -475,31 +482,62 @@ def read_chart(info: Element, shares: dict[str, dict]) -> Chart | None:
     if share is not None:
         # The share is what the chart last drew, so where the two disagree — a
         # stale name left behind in the element, say — the share wins.
-        shared_series = [str(name) for name in share.get(SHARE_COLUMNS_KEY, [])]
-        if shared_series:
-            series = shared_series
+        shared_names = [str(name) for name in share.get(SHARE_COLUMNS_KEY, [])]
+        if shared_names:
+            names = shared_names
         rows = share.get(SHARE_ROWS_KEY) or []
         if rows:
             categories = [str(row.get(SHARE_ROW_NAME_KEY, "")) for row in rows]
-            values = [points(row) for row in rows]
+            by_category = [points(row) for row in rows]
 
-    if not categories and not series:
+    if not categories and not names:
         return None
 
-    name = info.find(f".//{SF_CHART_NAME}")
-    return Chart(
-        name=(name.get(SFA_ATTR_TEXT) or "" if name is not None else "").strip(),
-        categories=categories,
-        series=series,
-        values=values,
+    return PlacedChart(
+        chart=Chart(
+            # iWork '09 numbers the kinds of chart differently from the modern
+            # container, and that numbering has not been established against
+            # real documents, so the kind is left unsaid rather than guessed.
+            kind=ChartKind.OTHER,
+            title=legacy_chart_title(info),
+            categories=tuple(categories),
+            series=tuple(
+                ChartSeries(
+                    name=name,
+                    values=tuple(
+                        _point_of(by_category, category, series)
+                        for category in range(len(categories))
+                    ),
+                )
+                for series, name in enumerate(names)
+            ),
+        ),
         geometry=legacy_geometry(info),
     )
 
 
-def points(row: dict) -> list[Decimal | float | None]:
+def legacy_chart_title(info: Element) -> str | None:
+    """Read the title a chart shows, or None when it shows none."""
+    name = info.find(f".//{SF_CHART_NAME}")
+    if name is None:
+        return None
+    return (name.get(SFA_ATTR_TEXT) or "").strip() or None
+
+
+def _point_of(
+    by_category: list[list[float | None]], category: int, series: int
+) -> float | None:
+    """Read one plotted value out of the share's category-major rows."""
+    if category >= len(by_category):
+        return None
+    row = by_category[category]
+    return row[series] if series < len(row) else None
+
+
+def points(row: dict) -> list[float | None]:
     """Read one category's plotted values, leaving the gaps empty."""
     return [
-        value
+        float(value)
         if isinstance(value, (int, float)) and not isinstance(value, bool)
         else None
         for value in row.get(SHARE_ROW_VALUES_KEY, [])

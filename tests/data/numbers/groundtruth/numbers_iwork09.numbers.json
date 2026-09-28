@@ -102,7 +102,22 @@
       "children": [],
       "content_layer": "body",
       "label": "caption",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 82.2,
+            "t": 50.2,
+            "r": 252.2,
+            "b": 220.2,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            23
+          ]
+        }
+      ],
       "orig": "Expenditure by Category",
       "text": "Expenditure by Category"
     },

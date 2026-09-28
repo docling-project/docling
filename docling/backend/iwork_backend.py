@@ -61,17 +61,14 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.backend.iwork import (
-    keynote_iwa,
-    keynote_xml,
-    numbers_content,
-    numbers_iwa,
-    numbers_xml,
 from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
 from docling.backend.iwork import (
     chart_image,
     keynote_iwa,
     keynote_xml,
+    numbers_content,
+    numbers_iwa,
+    numbers_xml,
     pages_iwa,
     pages_xml,
 )
@@ -1199,15 +1196,20 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             # Tables and charts share the sheet canvas, so they are laid out in
             # one pass down the page rather than one kind after the other.
-            drawn: list[numbers_content.Table | numbers_content.Chart] = [
+            drawn: list[numbers_content.Table | numbers_content.PlacedChart] = [
                 *sheet.tables,
                 *sheet.charts,
             ]
             for drawable in sorted(drawn, key=numbers_content.sheet_order):
                 if isinstance(drawable, numbers_content.Table):
                     _add_sheet_table(doc, drawable, parent=group, page_no=index)
-                elif isinstance(drawable, numbers_content.Chart):
-                    _add_chart(doc, drawable, parent=group, page_no=index)
+                elif isinstance(drawable, numbers_content.PlacedChart):
+                    _add_chart(
+                        doc,
+                        drawable.chart,
+                        parent=group,
+                        prov=_sheet_prov(drawable.geometry, index),
+                    )
 
             for position, comment in enumerate(sheet.comments, start=1):
                 _add_sheet_comment(doc, comment, sheet=sheet.name, position=position)
@@ -1277,97 +1279,6 @@ def _add_sheet_table(
         caption=caption,
         parent=parent,
         prov=_sheet_prov(table.geometry, page_no),
-    )
-
-
-def _add_chart(
-    doc: DoclingDocument,
-    chart: numbers_content.Chart,
-    *,
-    parent: NodeItem,
-    page_no: int,
-) -> None:
-    """Attach one Numbers chart, with the data it plots, under its sheet group.
-
-    Numbers gives no rendered image for a chart, so the picture item carries the
-    cached data instead — the same shape the Excel and OpenDocument backends
-    attach to their charts.
-    """
-    caption = (
-        doc.add_text(label=DocItemLabel.CAPTION, text=chart.name, parent=parent)
-        if chart.name
-        else None
-    )
-    picture = doc.add_picture(
-        parent=parent,
-        caption=caption,
-        prov=_sheet_prov(chart.geometry, page_no),
-    )
-    picture.meta = PictureMeta(
-        classification=PictureClassificationMetaField(
-            predictions=[
-                PictureClassificationPrediction(
-                    class_name=PictureClassificationLabel.OTHER_CHART
-                )
-            ]
-        ),
-        tabular_chart=TabularChartMetaField(chart_data=_chart_table(chart)),
-    )
-
-
-def _point_text(points: list, series: int) -> str:
-    """Render one plotted value, leaving a gap in a series empty."""
-    if series >= len(points):
-        return ""
-    value = points[series]
-    return "" if value is None else numbers_content.format_number(value)
-
-
-def _chart_table(chart: numbers_content.Chart) -> TableData:
-    """Lay a chart's cached data out as a grid, categories down the first column.
-
-    Args:
-        chart: The chart whose data to lay out.
-
-    Returns:
-        The data as a table: a header row of series names, then one row per
-        category.
-    """
-    cells: list[TableCell] = []
-    for column, label in enumerate(["", *chart.series]):
-        cells.append(
-            TableCell(
-                text=label,
-                start_row_offset_idx=0,
-                end_row_offset_idx=1,
-                start_col_offset_idx=column,
-                end_col_offset_idx=column + 1,
-                column_header=True,
-            )
-        )
-
-    for index, category in enumerate(chart.categories):
-        points = chart.values[index] if index < len(chart.values) else []
-        texts = [
-            category,
-            *(_point_text(points, series) for series in range(len(chart.series))),
-        ]
-        for column, text in enumerate(texts):
-            cells.append(
-                TableCell(
-                    text=text,
-                    start_row_offset_idx=index + 1,
-                    end_row_offset_idx=index + 2,
-                    start_col_offset_idx=column,
-                    end_col_offset_idx=column + 1,
-                    row_header=column == 0,
-                )
-            )
-
-    return TableData(
-        num_rows=len(chart.categories) + 1,
-        num_cols=1 + len(chart.series),
-        table_cells=cells,
     )
 
 

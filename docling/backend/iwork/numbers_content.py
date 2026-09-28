@@ -20,7 +20,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from typing import NamedTuple
 
-from docling.backend.iwork.content import Geometry
+from docling.backend.iwork.content import Chart, Geometry
 
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 """Instant Numbers counts its dates and times from."""
@@ -52,24 +52,16 @@ class Table(NamedTuple):
     geometry: Geometry | None
 
 
-class Chart(NamedTuple):
-    """One chart on a sheet, with the data it is drawn from.
+class PlacedChart(NamedTuple):
+    """One chart on a sheet, and where Numbers put it.
 
-    Numbers caches a chart's data beside the chart rather than only in the table
-    it was built from, so a chart reads as a small table of its own: one row per
-    category and one column per series, with ``values[category][series]`` holding
-    the point, or None where that series has none for that category.
-
-    Which *kind* of chart it is — pie, bar, line — is stored as an integer, and
-    the two container generations number them differently. Neither numbering is
-    read here, so every chart is classified as a chart of unspecified kind; what
-    the chart plots is recovered either way, which is what a reader is after.
+    The chart itself is the shared :class:`~docling.backend.iwork.content.Chart`
+    every iWork app's charts are read into; what a sheet adds is a position,
+    since a sheet is a canvas and the order things are read in comes from where
+    they sit.
     """
 
-    name: str
-    categories: list[str]
-    series: list[str]
-    values: list[list[Decimal | float | None]]
+    chart: Chart
     geometry: Geometry | None
 
 
@@ -87,11 +79,11 @@ class Sheet(NamedTuple):
 
     name: str
     tables: list[Table]
-    charts: list[Chart]
+    charts: list[PlacedChart]
     comments: list[Comment]
 
 
-Drawable = Table | Chart | Comment
+Drawable = Table | PlacedChart | Comment
 """Anything a sheet places on its canvas."""
 
 
