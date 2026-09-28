@@ -376,23 +376,53 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return None
 
-    @staticmethod
-    def _iter_blocks(lines: list[str]) -> Iterator[str | _LiteralBlock]:
-        literal_data: list[str] | None = None
+    _CONTENT_BLOCK_DELIMITERS: Final[tuple[str, ...]] = (
+        "====",
+        "****",
+        "____",
+        "--",
+        "++++",
+        "----",
+    )
 
-        for line in lines:
-            if line.strip() == "....":
+    @classmethod
+    def _iter_blocks(cls, lines: list[str]) -> Iterator[str | _LiteralBlock]:
+        literal_data: list[str] | None = None
+        i = 0
+        n = len(lines)
+        while i < n:
+            line = lines[i]
+            stripped = line.strip()
+            if stripped == "....":
                 if literal_data is None:
                     literal_data = []
                 else:
                     yield _LiteralBlock(text="\n".join(literal_data))
                     literal_data = None
+                i += 1
                 continue
 
             if literal_data is None:
+                if stripped in cls._CONTENT_BLOCK_DELIMITERS and any(
+                    lines[j].strip() == stripped for j in range(i + 1, n)
+                ):
+                    # Example (====), sidebar (****), quote (____), open (--)
+                    # and passthrough (+++) blocks carry regular content:
+                    # consume only the paired delimiter lines so they do not
+                    # leak into the text, and re-emit the inner lines
+                    # unchanged. The closer look-ahead keeps stray separator
+                    # lines without a pair (e.g. "--" in a changelog) from
+                    # swallowing the rest of the document.
+                    i += 1
+                    while i < n and lines[i].strip() != stripped:
+                        yield lines[i]
+                        i += 1
+                    i += 1
+                    continue
                 yield line
             else:
                 literal_data.append(line.rstrip("\r\n"))
+            i += 1
 
         if literal_data is not None:
             yield _LiteralBlock(text="\n".join(literal_data))
