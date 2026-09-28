@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import shutil
 import warnings
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -19,6 +20,8 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    ListGroup,
+    ListItem,
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
@@ -114,6 +117,24 @@ _SAFE_XML_PARSER: Final = etree.XMLParser(
     dtd_validation=False,
 )
 """Safe XML parser to prevent XXE, DTD-over-network and entity-expansion attacks."""
+
+
+@dataclass
+class _OpenList:
+    """A list group that is still accepting items while a text frame is walked.
+
+    Attributes:
+        group: The list group that items at ``level`` are added to.
+        level: The paragraph level (``a:pPr/@lvl``) of the group's items.
+        counter: The number of enumerated items added to the group so far.
+        last_item: The most recent item in the group, which parents any list
+            nested below it.
+    """
+
+    group: ListGroup
+    level: int
+    counter: int = 0
+    last_item: Optional[ListItem] = None
 
 
 def _is_metafile(image_bytes: bytes) -> bool:
@@ -739,9 +760,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     def _handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
     ):
-        is_list_group_created = False
-        enum_list_item_value = 0
-        new_list = None
+        # Lists that are open, outermost first; a deeper paragraph level opens a
+        # list nested under the last item of the enclosing one.
+        open_lists: list[_OpenList] = []
         doc_label = DocItemLabel.LIST_ITEM
 
         # Iterate through paragraphs to build up text
@@ -762,31 +783,41 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if is_a_list:
                 enum_marker = ""
                 enumerated = bullet_type == "Numbered"
+                level = self._get_paragraph_level(p)
 
-                if not is_list_group_created:
-                    new_list = doc.add_list_group(
-                        name="list",
-                        parent=parent_slide,
+                while len(open_lists) > 1 and open_lists[-1].level > level:
+                    open_lists.pop()
+                if not open_lists:
+                    open_lists.append(
+                        _OpenList(
+                            group=doc.add_list_group(name="list", parent=parent_slide),
+                            level=level,
+                        )
                     )
-                    is_list_group_created = True
-                    enum_list_item_value = 0
+                elif level > open_lists[-1].level:
+                    open_lists.append(
+                        _OpenList(
+                            group=doc.add_list_group(
+                                name="list", parent=open_lists[-1].last_item
+                            ),
+                            level=level,
+                        )
+                    )
+                current = open_lists[-1]
 
                 if enumerated:
-                    enum_list_item_value += 1
-                    enum_marker = str(enum_list_item_value) + "."
+                    current.counter += 1
+                    enum_marker = str(current.counter) + "."
 
-                doc.add_list_item(
+                current.last_item = doc.add_list_item(
                     marker=enum_marker,
                     enumerated=enumerated,
-                    parent=new_list,
+                    parent=current.group,
                     text=p_text,
                     prov=prov,
                 )
             else:  # is paragraph not a list item
-                if is_list_group_created:
-                    is_list_group_created = False
-                    new_list = None
-                    enum_list_item_value = 0
+                open_lists.clear()
                 # Assign proper label to the text, depending if it's a Title or Section Header
                 # For other types of text, assign - PARAGRAPH
                 doc_label = DocItemLabel.PARAGRAPH

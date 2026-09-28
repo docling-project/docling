@@ -1009,3 +1009,55 @@ def test_pptx_shape_bbox_is_not_vertically_mirrored(tmp_path: Path):
         assert bbox.t < bbox.b, f"{text}: top edge must sit above the bottom edge"
 
     assert tops["Near top"].t < tops["Near bottom"].t
+
+
+def test_pptx_indented_paragraphs_become_nested_lists(tmp_path: Path):
+    """Paragraph levels (``a:pPr/@lvl``) nest list items under their parent item.
+
+    Every list paragraph of a shape used to land in one flat list, so sub-bullets
+    lost their parent and numbered sub-items continued the outer numbering.
+    """
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[1])
+    slide.shapes.title.text = "Agenda"
+    body = slide.placeholders[1].text_frame
+    body.text = "Intro"
+    for text, level in [("Background", 1), ("Motivation", 1), ("Method", 0)]:
+        paragraph = body.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+
+    steps = slide.shapes.add_textbox(Inches(1), Inches(5), Inches(4), Inches(2))
+    steps.text_frame.text = "Step one"
+    for text, level in [("Sub a", 1), ("Sub b", 1), ("Step two", 0)]:
+        paragraph = steps.text_frame.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+    for paragraph in steps.text_frame.paragraphs:
+        paragraph._p.get_or_add_pPr().append(
+            paragraph._p.makeelement(qn("a:buAutoNum"), {"type": "arabicPeriod"})
+        )
+
+    pptx_path = tmp_path / "nested_lists.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert doc.export_to_markdown() == (
+        "# Agenda\n\n"
+        "- Intro\n"
+        "    - Background\n"
+        "    - Motivation\n"
+        "- Method\n\n"
+        "1. Step one\n"
+        "    1. Sub a\n"
+        "    2. Sub b\n"
+        "2. Step two"
+    )
+    sub_item = next(t for t in doc.texts if t.text == "Background")
+    intro = next(t for t in doc.texts if t.text == "Intro")
+    assert sub_item.parent.resolve(doc).parent.cref == intro.self_ref

@@ -190,6 +190,30 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
             self.path_or_stream.close()
         self.path_or_stream = None
 
+    def _add_footnotes(self, doc: DoclingDocument) -> None:
+        """Add footnote/endnote body text to the furniture layer.
+
+        ``_odf_text_runs`` skips ``text:note`` entirely wherever it's referenced
+        inline (see its own docstring), since splicing an arbitrary-length note
+        body into the middle of the citing sentence would corrupt the reading
+        order rather than just losing content. This recovers the body text
+        separately: each note becomes its own ``FOOTNOTE`` item in the furniture
+        layer, the same layer headers/footers use in the Word/iWork backends -
+        available to callers, out of the reading order by default.
+        """
+        for note in self.odf_obj.body.get_elements("descendant::text:note"):
+            bodies = note.get_elements("text:note-body")
+            if not bodies:
+                continue
+            text = bodies[0].text_content.strip()
+            if not text:
+                continue
+            doc.add_text(
+                label=DocItemLabel.FOOTNOTE,
+                text=text,
+                content_layer=ContentLayer.FURNITURE,
+            )
+
 
 def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
     """Find the true data boundaries (min/max rows and columns) in an ODS table.
@@ -354,6 +378,13 @@ def _odf_text_runs(
         ]
     if tag == "text:tab":
         return [_OdfTextRun(text="\t", formatting=formatting, hyperlink=hyperlink)]
+    if tag == "text:note":
+        # A footnote/endnote's citation marker and body live inside this element,
+        # but neither belongs in the citing sentence's own text: the body can be
+        # arbitrarily long, and splicing it in here would corrupt the reading
+        # order instead of just losing content. The body is recovered separately
+        # as its own furniture item; see _OdfBaseBackend._add_footnotes.
+        return []
 
     runs: list[_OdfTextRun] = []
     children = element.children
@@ -1537,6 +1568,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
             )
 
         self._walk(self.odf_obj.body.children, parent=None, doc=doc)
+        self._add_footnotes(doc)
         return doc
 
     def _walk(

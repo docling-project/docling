@@ -35,6 +35,7 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 
 if TYPE_CHECKING:
     from typing import Any
@@ -422,7 +423,11 @@ class MacroHandlerMixin:
                     self._input_stack.add(resolved)
                     try:
                         content = input_path.read_text(encoding="utf-8")
-                        sub_walker = LatexWalker(content, tolerant_parsing=True)
+                        sub_walker = LatexWalker(
+                            content,
+                            tolerant_parsing=True,
+                            latex_context=LATEX_CONTEXT_DB,
+                        )
                         sub_nodes, _, _ = sub_walker.get_latex_nodes()
                         self._process_nodes(
                             sub_nodes, doc, parent, formatting, text_label
@@ -634,7 +639,9 @@ class MacroHandlerMixin:
 
     def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str:
         try:
-            walker = LatexWalker(latex_fragment, tolerant_parsing=True)
+            walker = LatexWalker(
+                latex_fragment, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
+            )
             parsed_nodes, _, _ = walker.get_latex_nodes()
         except LatexWalkerParseError:
             return latex_fragment

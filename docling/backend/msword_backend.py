@@ -64,6 +64,8 @@ try:  # pragma: no cover - import-time guard
     from docx import Document
     from docx.document import Document as DocxDocument
     from docx.enum.style import WD_STYLE_TYPE
+    from docx.opc.constants import RELATIONSHIP_TYPE as DOCX_RT
+    from docx.oxml import parse_xml as docx_parse_xml
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
@@ -203,6 +205,15 @@ _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
         "lowerLetter",
         "upperLetter",
         "decimalZero",
+        "chineseCounting",
+        "chineseCountingThousand",
+        "chineseLegalSimplified",
+        "ideographDigital",
+        "ideographTraditional",
+        "ideographZodiac",
+        "japaneseCounting",
+        "decimalFullWidth",
+        "decimalEnclosedCircle",
     }
 )
 """OOXML numFmt values that produce visible list/heading markers."""
@@ -249,8 +260,215 @@ def _int_to_roman_marker(value: int) -> str:
     return "".join(parts)
 
 
+# East Asian numFmt rendering. Character sets follow ECMA-376-1:2016 §17.18.59
+# (ST_NumberFormat). Where the standard's prose and its examples disagree, or
+# are silent, the rules follow the markers rendered by Microsoft Word 16.112
+# (macOS) for a probe document, as noted on each helper.
+_CJK_DIGITS: Final[str] = "一二三四五六七八九"
+_CHINESE_LEGAL_DIGITS: Final[str] = "壹贰叁肆伍陆柒捌玖"
+_CHINESE_COUNTING_POSITIONAL_DIGITS: Final[str] = "\u25cb" + _CJK_DIGITS
+_IDEOGRAPH_DIGITAL_DIGITS: Final[str] = "\u3007" + _CJK_DIGITS
+_FULLWIDTH_DIGITS: Final[str] = "".join(chr(0xFF10 + digit) for digit in range(10))
+_HEAVENLY_STEMS: Final[str] = "甲乙丙丁戊己庚辛壬癸"
+_EARTHLY_BRANCHES: Final[str] = "子丑寅卯辰巳午未申酉戌亥"
+_ENCLOSED_CIRCLE_NUMBERS: Final[str] = "".join(
+    chr(code_point) for code_point in range(0x2460, 0x2474)
+)
+_CJK_GROUPED_NUMBER_LIMIT: Final[int] = 1_000_000
+"""Word renders an empty marker from this value on ([MS-OI29500] 2.1.548 j)."""
+
+
+def _int_to_positional_marker(value: int, digits: str) -> str:
+    """Write each decimal digit of ``value`` with ``digits`` (index 0 is zero)."""
+    if value < 0:
+        return str(value)
+    return "".join(digits[int(char)] for char in str(value))
+
+
+def _int_to_sequence_marker(value: int, symbols: str) -> str:
+    """Map 1..len(symbols) to one symbol each; other values stay decimal.
+
+    ECMA-376 specifies the decimal fallback for ideographTraditional,
+    ideographZodiac and decimalEnclosedCircle, and Word renders the same.
+    """
+    if 1 <= value <= len(symbols):
+        return symbols[value - 1]
+    return str(value)
+
+
+def _int_to_chinese_grouped_marker(
+    value: int,
+    digits: str,
+    units: tuple[str, str, str, str],
+    myriad: str,
+    zero: str,
+) -> str:
+    """Write 1..999,999 with Chinese unit characters (ten, hundred, thousand).
+
+    Every non-zero digit is followed by its unit, the ten-thousands group is
+    closed by ``myriad``, and one ``zero`` is written for each run of zero
+    digits that is followed by a non-zero digit: 101 -> 一百〇一,
+    100010 -> 一十万〇一十, 909090 -> 九十万〇九千〇九十. This matches Word. It
+    differs from [MS-OI29500] 2.1.548 e, which says Word omits the zero for
+    10,000-100,000.
+    """
+    parts: list[str] = []
+    pending_zero = False
+    text = str(value)
+    for power, char in zip(range(len(text) - 1, -1, -1), text):
+        digit = int(char)
+        if digit == 0:
+            pending_zero = bool(parts)
+        else:
+            if pending_zero:
+                parts.append(zero)
+                pending_zero = False
+            parts.append(digits[digit - 1] + units[power % 4])
+        if power == 4:
+            parts.append(myriad)
+    return "".join(parts)
+
+
+def _int_to_chinese_counting_marker(value: int) -> str:
+    """Render chineseCounting: 十 and 二十一 up to 99, then digit by digit.
+
+    ECMA-376 gives 0-10 as U+25CB, 一 ... 十 and the pattern 十, 十一, ..., 九十九,
+    一○○, 一○一. Word renders the same, including U+25CB (not U+3007) as zero.
+    """
+    if value < 0:
+        return str(value)
+    if value >= 100 or value == 0:
+        return _int_to_positional_marker(value, _CHINESE_COUNTING_POSITIONAL_DIGITS)
+    tens, ones = divmod(value, 10)
+    text = ""
+    if tens > 0:
+        text = ("" if tens == 1 else _CJK_DIGITS[tens - 1]) + "十"
+    if ones > 0:
+        text += _CJK_DIGITS[ones - 1]
+    return text
+
+
+def _int_to_chinese_counting_thousand_marker(value: int) -> str:
+    """Render chineseCountingThousand the way Word does.
+
+    Word writes 10-19 as 十 ... 十九 and every other ten with its digit
+    (110 -> 一百一十, 100000 -> 一十万), and uses U+3007 as the zero
+    (101 -> 一百〇一). The ECMA-376 text lists U+96F6 as the zero and its
+    example shows 一十 for 10; Word's output is used here because it is what
+    document authors see. Values from 1,000,000 render empty, as in Word.
+    """
+    if value < 0:
+        return str(value)
+    if value == 0:
+        return "\u3007"
+    if value >= _CJK_GROUPED_NUMBER_LIMIT:
+        return ""
+    if 10 <= value <= 19:
+        return "十" + (_CJK_DIGITS[value - 11] if value > 10 else "")
+    return _int_to_chinese_grouped_marker(
+        value,
+        digits=_CJK_DIGITS,
+        units=("", "十", "百", "千"),
+        myriad="万",
+        zero="\u3007",
+    )
+
+
+def _int_to_chinese_legal_marker(value: int) -> str:
+    """Render chineseLegalSimplified (壹, 贰, ..., 壹拾, 壹佰零壹).
+
+    Digits and units follow ECMA-376; 10 keeps its leading 壹. Ten thousand is
+    U+842C as rendered by Word ([MS-OI29500] 2.1.548 q), not the U+4E07 of the
+    standard. Values from 1,000,000 render empty, as in Word.
+    """
+    if value < 0:
+        return str(value)
+    if value == 0:
+        return "零"
+    if value >= _CJK_GROUPED_NUMBER_LIMIT:
+        return ""
+    return _int_to_chinese_grouped_marker(
+        value,
+        digits=_CHINESE_LEGAL_DIGITS,
+        units=("", "拾", "佰", "仟"),
+        myriad="萬",
+        zero="零",
+    )
+
+
+def _japanese_counting_group(value: int, explicit_one_thousand: bool) -> str:
+    """Write 1..9999 with 千, 百, 十; a digit 1 is omitted before its unit."""
+    parts: list[str] = []
+    for unit_value, unit in ((1000, "千"), (100, "百"), (10, "十")):
+        digit, value = divmod(value, unit_value)
+        if digit == 0:
+            continue
+        keep_digit = digit > 1 or (unit == "千" and explicit_one_thousand)
+        parts.append((_CJK_DIGITS[digit - 1] if keep_digit else "") + unit)
+    if value > 0:
+        parts.append(_CJK_DIGITS[value - 1])
+    return "".join(parts)
+
+
+def _int_to_japanese_counting_marker(value: int) -> str:
+    """Render japaneseCounting (十, 百一, 千百, 一万一千, 十万).
+
+    ECMA-376 gives the character set and the pattern up to 二十一. The rules
+    above that follow Word: no zero character inside a number, 百 and 十
+    without a leading 一, 千 without 一 below 10,000 and 一千 after a 万 group.
+    Values from 1,000,000 render empty, as in Word.
+    """
+    if value < 0:
+        return str(value)
+    if value == 0:
+        return "\u3007"
+    if value >= _CJK_GROUPED_NUMBER_LIMIT:
+        return ""
+    myriads, rest = divmod(value, 10_000)
+    text = ""
+    if myriads > 0:
+        text = (
+            _CJK_DIGITS[0]
+            if myriads == 1
+            else _japanese_counting_group(myriads, explicit_one_thousand=False)
+        ) + "万"
+    if rest > 0:
+        text += _japanese_counting_group(rest, explicit_one_thousand=myriads > 0)
+    return text
+
+
+_CJK_ENUM_FORMATTERS: Final[dict[str, Callable[[int], str]]] = {
+    "chineseCounting": _int_to_chinese_counting_marker,
+    "chineseCountingThousand": _int_to_chinese_counting_thousand_marker,
+    "chineseLegalSimplified": _int_to_chinese_legal_marker,
+    "ideographDigital": lambda value: _int_to_positional_marker(
+        value, _IDEOGRAPH_DIGITAL_DIGITS
+    ),
+    "ideographTraditional": lambda value: _int_to_sequence_marker(
+        value, _HEAVENLY_STEMS
+    ),
+    # ECMA-376 lists U+620C (戌), the eleventh Earthly Branch; Word 16.112
+    # renders U+620D (戍), the adjacent code point, which reads "garrison" and
+    # breaks the 子丑寅卯 sequence. Unlike the other deviations followed in this
+    # module, this one changes the character a reader sees rather than how a
+    # number is spelled, so the standard is kept here on purpose.
+    "ideographZodiac": lambda value: _int_to_sequence_marker(value, _EARTHLY_BRANCHES),
+    "japaneseCounting": _int_to_japanese_counting_marker,
+    "decimalFullWidth": lambda value: _int_to_positional_marker(
+        value, _FULLWIDTH_DIGITS
+    ),
+    "decimalEnclosedCircle": lambda value: _int_to_sequence_marker(
+        value, _ENCLOSED_CIRCLE_NUMBERS
+    ),
+}
+"""East Asian ``w:numFmt`` values mapped to their counter renderers."""
+
+
 def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
     """Render a list counter using an OOXML ``w:numFmt`` value."""
+    cjk_formatter = _CJK_ENUM_FORMATTERS.get(num_fmt) if num_fmt is not None else None
+    if cjk_formatter is not None and counter >= 0:
+        return cjk_formatter(counter)
     if num_fmt == "lowerLetter":
         return _int_to_letter_marker(counter)
     if num_fmt == "upperLetter":
@@ -687,6 +905,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_header_footer(self.docx_obj, doc)
             # Add comments and link them to annotated paragraphs
             self._add_comments(self.docx_obj, doc)
+            # Add footnotes and endnotes (their body text lives in a separate part;
+            # the in-body reference is otherwise silently empty, see docstring below)
+            self._add_footnotes_and_endnotes(self.docx_obj, doc)
 
             return doc
         else:
@@ -2363,6 +2584,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
+            # Same reason as for headings below: the parents stack is cleared here.
+            self.level_at_new_list = None
             te = doc.add_text(
                 parent=None,
                 label=DocItemLabel.TITLE,
@@ -2372,6 +2595,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
+            # _add_heading clears the parents tail; reset list context so the
+            # next list item opens fresh under this heading.
+            self.level_at_new_list = None
             is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
@@ -3903,6 +4129,63 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.content_layer = current_layer
         self.parents = base_parents
         self.level = base_level
+
+    def _add_footnotes_and_endnotes(
+        self, docx_obj: DocxDocument, doc: DoclingDocument
+    ) -> None:
+        """Add footnote and endnote body text to the furniture layer.
+
+        A footnote/endnote reference in the body (``w:footnoteReference``/
+        ``w:endnoteReference``) carries no text of its own - python-docx's
+        ``Run.text`` only concatenates ``w:t`` nodes, so a run containing one of
+        these references contributes an empty string. The actual body text lives
+        in a separate ``word/footnotes.xml``/``word/endnotes.xml`` part that
+        python-docx has no high-level model for (unlike headers/footers); without
+        reading it directly here, that content is silently dropped.
+
+        Each note's body becomes its own ``FOOTNOTE`` item in the furniture layer,
+        the same layer headers/footers use: available to callers, out of the
+        reading order by default. Separator/continuation-separator placeholders
+        (present in every Word-authored document, holding no user content) are
+        skipped.
+
+        Args:
+            docx_obj: A docx Document object to be parsed.
+            doc: A DoclingDocument object to add the footnotes/endnotes to.
+        """
+        skip_types = {"separator", "continuationSeparator", "continuationNotice"}
+        note_parts = {
+            DOCX_RT.FOOTNOTES: "footnote",
+            DOCX_RT.ENDNOTES: "endnote",
+        }
+
+        for reltype, tag_name in note_parts.items():
+            matches = [
+                rel for rel in docx_obj.part.rels.values() if rel.reltype == reltype
+            ]
+            if not matches:
+                continue
+            try:
+                root = docx_parse_xml(matches[0].target_part.blob)
+            except Exception:
+                _log.warning(f"Failed to parse {tag_name}s part")
+                continue
+
+            for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
+                if note.get(f"{_W_NS_CLARK}type") in skip_types:
+                    continue
+                texts = [
+                    text
+                    for p_elm in note.findall(f"{_W_NS_CLARK}p")
+                    if (text := Paragraph(p_elm, docx_obj).text.strip())
+                ]
+                if not texts:
+                    continue
+                doc.add_text(
+                    label=DocItemLabel.FOOTNOTE,
+                    text=" ".join(texts),
+                    content_layer=ContentLayer.FURNITURE,
+                )
 
     def _add_comments(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
         """Add document comments (reviewer annotations) and link to annotated items.
