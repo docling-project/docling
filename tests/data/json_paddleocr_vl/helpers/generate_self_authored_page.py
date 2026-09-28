@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Generate the self-authored source image for PaddleOCR-VL adapter tests."""
 
 from pathlib import Path

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Contract tests for the dependency-free PaddleOCR-VL result adapter.
 
 Most payloads in this module are deliberately synthetic mechanics fixtures.

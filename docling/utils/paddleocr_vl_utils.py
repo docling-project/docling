@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Convert saved PaddleOCR-VL page results into ``DoclingDocument`` objects.
 
 The adapter targets the single-page result schema emitted by PaddleOCR-VL 1.6
