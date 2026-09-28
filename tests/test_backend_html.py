@@ -357,18 +357,44 @@ def test_table_row_header_rowspan_keeps_the_row_cells():
     assert "$134" in doc.export_to_markdown()
 
 
-def test_table_tfoot_rows_are_kept():
+_THEAD = b"<thead><tr><th>Item</th><th>Amount</th></tr></thead>"
+_TFOOT = b"<tfoot><tr><td>Total</td><td>10</td></tr></tfoot>"
+
+
+@pytest.mark.parametrize(
+    "body,expected_grid",
+    [
+        (
+            _THEAD + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>" + _TFOOT,
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+        # HTML 4 placed tfoot before tbody; the table model still ends with it.
+        (
+            _THEAD + _TFOOT + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>",
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+        (
+            b"<tbody><tr><td>Widgets</td><td>4</td></tr></tbody>"
+            + _TFOOT
+            + b"<tbody><tr><td>Gadgets</td><td>6</td></tr></tbody>",
+            [["Widgets", "4"], ["Gadgets", "6"], ["Total", "10"]],
+        ),
+        (
+            _THEAD
+            + b'<tfoot><tr><td rowspan="2">Total</td><td>10</td></tr></tfoot>'
+            + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>",
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+    ],
+    ids=["tfoot_last", "tfoot_first", "tfoot_between", "tfoot_first_rowspan"],
+)
+def test_table_tfoot_rows_are_kept(body, expected_grid):
     """Regression: <tfoot> is a standard table section, but only thead/tbody
     were unwrapped before scanning rows. Footer totals then stayed nested
-    inside <tfoot> and were dropped from the grid.
+    inside <tfoot> and were dropped from the grid. Wherever the tfoot sits in
+    the source, its rows come last in the table model.
     """
-    src = (
-        b"<table>"
-        b"<thead><tr><th>Item</th><th>Amount</th></tr></thead>"
-        b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>"
-        b"<tfoot><tr><td>Total</td><td>10</td></tr></tfoot>"
-        b"</table>"
-    )
+    src = b"<table>" + body + b"</table>"
     in_doc = InputDocument(
         path_or_stream=BytesIO(src),
         format=InputFormat.HTML,
@@ -379,11 +405,8 @@ def test_table_tfoot_rows_are_kept():
 
     assert len(doc.tables) == 1
     assert doc.tables[0].data.num_rows == 3
-    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
-        ["Item", "Amount"],
-        ["Widgets", "10"],
-        ["Total", "10"],
-    ]
+    grid = [[cell.text for cell in row] for row in doc.tables[0].data.grid]
+    assert grid == expected_grid
 
 
 def test_table_inside_figure_is_parsed():
