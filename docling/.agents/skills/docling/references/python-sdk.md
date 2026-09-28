@@ -351,6 +351,12 @@ print(result.document.export_to_markdown())   # timestamped transcript
 
 The CLI can also transcribe: `docling interview.wav --to md --output /tmp/`.
 
+Video files (`.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`) use `VideoPipeline` with
+`VideoPipelineOptions`, which also samples frames. `max_sampled_frames` defaults
+to `200` (set `None` for no limit). When `document_timeout` is set, all FFmpeg
+calls share that budget; running out yields `PARTIAL_SUCCESS` with a `TIMEOUT`
+error (`result.has_timeout_errors()`).
+
 ## Exporting images and tables
 
 To keep and export page/figure images, tell the pipeline to generate them, then
