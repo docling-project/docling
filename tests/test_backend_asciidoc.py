@@ -677,3 +677,72 @@ def test_stray_delimiter_without_closer_kept() -> None:
     assert "changelog" in texts
     assert "note" in texts
 
+def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
+    # "**" and "***" mark nested bullet items, the same way ".." does for
+    # ordered lists. They used to fall through to paragraph text, which lost the
+    # nesting and moved that text after the rest of the list.
+    source = b"""* apple
+* banana
+** banana split
+*** with cherries
+** banana bread
+* cherry
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="nested-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == [
+        "apple",
+        "banana",
+        "banana split",
+        "with cherries",
+        "banana bread",
+        "cherry",
+    ]
+    assert not any(item.enumerated for item in list_items)
+    assert doc.export_to_markdown() == (
+        "- apple\n"
+        "- banana\n"
+        "    - banana split\n"
+        "        - with cherries\n"
+        "    - banana bread\n"
+        "- cherry"
+    )
+
+
+def test_line_comments_not_body_text() -> None:
+    # a line starting with // is a comment; it used to render as a paragraph
+    src = b"// a comment line\nreal para\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="comments.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert not any("comment line" in t for t in texts)
+    assert "real para" in texts
+
+
+def test_comment_block_hides_content() -> None:
+    # //// delimited comment blocks hide everything up to the closer
+    src = b"////\nhidden text\n////\nvisible\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="comment-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert not any("hidden" in t for t in texts)
+    assert "visible" in texts

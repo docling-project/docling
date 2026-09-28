@@ -35,6 +35,11 @@ from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
 
+# A line starting with // is a comment and never body content. //// opens a
+# delimited comment block: every line up to the matching //// is hidden.
+_LINE_COMMENT_RE = re.compile(r"^//")
+_COMMENT_BLOCK_DELIMITER = "////"
+
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
 # (a/d/e/h/l/m/s). AsciiDoc writes the span as [colspan][.rowspan] followed by
@@ -469,6 +474,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         block_data: list[str] | None = None
         block_delimiter: str | None = None
         block_language: str | None = None
+        in_comment_block = False
 
         i = 0
         n = len(lines)
@@ -497,6 +503,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 block_data = []
                 block_delimiter = stripped
                 block_language = None
+                i += 1
+                continue
+
+            if in_comment_block:
+                if stripped == _COMMENT_BLOCK_DELIMITER:
+                    in_comment_block = False
+                i += 1
+                continue
+
+            if stripped == _COMMENT_BLOCK_DELIMITER:
+                in_comment_block = True
+                i += 1
+                continue
+
+            if _LINE_COMMENT_RE.match(line):
                 i += 1
                 continue
 
