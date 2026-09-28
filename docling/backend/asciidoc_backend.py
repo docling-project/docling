@@ -30,6 +30,7 @@ from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
@@ -40,12 +41,13 @@ _log = logging.getLogger(__name__)
 # "+" or "*", and either number may be omitted, so ".2+" is a rowspan on its
 # own. Requiring at least one of the two keeps a bare "+" from matching.
 _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
-_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*|-|\.+|\d+\.|\w+\.)\s+(.*)"
+_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|\w+\.)\s+(.*)"
 
 
 @dataclass(frozen=True)
 class _LiteralBlock:
     text: str
+    language: str | None = None  # set for [source,lang] listing blocks
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -174,8 +176,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         label=DocItemLabel.CAPTION,
                     )
                     caption_data = []
+                code_language = (
+                    detect_code_language(block.text, hint=block.language)
+                    if block.language is not None
+                    else None
+                )
                 doc.add_code(
                     text=block.text,
+                    code_language=code_language,
                     caption=caption,
                     parent=(
                         last_list_item if in_list else self._get_current_parent(parents)
@@ -376,26 +384,81 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return None
 
-    @staticmethod
-    def _iter_blocks(lines: list[str]) -> Iterator[str | _LiteralBlock]:
-        literal_data: list[str] | None = None
+    _SOURCE_ATTR_RE = re.compile(r"^\[source(?:,\s*([\w+#.-]+))?[^\]]*\]$")
+    _CONTENT_BLOCK_DELIMITERS = ("====", "****", "____", "--", "+++")
 
-        for line in lines:
-            if line.strip() == "....":
-                if literal_data is None:
-                    literal_data = []
+    @staticmethod
+    def _has_matching_closer(lines: list[str], open_idx: int, delimiter: str) -> bool:
+        for j in range(open_idx + 1, len(lines)):
+            if lines[j].strip() == delimiter:
+                return True
+        return False
+
+    @classmethod
+    def _iter_blocks(cls, lines: list[str]) -> Iterator[str | _LiteralBlock]:
+        block_data: list[str] | None = None
+        block_delimiter: str | None = None
+        block_language: str | None = None
+
+        i = 0
+        n = len(lines)
+        while i < n:
+            line = lines[i]
+            stripped = line.strip()
+
+            if block_data is not None:
+                # Inside a delimited block: only the matching closer ends it.
+                if stripped == block_delimiter:
+                    yield _LiteralBlock(
+                        text="\n".join(block_data), language=block_language
+                    )
+                    block_data = None
+                    block_delimiter = None
+                    block_language = None
                 else:
-                    yield _LiteralBlock(text="\n".join(literal_data))
-                    literal_data = None
+                    block_data.append(line.rstrip("\r\n"))
+                i += 1
                 continue
 
-            if literal_data is None:
-                yield line
-            else:
-                literal_data.append(line.rstrip("\r\n"))
+            if stripped in {"....", "----"}:
+                # "...." is a literal block; "----" a listing block. A
+                # "[source,lang]" attribute consumed just before a "----"
+                # labels the listing's language.
+                block_data = []
+                block_delimiter = stripped
+                block_language = None
+                i += 1
+                continue
 
-        if literal_data is not None:
-            yield _LiteralBlock(text="\n".join(literal_data))
+            if stripped in cls._CONTENT_BLOCK_DELIMITERS and cls._has_matching_closer(
+                lines, i, stripped
+            ):
+                # Example (====), sidebar (****), quote (____), open (--) and
+                # passthrough (+++) blocks carry regular content: consume the
+                # delimiter lines themselves so they do not leak into the
+                # text, and re-emit the inner lines unchanged. The closer look-
+                # ahead keeps stray separator lines (e.g. "--" in a changelog)
+                # from swallowing the rest of the document.
+                i += 1
+                while i < n and lines[i].strip() != stripped:
+                    yield lines[i]
+                    i += 1
+                i += 1
+                continue
+
+            source_attr = cls._SOURCE_ATTR_RE.match(stripped)
+            if source_attr is not None and i + 1 < n and lines[i + 1].strip() == "----":
+                block_data = []
+                block_delimiter = "----"
+                block_language = source_attr.group(1)
+                i += 2
+                continue
+
+            yield line
+            i += 1
+
+        if block_data is not None:
+            yield _LiteralBlock(text="\n".join(block_data), language=block_language)
 
     @classmethod
     def _close_list_if_needed(
@@ -478,10 +541,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             marker = match.group(2)  # The list marker (e.g., "*", "-", "1.")
             text = match.group(3)  # The actual text of the list item
             indent_width = len(indent)
-            if marker.startswith("."):
+            if marker.startswith((".", "*")):
                 indent_width += len(marker) - 1
 
-            if marker == "*" or marker == "-":
+            if marker.startswith("*") or marker == "-":
                 return {
                     "type": "list_item",
                     "marker": marker,
