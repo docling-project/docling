@@ -91,7 +91,7 @@ _log = logging.getLogger(__name__)
 
 XML_DECLARATION: Final[str] = '<?xml version="1.0" encoding="UTF-8"?>'
 
-_TABLE_START: Final = re.compile(r"^<table ", re.MULTILINE)
+_TABLE_START: Final[re.Pattern[str]] = re.compile(r"^<table ", re.MULTILINE)
 _TABLE_END: Final[str] = "</table>"
 
 
