@@ -510,12 +510,11 @@ class LatexBackendOptions(BaseBackendOptions):
         description=(
             "The engine to use for rendering Tikz diagrams into images. "
             "Set to 'tectonic' to enable asynchronous image generation. "
-            "Rendering compiles LaTeX from the input document. Without shell "
-            "escape, diagrams whose source references files outside the "
-            "document directory, or builds commands or paths indirectly, are "
-            "kept as TikZ code instead of rendered. This check is best-effort: "
-            "enable rendering only for trusted input or run conversion in an "
-            "isolated environment."
+            "Without shell escape, Tectonic runs with --untrusted and "
+            "--only-cached, and diagrams whose source names absolute or "
+            "parent-directory files are kept as TikZ code instead of rendered. "
+            "This check is best-effort: process untrusted LaTeX in an isolated "
+            "environment."
         ),
     )
     tikz_engine_timeout: float = Field(
@@ -527,7 +526,7 @@ class LatexBackendOptions(BaseBackendOptions):
         description=(
             "Allow Tectonic TikZ rendering to enable shell escape during "
             "compilation. Disabled by default for safer rendering of untrusted "
-            "LaTeX."
+            "LaTeX; enable only for trusted input."
         ),
     )
 

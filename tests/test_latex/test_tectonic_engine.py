@@ -11,6 +11,13 @@ from docling.backend.latex.engines import tectonic
 from docling.backend.latex.engines.tectonic import TectonicEngine
 
 
+@pytest.fixture
+def untrusted_engine(monkeypatch) -> TectonicEngine:
+    """Engine with default options, using a stubbed system binary."""
+    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
+    return TectonicEngine(timeout=5.0)
+
+
 def test_tectonic_engine_uses_system_binary(monkeypatch):
     monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
 
@@ -130,65 +137,35 @@ def test_tectonic_render_does_not_add_search_path(monkeypatch):
     assert not any(part.startswith("search-path=") for part in captured_cmd["cmd"])
     assert "-Z" in captured_cmd["cmd"]
     assert "shell-escape" in captured_cmd["cmd"]
+    assert "--untrusted" not in captured_cmd["cmd"]
 
 
-def test_tectonic_render_can_disable_shell_escape(monkeypatch):
-    engine = TectonicEngine.__new__(TectonicEngine)
-    engine.binary_path = Path("/usr/bin/tectonic")
-    engine._is_available = True
-    engine.timeout = 5.0
-    engine.allow_shell_escape = False
-
-    captured_cmd = {}
+def test_tectonic_render_default_runs_untrusted_and_cache_only(
+    monkeypatch, untrusted_engine
+):
+    captured = {}
 
     def fake_run(cmd, **kwargs):
-        captured_cmd["cmd"] = cmd
+        captured["cmd"] = cmd
+        captured["kwargs"] = kwargs
         raise subprocess.CalledProcessError(
             returncode=1, cmd=cmd, output=b"", stderr=b"forced failure"
         )
 
     monkeypatch.setattr(tectonic.subprocess, "run", fake_run)
 
-    assert engine.render(r"\begin{tikzpicture}\end{tikzpicture}") is None
-    assert "shell-escape" not in captured_cmd["cmd"]
-
-
-def test_tectonic_default_command_is_hardened(monkeypatch):
-    # The default command has no shell escape and runs untrusted and cache-only.
-    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
-
-    engine = TectonicEngine()
-
-    assert engine.allow_shell_escape is False
-
-    cmd = engine._build_command(Path("/tmp/diagram.tex"))
-
+    assert untrusted_engine.render(r"\begin{tikzpicture}\end{tikzpicture}") is None
+    cmd = captured["cmd"]
     assert "--untrusted" in cmd
     assert "--only-cached" in cmd
-    assert "-Z" not in cmd
     assert "shell-escape" not in cmd
-    assert cmd.index("--untrusted") < cmd.index("/tmp/diagram.tex")
+    assert Path(cmd[-1]).parent == Path(captured["kwargs"]["cwd"])
 
 
-def test_tectonic_shell_escape_optin_command_is_trusted(monkeypatch):
-    # With shell escape enabled, --untrusted is omitted because it disables it.
-    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
-
-    engine = TectonicEngine(allow_shell_escape=True)
-
-    cmd = engine._build_command(Path("/tmp/diagram.tex"))
-
-    assert "-Z" in cmd
-    assert "shell-escape" in cmd
-    assert "--untrusted" not in cmd
-
-
-def test_tectonic_render_stages_explicit_local_dependencies(monkeypatch, tmp_path):
-    engine = TectonicEngine.__new__(TectonicEngine)
-    engine.binary_path = Path("/usr/bin/tectonic")
-    engine._is_available = True
-    engine.timeout = 5.0
-    engine.allow_shell_escape = False
+def test_tectonic_render_stages_explicit_local_dependencies(
+    monkeypatch, untrusted_engine, tmp_path
+):
+    engine = untrusted_engine
 
     (tmp_path / "styles").mkdir()
     (tmp_path / "styles" / "tikz-macros.tex").write_text(
@@ -227,20 +204,25 @@ def test_tectonic_render_stages_explicit_local_dependencies(monkeypatch, tmp_pat
 
 
 def test_tectonic_render_blocks_dependency_path_traversal(monkeypatch, tmp_path):
-    engine = TectonicEngine.__new__(TectonicEngine)
-    engine.binary_path = Path("/usr/bin/tectonic")
-    engine._is_available = True
-    engine.timeout = 5.0
-    engine.allow_shell_escape = False
+    # With shell escape the source pre-check is off, so staging alone must
+    # refuse the parent-directory dependency.
+    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
+    engine = TectonicEngine(timeout=5.0, allow_shell_escape=True)
 
     outside_dir = tmp_path.parent
     outside_file = outside_dir / "secret.tex"
     outside_file.write_text("\\newcommand{\\secret}{1}\n", encoding="utf-8")
 
-    calls = []
-    monkeypatch.setattr(
-        tectonic.subprocess, "run", lambda cmd, **kwargs: calls.append(cmd)
-    )
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        cwd = Path(kwargs["cwd"])
+        captured["staged_secret"] = (cwd / "secret.tex").exists()
+        raise subprocess.CalledProcessError(
+            returncode=1, cmd=cmd, output=b"", stderr=b"forced failure"
+        )
+
+    monkeypatch.setattr(tectonic.subprocess, "run", fake_run)
 
     assert (
         engine.render(
@@ -250,16 +232,7 @@ def test_tectonic_render_blocks_dependency_path_traversal(monkeypatch, tmp_path)
         )
         is None
     )
-    assert calls == []
-
-
-def _untrusted_engine() -> TectonicEngine:
-    engine = TectonicEngine.__new__(TectonicEngine)
-    engine.binary_path = Path("/usr/bin/tectonic")
-    engine._is_available = True
-    engine.timeout = 5.0
-    engine.allow_shell_escape = False
-    return engine
+    assert captured["staged_secret"] is False
 
 
 UNSAFE_TIKZ_SOURCES = [
@@ -267,37 +240,21 @@ UNSAFE_TIKZ_SOURCES = [
     r"\input /etc/passwd ",
     r"\include{../outside}",
     r"\def\p{/etc/passwd}\input\p",
-    r"\expandafter\let\csname x\endcsname\relax",
-    r"^^5cinput{/etc/passwd}",
-    r"\begin{input}/etc/passwd \end{input}",
-    r"\def\x{input}\begin\x /etc/passwd \end\x",
-    r"\def\x{input}\begin{\x}/etc/passwd \end{\x}",
-    r"\UseName{input}{/etc/passwd}",
-    r"\csuse{input}",
-    r"\catcode`\|=0 |input{/etc/passwd}",
-    r"\makeatletter\@@input /etc/passwd",
-    r"\openin1=/etc/passwd",
-    r"\newwrite\f\immediate\openout\f=/tmp/out.txt",
+    r"\InputIfFileExists{~/notes.tex}{}{}",
     r"\includegraphics{/etc/image.png}",
-    r"\includegraphics[width=2cm]{../image.png}",
-    r"\graphicspath{{/etc/}}",
-    r"\usepackage{../evil}",
-    r"\lstinputlisting{notes.txt}",
-    r"\pgfplotstableread{/etc/data.dat}\t",
-    r"\begin{axis}\addplot table {/etc/data.dat};\end{axis}",
-    r"\begin{axis}\addplot table[search path={/etc}] {data.dat};\end{axis}",
-    r"\draw plot file {/etc/data.dat};",
-    r"\begin{filecontents*}{/tmp/out.tex}x\end{filecontents*}",
-    r"\special{pdf:image (/etc/image.png)}",
+    r"\includegraphics*[width=2cm]{figures/../../image.png}",
+    r"\graphicspath{{C:/figures/}}",
+    r"\openin1=notes.txt",
+    r"\newwrite\f\immediate\openout\f=out.txt",
+    r"\XeTeXpicfile image.png",
 ]
 
 
 @pytest.mark.parametrize("source", UNSAFE_TIKZ_SOURCES)
 @pytest.mark.parametrize("location", ["tikz", "preamble"])
-def test_tectonic_render_skips_unsafe_file_access(
-    monkeypatch, caplog, source, location
+def test_tectonic_render_skips_outside_file_references(
+    monkeypatch, caplog, untrusted_engine, source, location
 ):
-    engine = _untrusted_engine()
     calls = []
     monkeypatch.setattr(
         tectonic.subprocess, "run", lambda cmd, **kwargs: calls.append(cmd)
@@ -310,24 +267,28 @@ def test_tectonic_render_skips_unsafe_file_access(
         preamble = f"\\usepackage{{tikz}}\n{source}"
 
     with caplog.at_level(logging.WARNING):
-        assert engine.render(tikz, preamble=preamble) is None
+        assert untrusted_engine.render(tikz, preamble=preamble) is None
 
     assert calls == []
     assert "Skipping TikZ rendering" in caplog.text
 
 
-def test_tectonic_render_skips_unsafe_staged_dependency(monkeypatch, tmp_path):
-    engine = _untrusted_engine()
-    (tmp_path / "macros.tex").write_text("\\input{/etc/passwd}\n", encoding="utf-8")
+@pytest.mark.parametrize("staged_name", ["macros.tex", "macros.png"])
+def test_tectonic_render_checks_every_staged_file(
+    monkeypatch, untrusted_engine, tmp_path, staged_name
+):
+    # Staged files are checked whatever their extension, since \input can read
+    # a file with any name.
+    (tmp_path / staged_name).write_text("\\input{/etc/passwd}\n", encoding="utf-8")
     calls = []
     monkeypatch.setattr(
         tectonic.subprocess, "run", lambda cmd, **kwargs: calls.append(cmd)
     )
 
     assert (
-        engine.render(
+        untrusted_engine.render(
             r"\begin{tikzpicture}\end{tikzpicture}",
-            preamble="\\input{macros}",
+            preamble=f"\\input{{{staged_name}}}",
             source_root=tmp_path,
         )
         is None
@@ -335,30 +296,24 @@ def test_tectonic_render_skips_unsafe_staged_dependency(monkeypatch, tmp_path):
     assert calls == []
 
 
-SAFE_TIKZ_SOURCES = [
-    (
+def test_tectonic_render_compiles_ordinary_tikz(monkeypatch, untrusted_engine):
+    preamble = (
         "\\usepackage{amsmath,tikz,pgfplots}\n"
         "\\usetikzlibrary{arrows.meta,positioning}\n"
         "\\pgfplotsset{compat=1.18}\n"
         "\\graphicspath{{figures/}{img/}}\n"
-        "\\tikzset{every node/.style={draw, rounded corners}}\n"
-        "\\newcommand{\\half}{0.5}",
+        "\\makeatletter\\newcommand{\\half}{0.5}\\makeatother"
+    )
+    tikz = (
         "\\begin{tikzpicture}\n"
         "\\draw[->, >=Stealth] (0,0) -- (1,1) node[above] {$a/b$};\n"
-        "\\foreach \\x in {1,...,5} \\node at (\\x,0) {\\x};\n"
+        "\\node {\\includegraphics[width=1cm]{figures/logo}};\n"
         "\\begin{axis}[xlabel={time / s}]\n"
         "\\addplot table {\nx y\n1 2\n3 4\n};\n"
-        "\\addplot table[row sep=\\\\] {x y\\\\ 1 2\\\\};\n"
         "\\addplot coordinates {(0,0) (1,\\half)};\n"
         "\\end{axis}\n"
-        "\\end{tikzpicture}",
-    ),
-]
-
-
-@pytest.mark.parametrize(("preamble", "tikz"), SAFE_TIKZ_SOURCES)
-def test_tectonic_render_compiles_ordinary_tikz(monkeypatch, preamble, tikz):
-    engine = _untrusted_engine()
+        "\\end{tikzpicture}"
+    )
     calls = []
 
     def fake_run(cmd, **kwargs):
@@ -369,14 +324,13 @@ def test_tectonic_render_compiles_ordinary_tikz(monkeypatch, preamble, tikz):
 
     monkeypatch.setattr(tectonic.subprocess, "run", fake_run)
 
-    assert TectonicEngine._find_unsafe_construct(preamble + "\n" + tikz) is None
-    engine.render(tikz, preamble=preamble)
+    untrusted_engine.render(tikz, preamble=preamble)
     assert len(calls) == 1
 
 
 def test_tectonic_shell_escape_optin_skips_source_check(monkeypatch):
-    engine = _untrusted_engine()
-    engine.allow_shell_escape = True
+    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
+    engine = TectonicEngine(timeout=5.0, allow_shell_escape=True)
     calls = []
 
     def fake_run(cmd, **kwargs):
@@ -389,3 +343,5 @@ def test_tectonic_shell_escape_optin_skips_source_check(monkeypatch):
 
     engine.render(r"\begin{tikzpicture}\input{/etc/hostname}\end{tikzpicture}")
     assert len(calls) == 1
+    assert "shell-escape" in calls[0]
+    assert "--untrusted" not in calls[0]

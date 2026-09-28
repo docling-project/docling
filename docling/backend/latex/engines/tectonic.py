@@ -54,57 +54,17 @@ class TectonicEngine(RenderEngine):
     )
     _LATEX_GRAPHICS_EXTENSIONS = (".pdf", ".png", ".jpg", ".jpeg", ".eps", ".svg")
 
-    # Tectonic opens any path the TeX source names, including absolute and
-    # ``..`` paths, even with --untrusted. Untrusted sources are therefore
-    # rendered only when every file reference is a literal relative path inside
-    # the staging directory. Commands below either build control sequences or
-    # file names indirectly (so a path cannot be checked from the source text),
-    # or read or write files; any occurrence skips rendering. The list covers the
-    # TeX primitives and common packages, not every package in the bundle.
-    _UNSAFE_CONTROL_WORDS = frozenset(
-        {
-            # Indirect control sequences, catcodes and character codes
-            "catcode", "lccode", "uccode", "lowercase", "uppercase", "csname",
-            "endcsname", "ifcsname", "scantokens", "primitive", "makeatletter",
-            "ExplSyntaxOn", "ExplSyntaxNamesOn", "ProvidesExplPackage",
-            "ProvidesExplClass", "ProvidesExplFile", "UseName", "ExpandArgs",
-            "csuse", "csdef", "csgdef", "csedef", "csxdef", "cslet", "csletcs",
-            "letcs", "csexpandonce",
-            # Primitive file access
-            "openin", "read", "readline", "openout", "special", "XeTeXpicfile",
-            "XeTeXpdffile", "directlua",
-            # Package commands that read, embed or write files
-            "IfFileExists", "InputIfFileExists", "lstinputlisting", "VerbatimInput",
-            "BVerbatimInput", "LVerbatimInput", "verbatiminput", "inputminted",
-            "pgfplotstableread", "pgfplotstabletypeset", "pgfplotstablesave",
-            "CatchFileDef", "CatchFileEdef", "CatchFileBGroup", "csvreader",
-            "csvloop", "csvautotabular", "csvautobooktabular", "csvautolongtable",
-            "DTLloaddb", "DTLloadrawdb", "import", "subimport", "inputfrom",
-            "includefrom", "subinputfrom", "subincludefrom", "includestandalone",
-            "includesvg", "includepdf", "includeinkscape", "bibliography",
-            "addbibresource", "externaldocument", "tikzexternalize", "pgfimage",
-            "pgfdeclareimage", "readdef", "readarray", "embedfile", "attachfile",
-            "textattachfile", "filecontents",
-        }
-    )  # fmt: skip
-    # Commands whose braced argument names a file that is staged or looked up.
-    _PATH_CONTROL_WORDS = frozenset({"input", "include", "includegraphics"})
-    # Commands whose braced argument names packages, classes, libraries or
-    # directories.
-    _NAME_LIST_CONTROL_WORDS = frozenset(
-        {
-            "usepackage", "RequirePackage", "documentclass", "LoadClass",
-            "usetikzlibrary", "usepgflibrary", "usepgfplotslibrary", "graphicspath",
-        }
-    )  # fmt: skip
-    _CONTROL_SEQUENCE_PATTERN = re.compile(r"\\(?:([A-Za-z]+)|.)", re.DOTALL)
-    _OPTIONAL_ARGUMENT_PATTERN = re.compile(r"\s*(?:\[(?:[^\[\]]|\[[^\[\]]*\])*\])?\s*")
-    _SAFE_RELATIVE_PATH_PATTERN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_. /-]*")
-    # pgfplots/TikZ keys and plot operations that read data files.
-    _DATA_FILE_KEY_PATTERN = re.compile(
-        r"search\s+path|read\s+from\s+file|(?<![A-Za-z\\])file\s*(?:\[[^\]]*\])?\s*\{"
+    # Best-effort pre-check for untrusted sources: skip rendering when the
+    # source names an absolute or parent-directory path for an input or
+    # graphics file, or uses the TeX primitives that open arbitrary files. It
+    # cannot see names built by macros or every way TeX can open files.
+    _PATH_ARGUMENT_PATTERN = re.compile(
+        r"\\(?P<command>input|include|includegraphics|InputIfFileExists|graphicspath)"
+        r"(?![A-Za-z])\*?(?:\s*\[[^\]]*\])?\s*\{*\s*(?P<path>[^{}\s]*)"
     )
-    _PGFPLOTS_TABLE_PATTERN = re.compile(r"(?<![A-Za-z\\{])table")
+    _FILE_PRIMITIVE_PATTERN = re.compile(
+        r"\\(?P<command>openin|openout|XeTeXpicfile|XeTeXpdffile)(?![A-Za-z])"
+    )
 
     def __init__(
         self,
@@ -157,117 +117,40 @@ class TectonicEngine(RenderEngine):
             r"\1% docling: removed for Tectonic compatibility: \2", preamble
         )
 
-    @staticmethod
-    def _braced_argument(text: str, pos: int) -> tuple[str, int] | None:
-        """Return the balanced ``{...}`` group starting at ``pos`` and its end.
-
-        Returns:
-            The group content and the index after the closing brace, or ``None``
-            when ``text[pos]`` is not ``{`` or the group is not closed.
-        """
-        if pos >= len(text) or text[pos] != "{":
-            return None
-        depth = 0
-        index = pos
-        while index < len(text):
-            char = text[index]
-            if char == "\\":
-                index += 2
-                continue
-            if char == "{":
-                depth += 1
-            elif char == "}":
-                depth -= 1
-                if depth == 0:
-                    return text[pos + 1 : index], index + 1
-            index += 1
-        return None
-
-    @classmethod
-    def _skip_optional_argument(cls, text: str, pos: int) -> int:
-        """Return the index after whitespace and an optional ``[...]`` at ``pos``."""
-        match = cls._OPTIONAL_ARGUMENT_PATTERN.match(text, pos)
-        return match.end() if match else pos
-
-    @classmethod
-    def _is_safe_relative_path(cls, raw_path: str) -> bool:
-        path = raw_path.strip()
-        if not cls._SAFE_RELATIVE_PATH_PATTERN.fullmatch(path):
-            return False
-        return ".." not in path.split("/")
-
     @classmethod
     def _find_unsafe_construct(cls, text: str) -> str | None:
-        """Find TeX source that could read or write files outside the staging dir.
-
-        Args:
-            text: TeX source to check.
-
-        Returns:
-            A short description of the first unsafe construct, or ``None`` when
-            every file reference is a literal relative path.
-        """
-        if "^^" in text:
-            return "^^ character notation"
-        data_file_match = cls._DATA_FILE_KEY_PATTERN.search(text)
-        if data_file_match:
-            return f"data file reference {data_file_match.group(0)!r}"
-
-        for table_match in cls._PGFPLOTS_TABLE_PATTERN.finditer(text):
-            start = cls._skip_optional_argument(text, table_match.end())
-            argument = cls._braced_argument(text, start)
-            if argument is None:
-                continue
-            content = argument[0].replace("\\\\", "")
-            if any(token in content for token in ("\\", "/", "..", "~")):
-                return "pgfplots table argument that is not inline data"
-
-        checked_words = (
-            cls._UNSAFE_CONTROL_WORDS
-            | cls._PATH_CONTROL_WORDS
-            | cls._NAME_LIST_CONTROL_WORDS
-        )
-        for match in cls._CONTROL_SEQUENCE_PATTERN.finditer(text):
-            word = match.group(1)
-            if word is None:
-                continue
-            if word in cls._UNSAFE_CONTROL_WORDS:
-                return f"\\{word}"
-            if word in ("begin", "end"):
-                argument = cls._braced_argument(
-                    text, cls._skip_optional_argument(text, match.end())
-                )
-                if argument is None or "\\" in argument[0]:
-                    return f"\\{word} without a literal environment name"
-                name = argument[0].strip().rstrip("*")
-                if name in checked_words or f"end{name}" in checked_words:
-                    return f"\\{word}{{{name}}}"
-                continue
-            if word in cls._PATH_CONTROL_WORDS:
-                start = match.end()
-                if word == "includegraphics" and text.startswith("*", start):
-                    start += 1
-                start = cls._skip_optional_argument(text, start)
-                argument = cls._braced_argument(text, start)
-                if argument is None or not cls._is_safe_relative_path(argument[0]):
-                    return f"\\{word} without a literal relative path"
-                continue
-            if word in cls._NAME_LIST_CONTROL_WORDS:
-                start = cls._skip_optional_argument(text, match.end())
-                argument = cls._braced_argument(text, start)
-                if argument is None:
-                    return f"\\{word} without a literal argument"
-                content = argument[0]
-                if word == "graphicspath":
-                    directories = re.findall(r"\{([^{}]*)\}", content)
-                    if not directories or not all(
-                        cls._is_safe_relative_path(directory)
-                        for directory in directories
-                    ):
-                        return "\\graphicspath with a non-relative directory"
-                elif any(token in content for token in ("\\", "/", "..", "~")):
-                    return f"\\{word} with a path in its argument"
+        """Return a description of the first outside file reference, if any."""
+        primitive = cls._FILE_PRIMITIVE_PATTERN.search(text)
+        if primitive is not None:
+            return f"\\{primitive.group('command')}"
+        for match in cls._PATH_ARGUMENT_PATTERN.finditer(text):
+            path = match.group("path")
+            if (
+                path.startswith(("/", "\\", "~"))
+                or re.match(r"[A-Za-z]:", path)
+                or ".." in re.split(r"[/\\]", path)
+            ):
+                return f"\\{match.group('command')} with path {path!r}"
         return None
+
+    @classmethod
+    def _precheck_staged_files(cls, staging_dir: Path) -> bool:
+        """Return whether no staged file refers to files outside ``staging_dir``."""
+        for staged_file in staging_dir.rglob("*"):
+            if not staged_file.is_file():
+                continue
+            unsafe = cls._find_unsafe_construct(
+                staged_file.read_text(encoding="utf-8", errors="replace")
+            )
+            if unsafe is not None:
+                _log.warning(
+                    "Skipping TikZ rendering: %s contains %s, which refers to "
+                    "files outside the rendering directory.",
+                    staged_file.relative_to(staging_dir),
+                    unsafe,
+                )
+                return False
+        return True
 
     @staticmethod
     def _strip_comments(text: str) -> str:
@@ -415,16 +298,6 @@ class TectonicEngine(RenderEngine):
         else:
             preamble = self._sanitize_preamble_for_tectonic(preamble)
 
-        if not self.allow_shell_escape:
-            unsafe = self._find_unsafe_construct(preamble + "\n" + tikz_code)
-            if unsafe is not None:
-                _log.warning(
-                    "Skipping TikZ rendering: the source contains %s, which can "
-                    "access files outside the rendering directory.",
-                    unsafe,
-                )
-                return None
-
         latex_doc = (
             "\\documentclass[border=20pt]{standalone}\n"
             + preamble
@@ -438,26 +311,13 @@ class TectonicEngine(RenderEngine):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             self._stage_local_dependencies(temp_path, preamble, tikz_code, source_root)
-            if not self.allow_shell_escape:
-                for staged_file in temp_path.rglob("*"):
-                    if (
-                        not staged_file.is_file()
-                        or staged_file.suffix.lower() in self._LATEX_GRAPHICS_EXTENSIONS
-                    ):
-                        continue
-                    unsafe = self._find_unsafe_construct(
-                        staged_file.read_text(encoding="utf-8", errors="replace")
-                    )
-                    if unsafe is not None:
-                        _log.warning(
-                            "Skipping TikZ rendering: %s contains %s, which can "
-                            "access files outside the rendering directory.",
-                            staged_file.relative_to(temp_path),
-                            unsafe,
-                        )
-                        return None
             tex_file = temp_path / "diagram.tex"
             tex_file.write_text(latex_doc, encoding="utf-8")
+
+            if not self.allow_shell_escape and not self._precheck_staged_files(
+                temp_path
+            ):
+                return None
 
             cmd = self._build_command(tex_file)
 
