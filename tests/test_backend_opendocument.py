@@ -704,6 +704,7 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
     item_comment = annotation('office:name="l1"', "Ann Reviewer", "AR", "Too vague")
     link_comment = annotation('office:name="k1"', "Bo Writer", "BW", "Dead link?")
     empty_comment = annotation('office:name="p1"', "Cy Editor", "CE", "Add text")
+    box_comment = annotation('office:name="b1"', "Bo Writer", "BW", "In a box")
     footnote = (
         '<text:note text:id="n1" text:note-class="footnote">'
         "<text:note-citation>1</text:note-citation>"
@@ -763,6 +764,13 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
         )
     )
     body.append(Element.from_tag(f"<text:p>{empty_comment}</text:p>"))
+    # The walk skips a text box, so this thread goes to the root at the end.
+    body.append(
+        Element.from_tag(
+            '<draw:frame text:anchor-type="page"><draw:text-box>'
+            f"<text:p>Boxed{box_comment}</text:p></draw:text-box></draw:frame>"
+        )
+    )
     source.save(str(path))
 
     document = (
@@ -812,6 +820,7 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
         ["[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Dead link?"],
         ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Add text"],
         ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Which year?"],
+        ["[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: In a box"],
     ]
     parents = [group.parent.resolve(document) for group in comment_groups]
     assert [
@@ -830,6 +839,7 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
         "#/groups/12",
         "#/body",
         "Source: annual report.",
+        "#/body",
     ]
     assert isinstance(parents[9], InlineGroup)
     # As in the DOCX backend, the annotated item refers to its comment groups.
