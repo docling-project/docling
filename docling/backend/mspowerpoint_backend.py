@@ -11,6 +11,7 @@ from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any, Callable, Final, Iterable, Iterator, Optional, Union
+from urllib.parse import urlparse
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -32,9 +33,10 @@ from docling_core.types.doc import (
     TableData,
     TabularChartMetaField,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.document import ContentLayer, Formatting
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -61,6 +63,7 @@ try:  # pragma: no cover - import-time guard
     from pptx.exc import InvalidXmlError
     from pptx.oxml.ns import qn
     from pptx.oxml.text import CT_TextLineBreak
+    from pptx.text.text import _Run
 
     _PPTX_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -778,6 +781,138 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             for si in sorted(row, key=lambda si: (si.left, si.index)):
                 yield si.shape
 
+    def _get_run_format(self, run: _Run) -> Formatting:
+        """Build a ``Formatting`` from a run's font, mirroring the DOCX backend.
+
+        Only bold/italic/underline are read: ``python-pptx``'s public ``Font``
+        API exposes nothing for strikethrough or sub/superscript, unlike
+        python-docx's richer run API.
+        """
+        font = run.font
+        return Formatting(
+            bold=bool(font.bold),
+            italic=bool(font.italic),
+            underline=bool(font.underline),
+        )
+
+    def _get_run_hyperlink_target(self, run: _Run) -> Optional[AnyUrl | Path]:
+        """Resolve a run's hyperlink address to a URL or a local path.
+
+        Mirrors the DOCX backend's ``_get_hyperlink_target``: addresses
+        without a URL scheme are treated as (relative) filesystem paths, and
+        a malformed address is dropped (returning ``None``) rather than
+        aborting the whole conversion.
+        """
+        address = run.hyperlink.address
+        if not address:
+            return None
+        if not urlparse(address).scheme:
+            return Path(address)
+        try:
+            return AnyUrl(address)
+        except ValidationError:
+            _log.warning("Skipping malformed hyperlink address: %r", address)
+            return None
+
+    def _iter_paragraph_runs(
+        self, paragraph
+    ) -> list[tuple[str, Optional[Formatting], Optional[AnyUrl | Path]]]:
+        """Split a paragraph into ``(text, formatting, hyperlink)`` per run.
+
+        A line break (``a:br``) is a sibling of ``a:r`` at the paragraph
+        level in DrawingML (unlike python-docx, where an embedded break is
+        already folded into ``Run.text``), so it is kept as its own
+        formatting-less, hyperlink-less space entry.
+        """
+        elements: list[tuple[str, Optional[Formatting], Optional[AnyUrl | Path]]] = []
+        for e in paragraph._element.content_children:
+            if isinstance(e, CT_TextLineBreak):
+                elements.append((" ", None, None))
+            else:
+                run = _Run(e, paragraph)
+                elements.append(
+                    (
+                        run.text,
+                        self._get_run_format(run),
+                        self._get_run_hyperlink_target(run),
+                    )
+                )
+
+        # PowerPoint sometimes splits a single word across adjacent runs with
+        # no formatting difference at all (e.g. spell-check markup); joining
+        # each run into its own item would then split that word with a
+        # spurious space wherever they land in an inline group (the markdown
+        # serializer always inserts one between siblings). Coalescing
+        # adjacent runs that share the exact same formatting/hyperlink keeps
+        # those words intact while still separating any run that is actually
+        # different.
+        coalesced: list[tuple[str, Optional[Formatting], Optional[AnyUrl | Path]]] = []
+        for text, format, hyperlink in elements:
+            if (
+                coalesced
+                and coalesced[-1][1] == format
+                and coalesced[-1][2] == hyperlink
+            ):
+                prev_text, _, _ = coalesced[-1]
+                coalesced[-1] = (prev_text + text, format, hyperlink)
+            else:
+                coalesced.append((text, format, hyperlink))
+        return coalesced
+
+    def _add_list_item_with_formatting(
+        self,
+        doc: DoclingDocument,
+        elements: list[tuple[str, Optional[Formatting], Optional[AnyUrl | Path]]],
+        marker: str,
+        enumerated: bool,
+        parent: ListGroup,
+        shape,
+        slide_ind: int,
+        slide_size,
+    ) -> ListItem:
+        """Add a list item, preserving per-run formatting/hyperlinks.
+
+        A single (or no) run keeps the current one-``ListItem``-per-paragraph
+        shape. Multiple runs need an empty marker item plus an inline group
+        of per-run text items, mirroring the DOCX backend's
+        ``_add_formatted_list_item`` — a bare ``ListItem`` has no per-span
+        formatting of its own. Each item gets its own provenance, built from
+        its own text, so its charspan matches its own length rather than the
+        whole paragraph's (python-pptx exposes no finer bbox than the shape's,
+        so the bbox itself stays shape-level for every item).
+        """
+        non_empty = [(t, f, h) for t, f, h in elements if t]
+        if len(non_empty) <= 1:
+            text, format, hyperlink = non_empty[0] if non_empty else ("", None, None)
+            return doc.add_list_item(
+                marker=marker,
+                enumerated=enumerated,
+                parent=parent,
+                text=text,
+                prov=self._generate_prov(shape, slide_ind, text, slide_size),
+                formatting=format,
+                hyperlink=hyperlink,
+            )
+
+        item = doc.add_list_item(
+            marker=marker,
+            enumerated=enumerated,
+            parent=parent,
+            text="",
+            prov=self._generate_prov(shape, slide_ind, "", slide_size),
+        )
+        inline_parent = doc.add_inline_group(parent=item)
+        for text, format, hyperlink in non_empty:
+            doc.add_text(
+                label=DocItemLabel.TEXT,
+                parent=inline_parent,
+                text=text,
+                prov=self._generate_prov(shape, slide_ind, text, slide_size),
+                formatting=format,
+                hyperlink=hyperlink,
+            )
+        return item
+
     def _handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
     ):
@@ -791,15 +926,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             is_a_list, bullet_type = self._is_list_item(paragraph)
             p = paragraph._element
 
-            # Convert line breaks to spaces and accumulate text
-            p_text = ""
-            for e in p.content_children:
-                if isinstance(e, CT_TextLineBreak):
-                    p_text += " "
-                else:
-                    p_text += e.text
-
-            prov = self._generate_prov(shape, slide_ind, p_text, slide_size)
+            # Split into (text, formatting, hyperlink) per run so a bold word
+            # or a link inside an otherwise plain sentence isn't lost. Each
+            # resulting item gets its own provenance (below), built from its
+            # own text, not one shared paragraph-wide span.
+            paragraph_elements = self._iter_paragraph_runs(paragraph)
 
             if is_a_list:
                 enum_marker = ""
@@ -832,12 +963,15 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     current.counter += 1
                     enum_marker = str(current.counter) + "."
 
-                current.last_item = doc.add_list_item(
+                current.last_item = self._add_list_item_with_formatting(
+                    doc=doc,
+                    elements=paragraph_elements,
                     marker=enum_marker,
                     enumerated=enumerated,
                     parent=current.group,
-                    text=p_text,
-                    prov=prov,
+                    shape=shape,
+                    slide_ind=slide_ind,
+                    slide_size=slide_size,
                 )
             else:  # is paragraph not a list item
                 open_lists.clear()
@@ -853,13 +987,45 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         # It's a title
                         doc_label = DocItemLabel.TITLE
 
-                # output accumulated inline text:
-                doc.add_text(
-                    label=doc_label,
-                    parent=parent_slide,
-                    text=p_text,
-                    prov=prov,
-                )
+                if doc_label == DocItemLabel.TITLE:
+                    # A title/section-header is one heading-level unit, not a
+                    # sequence of independently formatted spans: keep it a
+                    # single item exactly as before, run-formatting is not
+                    # meaningful at this level.
+                    p_text = "".join(
+                        text for text, _format, _hyperlink in paragraph_elements
+                    )
+                    doc.add_text(
+                        label=doc_label,
+                        parent=parent_slide,
+                        text=p_text,
+                        prov=self._generate_prov(shape, slide_ind, p_text, slide_size),
+                    )
+                else:
+                    # output accumulated inline text, one item per run so
+                    # each run's own formatting/hyperlink survives. Multiple
+                    # runs are nested under an inline group (mirroring the
+                    # DOCX backend's own _create_or_reuse_parent) so a
+                    # sentence with a bold word or a link in the middle stays
+                    # one flowing paragraph on export instead of splintering
+                    # into separate blocks.
+                    non_empty = [(t, f, h) for t, f, h in paragraph_elements if t]
+                    text_parent = (
+                        doc.add_inline_group(parent=parent_slide)
+                        if len(non_empty) > 1
+                        else parent_slide
+                    )
+                    for text, format, hyperlink in non_empty:
+                        doc.add_text(
+                            label=doc_label,
+                            parent=text_parent,
+                            text=text,
+                            prov=self._generate_prov(
+                                shape, slide_ind, text, slide_size
+                            ),
+                            formatting=format,
+                            hyperlink=hyperlink,
+                        )
         return
 
     def _rasterize_metafile(self, image_bytes: bytes) -> Optional[Image.Image]:
