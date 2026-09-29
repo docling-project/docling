@@ -71,6 +71,7 @@ try:  # pragma: no cover - import-time guard
     from odfdo import (
         Document as OdfDocument,
         DrawPage,
+        Element,
         Frame,
         Header,
         List as OdfList,
@@ -1567,9 +1568,102 @@ class OdtDocumentBackend(_OdfBaseBackend):
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
+        comment_threads = self._detach_annotations()
         self._walk(self.odf_obj.body.children, parent=None, doc=doc)
         self._add_footnotes(doc)
+        for index, thread in enumerate(comment_threads, start=1):
+            group = doc.add_group(
+                label=GroupLabel.COMMENT_SECTION,
+                name=f"comment-{index}",
+                content_layer=ContentLayer.NOTES,
+            )
+            for comment in thread:
+                doc.add_comment(text=comment, parent=group)
         return doc
+
+    def _detach_annotations(self) -> list[list[str]]:
+        """Remove the comments (``office:annotation``) from the body.
+
+        The text paths for paragraphs, headings, list items and table cells all
+        read an annotation's creator, date and body as inline text, so the
+        comment would otherwise be spliced into the text it annotates.
+
+        Returns the comments as threads: a comment, then its replies. Each entry
+        uses the '[author: Name (initials), time: date]: text' form of the DOCX
+        backend.
+        """
+        body = self.odf_obj.body
+        # The walk drops deleted tracked-change text, so drop its comments too.
+        for annotation in body.get_elements(
+            "descendant::text:tracked-changes//office:annotation"
+        ):
+            Element.delete(annotation)
+        comments: list[tuple[str | None, str | None, str]] = []
+        for annotation in body.get_elements("descendant::office:annotation"):
+            metadata: list[str] = []
+            creator = annotation.get_element("dc:creator")
+            if creator is not None and creator.text:
+                author = f"author: {creator.text}"
+                # LibreOffice writes loext:sender-initials for ODF 1.2.
+                initials = annotation.get_element(
+                    "meta:creator-initials | loext:sender-initials"
+                )
+                if initials is not None and initials.text:
+                    author += f" ({initials.text})"
+                metadata.append(author)
+            date = annotation.get_element("dc:date")
+            if date is not None and date.text:
+                metadata.append(f"time: {date.text}")
+            prefix = ", ".join(metadata)
+            text = annotation.text_content.strip()
+            name = annotation.attributes.get("office:name")
+            parent_name = annotation.attributes.get("loext:parent-name")
+            # Not Annotation.delete(): it searches the whole body for the
+            # matching office:annotation-end, once per comment.
+            Element.delete(annotation)
+
+            if prefix and text:
+                comment = f"[{prefix}]: {text}"
+            elif prefix:
+                comment = f"[{prefix}]"
+            elif text:
+                comment = text
+            else:
+                continue
+            comments.append((name, parent_name, comment))
+
+        # LibreOffice links a reply to the comment it answers by name. A reply
+        # can come before that comment, so build the threads after the pass.
+        # As in the XLSX backend, each comment comes before its replies.
+        index_by_name: dict[str, int] = {}
+        for index, (name, _, _) in enumerate(comments):
+            if name:
+                index_by_name.setdefault(name, index)
+        roots: list[int] = []
+        replies: dict[int, list[int]] = {}
+        for index, (_, parent_name, _) in enumerate(comments):
+            parent = index_by_name.get(parent_name) if parent_name else None
+            if parent is None or parent == index:
+                roots.append(index)
+            else:
+                replies.setdefault(parent, []).append(index)
+        threads: list[list[str]] = []
+        visited: set[int] = set()
+        # A parent-name cycle has no root, so its first comment starts a thread.
+        for start in [*roots, *range(len(comments))]:
+            if start in visited:
+                continue
+            thread: list[str] = []
+            stack = [start]
+            while stack:
+                index = stack.pop()
+                if index in visited:
+                    continue
+                visited.add(index)
+                thread.append(comments[index][2])
+                stack.extend(reversed(replies.get(index, [])))
+            threads.append(thread)
+        return threads
 
     def _walk(
         self,

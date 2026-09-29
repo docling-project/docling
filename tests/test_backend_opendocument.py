@@ -20,7 +20,9 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
+    GroupLabel,
     ImageRefMode,
     InlineGroup,
     PictureClassificationLabel,
@@ -637,6 +639,144 @@ def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
     assert footnote_texts == [
         "This is the footnote body text that should not vanish."
     ], "the footnote body must be recovered, not silently dropped"
+
+
+def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
+    """A comment (office:annotation), as LibreOffice Writer saves it, must not be
+    spliced into the paragraph, footnote or table cell that anchors it. A reply
+    joins the thread of the comment it answers, also when the reply comes first.
+    A comment on text deleted in a tracked change is dropped with that text."""
+
+    def annotation(
+        attributes: str,
+        author: str,
+        initials: str,
+        text: str,
+        initials_tag: str = "meta:creator-initials",
+    ) -> str:
+        return (
+            f"<office:annotation {attributes}>"
+            f"<dc:creator>{author}</dc:creator>"
+            "<dc:date>2024-01-15T10:00:00</dc:date>"
+            f"<{initials_tag}>{initials}</{initials_tag}>"
+            f"<text:p>{text}</text:p></office:annotation>"
+        )
+
+    comment = annotation('office:name="c1"', "Ann Reviewer", "AR", "Source?")
+    # LibreOffice writes loext:sender-initials when it saves as ODF 1.2.
+    reply = annotation(
+        'office:name="c2" loext:parent-name="c1"',
+        "Bo Writer",
+        "BW",
+        "Added below.",
+        initials_tag="loext:sender-initials",
+    )
+    cell_comment = annotation('office:name="c3"', "Ann Reviewer", "AR", "Cell remark")
+    cell_reply = annotation(
+        'office:name="c6" loext:parent-name="c3"', "Bo Writer", "BW", "Fixed."
+    )
+    deleted_comment = annotation('office:name="c4"', "Bo Writer", "BW", "Gone")
+    note_comment = annotation('office:name="c5"', "Ann Reviewer", "AR", "Which year?")
+    unnamed = [annotation("", "Cy Editor", "CE", f"Note {n}") for n in (1, 2)]
+    # A reply to a reply, saved before the comments it answers, and a second
+    # reply saved after them.
+    chain = [
+        annotation(
+            'office:name="d3" loext:parent-name="d2"', "Ann Reviewer", "AR", "Done."
+        ),
+        annotation(
+            'office:name="d2" loext:parent-name="d1"', "Bo Writer", "BW", "Why?"
+        ),
+        annotation('office:name="d1"', "Ann Reviewer", "AR", "Split this."),
+        annotation(
+            'office:name="d4" loext:parent-name="d1"', "Cy Editor", "CE", "Agreed."
+        ),
+    ]
+    cycle = [
+        annotation('office:name="e1" loext:parent-name="e2"', "Bo Writer", "BW", "A"),
+        annotation('office:name="e2" loext:parent-name="e1"', "Bo Writer", "BW", "B"),
+    ]
+    footnote = (
+        '<text:note text:id="n1" text:note-class="footnote">'
+        "<text:note-citation>1</text:note-citation>"
+        f"<text:note-body><text:p>Source: {note_comment}annual report.</text:p>"
+        "</text:note-body></text:note>"
+    )
+
+    path = tmp_path / "annotation.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(
+        Element.from_tag(
+            '<text:tracked-changes><text:changed-region text:id="ct1">'
+            f"<text:deletion><text:p>Old{deleted_comment}</text:p></text:deletion>"
+            "</text:changed-region></text:tracked-changes>"
+        )
+    )
+    body.append(
+        Element.from_tag(
+            f"<text:p>The total is {comment}{reply}42 EUR"
+            f'<office:annotation-end office:name="c1"/> this year.{footnote}</text:p>'
+        )
+    )
+    body.append(
+        Element.from_tag(
+            '<table:table table:name="T"><table:table-row>'
+            f"<table:table-cell><text:p>Key{cell_reply}</text:p></table:table-cell>"
+            f"<table:table-cell><text:p>Val{cell_comment}</text:p></table:table-cell>"
+            "</table:table-row></table:table>"
+        )
+    )
+    body.append(
+        Element.from_tag(
+            f"<text:p>More{''.join(unnamed + chain + cycle)} text.</text:p>"
+        )
+    )
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    assert document.export_to_markdown() == (
+        "The total is 42 EUR this year.\n\n| Key   | Val   |\n|-------|-------|"
+        "\n\nMore text."
+    )
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Source: annual report."]
+    comment_groups = [
+        group for group in document.groups if group.label == GroupLabel.COMMENT_SECTION
+    ]
+    assert {group.content_layer for group in comment_groups} == {ContentLayer.NOTES}
+    threads = [
+        [child.resolve(document).text for child in group.children]
+        for group in comment_groups
+    ]
+    assert threads == [
+        [
+            "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Source?",
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Added below.",
+        ],
+        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Which year?"],
+        [
+            "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Cell remark",
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Fixed.",
+        ],
+        ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Note 1"],
+        ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Note 2"],
+        [
+            "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Split this.",
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Why?",
+            "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Done.",
+            "[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Agreed.",
+        ],
+        [
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: A",
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: B",
+        ],
+    ]
 
 
 @pytest.mark.parametrize(
