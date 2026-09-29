@@ -7,7 +7,7 @@ import base64
 import mimetypes
 from io import BytesIO
 from pathlib import Path, PureWindowsPath
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from PIL import Image
@@ -22,6 +22,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import _DocumentConversionInput
 from docling.document_converter import DocumentConverter, HTMLFormatOption
+from tests.fakes.image_server import SERVER_IP, local_server, use_test_network
 
 MHTML_DATA_DIR = Path("tests/data/mhtml/sources")
 
@@ -253,14 +254,14 @@ def test_archive_image_precedes_explicit_remote_fetch():
     html = '<html><body><img src="https://example.com/image.png"></body></html>'
 
     with patch(
-        "docling.backend.utils.image_resource_loader.requests.Session.get"
-    ) as mocked_get:
+        "docling.backend.utils.image_resource_loader._open_direct"
+    ) as mocked_open_direct:
         doc = _convert_stream(
             _archive(html, parts),
             options=HTMLBackendOptions(fetch_images=True, enable_remote_fetch=True),
         )
 
-    mocked_get.assert_not_called()
+    mocked_open_direct.assert_not_called()
     assert doc.pictures[0].get_image(doc).getpixel((0, 0)) == (255, 0, 0)
 
 
@@ -422,45 +423,38 @@ def test_missing_remote_image_respects_default_fetch_permission():
 
     with (
         patch(
-            "docling.backend.utils.image_resource_loader.requests.Session.get"
-        ) as mocked_get,
+            "docling.backend.utils.image_resource_loader._open_direct"
+        ) as mocked_open_direct,
         pytest.warns(UserWarning, match="Fetching remote resources"),
     ):
         doc = _convert_stream(
             _archive(html), options=HTMLBackendOptions(fetch_images=True)
         )
-        mocked_get.assert_not_called()
+        mocked_open_direct.assert_not_called()
 
     assert len(doc.pictures) == 1
     assert doc.pictures[0].image is None
 
 
-def test_missing_remote_image_is_fetched_when_explicitly_enabled():
+def test_missing_remote_image_is_fetched_when_explicitly_enabled(monkeypatch):
     html = '<html><body><img src="image.png"></body></html>'
-    response = Mock()
-    response.headers = {}
-    response.raise_for_status = Mock()
-    response.iter_content = Mock(return_value=[_red_png()])
-    response.is_redirect = False
-    response.is_permanent_redirect = False
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
 
-    with patch(
-        "docling.backend.utils.image_resource_loader.requests.Session.get",
-        return_value=response,
-    ) as mocked_get:
+    with local_server() as server:
+        server.files = {"/image.png": _red_png()}
+        source_uri = server.url("images.test", "/archive.mhtml")
         options = HTMLBackendOptions(
             fetch_images=True,
             enable_remote_fetch=True,
-            source_uri=AnyUrl("https://example.com/archive.mhtml"),
+            source_uri=AnyUrl(source_uri),
         )
         doc = _convert_stream(
             _archive(html, root_location="page.html"), options=options
         )
 
-    mocked_get.assert_called_once()
-    assert mocked_get.call_args.args[0] == "https://example.com/image.png"
+    assert server.paths() == ["/image.png"]
     assert doc.pictures[0].image is not None
-    assert str(options.source_uri) == "https://example.com/archive.mhtml"
+    assert str(options.source_uri) == source_uri
 
 
 def test_relative_root_path_uses_archive_directory_for_local_fallback(

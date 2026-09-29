@@ -1152,7 +1152,8 @@ class _DocumentConversionInput(BaseModel):
                 fileobj=content if isinstance(content, BytesIO) else None,
                 mode="r:gz",
             ) as tar:
-                for member in tar.getmembers():
+                # Iterate lazily so the member limit applies before all headers are read
+                for member in tar:
                     member_count += 1
                     if member_count > max_member_count:
                         _log.warning(

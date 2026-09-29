@@ -120,6 +120,7 @@ docling report.pdf --enrich-picture-description --output /tmp/
 | `�` replacement characters | Try a different `--ocr-engine`, or `--pipeline vlm` |
 | Same line repeated many times | `--pipeline vlm` (or hybrid `force_backend_text`, Python SDK only) |
 | Choose GPU/CPU explicitly | `--device cuda` / `--device cpu` / `--device mps` |
+| HTML images on remote hosts | `--html-image-fetch remote`; add auth with `--html-image-headers '{"Authorization": "Bearer T"}'` (sent only to the source page's origin, or to each `--html-image-headers-origin https://cdn.example.com`) |
 
 ## Remote VLM services from the CLI
 

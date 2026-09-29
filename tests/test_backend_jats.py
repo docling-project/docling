@@ -627,6 +627,30 @@ def test_jats_empty_display_formula_does_not_drop_following_content():
     assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
 
 
+def test_jats_table_oversized_spans_clamped_to_table_size():
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    doc = convert_jats_body(
+        "<sec><title>T</title><table-wrap><table>"
+        '<tr><td rowspan="100000000">A</td><td colspan="3000000">B</td></tr>'
+        "<tr><td>C</td></tr>"
+        "</table></table-wrap></sec>"
+    )
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
+    ]
+
+
 def test_jats_footnotes_are_preserved():
     doc = convert_jats_body(
         """

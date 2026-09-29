@@ -58,6 +58,7 @@ def test_kserve_v2_ocr_conversion() -> None:
             pipeline_options = PdfPipelineOptions()
             pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
             pipeline_options.do_table_structure = False
+            pipeline_options.enable_remote_services = True
             pipeline_options.ocr_options = KserveV2OcrOptions(
                 url=url,
                 transport=transport,

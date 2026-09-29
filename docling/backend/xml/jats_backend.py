@@ -50,6 +50,7 @@ from typing_extensions import TypedDict, override
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.table_spans import table_width
 from docling.datamodel.backend_options import JatsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -1029,9 +1030,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Find the number of rows and columns (taking into account spans)
         num_rows = 0
-        num_cols = 0
+        row_col_spans: list[list[int]] = []
         for row in element("tr"):
-            col_count = 0
+            col_spans: list[int] = []
             is_row_header = True
             if not isinstance(row, Tag):
                 continue
@@ -1040,12 +1041,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     continue
                 cell_tag = cast(Tag, cell)
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
-                col_count += col_span
+                col_spans.append(col_span)
                 if cell_tag.name == "td" or row_span == 1:
                     is_row_header = False
-            num_cols = max(num_cols, col_count)
+            row_col_spans.append(col_spans)
             if not is_row_header:
                 num_rows += 1
+        num_cols = table_width(row_col_spans)
 
         _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
 
@@ -1103,6 +1105,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     and grid[row_idx + start_row_span][col_idx] is not None
                 ):
                     col_idx += 1
+                # Keep the cell within the table so the fill below stays
+                # proportional to the table size, not to the declared spans.
+                row_span = min(row_span, max(num_rows - (row_idx + start_row_span), 1))
+                col_span = min(col_span, max(num_cols - col_idx, 1))
                 for r in range(start_row_span, start_row_span + row_span):
                     for c in range(col_span):
                         if row_idx + r < num_rows and col_idx + c < num_cols:

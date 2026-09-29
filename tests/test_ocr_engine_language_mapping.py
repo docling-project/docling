@@ -270,6 +270,7 @@ def test_kserve_warns_and_sends_the_first_language(
             artifacts_path=None,
             options=options,
             accelerator_options=AcceleratorOptions(),
+            enable_remote_services=True,
         )
 
     assert model._lang == "japan"

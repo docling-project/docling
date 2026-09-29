@@ -814,7 +814,12 @@ def convert(  # noqa: C901
     html_image_headers: str = typer.Option(
         None,
         "--html-image-headers",
-        help="Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string",
+        help="Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string. They are only sent to the source document's origin, or to the origins given with --html-image-headers-origin.",
+    ),
+    html_image_headers_origins: list[str] = typer.Option(
+        None,
+        "--html-image-headers-origin",
+        help="Origin (e.g. https://cdn.example.com) allowed to receive --html-image-headers. Can be repeated. Replaces the default, which is the source document's origin.",
     ),
     image_export_mode: Annotated[
         ImageRefMode,
@@ -1327,6 +1332,11 @@ def convert(  # noqa: C901
             "[red]Error: --html-image-headers requires --html-image-fetch remote or all.[/red]"
         )
         raise typer.Abort()
+    if html_image_headers_origins and parsed_html_image_headers is None:
+        err_console.print(
+            "[red]Error: --html-image-headers-origin requires --html-image-headers.[/red]"
+        )
+        raise typer.Abort()
 
     if profiling or save_profiling:
         settings.debug.profile_pipeline_timings = True
@@ -1534,6 +1544,7 @@ def convert(  # noqa: C901
                     enable_local_fetch=html_enable_local_fetch,
                     enable_remote_fetch=html_enable_remote_fetch,
                     headers=parsed_html_image_headers,
+                    headers_allowed_origins=html_image_headers_origins or None,
                 )
 
             # Use image-native backend for IMAGE to avoid pypdfium2 locking
@@ -1725,6 +1736,7 @@ def convert(  # noqa: C901
             # --video-cuts-per-minute is given (see _auto_prominence).
             video_pipeline_options = VideoPipelineOptions()
             video_pipeline_options.enable_diarization = video_diarization
+            video_pipeline_options.document_timeout = document_timeout
             video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
             if video_sampling_mode == "scene":
                 video_pipeline_options.frame_sampling_mode = (

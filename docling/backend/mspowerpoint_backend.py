@@ -337,6 +337,27 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 pass
         return 0
 
+    def _get_auto_number_start(self, paragraph) -> int:
+        """Return the number an auto-numbered paragraph's list starts from.
+
+        PowerPoint records the "Start at" value of a numbered list in the
+        `startAt` attribute of the paragraph's `a:buAutoNum` element.
+
+        Args:
+            paragraph: Paragraph XML element whose start value should be extracted.
+
+        Returns:
+            The `startAt` value, or 1 when the paragraph carries no `a:buAutoNum`
+                element, no `startAt` attribute, or an invalid value.
+        """
+        bu_auto = paragraph.find("a:pPr/a:buAutoNum", namespaces=self.NAMESPACES)
+        if bu_auto is not None and "startAt" in bu_auto.attrib:
+            try:
+                return int(bu_auto.get("startAt"))
+            except ValueError:
+                pass
+        return 1
+
     def _parse_bullet_from_paragraph_properties(
         self, pPr
     ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
@@ -806,6 +827,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 current = open_lists[-1]
 
                 if enumerated:
+                    if current.counter == 0:
+                        current.counter = self._get_auto_number_start(p) - 1
                     current.counter += 1
                     enum_marker = str(current.counter) + "."
 
