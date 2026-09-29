@@ -59,6 +59,12 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.table_spans import (
+    MAX_COLSPAN,
+    MAX_ROWSPAN,
+    clamp_span,
+    table_width,
+)
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -1901,6 +1907,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     and grid[row_idx + start_row_span][col_idx] is not None
                 ):
                     col_idx += 1
+                # Keep the cell within the table so the fill below stays
+                # proportional to the table size, not to the declared spans.
+                row_span = min(row_span, max(num_rows - (row_idx + start_row_span), 1))
+                col_span = min(col_span, max(num_cols - col_idx, 1))
                 for r in range(start_row_span, start_row_span + row_span):
                     for c in range(col_span):
                         if row_idx + r < num_rows and col_idx + c < num_cols:
@@ -1977,10 +1987,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     annotated_text_list, doc, force=force_inline_group
                 ) as inline_ref:
                     for annotated_text, source_tag_ids in compacted_parts:
-                        if annotated_text.text.strip():
-                            seg_clean = HTMLDocumentBackend._clean_unicode(
-                                annotated_text.text.strip()
-                            )
+                        if seg := annotated_text.text.strip():
+                            seg_clean = HTMLDocumentBackend._clean_unicode(seg)
                             if annotated_text.code:
                                 prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
@@ -1990,6 +1998,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 docling_code2 = doc.add_code(
                                     parent=self.parents[self.level],
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -2007,6 +2016,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[self.level],
                                     label=DocItemLabel.TEXT,
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -2708,6 +2718,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         doc.add_code(
                             parent=self.parents[self.level],
                             text=clean_text,
+                            orig=text_part,
                             content_layer=self.content_layer,
                             formatting=formatting,
                             hyperlink=annotated_text.hyperlink,
@@ -2718,6 +2729,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             parent=self.parents[self.level],
                             label=DocItemLabel.TEXT,
                             text=clean_text,
+                            orig=text_part,
                             content_layer=self.content_layer,
                             formatting=formatting,
                             hyperlink=annotated_text.hyperlink,
@@ -2979,9 +2991,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             t.unwrap()
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
-        num_cols: int = 0
+        row_col_spans: list[list[int]] = []
         for row in tag("tr", recursive=False):
-            col_count = 0
+            col_spans: list[int] = []
             is_row_header = True
             if not isinstance(row, Tag):
                 continue
@@ -2990,13 +3002,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     continue
                 cell_tag = cast(Tag, cell)
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
-                col_count += col_span
+                col_spans.append(col_span)
                 if cell_tag.name == "td" or row_span == 1:
                     is_row_header = False
-            num_cols = max(num_cols, col_count)
+            row_col_spans.append(col_spans)
             if not is_row_header:
                 num_rows += 1
-        return num_rows, num_cols
+        return num_rows, table_width(row_col_spans)
 
     def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
         added_refs = []
@@ -3069,6 +3081,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 docling_code = doc.add_code(
                                     parent=self.parents[self.level],
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -3086,6 +3099,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[self.level],
                                     label=DocItemLabel.TEXT,
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -3151,8 +3165,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     ],
                 ),
             )
-            text = HTMLDocumentBackend._clean_unicode(self.get_text(tag).strip())
-            doc.add_text(label=DocItemLabel.TEXT, text=text, parent=placeholder)
+            text = self.get_text(tag).strip()
+            doc.add_text(
+                label=DocItemLabel.TEXT,
+                text=HTMLDocumentBackend._clean_unicode(text),
+                orig=text,
+                parent=placeholder,
+            )
 
         elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).
@@ -3163,9 +3182,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
-                    text_clean = HTMLDocumentBackend._clean_unicode(
-                        annotated_text.text.strip()
-                    )
+                    text_orig = annotated_text.text.strip()
+                    text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
                     prov = self._make_prov(
                         text=text_clean,
                         tag=tag,
@@ -3174,6 +3192,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     docling_code2 = doc.add_code(
                         parent=self.parents[self.level],
                         text=text_clean,
+                        orig=text_orig,
                         code_language=detect_code_language(
                             text_clean, hint=language_hint
                         ),
@@ -5104,6 +5123,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         This function retrieves the 'colspan' and 'rowspan' attributes from a given
         table cell tag.
         If the attribute does not exist, is not numeric, or is zero, it defaults to 1.
+        Values above the HTML limits (1000 columns, 65534 rows) are clamped to them.
         """
         raw_spans: tuple[str, str] = (
             str(cell.get("colspan", "1")),
@@ -5118,12 +5138,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     # of the table and the cells after it shift. HTML5 reads
                     # rowspan="0" as "span to the end of the row group"; falling
                     # back to 1 keeps the cell without implementing that rule.
-                    return max(int(match.group()), 1)
+                    digits = match.group().lstrip("0")
+                    # Any value this long is above both span limits; skip
+                    # converting very long digit strings to int.
+                    if len(digits) > len(str(MAX_ROWSPAN)):
+                        return MAX_ROWSPAN
+                    return max(int(digits or "0"), 1)
             return 1
 
         int_spans: tuple[int, int] = (
-            _extract_num(raw_spans[0]),
-            _extract_num(raw_spans[1]),
+            clamp_span(_extract_num(raw_spans[0]), MAX_COLSPAN),
+            clamp_span(_extract_num(raw_spans[1]), MAX_ROWSPAN),
         )
 
         return int_spans

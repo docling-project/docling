@@ -214,6 +214,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Section headers
             elif self._is_section_header(line):
+                # A heading ends the paragraph being accumulated: without
+                # this flush the text before the heading is appended to the
+                # text after it and lands in the wrong section.
+                text_data = self._flush_text_data(
+                    doc=doc,
+                    text_data=text_data,
+                    parent=self._get_current_parent(parents),
+                )
                 item = self._parse_section_header(line)
                 level = item["level"]
 

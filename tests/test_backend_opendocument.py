@@ -56,6 +56,7 @@ from odfdo import (
     Link,
     List as OdfList,
     ListItem,
+    Note,
     Paragraph,
     Section,
     Spacer,
@@ -368,6 +369,39 @@ def test_ods_merged_cells(tmp_path: Path):
     assert anchor.text == "merged"
 
 
+def test_ods_oversized_spans_clamped_to_table_size(tmp_path: Path):
+    # Declared spans far beyond the sheet must not size the table: it keeps the
+    # shape of its real cells, and the spans stop at its edges.
+    path = tmp_path / "oversized_spans.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    t = Table("S", width=2, height=2)
+    t.set_value("A1", "A")
+    t.set_value("B1", "B")
+    t.set_value("B2", "C")
+    t.set_span([0, 0, 0, 1])  # A1 spans two rows, A2 becomes covered
+    a1 = t.get_cell("A1")
+    a1.set_attribute("table:number-rows-spanned", "100000000")
+    t.set_cell("A1", a1)
+    b1 = t.get_cell("B1")
+    b1.set_attribute("table:number-columns-spanned", "3000000")
+    t.set_cell("B1", b1)
+    body.append(t)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+
+    assert len(res.document.tables) == 1
+    data = res.document.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+
+
 def test_odt_rich_table_cell_text(tmp_path: Path):
     path = tmp_path / "rich_table.odt"
     doc = OdfDocument("text")
@@ -593,6 +627,49 @@ def test_odt_hyperlink_preserved(tmp_path: Path):
         "Watch [the example talk](https://example.com/talk) for context."
     )
     assert "example.com/talk" in res.document.model_dump_json()
+
+
+def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
+    """A footnote's body text must not be spliced into the citing sentence, and
+    must not be silently dropped either.
+
+    Regression test: ``_odf_text_runs`` used to have no special case for
+    ``text:note``, so it recursed into the note's citation and body exactly like
+    any other inline span, concatenating an arbitrary-length footnote body
+    straight into the middle of the paragraph that cited it - corrupting the
+    reading-order text rather than merely losing content.
+    """
+    path = tmp_path / "footnote.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    paragraph = Paragraph("Sentence before the marker")
+    paragraph.append(
+        Note(
+            citation="1",
+            body="This is the footnote body text that should not vanish.",
+        )
+    )
+    paragraph.append(Span(" and sentence after the marker."))
+    body.append(paragraph)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    body_texts = [
+        item.text for item in res.document.texts if item.label != DocItemLabel.FOOTNOTE
+    ]
+    assert body_texts == [
+        "Sentence before the marker and sentence after the marker."
+    ], "the footnote body must not be spliced into the citing paragraph"
+
+    footnote_texts = [
+        item.text for item in res.document.texts if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_texts == [
+        "This is the footnote body text that should not vanish."
+    ], "the footnote body must be recovered, not silently dropped"
 
 
 @pytest.mark.parametrize(

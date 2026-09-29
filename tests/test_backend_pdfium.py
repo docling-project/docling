@@ -191,3 +191,96 @@ def test_pdfium_intersects_ignores_invisible_text():
         }
     finally:
         doc_backend.unload()
+
+
+def _build_multi_object_pdf(n_paths: int = 40) -> bytes:
+    """A minimal single-page PDF whose content stream draws ``n_paths`` stroked
+    rectangles, i.e. ``n_paths`` separate PATH page objects, laid out in a grid
+    inside the region (10, 10)-(250, 250) of a 300x300 MediaBox."""
+    objs = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Contents 4 0 R >>",
+    ]
+    parts = [b"1 0 0 RG 2 w"]
+    for i in range(n_paths):
+        x = 10 + (i % 8) * 30
+        y = 10 + (i // 8) * 30
+        parts.append(f"{x} {y} 20 20 re S".encode())
+    stream = b"\n".join(parts)
+    objs.append(b"<< /Length %d >>\nstream\n%s\nendstream" % (len(stream), stream))
+
+    out = b"%PDF-1.7\n"
+    offsets = []
+    for i, o in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += b"%d 0 obj\n%s\nendobj\n" % (i, o)
+    xref_off = len(out)
+    out += b"xref\n0 %d\n" % (len(objs) + 1)
+    out += b"0000000000 65535 f \n"
+    for off in offsets:
+        out += b"%010d 00000 n \n" % off
+    out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF" % (
+        len(objs) + 1,
+        xref_off,
+    )
+    return out
+
+
+def test_pdfium_object_index_built_once_per_type(tmp_path, monkeypatch):
+    """Each page-object type is walked at most once per page, however often
+    ``has_content_in`` is called (once per layout cluster), and a type nobody asks
+    for is never walked. Records the ``filter`` of every underlying pypdfium2 object
+    enumeration."""
+    import pypdfium2 as pdfium
+    import pypdfium2.raw as pdfium_c
+
+    pdf_path = tmp_path / "multi_object.pdf"
+    pdf_path.write_bytes(_build_multi_object_pdf(40))
+
+    original_get_objects = pdfium.PdfPage.get_objects
+    walks: list = []
+
+    def recording_get_objects(self, *args, **kwargs):
+        # ``get_objects`` recurses into form XObjects through this same method;
+        # only the top-level call (no ``form``) counts as a page walk.
+        if kwargs.get("form") is None:
+            filt = args[0] if args else kwargs.get("filter")
+            walks.append(tuple(filt or ()))
+        return original_get_objects(self, *args, **kwargs)
+
+    monkeypatch.setattr(pdfium.PdfPage, "get_objects", recording_get_objects)
+
+    doc_backend = _get_backend(pdf_path)
+    try:
+        page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+
+        content = BoundingBox(
+            l=10, t=50, r=250, b=250, coord_origin=CoordOrigin.TOPLEFT
+        )
+        blank = BoundingBox(
+            l=260, t=260, r=299, b=299, coord_origin=CoordOrigin.TOPLEFT
+        )
+
+        # Emulate the per-cluster query pattern (2-3 calls per cluster, many clusters).
+        for _ in range(5):
+            assert page_backend.has_content_in(bbox=content) is True
+            assert page_backend.has_content_in(bbox=blank) is False
+        # These reuse the same lists too.
+        list(page_backend.get_bitmap_rects())
+        page_backend.get_connected_shape_bounding_boxes()
+
+        # One walk for paths, one for images; chars were never requested.
+        assert sorted(walks) == sorted(
+            [(pdfium_c.FPDF_PAGEOBJ_PATH,), (pdfium_c.FPDF_PAGEOBJ_IMAGE,)]
+        ), f"page-object walks: {walks}"
+
+        # The first request for chars adds exactly one text walk, and no more after.
+        assert page_backend.has_content_in(bbox=blank, chars=True) is False
+        assert page_backend.has_content_in(bbox=content, chars=True) is True
+        assert walks.count((pdfium_c.FPDF_PAGEOBJ_TEXT,)) == 1, (
+            f"page-object walks: {walks}"
+        )
+        assert len(walks) == 3, f"page-object walks: {walks}"
+    finally:
+        doc_backend.unload()

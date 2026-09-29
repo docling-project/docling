@@ -61,6 +61,7 @@ from docling.datamodel.backend_options import (
     AsciiDocBackendOptions,
     BackendOptions,
     CsvBackendOptions,
+    DeclarativeBackendOptions,
     EbcdicBackendOptions,
     EmailBackendOptions,
     EpubBackendOptions,
@@ -245,6 +246,18 @@ class DclxFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = DocLangArchiveBackend
 
 
+class DoclingJSONFormatOption(FormatOption):
+    """Format option for DoclingDocument JSON input.
+
+    Image references pointing at local files are dropped from the input unless
+    ``backend_options.enable_local_fetch`` is set.
+    """
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = DoclingJSONBackend
+    backend_options: DeclarativeBackendOptions | None = None
+
+
 class XBRLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
@@ -397,9 +410,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         ),
         InputFormat.IMAGE: ImageFormatOption(),
         InputFormat.PDF: PdfFormatOption(),
-        InputFormat.JSON_DOCLING: FormatOption(
-            pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
-        ),
+        InputFormat.JSON_DOCLING: DoclingJSONFormatOption(),
         InputFormat.AUDIO: AudioFormatOption(),
         InputFormat.VIDEO: VideoFormatOption(),
         InputFormat.VTT: FormatOption(

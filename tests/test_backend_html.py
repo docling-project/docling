@@ -228,6 +228,38 @@ def test_table_zero_span_defaults_to_one():
     ]
 
 
+@pytest.mark.parametrize(
+    "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
+)
+def test_table_oversized_spans_clamped_to_table_size(huge: str):
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    src = (
+        f'<table><tr><td rowspan="{huge}">A</td><td colspan="{huge}">B</td></tr>'
+        "<tr><td>C</td></tr></table>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
+    ]
+
+
 def test_table_inside_figure_is_parsed():
     """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
     html = (
@@ -447,6 +479,33 @@ def test_ordered_lists():
         doc: DoclingDocument = backend.convert()
         assert doc
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
+
+
+def test_orig_keeps_source_text():
+    """Regression for #4423: `text` is sanitized, `orig` keeps the source text."""
+    html = (
+        "<html><body>"
+        "<p>See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept.</p>"
+        "<ul><li>Item 3\u20135 with <b>bold</b> \u201ctext\u201d</li></ul>"
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    items = {item.text: item for item in doc.texts if item.text}
+
+    paragraph = items['See §§ 3-5 and "quoted" text ... it\'s kept.']
+    assert (
+        paragraph.orig
+        == "See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept."
+    )
+    assert items["Item 3-5 with"].orig == "Item 3\u20135 with"
+    assert items['"text"'].orig == "\u201ctext\u201d"
 
 
 def test_nested_table_in_list_item():
