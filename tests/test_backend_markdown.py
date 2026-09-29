@@ -444,6 +444,127 @@ def test_convert_table_rows_match_header_cell_count():
         assert len(table_data.table_cells) == table_data.num_rows * table_data.num_cols
 
 
+def test_convert_table_cell_with_escaped_pipe():
+    """
+    Regression test:
+    GFM 4.10 example 200: "Include a pipe in a cell's content by escaping it".
+    Marko resolves ``\\|`` to a Literal node holding a bare ``|``, which the
+    table buffer then took for a cell delimiter: the cell was split in two and
+    the row gained a column the header never had.
+    """
+    leading_pipes = """| a\\|b | c |
+| --- | --- |
+| d\\|e | f |
+"""
+    no_leading_pipes = """a\\|b | c
+--- | ---
+d\\|e | f
+"""
+    inside_strong = """| **a\\|b** | c |
+| --- | --- |
+| d\\|e | f |
+"""
+    expected = ["a|b", "c", "d|e", "f"]
+
+    for markdown in (leading_pipes, no_leading_pipes, inside_strong):
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+
+        assert len(conv_result.document.tables) == 1
+        table_data = conv_result.document.tables[0].data
+        assert table_data.num_cols == 2
+        assert [cell.text for cell in table_data.table_cells] == expected
+
+
+def test_convert_escaped_pipe_in_prose_stays_text():
+    """
+    Regression test:
+    An escaped pipe reaches the backend as a Literal node holding a bare ``|``,
+    which the row detector read as the leading pipe of a table row. A sentence
+    that merely contained ``\\|`` was split into a text item and a spurious
+    one-cell table, and the pipe itself never reached the document.
+
+    The expectation is pinned to ``\\*``, an escape the backend already handles,
+    so that the assertion covers the pipe's own handling without also freezing
+    how inline runs are split into text items.
+    """
+    for template in ("Some sentence with a \\{c} pipe in it.\n", "a \\{c} b\n"):
+        pipe_result = get_converter().convert_string(
+            template.format(c="|"), format=InputFormat.MD
+        )
+        star_result = get_converter().convert_string(
+            template.format(c="*"), format=InputFormat.MD
+        )
+        assert pipe_result.status == ConversionStatus.SUCCESS
+        assert star_result.status == ConversionStatus.SUCCESS
+
+        assert pipe_result.document.tables == []
+        assert [item.text for item in pipe_result.document.texts] == [
+            item.text.replace("*", "|") for item in star_result.document.texts
+        ]
+
+
+def test_convert_table_escaped_pipe_does_not_add_a_column():
+    """
+    The same defect with whitespace around the escaped pipe. Only the cell
+    count is asserted here: the spaces that surround an inline fragment are
+    dropped by a separate defect (#3991), so the cell text is not yet stable.
+    """
+    markdown = """| a \\| b | c |
+| --- | --- |
+| d | f |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    table_data = conv_result.document.tables[0].data
+    assert table_data.num_cols == 2
+    assert table_data.num_rows == 2
+    assert len(table_data.table_cells) == 4
+
+
+def test_convert_table_cell_with_pipe_character_reference():
+    """
+    Regression test:
+    A pipe written as a character reference is cell content, in any of its
+    spellings. Only ``&#124;``, ``&#x7C;`` and ``&vert;`` were kept encoded until
+    the row was split; ``&#x7c;``, ``&verbar;`` and the rest were decoded first,
+    so the cell was cut at the pipe, the remainder shifted into the next column,
+    and the last cell of the row was dropped.
+    """
+    spellings = [
+        "&#124;",
+        "&#x7C;",
+        "&vert;",
+        "&#x7c;",
+        "&#x07C;",
+        "&#0124;",
+        "&verbar;",
+        "&VerticalLine;",
+    ]
+    expected = ["Metric", "Formula", "Notes", "MAE", "|y - x|", "same units"]
+
+    for pipe in spellings:
+        leading_pipes = f"""| Metric | Formula | Notes |
+| --- | --- | --- |
+| MAE | {pipe}y - x{pipe} | same units |
+"""
+        no_leading_pipes = f"""Metric | Formula | Notes
+--- | --- | ---
+MAE | {pipe}y - x{pipe} | same units
+"""
+        for markdown in (leading_pipes, no_leading_pipes):
+            conv_result = get_converter().convert_string(
+                markdown, format=InputFormat.MD
+            )
+            assert conv_result.status == ConversionStatus.SUCCESS
+
+            assert len(conv_result.document.tables) == 1, pipe
+            table_data = conv_result.document.tables[0].data
+            assert table_data.num_cols == 3, pipe
+            assert [cell.text for cell in table_data.table_cells] == expected, pipe
+
+
 def test_utf8_bom_does_not_hide_the_first_heading(tmp_path):
     """A leading UTF-8 BOM must not survive into the first line.
 
@@ -610,3 +731,36 @@ def test_standard_ordered_list_still_starts_at_one():
 
     exported = conv_result.document.export_to_markdown()
     assert exported == "1. alpha\n2. beta\n3. gamma"
+
+
+def test_convert_table_cell_whitespace_around_inline_emphasis():
+    """Verify that whitespace around inline emphasis inside table cells is preserved.
+
+    Leading space after emphasis, trailing space before emphasis, and space
+    between adjacent inline formatting runs must all be preserved.
+    """
+    markdown = (
+        "| Letter | Word |\n"
+        "|---|---|\n"
+        "| **C** Cadre | x |\n"
+        "| foo **bar** | y |\n"
+        "| **A** **B** | z |\n"
+        "| *italic* and **bold** | w |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    table = conv_result.document.tables[0].data
+    cell_texts = [cell.text for cell in table.table_cells]
+    assert cell_texts == [
+        "Letter",
+        "Word",
+        "C Cadre",
+        "x",
+        "foo bar",
+        "y",
+        "A B",
+        "z",
+        "italic and bold",
+        "w",
+    ]

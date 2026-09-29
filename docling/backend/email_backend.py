@@ -267,18 +267,26 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
     def _get_body_paragraphs(self) -> list[str]:
         assert self.mail is not None
 
+        # A part being present does not mean it holds a paragraph. A
+        # multipart/alternative message can carry a blank or whitespace-only
+        # text/plain part beside a real text/html one, which many senders
+        # generate automatically. Only return once a part has actually
+        # produced text, or the fallbacks below never run and the message
+        # renders with no body at all.
         if self.mail.text_plain:
             paragraphs: list[str] = []
             for part in self.mail.text_plain:
                 paragraphs.extend(self._split_paragraphs(part))
-            return paragraphs
+            if paragraphs:
+                return paragraphs
 
         if self.mail.text_html:
             paragraphs = []
             for part in self.mail.text_html:
                 html_doc = self._convert_html_part(part)
                 paragraphs.extend(self._split_paragraphs(html_doc.export_to_markdown()))
-            return paragraphs
+            if paragraphs:
+                return paragraphs
 
         return self._split_paragraphs(self.mail.body)
 

@@ -192,16 +192,18 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
                     stop_reason=_map_stop_reason(output.stop_reason),
                     usage=output.metadata.get("usage"),
                     logprobs=output.metadata.get("logprobs"),
+                    error=output.metadata.get("error"),
                 )
 
         except Exception as e:
             _log.error(f"Error generating picture descriptions: {e}")
-            # Yield empty results on error to maintain batch alignment
+            # Yield one failed result per image to keep the batch aligned
             for _ in image_list:
                 yield ApiImageRequestResult(
                     text="",
                     num_tokens=0,
-                    stop_reason=VlmStopReason.UNSPECIFIED,
+                    stop_reason=VlmStopReason.INFERENCE_ERROR,
+                    error=f"{type(e).__name__}: {e}",
                 )
 
     def __del__(self):

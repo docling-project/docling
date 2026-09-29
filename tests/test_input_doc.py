@@ -205,6 +205,14 @@ def test_guess_format_preserves_confident_mime_for_afp_like_content(
     assert dci._guess_format(binary_path) is InputFormat.PDF
 
 
+def test_guess_format_markdown_extension(tmp_path):
+    markdown_path = tmp_path / "document.markdown"
+    markdown_path.write_text("# Title\n")
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(markdown_path) is InputFormat.MD
+
+
 def test_guess_format(tmp_path):
     """Test docling.datamodel.document._DocumentConversionInput.__guess_format"""
     dci = _DocumentConversionInput(path_or_stream_iterator=[])

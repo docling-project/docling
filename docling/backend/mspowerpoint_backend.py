@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import shutil
 import warnings
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -19,6 +20,8 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    ListGroup,
+    ListItem,
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
@@ -38,7 +41,11 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.backend.docx.drawingml.utils import convert_to_modern_format
+from docling.backend.docx.drawingml.utils import (
+    convert_to_modern_format,
+    crop_whitespace,
+    get_docx_to_pdf_converter,
+)
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -59,20 +66,13 @@ try:  # pragma: no cover - import-time guard
 except ImportError as e:  # pragma: no cover - import-time guard
     _PPTX_IMPORT_ERROR = e
 
-# Chart image rendering is opt-in and relies on pypdfium2 plus the shared
-# DrawingML/LibreOffice helpers, which live behind the PDF extra rather than
-# format-pptx. Guard them separately so a slim PPTX install still parses text,
-# tables, and chart data; only render_chart_images needs these.
-_CHART_RENDER_AVAILABLE: bool = False
+# pypdfium2 ships with the PDF extras, not with format-pptx, and is only reached
+# after `get_docx_to_pdf_converter` returns a converter. That shared factory
+# returns None when pypdfium2 is missing, so the rendering paths already degrade
+# to "no image"; this guard only keeps the module itself importable.
+# See https://github.com/docling-project/docling/issues/3613.
 try:  # pragma: no cover - import-time guard
     import pypdfium2
-
-    from docling.backend.docx.drawingml.utils import (
-        crop_whitespace,
-        get_docx_to_pdf_converter,
-    )
-
-    _CHART_RENDER_AVAILABLE = True
 except ImportError:  # pragma: no cover - import-time guard
     pass
 
@@ -117,6 +117,24 @@ _SAFE_XML_PARSER: Final = etree.XMLParser(
     dtd_validation=False,
 )
 """Safe XML parser to prevent XXE, DTD-over-network and entity-expansion attacks."""
+
+
+@dataclass
+class _OpenList:
+    """A list group that is still accepting items while a text frame is walked.
+
+    Attributes:
+        group: The list group that items at ``level`` are added to.
+        level: The paragraph level (``a:pPr/@lvl``) of the group's items.
+        counter: The number of enumerated items added to the group so far.
+        last_item: The most recent item in the group, which parents any list
+            nested below it.
+    """
+
+    group: ListGroup
+    level: int
+    counter: int = 0
+    last_item: Optional[ListItem] = None
 
 
 def _is_metafile(image_bytes: bytes) -> bool:
@@ -283,7 +301,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             width = slide_size.width
             height = slide_size.height
         shape_bbox = [left, top, left + width, top + height]
-        shape_bbox = BoundingBox.from_tuple(shape_bbox, origin=CoordOrigin.BOTTOMLEFT)
+        # python-pptx reports left and top as EMU from the slide's top-left, with
+        # y growing downward, so the tuple above is in TOPLEFT order. Tagging it
+        # BOTTOMLEFT does not convert it: BoundingBox.from_tuple unpacks
+        # l, b, r, t for that origin, so the top edge lands in b and the bottom
+        # edge in t, and a consumer calling to_top_left_origin then computes
+        # page_height - t and mirrors the box. html_backend and msexcel_backend
+        # tag their own top-left coordinates TOPLEFT for the same reason.
+        shape_bbox = BoundingBox.from_tuple(shape_bbox, origin=CoordOrigin.TOPLEFT)
         prov = ProvenanceItem(
             page_no=slide_ind + 1, charspan=[0, len(text)], bbox=shape_bbox
         )
@@ -311,6 +336,27 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             except ValueError:
                 pass
         return 0
+
+    def _get_auto_number_start(self, paragraph) -> int:
+        """Return the number an auto-numbered paragraph's list starts from.
+
+        PowerPoint records the "Start at" value of a numbered list in the
+        `startAt` attribute of the paragraph's `a:buAutoNum` element.
+
+        Args:
+            paragraph: Paragraph XML element whose start value should be extracted.
+
+        Returns:
+            The `startAt` value, or 1 when the paragraph carries no `a:buAutoNum`
+                element, no `startAt` attribute, or an invalid value.
+        """
+        bu_auto = paragraph.find("a:pPr/a:buAutoNum", namespaces=self.NAMESPACES)
+        if bu_auto is not None and "startAt" in bu_auto.attrib:
+            try:
+                return int(bu_auto.get("startAt"))
+            except ValueError:
+                pass
+        return 1
 
     def _parse_bullet_from_paragraph_properties(
         self, pPr
@@ -735,9 +781,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     def _handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
     ):
-        is_list_group_created = False
-        enum_list_item_value = 0
-        new_list = None
+        # Lists that are open, outermost first; a deeper paragraph level opens a
+        # list nested under the last item of the enclosing one.
+        open_lists: list[_OpenList] = []
         doc_label = DocItemLabel.LIST_ITEM
 
         # Iterate through paragraphs to build up text
@@ -758,31 +804,43 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if is_a_list:
                 enum_marker = ""
                 enumerated = bullet_type == "Numbered"
+                level = self._get_paragraph_level(p)
 
-                if not is_list_group_created:
-                    new_list = doc.add_list_group(
-                        name="list",
-                        parent=parent_slide,
+                while len(open_lists) > 1 and open_lists[-1].level > level:
+                    open_lists.pop()
+                if not open_lists:
+                    open_lists.append(
+                        _OpenList(
+                            group=doc.add_list_group(name="list", parent=parent_slide),
+                            level=level,
+                        )
                     )
-                    is_list_group_created = True
-                    enum_list_item_value = 0
+                elif level > open_lists[-1].level:
+                    open_lists.append(
+                        _OpenList(
+                            group=doc.add_list_group(
+                                name="list", parent=open_lists[-1].last_item
+                            ),
+                            level=level,
+                        )
+                    )
+                current = open_lists[-1]
 
                 if enumerated:
-                    enum_list_item_value += 1
-                    enum_marker = str(enum_list_item_value) + "."
+                    if current.counter == 0:
+                        current.counter = self._get_auto_number_start(p) - 1
+                    current.counter += 1
+                    enum_marker = str(current.counter) + "."
 
-                doc.add_list_item(
+                current.last_item = doc.add_list_item(
                     marker=enum_marker,
                     enumerated=enumerated,
-                    parent=new_list,
+                    parent=current.group,
                     text=p_text,
                     prov=prov,
                 )
             else:  # is paragraph not a list item
-                if is_list_group_created:
-                    is_list_group_created = False
-                    new_list = None
-                    enum_list_item_value = 0
+                open_lists.clear()
                 # Assign proper label to the text, depending if it's a Title or Section Header
                 # For other types of text, assign - PARAGRAPH
                 doc_label = DocItemLabel.PARAGRAPH
@@ -1200,14 +1258,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """Lazily initialize and return a LibreOffice converter callable.
 
         The converter accepts ``(input_path, output_path)`` and converts the
-        input file to PDF. Returns None when LibreOffice is not available.
+        input file to PDF.
+
+        Returns:
+            A converter callable, or None when LibreOffice or pypdfium2 is not
+            available; `get_docx_to_pdf_converter` checks for both.
         """
         if self.pptx_to_pdf_converter_init:
             return self.pptx_to_pdf_converter
 
         self.pptx_to_pdf_converter_init = True
-        if _CHART_RENDER_AVAILABLE:
-            self.pptx_to_pdf_converter = get_docx_to_pdf_converter()
+        self.pptx_to_pdf_converter = get_docx_to_pdf_converter()
         if self.pptx_to_pdf_converter is None:
             _log.debug("LibreOffice not found — PPTX charts will not be rendered.")
         return self.pptx_to_pdf_converter

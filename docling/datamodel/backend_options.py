@@ -36,7 +36,27 @@ class DeclarativeBackendOptions(BaseBackendOptions):
     kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
 
 
-class AsciiDocBackendOptions(BaseBackendOptions):
+class TextBackendOptions(BaseBackendOptions):
+    """Options common to the backends that decode a whole file as plain text."""
+
+    encoding: Optional[str] = Field(
+        None,
+        description=(
+            "Character encoding of the document, as a Python codec name such as "
+            '"shift_jis" or "koi8-r". When set, the file is decoded with it and '
+            "nothing is guessed. When unset, a byte-order mark is honoured, then "
+            "UTF-8 is tried, then cp1252; anything else raises."
+        ),
+    )
+
+
+class CsvBackendOptions(TextBackendOptions):
+    """Options specific to the CSV backend."""
+
+    kind: Literal["csv"] = Field("csv", exclude=True, repr=False)
+
+
+class AsciiDocBackendOptions(TextBackendOptions):
     """Options specific to the AsciiDoc backend."""
 
     kind: Literal["asciidoc"] = Field("asciidoc", exclude=True, repr=False)
@@ -155,7 +175,7 @@ class HTMLBackendOptions(BaseBackendOptions):
     )
 
 
-class MarkdownBackendOptions(BaseBackendOptions):
+class MarkdownBackendOptions(TextBackendOptions):
     """Options specific to the Markdown backend."""
 
     kind: Literal["md"] = Field("md", exclude=True, repr=False)
@@ -328,6 +348,25 @@ class IWorkBackendOptions(BaseBackendOptions):
     max_member_count: Annotated[
         PositiveInt, Field(description="Maximum number of archive members to inspect")
     ] = 5000
+    render_chart_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to render an image for each chart in a Keynote "
+                "presentation and attach it to the chart PictureItem. Keynote "
+                "stores no picture of a chart and LibreOffice cannot read one "
+                "out of a .key, so the chart is rebuilt from the data read out "
+                "of the presentation as a single-chart Office document and "
+                "rasterized with LibreOffice, the route the Office backends "
+                "render their charts by. The image has the chart's kind, data "
+                "and title but not its colours or fonts, and a chart with no "
+                "Office equivalent (mixed, two-axis, bubble or interactive) "
+                "gets none. Opt-in (default False) because it requires "
+                "LibreOffice and inflates the output size. Charts always keep "
+                "their classification and data regardless of this option."
+            )
+        ),
+    ] = False
 
 
 class MsExcelBackendOptions(BaseBackendOptions):
@@ -711,6 +750,7 @@ BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
         AsciiDocBackendOptions,
+        CsvBackendOptions,
         EbcdicBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,

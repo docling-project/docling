@@ -1658,7 +1658,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.128.0"
+version = "2.131.0"
 source = { editable = "packages/docling" }
 dependencies = [
     { name = "docling-slim", extra = ["standard"] },
@@ -1714,7 +1714,7 @@ provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "
 
 [[package]]
 name = "docling-client"
-version = "2.128.0"
+version = "2.131.0"
 source = { editable = "packages/docling-client" }
 dependencies = [
     { name = "docling-slim", extra = ["service-client"] },
@@ -1725,7 +1725,7 @@ requires-dist = [{ name = "docling-slim", extras = ["service-client"], editable 
 
 [[package]]
 name = "docling-core"
-version = "2.96.0"
+version = "2.98.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "defusedxml" },
@@ -1739,13 +1739,14 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
+    { name = "requests" },
     { name = "tabulate" },
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ed/eb/853a4bfe313dabcbcf0c9e86bb83498ca4d708674b7bc97b159333ae27fa/docling_core-2.96.0.tar.gz", hash = "sha256:6285b2a461a830a7b4da052fef5253a08a141be46ef8a1ce9b4b47b92323b700", size = 375865, upload-time = "2026-09-10T12:16:00.776Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/1f/03528148da2a97c35fcf0a0a9bc7614b7585cf1f63f624fce85aafaa60c9/docling_core-2.98.0.tar.gz", hash = "sha256:a5dd76d747d23b6e1c83b434e29285798a2547d6e23a0ddfc487ed09ff5663ea", size = 383348, upload-time = "2026-09-22T09:42:51.273Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/92/30/0819c61aeb96584a61101d06ecbe81226db1326c3097aa966411ddf86d4a/docling_core-2.96.0-py3-none-any.whl", hash = "sha256:c88c11452af805402df9477e35fb1ee8e289bdd9007969127dc1d43f760add96", size = 302135, upload-time = "2026-09-10T12:15:58.796Z" },
+    { url = "https://files.pythonhosted.org/packages/23/c6/479371d25ad9fd0137c3036bb21d0b1f96075b85958a81ce868aae4bc515/docling_core-2.98.0-py3-none-any.whl", hash = "sha256:655903b45f4c66c759842df8172237bda3ef35055197bf371fa5c855d3df0bd3", size = 305641, upload-time = "2026-09-22T09:42:49.591Z" },
 ]
 
 [package.optional-dependencies]
@@ -1824,7 +1825,7 @@ wheels = [
 
 [[package]]
 name = "docling-slim"
-version = "2.128.0"
+version = "2.131.0"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
@@ -2201,7 +2202,7 @@ requires-dist = [
     { name = "defusedxml", marker = "extra == 'format-iwork'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'format-xml-uspto'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", specifier = ">=2.96.0,<3.0.0" },
+    { name = "docling-core", specifier = ">=2.98.0,<3.0.0" },
     { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", specifier = ">=2.96.0,<3.0.0" },
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=4.0.2,<5" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=7.20.0,<8.0.0" },

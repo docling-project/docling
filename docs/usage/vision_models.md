@@ -101,7 +101,9 @@ Other models can be configured by directly providing the Hugging Face `repo_id`,
 For example:
 
 ```python
-from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions, InferenceFramework, TransformersModelType
+from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.pipeline_options import VlmPipelineOptions
+from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions, InferenceFramework, ResponseFormat, TransformersModelType
 
 pipeline_options = VlmPipelineOptions(
     vlm_options=InlineVlmOptions(

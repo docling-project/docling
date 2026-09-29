@@ -800,6 +800,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".presentationml.presentation"
                 elif suffix == ".pages":
                     mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
+                elif suffix == ".key":
+                    mime = FormatToMimeType[InputFormat.IWORK_KEYNOTE][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj
@@ -833,6 +835,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".presentationml.presentation"
                 elif objname.endswith(".pages"):
                     mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
+                elif objname.endswith(".key"):
+                    mime = FormatToMimeType[InputFormat.IWORK_KEYNOTE][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj.stream
@@ -1148,7 +1152,8 @@ class _DocumentConversionInput(BaseModel):
                 fileobj=content if isinstance(content, BytesIO) else None,
                 mode="r:gz",
             ) as tar:
-                for member in tar.getmembers():
+                # Iterate lazily so the member limit applies before all headers are read
+                for member in tar:
                     member_count += 1
                     if member_count > max_member_count:
                         _log.warning(

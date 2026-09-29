@@ -23,10 +23,7 @@ from docling.datamodel.base_models import (
     FailureCategory,
     Page,
 )
-from docling.datamodel.chart_extraction_options import (
-    ChartExtractionModelKind,
-    ChartExtractionModelOptions,
-)
+from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
@@ -157,6 +154,12 @@ class BasePipeline(ABC):
         return conv_res
 
     def _enrich_document(self, conv_res: ConversionResult) -> ConversionResult:
+        if any(
+            error.category == FailureCategory.TIMEOUT
+            for error in getattr(conv_res, "errors", ())
+        ):
+            return conv_res
+
         def _prepare_elements(
             conv_res: ConversionResult, model: GenericEnrichmentModel[Any]
         ) -> Iterable[NodeItem]:
@@ -240,31 +243,17 @@ class ConvertPipeline(BasePipeline):
         # pulling torch+transformers.
         if pipeline_options.do_chart_extraction:
             from docling.models.stages.chart_extraction.granite_vision import (
-                ChartExtractionModelGraniteVision,
-                ChartExtractionModelGraniteVisionV4,
+                ChartExtractionVlmEngineModel,
             )
 
-            self.enrichment_pipe.extend(
-                [
-                    ChartExtractionModelGraniteVision(
-                        enabled=(
-                            pipeline_options.chart_extraction_options.model
-                            == ChartExtractionModelKind.GRANITE_VISION
-                        ),
-                        artifacts_path=self.artifacts_path,
-                        options=pipeline_options.chart_extraction_options,
-                        accelerator_options=pipeline_options.accelerator_options,
-                    ),
-                    ChartExtractionModelGraniteVisionV4(
-                        enabled=(
-                            pipeline_options.chart_extraction_options.model
-                            == ChartExtractionModelKind.GRANITE_VISION_V4
-                        ),
-                        artifacts_path=self.artifacts_path,
-                        options=pipeline_options.chart_extraction_options,
-                        accelerator_options=pipeline_options.accelerator_options,
-                    ),
-                ]
+            self.enrichment_pipe.append(
+                ChartExtractionVlmEngineModel(
+                    enabled=True,
+                    artifacts_path=self.artifacts_path,
+                    options=pipeline_options.chart_extraction_options,
+                    accelerator_options=pipeline_options.accelerator_options,
+                    enable_remote_services=pipeline_options.enable_remote_services,
+                )
             )
 
     def _get_picture_description_model(

@@ -278,6 +278,7 @@ layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models",
+  "docling.models.inference_engines.vlm",
   "docling.models.utils",
   "docling.utils",
 ]

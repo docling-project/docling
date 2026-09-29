@@ -103,11 +103,18 @@ def test_e2e_pptx_conversions():
     converter = get_converter()
 
     for pptx_path in pptx_paths:
-        # print(f"converting {pptx_path}")
-
         gt_path = pptx_path.parent.parent / "groundtruth" / pptx_path.name
 
-        conv_result: ConversionResult = converter.convert(pptx_path)
+        # Two source files intentionally contain picture shapes the backend
+        # cannot decode and skips with a UserWarning
+        if pptx_path.stem in {
+            "powerpoint_malformed_pictures",  # structurally broken <p:pic>
+            "powerpoint_with_image",  # externally linked (r:link) image
+        }:
+            with pytest.warns(UserWarning, match="Skipping malformed picture shape"):
+                conv_result = converter.convert(pptx_path)
+        else:
+            conv_result = converter.convert(pptx_path)
 
         doc: DoclingDocument = conv_result.document
 
@@ -830,17 +837,20 @@ def test_pptx_emf_picture_survives_without_pillow_metafile_support(
     load. Dropping the shape there loses the picture -- commonly a chart pasted
     in from Excel -- from an otherwise successful conversion, and does so on
     Linux only. Clearing the handler reproduces a non-Windows Pillow, and
-    emptying PATH reproduces a machine without LibreOffice, so the picture has
-    to survive on structure alone.
+    patching get_libreoffice_cmd to return None reproduces a machine without
+    LibreOffice, so the picture has to survive on structure alone.
     """
     from PIL import WmfImagePlugin
+
+    import docling.backend.mspowerpoint_backend as _pptx_backend
 
     # The plugin registers a GDI-backed handler at import time on Windows only;
     # on other platforms this attribute is already None.
     monkeypatch.setattr(WmfImagePlugin, "_handler", None)
-    # LibreOffice is found with shutil.which, so an empty PATH hides it whether
-    # or not the machine running the tests happens to have it installed.
-    monkeypatch.setenv("PATH", str(tmp_path))
+    # Patch get_docx_to_pdf_converter in the pptx backend's own namespace so
+    # LibreOffice is reported as unavailable regardless of PATH, environment
+    # variables, or hardcoded install paths on the test machine.
+    monkeypatch.setattr(_pptx_backend, "get_docx_to_pdf_converter", lambda: None)
 
     deck_path = _deck_with_picture(tmp_path, _emf_bytes(), ".emf")
 
@@ -968,3 +978,130 @@ def test_paragraph_provenance_spans_its_own_text():
                 f"{item.self_ref} ({item.label}) spans {prov.charspan} "
                 f"but its text is {len(item.text)} characters"
             )
+
+
+def test_pptx_shape_bbox_is_not_vertically_mirrored(tmp_path: Path):
+    """python-pptx reports positions from the slide's top-left, y growing down.
+
+    Tagging those coordinates BOTTOMLEFT does not convert them. A consumer that
+    un-flips a BOTTOMLEFT box, which ``BoundingBox.to_top_left_origin`` does by
+    computing ``page_height - t``, then mirrors every box that is not centred
+    vertically onto the wrong half of the slide.
+    """
+    from docling_core.types.doc import CoordOrigin
+    from pptx import Presentation
+    from pptx.util import Emu
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.shapes.add_textbox(
+        Emu(100000), Emu(100000), Emu(2000000), Emu(400000)
+    ).text_frame.text = "Near top"
+    slide.shapes.add_textbox(
+        Emu(100000), Emu(6000000), Emu(2000000), Emu(400000)
+    ).text_frame.text = "Near bottom"
+
+    pptx_path = tmp_path / "vertical_order.pptx"
+    prs.save(pptx_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
+    doc = converter.convert(pptx_path, raises_on_error=True).document
+
+    tops = {
+        item.text: item.prov[0].bbox
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.prov
+    }
+
+    assert set(tops) == {"Near top", "Near bottom"}
+    for text, bbox in tops.items():
+        assert bbox.coord_origin == CoordOrigin.TOPLEFT, text
+        assert bbox.t < bbox.b, f"{text}: top edge must sit above the bottom edge"
+
+    assert tops["Near top"].t < tops["Near bottom"].t
+
+
+def test_pptx_indented_paragraphs_become_nested_lists(tmp_path: Path):
+    """Paragraph levels (``a:pPr/@lvl``) nest list items under their parent item.
+
+    Every list paragraph of a shape used to land in one flat list, so sub-bullets
+    lost their parent and numbered sub-items continued the outer numbering.
+    """
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[1])
+    slide.shapes.title.text = "Agenda"
+    body = slide.placeholders[1].text_frame
+    body.text = "Intro"
+    for text, level in [("Background", 1), ("Motivation", 1), ("Method", 0)]:
+        paragraph = body.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+
+    steps = slide.shapes.add_textbox(Inches(1), Inches(5), Inches(4), Inches(2))
+    steps.text_frame.text = "Step one"
+    for text, level in [("Sub a", 1), ("Sub b", 1), ("Step two", 0)]:
+        paragraph = steps.text_frame.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+    for paragraph in steps.text_frame.paragraphs:
+        paragraph._p.get_or_add_pPr().append(
+            paragraph._p.makeelement(qn("a:buAutoNum"), {"type": "arabicPeriod"})
+        )
+
+    pptx_path = tmp_path / "nested_lists.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert doc.export_to_markdown() == (
+        "# Agenda\n\n"
+        "- Intro\n"
+        "    - Background\n"
+        "    - Motivation\n"
+        "- Method\n\n"
+        "1. Step one\n"
+        "    1. Sub a\n"
+        "    2. Sub b\n"
+        "2. Step two"
+    )
+    sub_item = next(t for t in doc.texts if t.text == "Background")
+    intro = next(t for t in doc.texts if t.text == "Intro")
+    assert sub_item.parent.resolve(doc).parent.cref == intro.self_ref
+
+
+def test_pptx_numbered_list_honors_start_at(tmp_path: Path):
+    """A numbered list starts from its ``a:buAutoNum/@startAt`` value.
+
+    A list continued from a previous slide is numbered from "Start at" in
+    PowerPoint, but its items used to be renumbered from 1.
+    """
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    steps = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(2))
+    steps.text_frame.text = "Step four"
+    for text, level in [("Sub a", 1), ("Step five", 0)]:
+        paragraph = steps.text_frame.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+    for paragraph in steps.text_frame.paragraphs:
+        attrs = {"type": "arabicPeriod"}
+        if paragraph.level == 0:
+            attrs["startAt"] = "4"
+        paragraph._p.get_or_add_pPr().append(
+            paragraph._p.makeelement(qn("a:buAutoNum"), attrs)
+        )
+
+    pptx_path = tmp_path / "start_at.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert doc.export_to_markdown() == "4. Step four\n    1. Sub a\n5. Step five"

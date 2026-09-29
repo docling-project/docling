@@ -189,6 +189,77 @@ def test_table_header_rowspan_without_body_does_not_crash():
     assert [cell.text for cell in doc.tables[0].data.table_cells] == ["h"]
 
 
+def test_table_zero_span_defaults_to_one():
+    # `colspan="0"` and `rowspan="0"` pass the numeric guard in _get_cell_spans,
+    # so the span reaches the grid as 0 and the cell covers no grid position at
+    # all: its text drops out of the table and the cells after it shift into the
+    # place it should have taken.
+    src = b'<table><tr><td colspan="0">A</td><td>B</td></tr></table>'
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_cols == 2
+    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
+        ["A", "B"]
+    ]
+
+    src = (
+        b'<table><tr><td rowspan="0">A</td><td>B</td></tr>'
+        b"<tr><td>C</td><td>D</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
+        ["A", "B"],
+        ["C", "D"],
+    ]
+
+
+@pytest.mark.parametrize(
+    "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
+)
+def test_table_oversized_spans_clamped_to_table_size(huge: str):
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    src = (
+        f'<table><tr><td rowspan="{huge}">A</td><td colspan="{huge}">B</td></tr>'
+        "<tr><td>C</td></tr></table>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
+    ]
+
+
 def test_table_inside_figure_is_parsed():
     """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
     html = (
@@ -228,6 +299,58 @@ def test_table_inside_figure_is_parsed():
     cap_item = cap_ref.resolve(doc)
     assert cap_item.text == "Table 1: demo caption."
     assert cap_item.label == DocItemLabel.CAPTION
+
+
+def test_table_caption_is_parsed():
+    """Regression: <caption> is the element HTML defines for table captions."""
+    html = (
+        b"<html><body>"
+        b"<table>"
+        b"<caption>Table 1: sales by region</caption>"
+        b"<tr><th>A</th><th>B</th></tr>"
+        b"<tr><td>1</td><td>2</td></tr>"
+        b"</table>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "A",
+        "B",
+        "1",
+        "2",
+    ]
+
+    assert len(doc.tables[0].captions) == 1
+    cap_item = doc.tables[0].captions[0].resolve(doc)
+    assert cap_item.text == "Table 1: sales by region"
+    assert cap_item.label == DocItemLabel.CAPTION
+    assert "Table 1: sales by region" in doc.export_to_markdown()
+
+
+def test_empty_table_caption_is_skipped():
+    """A whitespace-only <caption> should not produce a caption item."""
+    html = b"<html><body><table><caption>  </caption><tr><td>1</td></tr></table></body></html>"
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].captions == []
+    assert doc.texts == []
 
 
 def test_image_inside_figure_is_parsed():
@@ -356,6 +479,33 @@ def test_ordered_lists():
         doc: DoclingDocument = backend.convert()
         assert doc
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
+
+
+def test_orig_keeps_source_text():
+    """Regression for #4423: `text` is sanitized, `orig` keeps the source text."""
+    html = (
+        "<html><body>"
+        "<p>See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept.</p>"
+        "<ul><li>Item 3\u20135 with <b>bold</b> \u201ctext\u201d</li></ul>"
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    items = {item.text: item for item in doc.texts if item.text}
+
+    paragraph = items['See §§ 3-5 and "quoted" text ... it\'s kept.']
+    assert (
+        paragraph.orig
+        == "See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept."
+    )
+    assert items["Item 3-5 with"].orig == "Item 3\u20135 with"
+    assert items['"text"'].orig == "\u201ctext\u201d"
 
 
 def test_nested_table_in_list_item():
@@ -1570,3 +1720,46 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+def test_gfm_task_list_renders_checkbox_with_text():
+    # <li><input type=checkbox>text</li> is the canonical GFM task list. The
+    # text belongs to the checkbox item; it used to become a separate list
+    # item, pushing the checkbox onto its own bullet *after* the text.
+    html = (
+        "<ul><li><input type='checkbox' checked>done</li>"
+        "<li><input type='checkbox'>todo</li></ul>"
+    )
+    stream = BytesIO(html.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="tasks.html",
+    )
+    doc = in_doc._backend.convert()
+
+    markdown = doc.export_to_markdown()
+    assert markdown == "- [x] done\n- [ ] todo"
+
+
+def test_task_list_item_keeps_nested_content_list_item():
+    # An <li> holding a checkbox plus real block content still gets its list
+    # item; only the pure checkbox+text form is consumed by the checkbox.
+    html = (
+        "<ul><li><input type='checkbox' checked>done<p>details paragraph</p></li></ul>"
+    )
+    stream = BytesIO(html.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="tasks_nested.html",
+    )
+    doc = in_doc._backend.convert()
+
+    markdown = doc.export_to_markdown()
+    assert "done" in markdown
+    assert "details paragraph" in markdown
+    # the checkbox must not be rendered as an empty extra bullet
+    assert "- [x] \n" not in markdown and "- [x] \r" not in markdown
