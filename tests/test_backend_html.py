@@ -473,6 +473,53 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+def test_non_li_children_of_list_are_preserved():
+    """Regression for #4424: direct non-<li> list children must not be dropped."""
+    html = (
+        b"<html><body>"
+        b"<ul><li>First item</li>"
+        b"<p>A paragraph placed directly inside the list.</p>"
+        b"<table><tr><td>A table cell.</td></tr></table>"
+        b"<li>Second item</li></ul>"
+        b"<ol><li>a</li><li>b</li>"
+        b"<ol><li>x</li></ol>"
+        b"<li>c</li></ol>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="non_li_list_children.html",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert any(
+        item.text == "A paragraph placed directly inside the list." for item in doc.texts
+    )
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A table cell."]
+
+    markdown = doc.export_to_markdown()
+    assert markdown.index("First item") < markdown.index(
+        "A paragraph placed directly inside the list."
+    )
+    assert markdown.index("A paragraph placed directly inside the list.") < markdown.index(
+        "A table cell."
+    )
+    assert markdown.index("A table cell.") < markdown.index("Second item")
+
+    # A direct nested <ol> belongs to the preceding list item and must not
+    # consume an additional counter value.
+    assert "1. a" in markdown
+    assert "2. b" in markdown
+    assert "    1. x" in markdown
+    assert "3. c" in markdown
+    assert "4. c" not in markdown
+
+
 def test_orig_keeps_source_text():
     """Regression for #4423: `text` is sanitized, `orig` keeps the source text."""
     html = (
