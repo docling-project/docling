@@ -319,6 +319,55 @@ def test_pptx_left_flush_shape_keeps_own_bbox(tmp_path: Path):
     assert bbox.r != prs.slide_width
 
 
+def test_pptx_preserves_run_level_formatting_and_hyperlinks(tmp_path: Path):
+    """A paragraph mixing a bold run, a plain run, and a hyperlinked run
+    must keep each run's own formatting/hyperlink.
+
+    The text-extraction loop used to flatten every run in a paragraph into
+    one plain string, silently dropping both bold/italic/underline and any
+    hyperlink target.
+    """
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    box = slide.shapes.add_textbox(Inches(0), Inches(0), Inches(4), Inches(1))
+    p = box.text_frame.paragraphs[0]
+
+    bold_run = p.add_run()
+    bold_run.text = "Bold"
+    bold_run.font.bold = True
+
+    plain_run = p.add_run()
+    plain_run.text = " plain "
+
+    link_run = p.add_run()
+    link_run.text = "link"
+    link_run.hyperlink.address = "https://example.com/docs"
+
+    pptx_path = tmp_path / "mixed_runs.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    texts = [t for t in doc.texts if t.text]
+    assert [t.text for t in texts] == ["Bold", " plain ", "link"]
+
+    assert texts[0].formatting is not None
+    assert texts[0].formatting.bold is True
+    assert texts[0].hyperlink is None
+
+    assert texts[1].formatting is not None
+    assert texts[1].formatting.bold is False
+    assert texts[1].hyperlink is None
+
+    assert texts[2].formatting is not None
+    assert texts[2].formatting.bold is False
+    assert texts[2].hyperlink is not None
+    assert str(texts[2].hyperlink) == "https://example.com/docs"
+
+
 def test_pptx_page_range():
     converter = get_converter()
     pptx_path = Path("./tests/data/pptx/sources/powerpoint_sample.pptx")
