@@ -265,17 +265,6 @@ def _table_data(cells: list[TableCell]) -> TableData:
     )
 
 
-def _parse_table_html(html_content: str) -> TableData:
-    """Plain table conversion also used by the DOTS parser."""
-    root = _HTMLTreeParser(html_content).root
-    table = next((node for node in root.elements() if node.tag == "table"), None)
-    return (
-        _table_data([cell for cell, _ in _table_cells(table)])
-        if table is not None
-        else _table_data([])
-    )
-
-
 @dataclass
 class _Run:
     text: str
@@ -710,6 +699,48 @@ class _ChandraDocumentBuilder:
                 child for child in node.children if not isinstance(child, str)
             ]
         self.walk(node.children, picture)
+
+
+def _add_html_fragment(
+    doc: DoclingDocument,
+    html_content: str,
+    *,
+    label: DocItemLabel,
+    prov: ProvenanceItem | None = None,
+    parent: NodeItem | None = None,
+) -> bool:
+    """Add an HTML fragment using Chandra's dependency-free rich tree mapping."""
+    root = _HTMLTreeParser(html_content).root
+    if not any(True for _ in root.elements()):
+        return False
+    page_no = prov.page_no if prov is not None else next(iter(doc.pages))
+    size = doc.pages[page_no].size
+    _ChandraDocumentBuilder(doc, size, page_no).walk(
+        root.children,
+        parent=parent,
+        prov=_Provenance(prov, text_owner=True) if prov is not None else None,
+        label=label,
+    )
+    return True
+
+
+def _add_html_table(
+    doc: DoclingDocument,
+    html_content: str,
+    prov: ProvenanceItem,
+    parent: NodeItem | None = None,
+) -> TableItem | None:
+    """Add one rich HTML table, including captions and formatted cell content."""
+    root = _HTMLTreeParser(html_content).root
+    table_node = next((node for node in root.elements() if node.tag == "table"), None)
+    if table_node is None or not _table_cells(table_node):
+        return None
+    for child in table_node.children:
+        if isinstance(child, _Element) and child.tag in {"caption", "figcaption"}:
+            child.children = [child.text()]
+    builder = _ChandraDocumentBuilder(doc, doc.pages[prov.page_no].size, prov.page_no)
+    builder._table(table_node, parent, _Provenance(prov, text_owner=False))
+    return doc.tables[-1]
 
 
 def parse_chandra_html(

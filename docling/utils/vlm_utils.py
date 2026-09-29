@@ -6,8 +6,19 @@
 from __future__ import annotations
 
 import math
+import re
 
 from docling_core.types.doc import Size
+
+_MARKDOWN_HEADING_PATTERN = re.compile(r"^(#{1,6})[ \t]+(.*?)\s*$", re.DOTALL)
+
+
+def parse_markdown_heading(text: str) -> tuple[str, int | None]:
+    """Strip an optional Markdown heading marker and return its depth."""
+    match = _MARKDOWN_HEADING_PATTERN.match(text)
+    if match is None:
+        return text, None
+    return match.group(2), len(match.group(1))
 
 
 def strip_stop_strings(texts: list[str], stop_strings: list[str]) -> list[str]:
