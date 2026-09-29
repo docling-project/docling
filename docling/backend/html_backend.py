@@ -2739,21 +2739,132 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 for child in elem.children:
                     self._process_nested_element(child, li, doc, processed_elements)
 
+    def _emit_list_item_trailing_content(
+        self,
+        elem,
+        doc: DoclingDocument,
+        processed_elements: set,
+    ) -> None:
+        """Emit content that follows a nested block inside a list item.
+
+        Once a nested list/table has been emitted, later block content must be
+        emitted as separate Docling items so that DOM reading order is preserved.
+        """
+        if isinstance(elem, NavigableString):
+            parts = self._extract_text_and_hyperlink_recursively(
+                elem, find_parent_annotation=True
+            )
+            for part in parts.simplify_text_elements():
+                text = HTMLDocumentBackend._clean_unicode(
+                    re.sub(r"\s+|\n+", " ", part.text).strip()
+                )
+                if not text:
+                    continue
+                prov = self._make_text_prov(
+                    text=text,
+                    tag=elem.parent if isinstance(elem.parent, Tag) else None,
+                    source_tag_id=part.source_tag_id,
+                )
+                doc.add_text(
+                    parent=self.parents[self.level],
+                    label=DocItemLabel.TEXT,
+                    text=text,
+                    orig=part.text,
+                    content_layer=self.content_layer,
+                    formatting=part.formatting,
+                    hyperlink=part.hyperlink,
+                    prov=prov,
+                )
+            return
+
+        if not isinstance(elem, Tag) or id(elem) in processed_elements:
+            return
+        processed_elements.add(id(elem))
+
+        if elem.name in {"ul", "ol", "dl", "table"}:
+            self._handle_block(elem, doc)
+        elif elem.name == "img":
+            self._emit_image(elem, doc)
+        elif elem.name in {"p", "address", "summary", "pre"}:
+            self._handle_block(elem, doc)
+        else:
+            for child in elem.children:
+                self._emit_list_item_trailing_content(
+                    child, doc, processed_elements
+                )
+
     def _process_list_item_nested_content(
         self,
         li: Tag,
         doc: DoclingDocument,
         processed_elements: set,
     ) -> None:
-        """Process nested content (images, lists, etc.) within a list item in DOM order.
+        """Process nested content in DOM order, preserving content after nested blocks."""
+        nested_block_seen = False
 
-        Args:
-            li: The list item tag
-            doc: The DoclingDocument being built
-            processed_elements: Set of element IDs already processed to avoid duplicates
-        """
+        def process(elem) -> None:
+            nonlocal nested_block_seen
+
+            if nested_block_seen:
+                self._emit_list_item_trailing_content(elem, doc, processed_elements)
+                return
+
+            if isinstance(elem, Tag) and elem.name in {"ul", "ol", "dl", "table"}:
+                self._process_nested_element(elem, li, doc, processed_elements)
+                nested_block_seen = True
+                return
+
+            if isinstance(elem, Tag) and elem.find(
+                {"ul", "ol", "dl", "table"}
+            ) is not None:
+                for child in elem.children:
+                    process(child)
+                return
+
+            self._process_nested_element(elem, li, doc, processed_elements)
+
         for child in li.children:
-            self._process_nested_element(child, li, doc, processed_elements)
+            process(child)
+
+    def _extract_list_item_leading_content(
+        self, tag: Tag
+    ) -> AnnotatedTextList:
+        """Extract only the list item's text before its first nested block."""
+        result = AnnotatedTextList()
+        nested_tags = {"ul", "ol", "dl", "table"}
+
+        def collect(elem) -> bool:
+            if isinstance(elem, NavigableString):
+                result.extend(
+                    self._extract_text_and_hyperlink_recursively(
+                        elem, find_parent_annotation=True
+                    )
+                )
+                return False
+
+            if not isinstance(elem, Tag):
+                return False
+
+            if elem.name in nested_tags:
+                return True
+
+            if elem.find(nested_tags) is not None:
+                for child in elem.children:
+                    if collect(child):
+                        return True
+                return False
+
+            result.extend(
+                self._extract_text_and_hyperlink_recursively(
+                    elem, ignore_list=True, find_parent_annotation=True
+                )
+            )
+            return False
+
+        for child in tag.children:
+            if collect(child):
+                break
+        return result
 
     def _add_list_item_with_content(
         self,
@@ -2769,10 +2880,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         Handles both simple and complex content with inline groups.
         Returns the created list item or None if no content.
         """
-        # Extract text and hyperlinks
-        parts = self._extract_text_and_hyperlink_recursively(
-            tag, ignore_list=True, find_parent_annotation=True
-        )
+        # Extract only the item's leading text. Text after a nested list/table
+        # is emitted later in DOM order by _process_list_item_nested_content.
+        parts = self._extract_list_item_leading_content(tag)
         min_parts = parts.simplify_text_elements()
         item_text = re.sub(
             r"\s+|\n+", " ", "".join([el.text for el in min_parts])
