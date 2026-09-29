@@ -13,7 +13,11 @@ import pytest
 from docling_core.types import DoclingDocument
 from docling_core.types.doc import DocItemLabel, TableData, TextItem
 
-from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend, XmlTable
+from docling.backend.xml.uspto_backend import (
+    PatentUsptoDocumentBackend,
+    XmlTable,
+    _extract_raw_tables,
+)
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.document_converter import DocumentConverter
@@ -223,6 +227,27 @@ def test_table_out_of_range_namest_does_not_crash():
     ok = XmlTable(well_formed).parse()
     assert ok is not None
     assert [cell.text for cell in ok.table_cells] == ["a", "b"]
+
+
+def test_extract_raw_tables_matches_line_leading_tables():
+    """Tables start at a line-leading ``<table `` and end at the next ``</table>``."""
+    content = (
+        '<p>inline <table id="skip">no</table></p>\n'
+        '<table id="t1">\n<table id="nested">\n</table>\n'
+        '<table id="t2">b</table> tail\n'
+        '<table id="open">\n'
+    )
+    assert _extract_raw_tables(content) == [
+        '<table id="t1">\n<table id="nested">\n</table>',
+        '<table id="t2">b</table>',
+    ]
+
+
+def test_extract_raw_tables_stops_at_unterminated_tables():
+    """Many unterminated ``<table `` lines must not trigger a quadratic scan (#4410)."""
+    content = '<table id="t1">a</table>\n' + '<table id="open">\n' * 200_000
+
+    assert _extract_raw_tables(content) == ['<table id="t1">a</table>']
 
 
 def test_patent_uspto_ice(patents):

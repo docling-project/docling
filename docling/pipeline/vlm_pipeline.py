@@ -383,13 +383,14 @@ class VlmPipeline(PaginatedPipeline):
         """Determine conversion status accounting for VLM stop reasons.
 
         Extends the base implementation to detect partial failures from VLM
-        inference, such as truncated output (LENGTH) or filtered content
-        (CONTENT_FILTERED).
+        inference: a failed inference call (INFERENCE_ERROR), truncated output
+        (LENGTH) or filtered content (CONTENT_FILTERED).
         """
         status = conv_res.status
         if status in {ConversionStatus.PENDING, ConversionStatus.STARTED}:
             status = ConversionStatus.SUCCESS
 
+        failed_pages = 0
         for page in conv_res.pages:
             vlm_response = page.predictions.vlm_response
             if vlm_response is None:
@@ -403,6 +404,19 @@ class VlmPipeline(PaginatedPipeline):
                     )
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS
+            elif vlm_response.stop_reason == VlmStopReason.INFERENCE_ERROR:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message="VLM inference failed: "
+                        f"{vlm_response.error_message or 'unknown error'}.",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                status = ConversionStatus.PARTIAL_SUCCESS
+                failed_pages += 1
             elif vlm_response.stop_reason in (
                 VlmStopReason.LENGTH,
                 VlmStopReason.CONTENT_FILTERED,
@@ -419,6 +433,10 @@ class VlmPipeline(PaginatedPipeline):
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS
 
+        if conv_res.pages and failed_pages == len(conv_res.pages):
+            # No page produced any output: that is a failed conversion, not a
+            # partial result, and `raises_on_error` should fire for it.
+            return ConversionStatus.FAILURE
         if status == ConversionStatus.SUCCESS and conv_res.errors:
             status = ConversionStatus.PARTIAL_SUCCESS
         return status
@@ -436,8 +454,17 @@ class VlmPipeline(PaginatedPipeline):
     def _finalize_page_document(
         self, conv_res: ConversionResult, page: Page
     ) -> DoclingDocument:
-        response_format = self._response_format()
         response = page.predictions.vlm_response
+        if (
+            response is not None
+            and response.stop_reason == VlmStopReason.INFERENCE_ERROR
+        ):
+            # The failed call is reported by _determine_status; there is no
+            # output to parse, so do not add a parser error on top of it.
+            document = DoclingDocument(name=f"page_{page.page_no}")
+            self._finalize_page_output(document, page)
+            return document
+        response_format = self._response_format()
         predicted_text = response.text if response is not None else ""
         image = page.image or PILImage.new("RGB", (1, 1), "white")
         assert page.size is not None

@@ -40,7 +40,7 @@ Schema-specific support:
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |
 | EBCDIC | Mainframe fixed-width data files; needs the COBOL record layout passed through `EbcdicBackendOptions`; supported extensions: `.ebc`, `.ebcdic` |
-| Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md) |
+| Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md); images referencing local files are ignored unless enabled, see [Docling JSON input](./advanced_options.md#docling-json-input) |
 
 ## Supported output formats
 

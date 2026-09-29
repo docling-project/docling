@@ -230,10 +230,16 @@ def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
     """
     min_row, min_col = None, None
     max_row, max_col = 0, 0
+    # Extent of the rows and cells actually present in the table, used to keep
+    # merged ranges from reaching past the table.
+    last_row, last_col = 0, 0
+    span_max_row, span_max_col = 0, 0
 
     # Scan all rows and cells to find non-empty cells
     for row_idx, row in enumerate(table.traverse()):
+        last_row = row_idx
         for col_idx, cell in enumerate(row.traverse()):
+            last_col = max(last_col, col_idx)
             # Check if cell has content (value or is part of a span)
             if _odf_cell_has_content(cell) or cell.tag == "table:covered-table-cell":
                 if min_row is None:
@@ -246,21 +252,31 @@ def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
             # Also check for cells with spans (they define data regions)
             if cell.tag != "table:covered-table-cell":
                 attrs = cell.attributes
-                row_span = int(attrs.get("table:number-rows-spanned") or 1)
-                col_span = int(attrs.get("table:number-columns-spanned") or 1)
+                row_span = _odf_span(attrs, "table:number-rows-spanned")
+                col_span = _odf_span(attrs, "table:number-columns-spanned")
                 if row_span > 1 or col_span > 1:
                     if min_row is None:
                         min_row = row_idx
                     if min_col is None or col_idx < min_col:
                         min_col = col_idx
-                    max_row = max(max_row, row_idx + row_span - 1)
-                    max_col = max(max_col, col_idx + col_span - 1)
+                    span_max_row = max(span_max_row, row_idx + row_span - 1)
+                    span_max_col = max(span_max_col, col_idx + col_span - 1)
 
     # If no data found, return empty bounds
     if min_row is None or min_col is None:
         return (0, 0, 0, 0)
 
+    max_row = max(max_row, min(span_max_row, last_row))
+    max_col = max(max_col, min(span_max_col, last_col))
     return (min_row, max_row, min_col, max_col)
+
+
+def _odf_span(attrs: dict[str, str], key: str) -> int:
+    """Read a ``table:number-*-spanned`` attribute as a span of at least 1."""
+    try:
+        return max(int(attrs.get(key) or 1), 1)
+    except ValueError:
+        return 1
 
 
 def _clean_odf_text_lines(text: str) -> list[str]:
@@ -1406,8 +1422,13 @@ def _add_table_from_odf(
                 continue
 
             attrs = cell.attributes
-            row_span = int(attrs.get("table:number-rows-spanned") or 1)
-            col_span = int(attrs.get("table:number-columns-spanned") or 1)
+            # Keep merged ranges within the table region.
+            row_span = min(
+                _odf_span(attrs, "table:number-rows-spanned"), max_row - row_idx + 1
+            )
+            col_span = min(
+                _odf_span(attrs, "table:number-columns-spanned"), max_col - col_idx + 1
+            )
             adjusted_row = row_idx - min_row
             adjusted_col = col_idx - min_col
             text = _odf_cell_text(cell)
@@ -1514,8 +1535,13 @@ def _table_data_from_odf(
                 continue
 
             attrs = cell.attributes
-            row_span = int(attrs.get("table:number-rows-spanned") or 1)
-            col_span = int(attrs.get("table:number-columns-spanned") or 1)
+            # Keep merged ranges within the table region.
+            row_span = min(
+                _odf_span(attrs, "table:number-rows-spanned"), max_row - row_idx + 1
+            )
+            col_span = min(
+                _odf_span(attrs, "table:number-columns-spanned"), max_col - col_idx + 1
+            )
             text = _odf_cell_text(cell)
 
             # Adjust cell coordinates to be relative to the data region

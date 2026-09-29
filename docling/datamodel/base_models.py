@@ -310,6 +310,7 @@ class VlmStopReason(str, Enum):
     STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
     END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
     CONTENT_FILTERED = "content_filter"  # Content filtered by API provider
+    INFERENCE_ERROR = "inference_error"  # Inference call failed (remote API or local engine), no output
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
@@ -395,6 +396,7 @@ class VlmPrediction(BaseModel):
     usage: Any | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
     input_prompt: str | None = None
+    error_message: str | None = None  # set when stop_reason is INFERENCE_ERROR
 
 
 @dataclass(frozen=True)
@@ -406,6 +408,7 @@ class ApiImageRequestResult:
     stop_reason: VlmStopReason
     usage: Any | None = None
     logprobs: Any | None = None
+    error: str | None = None  # set when stop_reason is INFERENCE_ERROR
 
 
 @dataclass(frozen=True)

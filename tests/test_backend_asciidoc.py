@@ -508,3 +508,23 @@ def test_utf8_bom_does_not_hide_the_document_title(tmp_path: Path) -> None:
     for doc in (stream_doc, file_doc):
         assert doc.texts[0].label == "title"
         assert doc.texts[0].text == "Document Title"
+
+
+def test_heading_flushes_pending_paragraph() -> None:
+    # text accumulated before a section header used to be appended to the
+    # text after the header and attributed to the wrong section
+    src = b"= Doc\n== S1\n=== S1.1\nbody\n== S2\nbody2\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="section-flush.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    paras = {
+        item.text: item.parent.resolve(doc).text
+        for item, _ in doc.iterate_items()
+        if item.label.value == "paragraph"
+    }
+    assert paras == {"body": "S1.1", "body2": "S2"}
