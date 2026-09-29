@@ -456,6 +456,26 @@ def test_chandra_picture_descriptions_data_captions_and_crop():
     assert doc.validate_tree(doc.body)
 
 
+def test_chandra_picture_bare_text_sibling_of_img_is_dropped():
+    content = (
+        "<div data-label='Image' data-bbox='100 200 600 700'>"
+        "<img alt='A kitten peeking over a horizon line.'>"
+        "A small orange and white kitten is peeking over a horizon line, "
+        "looking directly at the camera."
+        "</div>"
+    )
+    doc = parse_chandra_html(
+        content,
+        Size(width=100, height=100),
+        1,
+        page_image=Image.new("RGB", (200, 200), "red"),
+    )
+    picture = doc.pictures[0]
+    assert picture.meta.description.text == "A kitten peeking over a horizon line."
+    assert not picture.children
+    assert not doc.texts
+
+
 def test_chandra_chemical_structure_and_page_furniture():
     doc = _parse_fragment("<chem>CC(=O)O</chem>", "Chemical-Block")
     assert len(doc.pictures) == 1

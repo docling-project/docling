@@ -702,6 +702,13 @@ class _ChandraDocumentBuilder:
                     and not (child.tag == "chem" and len(chemicals) == 1)
                 )
             ]
+        if images:
+            # Bare text siblings of <img> restate the alt description rather
+            # than transcribing text visible in the picture; tag-wrapped
+            # siblings (e.g. <p> captions) are kept as picture text.
+            node.children[:] = [
+                child for child in node.children if not isinstance(child, str)
+            ]
         self.walk(node.children, picture)
 
 
