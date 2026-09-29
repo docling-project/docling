@@ -224,12 +224,12 @@
           },
           "charspan": [
             0,
-            16
+            18
           ]
         }
       ],
-      "orig": "2 ABJETZTDIGITAL",
-      "text": "2 ABJETZTDIGITAL"
+      "orig": "2 AB JETZT DIGITAL",
+      "text": "2 AB JETZT DIGITAL"
     },
     {
       "self_ref": "#/texts/1",
@@ -251,12 +251,12 @@
           },
           "charspan": [
             0,
-            37
+            40
           ]
         }
       ],
-      "orig": "Dienstag,23.Dezember2025 20minuten.ch",
-      "text": "Dienstag,23.Dezember2025 20minuten.ch"
+      "orig": "Dienstag, 23. Dezember 2025 20minuten.ch",
+      "text": "Dienstag, 23. Dezember 2025 20minuten.ch"
     },
     {
       "self_ref": "#/texts/2",
@@ -278,12 +278,12 @@
           },
           "charspan": [
             0,
-            37
+            40
           ]
         }
       ],
-      "orig": "20minuten.ch Dienstag,23.Dezember2025",
-      "text": "20minuten.ch Dienstag,23.Dezember2025"
+      "orig": "20minuten.ch Dienstag, 23. Dezember 2025",
+      "text": "20minuten.ch Dienstag, 23. Dezember 2025"
     },
     {
       "self_ref": "#/texts/3",

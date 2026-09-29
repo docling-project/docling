@@ -769,12 +769,12 @@
           },
           "charspan": [
             0,
-            15
+            18
           ]
         }
       ],
-      "orig": "2 M.Lysak,etal.",
-      "text": "2 M.Lysak,etal."
+      "orig": "2 M. Lysak, et al.",
+      "text": "2 M. Lysak, et al."
     },
     {
       "self_ref": "#/texts/11",
@@ -796,12 +796,12 @@
           },
           "charspan": [
             0,
-            573
+            574
           ]
         }
       ],
-      "orig": "Fig.1. Comparison between HTML and OTSL table structure representation: (A) table-example with complex row and column headers, including a 2D empty span, (B) minimal graphical representation of table structure using rectangular layout, (C) HTML representation, (D) OTSL representation. This example demonstrates many of the key-features of OTSL, namely its reduced vocabulary size (12 versus 5 in this case), its reduced sequence length (55 versus 30) and a enhanced internal structure (variable token sequence length per row in HTML versus a fixed length of rows in OTSL).",
-      "text": "Fig.1. Comparison between HTML and OTSL table structure representation: (A) table-example with complex row and column headers, including a 2D empty span, (B) minimal graphical representation of table structure using rectangular layout, (C) HTML representation, (D) OTSL representation. This example demonstrates many of the key-features of OTSL, namely its reduced vocabulary size (12 versus 5 in this case), its reduced sequence length (55 versus 30) and a enhanced internal structure (variable token sequence length per row in HTML versus a fixed length of rows in OTSL)."
+      "orig": "Fig. 1. Comparison between HTML and OTSL table structure representation: (A) table-example with complex row and column headers, including a 2D empty span, (B) minimal graphical representation of table structure using rectangular layout, (C) HTML representation, (D) OTSL representation. This example demonstrates many of the key-features of OTSL, namely its reduced vocabulary size (12 versus 5 in this case), its reduced sequence length (55 versus 30) and a enhanced internal structure (variable token sequence length per row in HTML versus a fixed length of rows in OTSL).",
+      "text": "Fig. 1. Comparison between HTML and OTSL table structure representation: (A) table-example with complex row and column headers, including a 2D empty span, (B) minimal graphical representation of table structure using rectangular layout, (C) HTML representation, (D) OTSL representation. This example demonstrates many of the key-features of OTSL, namely its reduced vocabulary size (12 versus 5 in this case), its reduced sequence length (55 versus 30) and a enhanced internal structure (variable token sequence length per row in HTML versus a fixed length of rows in OTSL)."
     },
     {
       "self_ref": "#/texts/12",
@@ -1228,12 +1228,12 @@
           },
           "charspan": [
             0,
-            4
+            5
           ]
         }
       ],
-      "orig": "L LL",
-      "text": "L LL"
+      "orig": "L L L",
+      "text": "L L L"
     },
     {
       "self_ref": "#/texts/28",
@@ -1529,8 +1529,8 @@
           ]
         }
       ],
-      "orig": "<td colspan='2' rowspan='2' > </td> <td colspan='3' > </td>",
-      "text": "<td colspan='2' rowspan='2' > </td> <td colspan='3' > </td>"
+      "orig": "<td colspan=\"2\" rowspan=\"2\" > </td> <td colspan=\"3\" > </td>",
+      "text": "<td colspan=\"2\" rowspan=\"2\" > </td> <td colspan=\"3\" > </td>"
     },
     {
       "self_ref": "#/texts/39",
@@ -1691,8 +1691,8 @@
           ]
         }
       ],
-      "orig": "<td rowspan='3' > </td> <td> </td> <td> </td> <td> </td> <td> </td>",
-      "text": "<td rowspan='3' > </td> <td> </td> <td> </td> <td> </td> <td> </td>"
+      "orig": "<td rowspan=\"3\" > </td> <td> </td> <td> </td> <td> </td> <td> </td>",
+      "text": "<td rowspan=\"3\" > </td> <td> </td> <td> </td> <td> </td> <td> </td>"
     },
     {
       "self_ref": "#/texts/45",
@@ -1930,12 +1930,12 @@
           },
           "charspan": [
             0,
-            6
+            7
           ]
         }
       ],
-      "orig": "C L UX",
-      "text": "C L UX"
+      "orig": "C L U X",
+      "text": "C L U X"
     },
     {
       "self_ref": "#/texts/54",
@@ -2227,12 +2227,12 @@
           },
           "charspan": [
             0,
-            13
+            14
           ]
         }
       ],
-      "orig": "2 RelatedWork",
-      "text": "2 RelatedWork",
+      "orig": "2 Related Work",
+      "text": "2 Related Work",
       "level": 1
     },
     {
@@ -2282,12 +2282,12 @@
           },
           "charspan": [
             0,
-            15
+            18
           ]
         }
       ],
-      "orig": "4 M.Lysak,etal.",
-      "text": "4 M.Lysak,etal."
+      "orig": "4 M. Lysak, et al.",
+      "text": "4 M. Lysak, et al."
     },
     {
       "self_ref": "#/texts/67",
@@ -2336,12 +2336,12 @@
           },
           "charspan": [
             0,
-            1394
+            1402
           ]
         }
       ],
-      "orig": "Within the Im2Seq method, we find several popular models, namely the encoder-dual-decoder model (EDD) [22], TableFormer [9], Tabsplitter[2] and Ye et. al. [19]. EDD uses two consecutive long short-term memory (LSTM) decoders to predict a table in HTML representation. The tag decoder predicts a sequence of HTML tags. For each decoded table cell (<td>), the attention is passed to the cell decoder to predict the content with an embedded OCR approach. The latter makes it susceptible to transcription errors in the cell content of the table. TableFormer address this reliance on OCR and uses two transformer decoders for HTML structure and cell bounding box prediction in an end-to-end architecture. The predicted cell bounding box is then used to extract text tokens from an originating (digital) PDF page, circumventing any need for OCR. TabSplitter [2] proposes a compact double-matrix representation of table rows and columns to do error detection and error correction of HTML structure sequences based on predictions from [19]. This compact double-matrix representation can not be used directly by the Img2seq model training, so the model uses HTML as an intermediate form. Chi et. al. [4] introduce a data set and a baseline method usingbidirectionalLSTMstopredictLaTeXcode.Kayal [5] introducesGated ResNet transformers to predict LaTeX code, and a separate OCR module to extract content.",
-      "text": "Within the Im2Seq method, we find several popular models, namely the encoder-dual-decoder model (EDD) [22], TableFormer [9], Tabsplitter[2] and Ye et. al. [19]. EDD uses two consecutive long short-term memory (LSTM) decoders to predict a table in HTML representation. The tag decoder predicts a sequence of HTML tags. For each decoded table cell (<td>), the attention is passed to the cell decoder to predict the content with an embedded OCR approach. The latter makes it susceptible to transcription errors in the cell content of the table. TableFormer address this reliance on OCR and uses two transformer decoders for HTML structure and cell bounding box prediction in an end-to-end architecture. The predicted cell bounding box is then used to extract text tokens from an originating (digital) PDF page, circumventing any need for OCR. TabSplitter [2] proposes a compact double-matrix representation of table rows and columns to do error detection and error correction of HTML structure sequences based on predictions from [19]. This compact double-matrix representation can not be used directly by the Img2seq model training, so the model uses HTML as an intermediate form. Chi et. al. [4] introduce a data set and a baseline method usingbidirectionalLSTMstopredictLaTeXcode.Kayal [5] introducesGated ResNet transformers to predict LaTeX code, and a separate OCR module to extract content."
+      "orig": "Within the Im2Seq method, we find several popular models, namely the encoder-dual-decoder model (EDD) [22], TableFormer [9], Tabsplitter[2] and Ye et. al. [19]. EDD uses two consecutive long short-term memory (LSTM) decoders to predict a table in HTML representation. The tag decoder predicts a sequence of HTML tags. For each decoded table cell (<td>), the attention is passed to the cell decoder to predict the content with an embedded OCR approach. The latter makes it susceptible to transcription errors in the cell content of the table. TableFormer address this reliance on OCR and uses two transformer decoders for HTML structure and cell bounding box prediction in an end-to-end architecture. The predicted cell bounding box is then used to extract text tokens from an originating (digital) PDF page, circumventing any need for OCR. TabSplitter [2] proposes a compact double-matrix representation of table rows and columns to do error detection and error correction of HTML structure sequences based on predictions from [19]. This compact double-matrix representation can not be used directly by the Img2seq model training, so the model uses HTML as an intermediate form. Chi et. al. [4] introduce a data set and a baseline method using bidirectional LSTMs to predict LaTeX code. Kayal [5] introduces Gated ResNet transformers to predict LaTeX code, and a separate OCR module to extract content.",
+      "text": "Within the Im2Seq method, we find several popular models, namely the encoder-dual-decoder model (EDD) [22], TableFormer [9], Tabsplitter[2] and Ye et. al. [19]. EDD uses two consecutive long short-term memory (LSTM) decoders to predict a table in HTML representation. The tag decoder predicts a sequence of HTML tags. For each decoded table cell (<td>), the attention is passed to the cell decoder to predict the content with an embedded OCR approach. The latter makes it susceptible to transcription errors in the cell content of the table. TableFormer address this reliance on OCR and uses two transformer decoders for HTML structure and cell bounding box prediction in an end-to-end architecture. The predicted cell bounding box is then used to extract text tokens from an originating (digital) PDF page, circumventing any need for OCR. TabSplitter [2] proposes a compact double-matrix representation of table rows and columns to do error detection and error correction of HTML structure sequences based on predictions from [19]. This compact double-matrix representation can not be used directly by the Img2seq model training, so the model uses HTML as an intermediate form. Chi et. al. [4] introduce a data set and a baseline method using bidirectional LSTMs to predict LaTeX code. Kayal [5] introduces Gated ResNet transformers to predict LaTeX code, and a separate OCR module to extract content."
     },
     {
       "self_ref": "#/texts/69",
@@ -2390,12 +2390,12 @@
           },
           "charspan": [
             0,
-            18
+            19
           ]
         }
       ],
-      "orig": "3 ProblemStatement",
-      "text": "3 ProblemStatement",
+      "orig": "3 Problem Statement",
+      "text": "3 Problem Statement",
       "level": 1
     },
     {
@@ -2635,12 +2635,12 @@
           },
           "charspan": [
             0,
-            15
+            18
           ]
         }
       ],
-      "orig": "6 M.Lysak,etal.",
-      "text": "6 M.Lysak,etal."
+      "orig": "6 M. Lysak, et al.",
+      "text": "6 M. Lysak, et al."
     },
     {
       "self_ref": "#/texts/79",
@@ -2689,12 +2689,12 @@
           },
           "charspan": [
             0,
-            33
+            36
           ]
         }
       ],
-      "orig": "4 OptimisedTableStructureLanguage",
-      "text": "4 OptimisedTableStructureLanguage",
+      "orig": "4 Optimised Table Structure Language",
+      "text": "4 Optimised Table Structure Language",
       "level": 1
     },
     {
@@ -2744,12 +2744,12 @@
           },
           "charspan": [
             0,
-            22
+            23
           ]
         }
       ],
-      "orig": "4.1 LanguageDefinition",
-      "text": "4.1 LanguageDefinition",
+      "orig": "4.1 Language Definition",
+      "text": "4.1 Language Definition",
       "level": 1
     },
     {
@@ -3052,12 +3052,12 @@
           },
           "charspan": [
             0,
-            206
+            207
           ]
         }
       ],
-      "orig": "Fig.3. OTSL description of table structure: A - table example; B - graphical representation of table structure; C - mapping structure on a grid; D - OTSL structure encoding; E - explanation on cell encoding",
-      "text": "Fig.3. OTSL description of table structure: A - table example; B - graphical representation of table structure; C - mapping structure on a grid; D - OTSL structure encoding; E - explanation on cell encoding"
+      "orig": "Fig. 3. OTSL description of table structure: A - table example; B - graphical representation of table structure; C - mapping structure on a grid; D - OTSL structure encoding; E - explanation on cell encoding",
+      "text": "Fig. 3. OTSL description of table structure: A - table example; B - graphical representation of table structure; C - mapping structure on a grid; D - OTSL structure encoding; E - explanation on cell encoding"
     },
     {
       "self_ref": "#/texts/94",
@@ -3484,12 +3484,12 @@
           },
           "charspan": [
             0,
-            4
+            5
           ]
         }
       ],
-      "orig": "L LL",
-      "text": "L LL"
+      "orig": "L L L",
+      "text": "L L L"
     },
     {
       "self_ref": "#/texts/110",
@@ -3619,12 +3619,12 @@
           },
           "charspan": [
             0,
-            4
+            5
           ]
         }
       ],
-      "orig": "L LL",
-      "text": "L LL"
+      "orig": "L L L",
+      "text": "L L L"
     },
     {
       "self_ref": "#/texts/115",
@@ -3700,12 +3700,12 @@
           },
           "charspan": [
             0,
-            5
+            7
           ]
         }
       ],
-      "orig": "CL LL",
-      "text": "CL LL"
+      "orig": "C L L L",
+      "text": "C L L L"
     },
     {
       "self_ref": "#/texts/118",
@@ -3916,12 +3916,12 @@
           },
           "charspan": [
             0,
-            32
+            33
           ]
         }
       ],
-      "orig": "4 - 2dmerges: \"C\", \"L\", \"U\", \"X\"",
-      "text": "4 - 2dmerges: \"C\", \"L\", \"U\", \"X\""
+      "orig": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\"",
+      "text": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\""
     },
     {
       "self_ref": "#/texts/126",
@@ -4294,12 +4294,12 @@
           },
           "charspan": [
             0,
-            18
+            19
           ]
         }
       ],
-      "orig": "4.2 LanguageSyntax",
-      "text": "4.2 LanguageSyntax",
+      "orig": "4.2 Language Syntax",
+      "text": "4.2 Language Syntax",
       "level": 1
     },
     {
@@ -4618,12 +4618,12 @@
           },
           "charspan": [
             0,
-            15
+            18
           ]
         }
       ],
-      "orig": "8 M.Lysak,etal.",
-      "text": "8 M.Lysak,etal."
+      "orig": "8 M. Lysak, et al.",
+      "text": "8 M. Lysak, et al."
     },
     {
       "self_ref": "#/texts/151",
@@ -4645,12 +4645,12 @@
           },
           "charspan": [
             0,
-            33
+            35
           ]
         }
       ],
-      "orig": "4.3 Error-detectionand-mitigation",
-      "text": "4.3 Error-detectionand-mitigation",
+      "orig": "4.3 Error-detection and -mitigation",
+      "text": "4.3 Error-detection and -mitigation",
       "level": 1
     },
     {
@@ -6578,12 +6578,12 @@
           },
           "charspan": [
             0,
-            30
+            32
           ]
         }
       ],
-      "orig": "5.1 HyperParameterOptimization",
-      "text": "5.1 HyperParameterOptimization",
+      "orig": "5.1 Hyper Parameter Optimization",
+      "text": "5.1 Hyper Parameter Optimization",
       "level": 1
     },
     {
@@ -6660,12 +6660,12 @@
           },
           "charspan": [
             0,
-            23
+            24
           ]
         }
       ],
-      "orig": "5.2 QuantitativeResults",
-      "text": "5.2 QuantitativeResults",
+      "orig": "5.2 Quantitative Results",
+      "text": "5.2 Quantitative Results",
       "level": 1
     },
     {
@@ -6742,12 +6742,12 @@
           },
           "charspan": [
             0,
-            16
+            19
           ]
         }
       ],
-      "orig": "10 M.Lysak,etal.",
-      "text": "10 M.Lysak,etal."
+      "orig": "10 M. Lysak, et al.",
+      "text": "10 M. Lysak, et al."
     },
     {
       "self_ref": "#/texts/229",
@@ -6796,12 +6796,12 @@
           },
           "charspan": [
             0,
-            22
+            23
           ]
         }
       ],
-      "orig": "5.3 QualitativeResults",
-      "text": "5.3 QualitativeResults",
+      "orig": "5.3 Qualitative Results",
+      "text": "5.3 Qualitative Results",
       "level": 1
     },
     {
@@ -6905,12 +6905,12 @@
           },
           "charspan": [
             0,
-            269
+            270
           ]
         }
       ],
-      "orig": "Fig.5. The OTSL model produces more accurate bounding boxes with less overlap (E) than the HTML model (D), when predicting the structure of a sparse table (A), at twice the inference speed because of shorter sequence length (B),(C). \"PMC2807444 006 00.png\" PubTabNet. \u03bc",
-      "text": "Fig.5. The OTSL model produces more accurate bounding boxes with less overlap (E) than the HTML model (D), when predicting the structure of a sparse table (A), at twice the inference speed because of shorter sequence length (B),(C). \"PMC2807444 006 00.png\" PubTabNet. \u03bc"
+      "orig": "Fig. 5. The OTSL model produces more accurate bounding boxes with less overlap (E) than the HTML model (D), when predicting the structure of a sparse table (A), at twice the inference speed because of shorter sequence length (B),(C). \"PMC2807444 006 00.png\" PubTabNet. \u03bc",
+      "text": "Fig. 5. The OTSL model produces more accurate bounding boxes with less overlap (E) than the HTML model (D), when predicting the structure of a sparse table (A), at twice the inference speed because of shorter sequence length (B),(C). \"PMC2807444 006 00.png\" PubTabNet. \u03bc"
     },
     {
       "self_ref": "#/texts/235",
@@ -9524,12 +9524,12 @@
           },
           "charspan": [
             0,
-            16
+            19
           ]
         }
       ],
-      "orig": "12 M.Lysak,etal.",
-      "text": "12 M.Lysak,etal."
+      "orig": "12 M. Lysak, et al.",
+      "text": "12 M. Lysak, et al."
     },
     {
       "self_ref": "#/texts/332",
@@ -10235,12 +10235,12 @@
           },
           "charspan": [
             0,
-            16
+            19
           ]
         }
       ],
-      "orig": "14 M.Lysak,etal.",
-      "text": "14 M.Lysak,etal."
+      "orig": "14 M. Lysak, et al.",
+      "text": "14 M. Lysak, et al."
     },
     {
       "self_ref": "#/texts/357",
@@ -12178,6 +12178,26 @@
             "bbox": {
               "l": 362.09,
               "t": 446.88,
+              "r": 386.25,
+              "b": 466.21,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 5,
+            "end_col_offset_idx": 6,
+            "text": "0.942 0.931",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 394.62,
+              "t": 446.88,
               "r": 418.78,
               "b": 466.21,
               "coord_origin": "TOPLEFT"
@@ -12188,7 +12208,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 6,
             "end_col_offset_idx": 7,
-            "text": "0.9420.857 0.824",
+            "text": "0.857 0.824",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -12209,26 +12229,6 @@
             "start_col_offset_idx": 7,
             "end_col_offset_idx": 8,
             "text": "1.22 2",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 363.68,
-              "t": 460.03,
-              "r": 384.66,
-              "b": 466.21,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
-            "text": "0.931",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -13152,9 +13152,9 @@
             },
             {
               "bbox": {
-                "l": 363.68,
-                "t": 460.03,
-                "r": 384.66,
+                "l": 362.09,
+                "t": 446.88,
+                "r": 386.25,
                 "b": 466.21,
                 "coord_origin": "TOPLEFT"
               },
@@ -13164,7 +13164,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 6,
-              "text": "0.931",
+              "text": "0.942 0.931",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -13172,7 +13172,7 @@
             },
             {
               "bbox": {
-                "l": 362.09,
+                "l": 394.62,
                 "t": 446.88,
                 "r": 418.78,
                 "b": 466.21,
@@ -13184,7 +13184,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 6,
               "end_col_offset_idx": 7,
-              "text": "0.9420.857 0.824",
+              "text": "0.857 0.824",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -13266,7 +13266,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Dataset",
+            "text": "Data set",
             "column_header": true,
             "row_header": false,
             "row_section": false,
@@ -13852,7 +13852,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Dataset",
+              "text": "Data set",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -13994,7 +13994,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Dataset",
+              "text": "Data set",
               "column_header": true,
               "row_header": false,
               "row_section": false,

@@ -1,6 +1,6 @@
-<doctag><page_header><loc_11><loc_20><loc_84><loc_27>2 ABJETZTDIGITAL</page_header>
-<page_header><loc_176><loc_23><loc_239><loc_28>Dienstag,23.Dezember2025 20minuten.ch</page_header>
-<page_header><loc_261><loc_23><loc_324><loc_28>20minuten.ch Dienstag,23.Dezember2025</page_header>
+<doctag><page_header><loc_11><loc_20><loc_84><loc_27>2 AB JETZT DIGITAL</page_header>
+<page_header><loc_176><loc_23><loc_239><loc_28>Dienstag, 23. Dezember 2025 20minuten.ch</page_header>
+<page_header><loc_261><loc_23><loc_324><loc_28>20minuten.ch Dienstag, 23. Dezember 2025</page_header>
 <page_header><loc_416><loc_20><loc_470><loc_27>AB JETZT DIGITAL</page_header>
 <page_header><loc_485><loc_20><loc_489><loc_27>3</page_header>
 <section_header_level_1><loc_11><loc_48><loc_78><loc_72>Liebe Leserinnen und Leser</section_header_level_1>

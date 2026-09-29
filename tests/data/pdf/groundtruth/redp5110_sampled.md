@@ -10,50 +10,50 @@ ibm.com/redbooks Redpaper
 
 ## Contents
 
-| Notices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . .vii |
+| Notices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . vii |
 | - | - |
 | Trademarks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . viii |
 | DB2 for i Center of Excellence . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . ix |
 |  | . |
 | Preface . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . xi |
-| Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . xi |
+| Authors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . xi |
 | Now you can become a published author, too! . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . xiii |
-| Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . xiii |
+| Comments welcome . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . xiii |
 | Stay connected to IBM Redbooks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . xiv |
 | Chapter 1. Securing and protecting IBM DB2 data . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 1 |
 | . . |  |
-| 1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 2 |
-| 1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 2 |
-| 1.3 DB2 for i security controls. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 3 |
-| 1.3.1 Existing row and column control. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 4 |
-| 1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . . | . . . . . . . 5 |
-| Chapter 2. Roles and separation of duties. . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 7 |
-| 2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 8 |
+| 1.1 Security fundamentals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 2 |
+| 1.2 Current state of IBM i security . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 2 |
+| 1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 3 |
+| 1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 4 |
+| 1.3.2 New controls: Row and Column Access Control . . . . . . . . . . . . . . . . . . . . | . . . . . . . 5 |
+| Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 7 |
+| 2.1 Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . . 8 |
 | 2.1.1 DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . . | . . . . . . . 8 |
-| 2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . . | . . . . . . . 8 |
+| 2.1.2 Toolbox application server access: QIBM_DB_ZDA . . . . . . . . . . . . . . . . . | . . . . . . . 8 |
 | 2.1.3 Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . . | . . . . . . . 9 |
 | 2.1.4 Database Information function: QIBM_DB_SYSMON . . . . . . . . . . . . . . . | . . . . . . . 9 |
 | 2.1.5 Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . . | . . . . . . . 9 |
-| 2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 10 |
-| 2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view. | . . . . 10 |
+| 2.1.6 Change Function Usage CL command . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 10 |
+| 2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view | . . . . . 10 |
 | 2.2 Separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 10 |
-| Chapter 3. Row and Column Access Control. . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 13 |
+| Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 13 |
 | 3.1 Explanation of RCAC and the concept of access control . . . . . . . . . . . . . . . . . | . . . . . . 14 |
 | 3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . . | . . . . . . 14 |
 | 3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 16 |
-| 3.2 Special registers and built-in global variables. . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 18 |
-| 3.2.1 Special registers. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 18 |
-| 3.2.2 Built-in global variables. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 19 |
-| 3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 20 |
-| 3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . . | . . . . . . 21 |
+| 3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 18 |
+| 3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 18 |
+| 3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 19 |
+| 3.3 VERIFY_GROUP_FOR_USER function . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 20 |
+| 3.4 Establishing and controlling accessibility by using the RCAC rule text . . . . . . . | . . . . . . 21 |
 | 3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . . | . . . . . . 22 |
-| 3.6 Human resources example. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 22 |
-| 3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . | . . . . . . 23 |
-| 3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . . . . . . . | . . . . . . 23 |
-| 3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 24 |
-| 3.6.4 Defining and creating row permissions. . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 25 |
+| 3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 22 |
+| 3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants . . . . . . | . . . . . . 23 |
+| 3.6.2 Creating group profiles for the users and their roles . . . . . . . . . . . . . . . . . | . . . . . . 23 |
+| 3.6.3 Demonstrating data access without RCAC . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 24 |
+| 3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 25 |
 | 3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 26 |
-| 3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 28 |
+| 3.6.6 Activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 28 |
 | 3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . | . . . . . . 29 |
 | 3.6.8 Demonstrating data access with a view and RCAC . . . . . . . . . . . . . . . . . | . . . . . . 32 |
 
@@ -164,7 +164,7 @@ Many businesses are trying to limit data access to a need-to-know basis. This se
 
 ## 1.3.1 Existing row and column control
 
-Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator.
+Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure 1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator.
 
 Using SQL views to limit access to a subset of the data in a table also has its own set of challenges. First, there is the complexity of managing all of the SQL view objects that are used for securing data access. Second, scaling a view-based security solution can be difficult as the amount of data grows and the number of users increases.
 
@@ -188,7 +188,7 @@ CHGFCNUSG FCNID(QIBM\_DB\_SECADM) USER(HBEDOYA) USAGE(*ALLOWED)
 
 ## 2.1.7 Verifying function usage IDs for RCAC with the FUNCTION\_USAGE view
 
-The FUNCTION\_USAGE view contains function usage configuration details. Table2-1 describes the columns in the FUNCTION\_USAGE view.
+The FUNCTION\_USAGE view contains function usage configuration details. Table 2-1 describes the columns in the FUNCTION\_USAGE view.
 
 Table 2-1 FUNCTION\_USAGE view
 
@@ -199,7 +199,7 @@ Table 2-1 FUNCTION\_USAGE view
 | USAGE | VARCHAR(7) | Usage setting: SM590000 ALLOWED: The user profile is allowed to use the function. SM590000 DENIED: The user profile is not allowed to use the function. |
 | USER_TYPE | VARCHAR(5) | Type of user profile: SM590000 USER: The user profile is a user. SM590000 GROUP: The user profile is a group. |
 
-To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example2-1.
+To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.
 
 Example 2-1 Query to determine who has authority to define and manage RCAC
 
@@ -224,7 +224,7 @@ QIBM\_DB\_SECADM also is responsible for administering RCAC, which restricts whi
 
 A preferred practice is that the RCAC administrator has the QIBM\_DB\_SECADM function usage ID, but absolutely no other data privileges. The result is that the RCAC administrator can deploy and maintain the RCAC constructs, but cannot grant themselves unauthorized access to data itself.
 
-Table2-2 shows a comparison of the different function usage IDs and *JOBCTL authority to the different CL commands and DB2 for i tools.
+Table 2-2 shows a comparison of the different function usage IDs and *JOBCTL authority to the different CL commands and DB2 for i tools.
 
 Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority
 
@@ -243,7 +243,7 @@ Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority
 | MODIFY PLAN CACHE PROPERTIES procedure (currently does not check authority) | X |  | X |  |  |
 | CHANGE PLAN CACHE SIZE procedure (currently does not check authority) | X |  | X |  |  |
 
-The SQL CREATE PERMISSION statement that is shown in Figure3-1 is used to define and initially enable or disable the row access rules.
+The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.
 
 Figure 3-1 CREATE PERMISSION SQL statement
 
@@ -253,7 +253,7 @@ Figure 3-1 CREATE PERMISSION SQL statement
 
 A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.
 
-Table3-1 summarizes these special registers and their values.
+Table 3-1 summarizes these special registers and their values.
 
 Table 3-1 Special registers and their corresponding values
 
@@ -263,7 +263,7 @@ Table 3-1 Special registers and their corresponding values
 | CURRENT_USER | The effective user of the thread including adopted authority. When no adopted authority is present, this has the same value as USER. |
 | SYSTEM_USER | The authorization ID that initiated the connection. |
 
-Figure3-5 shows the difference in the special register values when an adopted authority is used:
+Figure 3-5 shows the difference in the special register values when an adopted authority is used:
 
 - SM590000 A user connects to the server using the user profile ALICE.
 - SM590000 USER and CURRENT USER initially have the same value of ALICE.
@@ -281,7 +281,7 @@ Built-in global variables are provided with the database manager and are used in
 
 IBM DB2 for i supports nine different built-in global variables that are read only and maintained by the system. These global variables can be used to identify attributes of the database connection and used as part of the RCAC logic.
 
-Table3-2 lists the nine built-in global variables.
+Table 3-2 lists the nine built-in global variables.
 
 Table 3-2 Built-in global variables
 
@@ -325,7 +325,7 @@ RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN E
 - Managers see a masked version of TAX\_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).
 - Any other person sees the entire TAX\_ID as masked, for example, XXX-XX-XXXX.
 
-To implement this column mask, run the SQL statement that is shown in Example3-9.
+To implement this column mask, run the SQL statement that is shown in Example 3-9.
 
 ```
 CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ;
@@ -333,7 +333,7 @@ CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYE
 
 Example 3-9 Creating a mask on the TAX\_ID column
 
-3. Figure3-10 shows the masks that are created in the HR\_SCHEMA.
+3. Figure 3-10 shows the masks that are created in the HR\_SCHEMA.
 
 Figure 3-10 Column masks shown in System i Navigator
 
@@ -343,20 +343,20 @@ Figure 3-10 Column masks shown in System i Navigator
 
 Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:
 
-1. Run the SQL statements that are shown in Example3-10.
+1. Run the SQL statements that are shown in Example 3-10.
 
 Example 3-10 Activating RCAC on the EMPLOYEES table
 
 <!-- image -->
 
-2. Look at the definition of the EMPLOYEE table, as shown in Figure3-11. To do this, from the main navigation pane of System i Navigator, click Schemas HR\_SCHEMA Tables, right-click the EMPLOYEES table, and click Definition.
+2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR\_SCHEMA Tables, right-click the EMPLOYEES table, and click Definition.
 
 Figure 3-11 Selecting the EMPLOYEES table from System i Navigator
 
 <!-- image -->
 
-2. Figure4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.
-3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
+2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.
+3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
 
 Figure 4-68 Visual Explain with RCAC enabled
 

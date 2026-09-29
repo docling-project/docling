@@ -995,12 +995,12 @@
           },
           "charspan": [
             0,
-            1312
+            1320
           ]
         }
       ],
-      "orig": "Tables organize valuable content in a concise and compact representation. This content is extremely valuable for systems such as search engines, Knowledge Graph's, etc, since they enhance their predictive capabilities. Unfortunately, tables come in a large variety of shapes and sizes. Furthermore, they can have complex column/row-header configurations, multiline rows, different variety of separation lines, missing entries, etc. As such, the correct identification of the table-structure from an image is a nontrivial task. In this paper, we present a new table-structure identification model. The latter improves the latest end-toend deep learning model (i.e. encoder-dual-decoder from PubTabNet) in two significant ways. First, we introduce a newobjectdetectiondecoderfortable-cells. Inthisway, we can obtain the content of the table-cells from programmatic PDF's directly from the PDF source and avoid the training of the customOCR decoders. This architectural change leads to more accurate table-content extraction and allows us to tackle non-english tables. Second, we replace the LSTM decoders with transformer based decoders. This upgrade improves significantly the previous state-of-the-art tree-editing-distance-score (TEDS) from 91% to 98.5% on simple tables and from 88.7% to 95% on complex tables.",
-      "text": "Tables organize valuable content in a concise and compact representation. This content is extremely valuable for systems such as search engines, Knowledge Graph's, etc, since they enhance their predictive capabilities. Unfortunately, tables come in a large variety of shapes and sizes. Furthermore, they can have complex column/row-header configurations, multiline rows, different variety of separation lines, missing entries, etc. As such, the correct identification of the table-structure from an image is a nontrivial task. In this paper, we present a new table-structure identification model. The latter improves the latest end-toend deep learning model (i.e. encoder-dual-decoder from PubTabNet) in two significant ways. First, we introduce a newobjectdetectiondecoderfortable-cells. Inthisway, we can obtain the content of the table-cells from programmatic PDF's directly from the PDF source and avoid the training of the customOCR decoders. This architectural change leads to more accurate table-content extraction and allows us to tackle non-english tables. Second, we replace the LSTM decoders with transformer based decoders. This upgrade improves significantly the previous state-of-the-art tree-editing-distance-score (TEDS) from 91% to 98.5% on simple tables and from 88.7% to 95% on complex tables."
+      "orig": "Tables organize valuable content in a concise and compact representation. This content is extremely valuable for systems such as search engines, Knowledge Graph's, etc, since they enhance their predictive capabilities. Unfortunately, tables come in a large variety of shapes and sizes. Furthermore, they can have complex column/row-header configurations, multiline rows, different variety of separation lines, missing entries, etc. As such, the correct identification of the table-structure from an image is a nontrivial task. In this paper, we present a new table-structure identification model. The latter improves the latest end-toend deep learning model (i.e. encoder-dual-decoder from PubTabNet) in two significant ways. First, we introduce a new object detection decoder for table-cells. In this way, we can obtain the content of the table-cells from programmatic PDF's directly from the PDF source and avoid the training of the custom OCR decoders. This architectural change leads to more accurate table-content extraction and allows us to tackle non-english tables. Second, we replace the LSTM decoders with transformer based decoders. This upgrade improves significantly the previous state-of-the-art tree-editing-distance-score (TEDS) from 91% to 98.5% on simple tables and from 88.7% to 95% on complex tables.",
+      "text": "Tables organize valuable content in a concise and compact representation. This content is extremely valuable for systems such as search engines, Knowledge Graph's, etc, since they enhance their predictive capabilities. Unfortunately, tables come in a large variety of shapes and sizes. Furthermore, they can have complex column/row-header configurations, multiline rows, different variety of separation lines, missing entries, etc. As such, the correct identification of the table-structure from an image is a nontrivial task. In this paper, we present a new table-structure identification model. The latter improves the latest end-toend deep learning model (i.e. encoder-dual-decoder from PubTabNet) in two significant ways. First, we introduce a new object detection decoder for table-cells. In this way, we can obtain the content of the table-cells from programmatic PDF's directly from the PDF source and avoid the training of the custom OCR decoders. This architectural change leads to more accurate table-content extraction and allows us to tackle non-english tables. Second, we replace the LSTM decoders with transformer based decoders. This upgrade improves significantly the previous state-of-the-art tree-editing-distance-score (TEDS) from 91% to 98.5% on simple tables and from 88.7% to 95% on complex tables."
     },
     {
       "self_ref": "#/texts/6",
@@ -2298,8 +2298,8 @@
           ]
         }
       ],
-      "orig": "Image-to-Text networks: In this type of network, one predicts a sequence of tokens starting from an encoded image. Such sequences of tokens can be HTML table tags [37, 17] or LaTeX symbols[10]. The choice of symbols is ultimately not very important, since one can be transformed into the other. There are however subtle variations in the Image-to-Text networks. The easiest network architectures are 'image-encoder \u2192 text-decoder' (IETD), similar to network architectures that try to provide captions to images [32]. In these IETD networks, one expects as output the LaTeX/HTML string of the entire table, i.e. the symbols necessary for creating the table with the content of the table. Another approach is the 'image-encoder \u2192 dual decoder' (IEDD) networks. In these type of networks, one has two consecutive decoders with different purposes. The first decoder is the tag-decoder, i.e. it only produces the HTML/LaTeX tags which construct an empty table. The second content-decoder uses the encoding of the image in combination with the output encoding of each cell-tag (from the tag-decoder) to generate the textual content of each table cell. The network architecture of IEDD is certainly more elaborate, but it has the advantage that one can pre-train the tag-decoder which is constrained to the table-tags.",
-      "text": "Image-to-Text networks: In this type of network, one predicts a sequence of tokens starting from an encoded image. Such sequences of tokens can be HTML table tags [37, 17] or LaTeX symbols[10]. The choice of symbols is ultimately not very important, since one can be transformed into the other. There are however subtle variations in the Image-to-Text networks. The easiest network architectures are 'image-encoder \u2192 text-decoder' (IETD), similar to network architectures that try to provide captions to images [32]. In these IETD networks, one expects as output the LaTeX/HTML string of the entire table, i.e. the symbols necessary for creating the table with the content of the table. Another approach is the 'image-encoder \u2192 dual decoder' (IEDD) networks. In these type of networks, one has two consecutive decoders with different purposes. The first decoder is the tag-decoder, i.e. it only produces the HTML/LaTeX tags which construct an empty table. The second content-decoder uses the encoding of the image in combination with the output encoding of each cell-tag (from the tag-decoder) to generate the textual content of each table cell. The network architecture of IEDD is certainly more elaborate, but it has the advantage that one can pre-train the tag-decoder which is constrained to the table-tags."
+      "orig": "Image-to-Text networks: In this type of network, one predicts a sequence of tokens starting from an encoded image. Such sequences of tokens can be HTML table tags [37, 17] or LaTeX symbols[10]. The choice of symbols is ultimately not very important, since one can be transformed into the other. There are however subtle variations in the Image-to-Text networks. The easiest network architectures are \"image-encoder \u2192 text-decoder\" (IETD), similar to network architectures that try to provide captions to images [32]. In these IETD networks, one expects as output the LaTeX/HTML string of the entire table, i.e. the symbols necessary for creating the table with the content of the table. Another approach is the \"image-encoder \u2192 dual decoder\" (IEDD) networks. In these type of networks, one has two consecutive decoders with different purposes. The first decoder is the tag-decoder, i.e. it only produces the HTML/LaTeX tags which construct an empty table. The second content-decoder uses the encoding of the image in combination with the output encoding of each cell-tag (from the tag-decoder) to generate the textual content of each table cell. The network architecture of IEDD is certainly more elaborate, but it has the advantage that one can pre-train the tag-decoder which is constrained to the table-tags.",
+      "text": "Image-to-Text networks: In this type of network, one predicts a sequence of tokens starting from an encoded image. Such sequences of tokens can be HTML table tags [37, 17] or LaTeX symbols[10]. The choice of symbols is ultimately not very important, since one can be transformed into the other. There are however subtle variations in the Image-to-Text networks. The easiest network architectures are \"image-encoder \u2192 text-decoder\" (IETD), similar to network architectures that try to provide captions to images [32]. In these IETD networks, one expects as output the LaTeX/HTML string of the entire table, i.e. the symbols necessary for creating the table with the content of the table. Another approach is the \"image-encoder \u2192 dual decoder\" (IEDD) networks. In these type of networks, one has two consecutive decoders with different purposes. The first decoder is the tag-decoder, i.e. it only produces the HTML/LaTeX tags which construct an empty table. The second content-decoder uses the encoding of the image in combination with the output encoding of each cell-tag (from the tag-decoder) to generate the textual content of each table cell. The network architecture of IEDD is certainly more elaborate, but it has the advantage that one can pre-train the tag-decoder which is constrained to the table-tags."
     },
     {
       "self_ref": "#/texts/52",
@@ -3177,8 +3177,8 @@
           ]
         }
       ],
-      "orig": "The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as 'simple' when it does not contain row spans or column spans, otherwise it is 'complex'. The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits.",
-      "text": "The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as 'simple' when it does not contain row spans or column spans, otherwise it is 'complex'. The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits."
+      "orig": "The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as \"simple\" when it does not contain row spans or column spans, otherwise it is \"complex\". The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits.",
+      "text": "The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as \"simple\" when it does not contain row spans or column spans, otherwise it is \"complex\". The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits."
     },
     {
       "self_ref": "#/texts/84",
@@ -3390,12 +3390,12 @@
           },
           "charspan": [
             0,
-            263
+            267
           ]
         }
       ],
-      "orig": "Table1: Both'Combined-Tabnet'and'CombinedTabnet' are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank.",
-      "text": "Table1: Both'Combined-Tabnet'and'CombinedTabnet' are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank."
+      "orig": "Table 1: Both \"Combined-Tabnet\" and \"CombinedTabnet\" are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank.",
+      "text": "Table 1: Both \"Combined-Tabnet\" and \"CombinedTabnet\" are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank."
     },
     {
       "self_ref": "#/texts/91",
@@ -4702,12 +4702,12 @@
           },
           "charspan": [
             0,
-            31
+            34
           ]
         }
       ],
-      "orig": "<TD>1</TD><TDcolspan=\"2\"> </TD>",
-      "text": "<TD>1</TD><TDcolspan=\"2\"> </TD>"
+      "orig": "<TD> 1 </TD><TD colspan=\"2\"> </TD>",
+      "text": "<TD> 1 </TD><TD colspan=\"2\"> </TD>"
     },
     {
       "self_ref": "#/texts/139",
@@ -6106,12 +6106,12 @@
           },
           "charspan": [
             0,
-            561
+            563
           ]
         }
       ],
-      "orig": "Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. 'SceneUnderstanding', 'ImageCaptioning'), something which we relate to the simplicity of table images.",
-      "text": "Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. 'SceneUnderstanding', 'ImageCaptioning'), something which we relate to the simplicity of table images."
+      "orig": "Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. \"Scene Understanding\", \"Image Captioning\"), something which we relate to the simplicity of table images.",
+      "text": "Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. \"Scene Understanding\", \"Image Captioning\"), something which we relate to the simplicity of table images."
     },
     {
       "self_ref": "#/texts/191",
@@ -6201,12 +6201,12 @@
           },
           "charspan": [
             287,
-            657
+            667
           ]
         }
       ],
-      "orig": "The encoding generated by the CNN Backbone Network along with the features acquired for every data cell from the Transformer Decoder are then passed to the attention network. The attention network takes both inputs and learns to provide an attention weighted encoding. This weighted attention encoding is then multiplied to the encoded image to produce a feature for each table cell. Notice that this is different than the typical object detection problemwhere imbalances between the number of detections and the amount ofobjectsmayexist. Inourcase,weknowupfront that the produced detections always match with the table cells in number and correspondence.",
-      "text": "The encoding generated by the CNN Backbone Network along with the features acquired for every data cell from the Transformer Decoder are then passed to the attention network. The attention network takes both inputs and learns to provide an attention weighted encoding. This weighted attention encoding is then multiplied to the encoded image to produce a feature for each table cell. Notice that this is different than the typical object detection problemwhere imbalances between the number of detections and the amount ofobjectsmayexist. Inourcase,weknowupfront that the produced detections always match with the table cells in number and correspondence."
+      "orig": "The encoding generated by the CNN Backbone Network along with the features acquired for every data cell from the Transformer Decoder are then passed to the attention network. The attention network takes both inputs and learns to provide an attention weighted encoding. This weighted attention encoding is then multiplied to the encoded image to produce a feature for each table cell. Notice that this is different than the typical object detection problem where imbalances between the number of detections and the amount of objects may exist. In our case, we know up front that the produced detections always match with the table cells in number and correspondence.",
+      "text": "The encoding generated by the CNN Backbone Network along with the features acquired for every data cell from the Transformer Decoder are then passed to the attention network. The attention network takes both inputs and learns to provide an attention weighted encoding. This weighted attention encoding is then multiplied to the encoded image to produce a feature for each table cell. Notice that this is different than the typical object detection problem where imbalances between the number of detections and the amount of objects may exist. In our case, we know up front that the produced detections always match with the table cells in number and correspondence."
     },
     {
       "self_ref": "#/texts/194",
@@ -6418,12 +6418,12 @@
           },
           "charspan": [
             0,
-            26
+            27
           ]
         }
       ],
-      "orig": "5.1. ImplementationDetails",
-      "text": "5.1. ImplementationDetails",
+      "orig": "5.1. Implementation Details",
+      "text": "5.1. Implementation Details",
       "level": 1
     },
     {
@@ -6473,11 +6473,11 @@
           },
           "charspan": [
             0,
-            75
+            77
           ]
         }
       ],
-      "orig": "Image width and height \u2264 1024 pixels Structural tags length\u2264512 tokens. (2)",
+      "orig": "Image width and height \u2264 1024 pixels Structural tags length \u2264 512 tokens. (2)",
       "text": ""
     },
     {
@@ -6545,8 +6545,8 @@
           ]
         }
       ],
-      "orig": "The Transformer Encoder consists of two 'Transformer Encoder Layers', with an input feature size of 512, feed forward network of 1024, and 4 attention heads. As for the Transformer Decoder it is composed of four 'Transformer Decoder Layers' with similar input and output dimensions as the 'Transformer Encoder Layers'. Even though our model uses fewer layers and heads than the default implementation parameters, our extensive experimentation has proved this setup to be more suitable for table images. We attribute this finding to the inherent design of table images, which contain mostly lines and text, unlike the more elaborate content present in other scopes (e.g. the COCO dataset). Moreover, we have added ResNet blocks to the inputs of the Structure Decoder and Cell BBox Decoder. This prevents a decoder having a stronger influence over the learned weights which would damage the other prediction task (structure vs bounding boxes), but learn task specific weights instead. Lastly our dropout layers are set to 0.5.",
-      "text": "The Transformer Encoder consists of two 'Transformer Encoder Layers', with an input feature size of 512, feed forward network of 1024, and 4 attention heads. As for the Transformer Decoder it is composed of four 'Transformer Decoder Layers' with similar input and output dimensions as the 'Transformer Encoder Layers'. Even though our model uses fewer layers and heads than the default implementation parameters, our extensive experimentation has proved this setup to be more suitable for table images. We attribute this finding to the inherent design of table images, which contain mostly lines and text, unlike the more elaborate content present in other scopes (e.g. the COCO dataset). Moreover, we have added ResNet blocks to the inputs of the Structure Decoder and Cell BBox Decoder. This prevents a decoder having a stronger influence over the learned weights which would damage the other prediction task (structure vs bounding boxes), but learn task specific weights instead. Lastly our dropout layers are set to 0.5."
+      "orig": "The Transformer Encoder consists of two \"Transformer Encoder Layers\", with an input feature size of 512, feed forward network of 1024, and 4 attention heads. As for the Transformer Decoder it is composed of four \"Transformer Decoder Layers\" with similar input and output dimensions as the \"Transformer Encoder Layers\". Even though our model uses fewer layers and heads than the default implementation parameters, our extensive experimentation has proved this setup to be more suitable for table images. We attribute this finding to the inherent design of table images, which contain mostly lines and text, unlike the more elaborate content present in other scopes (e.g. the COCO dataset). Moreover, we have added ResNet blocks to the inputs of the Structure Decoder and Cell BBox Decoder. This prevents a decoder having a stronger influence over the learned weights which would damage the other prediction task (structure vs bounding boxes), but learn task specific weights instead. Lastly our dropout layers are set to 0.5.",
+      "text": "The Transformer Encoder consists of two \"Transformer Encoder Layers\", with an input feature size of 512, feed forward network of 1024, and 4 attention heads. As for the Transformer Decoder it is composed of four \"Transformer Decoder Layers\" with similar input and output dimensions as the \"Transformer Encoder Layers\". Even though our model uses fewer layers and heads than the default implementation parameters, our extensive experimentation has proved this setup to be more suitable for table images. We attribute this finding to the inherent design of table images, which contain mostly lines and text, unlike the more elaborate content present in other scopes (e.g. the COCO dataset). Moreover, we have added ResNet blocks to the inputs of the Structure Decoder and Cell BBox Decoder. This prevents a decoder having a stronger influence over the learned weights which would damage the other prediction task (structure vs bounding boxes), but learn task specific weights instead. Lastly our dropout layers are set to 0.5."
     },
     {
       "self_ref": "#/texts/206",
@@ -6963,12 +6963,12 @@
           },
           "charspan": [
             0,
-            87
+            94
           ]
         }
       ],
-      "orig": "Table3: CellBoundingBoxdetectionresultsonPubTabNet, and FinTabNet. PP: Post-processing.",
-      "text": "Table3: CellBoundingBoxdetectionresultsonPubTabNet, and FinTabNet. PP: Post-processing."
+      "orig": "Table 3: Cell Bounding Box detection results on PubTabNet, and FinTabNet. PP: Post-processing.",
+      "text": "Table 3: Cell Bounding Box detection results on PubTabNet, and FinTabNet. PP: Post-processing."
     },
     {
       "self_ref": "#/texts/221",
@@ -6990,12 +6990,12 @@
           },
           "charspan": [
             0,
-            708
+            715
           ]
         }
       ],
-      "orig": "CellContent. Inthissection,weevaluatetheentire pipeline of recovering a table with content. Here we put our approach to test by capitalizing on extracting content from the PDF cells rather than decoding from images. Tab. 4 shows the TEDs score of HTML code representing the structure of the table along with the content inserted in the data cell and compared with the ground-truth. Our method achieved a 5.3% increase over the state-of-the-art, and commercial solutions. We believe our scores would be higher if the HTML ground-truth matched the extracted PDF cell content. Unfortunately, there are small discrepancies such as spacings around words or special characters with various unicode representations.",
-      "text": "CellContent. Inthissection,weevaluatetheentire pipeline of recovering a table with content. Here we put our approach to test by capitalizing on extracting content from the PDF cells rather than decoding from images. Tab. 4 shows the TEDs score of HTML code representing the structure of the table along with the content inserted in the data cell and compared with the ground-truth. Our method achieved a 5.3% increase over the state-of-the-art, and commercial solutions. We believe our scores would be higher if the HTML ground-truth matched the extracted PDF cell content. Unfortunately, there are small discrepancies such as spacings around words or special characters with various unicode representations."
+      "orig": "Cell Content. In this section, we evaluate the entire pipeline of recovering a table with content. Here we put our approach to test by capitalizing on extracting content from the PDF cells rather than decoding from images. Tab. 4 shows the TEDs score of HTML code representing the structure of the table along with the content inserted in the data cell and compared with the ground-truth. Our method achieved a 5.3% increase over the state-of-the-art, and commercial solutions. We believe our scores would be higher if the HTML ground-truth matched the extracted PDF cell content. Unfortunately, there are small discrepancies such as spacings around words or special characters with various unicode representations.",
+      "text": "Cell Content. In this section, we evaluate the entire pipeline of recovering a table with content. Here we put our approach to test by capitalizing on extracting content from the PDF cells rather than decoding from images. Tab. 4 shows the TEDs score of HTML code representing the structure of the table along with the content inserted in the data cell and compared with the ground-truth. Our method achieved a 5.3% increase over the state-of-the-art, and commercial solutions. We believe our scores would be higher if the HTML ground-truth matched the extracted PDF cell content. Unfortunately, there are small discrepancies such as spacings around words or special characters with various unicode representations."
     },
     {
       "self_ref": "#/texts/222",
@@ -9861,8 +9861,8 @@
           ]
         }
       ],
-      "orig": "We showcase several visualizations for the different components of our network on various 'complex' tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type.",
-      "text": "We showcase several visualizations for the different components of our network on various 'complex' tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type."
+      "orig": "We showcase several visualizations for the different components of our network on various \"complex\" tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type.",
+      "text": "We showcase several visualizations for the different components of our network on various \"complex\" tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type."
     },
     {
       "self_ref": "#/texts/328",
@@ -9916,8 +9916,8 @@
           ]
         }
       ],
-      "orig": "In this paper, we presented TableFormer an end-to-end transformer based approach to predict table structures and bounding boxes of cells from an image. This approach enables us to recreate the table structure, and extract the cell content from PDF or OCR by using bounding boxes. Additionally, it provides the versatility required in real-world scenarios when dealing with various types of PDF documents, and languages. Furthermore, our method outperforms all state-of-the-arts with a wide margin. Finally, we introduce 'SynthTabNet' a challenging synthetically generated dataset that reinforces missing characteristics from other datasets.",
-      "text": "In this paper, we presented TableFormer an end-to-end transformer based approach to predict table structures and bounding boxes of cells from an image. This approach enables us to recreate the table structure, and extract the cell content from PDF or OCR by using bounding boxes. Additionally, it provides the versatility required in real-world scenarios when dealing with various types of PDF documents, and languages. Furthermore, our method outperforms all state-of-the-arts with a wide margin. Finally, we introduce 'SynthTabNet' a challenging synthetically generated dataset that reinforces missing characteristics from other datasets."
+      "orig": "In this paper, we presented TableFormer an end-to-end transformer based approach to predict table structures and bounding boxes of cells from an image. This approach enables us to recreate the table structure, and extract the cell content from PDF or OCR by using bounding boxes. Additionally, it provides the versatility required in real-world scenarios when dealing with various types of PDF documents, and languages. Furthermore, our method outperforms all state-of-the-arts with a wide margin. Finally, we introduce \"SynthTabNet\" a challenging synthetically generated dataset that reinforces missing characteristics from other datasets.",
+      "text": "In this paper, we presented TableFormer an end-to-end transformer based approach to predict table structures and bounding boxes of cells from an image. This approach enables us to recreate the table structure, and extract the cell content from PDF or OCR by using bounding boxes. Additionally, it provides the versatility required in real-world scenarios when dealing with various types of PDF documents, and languages. Furthermore, our method outperforms all state-of-the-arts with a wide margin. Finally, we introduce \"SynthTabNet\" a challenging synthetically generated dataset that reinforces missing characteristics from other datasets."
     },
     {
       "self_ref": "#/texts/330",
@@ -10023,12 +10023,12 @@
           },
           "charspan": [
             0,
-            205
+            211
           ]
         }
       ],
-      "orig": "endobjectdetectionwithtransformers. InAndreaVedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020, pages 213-229, Cham, 2020. Springer International Publishing. 5",
-      "text": "endobjectdetectionwithtransformers. InAndreaVedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020, pages 213-229, Cham, 2020. Springer International Publishing. 5"
+      "orig": "end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020, pages 213-229, Cham, 2020. Springer International Publishing. 5",
+      "text": "end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020, pages 213-229, Cham, 2020. Springer International Publishing. 5"
     },
     {
       "self_ref": "#/texts/334",
@@ -10108,12 +10108,12 @@
           },
           "charspan": [
             0,
-            209
+            216
           ]
         }
       ],
-      "orig": "[4] Herv\u00b4e D\u00b4ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang,YuFang,FlorianKleber,andEva-MariaLang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2",
-      "text": "Herv\u00b4e D\u00b4ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang,YuFang,FlorianKleber,andEva-MariaLang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2",
+      "orig": "[4] Herv\u00b4e D\u00b4ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2",
+      "text": "Herv\u00b4e D\u00b4ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2",
       "enumerated": true,
       "marker": "[4]"
     },
@@ -10137,12 +10137,12 @@
           },
           "charspan": [
             0,
-            230
+            235
           ]
         }
       ],
-      "orig": "[5] Basilios Gatos, Dimitrios Danatsas, Ioannis Pratikakis, and Stavros J Perantonis. Automatic table detection in document images. InInternationalConferenceonPatternRecognition and Image Analysis, pages 609-618. Springer, 2005. 2",
-      "text": "Basilios Gatos, Dimitrios Danatsas, Ioannis Pratikakis, and Stavros J Perantonis. Automatic table detection in document images. InInternationalConferenceonPatternRecognition and Image Analysis, pages 609-618. Springer, 2005. 2",
+      "orig": "[5] Basilios Gatos, Dimitrios Danatsas, Ioannis Pratikakis, and Stavros J Perantonis. Automatic table detection in document images. In International Conference on Pattern Recognition and Image Analysis, pages 609-618. Springer, 2005. 2",
+      "text": "Basilios Gatos, Dimitrios Danatsas, Ioannis Pratikakis, and Stavros J Perantonis. Automatic table detection in document images. In International Conference on Pattern Recognition and Image Analysis, pages 609-618. Springer, 2005. 2",
       "enumerated": true,
       "marker": "[5]"
     },
@@ -10166,12 +10166,12 @@
           },
           "charspan": [
             0,
-            187
+            193
           ]
         }
       ],
-      "orig": "[6] Max G\u00a8obel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar2013tablecompetition. In201312thInternational Conference on Document Analysis and Recognition, pages 1449-1453, 2013. 2",
-      "text": "Max G\u00a8obel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar2013tablecompetition. In201312thInternational Conference on Document Analysis and Recognition, pages 1449-1453, 2013. 2",
+      "orig": "[6] Max G\u00a8obel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition, pages 1449-1453, 2013. 2",
+      "text": "Max G\u00a8obel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition, pages 1449-1453, 2013. 2",
       "enumerated": true,
       "marker": "[6]"
     },
@@ -10195,12 +10195,12 @@
           },
           "charspan": [
             0,
-            155
+            164
           ]
         }
       ],
-      "orig": "[7] EAGreen andMKrishnamoorthy. Recognition of tables usingtablegrammars.procs. InSymposiumonDocument Analysis and Recognition (SDAIR'95), pages 261-277. 2",
-      "text": "EAGreen andMKrishnamoorthy. Recognition of tables usingtablegrammars.procs. InSymposiumonDocument Analysis and Recognition (SDAIR'95), pages 261-277. 2",
+      "orig": "[7] EA Green and M Krishnamoorthy. Recognition of tables using table grammars. procs. In Symposium on Document Analysis and Recognition (SDAIR'95), pages 261-277. 2",
+      "text": "EA Green and M Krishnamoorthy. Recognition of tables using table grammars. procs. In Symposium on Document Analysis and Recognition (SDAIR'95), pages 261-277. 2",
       "enumerated": true,
       "marker": "[7]"
     },
@@ -10224,12 +10224,12 @@
           },
           "charspan": [
             0,
-            265
+            270
           ]
         }
       ],
-      "orig": "[8] KhurramAzeemHashmi,AlainPagani,MarcusLiwicki,Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1",
-      "text": "KhurramAzeemHashmi,AlainPagani,MarcusLiwicki,Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1",
+      "orig": "[8] KhurramAzeemHashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1",
+      "text": "KhurramAzeemHashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging, 7(10), 2021. 1",
       "enumerated": true,
       "marker": "[8]"
     },
@@ -10311,12 +10311,12 @@
           },
           "charspan": [
             0,
-            236
+            238
           ]
         }
       ],
-      "orig": "[11] Jianying Hu, Ramanujan S Kashi, Daniel P Lopresti, and GordonWilfong. Medium-independent tabledetection. In Document Recognition and Retrieval VII, volume 3967, pages 291-302. International Society for Optics and Photonics, 1999. 2",
-      "text": "Jianying Hu, Ramanujan S Kashi, Daniel P Lopresti, and GordonWilfong. Medium-independent tabledetection. In Document Recognition and Retrieval VII, volume 3967, pages 291-302. International Society for Optics and Photonics, 1999. 2",
+      "orig": "[11] Jianying Hu, Ramanujan S Kashi, Daniel P Lopresti, and Gordon Wilfong. Medium-independent table detection. In Document Recognition and Retrieval VII, volume 3967, pages 291-302. International Society for Optics and Photonics, 1999. 2",
+      "text": "Jianying Hu, Ramanujan S Kashi, Daniel P Lopresti, and Gordon Wilfong. Medium-independent table detection. In Document Recognition and Retrieval VII, volume 3967, pages 291-302. International Society for Optics and Photonics, 1999. 2",
       "enumerated": true,
       "marker": "[11]"
     },
@@ -10340,12 +10340,12 @@
           },
           "charspan": [
             0,
-            234
+            239
           ]
         }
       ],
-      "orig": "[12] Matthew Hurst. A constraint-based approach to table structurederivation. InProceedingsof theSeventhInternational Conference on Document Analysis and Recognition - Volume 2, ICDAR '03, page 911, USA, 2003. IEEE Computer Society. 2",
-      "text": "Matthew Hurst. A constraint-based approach to table structurederivation. InProceedingsof theSeventhInternational Conference on Document Analysis and Recognition - Volume 2, ICDAR '03, page 911, USA, 2003. IEEE Computer Society. 2",
+      "orig": "[12] Matthew Hurst. A constraint-based approach to table structure derivation. In Proceedings of the Seventh International Conference on Document Analysis and Recognition - Volume 2, ICDAR '03, page 911, USA, 2003. IEEE Computer Society. 2",
+      "text": "Matthew Hurst. A constraint-based approach to table structure derivation. In Proceedings of the Seventh International Conference on Document Analysis and Recognition - Volume 2, ICDAR '03, page 911, USA, 2003. IEEE Computer Society. 2",
       "enumerated": true,
       "marker": "[12]"
     },
@@ -10398,12 +10398,12 @@
           },
           "charspan": [
             0,
-            136
+            142
           ]
         }
       ],
-      "orig": "[14] Pratik Kayal, Mrinal Anand, Harsh Desai, and Mayank Singh. Icdar2021competitiononscientifictableimage recognition to latex, 2021. 2",
-      "text": "Pratik Kayal, Mrinal Anand, Harsh Desai, and Mayank Singh. Icdar2021competitiononscientifictableimage recognition to latex, 2021. 2",
+      "orig": "[14] Pratik Kayal, Mrinal Anand, Harsh Desai, and Mayank Singh. Icdar 2021 competition on scientific table image recognition to latex, 2021. 2",
+      "text": "Pratik Kayal, Mrinal Anand, Harsh Desai, and Mayank Singh. Icdar 2021 competition on scientific table image recognition to latex, 2021. 2",
       "enumerated": true,
       "marker": "[14]"
     },
@@ -10427,12 +10427,12 @@
           },
           "charspan": [
             0,
-            124
+            125
           ]
         }
       ],
-      "orig": "[15] HaroldWKuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83-97, 1955. 6",
-      "text": "HaroldWKuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83-97, 1955. 6",
+      "orig": "[15] Harold WKuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83-97, 1955. 6",
+      "text": "Harold WKuhn. The hungarian method for the assignment problem. Naval research logistics quarterly, 2(1-2):83-97, 1955. 6",
       "enumerated": true,
       "marker": "[15]"
     },
@@ -10456,12 +10456,12 @@
           },
           "charspan": [
             0,
-            280
+            286
           ]
         }
       ],
-      "orig": "[16] Girish Kulkarni, Visruth Premraj, Vicente Ordonez, Sagnik Dhar, Siming Li, Yejin Choi, Alexander C. Berg, and Tamara L. Berg. Babytalk: Understanding and generatingsimpleimagedescriptions. IEEETransactionsonPattern Analysis and Machine Intelligence, 35(12):2891-2903, 2013. 4",
-      "text": "Girish Kulkarni, Visruth Premraj, Vicente Ordonez, Sagnik Dhar, Siming Li, Yejin Choi, Alexander C. Berg, and Tamara L. Berg. Babytalk: Understanding and generatingsimpleimagedescriptions. IEEETransactionsonPattern Analysis and Machine Intelligence, 35(12):2891-2903, 2013. 4",
+      "orig": "[16] Girish Kulkarni, Visruth Premraj, Vicente Ordonez, Sagnik Dhar, Siming Li, Yejin Choi, Alexander C. Berg, and Tamara L. Berg. Babytalk: Understanding and generating simple image descriptions. IEEE Transactions on Pattern Analysis and Machine Intelligence, 35(12):2891-2903, 2013. 4",
+      "text": "Girish Kulkarni, Visruth Premraj, Vicente Ordonez, Sagnik Dhar, Siming Li, Yejin Choi, Alexander C. Berg, and Tamara L. Berg. Babytalk: Understanding and generating simple image descriptions. IEEE Transactions on Pattern Analysis and Machine Intelligence, 35(12):2891-2903, 2013. 4",
       "enumerated": true,
       "marker": "[16]"
     },
@@ -10601,12 +10601,12 @@
           },
           "charspan": [
             0,
-            309
+            314
           ]
         }
       ],
-      "orig": "[21] Shubham Singh Paliwal, D Vishwanath, Rohit Rahul, Monika Sharma, and Lovekesh Vig. Tablenet: Deep learning model for end-to-end table detection and tabular data extractionfromscanneddocument images. In2019International Conference on Document Analysis and Recognition (ICDAR), pages 128-133. IEEE, 2019. 1",
-      "text": "Shubham Singh Paliwal, D Vishwanath, Rohit Rahul, Monika Sharma, and Lovekesh Vig. Tablenet: Deep learning model for end-to-end table detection and tabular data extractionfromscanneddocument images. In2019International Conference on Document Analysis and Recognition (ICDAR), pages 128-133. IEEE, 2019. 1",
+      "orig": "[21] Shubham Singh Paliwal, D Vishwanath, Rohit Rahul, Monika Sharma, and Lovekesh Vig. Tablenet: Deep learning model for end-to-end table detection and tabular data extraction from scanned document images. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 128-133. IEEE, 2019. 1",
+      "text": "Shubham Singh Paliwal, D Vishwanath, Rohit Rahul, Monika Sharma, and Lovekesh Vig. Tablenet: Deep learning model for end-to-end table detection and tabular data extraction from scanned document images. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 128-133. IEEE, 2019. 1",
       "enumerated": true,
       "marker": "[21]"
     },
@@ -10659,12 +10659,12 @@
           },
           "charspan": [
             0,
-            317
+            321
           ]
         }
       ],
-      "orig": "[23] Devashish Prasad, Ayan Gadpal, Kshitij Kapadni, Manish Visave, and Kavita Sultanpure. Cascadetabnet: An approach for end to end table detection and structure recognition from image-baseddocuments. InProceedingsof theIEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops, pages 572-573, 2020. 1",
-      "text": "Devashish Prasad, Ayan Gadpal, Kshitij Kapadni, Manish Visave, and Kavita Sultanpure. Cascadetabnet: An approach for end to end table detection and structure recognition from image-baseddocuments. InProceedingsof theIEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops, pages 572-573, 2020. 1",
+      "orig": "[23] Devashish Prasad, Ayan Gadpal, Kshitij Kapadni, Manish Visave, and Kavita Sultanpure. Cascadetabnet: An approach for end to end table detection and structure recognition from image-based documents. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops, pages 572-573, 2020. 1",
+      "text": "Devashish Prasad, Ayan Gadpal, Kshitij Kapadni, Manish Visave, and Kavita Sultanpure. Cascadetabnet: An approach for end to end table detection and structure recognition from image-based documents. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops, pages 572-573, 2020. 1",
       "enumerated": true,
       "marker": "[23]"
     },
@@ -10829,12 +10829,12 @@
           },
           "charspan": [
             0,
-            300
+            307
           ]
         }
       ],
-      "orig": "[27] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In201714thIAPRinternationalconferenceondocument analysis and recognition (ICDAR), volume 1, pages 1162-1167. IEEE, 2017. 3",
-      "text": "Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In201714thIAPRinternationalconferenceondocument analysis and recognition (ICDAR), volume 1, pages 1162-1167. IEEE, 2017. 3",
+      "orig": "[27] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR international conference on document analysis and recognition (ICDAR), volume 1, pages 1162-1167. IEEE, 2017. 3",
+      "text": "Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR international conference on document analysis and recognition (ICDAR), volume 1, pages 1162-1167. IEEE, 2017. 3",
       "enumerated": true,
       "marker": "[27]"
     },
@@ -10858,12 +10858,12 @@
           },
           "charspan": [
             0,
-            176
+            182
           ]
         }
       ],
-      "orig": "[28] Faisal Shafait and Ray Smith. Table detection in heterogeneousdocuments. InProceedingsof the9thIAPRInternational Workshop on Document Analysis Systems, pages 6572, 2010. 2",
-      "text": "Faisal Shafait and Ray Smith. Table detection in heterogeneousdocuments. InProceedingsof the9thIAPRInternational Workshop on Document Analysis Systems, pages 6572, 2010. 2",
+      "orig": "[28] Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems, pages 6572, 2010. 2",
+      "text": "Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems, pages 6572, 2010. 2",
       "enumerated": true,
       "marker": "[28]"
     },
@@ -10945,12 +10945,12 @@
           },
           "charspan": [
             0,
-            358
+            365
           ]
         }
       ],
-      "orig": "[31] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, \u0141 ukasz Kaiser, and IlliaPolosukhin. Attentionisallyouneed. InI.Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30, pages 5998-6008. Curran Associates, Inc., 2017. 5",
-      "text": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, \u0141 ukasz Kaiser, and IlliaPolosukhin. Attentionisallyouneed. InI.Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30, pages 5998-6008. Curran Associates, Inc., 2017. 5",
+      "orig": "[31] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, \u0141 ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30, pages 5998-6008. Curran Associates, Inc., 2017. 5",
+      "text": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, \u0141 ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30, pages 5998-6008. Curran Associates, Inc., 2017. 5",
       "enumerated": true,
       "marker": "[31]"
     },
@@ -11003,12 +11003,12 @@
           },
           "charspan": [
             0,
-            210
+            216
           ]
         }
       ],
-      "orig": "[33] Wenyuan Xue, Qingyong Li, and Dacheng Tao. Res2tim: reconstructsyntacticstructuresfromtableimages. In2019 International Conference on Document Analysis and Recognition (ICDAR), pages 749-755. IEEE, 2019. 3",
-      "text": "Wenyuan Xue, Qingyong Li, and Dacheng Tao. Res2tim: reconstructsyntacticstructuresfromtableimages. In2019 International Conference on Document Analysis and Recognition (ICDAR), pages 749-755. IEEE, 2019. 3",
+      "orig": "[33] Wenyuan Xue, Qingyong Li, and Dacheng Tao. Res2tim: reconstruct syntactic structures from table images. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 749-755. IEEE, 2019. 3",
+      "text": "Wenyuan Xue, Qingyong Li, and Dacheng Tao. Res2tim: reconstruct syntactic structures from table images. In 2019 International Conference on Document Analysis and Recognition (ICDAR), pages 749-755. IEEE, 2019. 3",
       "enumerated": true,
       "marker": "[33]"
     },
@@ -11061,12 +11061,12 @@
           },
           "charspan": [
             0,
-            214
+            219
           ]
         }
       ],
-      "orig": "[35] Quanzeng You, Hailin Jin, Zhaowen Wang, Chen Fang, and JieboLuo. Imagecaptioningwithsemanticattention. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 4651-4659, 2016. 4",
-      "text": "Quanzeng You, Hailin Jin, Zhaowen Wang, Chen Fang, and JieboLuo. Imagecaptioningwithsemanticattention. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 4651-4659, 2016. 4",
+      "orig": "[35] Quanzeng You, Hailin Jin, Zhaowen Wang, Chen Fang, and Jiebo Luo. Image captioning with semantic attention. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 4651-4659, 2016. 4",
+      "text": "Quanzeng You, Hailin Jin, Zhaowen Wang, Chen Fang, and Jiebo Luo. Image captioning with semantic attention. In Proceedings of the IEEE conference on computer vision and pattern recognition, pages 4651-4659, 2016. 4",
       "enumerated": true,
       "marker": "[35]"
     },
@@ -11119,12 +11119,12 @@
           },
           "charspan": [
             0,
-            101
+            106
           ]
         }
       ],
-      "orig": "[37] Xu Zhong, Elaheh ShafieiBavani, and Antonio JimenoYepes. Image-basedtablerecognition:Data,model,",
-      "text": "Xu Zhong, Elaheh ShafieiBavani, and Antonio JimenoYepes. Image-basedtablerecognition:Data,model,",
+      "orig": "[37] Xu Zhong, Elaheh ShafieiBavani, and Antonio Jimeno Yepes. Image-based table recognition: Data, model,",
+      "text": "Xu Zhong, Elaheh ShafieiBavani, and Antonio Jimeno Yepes. Image-based table recognition: Data, model,",
       "enumerated": true,
       "marker": "[37]"
     },
@@ -11148,12 +11148,12 @@
           },
           "charspan": [
             0,
-            187
+            193
           ]
         }
       ],
-      "orig": "andevaluation. InAndreaVedaldi,HorstBischof,Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020, pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
-      "text": "andevaluation. InAndreaVedaldi,HorstBischof,Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020, pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7"
+      "orig": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020, pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
+      "text": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020, pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7"
     },
     {
       "self_ref": "#/texts/373",
@@ -11346,8 +11346,8 @@
           ]
         }
       ],
-      "orig": "As a first step of our data preparation process, we have calculated statistics over the datasets across the following dimensions: (1) table size measured in the number of rows and columns, (2) complexity of the table, (3) strictness of the provided HTML structure and (4) completeness (i.e. no omitted bounding boxes). A table is considered to be simple if it does not contain row spans or column spans. Additionally, a table has a strict HTML structure if every row has the same number of columns after taking into account any row or column spans. Therefore a strict HTML structure looks always rectangular. However, HTML is a lenient encoding format, i.e. tables with rows of different sizes might still be regarded as correct due to implicit display rules. These implicit rules leave room for ambiguity, which we want to avoid. As such, we prefer to have 'strict' tables, i.e. tables where every row has exactly the same length.",
-      "text": "As a first step of our data preparation process, we have calculated statistics over the datasets across the following dimensions: (1) table size measured in the number of rows and columns, (2) complexity of the table, (3) strictness of the provided HTML structure and (4) completeness (i.e. no omitted bounding boxes). A table is considered to be simple if it does not contain row spans or column spans. Additionally, a table has a strict HTML structure if every row has the same number of columns after taking into account any row or column spans. Therefore a strict HTML structure looks always rectangular. However, HTML is a lenient encoding format, i.e. tables with rows of different sizes might still be regarded as correct due to implicit display rules. These implicit rules leave room for ambiguity, which we want to avoid. As such, we prefer to have 'strict' tables, i.e. tables where every row has exactly the same length."
+      "orig": "As a first step of our data preparation process, we have calculated statistics over the datasets across the following dimensions: (1) table size measured in the number of rows and columns, (2) complexity of the table, (3) strictness of the provided HTML structure and (4) completeness (i.e. no omitted bounding boxes). A table is considered to be simple if it does not contain row spans or column spans. Additionally, a table has a strict HTML structure if every row has the same number of columns after taking into account any row or column spans. Therefore a strict HTML structure looks always rectangular. However, HTML is a lenient encoding format, i.e. tables with rows of different sizes might still be regarded as correct due to implicit display rules. These implicit rules leave room for ambiguity, which we want to avoid. As such, we prefer to have \"strict\" tables, i.e. tables where every row has exactly the same length.",
+      "text": "As a first step of our data preparation process, we have calculated statistics over the datasets across the following dimensions: (1) table size measured in the number of rows and columns, (2) complexity of the table, (3) strictness of the provided HTML structure and (4) completeness (i.e. no omitted bounding boxes). A table is considered to be simple if it does not contain row spans or column spans. Additionally, a table has a strict HTML structure if every row has the same number of columns after taking into account any row or column spans. Therefore a strict HTML structure looks always rectangular. However, HTML is a lenient encoding format, i.e. tables with rows of different sizes might still be regarded as correct due to implicit display rules. These implicit rules leave room for ambiguity, which we want to avoid. As such, we prefer to have \"strict\" tables, i.e. tables where every row has exactly the same length."
     },
     {
       "self_ref": "#/texts/380",
@@ -12070,12 +12070,12 @@
           },
           "charspan": [
             0,
-            12
+            13
           ]
         }
       ],
-      "orig": "100% 500K10K",
-      "text": "100% 500K10K"
+      "orig": "100% 500K 10K",
+      "text": "100% 500K 10K"
     },
     {
       "self_ref": "#/texts/406",
@@ -12124,12 +12124,12 @@
           },
           "charspan": [
             0,
-            14
+            15
           ]
         }
       ],
-      "orig": "100% 91K10K10K",
-      "text": "100% 91K10K10K"
+      "orig": "100% 91K 10K10K",
+      "text": "100% 91K 10K10K"
     },
     {
       "self_ref": "#/texts/408",
@@ -12151,12 +12151,12 @@
           },
           "charspan": [
             0,
-            13
+            14
           ]
         }
       ],
-      "orig": "TrainTest Val",
-      "text": "TrainTest Val"
+      "orig": "Train Test Val",
+      "text": "Train Test Val"
     },
     {
       "self_ref": "#/texts/409",
@@ -13426,12 +13426,12 @@
           },
           "charspan": [
             0,
-            186
+            187
           ]
         }
       ],
-      "orig": "2. Generate pair-wise matches between the bounding boxes of the PDF cells and the predicted cells. The Intersection Over Union (IOU) metric is used to evaluate the quality of thematches.",
-      "text": "Generate pair-wise matches between the bounding boxes of the PDF cells and the predicted cells. The Intersection Over Union (IOU) metric is used to evaluate the quality of thematches.",
+      "orig": "2. Generate pair-wise matches between the bounding boxes of the PDF cells and the predicted cells. The Intersection Over Union (IOU) metric is used to evaluate the quality of the matches.",
+      "text": "Generate pair-wise matches between the bounding boxes of the PDF cells and the predicted cells. The Intersection Over Union (IOU) metric is used to evaluate the quality of the matches.",
       "enumerated": true,
       "marker": "2."
     },
@@ -13459,8 +13459,8 @@
           ]
         }
       ],
-      "orig": "3. Use a carefully selected IOU threshold to designate the matches as 'good' ones and 'bad' ones.",
-      "text": "Use a carefully selected IOU threshold to designate the matches as 'good' ones and 'bad' ones.",
+      "orig": "3. Use a carefully selected IOU threshold to designate the matches as \"good\" ones and \"bad\" ones.",
+      "text": "Use a carefully selected IOU threshold to designate the matches as \"good\" ones and \"bad\" ones.",
       "enumerated": true,
       "marker": "3."
     },
@@ -13681,12 +13681,12 @@
           },
           "charspan": [
             0,
-            462
+            471
           ]
         }
       ],
-      "orig": "7. Generate a new set of pair-wise matches between the corrected bounding boxes and PDF cells. This time use a modified version of the IOU metric, where the area of the intersection between the predicted and PDF cells is divided bythePDFcellarea. Incasetherearemultiplematches for the same PDF cell, the prediction with the higher score is preferred. This covers the cases where the PDF cells are smaller than the area of predicted or corrected prediction cells.",
-      "text": "Generate a new set of pair-wise matches between the corrected bounding boxes and PDF cells. This time use a modified version of the IOU metric, where the area of the intersection between the predicted and PDF cells is divided bythePDFcellarea. Incasetherearemultiplematches for the same PDF cell, the prediction with the higher score is preferred. This covers the cases where the PDF cells are smaller than the area of predicted or corrected prediction cells.",
+      "orig": "7. Generate a new set of pair-wise matches between the corrected bounding boxes and PDF cells. This time use a modified version of the IOU metric, where the area of the intersection between the predicted and PDF cells is divided by the PDF cell area. In case there are multiple matches for the same PDF cell, the prediction with the higher score is preferred. This covers the cases where the PDF cells are smaller than the area of predicted or corrected prediction cells.",
+      "text": "Generate a new set of pair-wise matches between the corrected bounding boxes and PDF cells. This time use a modified version of the IOU metric, where the area of the intersection between the predicted and PDF cells is divided by the PDF cell area. In case there are multiple matches for the same PDF cell, the prediction with the higher score is preferred. This covers the cases where the PDF cells are smaller than the area of predicted or corrected prediction cells.",
       "enumerated": true,
       "marker": "7."
     },
@@ -13710,12 +13710,12 @@
           },
           "charspan": [
             0,
-            295
+            311
           ]
         }
       ],
-      "orig": "8. Insomerareoccasions,wehavenoticedthatTableFormer can confuse a single column as two. When the postprocessing steps are applied, this results with two predicted columnspointingtothesamePDFcolumn. Insuchcase we must de-duplicate the columns according to highest total column intersection score.",
-      "text": "Insomerareoccasions,wehavenoticedthatTableFormer can confuse a single column as two. When the postprocessing steps are applied, this results with two predicted columnspointingtothesamePDFcolumn. Insuchcase we must de-duplicate the columns according to highest total column intersection score.",
+      "orig": "8. In some rare occasions, we have noticed that TableFormer can confuse a single column as two. When the postprocessing steps are applied, this results with two predicted columns pointing to the same PDF column. In such case we must de-duplicate the columns according to highest total column intersection score.",
+      "text": "In some rare occasions, we have noticed that TableFormer can confuse a single column as two. When the postprocessing steps are applied, this results with two predicted columns pointing to the same PDF column. In such case we must de-duplicate the columns according to highest total column intersection score.",
       "enumerated": true,
       "marker": "8."
     },
@@ -13795,12 +13795,12 @@
           },
           "charspan": [
             0,
-            95
+            101
           ]
         }
       ],
-      "orig": "9b. Intersect theorphan'sboundingboxwiththerow bands, and map the cell to the closest grid row.",
-      "text": "Intersect theorphan'sboundingboxwiththerow bands, and map the cell to the closest grid row.",
+      "orig": "9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
+      "text": "Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
       "enumerated": true,
       "marker": "9b."
     },
@@ -14112,12 +14112,12 @@
           },
           "charspan": [
             0,
-            54
+            61
           ]
         }
       ],
-      "orig": "Figure11: Simpletablewithdifferentstyleandempty cells.",
-      "text": "Figure11: Simpletablewithdifferentstyleandempty cells."
+      "orig": "Figure 11: Simple table with different style and empty cells.",
+      "text": "Figure 11: Simple table with different style and empty cells."
     },
     {
       "self_ref": "#/texts/480",
@@ -20648,6 +20648,26 @@
             "bbox": {
               "l": 454.1,
               "t": 253.93,
+              "r": 474.59,
+              "b": 262.49,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "mAP",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 486.54,
+              "t": 253.93,
               "r": 527.23,
               "b": 262.49,
               "coord_origin": "TOPLEFT"
@@ -20658,7 +20678,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
-            "text": "mAPmAP(PP)",
+            "text": "mAP (PP)",
             "column_header": true,
             "row_header": false,
             "row_section": false,
@@ -20951,21 +20971,28 @@
               "fillable": false
             },
             {
+              "bbox": {
+                "l": 454.1,
+                "t": 253.93,
+                "r": 474.59,
+                "b": 262.49,
+                "coord_origin": "TOPLEFT"
+              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "",
-              "column_header": false,
+              "text": "mAP",
+              "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
               "bbox": {
-                "l": 454.1,
+                "l": 486.54,
                 "t": 253.93,
                 "r": 527.23,
                 "b": 262.49,
@@ -20977,7 +21004,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "mAPmAP(PP)",
+              "text": "mAP (PP)",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -21605,7 +21632,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "AcrobatPro",
+            "text": "Acrobat Pro",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -22179,7 +22206,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "AcrobatPro",
+              "text": "Acrobat Pro",
               "column_header": false,
               "row_header": true,
               "row_section": false,

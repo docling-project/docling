@@ -2682,12 +2682,12 @@
           },
           "charspan": [
             0,
-            376
+            377
           ]
         }
       ],
-      "orig": "Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator.",
-      "text": "Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator."
+      "orig": "Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure 1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator.",
+      "text": "Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure 1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator."
     },
     {
       "self_ref": "#/texts/71",
@@ -3095,12 +3095,12 @@
           },
           "charspan": [
             0,
-            129
+            130
           ]
         }
       ],
-      "orig": "The FUNCTION_USAGE view contains function usage configuration details. Table2-1 describes the columns in the FUNCTION_USAGE view.",
-      "text": "The FUNCTION_USAGE view contains function usage configuration details. Table2-1 describes the columns in the FUNCTION_USAGE view."
+      "orig": "The FUNCTION_USAGE view contains function usage configuration details. Table 2-1 describes the columns in the FUNCTION_USAGE view.",
+      "text": "The FUNCTION_USAGE view contains function usage configuration details. Table 2-1 describes the columns in the FUNCTION_USAGE view."
     },
     {
       "self_ref": "#/texts/86",
@@ -3149,12 +3149,12 @@
           },
           "charspan": [
             0,
-            111
+            112
           ]
         }
       ],
-      "orig": "To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example2-1.",
-      "text": "To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example2-1."
+      "orig": "To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.",
+      "text": "To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1."
     },
     {
       "self_ref": "#/texts/88",
@@ -3420,12 +3420,12 @@
           },
           "charspan": [
             0,
-            135
+            136
           ]
         }
       ],
-      "orig": "Table2-2 shows a comparison of the different function usage IDs and *JOBCTL authority to the different CL commands and DB2 for i tools.",
-      "text": "Table2-2 shows a comparison of the different function usage IDs and *JOBCTL authority to the different CL commands and DB2 for i tools."
+      "orig": "Table 2-2 shows a comparison of the different function usage IDs and *JOBCTL authority to the different CL commands and DB2 for i tools.",
+      "text": "Table 2-2 shows a comparison of the different function usage IDs and *JOBCTL authority to the different CL commands and DB2 for i tools."
     },
     {
       "self_ref": "#/texts/98",
@@ -3501,12 +3501,12 @@
           },
           "charspan": [
             0,
-            134
+            135
           ]
         }
       ],
-      "orig": "The SQL CREATE PERMISSION statement that is shown in Figure3-1 is used to define and initially enable or disable the row access rules.",
-      "text": "The SQL CREATE PERMISSION statement that is shown in Figure3-1 is used to define and initially enable or disable the row access rules."
+      "orig": "The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.",
+      "text": "The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules."
     },
     {
       "self_ref": "#/texts/101",
@@ -3609,12 +3609,12 @@
           },
           "charspan": [
             0,
-            14
+            15
           ]
         }
       ],
-      "orig": "ON<table name>",
-      "text": "ON<table name>"
+      "orig": "ON <table name>",
+      "text": "ON <table name>"
     },
     {
       "self_ref": "#/texts/105",
@@ -3798,12 +3798,12 @@
           },
           "charspan": [
             0,
-            59
+            60
           ]
         }
       ],
-      "orig": "WHERE<logic to test: user and/or group and/or column value>",
-      "text": "WHERE<logic to test: user and/or group and/or column value>"
+      "orig": "WHERE <logic to test: user and/or group and/or column value>",
+      "text": "WHERE <logic to test: user and/or group and/or column value>"
     },
     {
       "self_ref": "#/texts/112",
@@ -3960,12 +3960,12 @@
           },
           "charspan": [
             0,
-            11
+            13
           ]
         }
       ],
-      "orig": "S ifi thtth",
-      "text": "S ifi thtth"
+      "orig": "S ifi th t th",
+      "text": "S ifi th t th"
     },
     {
       "self_ref": "#/texts/118",
@@ -4204,12 +4204,12 @@
           },
           "charspan": [
             0,
-            61
+            62
           ]
         }
       ],
-      "orig": "Table3-1 summarizes these special registers and their values.",
-      "text": "Table3-1 summarizes these special registers and their values."
+      "orig": "Table 3-1 summarizes these special registers and their values.",
+      "text": "Table 3-1 summarizes these special registers and their values."
     },
     {
       "self_ref": "#/texts/127",
@@ -4258,12 +4258,12 @@
           },
           "charspan": [
             0,
-            96
+            97
           ]
         }
       ],
-      "orig": "Figure3-5 shows the difference in the special register values when an adopted authority is used:",
-      "text": "Figure3-5 shows the difference in the special register values when an adopted authority is used:"
+      "orig": "Figure 3-5 shows the difference in the special register values when an adopted authority is used:",
+      "text": "Figure 3-5 shows the difference in the special register values when an adopted authority is used:"
     },
     {
       "self_ref": "#/texts/129",
@@ -4457,12 +4457,12 @@
           },
           "charspan": [
             0,
-            15
+            18
           ]
         }
       ],
-      "orig": "SignedonasALICE",
-      "text": "SignedonasALICE"
+      "orig": "Signed on as ALICE",
+      "text": "Signed on as ALICE"
     },
     {
       "self_ref": "#/texts/136",
@@ -4890,12 +4890,12 @@
           },
           "charspan": [
             0,
-            50
+            51
           ]
         }
       ],
-      "orig": "Table3-2 lists the nine built-in global variables.",
-      "text": "Table3-2 lists the nine built-in global variables."
+      "orig": "Table 3-2 lists the nine built-in global variables.",
+      "text": "Table 3-2 lists the nine built-in global variables."
     },
     {
       "self_ref": "#/texts/152",
@@ -5424,12 +5424,12 @@
           },
           "charspan": [
             0,
-            81
+            82
           ]
         }
       ],
-      "orig": "To implement this column mask, run the SQL statement that is shown in Example3-9.",
-      "text": "To implement this column mask, run the SQL statement that is shown in Example3-9."
+      "orig": "To implement this column mask, run the SQL statement that is shown in Example 3-9.",
+      "text": "To implement this column mask, run the SQL statement that is shown in Example 3-9."
     },
     {
       "self_ref": "#/texts/171",
@@ -5544,12 +5544,12 @@
           },
           "charspan": [
             0,
-            64
+            65
           ]
         }
       ],
-      "orig": "3. Figure3-10 shows the masks that are created in the HR_SCHEMA.",
-      "text": "Figure3-10 shows the masks that are created in the HR_SCHEMA.",
+      "orig": "3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.",
+      "text": "Figure 3-10 shows the masks that are created in the HR_SCHEMA.",
       "enumerated": true,
       "marker": "3."
     },
@@ -5655,12 +5655,12 @@
           },
           "charspan": [
             0,
-            56
+            57
           ]
         }
       ],
-      "orig": "1. Run the SQL statements that are shown in Example3-10.",
-      "text": "Run the SQL statements that are shown in Example3-10.",
+      "orig": "1. Run the SQL statements that are shown in Example 3-10.",
+      "text": "Run the SQL statements that are shown in Example 3-10.",
       "enumerated": true,
       "marker": "1."
     },
@@ -5873,12 +5873,12 @@
           },
           "charspan": [
             0,
-            226
+            228
           ]
         }
       ],
-      "orig": "2. Look at the definition of the EMPLOYEE table, as shown in Figure3-11. To do this, from the main navigation pane of System i Navigator, click Schemas\uf0ae HR_SCHEMA\uf0ae Tables, right-click the EMPLOYEES table, and click Definition.",
-      "text": "Look at the definition of the EMPLOYEE table, as shown in Figure3-11. To do this, from the main navigation pane of System i Navigator, click Schemas\uf0ae HR_SCHEMA\uf0ae Tables, right-click the EMPLOYEES table, and click Definition.",
+      "orig": "2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \uf0ae HR_SCHEMA\uf0ae Tables, right-click the EMPLOYEES table, and click Definition.",
+      "text": "Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \uf0ae HR_SCHEMA\uf0ae Tables, right-click the EMPLOYEES table, and click Definition.",
       "enumerated": true,
       "marker": "2."
     },
@@ -5956,12 +5956,12 @@
           },
           "charspan": [
             0,
-            227
+            228
           ]
         }
       ],
-      "orig": "2. Figure4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.",
-      "text": "Figure4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.",
+      "orig": "2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.",
+      "text": "Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.",
       "enumerated": true,
       "marker": "2."
     },
@@ -6012,12 +6012,12 @@
           },
           "charspan": [
             0,
-            231
+            232
           ]
         }
       ],
-      "orig": "3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.",
-      "text": "Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.",
+      "orig": "3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.",
+      "text": "Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.",
       "enumerated": true,
       "marker": "3."
     },
@@ -7262,7 +7262,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". . . . . . .vii",
+            "text": ". . . . . . . vii",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -7390,9 +7390,9 @@
           },
           {
             "bbox": {
-              "l": 531.39,
+              "l": 531.38,
               "t": 186.45,
-              "r": 547.52,
+              "r": 547.51,
               "b": 196.86,
               "coord_origin": "TOPLEFT"
             },
@@ -7422,7 +7422,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Authors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -7502,7 +7502,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Comments welcome . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -7592,7 +7592,7 @@
             "bbox": {
               "l": 500.15,
               "t": 260.04,
-              "r": 547.52,
+              "r": 547.51,
               "b": 271.82,
               "coord_origin": "TOPLEFT"
             },
@@ -7622,7 +7622,7 @@
             "end_row_offset_idx": 12,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.1 Security fundamentals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -7682,7 +7682,7 @@
             "end_row_offset_idx": 13,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.2 Current state of IBM i security . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -7722,7 +7722,7 @@
             "end_row_offset_idx": 14,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "1.3 DB2 for i security controls. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -7762,7 +7762,7 @@
             "end_row_offset_idx": 15,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "1.3.1 Existing row and column control. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -7802,7 +7802,7 @@
             "end_row_offset_idx": 16,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . .",
+            "text": "1.3.2 New controls: Row and Column Access Control . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -7842,7 +7842,7 @@
             "end_row_offset_idx": 17,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Chapter 2. Roles and separation of duties. . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": true,
@@ -7852,7 +7852,7 @@
             "bbox": {
               "l": 500.15,
               "t": 344.25,
-              "r": 547.52,
+              "r": 547.51,
               "b": 356.36,
               "coord_origin": "TOPLEFT"
             },
@@ -7882,7 +7882,7 @@
             "end_row_offset_idx": 18,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1 Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -7962,7 +7962,7 @@
             "end_row_offset_idx": 20,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . .",
+            "text": "2.1.2 Toolbox application server access: QIBM_DB_ZDA . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8122,7 +8122,7 @@
             "end_row_offset_idx": 24,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1.6 Change Function Usage CL command . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8162,7 +8162,7 @@
             "end_row_offset_idx": 25,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view.",
+            "text": "2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8170,7 +8170,7 @@
           },
           {
             "bbox": {
-              "l": 511.18,
+              "l": 505.59,
               "t": 445.95,
               "r": 548.01,
               "b": 456.74,
@@ -8182,7 +8182,7 @@
             "end_row_offset_idx": 25,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": ". . . . 10",
+            "text": ". . . . . 10",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -8242,7 +8242,7 @@
             "end_row_offset_idx": 27,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Chapter 3. Row and Column Access Control. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": true,
@@ -8252,7 +8252,7 @@
             "bbox": {
               "l": 500.15,
               "t": 479.21,
-              "r": 547.52,
+              "r": 547.51,
               "b": 490.82,
               "coord_origin": "TOPLEFT"
             },
@@ -8402,7 +8402,7 @@
             "end_row_offset_idx": 31,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.2 Special registers and built-in global variables. . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8442,7 +8442,7 @@
             "end_row_offset_idx": 32,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.2.1 Special registers. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8482,7 +8482,7 @@
             "end_row_offset_idx": 33,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.2.2 Built-in global variables. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8522,7 +8522,7 @@
             "end_row_offset_idx": 34,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.3 VERIFY_GROUP_FOR_USER function . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8562,7 +8562,7 @@
             "end_row_offset_idx": 35,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .",
+            "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8642,7 +8642,7 @@
             "end_row_offset_idx": 37,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6 Human resources example. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": false,
             "row_section": true,
@@ -8652,7 +8652,7 @@
             "bbox": {
               "l": 500.16,
               "t": 604.06,
-              "r": 547.52,
+              "r": 547.51,
               "b": 615.37,
               "coord_origin": "TOPLEFT"
             },
@@ -8682,7 +8682,7 @@
             "end_row_offset_idx": 38,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . .",
+            "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8722,7 +8722,7 @@
             "end_row_offset_idx": 39,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . . . . . . .",
+            "text": "3.6.2 Creating group profiles for the users and their roles . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8762,7 +8762,7 @@
             "end_row_offset_idx": 40,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.3 Demonstrating data access without RCAC . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8802,7 +8802,7 @@
             "end_row_offset_idx": 41,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.4 Defining and creating row permissions. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -8882,7 +8882,7 @@
             "end_row_offset_idx": 43,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.6 Activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false,
@@ -9028,7 +9028,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". . . . . . .vii",
+              "text": ". . . . . . . vii",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -9135,9 +9135,9 @@
             },
             {
               "bbox": {
-                "l": 531.39,
+                "l": 531.38,
                 "t": 186.45,
-                "r": 547.52,
+                "r": 547.51,
                 "b": 196.86,
                 "coord_origin": "TOPLEFT"
               },
@@ -9211,7 +9211,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "Authors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9295,7 +9295,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "Comments welcome . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9389,7 +9389,7 @@
               "bbox": {
                 "l": 500.15,
                 "t": 260.04,
-                "r": 547.52,
+                "r": 547.51,
                 "b": 271.82,
                 "coord_origin": "TOPLEFT"
               },
@@ -9456,7 +9456,7 @@
               "end_row_offset_idx": 12,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "1.1 Security fundamentals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9498,7 +9498,7 @@
               "end_row_offset_idx": 13,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "1.2 Current state of IBM i security . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9540,7 +9540,7 @@
               "end_row_offset_idx": 14,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "1.3 DB2 for i security controls. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9582,7 +9582,7 @@
               "end_row_offset_idx": 15,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "1.3.1 Existing row and column control. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9624,7 +9624,7 @@
               "end_row_offset_idx": 16,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . .",
+              "text": "1.3.2 New controls: Row and Column Access Control . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9666,7 +9666,7 @@
               "end_row_offset_idx": 17,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Chapter 2. Roles and separation of duties. . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": true,
@@ -9676,7 +9676,7 @@
               "bbox": {
                 "l": 500.15,
                 "t": 344.25,
-                "r": 547.52,
+                "r": 547.51,
                 "b": 356.36,
                 "coord_origin": "TOPLEFT"
               },
@@ -9708,7 +9708,7 @@
               "end_row_offset_idx": 18,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "2.1 Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9792,7 +9792,7 @@
               "end_row_offset_idx": 20,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . .",
+              "text": "2.1.2 Toolbox application server access: QIBM_DB_ZDA . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -9960,7 +9960,7 @@
               "end_row_offset_idx": 24,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "2.1.6 Change Function Usage CL command . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10002,7 +10002,7 @@
               "end_row_offset_idx": 25,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view.",
+              "text": "2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10010,7 +10010,7 @@
             },
             {
               "bbox": {
-                "l": 511.18,
+                "l": 505.59,
                 "t": 445.95,
                 "r": 548.01,
                 "b": 456.74,
@@ -10022,7 +10022,7 @@
               "end_row_offset_idx": 25,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": ". . . . 10",
+              "text": ". . . . . 10",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -10086,7 +10086,7 @@
               "end_row_offset_idx": 27,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Chapter 3. Row and Column Access Control. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": true,
@@ -10096,7 +10096,7 @@
               "bbox": {
                 "l": 500.15,
                 "t": 479.21,
-                "r": 547.52,
+                "r": 547.51,
                 "b": 490.82,
                 "coord_origin": "TOPLEFT"
               },
@@ -10254,7 +10254,7 @@
               "end_row_offset_idx": 31,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.2 Special registers and built-in global variables. . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10296,7 +10296,7 @@
               "end_row_offset_idx": 32,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.2.1 Special registers. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10338,7 +10338,7 @@
               "end_row_offset_idx": 33,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.2.2 Built-in global variables. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10380,7 +10380,7 @@
               "end_row_offset_idx": 34,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.3 VERIFY_GROUP_FOR_USER function . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10422,7 +10422,7 @@
               "end_row_offset_idx": 35,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .",
+              "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10506,7 +10506,7 @@
               "end_row_offset_idx": 37,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6 Human resources example. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": false,
               "row_section": true,
@@ -10516,7 +10516,7 @@
               "bbox": {
                 "l": 500.16,
                 "t": 604.06,
-                "r": 547.52,
+                "r": 547.51,
                 "b": 615.37,
                 "coord_origin": "TOPLEFT"
               },
@@ -10548,7 +10548,7 @@
               "end_row_offset_idx": 38,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . .",
+              "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10590,7 +10590,7 @@
               "end_row_offset_idx": 39,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . . . . . . .",
+              "text": "3.6.2 Creating group profiles for the users and their roles . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10632,7 +10632,7 @@
               "end_row_offset_idx": 40,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6.3 Demonstrating data access without RCAC . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10674,7 +10674,7 @@
               "end_row_offset_idx": 41,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.4 Defining and creating row permissions. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
@@ -10758,7 +10758,7 @@
               "end_row_offset_idx": 43,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6.6 Activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false,
