@@ -94,6 +94,7 @@ from docling.datamodel.document import (
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     NativePdfPipelineOptions,
+    PdfPipelineOptions,
     PipelineOptions,
 )
 from docling.datamodel.settings import (
@@ -266,10 +267,15 @@ class PdfFormatOption(FormatOption):
         options = self.backend_options
         if not issubclass(self.backend, ThreadedDoclingParseDocumentBackend):
             return options
-        if self.pipeline_options is None:
+        if not isinstance(self.pipeline_options, PdfPipelineOptions):
             return options
 
         render_scale = max(1.0, self.pipeline_options.images_scale)
+        if self.pipeline_options.do_ocr:
+            render_scale = max(render_scale, self.pipeline_options.ocr_options.scale)
+        if self.pipeline_options.do_table_structure:
+            render_scale = max(render_scale, 2.0)
+
         if options is None:
             return ThreadedDoclingParseBackendOptions(render_scale=render_scale)
         if not isinstance(options, ThreadedDoclingParseBackendOptions):
