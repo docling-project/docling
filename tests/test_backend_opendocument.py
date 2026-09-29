@@ -22,6 +22,7 @@ import pytest
 from docling_core.types.doc import (
     ContentLayer,
     DocItemLabel,
+    FineRef,
     GroupLabel,
     ImageRefMode,
     InlineGroup,
@@ -645,7 +646,9 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
     """A comment (office:annotation), as LibreOffice Writer saves it, must not be
     spliced into the paragraph, footnote or table cell that anchors it. A reply
     joins the thread of the comment it answers, also when the reply comes first.
-    A comment on text deleted in a tracked change is dropped with that text."""
+    Each thread is a child of the item made from the paragraph of its first
+    comment, or of the root when that paragraph makes no item. A comment on
+    text deleted in a tracked change is dropped with that text."""
 
     def annotation(
         attributes: str,
@@ -696,6 +699,11 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
         annotation('office:name="e1" loext:parent-name="e2"', "Bo Writer", "BW", "A"),
         annotation('office:name="e2" loext:parent-name="e1"', "Bo Writer", "BW", "B"),
     ]
+    heading_comment = annotation('office:name="h1"', "Ann Reviewer", "AR", "Rename")
+    number_comment = annotation('office:name="t1"', "Bo Writer", "BW", "Check")
+    item_comment = annotation('office:name="l1"', "Ann Reviewer", "AR", "Too vague")
+    link_comment = annotation('office:name="k1"', "Bo Writer", "BW", "Dead link?")
+    empty_comment = annotation('office:name="p1"', "Cy Editor", "CE", "Add text")
     footnote = (
         '<text:note text:id="n1" text:note-class="footnote">'
         "<text:note-citation>1</text:note-citation>"
@@ -716,6 +724,11 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
     )
     body.append(
         Element.from_tag(
+            f'<text:h text:outline-level="1">Budget{heading_comment}</text:h>'
+        )
+    )
+    body.append(
+        Element.from_tag(
             f"<text:p>The total is {comment}{reply}42 EUR"
             f'<office:annotation-end office:name="c1"/> this year.{footnote}</text:p>'
         )
@@ -725,7 +738,16 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
             '<table:table table:name="T"><table:table-row>'
             f"<table:table-cell><text:p>Key{cell_reply}</text:p></table:table-cell>"
             f"<table:table-cell><text:p>Val{cell_comment}</text:p></table:table-cell>"
+            '<table:table-cell office:value-type="float" office:value="42">'
+            f"<text:p>42{number_comment}</text:p></table:table-cell>"
             "</table:table-row></table:table>"
+        )
+    )
+    body.append(
+        Element.from_tag(
+            "<text:list><text:list-item>"
+            f"<text:p>First item{item_comment}</text:p>"
+            "</text:list-item></text:list>"
         )
     )
     body.append(
@@ -733,6 +755,14 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
             f"<text:p>More{''.join(unnamed + chain + cycle)} text.</text:p>"
         )
     )
+    # A hyperlink splits the paragraph into an InlineGroup of runs.
+    body.append(
+        Element.from_tag(
+            '<text:p>Read <text:a xlink:href="https://example.com/">the report'
+            f"</text:a>{link_comment}</text:p>"
+        )
+    )
+    body.append(Element.from_tag(f"<text:p>{empty_comment}</text:p>"))
     source.save(str(path))
 
     document = (
@@ -740,8 +770,9 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
     )
 
     assert document.export_to_markdown() == (
-        "The total is 42 EUR this year.\n\n| Key   | Val   |\n|-------|-------|"
-        "\n\nMore text."
+        "## Budget\n\nThe total is 42 EUR this year.\n\n"
+        "| Key   | Val   | 42   |\n|-------|-------|------|\n\n"
+        "- First item\n\nMore text.\n\nRead [the report](https://example.com/)"
     )
     assert [
         item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
@@ -755,15 +786,17 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
         for group in comment_groups
     ]
     assert threads == [
+        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Rename"],
         [
             "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Source?",
             "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Added below.",
         ],
-        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Which year?"],
         [
             "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Cell remark",
             "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Fixed.",
         ],
+        ["[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Check"],
+        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Too vague"],
         ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Note 1"],
         ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Note 2"],
         [
@@ -776,7 +809,33 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
             "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: A",
             "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: B",
         ],
+        ["[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Dead link?"],
+        ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Add text"],
+        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Which year?"],
     ]
+    parents = [group.parent.resolve(document) for group in comment_groups]
+    assert [
+        parent.text if isinstance(parent, TextItem) else parent.self_ref
+        for parent in parents
+    ] == [
+        "Budget",
+        "The total is 42 EUR this year.",
+        "Val",
+        "#/tables/0",
+        "First item",
+        "More text.",
+        "More text.",
+        "More text.",
+        "More text.",
+        "#/groups/12",
+        "#/body",
+        "Source: annual report.",
+    ]
+    assert isinstance(parents[9], InlineGroup)
+    # As in the DOCX backend, the annotated item refers to its comment groups.
+    for group, parent in zip(comment_groups, parents):
+        if isinstance(parent, (TextItem, TableItem)):
+            assert FineRef(cref=group.self_ref) in parent.comments
 
 
 @pytest.mark.parametrize(
