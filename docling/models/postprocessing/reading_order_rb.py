@@ -91,31 +91,34 @@ def _candidate_separator(
     allow_thickness: bool,
 ) -> SeparatorElement | None:
     box = _as_bottom_left_box(bbox, page_size)
-    horizontal = box.height <= (
+    max_thickness = (
         _MAX_FILLED_RULE_THICKNESS if allow_thickness else _AXIS_ALIGNMENT_TOLERANCE
     )
-    vertical = box.width <= (
-        _MAX_FILLED_RULE_THICKNESS if allow_thickness else _AXIS_ALIGNMENT_TOLERANCE
-    )
+    horizontal = box.height <= max_thickness and box.width > box.height
+    vertical = box.width <= max_thickness and box.height > box.width
 
-    if horizontal and box.width >= (
-        _MIN_HORIZONTAL_SEPARATOR_LENGTH_NORM * page_size.width
-    ):
+    if horizontal:
+        left = max(0.0, box.l)
+        right = min(page_size.width, box.r)
+        if left >= right:
+            return None
         y = (box.b + box.t) / 2
         return SeparatorElement(
             cid=0,
             page_no=page_no,
             page_size=page_size,
             orientation="horizontal",
-            l=max(0.0, box.l),
-            r=min(page_size.width, box.r),
+            l=left,
+            r=right,
             b=y,
             t=y,
             coord_origin=CoordOrigin.BOTTOMLEFT,
         )
-    if vertical and box.height >= (
-        _MIN_VERTICAL_SEPARATOR_LENGTH_NORM * page_size.height
-    ):
+    if vertical:
+        bottom = max(0.0, box.b)
+        top = min(page_size.height, box.t)
+        if bottom >= top:
+            return None
         x = (box.l + box.r) / 2
         return SeparatorElement(
             cid=0,
@@ -124,11 +127,21 @@ def _candidate_separator(
             orientation="vertical",
             l=x,
             r=x,
-            b=max(0.0, box.b),
-            t=min(page_size.height, box.t),
+            b=bottom,
+            t=top,
             coord_origin=CoordOrigin.BOTTOMLEFT,
         )
     return None
+
+
+def _separator_is_long_enough(separator: SeparatorElement) -> bool:
+    if separator.orientation == "horizontal":
+        return separator.r - separator.l >= (
+            _MIN_HORIZONTAL_SEPARATOR_LENGTH_NORM * separator.page_size.width
+        )
+    return separator.t - separator.b >= (
+        _MIN_VERTICAL_SEPARATOR_LENGTH_NORM * separator.page_size.height
+    )
 
 
 def _merge_separator_candidates(
@@ -322,7 +335,8 @@ def build_page_separators(
     accepted = [
         separator
         for separator in _merge_separator_candidates(candidates)
-        if not _separator_crosses_content(separator, bottom_left_elements)
+        if _separator_is_long_enough(separator)
+        and not _separator_crosses_content(separator, bottom_left_elements)
         and not _separator_is_inside_graphic(separator, bottom_left_elements)
         and _separator_has_content_on_both_sides(separator, bottom_left_elements)
     ]

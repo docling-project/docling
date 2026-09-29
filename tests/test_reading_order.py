@@ -1003,6 +1003,10 @@ def _hline(l: float, r: float, y: float) -> BoundingBox:  # noqa: E741
     return BoundingBox(l=l, r=r, b=y, t=y, coord_origin=CoordOrigin.BOTTOMLEFT)
 
 
+def _vline(x: float, b: float, t: float) -> BoundingBox:
+    return BoundingBox(l=x, r=x, b=b, t=t, coord_origin=CoordOrigin.BOTTOMLEFT)
+
+
 def _page_separators(
     elements: list[PageElement], lines: list[BoundingBox]
 ) -> list[SeparatorElement]:
@@ -1023,6 +1027,26 @@ def test_build_page_separators_joins_fragmented_rule() -> None:
     separators = _page_separators(elements, lines)
 
     assert [(s.l, s.r, s.b) for s in separators] == [(40, 560, 400)]
+
+
+def test_build_page_separators_joins_short_horizontal_fragments() -> None:
+    elements = [_text(0, 500, 600, 40, 560), _text(1, 200, 300, 40, 560)]
+    lines = [_hline(40 + i * 40, 79.5 + i * 40, 400) for i in range(13)]
+    lines.extend([_hline(100, 130, 390), _hline(40, 70, 380), _hline(72, 102, 380)])
+
+    separators = _page_separators(elements, lines)
+
+    assert [(s.l, s.r, s.b) for s in separators] == [(40, 559.5, 400)]
+
+
+def test_build_page_separators_joins_short_vertical_fragments() -> None:
+    elements = [_text(0, 220, 580, 40, 250), _text(1, 220, 580, 350, 560)]
+    lines = [_vline(300, 200 + i * 30, 229.5 + i * 30) for i in range(13)]
+    lines.extend([_vline(310, 300, 330), _vline(320, 200, 230), _vline(320, 232, 262)])
+
+    separators = _page_separators(elements, lines)
+
+    assert [(s.l, s.b, s.t) for s in separators] == [(300, 200, 589.5)]
 
 
 def test_build_page_separators_merges_until_no_rules_overlap() -> None:

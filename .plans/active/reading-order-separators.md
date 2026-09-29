@@ -20,7 +20,7 @@ rules. The latter refinement is required by `Elsevier.pdf`, whose important
 horizontal rules are filled paths rather than strokes. It does not synthesize
 rectangle edges from a region bbox.
 
-Candidates are clipped, length-filtered, merged until no further merge applies,
+Candidates are clipped, merged until no further merge applies, length-filtered,
 rejected when they cross text or a graphic (table, picture, code) or sit inside
 a graphic, and required to have content on both relevant sides. The graphic
 crossing check catches chart and table rules that overshoot the predicted
