@@ -35,6 +35,7 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.utils.encoding import decode_latex_content
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 
 if TYPE_CHECKING:
@@ -422,7 +423,7 @@ class MacroHandlerMixin:
                 elif input_path.exists():
                     self._input_stack.add(resolved)
                     try:
-                        content = input_path.read_text(encoding="utf-8")
+                        content = decode_latex_content(input_path)
                         sub_walker = LatexWalker(
                             content,
                             tolerant_parsing=True,
