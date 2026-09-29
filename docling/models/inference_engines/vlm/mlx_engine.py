@@ -359,4 +359,5 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             del self.processor
             self.processor = None
 
-        if _log is not None:\n            _log.info("MLX runtime cleaned up")
+        if _log is not None:
+            _log.info("MLX runtime cleaned up")
