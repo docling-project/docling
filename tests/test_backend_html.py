@@ -554,6 +554,55 @@ def test_nested_table_in_list_item():
         b"</table></div></li>",
     ],
 )
+def test_nested_block_content_preserves_following_text_order():
+    """Regression for #4422: text after nested blocks must stay after them."""
+    html = b"""
+    <html><body>
+    <ol>
+      <li><p>Intro:</p>
+        <ol>
+          <li><p>First nested.</p></li>
+          <li><p>Second nested.</p></li>
+        </ol>
+        <p>After the nested list.</p>
+      </li>
+    </ol>
+    <ul>
+      <li>Intro<table><tr><td>A</td></tr></table>After the table.</li>
+    </ul>
+    <dl>
+      <dt>Term</dt>
+      <dd>Intro<ul><li>x</li></ul>After the list.</dd>
+    </dl>
+    <p>Next paragraph.</p>
+    </body></html>
+    """;
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="nested_block_trailing_text.html",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    items = [
+        (item.label.value, getattr(item, "text", ""))
+        for item, _ in doc.iterate_items()
+        if getattr(item, "text", "")
+    ]
+
+    texts = [text for _, text in items]
+    assert texts.index("Intro:") < texts.index("First nested.")
+    assert texts.index("First nested.") < texts.index("Second nested.")
+    assert texts.index("Second nested.") < texts.index("After the nested list.")
+    assert texts.index("Intro After the table.") < texts.index("After the table.")
+    assert texts.index("Intro After the list.") < texts.index("x")
+    assert texts.index("x") < texts.index("After the list.")
+    assert texts[-1] == "Next paragraph."
+
+
 def test_nested_table_in_list_item_wrappers(inner):
     """#3508: the nested table is parsed regardless of an intermediate wrapper."""
     html = b"<html><body><ol>" + inner + b"</ol></body></html>"
