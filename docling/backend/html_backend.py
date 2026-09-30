@@ -2936,7 +2936,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def _handle_list(  # noqa: C901
         self, tag: Tag, doc: DoclingDocument
-    ) -> RefItem:
+    ) -> list[RefItem]:
+        """Parse a list tag and return the items added at the current level."""
+        added_refs: list[RefItem] = []
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
@@ -2966,7 +2968,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     tag.contents,
                 )
             )
-            self._walk_nodes(tag, leading, doc)
+            added_refs.extend(self._walk_nodes(tag, leading, doc))
 
         # Create the list container
         def open_list_group(group_start: Optional[int]) -> ListGroup:
@@ -2978,6 +2980,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
                 content_layer=self.content_layer,
             )
+            added_refs.append(group.get_ref())
             self.parents[self.level + 1] = group
             self.ctx.list_ordered_flag_by_ref[group.self_ref] = is_ordered
             if is_ordered and group_start is not None:
@@ -2986,7 +2989,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return group
 
         list_group: Optional[ListGroup] = open_list_group(start)
-        first_group = list_group
 
         # Track the number of list items added (not all children)
         list_item_counter: int = 0
@@ -3060,7 +3062,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             self.parents[self.level + 1] = None
             self.level -= 1
-            return list_group.get_ref()
+            return added_refs
 
         # For each child of this list (ul/ol) after the leading content
         prev_item: Optional[RefItem] = None
@@ -3079,9 +3081,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if list_group is not None:
                         self.parents[self.level + 1] = None
                         self.level -= 1
+                    parent = self.parents[self.level] or doc.body
+                    n_children = len(parent.children)
+                    added_refs.extend(self._walk_nodes(tag, [li], doc))
+                    if list_group is not None and len(parent.children) == n_children:
+                        # Nothing was added, e.g. a <br>: the list stays open
+                        self.parents[self.level + 1] = list_group
+                        self.level += 1
+                    else:
                         list_group = None
-                    self._walk_nodes(tag, [li], doc)
-                    prev_item = None
+                        prev_item = None
 
             else:
                 if list_group is None:
@@ -3172,7 +3181,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if list_group is not None:
             self.parents[self.level + 1] = None
             self.level -= 1
-        return first_group.get_ref()
+        return added_refs
 
     @staticmethod
     def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
@@ -3233,8 +3242,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             added_refs.extend(heading_refs)
 
         elif tag_name in {"ul", "ol", "dl"}:
-            list_ref = self._handle_list(tag, doc)
-            added_refs.append(list_ref)
+            added_refs.extend(self._handle_list(tag, doc))
 
         elif tag_name in {"p", "address", "summary"}:
             text_list = self._extract_text_and_hyperlink_recursively(
