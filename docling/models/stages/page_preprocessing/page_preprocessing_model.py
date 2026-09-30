@@ -41,6 +41,7 @@ class PagePreprocessingOptions(BaseModel):
     skip_cell_extraction: bool = (
         False  # Skip text cell extraction for VLM-only processing
     )
+    capture_reading_order_separators: bool = False
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -65,6 +66,8 @@ class PagePreprocessingModel(BasePageModel):
             else:
                 with TimeRecorder(conv_res, "page_parse"):
                     page = self._populate_page_images(page)
+                    if self.options.capture_reading_order_separators:
+                        page = self._capture_shape_geometry(page)
                     if not self.options.skip_cell_extraction:
                         page = self._parse_page_cells(conv_res, page)
                 yield page
@@ -84,6 +87,14 @@ class PagePreprocessingModel(BasePageModel):
                 scale=images_scale
             )  # this will trigger storing the image in the internal cache
 
+        return page
+
+    def _capture_shape_geometry(self, page: Page) -> Page:
+        """Retain visible vector geometry needed after the backend is released."""
+        assert page._backend is not None
+
+        page._shape_lines = page._backend.get_shape_lines()
+        page._shape_bounding_boxes = page._backend.get_connected_shape_bounding_boxes()
         return page
 
     # Extract and populate the page cells and store it in the page object

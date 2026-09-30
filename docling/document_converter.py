@@ -21,11 +21,11 @@ from typing_extensions import Self
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
 )
+from docling.backend.afp_backend import AfpDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.boxnote_backend import BoxNoteDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.ebcdic_backend import EbcdicDocumentBackend
@@ -33,7 +33,10 @@ from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.iwork_backend import IWorkPagesDocumentBackend
+from docling.backend.iwork_backend import (
+    IWorkKeynoteDocumentBackend,
+    IWorkPagesDocumentBackend,
+)
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -56,6 +59,8 @@ from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     AsciiDocBackendOptions,
     BackendOptions,
+    CsvBackendOptions,
+    DeclarativeBackendOptions,
     EbcdicBackendOptions,
     EmailBackendOptions,
     EpubBackendOptions,
@@ -137,6 +142,7 @@ class BoxNoteFormatOption(FormatOption):
 class CsvFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = CsvDocumentBackend
+    backend_options: Optional[CsvBackendOptions] = None
 
 
 class ExcelFormatOption(FormatOption):
@@ -239,6 +245,18 @@ class DclxFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = DocLangArchiveBackend
 
 
+class DoclingJSONFormatOption(FormatOption):
+    """Format option for DoclingDocument JSON input.
+
+    Image references pointing at local files are dropped from the input unless
+    ``backend_options.enable_local_fetch`` is set.
+    """
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = DoclingJSONBackend
+    backend_options: DeclarativeBackendOptions | None = None
+
+
 class XBRLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
@@ -261,6 +279,14 @@ class IWorkPagesFormatOption(FormatOption):
 
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = IWorkPagesDocumentBackend
+    backend_options: IWorkBackendOptions | None = None
+
+
+class IWorkKeynoteFormatOption(FormatOption):
+    """Format option for Apple Keynote input."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = IWorkKeynoteDocumentBackend
     backend_options: IWorkBackendOptions | None = None
 
 
@@ -342,6 +368,11 @@ class EbcdicFormatOption(FormatOption):
     backend_options: EbcdicBackendOptions | None = None
 
 
+class AfpFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = AfpDocumentBackend
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
@@ -359,6 +390,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.MD: MarkdownFormatOption(),
         InputFormat.ASCIIDOC: AsciiDocFormatOption(),
         InputFormat.HTML: HTMLFormatOption(),
+        InputFormat.MHTML: HTMLFormatOption(),
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
@@ -369,9 +401,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         ),
         InputFormat.IMAGE: ImageFormatOption(),
         InputFormat.PDF: PdfFormatOption(),
-        InputFormat.JSON_DOCLING: FormatOption(
-            pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
-        ),
+        InputFormat.JSON_DOCLING: DoclingJSONFormatOption(),
         InputFormat.AUDIO: AudioFormatOption(),
         InputFormat.VIDEO: VideoFormatOption(),
         InputFormat.VTT: FormatOption(
@@ -381,7 +411,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.EMAIL: EmailFormatOption(),
         InputFormat.EPUB: EpubFormatOption(),
         InputFormat.IWORK_PAGES: IWorkPagesFormatOption(),
+        InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
+        InputFormat.AFP: AfpFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

@@ -8,7 +8,7 @@ This is the first paragraph of the introduction.
 
 ## Background
 
-Some background information here with bold and italictext.
+Some background information here with bold and italic text.
 
 - First item in unordered list
 - Second item in unordered list

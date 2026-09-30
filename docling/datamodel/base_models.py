@@ -103,6 +103,7 @@ class InputFormat(str, Enum):
     PPTX = "pptx"
     PPT = "ppt"
     HTML = "html"
+    MHTML = "mhtml"
     IMAGE = "image"
     PDF = "pdf"
     ASCIIDOC = "asciidoc"
@@ -128,7 +129,9 @@ class InputFormat(str, Enum):
     EPUB = "epub"
     BOXNOTE = "boxnote"
     IWORK_PAGES = "iwork_pages"
+    IWORK_KEYNOTE = "iwork_keynote"
     EBCDIC = "ebcdic"
+    AFP = "afp"
 
 
 class OutputFormat(str, Enum):
@@ -153,13 +156,14 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
-    InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
+    InputFormat.MD: ["md", "markdown", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
+    InputFormat.MHTML: ["mhtml", "mht"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.DCLX: ["dclx"],
-    InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
+    InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp", "gif"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm", "xltx", "xltm"],
@@ -178,7 +182,9 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.EPUB: ["epub"],
     InputFormat.BOXNOTE: ["boxnote"],
     InputFormat.IWORK_PAGES: ["pages"],
+    InputFormat.IWORK_KEYNOTE: ["key"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
+    InputFormat.AFP: ["afp"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -204,6 +210,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.ms-powerpoint",
     ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
+    InputFormat.MHTML: ["application/x-mimearchive", "multipart/related"],
     InputFormat.XML_JATS: ["application/xml"],
     InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
     InputFormat.XML_DOCLANG: ["application/xml"],
@@ -270,7 +277,12 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.apple.pages",
         "application/x-iwork-pages-sffpages",
     ],
+    InputFormat.IWORK_KEYNOTE: [
+        "application/vnd.apple.keynote",
+        "application/x-iwork-keynote-sffkey",
+    ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
+    InputFormat.AFP: ["application/vnd.ibm.modcap", "application/x-afp"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -298,6 +310,7 @@ class VlmStopReason(str, Enum):
     STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
     END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
     CONTENT_FILTERED = "content_filter"  # Content filtered by API provider
+    INFERENCE_ERROR = "inference_error"  # Inference call failed (remote API or local engine), no output
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
@@ -383,6 +396,7 @@ class VlmPrediction(BaseModel):
     usage: Any | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
     input_prompt: str | None = None
+    error_message: str | None = None  # set when stop_reason is INFERENCE_ERROR
 
 
 @dataclass(frozen=True)
@@ -394,6 +408,7 @@ class ApiImageRequestResult:
     stop_reason: VlmStopReason
     usage: Any | None = None
     logprobs: Any | None = None
+    error: str | None = None  # set when stop_reason is INFERENCE_ERROR
 
 
 @dataclass(frozen=True)
@@ -493,6 +508,11 @@ class Page(BaseModel):
     _backend: Optional["PdfPageBackend"] = (
         None  # Internal PDF backend. By default it is cleared during assembling.
     )
+    # Visible vector geometry captured while the page backend is alive. These
+    # are transient pipeline signals and deliberately stay out of serialized
+    # conversion results.
+    _shape_lines: list[BoundingBox] | None = PrivateAttr(default=None)
+    _shape_bounding_boxes: list[BoundingBox] | None = PrivateAttr(default=None)
     _default_image_scale: float = 1.0  # Default image scale for external usage.
     _image_cache: dict[
         float, Image
@@ -547,6 +567,9 @@ class Page(BaseModel):
 class OpenAiChatMessage(BaseModel):
     role: str
     content: str | None = None
+    # Some reasoning-style servers (e.g. LM Studio serving chandra-ocr-2) leave
+    # content empty and place the actual answer in reasoning_content.
+    reasoning_content: str | None = None
     tool_calls: list[dict[str, Any]] | None = None
 
 

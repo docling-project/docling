@@ -202,6 +202,7 @@ def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocum
 
 
 def test_jats_structured_abstract_sections_are_preserved():
+    """Each <sec> inside a structured abstract becomes its own heading + paragraph."""
     doc = convert_jats_article_meta(
         """
       <title-group><article-title>Structured Abstract Test</article-title></title-group>
@@ -219,9 +220,27 @@ def test_jats_structured_abstract_sections_are_preserved():
     )
 
     md = doc.export_to_markdown()
+    # Top-level abstract heading
     assert "## Abstract" in md
-    assert "Background: Background text." in md
-    assert "Methods: Methods text." in md
+    # Section titles rendered as sub-headings (not inlined into text)
+    assert "### Background" in md
+    assert "### Methods" in md
+    # Section content appears as separate paragraphs, not prefixed with title
+    assert "Background text." in md
+    assert "Methods text." in md
+    # Old flat format must NOT appear
+    assert "Background: Background text." not in md
+    assert "Methods: Methods text." not in md
+
+    # Verify document structure: two headings parented under the Abstract heading
+    headings = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.SECTION_HEADER
+    ]
+    heading_texts = [h.text for h in headings]
+    assert "Background" in heading_texts
+    assert "Methods" in heading_texts
 
 
 def test_jats_nested_lists_are_preserved():
@@ -608,6 +627,30 @@ def test_jats_empty_display_formula_does_not_drop_following_content():
     assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
 
 
+def test_jats_table_oversized_spans_clamped_to_table_size():
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    doc = convert_jats_body(
+        "<sec><title>T</title><table-wrap><table>"
+        '<tr><td rowspan="100000000">A</td><td colspan="3000000">B</td></tr>'
+        "<tr><td>C</td></tr>"
+        "</table></table-wrap></sec>"
+    )
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
+    ]
+
+
 def test_jats_footnotes_are_preserved():
     doc = convert_jats_body(
         """
@@ -920,6 +963,64 @@ def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
     assert "Content after the blocked figure." in doc.export_to_markdown()
 
 
+def test_jats_element_citation_surname_only_does_not_crash():
+    """Citations with only a surname are rendered with that surname."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname></name>"
+        "<article-title>Only a surname</article-title>"
+        "<year>2020</year>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Smith" in markdown
+    assert "Only a surname" in markdown
+
+
+def test_jats_element_citation_empty_name_parts_are_omitted():
+    """Citations with empty surname and given-names elements omit that author."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname></surname><given-names></given-names></name>"
+        "<article-title>Empty name parts</article-title>"
+        "</element-citation></ref></ref-list>"
+    )
+    citations = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
+    ]
+    assert len(citations) == 1
+    assert citations[0].text == "Empty name parts. "
+
+
+def test_jats_element_citation_given_names_only():
+    """Citations with only given-names are rendered with that name."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><given-names>Ada</given-names></name>"
+        "<article-title>Given names only</article-title>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Ada" in markdown
+    assert "Given names only" in markdown
+
+
+def test_jats_element_citation_empty_year_does_not_crash():
+    """Citations with an empty year element are rendered without a year."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname><given-names>Jane</given-names></name>"
+        "<article-title>Empty year</article-title>"
+        "<year></year>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Smith Jane" in markdown
+    assert "Empty year" in markdown
+
+
 @pytest.mark.parametrize(
     ("contrib", "expected"),
     [
@@ -1017,3 +1118,13 @@ def test_e2e_jats_conversions_stream():
 
 def test_e2e_jats_conversions_no_stream():
     test_e2e_jats_conversions(use_stream=False)
+
+
+def test_jats_empty_article_title_does_not_crash():
+    """An empty article-title element produces an empty document title without aborting conversion."""
+    doc = convert_jats_article_meta(
+        "<title-group><article-title></article-title></title-group>"
+    )
+    exported = doc.export_to_markdown()
+    # Empty title is serialized as an H1 with no text.
+    assert exported == "# "

@@ -16,7 +16,7 @@ from docling_core.types.doc.page import (
     SegmentedPdfPage,
     TextCell,
 )
-from PIL import Image
+from PIL import Image, ImageOps
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
@@ -51,6 +51,22 @@ def _validate_dpi(dpi: tuple[SupportsFloat, SupportsFloat]) -> tuple[float, floa
 def _get_frame_dpi(image: Image.Image) -> tuple[float, float]:
     dpi = image.info.get("dpi")
     return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1)) else dpi)
+
+
+def _oriented_frame(image: Image.Image) -> tuple[Image.Image, tuple[float, float]]:
+    """Apply the EXIF orientation to a frame and return it with its DPI axes.
+
+    A camera stores the sensor readout and an orientation tag rather than
+    rotated pixels, so a portrait photo reaches OCR and layout on its side
+    unless the tag is honoured. ``exif_transpose`` swaps width and height for
+    the quarter-turn orientations but leaves ``info["dpi"]`` alone, so the axes
+    are swapped here whenever it actually rotated the frame.
+    """
+    dpi_x, dpi_y = _get_frame_dpi(image)
+    oriented = ImageOps.exif_transpose(image)
+    if oriented.size != image.size:
+        dpi_x, dpi_y = dpi_y, dpi_x
+    return oriented, (dpi_x, dpi_y)
 
 
 class _ImagePageBackend(PdfPageBackend):
@@ -217,11 +233,13 @@ class ImageDocumentBackend(PdfDocumentBackend):
                 if frame_count > 1:
                     for i in range(frame_count):
                         img.seek(i)
-                        self._frame_dpi.append(_get_frame_dpi(img))
-                        self._frames.append(img.copy().convert("RGB"))
+                        frame, dpi = _oriented_frame(img)
+                        self._frame_dpi.append(dpi)
+                        self._frames.append(frame.convert("RGB"))
                 else:
-                    self._frame_dpi.append(_get_frame_dpi(img))
-                    self._frames.append(img.convert("RGB"))
+                    frame, dpi = _oriented_frame(img)
+                    self._frame_dpi.append(dpi)
+                    self._frames.append(frame.convert("RGB"))
         except Exception as e:
             for frame in self._frames:
                 frame.close()

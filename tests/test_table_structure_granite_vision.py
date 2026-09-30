@@ -7,8 +7,8 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
 from docling.models.stages.table_structure.table_structure_model_granite_vision import (
     GraniteVisionTableStructureModel,
-    _parse_otsl_output,
 )
+from docling.utils.otsl import parse_otsl_output
 
 pytestmark = pytest.mark.ml_vlm
 
@@ -21,7 +21,7 @@ def test_options_kind():
 def test_parse_simple_table():
     """2x2 table with column headers."""
     text = "<ched>Name</ched><ched>Value</ched><nl><fcel>Foo</fcel><fcel>42</fcel><nl>"
-    otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+    otsl_seq, cells, num_rows, num_cols = parse_otsl_output(text)
 
     assert otsl_seq == ["ched", "ched", "nl", "fcel", "fcel", "nl"]
     assert num_rows == 2
@@ -44,7 +44,7 @@ def test_parse_simple_table():
 def test_parse_empty_cell():
     """Empty cell produces empty text, still in grid."""
     text = "<ched>A</ched><ched>B</ched><nl><fcel>x</fcel><ecel></ecel><nl>"
-    _otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+    _otsl_seq, cells, num_rows, num_cols = parse_otsl_output(text)
 
     assert num_rows == 2
     assert num_cols == 2
@@ -59,7 +59,7 @@ def test_parse_empty_cell():
 def test_parse_colspan():
     """lcel produces colspan=2 on the preceding fcel."""
     text = "<fcel>Merged</fcel><lcel><nl><fcel>A</fcel><fcel>B</fcel><nl>"
-    _otsl_seq, cells, _num_rows, num_cols = _parse_otsl_output(text)
+    _otsl_seq, cells, _num_rows, num_cols = parse_otsl_output(text)
 
     assert num_cols == 2
     merged = [
@@ -73,7 +73,7 @@ def test_parse_colspan():
 def test_parse_rowspan():
     """ucel produces rowspan=2 on the preceding fcel above it."""
     text = "<fcel>Tall</fcel><fcel>A</fcel><nl><ucel><fcel>B</fcel><nl>"
-    _otsl_seq, cells, _num_rows, _num_cols = _parse_otsl_output(text)
+    _otsl_seq, cells, _num_rows, _num_cols = parse_otsl_output(text)
 
     tall = [
         c for c in cells if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 0
@@ -89,7 +89,7 @@ def test_parse_multiple_rowspan():
         "<fcel>Regular</fcel><fcel>Merged</fcel><fcel>Merged</fcel><nl>"
         "<fcel>Regular</fcel><ucel><ucel><nl>"
     )
-    _otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+    _otsl_seq, cells, num_rows, num_cols = parse_otsl_output(text)
 
     assert num_cols == 3
     assert num_rows == 2
@@ -117,7 +117,7 @@ def test_parse_xcel():
         "<fcel>Regular</fcel><ucel><xcel><fcel>Regular</fcel><nl>"
         "<fcel>Regular</fcel><fcel>Regular</fcel><fcel>Regular</fcel><fcel>Regular</fcel><nl>"
     )
-    _otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+    _otsl_seq, cells, num_rows, num_cols = parse_otsl_output(text)
 
     assert num_cols == 4
     assert num_rows == 4
@@ -141,7 +141,7 @@ def test_parse_xcel():
 def test_parse_row_header():
     """rhed token produces row_header=True."""
     text = "<rhed>Section</rhed><fcel>Data</fcel><nl>"
-    _, cells, _, _ = _parse_otsl_output(text)
+    _, cells, _, _ = parse_otsl_output(text)
 
     rhed_cells = [c for c in cells if c.row_header]
     assert len(rhed_cells) == 1
@@ -151,13 +151,13 @@ def test_parse_row_header():
 def test_parse_no_bbox():
     """All cells must have bbox=None."""
     text = "<ched>X</ched><nl><fcel>Y</fcel><nl>"
-    _, cells, _, _ = _parse_otsl_output(text)
+    _, cells, _, _ = parse_otsl_output(text)
     assert all(c.bbox is None for c in cells)
 
 
 def test_parse_empty_string():
     """Empty or whitespace-only string returns empty table."""
-    otsl_seq, cells, num_rows, num_cols = _parse_otsl_output("")
+    otsl_seq, cells, num_rows, num_cols = parse_otsl_output("")
     assert otsl_seq == []
     assert cells == []
     assert num_rows == 0
@@ -223,7 +223,7 @@ def test_model_invalid_backend_returns_empty_prediction():
 def test_parse_xcel_2d_merge():
     """xcel produces both rowspan=2 and colspan=2 on the origin cell."""
     text = "<fcel>Big</fcel><lcel><nl><ucel><xcel><nl>"
-    _, cells, num_rows, num_cols = _parse_otsl_output(text)
+    _, cells, num_rows, num_cols = parse_otsl_output(text)
 
     assert num_rows == 2
     assert num_cols == 2
@@ -240,7 +240,7 @@ def test_parse_xcel_2d_merge():
 def test_parse_srow():
     """srow token produces row_section=True."""
     text = "<srow>Category</srow><fcel>Data</fcel><nl>"
-    _, cells, _, _ = _parse_otsl_output(text)
+    _, cells, _, _ = parse_otsl_output(text)
 
     srow_cells = [c for c in cells if c.row_section]
     assert len(srow_cells) == 1
@@ -250,7 +250,7 @@ def test_parse_srow():
 def test_parse_ecel_self_closing():
     """<ecel/> self-closing form produces an empty cell."""
     text = "<fcel>A</fcel><ecel/><nl>"
-    _, cells, _, _ = _parse_otsl_output(text)
+    _, cells, _, _ = parse_otsl_output(text)
 
     empty = [c for c in cells if c.start_col_offset_idx == 1]
     assert len(empty) == 1
