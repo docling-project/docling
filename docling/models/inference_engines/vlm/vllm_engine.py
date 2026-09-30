@@ -180,7 +180,11 @@ class VllmVlmEngine(BaseVlmEngine):
 
             # Wrapper to match expected signature
             def download_wrapper(repo_id: str, revision: str) -> Path:
-                return downloader.download_models(repo_id, revision=revision)
+                return downloader.download_models(
+                    repo_id,
+                    revision=revision,
+                    trust_remote_code=self.options.trust_remote_code,
+                )
 
             artifacts_path = resolve_model_artifacts_path(
                 repo_id=repo_id,
