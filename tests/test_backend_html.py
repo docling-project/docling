@@ -560,7 +560,7 @@ def test_list_non_li_children():
         b"<p>Intro.</p>"
         b"<li>First.</li>"
         b"<p>About the first.</p>"
-        b"<li>Second.</li>"
+        b"<li>Second.</li><br>"
         b"<ol><li>Nested.</li></ol>"
         b"<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>"
         b"<li>Third.</li>"
@@ -577,7 +577,8 @@ def test_list_non_li_children():
     texts = {item.text: item for item in doc.texts}
 
     # Content before the first <li> precedes the list. Any other content closes
-    # the list and is emitted at the parent level, like in the DOCX backend.
+    # the list and is emitted at the parent level, like in the DOCX backend. A
+    # <br> adds nothing and does not close the list.
     assert [child.resolve(doc).label for child in doc.body.children] == [
         DocItemLabel.TEXT,
         GroupLabel.LIST,
@@ -591,6 +592,33 @@ def test_list_non_li_children():
     assert nested_list.parent.cref == texts["Second."].self_ref
     # The list items that follow an interruption continue the numbering.
     assert "3. Third." in doc.export_to_markdown()
+
+
+def test_list_non_li_children_stay_in_table_cell():
+    """#4424: the content emitted around a split list stays in its table cell."""
+    html = (
+        b"<html><body><table><tbody><tr>"
+        b"<td><ul><li>First.</li><p>Between.</p><li>Second.</li></ul></td>"
+        b"</tr></tbody></table><p>After.</p></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    cell_group = texts["Between."].parent.resolve(doc)
+    assert cell_group.parent.cref == doc.tables[0].self_ref
+    assert [child.resolve(doc).label for child in cell_group.children] == [
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+    ]
+    assert texts["After."].parent.resolve(doc) == doc.body
 
 
 @pytest.mark.parametrize(
