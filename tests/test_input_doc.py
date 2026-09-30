@@ -33,6 +33,43 @@ from docling.document_converter import (
 )
 
 
+@pytest.mark.parametrize("as_stream", [False, True], ids=["path", "stream"])
+@pytest.mark.parametrize(
+    "name, content, expected",
+    [
+        ("table.txt", b"name,value\nalice,1\nbob,2\n", InputFormat.MD),
+        ("table.text", b"name,value\nalice,1\nbob,2\n", InputFormat.MD),
+        ("table.TXT", b"name,value\nalice,1\nbob,2\n", InputFormat.MD),
+        ("bmw.txt", b"BMW makes cars.\n", InputFormat.MD),
+        ("bmw.TXT", b"BMW makes cars.\n", InputFormat.MD),
+        ("bmw.text", b"BMW makes cars.\n", InputFormat.MD),
+        ("bmw.md", b"BMW makes cars.\n", InputFormat.MD),
+        ("bmw.qmd", b"BMW makes cars.\n", InputFormat.MD),
+        ("bmw.Rmd", b"BMW makes cars.\n", InputFormat.MD),
+        ("bmw.bmp", b"BMW makes cars.\n", InputFormat.IMAGE),
+        ("patent.txt", b"PATN\nWKU  057006474\n", InputFormat.XML_USPTO),
+        ("binary.txt", b"PK\x03\x04" + b"\x00" * 100, None),
+        ("table.csv", b"name,value\nalice,1\nbob,2\n", InputFormat.CSV),
+        ("table", b"name,value\nalice,1\nbob,2\n", InputFormat.CSV),
+    ],
+)
+def test_text_format_detection(
+    tmp_path: Path,
+    as_stream: bool,
+    name: str,
+    content: bytes,
+    expected: InputFormat | None,
+):
+    source: Path | DocumentStream
+    if as_stream:
+        source = DocumentStream(name=name, stream=BytesIO(content))
+    else:
+        source = tmp_path / name
+        source.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+    assert dci._guess_format(source) == expected
+
+
 def test_in_doc_from_valid_path():
     test_doc_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
     doc = _make_input_doc(test_doc_path)
