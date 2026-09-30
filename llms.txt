@@ -1,0 +1,70 @@
+# Docling
+
+> Docling is a Python SDK and CLI for converting supported document formats into a unified `DoclingDocument` representation for export, serialization, chunking, and downstream AI workflows.
+
+## When to use Docling
+
+Use Docling when a user asks an agent to:
+
+- Convert PDFs, Office files, HTML, Markdown, images, audio/video formats, XML-derived formats, or other supported inputs into `DoclingDocument`.
+- Work with document text, tables, pictures, hierarchy, layout information, provenance, or reading order after conversion.
+- Export converted content to Markdown, HTML, JSON, text, DocLang XML, DocTags, or WebVTT.
+- Prepare documents for RAG, chunking, serialization, visual grounding, or documented framework integrations.
+- Process sensitive documents locally, when the documented local execution path is appropriate for the user's environment.
+
+Check the supported input and output formats before assuming a file type or export target is available.
+
+## Start here
+
+- [README](README.md): project overview, feature summary, installation snippet, CLI example, and Python example.
+- [Documentation home](docs/index.md): documentation index.
+- [Installation](docs/getting_started/installation.md): environment setup and package installation details.
+- [Quickstart](docs/getting_started/quickstart.md): minimal Python and CLI conversion examples.
+- [Usage overview](docs/usage/index.md): basic workflows and links to usage pages.
+- [Supported formats](docs/usage/supported_formats.md): authoritative list of supported inputs and outputs.
+
+## Core concepts
+
+- [DoclingDocument](docs/concepts/docling_document.md): the unified Pydantic document representation used after conversion.
+- [Architecture](docs/concepts/architecture.md): conversion architecture.
+- [Serialization](docs/concepts/serialization.md): exporting a `DoclingDocument` through serializer abstractions and shorthand export methods.
+- [Chunking](docs/concepts/chunking.md): native chunkers that operate on `DoclingDocument` for downstream AI use.
+- [Plugins](docs/concepts/plugins.md): documented plugin extension points.
+
+## Common workflows for agents
+
+- Python conversion: use `DocumentConverter` as shown in [Quickstart](docs/getting_started/quickstart.md) and [DocumentConverter reference](docs/reference/document_converter.md).
+- CLI conversion: use the `docling` command as shown in [Quickstart](docs/getting_started/quickstart.md), and consult the [CLI reference](docs/reference/cli.md) for options.
+- Format decisions: consult [Supported formats](docs/usage/supported_formats.md) before choosing an input parser or export format.
+- Markdown/HTML/JSON exports: start from a converted `DoclingDocument`, then use the documented export and serialization APIs.
+- RAG preparation: review [Chunking](docs/concepts/chunking.md) and the RAG examples linked from [Examples](docs/examples/index.md).
+- OCR and enrichment: see [Enrichments](docs/usage/enrichments.md) and [Advanced options](docs/usage/advanced_options.md).
+- VLM, audio/video, and GPU workflows: see [Vision models](docs/usage/vision_models.md), [Processing audio and video](docs/usage/processing_audio_media.md), and [GPU acceleration](docs/usage/gpu.md).
+
+## Local, MCP, and service notes
+
+- The README documents local execution capabilities for sensitive data and air-gapped environments; the [FAQ](docs/faq/index.md) also addresses remote-service use.
+- [MCP usage](docs/usage/mcp.md) documents using Docling capabilities through the separate Docling MCP server.
+- [Service client examples](docs/examples/service_client/README.md) are experimental and require an already running `docling-serve` instance; they do not start the service process.
+
+## Examples and integrations
+
+- [Examples index](docs/examples/index.md): recipes for conversion, export, RAG, serialization, chunking, enrichments, VLM, audio, and related workflows.
+- [Minimal conversion example](docs/examples/minimal.py): small Python conversion example.
+- [Batch conversion example](docs/examples/batch_convert.py): batch conversion workflow.
+- [Serialization example](docs/examples/serialization.ipynb): notebook for serializer usage.
+- [Hybrid chunking example](docs/examples/hybrid_chunking.ipynb): notebook for chunking a `DoclingDocument`.
+- [Integrations](docs/integrations/index.md): documented integrations with AI frameworks and tools.
+
+## Developer and contributor guidance
+
+- [AGENTS.md](AGENTS.md): instructions for coding agents working on this repository.
+- [CONTRIBUTING.md](CONTRIBUTING.md): contributor guidance.
+- [Makefile](Makefile): common maintenance commands such as setup, checks, tests, and validation.
+
+## Agent cautions
+
+- Do not invent Docling capabilities; ground file-format, export, service, and model claims in the linked docs.
+- Prefer local repository docs over assumptions from memory.
+- Keep user-facing guidance focused on solving document conversion and AI workflow tasks; use `AGENTS.md` only for repository development work.
+- Avoid copying large documentation sections into responses; link to the relevant source file instead.
