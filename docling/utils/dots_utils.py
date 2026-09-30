@@ -42,7 +42,7 @@ from PIL import Image as PILImage
 
 from docling.utils.chandra_utils import _add_html_fragment, _add_html_table
 from docling.utils.code_language import detect_code_language
-from docling.utils.vlm_utils import parse_markdown_heading
+from docling.utils.vlm_utils import link_adjacent_captions, parse_markdown_heading
 
 _log = logging.getLogger(__name__)
 
@@ -161,12 +161,20 @@ def parse_dots_json(
         return doc
 
     current_list_group = None
-
-    for elem in elements:
+    block_starts: list[int] = []
+    caption_owners: dict[int, set[DocItemLabel]] = {}
+    for index, elem in enumerate(elements):
+        block_starts.append(len(doc.body.children))
         if not isinstance(elem, dict):
             continue
 
         category = elem.get("category", "")
+        if category == "Caption":
+            caption_owners[index] = {
+                DocItemLabel.TABLE,
+                DocItemLabel.PICTURE,
+                DocItemLabel.CODE,
+            }
         raw_bbox = elem.get("bbox")
         text = elem.get("text", "")
 
@@ -238,4 +246,5 @@ def parse_dots_json(
             ):
                 doc.add_text(label=doc_label, text=text, prov=prov)
 
+    link_adjacent_captions(doc, block_starts, caption_owners)
     return doc
