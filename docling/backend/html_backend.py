@@ -40,6 +40,7 @@ from docling_core.types.doc import (
     GraphLinkLabel,
     GroupItem,
     GroupLabel,
+    ListGroup,
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
@@ -2933,7 +2934,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 children.append(child)
         return children
 
-    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
+    def _handle_list(  # noqa: C901
+        self, tag: Tag, doc: DoclingDocument
+    ) -> RefItem:
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
@@ -2951,8 +2954,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             name = "list"
 
         # Children of <ul>/<ol> other than <li> are invalid HTML, but common in CMS
-        # output. Browsers render them in place: those before the first <li> precede
-        # the list, the others are nested under the preceding list item.
+        # output. Those before the first <li> precede the list. The others interrupt
+        # it, like the interleaved blocks of the DOCX backend (#3896): the list is
+        # closed, the content is emitted at the parent level, and the following items
+        # open a new list group that continues the numbering.
         leading: list[PageElement] = []
         if not is_description:
             leading = list(
@@ -2964,16 +2969,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self._walk_nodes(tag, leading, doc)
 
         # Create the list container
-        list_group = doc.add_list_group(
-            name=name,
-            parent=self.parents[self.level],
-            content_layer=self.content_layer,
-        )
-        self.parents[self.level + 1] = list_group
-        self.ctx.list_ordered_flag_by_ref[list_group.self_ref] = is_ordered
-        if is_ordered and start is not None:
-            self.ctx.list_start_by_ref[list_group.self_ref] = start
-        self.level += 1
+        def open_list_group(group_start: Optional[int]) -> ListGroup:
+            group_name = name
+            if is_ordered and group_start is not None:
+                group_name = f"ordered list start {group_start}"
+            group = doc.add_list_group(
+                name=group_name,
+                parent=self.parents[self.level],
+                content_layer=self.content_layer,
+            )
+            self.parents[self.level + 1] = group
+            self.ctx.list_ordered_flag_by_ref[group.self_ref] = is_ordered
+            if is_ordered and group_start is not None:
+                self.ctx.list_start_by_ref[group.self_ref] = group_start
+            self.level += 1
+            return group
+
+        list_group: Optional[ListGroup] = open_list_group(start)
+        first_group = list_group
 
         # Track the number of list items added (not all children)
         list_item_counter: int = 0
@@ -3052,11 +3065,32 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # For each child of this list (ul/ol) after the leading content
         prev_item: Optional[RefItem] = None
         for li in tag.contents[len(leading) :]:
+            if isinstance(li, NavigableString) and (
+                isinstance(li, PreformattedString) or not li.strip()
+            ):
+                continue
+
             if not (isinstance(li, Tag) and li.name == "li"):
-                with self._use_list_item_context(prev_item):
+                if isinstance(li, Tag) and li.name in {"ul", "ol"} and prev_item:
+                    # A nested list is a sub-list of the preceding list item
+                    with self._use_list_item_context(prev_item):
+                        self._walk_nodes(tag, [li], doc)
+                else:
+                    if list_group is not None:
+                        self.parents[self.level + 1] = None
+                        self.level -= 1
+                        list_group = None
                     self._walk_nodes(tag, [li], doc)
+                    prev_item = None
 
             else:
+                if list_group is None:
+                    if is_ordered and start is None:
+                        start = 1
+                    list_group = open_list_group(
+                        start + list_item_counter if start is not None else None
+                    )
+
                 # 1) determine the marker using the counter
                 marker: str = (
                     f"{start + list_item_counter}."
@@ -3135,9 +3169,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             if not has_list_ancestor:
                                 self._handle_block(sublist, doc)
 
-        self.parents[self.level + 1] = None
-        self.level -= 1
-        return list_group.get_ref()
+        if list_group is not None:
+            self.parents[self.level + 1] = None
+            self.level -= 1
+        return first_group.get_ref()
 
     @staticmethod
     def get_html_table_row_col(tag: Tag) -> tuple[int, int]:

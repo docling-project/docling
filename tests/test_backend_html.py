@@ -13,7 +13,12 @@ from urllib.parse import quote
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import DocItemLabel, PictureItem, RichTableCell
+from docling_core.types.doc import (
+    DocItemLabel,
+    GroupLabel,
+    PictureItem,
+    RichTableCell,
+)
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -685,8 +690,8 @@ def test_list_non_li_children():
         b"<li>First.</li>"
         b"<p>About the first.</p>"
         b"<li>Second.</li>"
-        b"<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>"
         b"<ol><li>Nested.</li></ol>"
+        b"<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>"
         b"<li>Third.</li>"
         b"</ol></body></html>"
     )
@@ -700,14 +705,20 @@ def test_list_non_li_children():
     doc: DoclingDocument = backend.convert()
     texts = {item.text: item for item in doc.texts}
 
-    # Content before the first <li> precedes the list.
-    assert texts["Intro."].parent.resolve(doc) == doc.body
-    # Other content is nested under the preceding list item.
-    assert texts["About the first."].parent.cref == texts["First."].self_ref
-    assert doc.tables[0].parent.cref == texts["Second."].self_ref
+    # Content before the first <li> precedes the list. Any other content closes
+    # the list and is emitted at the parent level, like in the DOCX backend.
+    assert [child.resolve(doc).label for child in doc.body.children] == [
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TABLE,
+        GroupLabel.LIST,
+    ]
+    # A nested list stays a sub-list of the preceding list item.
     nested_list = texts["Nested."].parent.resolve(doc)
     assert nested_list.parent.cref == texts["Second."].self_ref
-
+    # The list items that follow an interruption continue the numbering.
     assert "3. Third." in doc.export_to_markdown()
 
 
