@@ -10641,12 +10641,12 @@
           },
           "charspan": [
             0,
-            301
+            302
           ]
         }
       ],
-      "orig": "2. Chen, B., Peng, D., Zhang, J., Ren, Y., Jin, L.: Complex table structure recognition in the wild using transformer and identity matrix-based augmentation. In: Porwal, U., Forn\u00e9s, A., Shafait, F. (eds.) Frontiers in Handwriting Recognition. pp. 545561. Springer International Publishing, Cham (2022)",
-      "text": "Chen, B., Peng, D., Zhang, J., Ren, Y., Jin, L.: Complex table structure recognition in the wild using transformer and identity matrix-based augmentation. In: Porwal, U., Forn\u00e9s, A., Shafait, F. (eds.) Frontiers in Handwriting Recognition. pp. 545561. Springer International Publishing, Cham (2022)",
+      "orig": "2. Chen, B., Peng, D., Zhang, J., Ren, Y., Jin, L.: Complex table structure recognition in the wild using transformer and identity matrix-based augmentation. In: Porwal, U., Forn\u00e9s, A., Shafait, F. (eds.) Frontiers in Handwriting Recognition. pp. 545-561. Springer International Publishing, Cham (2022)",
+      "text": "Chen, B., Peng, D., Zhang, J., Ren, Y., Jin, L.: Complex table structure recognition in the wild using transformer and identity matrix-based augmentation. In: Porwal, U., Forn\u00e9s, A., Shafait, F. (eds.) Frontiers in Handwriting Recognition. pp. 545-561. Springer International Publishing, Cham (2022)",
       "enumerated": true,
       "marker": "2."
     },
@@ -10840,12 +10840,12 @@
           },
           "charspan": [
             0,
-            264
+            265
           ]
         }
       ],
-      "orig": "6. Lee, E., Kwon, J., Yang, H., Park, J., Lee, S., Koo, H.I., Cho, N.I.: Table structure recognition based on grid shape graph. In: 2022 Asia-Pacific Signal and Information Processing Association Annual Summit and Conference (APSIPA ASC). pp. 18681873. IEEE (2022)",
-      "text": "Lee, E., Kwon, J., Yang, H., Park, J., Lee, S., Koo, H.I., Cho, N.I.: Table structure recognition based on grid shape graph. In: 2022 Asia-Pacific Signal and Information Processing Association Annual Summit and Conference (APSIPA ASC). pp. 18681873. IEEE (2022)",
+      "orig": "6. Lee, E., Kwon, J., Yang, H., Park, J., Lee, S., Koo, H.I., Cho, N.I.: Table structure recognition based on grid shape graph. In: 2022 Asia-Pacific Signal and Information Processing Association Annual Summit and Conference (APSIPA ASC). pp. 1868-1873. IEEE (2022)",
+      "text": "Lee, E., Kwon, J., Yang, H., Park, J., Lee, S., Koo, H.I., Cho, N.I.: Table structure recognition based on grid shape graph. In: 2022 Asia-Pacific Signal and Information Processing Association Annual Summit and Conference (APSIPA ASC). pp. 1868-1873. IEEE (2022)",
       "enumerated": true,
       "marker": "6."
     },

@@ -12690,12 +12690,12 @@
           },
           "charspan": [
             0,
-            302
+            303
           ]
         }
       ],
-      "orig": "[26] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 11621167, 2017. 1",
-      "text": "Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 11621167, 2017. 1",
+      "orig": "[26] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1162-1167, 2017. 1",
+      "text": "Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1162-1167, 2017. 1",
       "enumerated": true,
       "marker": "[26]"
     },
@@ -12748,12 +12748,12 @@
           },
           "charspan": [
             0,
-            183
+            184
           ]
         }
       ],
-      "orig": "[28] Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 6572, 2010. 2",
-      "text": "Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 6572, 2010. 2",
+      "orig": "[28] Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 65-72, 2010. 2",
+      "text": "Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 65-72, 2010. 2",
       "enumerated": true,
       "marker": "[28]"
     },
@@ -15594,12 +15594,12 @@
           },
           "charspan": [
             0,
-            99
+            100
           ]
         }
       ],
-      "orig": "where c is one of { left, centroid, right } and x c is the xcoordinate for the corresponding point.",
-      "text": "where c is one of { left, centroid, right } and x c is the xcoordinate for the corresponding point."
+      "orig": "where c is one of { left, centroid, right } and x c is the x-coordinate for the corresponding point.",
+      "text": "where c is one of { left, centroid, right } and x c is the x-coordinate for the corresponding point."
     },
     {
       "self_ref": "#/texts/536",
