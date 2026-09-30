@@ -229,12 +229,12 @@ def test_container_does_not_interrupt_caption_assignment(
     assert len([text for text in doc.texts if text.label == DocItemLabel.CAPTION]) == 1
 
 
-def test_container_children_follow_predicted_reading_order() -> None:
+def test_container_children_follow_explicit_reading_order() -> None:
     container_cluster = _cluster(1, DocItemLabel.FORM, (0, 0, 300, 300))
     lower_cluster = _cluster(2, DocItemLabel.PICTURE, (10, 200, 100, 250))
     upper_cluster = _cluster(3, DocItemLabel.PICTURE, (10, 10, 100, 60))
     container_cluster.children = [lower_cluster, upper_cluster]
-
+    container_cluster.reading_order = [3, 2]
     container = ContainerElement(
         label=DocItemLabel.FORM,
         id=1,
