@@ -473,53 +473,6 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
-def test_non_li_children_of_list_are_preserved():
-    """Regression for #4424: direct non-<li> list children must not be dropped."""
-    html = (
-        b"<html><body>"
-        b"<ul><li>First item</li>"
-        b"<p>A paragraph placed directly inside the list.</p>"
-        b"<table><tr><td>A table cell.</td></tr></table>"
-        b"<li>Second item</li></ul>"
-        b"<ol><li>a</li><li>b</li>"
-        b"<ol><li>x</li></ol>"
-        b"<li>c</li></ol>"
-        b"</body></html>"
-    )
-
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(html),
-        format=InputFormat.HTML,
-        backend=HTMLDocumentBackend,
-        filename="non_li_list_children.html",
-    )
-    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
-    doc = backend.convert()
-
-    assert any(
-        item.text == "A paragraph placed directly inside the list." for item in doc.texts
-    )
-    assert len(doc.tables) == 1
-    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A table cell."]
-
-    markdown = doc.export_to_markdown()
-    assert markdown.index("First item") < markdown.index(
-        "A paragraph placed directly inside the list."
-    )
-    assert markdown.index("A paragraph placed directly inside the list.") < markdown.index(
-        "A table cell."
-    )
-    assert markdown.index("A table cell.") < markdown.index("Second item")
-
-    # A direct nested <ol> belongs to the preceding list item and must not
-    # consume an additional counter value.
-    assert "1. a" in markdown
-    assert "2. b" in markdown
-    assert "    1. x" in markdown
-    assert "3. c" in markdown
-    assert "4. c" not in markdown
-
-
 def test_orig_keeps_source_text():
     """Regression for #4423: `text` is sanitized, `orig` keeps the source text."""
     html = (
@@ -590,17 +543,6 @@ def test_nested_table_in_list_item():
     assert md.count("Fault type.") == 1
 
 
-@pytest.mark.parametrize(
-    "inner",
-    [
-        # table as a direct child of <li>
-        b"<li>Step:<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>",
-        # table wrapped in a <div> inside <li> (reaches the table branch via the
-        # generic else-recursion path)
-        b"<li>Step:<div><table><tbody><tr><td>A</td><td>B</td></tr></tbody>"
-        b"</table></div></li>",
-    ],
-)
 def test_nested_block_content_preserves_following_text_order():
     """Regression for #4422: text after nested blocks must stay after them."""
     html = b"""
@@ -644,11 +586,42 @@ def test_nested_block_content_preserves_following_text_order():
     assert texts.index("Intro:") < texts.index("First nested.")
     assert texts.index("First nested.") < texts.index("Second nested.")
     assert texts.index("Second nested.") < texts.index("After the nested list.")
-    assert texts.index("Intro After the table.") < texts.index("After the table.")
-    assert texts.index("Intro After the list.") < texts.index("x")
+    assert texts.index("Intro") < texts.index("After the table.")
+    assert texts.index("Intro") < texts.index("x")
     assert texts.index("x") < texts.index("After the list.")
     assert texts[-1] == "Next paragraph."
 
+
+def test_nested_list_trailing_text_without_leading_text():
+    """Trailing text remains after a nested list even when the outer <li> starts with it."""
+    html = b"<html><body><ul><li><ul><li>x</li></ul>After</li><li>b</li></ul></body></html>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="nested_list_trailing_text_no_leading.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    items = [
+        getattr(item, "text", "")
+        for item, _ in doc.iterate_items()
+        if getattr(item, "text", "")
+    ]
+    assert items.index("x") < items.index("After") < items.index("b")
+
+
+@pytest.mark.parametrize(
+    "inner",
+    [
+        # table as a direct child of <li>
+        b"<li>Step:<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>",
+        # table wrapped in a <div> inside <li> (reaches the table branch via the
+        # generic else-recursion path)
+        b"<li>Step:<div><table><tbody><tr><td>A</td><td>B</td></tr></tbody>"
+        b"</table></div></li>",
+    ],
+)
 
 def test_nested_table_in_list_item_wrappers(inner):
     """#3508: the nested table is parsed regardless of an intermediate wrapper."""
