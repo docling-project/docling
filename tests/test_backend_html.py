@@ -565,7 +565,7 @@ def test_nested_block_content_preserves_following_text_order():
     </dl>
     <p>Next paragraph.</p>
     </body></html>
-    """;
+    """
 
     in_doc = InputDocument(
         path_or_stream=BytesIO(html),
@@ -593,8 +593,11 @@ def test_nested_block_content_preserves_following_text_order():
 
 
 def test_nested_list_trailing_text_without_leading_text():
-    """Trailing text remains after a nested list even when the outer <li> starts with it."""
-    html = b"<html><body><ul><li><ul><li>x</li></ul>After</li><li>b</li></ul></body></html>"
+    """Trailing text remains after a nested list when the outer <li> starts empty."""
+    html = (
+        b"<html><body><ul><li><ul><li>x</li></ul>After</li>"
+        b"<li>b</li></ul></body></html>"
+    )
     in_doc = InputDocument(
         path_or_stream=BytesIO(html),
         format=InputFormat.HTML,
