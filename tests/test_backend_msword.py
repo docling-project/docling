@@ -1899,6 +1899,67 @@ def test_list_returning_to_starting_level_above_zero_keeps_items(documents):
     )
 
 
+_VML_NS = "urn:schemas-microsoft-com:vml"
+
+
+def _anchor_a_vml_textbox_with_a_numbered_item(paragraph, text: str) -> None:
+    """Anchor a legacy VML textbox holding one numbered paragraph in ``paragraph``."""
+
+    run = OxmlElement("w:r")
+    pict = OxmlElement("w:pict")
+    shape = etree.SubElement(pict, f"{{{_VML_NS}}}shape", nsmap={"v": _VML_NS})
+    shape.set("style", "width:200pt;height:50pt")
+    textbox = etree.SubElement(shape, f"{{{_VML_NS}}}textbox")
+    content = OxmlElement("w:txbxContent")
+
+    boxed = OxmlElement("w:p")
+    p_pr = OxmlElement("w:pPr")
+    num_pr = OxmlElement("w:numPr")
+    ilvl = OxmlElement("w:ilvl")
+    ilvl.set(qn("w:val"), "0")
+    num_id = OxmlElement("w:numId")
+    num_id.set(qn("w:val"), "7")
+    num_pr.append(ilvl)
+    num_pr.append(num_id)
+    p_pr.append(num_pr)
+    boxed.append(p_pr)
+
+    boxed_run = OxmlElement("w:r")
+    boxed_text = OxmlElement("w:t")
+    boxed_text.text = text
+    boxed_run.append(boxed_text)
+    boxed.append(boxed_run)
+
+    content.append(boxed)
+    textbox.append(content)
+    run.append(pict)
+    paragraph._p.append(run)
+
+
+def test_numbering_inside_a_textbox_does_not_number_its_anchor(tmp_path):
+    """A paragraph anchoring a numbered textbox stays body text.
+
+    A floating textbox is stored inside an anchor paragraph, but its contents
+    are independent of it: the box can hold a list while the anchor is plain
+    prose. Looking for ``w:numPr`` anywhere below the anchor finds the boxed
+    item's numbering and marks the anchor itself as a list item.
+    """
+
+    document = Document()
+    anchor = document.add_paragraph("Anchor paragraph, plain body text.")
+    _anchor_a_vml_textbox_with_a_numbered_item(anchor, "Numbered item in the box.")
+
+    doc = _convert_built(document, tmp_path)
+
+    labels = {
+        item.text: item.label
+        for item, _ in doc.iterate_items()
+        if getattr(item, "text", "")
+    }
+    assert labels["Numbered item in the box."] == DocItemLabel.LIST_ITEM
+    assert labels["Anchor paragraph, plain body text."] == DocItemLabel.TEXT
+
+
 def test_list_returning_to_starting_level_zero_still_works(documents):
     """Control case: levels 0, 1, 2, 1 must keep working unchanged."""
 
