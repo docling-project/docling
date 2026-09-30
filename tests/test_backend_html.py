@@ -625,7 +625,6 @@ def test_nested_list_trailing_text_without_leading_text():
         b"</table></div></li>",
     ],
 )
-
 def test_nested_table_in_list_item_wrappers(inner):
     """#3508: the nested table is parsed regardless of an intermediate wrapper."""
     html = b"<html><body><ol>" + inner + b"</ol></body></html>"
