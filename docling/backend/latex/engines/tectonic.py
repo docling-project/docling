@@ -14,6 +14,7 @@ from docling_core.types.doc.document import ImageRef
 from PIL import Image, ImageChops
 
 from docling.backend.latex.engines.base import RenderEngine
+from docling.backend.latex.utils.encoding import decode_latex_content
 
 _log = logging.getLogger(__name__)
 _PYPDFIUM2_LOCK = threading.Lock()
@@ -226,7 +227,7 @@ class TectonicEngine(RenderEngine):
 
             seen_tex_files.add(source_path)
             try:
-                nested_text = source_path.read_text(encoding="utf-8")
+                nested_text = decode_latex_content(source_path)
             except Exception as exc:
                 _log.warning("Failed to read TikZ dependency %s: %s", source_path, exc)
                 continue
