@@ -1103,11 +1103,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_numId_and_ilvl(
         self, paragraph: Paragraph
     ) -> tuple[int | None, int | None]:
-        # Access the XML element of the paragraph
+        # w:numPr is only valid as a child of the paragraph's own w:pPr, so read
+        # it from there. A descendant search also reaches the paragraphs nested
+        # inside an anchored textbox and would take their numbering as this
+        # paragraph's own.
         numPr = paragraph._element.find(
-            ".//w:numPr", namespaces=paragraph._element.nsmap
+            "w:pPr/w:numPr", namespaces=paragraph._element.nsmap
         )
-
         if numPr is not None:
             # Get the numId element and extract the value
             numId_elem = numPr.find("w:numId", namespaces=paragraph._element.nsmap)
