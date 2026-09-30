@@ -2866,6 +2866,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 break
         return result
 
+
+    def _list_item_has_trailing_content(self, tag: Tag) -> bool:
+        """Return whether a list item has content after its first nested block."""
+        nested_tags = {"ul", "ol", "dl", "table"}
+        seen_nested = False
+
+        def walk(elem) -> bool:
+            nonlocal seen_nested
+            if isinstance(elem, NavigableString):
+                return seen_nested and bool(str(elem).strip())
+            if not isinstance(elem, Tag):
+                return False
+            if elem.name in nested_tags:
+                seen_nested = True
+                return False
+            return any(walk(child) for child in elem.children)
+
+        return any(walk(child) for child in tag.children)
+
     def _add_list_item_with_content(
         self,
         tag: Tag,
@@ -2889,7 +2908,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         ).strip()
 
         if not item_text:
-            return None
+            if not self._list_item_has_trailing_content(tag):
+                return None
+
+            # Preserve an outer list item so content after a nested block can
+            # remain a child of that item while being emitted after the nested block.
+            return doc.add_list_item(
+                text="",
+                enumerated=enumerated,
+                marker=marker,
+                parent=parent,
+                content_layer=self.content_layer,
+                prov=self._make_text_prov(text="", tag=tag),
+            )
 
         if len(min_parts) > 1:
             # Complex content - create list item with inline group
