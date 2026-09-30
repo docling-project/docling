@@ -3104,106 +3104,93 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level -= 1
             return list_group.get_ref()
 
-        # Iterate over direct children instead of only <li> elements. Real-world CMS
-        # output frequently places block content directly inside <ul>/<ol>; browsers
-        # still render that content, so it should not be silently dropped.
-        current_list_item: Optional[RefItem] = None
-
-        for child in tag.children:
-            if not isinstance(child, Tag):
+        # For each top-level <li> in this list (ul/ol)
+        for li in tag.find_all({"li", "ul", "ol"}, recursive=False):
+            if not isinstance(li, Tag):
                 continue
 
-            if child.name in {"ul", "ol", "dl", "table", "p", "address", "summary", "pre"}:
-                if current_list_item is not None:
-                    with self._use_list_item_context(current_list_item):
-                        self._handle_block(child, doc)
-                else:
-                    self._handle_block(child, doc)
-                continue
+            # sub-list items should be indented under main list items, but temporarily
+            # addressing invalid HTML (docling-core/issues/357)
+            if li.name in {"ul", "ol"}:
+                self._handle_block(li, doc)
 
-            if child.name != "li":
-                if current_list_item is not None:
-                    with self._use_list_item_context(current_list_item):
-                        self._walk(child, doc)
-                else:
-                    self._walk(child, doc)
-                continue
-
-            # 1) determine the marker using the counter
-            marker: str = (
-                f"{start + list_item_counter}."
-                if is_ordered and start is not None
-                else ""
-            )
-
-            # 2) Find inputs and checkboxes in this <li>
-            inputs_in_li = [
-                input_tag
-                for input_tag in child.find_all("input")
-                if input_tag.find_parent("li") is child
-            ]
-            custom_checkboxes_in_li = [
-                checkbox_tag
-                for checkbox_tag in child.find_all(
-                    lambda item: (
-                        isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
-                    )
-                )
-                if checkbox_tag.find_parent("li") is child
-            ]
-
-            # GFM task-list form: the whole <li> is a bare checkbox input
-            # plus inline text (e.g. <li><input checked>done</li>). The text
-            # belongs to the checkbox item, so no separate list item is
-            # created for it - that used to render the checkbox on its own
-            # bullet *after* the text.
-            task_list_inputs = self._is_task_list_item(
-                child, inputs_in_li, custom_checkboxes_in_li
-            )
-
-            # 3) Add the list item using the helper function
-            list_item = None
-            if not task_list_inputs:
-                list_item = self._add_list_item_with_content(
-                    tag=child,
-                    doc=doc,
-                    parent=list_group,
-                    enumerated=is_ordered,
-                    marker=marker,
-                )
-
-            # Increment counter only when a list item is actually added
-            if list_item:
-                list_item_counter += 1
-                current_list_item = list_item
-
-            if list_item or inputs_in_li or custom_checkboxes_in_li:
-                if task_list_inputs:
-                    self._emit_task_list_inputs(inputs_in_li, doc)
-                    continue
-
-                with self._use_list_item_context(list_item):
-                    # Handle inputs and checkboxes
-                    if inputs_in_li or custom_checkboxes_in_li:
-                        for input_tag in inputs_in_li:
-                            if isinstance(input_tag, Tag):
-                                self._emit_input(input_tag, doc)
-                        for checkbox_tag in custom_checkboxes_in_li:
-                            if isinstance(checkbox_tag, Tag):
-                                self._emit_custom_checkbox(checkbox_tag, doc)
-
-                    # 4) Process nested content (images, lists, etc.) in DOM order
-                    processed_elements = set()
-                    self._process_list_item_nested_content(
-                        child, doc, processed_elements
-                    )
             else:
-                # No content, but check for nested lists (including those wrapped in divs)
-                for sublist in child({"ul", "ol", "dl"}):
-                    if isinstance(sublist, Tag):
-                        has_list_ancestor = self._has_list_ancestor(sublist, child)
-                        if not has_list_ancestor:
-                            self._handle_block(sublist, doc)
+                # 1) determine the marker using the counter
+                marker: str = (
+                    f"{start + list_item_counter}."
+                    if is_ordered and start is not None
+                    else ""
+                )
+
+                # 2) Find inputs and checkboxes in this <li>
+                inputs_in_li = [
+                    input_tag
+                    for input_tag in li.find_all("input")
+                    if input_tag.find_parent("li") is li
+                ]
+                custom_checkboxes_in_li = [
+                    checkbox_tag
+                    for checkbox_tag in li.find_all(
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
+                    )
+                    if checkbox_tag.find_parent("li") is li
+                ]
+
+                # GFM task-list form: the whole <li> is a bare checkbox input
+                # plus inline text (e.g. <li><input checked>done</li>). The text
+                # belongs to the checkbox item, so no separate list item is
+                # created for it - that used to render the checkbox on its own
+                # bullet *after* the text.
+                task_list_inputs = self._is_task_list_item(
+                    li, inputs_in_li, custom_checkboxes_in_li
+                )
+
+                # 3) Add the list item using the helper function
+                list_item = None
+                if not task_list_inputs:
+                    list_item = self._add_list_item_with_content(
+                        tag=li,
+                        doc=doc,
+                        parent=list_group,
+                        enumerated=is_ordered,
+                        marker=marker,
+                    )
+
+                # Increment counter only when a list item is actually added
+                if list_item:
+                    list_item_counter += 1
+
+                if list_item or inputs_in_li or custom_checkboxes_in_li:
+                    if task_list_inputs:
+                        self._emit_task_list_inputs(inputs_in_li, doc)
+                        continue
+
+                    with self._use_list_item_context(list_item):
+                        # Handle inputs and checkboxes
+                        if inputs_in_li or custom_checkboxes_in_li:
+                            for input_tag in inputs_in_li:
+                                if isinstance(input_tag, Tag):
+                                    self._emit_input(input_tag, doc)
+                            for checkbox_tag in custom_checkboxes_in_li:
+                                if isinstance(checkbox_tag, Tag):
+                                    self._emit_custom_checkbox(checkbox_tag, doc)
+
+                        # 4) Process nested content (images, lists, etc.) in DOM order
+                        processed_elements = set()
+                        self._process_list_item_nested_content(
+                            li, doc, processed_elements
+                        )
+                else:
+                    # No content, but check for nested lists (including those wrapped in divs)
+                    for sublist in li({"ul", "ol", "dl"}):
+                        if isinstance(sublist, Tag):
+                            # Check if this list has a ul/ol/dl ancestor within the current li
+                            has_list_ancestor = self._has_list_ancestor(sublist, li)
+
+                            if not has_list_ancestor:
+                                self._handle_block(sublist, doc)
 
         self.parents[self.level + 1] = None
         self.level -= 1
