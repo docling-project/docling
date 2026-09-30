@@ -88,12 +88,19 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         return {InputFormat.CSV}
 
     def convert(self) -> DoclingDocument:
-        """
-        Parses the CSV data into a structured document model.
-        """
+        """Parse the CSV content into a DoclingDocument.
 
-        # Detect CSV dialect. The larger sample is only read when the first
-        # line fails to sniff.
+        Dialect detection sniffs the first line; a larger sample is only read
+        when that fails (e.g. a quoted field spanning multiple lines cuts the
+        first line mid-quote). If sniffing fails entirely, `csv.excel`
+        (comma delimiter) is used as the fallback.
+
+        `doublequote=True` is passed explicitly because `csv.Sniffer` only
+        sets it when it actually sees `""` in the sample, and the sample is
+        usually the header line, which rarely contains one. RFC 4180 and
+        `csv.excel` both use doubling, so it is the correct default.
+        """
+        # Dialect detection: the larger sample is only read on fallback.
         head = self.content.readline()
 
         def read_sample() -> str:
@@ -109,17 +116,20 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             else:
                 _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
         except csv.Error as e:
-            # Fall back to default commad delimiter (e.g. single-column, insufficient data to detect)
+            # Fall back to comma (e.g. single-column or insufficient data to detect).
             _log.info(
                 f"Could not detect delimiter ({e}), using default comma delimiter"
             )
             dialect = csv.excel
 
-        # Parse CSV. strict=True rejects malformed quotes; that used to escape
-        # convert() as csv.Error after dialect detection had already succeeded.
         self.content.seek(0)
         try:
-            result = csv.reader(self.content, dialect=dialect, strict=True)
+            result = csv.reader(
+                self.content,
+                dialect=dialect,
+                doublequote=True,
+                strict=True,
+            )
             self.csv_data = list(result)
         except csv.Error as e:
             raise DocumentLoadError(

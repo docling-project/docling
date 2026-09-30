@@ -4,6 +4,7 @@
 import base64
 import json
 import re
+import shutil
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -487,6 +488,49 @@ def test_cli_html_fetches_local_images_per_input(tmp_path):
     _assert_markdown_embeds_png(output / "second.md", second_png)
 
 
+def test_cli_directory_skips_office_lock_files(tmp_path):
+    """~$ lock files are excluded regardless of the Office extension.
+
+    With --abort-on-error an unreadable lock stub would fail the whole run.
+    """
+    fixtures = {
+        "notes.docx": "tests/data/docx/sources/Strict.docx",
+        "report.xlsx": "tests/data/xlsx/sources/xlsx_09_section_label_header.xlsx",
+        "slides.pptx": "tests/data/pptx/sources/powerpoint_sample.pptx",
+    }
+    source = tmp_path / "office"
+    source.mkdir()
+    for name, fixture in fixtures.items():
+        shutil.copy(fixture, source / name)
+        (source / f"~${name}").write_bytes(b"lock")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "docx",
+            "--from",
+            "xlsx",
+            "--from",
+            "pptx",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--abort-on-error",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert sorted(path.name for path in output.iterdir()) == [
+        "notes.md",
+        "report.md",
+        "slides.md",
+    ]
+
+
 def test_cli_html_directory_matches_mixed_case_extensions(tmp_path):
     source_dir = tmp_path / "source"
     _write_html_image_case(source_dir, "Case.HtMl", "Mixed case")
@@ -882,6 +926,41 @@ def test_cli_explicit_pipeline_not_overridden(tmp_path):
     assert (
         result.exit_code == 0 or result.exit_code == 1
     )  # Allow for processing failure
+
+
+def test_cli_directory_includes_gif_images(tmp_path, monkeypatch):
+    """GIF files in a directory are picked up and converted like other image formats."""
+    captured: dict[str, list[Path]] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["paths"] = [Path(path) for path in input_doc_paths]
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "images"
+    source.mkdir()
+    Image.new("RGB", (1, 1), color=(0, 0, 0)).save(source / "photo.gif", format="GIF")
+    (source / "photo.png").write_bytes(_png_bytes((0, 0, 0)))
+
+    result = runner.invoke(
+        app, [str(source), "--from", "image", "--output", str(tmp_path / "out")]
+    )
+
+    assert result.exit_code == 0
+    assert sorted(path.name for path in captured["paths"]) == ["photo.gif", "photo.png"]
 
 
 def test_cli_audio_extensions_coverage():

@@ -109,6 +109,49 @@ def test_quoted_newline_in_first_field():
     assert table.data.table_cells[0].text == "line one\nstill line one"
 
 
+def test_doubled_quotes_are_unescaped():
+    """A doubled quote inside a quoted field is an escaped quote (RFC 4180).
+
+    The dialect is sniffed from the header line, which almost never contains a
+    doubled quote, so `csv.Sniffer` reported `doublequote=False` and the reader
+    kept the doubling, so the value came back with its quotes still doubled.
+    """
+    csv_bytes = b'a,b\n"he said ""hi""",2\n'
+    conv_result = get_converter().convert(
+        DocumentStream(name="quotes.csv", stream=BytesIO(csv_bytes)),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+    assert [cell.text for cell in cells] == ["a", "b", 'he said "hi"', "2"]
+
+
+def test_doubled_quotes_with_non_comma_delimiter():
+    """The same holds once the sniffer has picked a different delimiter."""
+    csv_bytes = b'a;b\n"say ""x""";2\n'
+    conv_result = get_converter().convert(
+        DocumentStream(name="quotes-semicolon.csv", stream=BytesIO(csv_bytes)),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+    assert [cell.text for cell in cells] == ["a", "b", 'say "x"', "2"]
+
+
+def test_backslash_escaped_quotes_are_a_load_error():
+    """A file using backslash-escaped quotes (e.g. MySQL SELECT … INTO OUTFILE) fails to load.
+
+    Such files contain bare `"` characters that are not doubled, which is
+    malformed under RFC 4180. The strict parse rejects them as a load error.
+    """
+    conv_result = get_converter().convert(
+        DocumentStream(
+            name="backslash.csv",
+            stream=BytesIO(b'id,text\n1,"say \\"hi\\" now"\n2,plain\n'),
+        ),
+        raises_on_error=False,
+    )
+    assert conv_result.status == ConversionStatus.FAILURE
+
+
 def test_empty_csv():
     """Regression test: converting an empty CSV file should not raise an IndexError."""
     conv_result = get_converter().convert(

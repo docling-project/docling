@@ -238,6 +238,40 @@ def test_code_block_language_detection():
     ]
 
 
+def test_convert_table_keeps_inline_code_spans():
+    """A code span inside a GFM table cell is part of that cell.
+
+    The span keeps the words around it, a pipe inside it is not a column
+    separator, and its text is literal, so an entity in it is not decoded.
+    """
+    markdown = """| Command | Description |
+| --- | --- |
+| run `build` now | builds it |
+| `a | b` | keeps the pipe |
+| `&amp;` | stays literal |
+| clean | removes it |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    assert len(conv_result.document.tables) == 1
+    table_data = conv_result.document.tables[0].data
+    assert table_data.num_rows == 5
+    assert table_data.num_cols == 2
+    assert [cell.text for cell in table_data.table_cells] == [
+        "Command",
+        "Description",
+        "run build now",
+        "builds it",
+        "a | b",
+        "keeps the pipe",
+        "&amp;",
+        "stays literal",
+        "clean",
+        "removes it",
+    ]
+
+
 def test_convert_table_has_no_duplicate_cells():
     """
     Regression test:
