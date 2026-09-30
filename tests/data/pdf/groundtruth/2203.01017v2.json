@@ -48,16 +48,19 @@
         "$ref": "#/tables/0"
       },
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/9"
+      },
+      {
+        "$ref": "#/texts/10"
       },
       {
         "$ref": "#/pictures/0"
       },
       {
-        "$ref": "#/tables/1"
+        "$ref": "#/texts/35"
       },
       {
-        "$ref": "#/texts/36"
+        "$ref": "#/tables/1"
       },
       {
         "$ref": "#/texts/37"
@@ -75,10 +78,10 @@
         "$ref": "#/texts/41"
       },
       {
-        "$ref": "#/groups/1"
+        "$ref": "#/texts/42"
       },
       {
-        "$ref": "#/texts/46"
+        "$ref": "#/groups/0"
       },
       {
         "$ref": "#/texts/47"
@@ -114,10 +117,10 @@
         "$ref": "#/texts/57"
       },
       {
-        "$ref": "#/pictures/1"
+        "$ref": "#/texts/58"
       },
       {
-        "$ref": "#/texts/83"
+        "$ref": "#/pictures/1"
       },
       {
         "$ref": "#/texts/84"
@@ -138,10 +141,10 @@
         "$ref": "#/texts/89"
       },
       {
-        "$ref": "#/tables/2"
+        "$ref": "#/texts/90"
       },
       {
-        "$ref": "#/texts/91"
+        "$ref": "#/tables/2"
       },
       {
         "$ref": "#/texts/92"
@@ -162,13 +165,13 @@
         "$ref": "#/texts/97"
       },
       {
+        "$ref": "#/texts/98"
+      },
+      {
         "$ref": "#/pictures/2"
       },
       {
         "$ref": "#/pictures/3"
-      },
-      {
-        "$ref": "#/texts/197"
       },
       {
         "$ref": "#/texts/198"
@@ -252,28 +255,28 @@
         "$ref": "#/texts/224"
       },
       {
+        "$ref": "#/texts/225"
+      },
+      {
         "$ref": "#/tables/3"
       },
       {
-        "$ref": "#/texts/226"
+        "$ref": "#/texts/227"
       },
       {
         "$ref": "#/tables/4"
       },
       {
-        "$ref": "#/texts/228"
+        "$ref": "#/texts/229"
       },
       {
         "$ref": "#/tables/5"
       },
       {
-        "$ref": "#/texts/230"
+        "$ref": "#/texts/231"
       },
       {
-        "$ref": "#/groups/2"
-      },
-      {
-        "$ref": "#/texts/232"
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/texts/233"
@@ -282,13 +285,13 @@
         "$ref": "#/texts/234"
       },
       {
+        "$ref": "#/texts/235"
+      },
+      {
         "$ref": "#/pictures/4"
       },
       {
         "$ref": "#/pictures/5"
-      },
-      {
-        "$ref": "#/texts/396"
       },
       {
         "$ref": "#/texts/397"
@@ -303,34 +306,34 @@
         "$ref": "#/texts/400"
       },
       {
-        "$ref": "#/groups/4"
+        "$ref": "#/texts/401"
       },
       {
-        "$ref": "#/texts/402"
+        "$ref": "#/groups/3"
       },
       {
         "$ref": "#/texts/403"
       },
       {
-        "$ref": "#/groups/5"
+        "$ref": "#/texts/404"
       },
       {
-        "$ref": "#/texts/428"
+        "$ref": "#/groups/4"
       },
       {
         "$ref": "#/texts/429"
       },
       {
+        "$ref": "#/texts/430"
+      },
+      {
+        "$ref": "#/groups/5"
+      },
+      {
+        "$ref": "#/texts/443"
+      },
+      {
         "$ref": "#/groups/6"
-      },
-      {
-        "$ref": "#/texts/442"
-      },
-      {
-        "$ref": "#/groups/7"
-      },
-      {
-        "$ref": "#/texts/444"
       },
       {
         "$ref": "#/texts/445"
@@ -363,10 +366,10 @@
         "$ref": "#/texts/454"
       },
       {
-        "$ref": "#/groups/8"
+        "$ref": "#/texts/455"
       },
       {
-        "$ref": "#/texts/460"
+        "$ref": "#/groups/7"
       },
       {
         "$ref": "#/texts/461"
@@ -375,43 +378,43 @@
         "$ref": "#/texts/462"
       },
       {
+        "$ref": "#/texts/463"
+      },
+      {
         "$ref": "#/pictures/6"
       },
       {
-        "$ref": "#/groups/9"
-      },
-      {
-        "$ref": "#/texts/527"
+        "$ref": "#/groups/8"
       },
       {
         "$ref": "#/texts/528"
       },
       {
-        "$ref": "#/groups/10"
+        "$ref": "#/texts/529"
       },
       {
-        "$ref": "#/texts/534"
+        "$ref": "#/groups/9"
       },
       {
         "$ref": "#/texts/535"
       },
       {
+        "$ref": "#/texts/536"
+      },
+      {
+        "$ref": "#/groups/10"
+      },
+      {
+        "$ref": "#/texts/538"
+      },
+      {
         "$ref": "#/groups/11"
       },
       {
-        "$ref": "#/texts/537"
+        "$ref": "#/texts/543"
       },
       {
         "$ref": "#/groups/12"
-      },
-      {
-        "$ref": "#/texts/542"
-      },
-      {
-        "$ref": "#/groups/13"
-      },
-      {
-        "$ref": "#/texts/545"
       },
       {
         "$ref": "#/texts/546"
@@ -420,10 +423,13 @@
         "$ref": "#/texts/547"
       },
       {
-        "$ref": "#/groups/14"
+        "$ref": "#/texts/548"
       },
       {
-        "$ref": "#/texts/549"
+        "$ref": "#/groups/13"
+      },
+      {
+        "$ref": "#/texts/550"
       },
       {
         "$ref": "#/pictures/7"
@@ -435,7 +441,7 @@
         "$ref": "#/pictures/9"
       },
       {
-        "$ref": "#/texts/553"
+        "$ref": "#/texts/554"
       },
       {
         "$ref": "#/pictures/10"
@@ -447,25 +453,25 @@
         "$ref": "#/pictures/12"
       },
       {
-        "$ref": "#/texts/557"
+        "$ref": "#/texts/558"
       },
       {
-        "$ref": "#/texts/558"
+        "$ref": "#/texts/559"
       },
       {
         "$ref": "#/pictures/13"
       },
       {
-        "$ref": "#/texts/560"
+        "$ref": "#/texts/561"
       },
       {
-        "$ref": "#/texts/561"
+        "$ref": "#/texts/562"
       },
       {
         "$ref": "#/pictures/14"
       },
       {
-        "$ref": "#/texts/563"
+        "$ref": "#/texts/564"
       }
     ],
     "content_layer": "body",
@@ -480,10 +486,16 @@
       },
       "children": [
         {
-          "$ref": "#/texts/9"
+          "$ref": "#/texts/43"
         },
         {
-          "$ref": "#/texts/34"
+          "$ref": "#/texts/44"
+        },
+        {
+          "$ref": "#/texts/45"
+        },
+        {
+          "$ref": "#/texts/46"
         }
       ],
       "content_layer": "body",
@@ -497,16 +509,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/42"
-        },
-        {
-          "$ref": "#/texts/43"
-        },
-        {
-          "$ref": "#/texts/44"
-        },
-        {
-          "$ref": "#/texts/45"
+          "$ref": "#/texts/232"
         }
       ],
       "content_layer": "body",
@@ -516,29 +519,29 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/pictures/4"
       },
       "children": [
         {
-          "$ref": "#/texts/231"
+          "$ref": "#/texts/237"
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     },
     {
       "self_ref": "#/groups/3",
       "parent": {
-        "$ref": "#/pictures/4"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/236"
+          "$ref": "#/texts/402"
         }
       ],
       "content_layer": "body",
-      "name": "group",
+      "name": "list",
       "label": "list"
     },
     {
@@ -547,23 +550,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/401"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/5",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/404"
-        },
         {
           "$ref": "#/texts/405"
         },
@@ -632,6 +618,9 @@
         },
         {
           "$ref": "#/texts/427"
+        },
+        {
+          "$ref": "#/texts/428"
         }
       ],
       "content_layer": "body",
@@ -639,14 +628,11 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/6",
+      "self_ref": "#/groups/5",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/430"
-        },
         {
           "$ref": "#/texts/431"
         },
@@ -679,6 +665,23 @@
         },
         {
           "$ref": "#/texts/441"
+        },
+        {
+          "$ref": "#/texts/442"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/444"
         }
       ],
       "content_layer": "body",
@@ -692,7 +695,19 @@
       },
       "children": [
         {
-          "$ref": "#/texts/443"
+          "$ref": "#/texts/456"
+        },
+        {
+          "$ref": "#/texts/457"
+        },
+        {
+          "$ref": "#/texts/458"
+        },
+        {
+          "$ref": "#/texts/459"
+        },
+        {
+          "$ref": "#/texts/460"
         }
       ],
       "content_layer": "body",
@@ -706,19 +721,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/455"
+          "$ref": "#/texts/526"
         },
         {
-          "$ref": "#/texts/456"
-        },
-        {
-          "$ref": "#/texts/457"
-        },
-        {
-          "$ref": "#/texts/458"
-        },
-        {
-          "$ref": "#/texts/459"
+          "$ref": "#/texts/527"
         }
       ],
       "content_layer": "body",
@@ -732,10 +738,19 @@
       },
       "children": [
         {
-          "$ref": "#/texts/525"
+          "$ref": "#/texts/530"
         },
         {
-          "$ref": "#/texts/526"
+          "$ref": "#/texts/531"
+        },
+        {
+          "$ref": "#/texts/532"
+        },
+        {
+          "$ref": "#/texts/533"
+        },
+        {
+          "$ref": "#/texts/534"
         }
       ],
       "content_layer": "body",
@@ -749,19 +764,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/529"
-        },
-        {
-          "$ref": "#/texts/530"
-        },
-        {
-          "$ref": "#/texts/531"
-        },
-        {
-          "$ref": "#/texts/532"
-        },
-        {
-          "$ref": "#/texts/533"
+          "$ref": "#/texts/537"
         }
       ],
       "content_layer": "body",
@@ -775,7 +778,16 @@
       },
       "children": [
         {
-          "$ref": "#/texts/536"
+          "$ref": "#/texts/539"
+        },
+        {
+          "$ref": "#/texts/540"
+        },
+        {
+          "$ref": "#/texts/541"
+        },
+        {
+          "$ref": "#/texts/542"
         }
       ],
       "content_layer": "body",
@@ -789,16 +801,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/538"
+          "$ref": "#/texts/544"
         },
         {
-          "$ref": "#/texts/539"
-        },
-        {
-          "$ref": "#/texts/540"
-        },
-        {
-          "$ref": "#/texts/541"
+          "$ref": "#/texts/545"
         }
       ],
       "content_layer": "body",
@@ -812,24 +818,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/543"
-        },
-        {
-          "$ref": "#/texts/544"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/14",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/548"
+          "$ref": "#/texts/549"
         }
       ],
       "content_layer": "body",
@@ -1088,11 +1077,11 @@
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -1100,22 +1089,47 @@
             "l": 315.57,
             "t": 477.96,
             "r": 486.4,
+            "b": 469.65,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            36
+          ]
+        }
+      ],
+      "orig": "b. Red-annotation of bounding boxes,",
+      "text": "b. Red-annotation of bounding boxes,"
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 326.46,
+            "t": 467.16,
+            "r": 472.47,
             "b": 458.85,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            68
+            31
           ]
         }
       ],
-      "orig": "b. Red-annotation of bounding boxes, Blue-predictions by TableFormer",
-      "text": "Red-annotation of bounding boxes, Blue-predictions by TableFormer",
-      "enumerated": true,
-      "marker": "b."
+      "orig": "Blue-predictions by TableFormer",
+      "text": "Blue-predictions by TableFormer"
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1142,7 +1156,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1169,7 +1183,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1196,7 +1210,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1223,7 +1237,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1250,7 +1264,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1277,7 +1291,7 @@
       "text": "5"
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1304,7 +1318,7 @@
       "text": "6"
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1331,7 +1345,7 @@
       "text": "7"
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1358,7 +1372,7 @@
       "text": "8"
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1385,7 +1399,7 @@
       "text": "9"
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1412,7 +1426,7 @@
       "text": "10"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1439,7 +1453,7 @@
       "text": "11"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1466,7 +1480,7 @@
       "text": "12"
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1493,7 +1507,7 @@
       "text": "13"
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1520,7 +1534,7 @@
       "text": "14"
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1547,7 +1561,7 @@
       "text": "15"
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1574,7 +1588,7 @@
       "text": "16"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1601,7 +1615,7 @@
       "text": "17"
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/29",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1628,7 +1642,7 @@
       "text": "18"
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1655,7 +1669,7 @@
       "text": "19"
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/31",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1682,7 +1696,7 @@
       "text": "20"
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1709,7 +1723,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/33",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1736,7 +1750,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1763,13 +1777,13 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/35",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "section_header",
       "prov": [
         {
           "page_no": 1,
@@ -1787,12 +1801,11 @@
         }
       ],
       "orig": "c. Structure predicted by TableFormer:",
-      "text": "Structure predicted by TableFormer:",
-      "enumerated": true,
-      "marker": "c."
+      "text": "c. Structure predicted by TableFormer:",
+      "level": 1
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/tables/1"
       },
@@ -1819,7 +1832,7 @@
       "text": "Figure 1: Picture of a table with subtle, complex features such as (1) multi-column headers, (2) cell with multi-row text and (3) cells with no content. Image from PubTabNet evaluation set, filename: 'PMC2944238 004 02'."
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/body"
       },
@@ -1846,7 +1859,7 @@
       "text": "Recently, significant progress has been made with vision based approaches to extract tables in documents. For the sake of completeness, the issue of table extraction from documents is typically decomposed into two separate challenges, i.e. (1) finding the location of the table(s) on a document-page and (2) finding the structure of a given table in the document."
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -1887,7 +1900,7 @@
       "text": "The first problem is called table-location and has been previously addressed [30, 38, 19, 21, 23, 26, 8] with stateof-the-art object-detection networks (e.g. YOLO and later on Mask-RCNN [9]). For all practical purposes, it can be considered as a solved problem, given enough ground-truth data to train on."
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/body"
       },
@@ -1914,7 +1927,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/body"
       },
@@ -1941,7 +1954,7 @@
       "text": "The second problem is called table-structure decomposition. The latter is a long standing problem in the community of document understanding [6, 4, 14]. Contrary to the table-location problem, there are no commonly used approaches that can easily be re-purposed to solve this problem. Lately, a set of new model-architectures has been proposed by the community to address table-structure decomposition [37, 36, 18, 20]. All these models have some weaknesses (see Sec. 2). The common denominator here is the reliance on textual features and/or the inability to provide the bounding box of each table-cell in the original image."
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/body"
       },
@@ -1968,7 +1981,7 @@
       "text": "In this paper, we want to address these weaknesses and present a robust table-structure decomposition algorithm. The design criteria for our model are the following. First, we want our algorithm to be language agnostic. In this way, we can obtain the structure of any table, irregardless of the language. Second, we want our algorithm to leverage as much data as possible from the original PDF document. For programmatic PDF documents, the text-cells can often be extracted much faster and with higher accuracy compared to OCR methods. Last but not least, we want to have a direct link between the table-cell and its bounding box in the image."
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/body"
       },
@@ -1995,9 +2008,9 @@
       "text": "To meet the design criteria listed above, we developed a new model called TableFormer and a synthetically generated table structure dataset called SynthTabNet 1 . In particular, our contributions in this work can be summarised as follows:"
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/43",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -2024,9 +2037,9 @@
       "marker": "\u00b7"
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -2053,9 +2066,9 @@
       "marker": "\u00b7"
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/45",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -2082,9 +2095,9 @@
       "marker": "\u00b7"
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/46",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -2111,7 +2124,7 @@
       "marker": "\u00b7"
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/body"
       },
@@ -2152,7 +2165,7 @@
       "text": "The paper is structured as follows. In Sec. 2, we give a brief overview of the current state-of-the-art. In Sec. 3, we describe the datasets on which we train. In Sec. 4, we introduce the TableFormer model-architecture and describe its results & performance in Sec. 5. As a conclusion, we describe how this new model-architecture can be re-purposed for other tasks in the computer-vision community."
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/body"
       },
@@ -2179,7 +2192,7 @@
       "text": "1 https://github.com/IBM/SynthTabNet"
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/body"
       },
@@ -2207,7 +2220,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/body"
       },
@@ -2234,7 +2247,7 @@
       "text": "Identifying the structure of a table has been an outstanding problem in the document-parsing community, that motivates many organised public challenges [6, 4, 14]. The difficulty of the problem can be attributed to a number of factors. First, there is a large variety in the shapes and sizes of tables. Such large variety requires a flexible method. This is especially true for complex column- and row headers, which can be extremely intricate and demanding. A second factor of complexity is the lack of data with regard to table-structure. Until the publication of PubTabNet [37], there were no large datasets (i.e. > 100 K tables) that provided structure information. This happens primarily due to the fact that tables are notoriously time-consuming to annotate by hand. However, this has definitely changed in recent years with the deliverance of PubTabNet [37], FinTabNet [36], TableBank [17] etc."
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/body"
       },
@@ -2261,7 +2274,7 @@
       "text": "Before the rising popularity of deep neural networks, the community relied heavily on heuristic and/or statistical methods to do table structure identification [3, 7, 11, 5, 13, 28]. Although such methods work well on constrained tables [12], a more data-driven approach can be applied due to the advent of convolutional neural networks (CNNs) and the availability of large datasets. To the best-of-our knowledge, there are currently two different types of network architecture that are being pursued for state-of-the-art tablestructure identification."
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/body"
       },
@@ -2302,7 +2315,7 @@
       "text": "Image-to-Text networks : In this type of network, one predicts a sequence of tokens starting from an encoded image. Such sequences of tokens can be HTML table tags [37, 17] or LaTeX symbols[10]. The choice of symbols is ultimately not very important, since one can be transformed into the other. There are however subtle variations in the Image-to-Text networks. The easiest network architectures are 'image-encoder \u2192 text-decoder' (IETD), similar to network architectures that try to provide captions to images [32]. In these IETD networks, one expects as output the LaTeX/HTML string of the entire table, i.e. the symbols necessary for creating the table with the content of the table. Another approach is the 'image-encoder \u2192 dual decoder' (IEDD) networks. In these type of networks, one has two consecutive decoders with different purposes. The first decoder is the tag-decoder , i.e. it only produces the HTML/LaTeX tags which construct an empty table. The second content-decoder uses the encoding of the image in combination with the output encoding of each cell-tag (from the tag-decoder ) to generate the textual content of each table cell. The network architecture of IEDD is certainly more elaborate, but it has the advantage that one can pre-train the tag-decoder which is constrained to the table-tags."
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/body"
       },
@@ -2329,7 +2342,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/body"
       },
@@ -2356,7 +2369,7 @@
       "text": "In practice, both network architectures (IETD and IEDD) require an implicit, custom trained object-characterrecognition (OCR) to obtain the content of the table-cells. In the case of IETD, this OCR engine is implicit in the decoder similar to [24]. For the IEDD, the OCR is solely embedded in the content-decoder. This reliance on a custom, implicit OCR decoder is of course problematic. OCR is a well known and extremely tough problem, that often needs custom training for each individual language. However, the limited availability for non-english content in the current datasets, makes it impractical to apply the IETD and IEDD methods on tables with other languages. Additionally, OCR can be completely omitted if the tables originate from programmatic PDF documents with known positions of each cell. The latter was the inspiration for the work of this paper."
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/body"
       },
@@ -2383,7 +2396,7 @@
       "text": "Graph Neural networks : Graph Neural networks (GNN's) take a radically different approach to tablestructure extraction. Note that one table cell can constitute out of multiple text-cells. To obtain the table-structure, one creates an initial graph, where each of the text-cells becomes a node in the graph similar to [33, 34, 2]. Each node is then associated with en embedding vector coming from the encoded image, its coordinates and the encoded text. Furthermore, nodes that represent adjacent text-cells are linked. Graph Convolutional Networks (GCN's) based methods take the image as an input, but also the position of the text-cells and their content [18]. The purpose of a GCN is to transform the input graph into a new graph, which replaces the old links with new ones. The new links then represent the table-structure. With this approach, one can avoid the need to build custom OCR decoders. However, the quality of the reconstructed structure is not comparable to the current state-of-the-art [18]."
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/body"
       },
@@ -2410,7 +2423,7 @@
       "text": "Hybrid Deep Learning-Rule-Based approach : Apopular current model for table-structure identification is the use of a hybrid Deep Learning-Rule-Based approach similar to [27, 29]. In this approach, one first detects the position of the table-cells with object detection (e.g. YoloVx or MaskRCNN), then classifies the table into different types (from its images) and finally uses different rule-sets to obtain its table-structure. Currently, this approach achieves stateof-the-art results, but is not an end-to-end deep-learning method. As such, new rules need to be written if different types of tables are encountered."
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -2438,7 +2451,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/body"
       },
@@ -2479,7 +2492,7 @@
       "text": "We rely on large-scale datasets such as PubTabNet [37], FinTabNet [36], and TableBank [17] datasets to train and evaluate our models. These datasets span over various appearance styles and content. We also introduce our own synthetically generated SynthTabNet dataset to fix an imbalance in the previous datasets."
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2506,7 +2519,7 @@
       "text": "Figure 2: Distribution of the tables across different table dimensions in PubTabNet + FinTabNet datasets"
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2533,7 +2546,7 @@
       "text": "PubTabNet + FinTabNet"
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2560,7 +2573,7 @@
       "text": "Rows / Columns"
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2587,7 +2600,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/63",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2614,7 +2627,7 @@
       "text": "20"
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/64",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2641,7 +2654,7 @@
       "text": "40"
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2668,7 +2681,7 @@
       "text": "10"
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/66",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2695,7 +2708,7 @@
       "text": "30"
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2722,7 +2735,7 @@
       "text": "50"
     },
     {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/68",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2749,7 +2762,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/69",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2776,7 +2789,7 @@
       "text": "20"
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/70",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2803,7 +2816,7 @@
       "text": "40"
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/71",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2830,7 +2843,7 @@
       "text": "60"
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/72",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2857,7 +2870,7 @@
       "text": "80"
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/73",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2884,7 +2897,7 @@
       "text": "10"
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/74",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2911,7 +2924,7 @@
       "text": "30"
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/75",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2938,7 +2951,7 @@
       "text": "50"
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/76",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2965,7 +2978,7 @@
       "text": "70"
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/77",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -2992,7 +3005,7 @@
       "text": "90"
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/78",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -3019,7 +3032,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/79",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -3046,7 +3059,7 @@
       "text": "10K"
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/80",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -3073,7 +3086,7 @@
       "text": "8K"
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -3100,7 +3113,7 @@
       "text": "6K"
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/82",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -3127,7 +3140,7 @@
       "text": "4K"
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/83",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -3154,7 +3167,7 @@
       "text": "2K"
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/84",
       "parent": {
         "$ref": "#/body"
       },
@@ -3181,7 +3194,7 @@
       "text": "The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as 'simple' when it does not contain row spans or column spans, otherwise it is 'complex'. The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits."
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/85",
       "parent": {
         "$ref": "#/body"
       },
@@ -3222,7 +3235,7 @@
       "text": "Due to the heterogeneity across the dataset formats, it was necessary to combine all available data into one homogenized dataset before we could train our models for practical purposes. Given the size of PubTabNet, we adopted its annotation format and we extracted and converted all tables as PNG images with a resolution of 72 dpi. Additionally, we have filtered out tables with extreme sizes due to small amount of such tables, and kept only those ones ranging between 1*1 and 20*10 (rows/columns)."
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/86",
       "parent": {
         "$ref": "#/body"
       },
@@ -3249,7 +3262,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/87",
       "parent": {
         "$ref": "#/body"
       },
@@ -3276,7 +3289,7 @@
       "text": "The availability of the bounding boxes for all table cells is essential to train our models. In order to distinguish between empty and non-empty bounding boxes, we have introduced a binary class in the annotation. Unfortunately, the original datasets either omit the bounding boxes for whole tables (e.g. TableBank) or they narrow their scope only to non-empty cells. Therefore, it was imperative to introduce a data pre-processing procedure that generates the missing bounding boxes out of the annotation information. This procedure first parses the provided table structure and calculates the dimensions of the most fine-grained grid that covers the table structure. Notice that each table cell may occupy multiple grid squares due to row or column spans. In case of PubTabNet we had to compute missing bounding boxes for 48% of the simple and 69% of the complex tables. Regarding FinTabNet, 68% of the simple and 98% of the complex tables require the generation of bounding boxes."
     },
     {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/88",
       "parent": {
         "$ref": "#/body"
       },
@@ -3303,7 +3316,7 @@
       "text": "As it is illustrated in Fig. 2, the table distributions from all datasets are skewed towards simpler structures with fewer number of rows/columns. Additionally, there is very limited variance in the table styles, which in case of PubTabNet and FinTabNet means one styling format for the majority of the tables. Similar limitations appear also in the type of table content, which in some cases (e.g. FinTabNet) is restricted to a certain domain. Ultimately, the lack of diversity in the training dataset damages the ability of the models to generalize well on unseen data."
     },
     {
-      "self_ref": "#/texts/88",
+      "self_ref": "#/texts/89",
       "parent": {
         "$ref": "#/body"
       },
@@ -3330,7 +3343,7 @@
       "text": "Motivated by those observations we aimed at generating a synthetic table dataset named SynthTabNet . This approach offers control over: 1) the size of the dataset, 2) the table structure, 3) the table style and 4) the type of content. The complexity of the table structure is described by the size of the table header and the table body, as well as the percentage of the table cells covered by row spans and column spans. A set of carefully designed styling templates provides the basis to build a wide range of table appearances. Lastly, the table content is generated out of a curated collection of text corpora. By controlling the size and scope of the synthetic datasets we are able to train and evaluate our models in a variety of different conditions. For example, we can first generate a highly diverse dataset to train our models and then evaluate their performance on other synthetic datasets which are focused on a specific domain."
     },
     {
-      "self_ref": "#/texts/89",
+      "self_ref": "#/texts/90",
       "parent": {
         "$ref": "#/body"
       },
@@ -3371,7 +3384,7 @@
       "text": "In this regard, we have prepared four synthetic datasets, each one containing 150k examples. The corpora to generate the table text consists of the most frequent terms appearing in PubTabNet and FinTabNet together with randomly generated text. The first two synthetic datasets have been fine-tuned to mimic the appearance of the original datasets but encompass more complicated table structures. The third one adopts a colorful appearance with high contrast and the last one contains tables with sparse content. Lastly, we have combined all synthetic datasets into one big unified synthetic dataset of 600k examples."
     },
     {
-      "self_ref": "#/texts/90",
+      "self_ref": "#/texts/91",
       "parent": {
         "$ref": "#/tables/2"
       },
@@ -3398,7 +3411,7 @@
       "text": "Table 1: Both 'Combined-Tabnet' and 'CombinedTabnet' are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank."
     },
     {
-      "self_ref": "#/texts/91",
+      "self_ref": "#/texts/92",
       "parent": {
         "$ref": "#/body"
       },
@@ -3425,7 +3438,7 @@
       "text": "Tab. 1 summarizes the various attributes of the datasets."
     },
     {
-      "self_ref": "#/texts/92",
+      "self_ref": "#/texts/93",
       "parent": {
         "$ref": "#/body"
       },
@@ -3453,7 +3466,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/93",
+      "self_ref": "#/texts/94",
       "parent": {
         "$ref": "#/body"
       },
@@ -3480,7 +3493,7 @@
       "text": "Given the image of a table, TableFormer is able to predict: 1) a sequence of tokens that represent the structure of a table, and 2) a bounding box coupled to a subset of those tokens. The conversion of an image into a sequence of tokens is a well-known task [35, 16]. While attention is often used as an implicit method to associate each token of the sequence with a position in the original image, an explicit association between the individual table-cells and the image bounding boxes is also required."
     },
     {
-      "self_ref": "#/texts/94",
+      "self_ref": "#/texts/95",
       "parent": {
         "$ref": "#/body"
       },
@@ -3508,7 +3521,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/95",
+      "self_ref": "#/texts/96",
       "parent": {
         "$ref": "#/body"
       },
@@ -3535,7 +3548,7 @@
       "text": "We now describe in detail the proposed method, which is composed of three main components, see Fig. 4. Our CNN Backbone Network encodes the input as a feature vector of predefined length. The input feature vector of the encoded image is passed to the Structure Decoder to produce a sequence of HTML tags that represent the structure of the table. With each prediction of an HTML standard data cell (' < td > ') the hidden state of that cell is passed to the Cell BBox Decoder. As for spanning cells, such as row or column span, the tag is broken down to ' < ', 'rowspan=' or 'colspan=', with the number of spanning cells (attribute), and ' > '. The hidden state attached to ' < ' is passed to the Cell BBox Decoder. A shared feed forward network (FFN) receives the hidden states from the Structure Decoder, to provide the final detection predictions of the bounding box coordinates and their classification."
     },
     {
-      "self_ref": "#/texts/96",
+      "self_ref": "#/texts/97",
       "parent": {
         "$ref": "#/body"
       },
@@ -3576,7 +3589,7 @@
       "text": "CNN Backbone Network. A ResNet-18 CNN is the backbone that receives the table image and encodes it as a vector of predefined length. The network has been modified by removing the linear and pooling layer, as we are not performing classification, and adding an adaptive pooling layer of size 28*28. ResNet by default downsamples the image resolution by 32 and then the encoded image is provided to both the Structure Decoder , and Cell BBox Decoder ."
     },
     {
-      "self_ref": "#/texts/97",
+      "self_ref": "#/texts/98",
       "parent": {
         "$ref": "#/body"
       },
@@ -3603,7 +3616,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/99",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3630,7 +3643,7 @@
       "text": "Figure 3: TableFormer takes in an image of the PDF and creates bounding box and HTML structure predictions that are synchronized. The bounding boxes grabs the content from the PDF and inserts it in the structure."
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/100",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3657,7 +3670,7 @@
       "text": "1."
     },
     {
-      "self_ref": "#/texts/100",
+      "self_ref": "#/texts/101",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3684,7 +3697,7 @@
       "text": "Item"
     },
     {
-      "self_ref": "#/texts/101",
+      "self_ref": "#/texts/102",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3711,7 +3724,7 @@
       "text": "Amount"
     },
     {
-      "self_ref": "#/texts/102",
+      "self_ref": "#/texts/103",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3738,7 +3751,7 @@
       "text": "Names"
     },
     {
-      "self_ref": "#/texts/103",
+      "self_ref": "#/texts/104",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3765,7 +3778,7 @@
       "text": "1000"
     },
     {
-      "self_ref": "#/texts/104",
+      "self_ref": "#/texts/105",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3792,7 +3805,7 @@
       "text": "500"
     },
     {
-      "self_ref": "#/texts/105",
+      "self_ref": "#/texts/106",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3819,7 +3832,7 @@
       "text": "3500"
     },
     {
-      "self_ref": "#/texts/106",
+      "self_ref": "#/texts/107",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3846,7 +3859,7 @@
       "text": "150"
     },
     {
-      "self_ref": "#/texts/107",
+      "self_ref": "#/texts/108",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3873,7 +3886,7 @@
       "text": "unit"
     },
     {
-      "self_ref": "#/texts/108",
+      "self_ref": "#/texts/109",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3900,7 +3913,7 @@
       "text": "unit"
     },
     {
-      "self_ref": "#/texts/109",
+      "self_ref": "#/texts/110",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3927,7 +3940,7 @@
       "text": "unit"
     },
     {
-      "self_ref": "#/texts/110",
+      "self_ref": "#/texts/111",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3954,7 +3967,7 @@
       "text": "unit"
     },
     {
-      "self_ref": "#/texts/111",
+      "self_ref": "#/texts/112",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -3981,7 +3994,7 @@
       "text": "2."
     },
     {
-      "self_ref": "#/texts/112",
+      "self_ref": "#/texts/113",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4008,7 +4021,7 @@
       "text": "Item"
     },
     {
-      "self_ref": "#/texts/113",
+      "self_ref": "#/texts/114",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4035,7 +4048,7 @@
       "text": "3."
     },
     {
-      "self_ref": "#/texts/114",
+      "self_ref": "#/texts/115",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4062,7 +4075,7 @@
       "text": "Item"
     },
     {
-      "self_ref": "#/texts/115",
+      "self_ref": "#/texts/116",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4089,7 +4102,7 @@
       "text": "4."
     },
     {
-      "self_ref": "#/texts/116",
+      "self_ref": "#/texts/117",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4116,7 +4129,7 @@
       "text": "Item"
     },
     {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/118",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4143,7 +4156,7 @@
       "text": "Extracted"
     },
     {
-      "self_ref": "#/texts/118",
+      "self_ref": "#/texts/119",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4170,7 +4183,7 @@
       "text": "Table Images"
     },
     {
-      "self_ref": "#/texts/119",
+      "self_ref": "#/texts/120",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4197,7 +4210,7 @@
       "text": "Standardized"
     },
     {
-      "self_ref": "#/texts/120",
+      "self_ref": "#/texts/121",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4224,7 +4237,7 @@
       "text": "Images"
     },
     {
-      "self_ref": "#/texts/121",
+      "self_ref": "#/texts/122",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4251,7 +4264,7 @@
       "text": "BBox"
     },
     {
-      "self_ref": "#/texts/122",
+      "self_ref": "#/texts/123",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4278,7 +4291,7 @@
       "text": "Decoder"
     },
     {
-      "self_ref": "#/texts/123",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4305,7 +4318,7 @@
       "text": "BBoxes"
     },
     {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/125",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4332,7 +4345,7 @@
       "text": "BBoxes can be"
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/126",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4359,7 +4372,7 @@
       "text": "traced back to the"
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/127",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4386,7 +4399,7 @@
       "text": "original image to"
     },
     {
-      "self_ref": "#/texts/127",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4413,7 +4426,7 @@
       "text": "extract content"
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/129",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4440,7 +4453,7 @@
       "text": "Structure Tags sequence"
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/130",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4467,7 +4480,7 @@
       "text": "provide full description of"
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/131",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4494,7 +4507,7 @@
       "text": "the table structure"
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/132",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4521,7 +4534,7 @@
       "text": "Structure Tags"
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4548,7 +4561,7 @@
       "text": "BBoxes in sync"
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/134",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4575,7 +4588,7 @@
       "text": "with tag sequence"
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4602,7 +4615,7 @@
       "text": "Encoder"
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/136",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4629,7 +4642,7 @@
       "text": "Structure"
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4656,7 +4669,7 @@
       "text": "Decoder"
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/138",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4683,7 +4696,7 @@
       "text": "[x1, y2, x2, y2]"
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/139",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4710,7 +4723,7 @@
       "text": "[x1', y2', x2', y2']"
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/140",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4737,7 +4750,7 @@
       "text": "[x1'', y2'', x2'', y2'']"
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/141",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4764,7 +4777,7 @@
       "text": "..."
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4791,7 +4804,7 @@
       "text": "<TR>"
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/143",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4818,7 +4831,7 @@
       "text": "<TD> 1 </TD><TD colspan=\"2\">"
     },
     {
-      "self_ref": "#/texts/143",
+      "self_ref": "#/texts/144",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4845,7 +4858,7 @@
       "text": "</TD>"
     },
     {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4872,7 +4885,7 @@
       "text": "</TR><TR>"
     },
     {
-      "self_ref": "#/texts/145",
+      "self_ref": "#/texts/146",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4899,7 +4912,7 @@
       "text": "<TD>"
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4926,7 +4939,7 @@
       "text": "</TD><TD>..."
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/148",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4953,7 +4966,7 @@
       "text": "..."
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/149",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -4980,7 +4993,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/150",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -5007,7 +5020,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -5034,7 +5047,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -5061,7 +5074,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/153",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -5088,7 +5101,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/154",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -5115,7 +5128,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/155",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -5142,7 +5155,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/156",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -5169,7 +5182,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -5196,7 +5209,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/158",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5223,7 +5236,7 @@
       "text": "Figure 4: Given an input image of a table, the Encoder produces fixed-length features that represent the input image. The features are then passed to both the Structure Decoder and Cell BBox Decoder . During training, the Structure Decoder receives 'tokenized tags' of the HTML code that represent the table structure. Afterwards, a transformer encoder and decoder architecture is employed to produce features that are received by a linear layer, and the Cell BBox Decoder. The linear layer is applied to the features to predict the tags. Simultaneously, the Cell BBox Decoder selects features referring to the data cells (' < td > ', ' < ') and passes them through an attention network, an MLP, and a linear layer to predict the bounding boxes."
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/159",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5250,7 +5263,7 @@
       "text": "Input Image"
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/160",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5277,7 +5290,7 @@
       "text": "Tokenised Tags"
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/161",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5304,7 +5317,7 @@
       "text": "Multi-Head Attention"
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/162",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5331,7 +5344,7 @@
       "text": "Add & Normalisation"
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/163",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5358,7 +5371,7 @@
       "text": "Feed Forward Network"
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/164",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5385,7 +5398,7 @@
       "text": "Add & Normalisation"
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/165",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5412,7 +5425,7 @@
       "text": "Linear"
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/166",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5439,7 +5452,7 @@
       "text": "Softmax"
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/167",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5466,7 +5479,7 @@
       "text": "CNN BACKBONE ENCODER"
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/168",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5493,7 +5506,7 @@
       "text": "[30,  1,  2,  3,  4, \u2026 3,"
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/169",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5520,7 +5533,7 @@
       "text": "4,  5,  8, 31]"
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/170",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5547,7 +5560,7 @@
       "text": "Positional"
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/171",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5574,7 +5587,7 @@
       "text": "Encoding"
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/172",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5601,7 +5614,7 @@
       "text": "Positional"
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/173",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5628,7 +5641,7 @@
       "text": "Encoding"
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/174",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5655,7 +5668,7 @@
       "text": "Add & Normalisation"
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/175",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5682,7 +5695,7 @@
       "text": "Add & Normalisation"
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/176",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5709,7 +5722,7 @@
       "text": "Multi-Head Attention"
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/177",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5736,7 +5749,7 @@
       "text": "Add & Normalisation"
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/178",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5763,7 +5776,7 @@
       "text": "Feed Forward Network"
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/179",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5790,7 +5803,7 @@
       "text": "Linear"
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/180",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5817,7 +5830,7 @@
       "text": "Linear"
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/181",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5844,7 +5857,7 @@
       "text": "Attention Network"
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/182",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5871,7 +5884,7 @@
       "text": "MLP"
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/183",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5898,7 +5911,7 @@
       "text": "Linear"
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/184",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5925,7 +5938,7 @@
       "text": "Sigmoid"
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/185",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5952,7 +5965,7 @@
       "text": "Transformer Encoder Network"
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/186",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5979,7 +5992,7 @@
       "text": "x2"
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/187",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6006,7 +6019,7 @@
       "text": "Encoded Output"
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/188",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6033,7 +6046,7 @@
       "text": "Encoded Output"
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/189",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6060,7 +6073,7 @@
       "text": "Predicted Tags"
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/190",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6087,7 +6100,7 @@
       "text": "Bounding Boxes &"
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/191",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6114,7 +6127,7 @@
       "text": "Classification"
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/192",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6141,7 +6154,7 @@
       "text": "Transformer"
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/193",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6168,7 +6181,7 @@
       "text": "Decoder Network"
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/194",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6195,7 +6208,7 @@
       "text": "x4"
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/195",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6222,7 +6235,7 @@
       "text": "CELL BBOX DECODER"
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/196",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6249,7 +6262,7 @@
       "text": "Masked Multi-Head"
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/197",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6276,7 +6289,7 @@
       "text": "Attention"
     },
     {
-      "self_ref": "#/texts/197",
+      "self_ref": "#/texts/198",
       "parent": {
         "$ref": "#/body"
       },
@@ -6303,7 +6316,7 @@
       "text": "Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. 'Scene Understanding', 'Image Captioning'), something which we relate to the simplicity of table images."
     },
     {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/199",
       "parent": {
         "$ref": "#/body"
       },
@@ -6330,7 +6343,7 @@
       "text": "The transformer encoder receives an encoded image from the CNN Backbone Network and refines it through a multi-head dot-product attention layer, followed by a Feed Forward Network. During training, the transformer decoder receives as input the output feature produced by the transformer encoder, and the tokenized input of the HTML ground-truth tags. Using a stack of multi-head attention layers, different aspects of the tag sequence could be inferred. This is achieved by each attention head on a layer operating in a different subspace, and then combining altogether their attention score."
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/200",
       "parent": {
         "$ref": "#/body"
       },
@@ -6357,7 +6370,7 @@
       "text": "Cell BBox Decoder. Our architecture allows to simultaneously predict HTML tags and bounding boxes for each table cell without the need of a separate object detector end to end. This approach is inspired by DETR [1] which employs a Transformer Encoder, and Decoder that looks for a specific number of object queries (potential object detections). As our model utilizes a transformer architecture, the hidden state of the < td > ' and ' < ' HTML structure tags become the object query."
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/201",
       "parent": {
         "$ref": "#/body"
       },
@@ -6398,7 +6411,7 @@
       "text": "The encoding generated by the CNN Backbone Network along with the features acquired for every data cell from the Transformer Decoder are then passed to the attention network. The attention network takes both inputs and learns to provide an attention weighted encoding. This weighted attention encoding is then multiplied to the encoded image to produce a feature for each table cell. Notice that this is different than the typical object detection problem where imbalances between the number of detections and the amount of objects may exist. In our case, we know up front that the produced detections always match with the table cells in number and correspondence."
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/202",
       "parent": {
         "$ref": "#/body"
       },
@@ -6425,7 +6438,7 @@
       "text": "5"
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/203",
       "parent": {
         "$ref": "#/body"
       },
@@ -6452,7 +6465,7 @@
       "text": "The output features for each table cell are then fed into the feed-forward network (FFN). The FFN consists of a Multi-Layer Perceptron (3 layers with ReLU activation function) that predicts the normalized coordinates for the bounding box of each table cell. Finally, the predicted bounding boxes are classified based on whether they are empty or not using a linear layer."
     },
     {
-      "self_ref": "#/texts/203",
+      "self_ref": "#/texts/204",
       "parent": {
         "$ref": "#/body"
       },
@@ -6479,7 +6492,7 @@
       "text": "Loss Functions. We formulate a multi-task loss Eq. 2 to train our network. The Cross-Entropy loss (denoted as l s ) is used to train the Structure Decoder which predicts the structure tokens. As for the Cell BBox Decoder it is trained with a combination of losses denoted as l box . l box consists of the generally used l 1 loss for object detection and the IoU loss ( l iou ) to be scale invariant as explained in [25]. In comparison to DETR, we do not use the Hungarian algorithm [15] to match the predicted bounding boxes with the ground-truth boxes, as we have already achieved a one-toone match through two steps: 1) Our token input sequence is naturally ordered, therefore the hidden states of the table data cells are also in order when they are provided as input to the Cell BBox Decoder , and 2) Our bounding boxes generation mechanism (see Sec. 3) ensures a one-to-one mapping between the cell content and its bounding box for all post-processed datasets."
     },
     {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/205",
       "parent": {
         "$ref": "#/body"
       },
@@ -6506,7 +6519,7 @@
       "text": "The loss used to train the TableFormer can be defined as following:"
     },
     {
-      "self_ref": "#/texts/205",
+      "self_ref": "#/texts/206",
       "parent": {
         "$ref": "#/body"
       },
@@ -6533,7 +6546,7 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/206",
+      "self_ref": "#/texts/207",
       "parent": {
         "$ref": "#/body"
       },
@@ -6560,7 +6573,7 @@
       "text": "where \u03bb \u2208 [0, 1], and \u03bb iou , \u03bb l 1 \u2208 R are hyper-parameters."
     },
     {
-      "self_ref": "#/texts/207",
+      "self_ref": "#/texts/208",
       "parent": {
         "$ref": "#/body"
       },
@@ -6588,7 +6601,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/208",
+      "self_ref": "#/texts/209",
       "parent": {
         "$ref": "#/body"
       },
@@ -6616,7 +6629,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/209",
+      "self_ref": "#/texts/210",
       "parent": {
         "$ref": "#/body"
       },
@@ -6643,7 +6656,7 @@
       "text": "TableFormer uses ResNet-18 as the CNN Backbone Network . The input images are resized to 448*448 pixels and the feature map has a dimension of 28*28. Additionally, we enforce the following input constraints:"
     },
     {
-      "self_ref": "#/texts/210",
+      "self_ref": "#/texts/211",
       "parent": {
         "$ref": "#/body"
       },
@@ -6670,7 +6683,7 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/211",
+      "self_ref": "#/texts/212",
       "parent": {
         "$ref": "#/body"
       },
@@ -6711,7 +6724,7 @@
       "text": "Although input constraints are used also by other methods, such as EDD, ours are less restrictive due to the improved runtime performance and lower memory footprint of TableFormer. This allows to utilize input samples with longer sequences and images with larger dimensions."
     },
     {
-      "self_ref": "#/texts/212",
+      "self_ref": "#/texts/213",
       "parent": {
         "$ref": "#/body"
       },
@@ -6738,7 +6751,7 @@
       "text": "The Transformer Encoder consists of two 'Transformer Encoder Layers', with an input feature size of 512, feed forward network of 1024, and 4 attention heads. As for the Transformer Decoder it is composed of four 'Transformer Decoder Layers' with similar input and output dimensions as the 'Transformer Encoder Layers'. Even though our model uses fewer layers and heads than the default implementation parameters, our extensive experimentation has proved this setup to be more suitable for table images. We attribute this finding to the inherent design of table images, which contain mostly lines and text, unlike the more elaborate content present in other scopes (e.g. the COCO dataset). Moreover, we have added ResNet blocks to the inputs of the Structure Decoder and Cell BBox Decoder. This prevents a decoder having a stronger influence over the learned weights which would damage the other prediction task (structure vs bounding boxes), but learn task specific weights instead. Lastly our dropout layers are set to 0.5."
     },
     {
-      "self_ref": "#/texts/213",
+      "self_ref": "#/texts/214",
       "parent": {
         "$ref": "#/body"
       },
@@ -6765,7 +6778,7 @@
       "text": "For training, TableFormer is trained with 3 Adam optimizers, each one for the CNN Backbone Network , Structure Decoder , and Cell BBox Decoder . Taking the PubTabNet as an example for our parameter set up, the initializing learning rate is 0.001 for 12 epochs with a batch size of 24, and \u03bb set to 0.5. Afterwards, we reduce the learning rate to 0.0001, the batch size to 18 and train for 12 more epochs or convergence."
     },
     {
-      "self_ref": "#/texts/214",
+      "self_ref": "#/texts/215",
       "parent": {
         "$ref": "#/body"
       },
@@ -6792,7 +6805,7 @@
       "text": "TableFormer is implemented with PyTorch and Torchvision libraries [22]. To speed up the inference, the image undergoes a single forward pass through the CNN Backbone Network and transformer encoder. This eliminates the overhead of generating the same features for each decoding step. Similarly, we employ a 'caching' technique to preform faster autoregressive decoding. This is achieved by storing the features of decoded tokens so we can reuse them for each time step. Therefore, we only compute the attention for each new tag."
     },
     {
-      "self_ref": "#/texts/215",
+      "self_ref": "#/texts/216",
       "parent": {
         "$ref": "#/body"
       },
@@ -6820,7 +6833,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/216",
+      "self_ref": "#/texts/217",
       "parent": {
         "$ref": "#/body"
       },
@@ -6847,7 +6860,7 @@
       "text": "TableFormer is evaluated on three major publicly available datasets of different nature to prove the generalization and effectiveness of our model. The datasets used for evaluation are the PubTabNet, FinTabNet and TableBank which stem from the scientific, financial and general domains respectively."
     },
     {
-      "self_ref": "#/texts/217",
+      "self_ref": "#/texts/218",
       "parent": {
         "$ref": "#/body"
       },
@@ -6874,7 +6887,7 @@
       "text": "We also share our baseline results on the challenging SynthTabNet dataset. Throughout our experiments, the same parameters stated in Sec. 5.1 are utilized."
     },
     {
-      "self_ref": "#/texts/218",
+      "self_ref": "#/texts/219",
       "parent": {
         "$ref": "#/body"
       },
@@ -6901,7 +6914,7 @@
       "text": "6"
     },
     {
-      "self_ref": "#/texts/219",
+      "self_ref": "#/texts/220",
       "parent": {
         "$ref": "#/body"
       },
@@ -6929,7 +6942,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/220",
+      "self_ref": "#/texts/221",
       "parent": {
         "$ref": "#/body"
       },
@@ -6956,7 +6969,7 @@
       "text": "The Tree-Edit-Distance-Based Similarity (TEDS) metric was introduced in [37]. It represents the prediction, and ground-truth as a tree structure of HTML tags. This similarity is calculated as:"
     },
     {
-      "self_ref": "#/texts/221",
+      "self_ref": "#/texts/222",
       "parent": {
         "$ref": "#/body"
       },
@@ -6983,7 +6996,7 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/222",
+      "self_ref": "#/texts/223",
       "parent": {
         "$ref": "#/body"
       },
@@ -7010,7 +7023,7 @@
       "text": "where T a and T b represent tables in tree structure HTML format. EditDist denotes the tree-edit distance, and | T | represents the number of nodes in T ."
     },
     {
-      "self_ref": "#/texts/223",
+      "self_ref": "#/texts/224",
       "parent": {
         "$ref": "#/body"
       },
@@ -7038,7 +7051,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/224",
+      "self_ref": "#/texts/225",
       "parent": {
         "$ref": "#/body"
       },
@@ -7065,7 +7078,7 @@
       "text": "Structure. As shown in Tab. 2, TableFormer outperforms all SOTA methods across different datasets by a large margin for predicting the table structure from an image. All the more, our model outperforms pre-trained methods. During the evaluation we do not apply any table filtering. We also provide our baseline results on the SynthTabNet dataset. It has been observed that large tables (e.g. tables that occupy half of the page or more) yield poor predictions. We attribute this issue to the image resizing during the preprocessing step, that produces downsampled images with indistinguishable features. This problem can be addressed by treating such big tables with a separate model which accepts a large input image size."
     },
     {
-      "self_ref": "#/texts/225",
+      "self_ref": "#/texts/226",
       "parent": {
         "$ref": "#/tables/3"
       },
@@ -7092,7 +7105,7 @@
       "text": "Table 2: Structure results on PubTabNet (PTN), FinTabNet (FTN), TableBank (TB) and SynthTabNet (STN). FT: Model was trained on PubTabNet then finetuned."
     },
     {
-      "self_ref": "#/texts/226",
+      "self_ref": "#/texts/227",
       "parent": {
         "$ref": "#/body"
       },
@@ -7133,7 +7146,7 @@
       "text": "Cell Detection. Like any object detector, our Cell BBox Detector provides bounding boxes that can be improved with post-processing during inference. We make use of the grid-like structure of tables to refine the predictions. A detailed explanation on the post-processing is available in the supplementary material. As shown in Tab. 3, we evaluate our Cell BBox Decoder accuracy for cells with a class label of 'content' only using the PASCAL VOC mAP metric for pre-processing and post-processing. Note that we do not have post-processing results for SynthTabNet as images are only provided. To compare the performance of our proposed approach, we've integrated TableFormer's Cell BBox Decoder into EDD architecture. As mentioned previously, the Structure Decoder provides the Cell BBox Decoder with the features needed to predict the bounding box predictions. Therefore, the accuracy of the Structure Decoder directly influences the accuracy of the Cell BBox Decoder . If the Structure Decoder predicts an extra column, this will result in an extra column of predicted bounding boxes."
     },
     {
-      "self_ref": "#/texts/227",
+      "self_ref": "#/texts/228",
       "parent": {
         "$ref": "#/tables/4"
       },
@@ -7160,7 +7173,7 @@
       "text": "Table 3: Cell Bounding Box detection results on PubTabNet, and FinTabNet. PP: Post-processing."
     },
     {
-      "self_ref": "#/texts/228",
+      "self_ref": "#/texts/229",
       "parent": {
         "$ref": "#/body"
       },
@@ -7187,7 +7200,7 @@
       "text": "Cell Content. In this section, we evaluate the entire pipeline of recovering a table with content. Here we put our approach to test by capitalizing on extracting content from the PDF cells rather than decoding from images. Tab. 4 shows the TEDs score of HTML code representing the structure of the table along with the content inserted in the data cell and compared with the ground-truth. Our method achieved a 5.3% increase over the state-of-the-art, and commercial solutions. We believe our scores would be higher if the HTML ground-truth matched the extracted PDF cell content. Unfortunately, there are small discrepancies such as spacings around words or special characters with various unicode representations."
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/230",
       "parent": {
         "$ref": "#/tables/5"
       },
@@ -7214,7 +7227,7 @@
       "text": "Table 4: Results of structure with content retrieved using cell detection on PubTabNet. In all cases the input is PDF documents with cropped tables."
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/231",
       "parent": {
         "$ref": "#/body"
       },
@@ -7241,9 +7254,9 @@
       "text": "7"
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/232",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -7270,7 +7283,7 @@
       "marker": "a."
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/233",
       "parent": {
         "$ref": "#/body"
       },
@@ -7297,7 +7310,7 @@
       "text": "Japanese language (previously unseen by TableFormer):"
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/234",
       "parent": {
         "$ref": "#/body"
       },
@@ -7324,7 +7337,7 @@
       "text": "Example table from FinTabNet:"
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/235",
       "parent": {
         "$ref": "#/body"
       },
@@ -7351,7 +7364,7 @@
       "text": "Text is aligned to match original for ease of viewing"
     },
     {
-      "self_ref": "#/texts/235",
+      "self_ref": "#/texts/236",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7378,9 +7391,9 @@
       "text": "Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset."
     },
     {
-      "self_ref": "#/texts/236",
+      "self_ref": "#/texts/237",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -7407,7 +7420,7 @@
       "marker": "b."
     },
     {
-      "self_ref": "#/texts/237",
+      "self_ref": "#/texts/238",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7434,7 +7447,7 @@
       "text": "\u8ad6\u6587\u30d5\u30a1\u30a4\u30eb"
     },
     {
-      "self_ref": "#/texts/238",
+      "self_ref": "#/texts/239",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7461,7 +7474,7 @@
       "text": "\u53c2\u8003\u6587\u732e"
     },
     {
-      "self_ref": "#/texts/239",
+      "self_ref": "#/texts/240",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7488,7 +7501,7 @@
       "text": "\u51fa\u5178"
     },
     {
-      "self_ref": "#/texts/240",
+      "self_ref": "#/texts/241",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7515,7 +7528,7 @@
       "text": "\u30d5\u30a1\u30a4\u30eb\u6570"
     },
     {
-      "self_ref": "#/texts/241",
+      "self_ref": "#/texts/242",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7542,7 +7555,7 @@
       "text": "\u82f1\u8a9e"
     },
     {
-      "self_ref": "#/texts/242",
+      "self_ref": "#/texts/243",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7569,7 +7582,7 @@
       "text": "\u65e5\u672c\u8a9e"
     },
     {
-      "self_ref": "#/texts/243",
+      "self_ref": "#/texts/244",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7596,7 +7609,7 @@
       "text": "\u82f1\u8a9e"
     },
     {
-      "self_ref": "#/texts/244",
+      "self_ref": "#/texts/245",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7623,7 +7636,7 @@
       "text": "\u65e5\u672c\u8a9e"
     },
     {
-      "self_ref": "#/texts/245",
+      "self_ref": "#/texts/246",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7650,7 +7663,7 @@
       "text": "Association for Computational Linguistics(ACL2003)"
     },
     {
-      "self_ref": "#/texts/246",
+      "self_ref": "#/texts/247",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7677,7 +7690,7 @@
       "text": "65"
     },
     {
-      "self_ref": "#/texts/247",
+      "self_ref": "#/texts/248",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7704,7 +7717,7 @@
       "text": "65"
     },
     {
-      "self_ref": "#/texts/248",
+      "self_ref": "#/texts/249",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7731,7 +7744,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/249",
+      "self_ref": "#/texts/250",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7758,7 +7771,7 @@
       "text": "150"
     },
     {
-      "self_ref": "#/texts/250",
+      "self_ref": "#/texts/251",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7785,7 +7798,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/251",
+      "self_ref": "#/texts/252",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7812,7 +7825,7 @@
       "text": "Computational Linguistics(COLING2002)"
     },
     {
-      "self_ref": "#/texts/252",
+      "self_ref": "#/texts/253",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7839,7 +7852,7 @@
       "text": "140"
     },
     {
-      "self_ref": "#/texts/253",
+      "self_ref": "#/texts/254",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7866,7 +7879,7 @@
       "text": "140"
     },
     {
-      "self_ref": "#/texts/254",
+      "self_ref": "#/texts/255",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7893,7 +7906,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/255",
+      "self_ref": "#/texts/256",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7920,7 +7933,7 @@
       "text": "150"
     },
     {
-      "self_ref": "#/texts/256",
+      "self_ref": "#/texts/257",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7947,7 +7960,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/257",
+      "self_ref": "#/texts/258",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7974,7 +7987,7 @@
       "text": "\u96fb\u6c17\u60c5\u5831\u901a\u4fe1\u5b66\u4f1a"
     },
     {
-      "self_ref": "#/texts/258",
+      "self_ref": "#/texts/259",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8001,7 +8014,7 @@
       "text": "2003"
     },
     {
-      "self_ref": "#/texts/259",
+      "self_ref": "#/texts/260",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8028,7 +8041,7 @@
       "text": "\u5e74\u7dcf\u5408\u5927\u4f1a"
     },
     {
-      "self_ref": "#/texts/260",
+      "self_ref": "#/texts/261",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8055,7 +8068,7 @@
       "text": "150"
     },
     {
-      "self_ref": "#/texts/261",
+      "self_ref": "#/texts/262",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8082,7 +8095,7 @@
       "text": "8"
     },
     {
-      "self_ref": "#/texts/262",
+      "self_ref": "#/texts/263",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8109,7 +8122,7 @@
       "text": "142"
     },
     {
-      "self_ref": "#/texts/263",
+      "self_ref": "#/texts/264",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8136,7 +8149,7 @@
       "text": "223"
     },
     {
-      "self_ref": "#/texts/264",
+      "self_ref": "#/texts/265",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8163,7 +8176,7 @@
       "text": "147"
     },
     {
-      "self_ref": "#/texts/265",
+      "self_ref": "#/texts/266",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8190,7 +8203,7 @@
       "text": "\u60c5\u5831\u51e6\u7406\u5b66\u4f1a\u7b2c"
     },
     {
-      "self_ref": "#/texts/266",
+      "self_ref": "#/texts/267",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8217,7 +8230,7 @@
       "text": "65"
     },
     {
-      "self_ref": "#/texts/267",
+      "self_ref": "#/texts/268",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8244,7 +8257,7 @@
       "text": "\u56de\u5168\u56fd\u5927\u4f1a"
     },
     {
-      "self_ref": "#/texts/268",
+      "self_ref": "#/texts/269",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8271,7 +8284,7 @@
       "text": "(2003)"
     },
     {
-      "self_ref": "#/texts/269",
+      "self_ref": "#/texts/270",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8298,7 +8311,7 @@
       "text": "177"
     },
     {
-      "self_ref": "#/texts/270",
+      "self_ref": "#/texts/271",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8325,7 +8338,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/271",
+      "self_ref": "#/texts/272",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8352,7 +8365,7 @@
       "text": "176"
     },
     {
-      "self_ref": "#/texts/272",
+      "self_ref": "#/texts/273",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8379,7 +8392,7 @@
       "text": "150"
     },
     {
-      "self_ref": "#/texts/273",
+      "self_ref": "#/texts/274",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8406,7 +8419,7 @@
       "text": "236"
     },
     {
-      "self_ref": "#/texts/274",
+      "self_ref": "#/texts/275",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8433,7 +8446,7 @@
       "text": "\u7b2c"
     },
     {
-      "self_ref": "#/texts/275",
+      "self_ref": "#/texts/276",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8460,7 +8473,7 @@
       "text": "17"
     },
     {
-      "self_ref": "#/texts/276",
+      "self_ref": "#/texts/277",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8487,7 +8500,7 @@
       "text": "\u56de\u4eba\u5de5\u77e5\u80fd\u5b66\u4f1a\u5168\u56fd\u5927\u4f1a"
     },
     {
-      "self_ref": "#/texts/277",
+      "self_ref": "#/texts/278",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8514,7 +8527,7 @@
       "text": "(2003)"
     },
     {
-      "self_ref": "#/texts/278",
+      "self_ref": "#/texts/279",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8541,7 +8554,7 @@
       "text": "208"
     },
     {
-      "self_ref": "#/texts/279",
+      "self_ref": "#/texts/280",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8568,7 +8581,7 @@
       "text": "5"
     },
     {
-      "self_ref": "#/texts/280",
+      "self_ref": "#/texts/281",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8595,7 +8608,7 @@
       "text": "203"
     },
     {
-      "self_ref": "#/texts/281",
+      "self_ref": "#/texts/282",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8622,7 +8635,7 @@
       "text": "152"
     },
     {
-      "self_ref": "#/texts/282",
+      "self_ref": "#/texts/283",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8649,7 +8662,7 @@
       "text": "244"
     },
     {
-      "self_ref": "#/texts/283",
+      "self_ref": "#/texts/284",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8676,7 +8689,7 @@
       "text": "\u81ea\u7136\u8a00\u8a9e\u51e6\u7406\u7814\u7a76\u4f1a\u7b2c"
     },
     {
-      "self_ref": "#/texts/284",
+      "self_ref": "#/texts/285",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8703,7 +8716,7 @@
       "text": "146"
     },
     {
-      "self_ref": "#/texts/285",
+      "self_ref": "#/texts/286",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8730,7 +8743,7 @@
       "text": "\u301c"
     },
     {
-      "self_ref": "#/texts/286",
+      "self_ref": "#/texts/287",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8757,7 +8770,7 @@
       "text": "155"
     },
     {
-      "self_ref": "#/texts/287",
+      "self_ref": "#/texts/288",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8784,7 +8797,7 @@
       "text": "\u56de"
     },
     {
-      "self_ref": "#/texts/288",
+      "self_ref": "#/texts/289",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8811,7 +8824,7 @@
       "text": "98"
     },
     {
-      "self_ref": "#/texts/289",
+      "self_ref": "#/texts/290",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8838,7 +8851,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/290",
+      "self_ref": "#/texts/291",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8865,7 +8878,7 @@
       "text": "96"
     },
     {
-      "self_ref": "#/texts/291",
+      "self_ref": "#/texts/292",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8892,7 +8905,7 @@
       "text": "150"
     },
     {
-      "self_ref": "#/texts/292",
+      "self_ref": "#/texts/293",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8919,7 +8932,7 @@
       "text": "232"
     },
     {
-      "self_ref": "#/texts/293",
+      "self_ref": "#/texts/294",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8946,7 +8959,7 @@
       "text": "WWW"
     },
     {
-      "self_ref": "#/texts/294",
+      "self_ref": "#/texts/295",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8973,7 +8986,7 @@
       "text": "\u304b\u3089\u53ce\u96c6\u3057\u305f\u8ad6\u6587"
     },
     {
-      "self_ref": "#/texts/295",
+      "self_ref": "#/texts/296",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9000,7 +9013,7 @@
       "text": "107"
     },
     {
-      "self_ref": "#/texts/296",
+      "self_ref": "#/texts/297",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9027,7 +9040,7 @@
       "text": "73"
     },
     {
-      "self_ref": "#/texts/297",
+      "self_ref": "#/texts/298",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9054,7 +9067,7 @@
       "text": "34"
     },
     {
-      "self_ref": "#/texts/298",
+      "self_ref": "#/texts/299",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9081,7 +9094,7 @@
       "text": "147"
     },
     {
-      "self_ref": "#/texts/299",
+      "self_ref": "#/texts/300",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9108,7 +9121,7 @@
       "text": "96"
     },
     {
-      "self_ref": "#/texts/300",
+      "self_ref": "#/texts/301",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9135,7 +9148,7 @@
       "text": "\u8a08"
     },
     {
-      "self_ref": "#/texts/301",
+      "self_ref": "#/texts/302",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9162,7 +9175,7 @@
       "text": "945"
     },
     {
-      "self_ref": "#/texts/302",
+      "self_ref": "#/texts/303",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9189,7 +9202,7 @@
       "text": "294"
     },
     {
-      "self_ref": "#/texts/303",
+      "self_ref": "#/texts/304",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9216,7 +9229,7 @@
       "text": "651"
     },
     {
-      "self_ref": "#/texts/304",
+      "self_ref": "#/texts/305",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9243,7 +9256,7 @@
       "text": "1122"
     },
     {
-      "self_ref": "#/texts/305",
+      "self_ref": "#/texts/306",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9270,7 +9283,7 @@
       "text": "955"
     },
     {
-      "self_ref": "#/texts/306",
+      "self_ref": "#/texts/307",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9297,7 +9310,7 @@
       "text": "Weighted Average Grant Date Fair"
     },
     {
-      "self_ref": "#/texts/307",
+      "self_ref": "#/texts/308",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9324,7 +9337,7 @@
       "text": "Value"
     },
     {
-      "self_ref": "#/texts/308",
+      "self_ref": "#/texts/309",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9351,7 +9364,7 @@
       "text": "RSUs"
     },
     {
-      "self_ref": "#/texts/309",
+      "self_ref": "#/texts/310",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9378,7 +9391,7 @@
       "text": "Shares (in millions)"
     },
     {
-      "self_ref": "#/texts/310",
+      "self_ref": "#/texts/311",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9405,7 +9418,7 @@
       "text": "PSUs"
     },
     {
-      "self_ref": "#/texts/311",
+      "self_ref": "#/texts/312",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9432,7 +9445,7 @@
       "text": "RSUs"
     },
     {
-      "self_ref": "#/texts/312",
+      "self_ref": "#/texts/313",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9459,7 +9472,7 @@
       "text": "PSUs"
     },
     {
-      "self_ref": "#/texts/313",
+      "self_ref": "#/texts/314",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9486,7 +9499,7 @@
       "text": "Nonvested on January 1"
     },
     {
-      "self_ref": "#/texts/314",
+      "self_ref": "#/texts/315",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9513,7 +9526,7 @@
       "text": "1.1"
     },
     {
-      "self_ref": "#/texts/315",
+      "self_ref": "#/texts/316",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9540,7 +9553,7 @@
       "text": "0.3"
     },
     {
-      "self_ref": "#/texts/316",
+      "self_ref": "#/texts/317",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9567,7 +9580,7 @@
       "text": "90.10 $"
     },
     {
-      "self_ref": "#/texts/317",
+      "self_ref": "#/texts/318",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9594,7 +9607,7 @@
       "text": "$ 91.19"
     },
     {
-      "self_ref": "#/texts/318",
+      "self_ref": "#/texts/319",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9621,7 +9634,7 @@
       "text": "Granted"
     },
     {
-      "self_ref": "#/texts/319",
+      "self_ref": "#/texts/320",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9648,7 +9661,7 @@
       "text": "0.5"
     },
     {
-      "self_ref": "#/texts/320",
+      "self_ref": "#/texts/321",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9675,7 +9688,7 @@
       "text": "0.1"
     },
     {
-      "self_ref": "#/texts/321",
+      "self_ref": "#/texts/322",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9702,7 +9715,7 @@
       "text": "117.44"
     },
     {
-      "self_ref": "#/texts/322",
+      "self_ref": "#/texts/323",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9729,7 +9742,7 @@
       "text": "122.41"
     },
     {
-      "self_ref": "#/texts/323",
+      "self_ref": "#/texts/324",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9756,7 +9769,7 @@
       "text": "Vested"
     },
     {
-      "self_ref": "#/texts/324",
+      "self_ref": "#/texts/325",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9783,7 +9796,7 @@
       "text": "(0.5)"
     },
     {
-      "self_ref": "#/texts/325",
+      "self_ref": "#/texts/326",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9810,7 +9823,7 @@
       "text": "(0.1)"
     },
     {
-      "self_ref": "#/texts/326",
+      "self_ref": "#/texts/327",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9837,7 +9850,7 @@
       "text": "87.08"
     },
     {
-      "self_ref": "#/texts/327",
+      "self_ref": "#/texts/328",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9864,7 +9877,7 @@
       "text": "81.14"
     },
     {
-      "self_ref": "#/texts/328",
+      "self_ref": "#/texts/329",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9891,7 +9904,7 @@
       "text": "Canceled or forfeited"
     },
     {
-      "self_ref": "#/texts/329",
+      "self_ref": "#/texts/330",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9918,7 +9931,7 @@
       "text": "(0.1)"
     },
     {
-      "self_ref": "#/texts/330",
+      "self_ref": "#/texts/331",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9945,7 +9958,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/331",
+      "self_ref": "#/texts/332",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9972,7 +9985,7 @@
       "text": "102.01"
     },
     {
-      "self_ref": "#/texts/332",
+      "self_ref": "#/texts/333",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9999,7 +10012,7 @@
       "text": "92.18"
     },
     {
-      "self_ref": "#/texts/333",
+      "self_ref": "#/texts/334",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10026,7 +10039,7 @@
       "text": "Nonvested on December 31"
     },
     {
-      "self_ref": "#/texts/334",
+      "self_ref": "#/texts/335",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10053,7 +10066,7 @@
       "text": "1.0"
     },
     {
-      "self_ref": "#/texts/335",
+      "self_ref": "#/texts/336",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10080,7 +10093,7 @@
       "text": "0.3"
     },
     {
-      "self_ref": "#/texts/336",
+      "self_ref": "#/texts/337",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10107,7 +10120,7 @@
       "text": "104.85 $"
     },
     {
-      "self_ref": "#/texts/337",
+      "self_ref": "#/texts/338",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10134,7 +10147,7 @@
       "text": "$ 104.51"
     },
     {
-      "self_ref": "#/texts/338",
+      "self_ref": "#/texts/339",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10161,7 +10174,7 @@
       "text": "Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table."
     },
     {
-      "self_ref": "#/texts/339",
+      "self_ref": "#/texts/340",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10188,7 +10201,7 @@
       "text": "Red - PDF cells, Green - predicted bounding boxes"
     },
     {
-      "self_ref": "#/texts/340",
+      "self_ref": "#/texts/341",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10215,7 +10228,7 @@
       "text": "Ground Truth"
     },
     {
-      "self_ref": "#/texts/341",
+      "self_ref": "#/texts/342",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10242,7 +10255,7 @@
       "text": "16"
     },
     {
-      "self_ref": "#/texts/342",
+      "self_ref": "#/texts/343",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10269,7 +10282,7 @@
       "text": "17"
     },
     {
-      "self_ref": "#/texts/343",
+      "self_ref": "#/texts/344",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10296,7 +10309,7 @@
       "text": "18"
     },
     {
-      "self_ref": "#/texts/344",
+      "self_ref": "#/texts/345",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10323,7 +10336,7 @@
       "text": "19"
     },
     {
-      "self_ref": "#/texts/345",
+      "self_ref": "#/texts/346",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10350,7 +10363,7 @@
       "text": "20"
     },
     {
-      "self_ref": "#/texts/346",
+      "self_ref": "#/texts/347",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10377,7 +10390,7 @@
       "text": "21"
     },
     {
-      "self_ref": "#/texts/347",
+      "self_ref": "#/texts/348",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10404,7 +10417,7 @@
       "text": "22"
     },
     {
-      "self_ref": "#/texts/348",
+      "self_ref": "#/texts/349",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10431,7 +10444,7 @@
       "text": "23"
     },
     {
-      "self_ref": "#/texts/349",
+      "self_ref": "#/texts/350",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10458,7 +10471,7 @@
       "text": "24"
     },
     {
-      "self_ref": "#/texts/350",
+      "self_ref": "#/texts/351",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10485,7 +10498,7 @@
       "text": "25"
     },
     {
-      "self_ref": "#/texts/351",
+      "self_ref": "#/texts/352",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10512,7 +10525,7 @@
       "text": "26"
     },
     {
-      "self_ref": "#/texts/352",
+      "self_ref": "#/texts/353",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10539,7 +10552,7 @@
       "text": "27"
     },
     {
-      "self_ref": "#/texts/353",
+      "self_ref": "#/texts/354",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10566,7 +10579,7 @@
       "text": "28"
     },
     {
-      "self_ref": "#/texts/354",
+      "self_ref": "#/texts/355",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10593,7 +10606,7 @@
       "text": "30"
     },
     {
-      "self_ref": "#/texts/355",
+      "self_ref": "#/texts/356",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10620,7 +10633,7 @@
       "text": "31"
     },
     {
-      "self_ref": "#/texts/356",
+      "self_ref": "#/texts/357",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10647,7 +10660,7 @@
       "text": "32"
     },
     {
-      "self_ref": "#/texts/357",
+      "self_ref": "#/texts/358",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10674,7 +10687,7 @@
       "text": "33"
     },
     {
-      "self_ref": "#/texts/358",
+      "self_ref": "#/texts/359",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10701,7 +10714,7 @@
       "text": "34"
     },
     {
-      "self_ref": "#/texts/359",
+      "self_ref": "#/texts/360",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10728,7 +10741,7 @@
       "text": "35"
     },
     {
-      "self_ref": "#/texts/360",
+      "self_ref": "#/texts/361",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10755,7 +10768,7 @@
       "text": "36"
     },
     {
-      "self_ref": "#/texts/361",
+      "self_ref": "#/texts/362",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10782,7 +10795,7 @@
       "text": "37"
     },
     {
-      "self_ref": "#/texts/362",
+      "self_ref": "#/texts/363",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10809,7 +10822,7 @@
       "text": "38"
     },
     {
-      "self_ref": "#/texts/363",
+      "self_ref": "#/texts/364",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10836,7 +10849,7 @@
       "text": "39"
     },
     {
-      "self_ref": "#/texts/364",
+      "self_ref": "#/texts/365",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10863,7 +10876,7 @@
       "text": "40"
     },
     {
-      "self_ref": "#/texts/365",
+      "self_ref": "#/texts/366",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10890,7 +10903,7 @@
       "text": "41"
     },
     {
-      "self_ref": "#/texts/366",
+      "self_ref": "#/texts/367",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10917,7 +10930,7 @@
       "text": "42"
     },
     {
-      "self_ref": "#/texts/367",
+      "self_ref": "#/texts/368",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10944,7 +10957,7 @@
       "text": "43"
     },
     {
-      "self_ref": "#/texts/368",
+      "self_ref": "#/texts/369",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10971,7 +10984,7 @@
       "text": "44"
     },
     {
-      "self_ref": "#/texts/369",
+      "self_ref": "#/texts/370",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10998,7 +11011,7 @@
       "text": "45"
     },
     {
-      "self_ref": "#/texts/370",
+      "self_ref": "#/texts/371",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11025,7 +11038,7 @@
       "text": "46"
     },
     {
-      "self_ref": "#/texts/371",
+      "self_ref": "#/texts/372",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11052,7 +11065,7 @@
       "text": "47"
     },
     {
-      "self_ref": "#/texts/372",
+      "self_ref": "#/texts/373",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11079,7 +11092,7 @@
       "text": "48"
     },
     {
-      "self_ref": "#/texts/373",
+      "self_ref": "#/texts/374",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11106,7 +11119,7 @@
       "text": "49"
     },
     {
-      "self_ref": "#/texts/374",
+      "self_ref": "#/texts/375",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11133,7 +11146,7 @@
       "text": "50"
     },
     {
-      "self_ref": "#/texts/375",
+      "self_ref": "#/texts/376",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11160,7 +11173,7 @@
       "text": "51"
     },
     {
-      "self_ref": "#/texts/376",
+      "self_ref": "#/texts/377",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11187,7 +11200,7 @@
       "text": "52"
     },
     {
-      "self_ref": "#/texts/377",
+      "self_ref": "#/texts/378",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11214,7 +11227,7 @@
       "text": "53"
     },
     {
-      "self_ref": "#/texts/378",
+      "self_ref": "#/texts/379",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11241,7 +11254,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/379",
+      "self_ref": "#/texts/380",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11268,7 +11281,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/380",
+      "self_ref": "#/texts/381",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11295,7 +11308,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/381",
+      "self_ref": "#/texts/382",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11322,7 +11335,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/382",
+      "self_ref": "#/texts/383",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11349,7 +11362,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/383",
+      "self_ref": "#/texts/384",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11376,7 +11389,7 @@
       "text": "5"
     },
     {
-      "self_ref": "#/texts/384",
+      "self_ref": "#/texts/385",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11403,7 +11416,7 @@
       "text": "6"
     },
     {
-      "self_ref": "#/texts/385",
+      "self_ref": "#/texts/386",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11430,7 +11443,7 @@
       "text": "7"
     },
     {
-      "self_ref": "#/texts/386",
+      "self_ref": "#/texts/387",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11457,7 +11470,7 @@
       "text": "8"
     },
     {
-      "self_ref": "#/texts/387",
+      "self_ref": "#/texts/388",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11484,7 +11497,7 @@
       "text": "9"
     },
     {
-      "self_ref": "#/texts/388",
+      "self_ref": "#/texts/389",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11511,7 +11524,7 @@
       "text": "10"
     },
     {
-      "self_ref": "#/texts/389",
+      "self_ref": "#/texts/390",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11538,7 +11551,7 @@
       "text": "11"
     },
     {
-      "self_ref": "#/texts/390",
+      "self_ref": "#/texts/391",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11565,7 +11578,7 @@
       "text": "12"
     },
     {
-      "self_ref": "#/texts/391",
+      "self_ref": "#/texts/392",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11592,7 +11605,7 @@
       "text": "13"
     },
     {
-      "self_ref": "#/texts/392",
+      "self_ref": "#/texts/393",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11619,7 +11632,7 @@
       "text": "14"
     },
     {
-      "self_ref": "#/texts/393",
+      "self_ref": "#/texts/394",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11646,7 +11659,7 @@
       "text": "15"
     },
     {
-      "self_ref": "#/texts/394",
+      "self_ref": "#/texts/395",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11673,7 +11686,7 @@
       "text": "29"
     },
     {
-      "self_ref": "#/texts/395",
+      "self_ref": "#/texts/396",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -11700,7 +11713,7 @@
       "text": "Predicted Structure"
     },
     {
-      "self_ref": "#/texts/396",
+      "self_ref": "#/texts/397",
       "parent": {
         "$ref": "#/body"
       },
@@ -11728,7 +11741,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/397",
+      "self_ref": "#/texts/398",
       "parent": {
         "$ref": "#/body"
       },
@@ -11755,7 +11768,7 @@
       "text": "We showcase several visualizations for the different components of our network on various 'complex' tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type."
     },
     {
-      "self_ref": "#/texts/398",
+      "self_ref": "#/texts/399",
       "parent": {
         "$ref": "#/body"
       },
@@ -11783,7 +11796,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/399",
+      "self_ref": "#/texts/400",
       "parent": {
         "$ref": "#/body"
       },
@@ -11810,7 +11823,7 @@
       "text": "In this paper, we presented TableFormer an end-to-end transformer based approach to predict table structures and bounding boxes of cells from an image. This approach enables us to recreate the table structure, and extract the cell content from PDF or OCR by using bounding boxes. Additionally, it provides the versatility required in real-world scenarios when dealing with various types of PDF documents, and languages. Furthermore, our method outperforms all state-of-the-arts with a wide margin. Finally, we introduce 'SynthTabNet' a challenging synthetically generated dataset that reinforces missing characteristics from other datasets."
     },
     {
-      "self_ref": "#/texts/400",
+      "self_ref": "#/texts/401",
       "parent": {
         "$ref": "#/body"
       },
@@ -11838,9 +11851,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/401",
+      "self_ref": "#/texts/402",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -11867,7 +11880,7 @@
       "marker": "[1]"
     },
     {
-      "self_ref": "#/texts/402",
+      "self_ref": "#/texts/403",
       "parent": {
         "$ref": "#/body"
       },
@@ -11894,7 +11907,7 @@
       "text": "8"
     },
     {
-      "self_ref": "#/texts/403",
+      "self_ref": "#/texts/404",
       "parent": {
         "$ref": "#/body"
       },
@@ -11921,9 +11934,9 @@
       "text": "end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 213-229, Cham, 2020. Springer International Publishing. 5"
     },
     {
-      "self_ref": "#/texts/404",
+      "self_ref": "#/texts/405",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11950,9 +11963,9 @@
       "marker": "[2]"
     },
     {
-      "self_ref": "#/texts/405",
+      "self_ref": "#/texts/406",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11979,9 +11992,9 @@
       "marker": "[3]"
     },
     {
-      "self_ref": "#/texts/406",
+      "self_ref": "#/texts/407",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12008,9 +12021,9 @@
       "marker": "[4]"
     },
     {
-      "self_ref": "#/texts/407",
+      "self_ref": "#/texts/408",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12037,9 +12050,9 @@
       "marker": "[5]"
     },
     {
-      "self_ref": "#/texts/408",
+      "self_ref": "#/texts/409",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12066,9 +12079,9 @@
       "marker": "[6]"
     },
     {
-      "self_ref": "#/texts/409",
+      "self_ref": "#/texts/410",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12095,9 +12108,9 @@
       "marker": "[7]"
     },
     {
-      "self_ref": "#/texts/410",
+      "self_ref": "#/texts/411",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12124,9 +12137,9 @@
       "marker": "[8]"
     },
     {
-      "self_ref": "#/texts/411",
+      "self_ref": "#/texts/412",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12153,9 +12166,9 @@
       "marker": "[9]"
     },
     {
-      "self_ref": "#/texts/412",
+      "self_ref": "#/texts/413",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12182,9 +12195,9 @@
       "marker": "[10]"
     },
     {
-      "self_ref": "#/texts/413",
+      "self_ref": "#/texts/414",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12211,9 +12224,9 @@
       "marker": "[11]"
     },
     {
-      "self_ref": "#/texts/414",
+      "self_ref": "#/texts/415",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12240,9 +12253,9 @@
       "marker": "[12]"
     },
     {
-      "self_ref": "#/texts/415",
+      "self_ref": "#/texts/416",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12269,9 +12282,9 @@
       "marker": "[13]"
     },
     {
-      "self_ref": "#/texts/416",
+      "self_ref": "#/texts/417",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12298,9 +12311,9 @@
       "marker": "[14]"
     },
     {
-      "self_ref": "#/texts/417",
+      "self_ref": "#/texts/418",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12327,9 +12340,9 @@
       "marker": "[15]"
     },
     {
-      "self_ref": "#/texts/418",
+      "self_ref": "#/texts/419",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12356,9 +12369,9 @@
       "marker": "[16]"
     },
     {
-      "self_ref": "#/texts/419",
+      "self_ref": "#/texts/420",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12385,9 +12398,9 @@
       "marker": "[17]"
     },
     {
-      "self_ref": "#/texts/420",
+      "self_ref": "#/texts/421",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12414,9 +12427,9 @@
       "marker": "[18]"
     },
     {
-      "self_ref": "#/texts/421",
+      "self_ref": "#/texts/422",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12443,9 +12456,9 @@
       "marker": "[19]"
     },
     {
-      "self_ref": "#/texts/422",
+      "self_ref": "#/texts/423",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12472,9 +12485,9 @@
       "marker": "[20]"
     },
     {
-      "self_ref": "#/texts/423",
+      "self_ref": "#/texts/424",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12501,9 +12514,9 @@
       "marker": "[21]"
     },
     {
-      "self_ref": "#/texts/424",
+      "self_ref": "#/texts/425",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12530,9 +12543,9 @@
       "marker": "[22]"
     },
     {
-      "self_ref": "#/texts/425",
+      "self_ref": "#/texts/426",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12559,9 +12572,9 @@
       "marker": "[23]"
     },
     {
-      "self_ref": "#/texts/426",
+      "self_ref": "#/texts/427",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12588,9 +12601,9 @@
       "marker": "[24]"
     },
     {
-      "self_ref": "#/texts/427",
+      "self_ref": "#/texts/428",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -12617,7 +12630,7 @@
       "marker": "[25]"
     },
     {
-      "self_ref": "#/texts/428",
+      "self_ref": "#/texts/429",
       "parent": {
         "$ref": "#/body"
       },
@@ -12644,7 +12657,7 @@
       "text": "9"
     },
     {
-      "self_ref": "#/texts/429",
+      "self_ref": "#/texts/430",
       "parent": {
         "$ref": "#/body"
       },
@@ -12671,9 +12684,9 @@
       "text": "Computer Vision and Pattern Recognition , pages 658-666, 2019. 6"
     },
     {
-      "self_ref": "#/texts/430",
+      "self_ref": "#/texts/431",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12690,19 +12703,19 @@
           },
           "charspan": [
             0,
-            302
+            303
           ]
         }
       ],
-      "orig": "[26] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 11621167, 2017. 1",
-      "text": "Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 11621167, 2017. 1",
+      "orig": "[26] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1162-1167, 2017. 1",
+      "text": "Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1162-1167, 2017. 1",
       "enumerated": true,
       "marker": "[26]"
     },
     {
-      "self_ref": "#/texts/431",
+      "self_ref": "#/texts/432",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12729,9 +12742,9 @@
       "marker": "[27]"
     },
     {
-      "self_ref": "#/texts/432",
+      "self_ref": "#/texts/433",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12748,19 +12761,19 @@
           },
           "charspan": [
             0,
-            183
+            184
           ]
         }
       ],
-      "orig": "[28] Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 6572, 2010. 2",
-      "text": "Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 6572, 2010. 2",
+      "orig": "[28] Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 65-72, 2010. 2",
+      "text": "Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 65-72, 2010. 2",
       "enumerated": true,
       "marker": "[28]"
     },
     {
-      "self_ref": "#/texts/433",
+      "self_ref": "#/texts/434",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12787,9 +12800,9 @@
       "marker": "[29]"
     },
     {
-      "self_ref": "#/texts/434",
+      "self_ref": "#/texts/435",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12816,9 +12829,9 @@
       "marker": "[30]"
     },
     {
-      "self_ref": "#/texts/435",
+      "self_ref": "#/texts/436",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12845,9 +12858,9 @@
       "marker": "[31]"
     },
     {
-      "self_ref": "#/texts/436",
+      "self_ref": "#/texts/437",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12874,9 +12887,9 @@
       "marker": "[32]"
     },
     {
-      "self_ref": "#/texts/437",
+      "self_ref": "#/texts/438",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12903,9 +12916,9 @@
       "marker": "[33]"
     },
     {
-      "self_ref": "#/texts/438",
+      "self_ref": "#/texts/439",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12932,9 +12945,9 @@
       "marker": "[34]"
     },
     {
-      "self_ref": "#/texts/439",
+      "self_ref": "#/texts/440",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12961,9 +12974,9 @@
       "marker": "[35]"
     },
     {
-      "self_ref": "#/texts/440",
+      "self_ref": "#/texts/441",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -12990,9 +13003,9 @@
       "marker": "[36]"
     },
     {
-      "self_ref": "#/texts/441",
+      "self_ref": "#/texts/442",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -13019,7 +13032,7 @@
       "marker": "[37]"
     },
     {
-      "self_ref": "#/texts/442",
+      "self_ref": "#/texts/443",
       "parent": {
         "$ref": "#/body"
       },
@@ -13046,9 +13059,9 @@
       "text": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7"
     },
     {
-      "self_ref": "#/texts/443",
+      "self_ref": "#/texts/444",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -13075,7 +13088,7 @@
       "marker": "[38]"
     },
     {
-      "self_ref": "#/texts/444",
+      "self_ref": "#/texts/445",
       "parent": {
         "$ref": "#/body"
       },
@@ -13102,7 +13115,7 @@
       "text": "10"
     },
     {
-      "self_ref": "#/texts/445",
+      "self_ref": "#/texts/446",
       "parent": {
         "$ref": "#/body"
       },
@@ -13130,7 +13143,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/446",
+      "self_ref": "#/texts/447",
       "parent": {
         "$ref": "#/body"
       },
@@ -13157,7 +13170,7 @@
       "text": "Supplementary Material"
     },
     {
-      "self_ref": "#/texts/447",
+      "self_ref": "#/texts/448",
       "parent": {
         "$ref": "#/body"
       },
@@ -13185,7 +13198,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/448",
+      "self_ref": "#/texts/449",
       "parent": {
         "$ref": "#/body"
       },
@@ -13213,7 +13226,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/449",
+      "self_ref": "#/texts/450",
       "parent": {
         "$ref": "#/body"
       },
@@ -13240,7 +13253,7 @@
       "text": "As a first step of our data preparation process, we have calculated statistics over the datasets across the following dimensions: (1) table size measured in the number of rows and columns, (2) complexity of the table, (3) strictness of the provided HTML structure and (4) completeness (i.e. no omitted bounding boxes). A table is considered to be simple if it does not contain row spans or column spans. Additionally, a table has a strict HTML structure if every row has the same number of columns after taking into account any row or column spans. Therefore a strict HTML structure looks always rectangular. However, HTML is a lenient encoding format, i.e. tables with rows of different sizes might still be regarded as correct due to implicit display rules. These implicit rules leave room for ambiguity, which we want to avoid. As such, we prefer to have 'strict' tables, i.e. tables where every row has exactly the same length."
     },
     {
-      "self_ref": "#/texts/450",
+      "self_ref": "#/texts/451",
       "parent": {
         "$ref": "#/body"
       },
@@ -13267,7 +13280,7 @@
       "text": "We have developed a technique that tries to derive a missing bounding box out of its neighbors. As a first step, we use the annotation data to generate the most fine-grained grid that covers the table structure. In case of strict HTML tables, all grid squares are associated with some table cell and in the presence of table spans a cell extends across multiple grid squares. When enough bounding boxes are known for a rectangular table, it is possible to compute the geometrical border lines between the grid rows and columns. Eventually this information is used to generate the missing bounding boxes. Additionally, the existence of unused grid squares indicates that the table rows have unequal number of columns and the overall structure is non-strict. The generation of missing bounding boxes for non-strict HTML tables is ambiguous and therefore quite challenging. Thus, we have decided to simply discard those tables. In case of PubTabNet we have computed missing bounding boxes for 48% of the simple and 69% of the complex tables. Regarding FinTabNet, 68% of the simple and 98% of the complex tables require the generation of bounding boxes."
     },
     {
-      "self_ref": "#/texts/451",
+      "self_ref": "#/texts/452",
       "parent": {
         "$ref": "#/body"
       },
@@ -13294,7 +13307,7 @@
       "text": "Figure 7 illustrates the distribution of the tables across different dimensions per dataset."
     },
     {
-      "self_ref": "#/texts/452",
+      "self_ref": "#/texts/453",
       "parent": {
         "$ref": "#/body"
       },
@@ -13322,7 +13335,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/453",
+      "self_ref": "#/texts/454",
       "parent": {
         "$ref": "#/body"
       },
@@ -13363,7 +13376,7 @@
       "text": "Aiming to train and evaluate our models in a broader spectrum of table data we have synthesized four types of datasets. Each one contains tables with different appearances in regard to their size, structure, style and content. Every synthetic dataset contains 150k examples, summing up to 600k synthetic examples. All datasets are divided into Train, Test and Val splits (80%, 10%, 10%)."
     },
     {
-      "self_ref": "#/texts/454",
+      "self_ref": "#/texts/455",
       "parent": {
         "$ref": "#/body"
       },
@@ -13390,9 +13403,9 @@
       "text": "The process of generating a synthetic dataset can be decomposed into the following steps:"
     },
     {
-      "self_ref": "#/texts/455",
+      "self_ref": "#/texts/456",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -13419,9 +13432,9 @@
       "marker": "1."
     },
     {
-      "self_ref": "#/texts/456",
+      "self_ref": "#/texts/457",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -13448,9 +13461,9 @@
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/457",
+      "self_ref": "#/texts/458",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -13477,9 +13490,9 @@
       "marker": "3."
     },
     {
-      "self_ref": "#/texts/458",
+      "self_ref": "#/texts/459",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -13506,9 +13519,9 @@
       "marker": "4."
     },
     {
-      "self_ref": "#/texts/459",
+      "self_ref": "#/texts/460",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -13535,7 +13548,7 @@
       "marker": "5."
     },
     {
-      "self_ref": "#/texts/460",
+      "self_ref": "#/texts/461",
       "parent": {
         "$ref": "#/body"
       },
@@ -13563,7 +13576,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/461",
+      "self_ref": "#/texts/462",
       "parent": {
         "$ref": "#/body"
       },
@@ -13590,7 +13603,7 @@
       "text": "Although TableFormer can predict the table structure and the bounding boxes for tables recognized inside PDF documents, this is not enough when a full reconstruction of the original table is required. This happens mainly due the following reasons:"
     },
     {
-      "self_ref": "#/texts/462",
+      "self_ref": "#/texts/463",
       "parent": {
         "$ref": "#/body"
       },
@@ -13617,7 +13630,7 @@
       "text": "11"
     },
     {
-      "self_ref": "#/texts/463",
+      "self_ref": "#/texts/464",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13644,7 +13657,7 @@
       "text": "Figure 7: Distribution of the tables across different dimensions per dataset. Simple vs complex tables per dataset and split, strict vs non strict html structures per dataset and table complexity, missing bboxes per dataset and table complexity."
     },
     {
-      "self_ref": "#/texts/464",
+      "self_ref": "#/texts/465",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13671,7 +13684,7 @@
       "text": "PubTabNet"
     },
     {
-      "self_ref": "#/texts/465",
+      "self_ref": "#/texts/466",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13698,7 +13711,7 @@
       "text": "b."
     },
     {
-      "self_ref": "#/texts/466",
+      "self_ref": "#/texts/467",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13725,7 +13738,7 @@
       "text": "FinTabNet"
     },
     {
-      "self_ref": "#/texts/467",
+      "self_ref": "#/texts/468",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13752,7 +13765,7 @@
       "text": "Table Bank"
     },
     {
-      "self_ref": "#/texts/468",
+      "self_ref": "#/texts/469",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13779,7 +13792,7 @@
       "text": "Train"
     },
     {
-      "self_ref": "#/texts/469",
+      "self_ref": "#/texts/470",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13806,7 +13819,7 @@
       "text": "Complex"
     },
     {
-      "self_ref": "#/texts/470",
+      "self_ref": "#/texts/471",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13833,7 +13846,7 @@
       "text": "Simple"
     },
     {
-      "self_ref": "#/texts/471",
+      "self_ref": "#/texts/472",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13860,7 +13873,7 @@
       "text": "Complex"
     },
     {
-      "self_ref": "#/texts/472",
+      "self_ref": "#/texts/473",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13887,7 +13900,7 @@
       "text": "Simple"
     },
     {
-      "self_ref": "#/texts/473",
+      "self_ref": "#/texts/474",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13914,7 +13927,7 @@
       "text": "Simple"
     },
     {
-      "self_ref": "#/texts/474",
+      "self_ref": "#/texts/475",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13941,7 +13954,7 @@
       "text": "Val"
     },
     {
-      "self_ref": "#/texts/475",
+      "self_ref": "#/texts/476",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13968,7 +13981,7 @@
       "text": "100%"
     },
     {
-      "self_ref": "#/texts/476",
+      "self_ref": "#/texts/477",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -13995,7 +14008,7 @@
       "text": "500K 10K"
     },
     {
-      "self_ref": "#/texts/477",
+      "self_ref": "#/texts/478",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14022,7 +14035,7 @@
       "text": "Train Test"
     },
     {
-      "self_ref": "#/texts/478",
+      "self_ref": "#/texts/479",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14049,7 +14062,7 @@
       "text": "Val"
     },
     {
-      "self_ref": "#/texts/479",
+      "self_ref": "#/texts/480",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14076,7 +14089,7 @@
       "text": "100%"
     },
     {
-      "self_ref": "#/texts/480",
+      "self_ref": "#/texts/481",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14103,7 +14116,7 @@
       "text": "91K 10K10K"
     },
     {
-      "self_ref": "#/texts/481",
+      "self_ref": "#/texts/482",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14130,7 +14143,7 @@
       "text": "Train Test"
     },
     {
-      "self_ref": "#/texts/482",
+      "self_ref": "#/texts/483",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14157,7 +14170,7 @@
       "text": "Val"
     },
     {
-      "self_ref": "#/texts/483",
+      "self_ref": "#/texts/484",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14184,7 +14197,7 @@
       "text": "100%"
     },
     {
-      "self_ref": "#/texts/484",
+      "self_ref": "#/texts/485",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14211,7 +14224,7 @@
       "text": "130K 5K 10K"
     },
     {
-      "self_ref": "#/texts/485",
+      "self_ref": "#/texts/486",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14238,7 +14251,7 @@
       "text": "Complex"
     },
     {
-      "self_ref": "#/texts/486",
+      "self_ref": "#/texts/487",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14265,7 +14278,7 @@
       "text": "Non"
     },
     {
-      "self_ref": "#/texts/487",
+      "self_ref": "#/texts/488",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14292,7 +14305,7 @@
       "text": "Strict"
     },
     {
-      "self_ref": "#/texts/488",
+      "self_ref": "#/texts/489",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14319,7 +14332,7 @@
       "text": "HTML"
     },
     {
-      "self_ref": "#/texts/489",
+      "self_ref": "#/texts/490",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14346,7 +14359,7 @@
       "text": "Strict"
     },
     {
-      "self_ref": "#/texts/490",
+      "self_ref": "#/texts/491",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14373,7 +14386,7 @@
       "text": "HTML"
     },
     {
-      "self_ref": "#/texts/491",
+      "self_ref": "#/texts/492",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14400,7 +14413,7 @@
       "text": "Simple"
     },
     {
-      "self_ref": "#/texts/492",
+      "self_ref": "#/texts/493",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14427,7 +14440,7 @@
       "text": "230K 280K"
     },
     {
-      "self_ref": "#/texts/493",
+      "self_ref": "#/texts/494",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14454,7 +14467,7 @@
       "text": "65K"
     },
     {
-      "self_ref": "#/texts/494",
+      "self_ref": "#/texts/495",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14481,7 +14494,7 @@
       "text": "Complex"
     },
     {
-      "self_ref": "#/texts/495",
+      "self_ref": "#/texts/496",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14508,7 +14521,7 @@
       "text": "Non"
     },
     {
-      "self_ref": "#/texts/496",
+      "self_ref": "#/texts/497",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14535,7 +14548,7 @@
       "text": "Strict"
     },
     {
-      "self_ref": "#/texts/497",
+      "self_ref": "#/texts/498",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14562,7 +14575,7 @@
       "text": "HTML"
     },
     {
-      "self_ref": "#/texts/498",
+      "self_ref": "#/texts/499",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14589,7 +14602,7 @@
       "text": "Strict"
     },
     {
-      "self_ref": "#/texts/499",
+      "self_ref": "#/texts/500",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14616,7 +14629,7 @@
       "text": "HTML"
     },
     {
-      "self_ref": "#/texts/500",
+      "self_ref": "#/texts/501",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14643,7 +14656,7 @@
       "text": "Simple"
     },
     {
-      "self_ref": "#/texts/501",
+      "self_ref": "#/texts/502",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14670,7 +14683,7 @@
       "text": "47K"
     },
     {
-      "self_ref": "#/texts/502",
+      "self_ref": "#/texts/503",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14697,7 +14710,7 @@
       "text": "Simple"
     },
     {
-      "self_ref": "#/texts/503",
+      "self_ref": "#/texts/504",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14724,7 +14737,7 @@
       "text": "Non"
     },
     {
-      "self_ref": "#/texts/504",
+      "self_ref": "#/texts/505",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14751,7 +14764,7 @@
       "text": "Strict"
     },
     {
-      "self_ref": "#/texts/505",
+      "self_ref": "#/texts/506",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14778,7 +14791,7 @@
       "text": "HTML"
     },
     {
-      "self_ref": "#/texts/506",
+      "self_ref": "#/texts/507",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14805,7 +14818,7 @@
       "text": "145K"
     },
     {
-      "self_ref": "#/texts/507",
+      "self_ref": "#/texts/508",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14832,7 +14845,7 @@
       "text": "Complex"
     },
     {
-      "self_ref": "#/texts/508",
+      "self_ref": "#/texts/509",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14859,7 +14872,7 @@
       "text": "Contain"
     },
     {
-      "self_ref": "#/texts/509",
+      "self_ref": "#/texts/510",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14886,7 +14899,7 @@
       "text": "Missing"
     },
     {
-      "self_ref": "#/texts/510",
+      "self_ref": "#/texts/511",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14913,7 +14926,7 @@
       "text": "bboxes"
     },
     {
-      "self_ref": "#/texts/511",
+      "self_ref": "#/texts/512",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14940,7 +14953,7 @@
       "text": "Contain"
     },
     {
-      "self_ref": "#/texts/512",
+      "self_ref": "#/texts/513",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14967,7 +14980,7 @@
       "text": "Missing"
     },
     {
-      "self_ref": "#/texts/513",
+      "self_ref": "#/texts/514",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -14994,7 +15007,7 @@
       "text": "bboxes"
     },
     {
-      "self_ref": "#/texts/514",
+      "self_ref": "#/texts/515",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15021,7 +15034,7 @@
       "text": "Dataset"
     },
     {
-      "self_ref": "#/texts/515",
+      "self_ref": "#/texts/516",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15048,7 +15061,7 @@
       "text": "doesn't"
     },
     {
-      "self_ref": "#/texts/516",
+      "self_ref": "#/texts/517",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15075,7 +15088,7 @@
       "text": "provide"
     },
     {
-      "self_ref": "#/texts/517",
+      "self_ref": "#/texts/518",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15102,7 +15115,7 @@
       "text": "bboxes"
     },
     {
-      "self_ref": "#/texts/518",
+      "self_ref": "#/texts/519",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15129,7 +15142,7 @@
       "text": "Simple"
     },
     {
-      "self_ref": "#/texts/519",
+      "self_ref": "#/texts/520",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15156,7 +15169,7 @@
       "text": "230K 280K"
     },
     {
-      "self_ref": "#/texts/520",
+      "self_ref": "#/texts/521",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15183,7 +15196,7 @@
       "text": "65K"
     },
     {
-      "self_ref": "#/texts/521",
+      "self_ref": "#/texts/522",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15210,7 +15223,7 @@
       "text": "Complex Simple"
     },
     {
-      "self_ref": "#/texts/522",
+      "self_ref": "#/texts/523",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15237,7 +15250,7 @@
       "text": "47K"
     },
     {
-      "self_ref": "#/texts/523",
+      "self_ref": "#/texts/524",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15264,7 +15277,7 @@
       "text": "Simple"
     },
     {
-      "self_ref": "#/texts/524",
+      "self_ref": "#/texts/525",
       "parent": {
         "$ref": "#/pictures/6"
       },
@@ -15291,9 +15304,9 @@
       "text": "145K"
     },
     {
-      "self_ref": "#/texts/525",
+      "self_ref": "#/texts/526",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "body",
@@ -15320,9 +15333,9 @@
       "marker": "\u00b7"
     },
     {
-      "self_ref": "#/texts/526",
+      "self_ref": "#/texts/527",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "body",
@@ -15349,7 +15362,7 @@
       "marker": "\u00b7"
     },
     {
-      "self_ref": "#/texts/527",
+      "self_ref": "#/texts/528",
       "parent": {
         "$ref": "#/body"
       },
@@ -15376,7 +15389,7 @@
       "text": "However, it is possible to mitigate those limitations by combining the TableFormer predictions with the information already present inside a programmatic PDF document. More specifically, PDF documents can be seen as a sequence of PDF cells where each cell is described by its content and bounding box. If we are able to associate the PDF cells with the predicted table cells, we can directly link the PDF cell content to the table cell structure and use the PDF bounding boxes to correct misalignments in the predicted table cell bounding boxes."
     },
     {
-      "self_ref": "#/texts/528",
+      "self_ref": "#/texts/529",
       "parent": {
         "$ref": "#/body"
       },
@@ -15403,9 +15416,9 @@
       "text": "Here is a step-by-step description of the prediction postprocessing:"
     },
     {
-      "self_ref": "#/texts/529",
+      "self_ref": "#/texts/530",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -15432,9 +15445,9 @@
       "marker": "1."
     },
     {
-      "self_ref": "#/texts/530",
+      "self_ref": "#/texts/531",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -15461,9 +15474,9 @@
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/531",
+      "self_ref": "#/texts/532",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -15490,9 +15503,9 @@
       "marker": "3."
     },
     {
-      "self_ref": "#/texts/532",
+      "self_ref": "#/texts/533",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -15519,9 +15532,9 @@
       "marker": "3.a."
     },
     {
-      "self_ref": "#/texts/533",
+      "self_ref": "#/texts/534",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -15548,7 +15561,7 @@
       "marker": "4."
     },
     {
-      "self_ref": "#/texts/534",
+      "self_ref": "#/texts/535",
       "parent": {
         "$ref": "#/body"
       },
@@ -15575,7 +15588,7 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/535",
+      "self_ref": "#/texts/536",
       "parent": {
         "$ref": "#/body"
       },
@@ -15594,17 +15607,17 @@
           },
           "charspan": [
             0,
-            99
+            100
           ]
         }
       ],
-      "orig": "where c is one of { left, centroid, right } and x c is the xcoordinate for the corresponding point.",
-      "text": "where c is one of { left, centroid, right } and x c is the xcoordinate for the corresponding point."
+      "orig": "where c is one of { left, centroid, right } and x c is the x-coordinate for the corresponding point.",
+      "text": "where c is one of { left, centroid, right } and x c is the x-coordinate for the corresponding point."
     },
     {
-      "self_ref": "#/texts/536",
+      "self_ref": "#/texts/537",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -15631,7 +15644,7 @@
       "marker": "5."
     },
     {
-      "self_ref": "#/texts/537",
+      "self_ref": "#/texts/538",
       "parent": {
         "$ref": "#/body"
       },
@@ -15658,9 +15671,9 @@
       "text": "dian cell size for all table cells. The usage of median during the computations, helps to eliminate outliers caused by occasional column spans which are usually wider than the normal."
     },
     {
-      "self_ref": "#/texts/538",
+      "self_ref": "#/texts/539",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -15687,9 +15700,9 @@
       "marker": "6."
     },
     {
-      "self_ref": "#/texts/539",
+      "self_ref": "#/texts/540",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -15716,9 +15729,9 @@
       "marker": "7."
     },
     {
-      "self_ref": "#/texts/540",
+      "self_ref": "#/texts/541",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -15745,9 +15758,9 @@
       "marker": "8."
     },
     {
-      "self_ref": "#/texts/541",
+      "self_ref": "#/texts/542",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -15774,7 +15787,7 @@
       "marker": "9."
     },
     {
-      "self_ref": "#/texts/542",
+      "self_ref": "#/texts/543",
       "parent": {
         "$ref": "#/body"
       },
@@ -15801,9 +15814,9 @@
       "text": "9a. Compute the top and bottom boundary of the horizontal band for each grid row (min/max y coordinates per row)."
     },
     {
-      "self_ref": "#/texts/543",
+      "self_ref": "#/texts/544",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -15830,9 +15843,9 @@
       "marker": "9b."
     },
     {
-      "self_ref": "#/texts/544",
+      "self_ref": "#/texts/545",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -15859,7 +15872,7 @@
       "marker": "9c."
     },
     {
-      "self_ref": "#/texts/545",
+      "self_ref": "#/texts/546",
       "parent": {
         "$ref": "#/body"
       },
@@ -15886,7 +15899,7 @@
       "text": "9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column."
     },
     {
-      "self_ref": "#/texts/546",
+      "self_ref": "#/texts/547",
       "parent": {
         "$ref": "#/body"
       },
@@ -15927,7 +15940,7 @@
       "text": "9e. If the table cell under the identified row and column is not empty, extend its content with the content of the orphan cell."
     },
     {
-      "self_ref": "#/texts/547",
+      "self_ref": "#/texts/548",
       "parent": {
         "$ref": "#/body"
       },
@@ -15954,9 +15967,9 @@
       "text": "12"
     },
     {
-      "self_ref": "#/texts/548",
+      "self_ref": "#/texts/549",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -15983,7 +15996,7 @@
       "marker": "9f."
     },
     {
-      "self_ref": "#/texts/549",
+      "self_ref": "#/texts/550",
       "parent": {
         "$ref": "#/body"
       },
@@ -16010,7 +16023,7 @@
       "text": "Aditional images with examples of TableFormer predictions and post-processing can be found below."
     },
     {
-      "self_ref": "#/texts/550",
+      "self_ref": "#/texts/551",
       "parent": {
         "$ref": "#/pictures/7"
       },
@@ -16037,7 +16050,7 @@
       "text": "Figure 8: Example of a table with multi-line header."
     },
     {
-      "self_ref": "#/texts/551",
+      "self_ref": "#/texts/552",
       "parent": {
         "$ref": "#/pictures/8"
       },
@@ -16064,7 +16077,7 @@
       "text": "Figure 9: Example of a table with big empty distance between cells."
     },
     {
-      "self_ref": "#/texts/552",
+      "self_ref": "#/texts/553",
       "parent": {
         "$ref": "#/pictures/9"
       },
@@ -16091,7 +16104,7 @@
       "text": "Figure 10: Example of a complex table with empty cells."
     },
     {
-      "self_ref": "#/texts/553",
+      "self_ref": "#/texts/554",
       "parent": {
         "$ref": "#/body"
       },
@@ -16118,7 +16131,7 @@
       "text": "13"
     },
     {
-      "self_ref": "#/texts/554",
+      "self_ref": "#/texts/555",
       "parent": {
         "$ref": "#/pictures/10"
       },
@@ -16145,7 +16158,7 @@
       "text": "Figure 11: Simple table with different style and empty cells."
     },
     {
-      "self_ref": "#/texts/555",
+      "self_ref": "#/texts/556",
       "parent": {
         "$ref": "#/pictures/11"
       },
@@ -16172,7 +16185,7 @@
       "text": "Figure 13: Table predictions example on colorful table."
     },
     {
-      "self_ref": "#/texts/556",
+      "self_ref": "#/texts/557",
       "parent": {
         "$ref": "#/pictures/12"
       },
@@ -16199,7 +16212,7 @@
       "text": "Figure 12: Simple table predictions and post processing."
     },
     {
-      "self_ref": "#/texts/557",
+      "self_ref": "#/texts/558",
       "parent": {
         "$ref": "#/body"
       },
@@ -16226,7 +16239,7 @@
       "text": "Figure 14: Example with multi-line text."
     },
     {
-      "self_ref": "#/texts/558",
+      "self_ref": "#/texts/559",
       "parent": {
         "$ref": "#/body"
       },
@@ -16253,7 +16266,7 @@
       "text": "14"
     },
     {
-      "self_ref": "#/texts/559",
+      "self_ref": "#/texts/560",
       "parent": {
         "$ref": "#/pictures/13"
       },
@@ -16280,7 +16293,7 @@
       "text": "Figure 15: Example with triangular table."
     },
     {
-      "self_ref": "#/texts/560",
+      "self_ref": "#/texts/561",
       "parent": {
         "$ref": "#/body"
       },
@@ -16307,7 +16320,7 @@
       "text": "Figure 16: Example of how post-processing helps to restore mis-aligned bounding boxes prediction artifact."
     },
     {
-      "self_ref": "#/texts/561",
+      "self_ref": "#/texts/562",
       "parent": {
         "$ref": "#/body"
       },
@@ -16334,7 +16347,7 @@
       "text": "15"
     },
     {
-      "self_ref": "#/texts/562",
+      "self_ref": "#/texts/563",
       "parent": {
         "$ref": "#/pictures/14"
       },
@@ -16361,7 +16374,7 @@
       "text": "Figure 17: Example of long table. End-to-end example from initial PDF cells to prediction of bounding boxes, post processing and prediction of structure."
     },
     {
-      "self_ref": "#/texts/563",
+      "self_ref": "#/texts/564",
       "parent": {
         "$ref": "#/body"
       },
@@ -16395,9 +16408,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/10"
-        },
         {
           "$ref": "#/texts/11"
         },
@@ -16466,6 +16476,9 @@
         },
         {
           "$ref": "#/texts/33"
+        },
+        {
+          "$ref": "#/texts/34"
         }
       ],
       "content_layer": "body",
@@ -16475,9 +16488,9 @@
           "page_no": 1,
           "bbox": {
             "l": 314.51,
-            "t": 454.05,
-            "r": 539.34,
-            "b": 381.33,
+            "t": 454.02,
+            "r": 539.33,
+            "b": 381.26,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -16497,9 +16510,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/58"
-        },
         {
           "$ref": "#/texts/59"
         },
@@ -16571,6 +16581,9 @@
         },
         {
           "$ref": "#/texts/82"
+        },
+        {
+          "$ref": "#/texts/83"
         }
       ],
       "content_layer": "body",
@@ -16593,7 +16606,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/58"
+          "$ref": "#/texts/59"
         }
       ],
       "references": [],
@@ -16606,9 +16619,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/98"
-        },
         {
           "$ref": "#/texts/99"
         },
@@ -16782,6 +16792,9 @@
         },
         {
           "$ref": "#/texts/156"
+        },
+        {
+          "$ref": "#/texts/157"
         }
       ],
       "content_layer": "body",
@@ -16804,7 +16817,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/98"
+          "$ref": "#/texts/99"
         }
       ],
       "references": [],
@@ -16817,9 +16830,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/157"
-        },
         {
           "$ref": "#/texts/158"
         },
@@ -16936,6 +16946,9 @@
         },
         {
           "$ref": "#/texts/196"
+        },
+        {
+          "$ref": "#/texts/197"
         }
       ],
       "content_layer": "body",
@@ -16958,7 +16971,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/157"
+          "$ref": "#/texts/158"
         }
       ],
       "references": [],
@@ -16972,13 +16985,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/235"
+          "$ref": "#/texts/236"
         },
         {
-          "$ref": "#/groups/3"
-        },
-        {
-          "$ref": "#/texts/237"
+          "$ref": "#/groups/2"
         },
         {
           "$ref": "#/texts/238"
@@ -17279,6 +17289,9 @@
         },
         {
           "$ref": "#/texts/337"
+        },
+        {
+          "$ref": "#/texts/338"
         }
       ],
       "content_layer": "body",
@@ -17301,7 +17314,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/235"
+          "$ref": "#/texts/236"
         }
       ],
       "references": [],
@@ -17314,9 +17327,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/338"
-        },
         {
           "$ref": "#/texts/339"
         },
@@ -17487,6 +17497,9 @@
         },
         {
           "$ref": "#/texts/395"
+        },
+        {
+          "$ref": "#/texts/396"
         }
       ],
       "content_layer": "body",
@@ -17509,7 +17522,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/338"
+          "$ref": "#/texts/339"
         }
       ],
       "references": [],
@@ -17522,9 +17535,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/463"
-        },
         {
           "$ref": "#/texts/464"
         },
@@ -17707,6 +17717,9 @@
         },
         {
           "$ref": "#/texts/524"
+        },
+        {
+          "$ref": "#/texts/525"
         }
       ],
       "content_layer": "body",
@@ -17729,7 +17742,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/463"
+          "$ref": "#/texts/464"
         }
       ],
       "references": [],
@@ -17743,7 +17756,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/550"
+          "$ref": "#/texts/551"
         }
       ],
       "content_layer": "body",
@@ -17766,7 +17779,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/550"
+          "$ref": "#/texts/551"
         }
       ],
       "references": [],
@@ -17780,7 +17793,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/551"
+          "$ref": "#/texts/552"
         }
       ],
       "content_layer": "body",
@@ -17803,7 +17816,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/551"
+          "$ref": "#/texts/552"
         }
       ],
       "references": [],
@@ -17817,7 +17830,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/552"
+          "$ref": "#/texts/553"
         }
       ],
       "content_layer": "body",
@@ -17840,7 +17853,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/552"
+          "$ref": "#/texts/553"
         }
       ],
       "references": [],
@@ -17854,7 +17867,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/554"
+          "$ref": "#/texts/555"
         }
       ],
       "content_layer": "body",
@@ -17877,7 +17890,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/554"
+          "$ref": "#/texts/555"
         }
       ],
       "references": [],
@@ -17891,7 +17904,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/555"
+          "$ref": "#/texts/556"
         }
       ],
       "content_layer": "body",
@@ -17914,7 +17927,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/555"
+          "$ref": "#/texts/556"
         }
       ],
       "references": [],
@@ -17928,7 +17941,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/556"
+          "$ref": "#/texts/557"
         }
       ],
       "content_layer": "body",
@@ -17951,7 +17964,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/556"
+          "$ref": "#/texts/557"
         }
       ],
       "references": [],
@@ -17965,7 +17978,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/559"
+          "$ref": "#/texts/560"
         }
       ],
       "content_layer": "body",
@@ -17988,7 +18001,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/559"
+          "$ref": "#/texts/560"
         }
       ],
       "references": [],
@@ -18002,7 +18015,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/562"
+          "$ref": "#/texts/563"
         }
       ],
       "content_layer": "body",
@@ -18025,7 +18038,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/562"
+          "$ref": "#/texts/563"
         }
       ],
       "references": [],
@@ -18047,9 +18060,9 @@
           "page_no": 1,
           "bbox": {
             "l": 315.63,
-            "t": 561.1,
-            "r": 536.71,
-            "b": 490.07,
+            "t": 561.13,
+            "r": 536.73,
+            "b": 490.03,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -18161,7 +18174,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/35"
+          "$ref": "#/texts/36"
         }
       ],
       "content_layer": "body",
@@ -18170,10 +18183,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 315.61,
-            "t": 358.32,
-            "r": 537.1,
-            "b": 295.46,
+            "l": 315.6,
+            "t": 358.33,
+            "r": 537.11,
+            "b": 295.43,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -18184,7 +18197,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/35"
+          "$ref": "#/texts/36"
         }
       ],
       "references": [],
@@ -19123,7 +19136,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/90"
+          "$ref": "#/texts/91"
         }
       ],
       "content_layer": "body",
@@ -19146,7 +19159,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/90"
+          "$ref": "#/texts/91"
         }
       ],
       "references": [],
@@ -20556,7 +20569,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/225"
+          "$ref": "#/texts/226"
         }
       ],
       "content_layer": "body",
@@ -20579,7 +20592,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/225"
+          "$ref": "#/texts/226"
         }
       ],
       "references": [],
@@ -22824,7 +22837,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/227"
+          "$ref": "#/texts/228"
         }
       ],
       "content_layer": "body",
@@ -22847,7 +22860,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/227"
+          "$ref": "#/texts/228"
         }
       ],
       "references": [],
@@ -23518,7 +23531,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/229"
+          "$ref": "#/texts/230"
         }
       ],
       "content_layer": "body",
@@ -23541,7 +23554,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/229"
+          "$ref": "#/texts/230"
         }
       ],
       "references": [],
