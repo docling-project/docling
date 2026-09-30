@@ -343,6 +343,20 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
     def _close_table(self, doc: DoclingDocument):
         self.in_pipeless_table = False
+        if self.in_table and not (
+            len(self.md_table_buffer) > 1
+            and MarkdownDocumentBackend._is_delimiter_row(self.md_table_buffer[1])
+        ):
+            # GFM: a table needs a delimiter row right after its header, so
+            # lines that merely start with a pipe are a paragraph. Building a
+            # table here would drop the second line, taken for that row.
+            text = " ".join(
+                unescape(row.strip()) for row in self.md_table_buffer if row.strip()
+            )
+            self.in_table = False
+            self.md_table_buffer = []
+            if text:
+                doc.add_text(label=DocItemLabel.TEXT, text=text)
         if self.in_table:
             _log.debug("=== TABLE START ===")
             for md_table_row in self.md_table_buffer:
