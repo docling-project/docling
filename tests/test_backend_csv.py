@@ -298,6 +298,77 @@ def test_row_of_empty_fields_is_kept():
     assert [cell.text for cell in table_data.table_cells] == ["a", "b", "", ""]
 
 
+@pytest.mark.parametrize("delimiter", [",", ";", "\t", "|", ":"])
+@pytest.mark.parametrize("prefix", ["\n", "\n\n", "\r\n\r\n"])
+@pytest.mark.parametrize("source_kind", ["path", "stream"])
+def test_leading_blank_lines_preserve_nonuniform_dialect(
+    delimiter, prefix, source_kind, tmp_path
+):
+    payload = (
+        prefix + f"name{delimiter}value\na{delimiter}1{delimiter}extra\nb{delimiter}2\n"
+    ).encode()
+    if source_kind == "path":
+        source = tmp_path / "leading.csv"
+        source.write_bytes(payload)
+    else:
+        source = DocumentStream(name="leading.csv", stream=BytesIO(payload))
+
+    with pytest.warns(UserWarning, match="Inconsistent column lengths"):
+        doc = get_converter().convert(source, raises_on_error=True).document
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (3, 3)
+    assert [cell.text for cell in data.table_cells] == [
+        "name",
+        "value",
+        "a",
+        "1",
+        "extra",
+        "b",
+        "2",
+    ]
+
+
+@pytest.mark.parametrize("prefix", ["\n", "\n" * 4096])
+def test_leading_blank_lines_before_quoted_multiline_header(prefix):
+    payload = (prefix + '"Title: details\ncontinued";value\n1;2\n').encode()
+    doc = (
+        get_converter()
+        .convert(
+            DocumentStream(name="multiline.csv", stream=BytesIO(payload)),
+            raises_on_error=True,
+        )
+        .document
+    )
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [cell.text for cell in data.table_cells] == [
+        "Title: details\ncontinued",
+        "value",
+        "1",
+        "2",
+    ]
+
+
+@pytest.mark.parametrize(
+    "payload, expected",
+    [
+        (b"\n;;\na;b;c\n", ["", "", "", "a", "b", "c"]),
+        (b'\n"";b\na;c\n', ["", "b", "a", "c"]),
+        (b"\n ;b\na;c\n", [" ", "b", "a", "c"]),
+    ],
+)
+def test_leading_blank_lines_keep_nonblank_first_record(payload, expected):
+    doc = (
+        get_converter()
+        .convert(
+            DocumentStream(name="nonblank.csv", stream=BytesIO(payload)),
+            raises_on_error=True,
+        )
+        .document
+    )
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == expected
+
+
 def test_file_of_only_blank_lines_is_empty():
     """Dropping every row must leave an empty document, not an empty table."""
     doc = (

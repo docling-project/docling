@@ -107,9 +107,12 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         """
         # Dialect detection: the larger sample is only read on fallback.
         head = self.content.readline()
+        while head in ("\n", "\r\n", "\r"):
+            head = self.content.readline()
+        sample_start = self.content.tell() - len(head)
 
         def read_sample() -> str:
-            self.content.seek(0)
+            self.content.seek(sample_start)
             return self.content.read(_SNIFF_SAMPLE_SIZE)
 
         try:
