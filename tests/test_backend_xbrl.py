@@ -87,3 +87,41 @@ def test_e2e_xbrl_conversions(xbrl_paths, use_stream=False):
         )
 
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), "export to json"
+
+
+def test_xbrl_divide_unit_keeps_denominator():
+    """A fact measured in a divide unit must report both of its measures.
+
+    XBRL 2.1 (sections 4.8.3-4.8.4) defines a ``<divide>`` unit as the ratio of its
+    numerator and denominator measures. In ``grve_10q_htm.xml`` the per-share facts
+    use the unit ``USDPShares`` (``iso4217:USD`` divided by ``shares``), which must
+    not be reported as a plain ``USD`` amount.
+    """
+    sources = Path(__file__).parent / "data" / "xbrl" / "sources"
+    backend_options = XBRLBackendOptions(
+        enable_local_fetch=True, taxonomy=sources / "grve-taxonomy"
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XML_XBRL],
+        format_options={
+            InputFormat.XML_XBRL: XBRLFormatOption(backend_options=backend_options)
+        },
+    )
+    doc: DoclingDocument = converter.convert(sources / "grve_10q_htm.xml").document
+
+    unit_texts: dict[str, set[str]] = {}
+    for kv_item in doc.key_value_items:
+        cells = {cell.cell_id: cell for cell in kv_item.graph.cells}
+        for link in kv_item.graph.links:
+            target = cells[link.target_cell_id]
+            if target.orig == "unit":
+                concept = cells[link.source_cell_id].orig
+                unit_texts.setdefault(concept, set()).add(target.text)
+
+    for concept in (
+        "us-gaap:EarningsPerShareDiluted",
+        "us-gaap:CommonStockParOrStatedValuePerShare",
+        "us-gaap:PreferredStockParOrStatedValuePerShare",
+    ):
+        assert unit_texts.get(concept) == {"currency: USD / shares"}, concept
+    assert unit_texts.get("us-gaap:Assets") == {"currency: USD"}
