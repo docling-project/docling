@@ -164,7 +164,7 @@ def test_api_errors_do_not_raise_but_are_marked_as_inference_errors(
 
     assert result.text == ""
     assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
-    assert result.error is not None and result.error.startswith(f"HTTP {status}")
+    assert result.error == f"API request failed with status {status}"
 
 
 # -- streaming -----------------------------------------------------------

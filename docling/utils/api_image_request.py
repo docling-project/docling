@@ -11,6 +11,7 @@ import requests
 from PIL import Image
 from pydantic import AnyUrl
 from requests.adapters import HTTPAdapter
+from urllib3.exceptions import MaxRetryError, ReadTimeoutError
 from urllib3.util.retry import Retry
 
 from docling.datamodel.base_models import (
@@ -60,6 +61,17 @@ def _failed_request(reason: str) -> ApiImageRequestResult:
     return ApiImageRequestResult(
         text="", num_tokens=0, stop_reason=VlmStopReason.INFERENCE_ERROR, error=reason
     )
+
+
+def _model_request_error(
+    exc: requests.RequestException,
+) -> TimeoutError | ConnectionError:
+    reason = exc.args[0] if exc.args else exc
+    if isinstance(reason, MaxRetryError):
+        reason = reason.reason
+    if isinstance(exc, requests.Timeout) or isinstance(reason, ReadTimeoutError):
+        return TimeoutError(backend_error_message("Model API request timed out", exc))
+    return ConnectionError(backend_error_message("Model API request failed", exc))
 
 
 def _extract_text_from_tool_arguments(arguments: str | None) -> str:
@@ -200,14 +212,8 @@ def _post_openai_chat_completion(
                 json=payload,
                 timeout=timeout,
             )
-    except requests.Timeout as exc:
-        raise TimeoutError(
-            backend_error_message("Model API request timed out", exc)
-        ) from exc
     except requests.RequestException as exc:
-        raise ConnectionError(
-            backend_error_message("Model API request failed", exc)
-        ) from exc
+        raise _model_request_error(exc) from exc
     if not response.ok:
         raise RuntimeError(
             backend_error_message(
@@ -434,11 +440,5 @@ def api_image_request_streaming(
                     num_tokens=num_tokens,
                     usage=usage_payload,
                 )
-    except requests.Timeout as exc:
-        raise TimeoutError(
-            backend_error_message("Model API request timed out", exc)
-        ) from exc
     except requests.RequestException as exc:
-        raise ConnectionError(
-            backend_error_message("Model API request failed", exc)
-        ) from exc
+        raise _model_request_error(exc) from exc
