@@ -220,6 +220,38 @@ def test_table_zero_span_defaults_to_one():
     ]
 
 
+def test_table_cell_text_separates_inline_text_from_block():
+    # Inline text directly inside a <td> followed by a <p> used to be
+    # concatenated without a separator in TableCell.text ("Kingdomof Norway").
+    src = b"<table><tr><td>For the Kingdom<p>of Norway</p></td></tr></table>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+    assert [cell.text.strip() for cell in cells] == ["For the Kingdom of Norway"]
+
+    # A block tag at the start of a cell gets no leading separator, and inline
+    # text that already ends with whitespace is not given a doubled one.
+    assert (
+        HTMLDocumentBackend.get_text(
+            BeautifulSoup("<td><p>lead</p></td>", "html.parser").find("td")
+        )
+        == "lead  "
+    )
+    assert (
+        HTMLDocumentBackend.get_text(
+            BeautifulSoup("<td>trail <p>block</p></td>", "html.parser").find("td")
+        )
+        == "trail block  "
+    )
+
+
 @pytest.mark.parametrize(
     "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
 )
