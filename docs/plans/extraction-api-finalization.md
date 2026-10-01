@@ -10,7 +10,7 @@ Three confirmed error gaps are now fixed locally: raw model HTTP error bodies ob
 
 | Priority / owner | Concrete next action / completion evidence |
 |---|---|
-| Now — PR authors | Review and push the scoped local commits below. Refresh downstream locks to the new upstream commits; their current pins contain the September 24 transport fix, not the October 1 patches. Resolve Jobkit/Serve base conflicts and Docling DCO; rerun affected CI after integration. |
+| Now — PR authors | Review and push the scoped local commits below. Refresh Jobkit/Serve locks and ExtractBench's client requirement to the new upstream commits; their current pins contain the September 24 transport fix, not the October 1 patches. Resolve Jobkit/Serve base conflicts and Docling DCO; rerun affected CI after integration. |
 | Now — Docling maintainer | Settle whether [#4201](https://github.com/docling-project/docling/pull/4201) merges first or is superseded. Its head is an ancestor of #4218, so its implementation is already included. It currently conflicts and has failing CI. |
 | Integration — Jobkit/client owners | Coordinate [Jobkit #253](https://github.com/docling-project/docling-jobkit/pull/253), which changes all-failed task status to failure. Verify clients still retrieve structured failed extraction envelopes and item reasons. Its helper is absent from #249; do not silently assume compatibility. |
 | Deployment — SaaS operator | Record deployed revisions, debug-off configuration and the server's 60-second model timeout. Run the original complex case using the default preset; inspect document status/counts and item errors. Confirm backend detail stays private. Then run the corrected 147 single-page cases into fresh output directories using the ExtractBench README. |
@@ -21,13 +21,24 @@ Lift live validation is optional follow-up. Qwen3.5/Gemma remain explicitly defe
 
 ## Current source and PR state
 
-| PR / checkout | Head | GitHub state checked October 1 |
+| PR / checkout | Pushed PR head | GitHub state checked October 1 |
 |---|---|---|
 | [Docling #4218](https://github.com/docling-project/docling/pull/4218) / `docling-second` | `7f237215` | Mergeable; Linux Python 3.10–3.14, docs and packaging checks green; DCO `ACTION_REQUIRED`; Windows/macOS skipped. |
 | [Jobkit #249](https://github.com/docling-project/docling-jobkit/pull/249) / `docling-jobkit` | `af845006` | Conflicts with main; Python 3.10–3.14 checks and DCO green. |
 | [Serve #695](https://github.com/docling-project/docling-serve/pull/695) / `docling-serve` | `b85ead7f` | Conflicts with main; current checks show DCO/Mergify, with no test-CI result. |
 
 The original timeout/connection debug fix is on these named PR heads, not stranded in a worktree. The separate task-completed-callback worktree does not supply extraction metering. PR checks above cover pushed heads, not the new local patches.
+
+The October 1 changes are committed with signoff and no attribution. Nothing has been pushed:
+
+| Checkout | Local implementation commit | Scope |
+|---|---|---|
+| `docling-second` | `c8bccb025f` | HTTP-body privacy, SDK item reasons, regressions and compact plans. |
+| `docling-jobkit` | `0065e095cb` | Scoped callback failure reasons, regression and handoffs. |
+| `docling-serve` | `7b6f5a7f53` | Portable smoke runners/configuration, corrected assertions and handoffs. |
+| `ExtractBench` | `274397b39a` | Self-contained integration, adapter fixes, examples and checks. |
+
+These identify the implementation commits; subsequent documentation-only commits may advance local heads. Smoke runners are now committed. Unrelated untracked files were preserved.
 
 ## Complete, fixed now, and tested
 
@@ -48,13 +59,13 @@ The contract is implemented end to end: top-level `extraction_target` holds sche
 | Serve admission / environment parsing / smoke assertions | **64 passed**. |
 | ExtractBench integration | **6 passed**, self-check and portable examples passed. |
 
-Docling `make validate` and affected Jobkit/Serve lint/type hooks passed. Downstream lock hooks were skipped because dependency declarations/locks were unchanged; Serve's unrelated generated-doc hook was skipped. Existing additional SDK/conversion checks passed in the initial assessment after rerunning socket-denied fixtures with permission. This was not a fresh whole-repository or live SaaS test run. Docling's own Python 3.14 environment still aborts on optional MLX import; the compatible environment avoids that unrelated collection problem.
+Docling `make validate` and all applicable commit hooks passed, including Jobkit/Serve lint/type checks and Serve's generated-doc/Vale hooks. Dependency lock hooks had no changed dependency files to check. Existing additional SDK/conversion checks passed in the initial assessment after rerunning socket-denied fixtures with permission. This was not a fresh whole-repository or live SaaS test run. Docling's own Python 3.14 environment still aborts on optional MLX import; the compatible environment avoids that unrelated collection problem.
 
 Historical September 23 live runs covered Granite/LM Studio and NuExtract3 GGUF/llama-server, PDF/DOCX matrices, Markdown/HTML, expanded S3 prefixes, encryption, page range 2–3, forced schema failure and artifacts before document callbacks. Original temporary logs are unavailable; retain the committed evidence/ledger. Historical broad runs included unrelated parser/cv2, MinIO and async/config/OTEL failures and should not be reported as fully green.
 
 ## ExtractBench handoff
 
-The self-contained integration is `integrations/docling/` in ExtractBench: adapter, pinned client requirements, blank credential example, portable request/complex-target examples, six checks and run instructions. It needs no sibling checkout. Generated links, credentials and outputs are ignored; historical outputs were moved into `integrations/docling/runs/2026-09-24/` and preserved locally.
+The self-contained integration is `integrations/docling/` in ExtractBench: adapter, pinned client requirements, blank credential example, portable request/complex-target examples, six checks and run instructions. It needs no sibling checkout. Its client requirement still pins Docling `7f237215`; refresh it after the October 1 Docling commit is pushed, then replace it with the published release when available. Generated links, credentials and outputs are ignored; historical outputs were moved into `integrations/docling/runs/2026-09-24/` and preserved locally.
 
 The historical 147-case run failed on wrong COS keys (404), not 147 model timeouts. The later one-case smoke reached the VLM and timed out at 20 seconds. Correct example-ID keys and the new 60-second server setting have **no saved successful remote rerun yet**. Client job waiting is a separate timeout. Score raw output using the baseline parser, record validation separately, and preserve complex guidance for comparable scores. The full 370-case benchmark still needs a whole-document strategy; page 1 alone is not comparable.
 
