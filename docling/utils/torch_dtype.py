@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Resolve a preferred torch dtype against what the target device supports."""
 
 import logging
