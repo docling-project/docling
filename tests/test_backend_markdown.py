@@ -239,15 +239,22 @@ def test_code_block_language_detection():
 
 
 def test_convert_table_keeps_inline_code_spans():
-    """A code span inside a GFM table cell is part of that cell.
+    """Code spans inside GFM table cells are parsed and their text is literal.
 
-    The span keeps the words around it, a pipe inside it is not a column
-    separator, and its text is literal, so an entity in it is not decoded.
+    Per the GFM specification, table cells are split on ``|`` before inline
+    elements are processed, so a bare ``|`` inside a code span is treated as a
+    column separator.  A backslash-escaped pipe (``\\|``) inside a code span is
+    resolved to a literal ``|`` by the inline parser and is not a separator.
+
+    What this test verifies:
+    - A code span embedded in running text is preserved as a CodeItem.
+    - A ``\\|`` inside a code span becomes a literal pipe in the cell text.
+    - The text of a code span is literal: HTML entities are not decoded.
     """
     markdown = """| Command | Description |
 | --- | --- |
 | run `build` now | builds it |
-| `a | b` | keeps the pipe |
+| `a \\| b` | keeps the pipe |
 | `&amp;` | stays literal |
 | clean | removes it |
 """
@@ -367,6 +374,10 @@ def test_convert_table_without_leading_pipes_formatted_header():
     delimiter row out of second place. The header then measured one cell, and
     since rows are trimmed to the header's cell count the data cells went with
     it -- a 2x2 table silently arrived as 1x2, first column dropped to prose.
+
+    With RichTableCell support, formatted header cells produce TextItem objects
+    parented under the table (not the document body), so we verify that no text
+    items are rooted directly in the body rather than checking doc.texts == [].
     """
     bold_first = """**Region** | Q1
 --- | ---
@@ -390,7 +401,11 @@ North | 10
         table_data = conv_result.document.tables[0].data
         assert table_data.num_cols == 2
         assert [cell.text for cell in table_data.table_cells] == expected
-        assert conv_result.document.texts == []
+        # No stray items should be emitted directly under the document body;
+        # formatted header cells now live inside the table as RichTableCell
+        # children, not as top-level prose.
+        body_child_crefs = {ref.cref for ref in conv_result.document.body.children}
+        assert body_child_crefs == {"#/tables/0"}
 
 
 def test_convert_pipes_in_prose_stay_text():
@@ -798,3 +813,213 @@ def test_convert_table_cell_whitespace_around_inline_emphasis():
         "italic and bold",
         "w",
     ]
+
+
+def test_rich_table_cell_bold_and_italic():
+    """Cells with bold or italic content are emitted as RichTableCell.
+
+    The ``cell.text`` property returns the plain-text summary; the rich
+    content (formatting and inline children) is accessible through
+    ``RichTableCell.ref``.
+    """
+    from docling_core.types.doc import Formatting, RichTableCell, TableCell
+
+    markdown = (
+        "| **Header** | Plain |\n"
+        "| --- | --- |\n"
+        "| *italic* value | plain value |\n"
+        "| **bold** and normal | data |\n"
+        "| plain only | also plain |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    assert len(conv_result.document.tables) == 1
+    table = conv_result.document.tables[0]
+    cells = table.data.table_cells
+
+    # Header row: first cell is rich (bold), second is plain
+    assert isinstance(cells[0], RichTableCell)
+    assert cells[0].text == "Header"
+    assert cells[0].column_header is True
+    assert isinstance(cells[1], TableCell)
+    assert not isinstance(cells[1], RichTableCell)
+    assert cells[1].text == "Plain"
+
+    # Data row 1: first cell has italic
+    italic_cell = cells[2]
+    assert isinstance(italic_cell, RichTableCell)
+    assert italic_cell.text == "italic value"
+    doc = conv_result.document
+    group = italic_cell.ref.resolve(doc)
+    inline = group.children[0].resolve(doc)
+    items = [ref.resolve(doc) for ref in inline.children]
+    fmt_items = [
+        i for i in items if getattr(i, "formatting", None) and i.formatting.italic
+    ]
+    assert fmt_items, "Expected at least one italic TextItem inside the cell"
+
+    # Data row 2: mixed bold + plain
+    mixed_cell = cells[4]
+    assert isinstance(mixed_cell, RichTableCell)
+    assert mixed_cell.text == "bold and normal"
+
+    # Data row 3: fully plain — plain TableCell
+    plain_cell = cells[6]
+    assert not isinstance(plain_cell, RichTableCell)
+    assert plain_cell.text == "plain only"
+
+
+def test_rich_table_cell_inline_code():
+    """Code spans in table cells are preserved as CodeItem objects.
+
+    The CodeItem text is literal — HTML entities inside a code span are not
+    decoded.  ``cell.text`` provides the plain-text summary of the whole cell.
+    """
+    from docling_core.types.doc import CodeItem, RichTableCell
+
+    markdown = (
+        "| Command | Result |\n"
+        "| --- | --- |\n"
+        "| run `build` now | ok |\n"
+        "| check `&amp;` entity | literal |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    doc = conv_result.document
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+
+    # "run `build` now" → RichTableCell; cell.text is the plain-text summary
+    run_cell = cells[2]
+    assert isinstance(run_cell, RichTableCell)
+    assert run_cell.text == "run build now"
+
+    # Verify a CodeItem exists inside the cell with text "build"
+    group = run_cell.ref.resolve(doc)
+    inline = group.children[0].resolve(doc)
+    code_items = [
+        ref.resolve(doc)
+        for ref in inline.children
+        if isinstance(ref.resolve(doc), CodeItem)
+    ]
+    assert len(code_items) == 1
+    assert code_items[0].text == "build"
+
+    # "check `&amp;` entity" — cell.text uses literal code text (not decoded)
+    entity_cell = cells[4]
+    assert isinstance(entity_cell, RichTableCell)
+    assert entity_cell.text == "check &amp; entity"
+
+    # The CodeItem inside the entity cell must hold the un-decoded entity
+    group2 = entity_cell.ref.resolve(doc)
+    inline2 = group2.children[0].resolve(doc)
+    code_items2 = [
+        ref.resolve(doc)
+        for ref in inline2.children
+        if isinstance(ref.resolve(doc), CodeItem)
+    ]
+    assert len(code_items2) == 1
+    assert code_items2[0].text == "&amp;"
+
+
+def test_rich_table_cell_hyperlink():
+    """Links inside table cells are stored as RichTableCell with hyperlink."""
+    from docling_core.types.doc import RichTableCell
+
+    markdown = (
+        "| Source | Notes |\n"
+        "| --- | --- |\n"
+        "| [Docling](https://github.com/docling-project/docling) | repo |\n"
+        "| plain | text |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    doc = conv_result.document
+    cells = doc.tables[0].data.table_cells
+
+    # Link cell must be rich
+    link_cell = cells[2]
+    assert isinstance(link_cell, RichTableCell)
+    assert link_cell.text == "Docling"
+
+    # The TextItem inside should carry the hyperlink
+    group = link_cell.ref.resolve(doc)
+    inline = group.children[0].resolve(doc)
+    linked = [ref.resolve(doc) for ref in inline.children if ref.resolve(doc).hyperlink]
+    assert linked, "Expected a TextItem with a hyperlink inside the link cell"
+    assert "docling-project" in str(linked[0].hyperlink)
+
+
+def test_rich_table_cell_autolinks():
+    """Angle-bracket autolinks and bare GFM URLs in cells become RichTableCell.
+
+    All three link syntaxes supported in GFM table cells must produce a
+    ``RichTableCell`` whose inline ``TextItem`` carries the hyperlink:
+
+    - ``<https://url>`` — CommonMark angle-bracket autolink
+      (``marko.inline.AutoLink``)
+    - ``https://url`` — GFM bare-URL extension (``gfm_el.Url``, a subclass
+      of ``AutoLink``)
+    - ``[label](url)`` — explicit inline link (``marko.inline.Link``)
+    """
+    from docling_core.types.doc import RichTableCell
+
+    markdown = (
+        "| Type | URL |\n"
+        "| --- | --- |\n"
+        "| angle bracket | <https://example.com/ab> |\n"
+        "| gfm bare | https://example.com/gfm |\n"
+        "| explicit | [label](https://example.com/ex) |\n"
+        "| plain | no link |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    doc = conv_result.document
+    cells = doc.tables[0].data.table_cells
+
+    def _hyperlinks(cell):
+        group = cell.ref.resolve(doc)
+        inline = group.children[0].resolve(doc)
+        return [
+            str(ref.resolve(doc).hyperlink)
+            for ref in inline.children
+            if ref.resolve(doc).hyperlink
+        ]
+
+    # Angle-bracket autolink (row 1, col 1 → cells[3])
+    ab_cell = cells[3]
+    assert isinstance(ab_cell, RichTableCell)
+    assert ab_cell.text == "https://example.com/ab"
+    assert any("example.com/ab" in h for h in _hyperlinks(ab_cell))
+
+    # GFM bare URL (row 2, col 1 → cells[5])
+    gfm_cell = cells[5]
+    assert isinstance(gfm_cell, RichTableCell)
+    assert gfm_cell.text == "https://example.com/gfm"
+    assert any("example.com/gfm" in h for h in _hyperlinks(gfm_cell))
+
+    # Explicit link — label text, not the URL itself (row 3, col 1 → cells[7])
+    ex_cell = cells[7]
+    assert isinstance(ex_cell, RichTableCell)
+    assert ex_cell.text == "label"
+    assert any("example.com/ex" in h for h in _hyperlinks(ex_cell))
+
+    # Plain cell — no RichTableCell (row 4, col 1 → cells[9])
+    plain_cell = cells[9]
+    assert not isinstance(plain_cell, RichTableCell)
+
+
+def test_rich_table_cell_no_stray_body_items():
+    """Items created for rich table cells must not appear at the body level."""
+    markdown = "| **Bold** | *Italic* | plain |\n| --- | --- | --- |\n| a | b | c |\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    doc = conv_result.document
+    # The only direct body child must be the table itself.
+    body_crefs = {ref.cref for ref in doc.body.children}
+    assert body_crefs == {"#/tables/0"}
