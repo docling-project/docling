@@ -576,3 +576,29 @@ def test_chandra_empty_html_is_not_a_successful_transcription():
         _parse_fragment("<hr>")
     blank = _parse_fragment("", "Blank-Page")
     assert not blank.texts
+
+
+def test_chandra_equation_block_with_prose_becomes_text():
+    # Chandra labels exercise lines ("1. Compute <math>...</math> .") as
+    # Equation-Block; a formula cannot hold prose, so the block is text with an
+    # inline formula run.
+    doc = _parse_fragment(
+        "1. Compute <math>\\int_0^1 x\\,dx</math> .", "Equation-Block"
+    )
+    assert [(t.label, t.text) for t in doc.texts] == [
+        (DocItemLabel.TEXT, "1. Compute"),
+        (DocItemLabel.FORMULA, "\\int_0^1 x\\,dx"),
+        (DocItemLabel.TEXT, "."),
+    ]
+    dclg = doc.export_to_doclang()
+    assert dclg.count("<formula>") == 1
+    assert dclg.count("<location") == 4
+    # A pure equation block stays one formula.
+    doc = _parse_fragment("<math>E = mc^2</math>", "Equation-Block")
+    assert [(t.label, t.text) for t in doc.texts] == [
+        (DocItemLabel.FORMULA, "E = mc^2")
+    ]
+    # So does math with only punctuation around it.
+    doc = _parse_fragment("<math>R = 1</math> ,", "Equation-Block")
+    assert [(t.label, t.text) for t in doc.texts] == [(DocItemLabel.FORMULA, "R = 1 ,")]
+    assert doc.texts[0].prov

@@ -410,6 +410,22 @@ class _ChandraDocumentBuilder:
             if label in {DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER}
             else ContentLayer.BODY
         )
+        if len(merged) > 1 and label == DocItemLabel.FORMULA:
+            if all(
+                run.label == DocItemLabel.FORMULA
+                or not any(ch.isalnum() for ch in run.text)
+                for run in merged
+            ):
+                # Math with only punctuation around it (`R = 1` + `,`) is one formula.
+                merged = [
+                    _Run(
+                        text=" ".join(run.text.strip() for run in merged),
+                        label=DocItemLabel.FORMULA,
+                    )
+                ]
+            else:
+                # An equation block mixing prose and inline math is text, not one formula.
+                label = DocItemLabel.TEXT
         if len(merged) > 1:
             if label != DocItemLabel.TEXT:
                 parent = self.doc.add_text(
