@@ -1054,7 +1054,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _get_render_html_text(self) -> str:
         if self._raw_html_bytes is None:
             return ""
-        return self._raw_html_bytes.decode("utf-8", errors="replace")
+        # A browser reads the bytes with the encoding the document declares
+        # (``<meta charset>`` or an HTTP header), so the stream we hand to
+        # ``page.set_content`` has to be decoded the same way. Reuse the
+        # encoding BeautifulSoup already detected for these bytes instead of
+        # assuming UTF-8, which garbles every non-ASCII character of a legacy
+        # encoded stream.
+        encoding = (
+            self.soup.original_encoding if self.soup is not None else None
+        ) or "utf-8"
+        return self._raw_html_bytes.decode(encoding, errors="replace")
 
     def _inject_base_tag(self, html_text: str, base_url: Optional[str]) -> str:
         if not base_url:
