@@ -1,7 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Regression tests for chart CSV table header semantics."""
+"""Regression tests for chart extraction presets and CSV table semantics."""
+
+import sys
+from types import ModuleType
 
 import pandas as pd
 import pytest
@@ -16,13 +19,90 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
+from docling.datamodel.vlm_engine_options import (
+    AutoInlineVlmEngineOptions,
+    MlxVlmEngineOptions,
+)
+from docling.models.inference_engines.vlm.auto_inline_engine import (
+    AutoInlineVlmEngine,
+)
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionVlmEngineModel,
     _dataframe_to_tabledata,
     _extract_csv_to_dataframe,
 )
+
+
+def test_granite_vision_v4_mlx_preset_uses_official_model() -> None:
+    mlx_options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4_mlx")
+    default_options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4")
+
+    assert isinstance(mlx_options.engine_options, MlxVlmEngineOptions)
+    assert isinstance(default_options.engine_options, AutoInlineVlmEngineOptions)
+    assert mlx_options.model_spec.is_engine_supported(VlmEngineType.MLX)
+    assert mlx_options.model_spec.get_engine_config(VlmEngineType.MLX).repo_id == (
+        "ibm-granite/granite-vision-4.1-4b"
+    )
+    assert mlx_options.model_spec.get_engine_config(VlmEngineType.MLX).revision == (
+        default_options.model_spec.revision
+    )
+    assert mlx_options.output_format == default_options.output_format
+    assert (
+        default_options.model_spec.get_engine_config(
+            VlmEngineType.MLX
+        ).min_engine_version
+        == "0.7.0"
+    )
+    assert "granite_vision_v4_mlx" in ChartExtractionVlmEngineOptions.list_preset_ids()
+
+
+@pytest.mark.parametrize(
+    ("system", "device", "mlx_version_ok", "expected_engine"),
+    [
+        ("Darwin", "mps", True, VlmEngineType.MLX),
+        ("Darwin", "mps", False, VlmEngineType.TRANSFORMERS),
+        ("Darwin", "cpu", True, VlmEngineType.TRANSFORMERS),
+        ("Linux", "cpu", True, VlmEngineType.TRANSFORMERS),
+    ],
+)
+def test_granite_vision_v4_auto_selects_local_engine(
+    monkeypatch: pytest.MonkeyPatch,
+    system: str,
+    device: str,
+    mlx_version_ok: bool,
+    expected_engine: VlmEngineType,
+) -> None:
+    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4")
+    assert isinstance(options.engine_options, AutoInlineVlmEngineOptions)
+    engine = AutoInlineVlmEngine(
+        options=options.engine_options,
+        accelerator_options=AcceleratorOptions(),
+        artifacts_path=None,
+    )
+    engine.model_spec = options.model_spec
+
+    monkeypatch.setattr("platform.system", lambda: system)
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.auto_inline_engine.decide_device",
+        lambda *args, **kwargs: device,
+    )
+    monkeypatch.setitem(sys.modules, "mlx_vlm", ModuleType("mlx_vlm"))
+
+    def version_satisfied(engine_type: VlmEngineType, min_version: str | None) -> bool:
+        assert engine_type == VlmEngineType.MLX
+        assert min_version == "0.7.0"
+        return mlx_version_ok
+
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.auto_inline_engine.engine_version_satisfied",
+        version_satisfied,
+    )
+
+    assert engine._select_engine() == expected_engine
 
 
 @pytest.mark.parametrize(

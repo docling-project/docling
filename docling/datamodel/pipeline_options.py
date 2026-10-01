@@ -1245,7 +1245,7 @@ _default_code_formula_options = CodeFormulaVlmOptions.from_preset("codeformulav2
 _default_chart_extraction_options = ChartExtractionVlmEngineOptions.from_preset(
     "granite_vision_v4"
 )
-"""Default chart extraction options using granite_vision_v4 preset with Transformers runtime."""
+"""Default chart extraction options using granite_vision_v4 with automatic runtime selection."""
 
 
 # Define an enum for the backend options

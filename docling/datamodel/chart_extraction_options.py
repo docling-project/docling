@@ -54,7 +54,7 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
 
     Examples::
 
-        # Default preset (granite_vision_v4, Transformers engine)
+        # Default preset (granite_vision_v4, automatic local engine selection)
         options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4")
 
         # Override engine at preset time
@@ -158,6 +158,9 @@ ChartExtractionVlmEngineOptions.register_preset(
 )
 ChartExtractionVlmEngineOptions.register_preset(
     _stage_model_specs.CHART_EXTRACTION_GRANITE_VISION_V4
+)
+ChartExtractionVlmEngineOptions.register_preset(
+    _stage_model_specs.CHART_EXTRACTION_GRANITE_VISION_V4_MLX
 )
 
 

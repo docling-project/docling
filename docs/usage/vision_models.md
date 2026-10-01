@@ -57,11 +57,18 @@ behavior. Picture classification is enabled automatically when chart extraction
 is requested. Picture description and classification can also be enabled with
 `--enrich-picture-description` and `--enrich-picture-classes`.
 
-The default chart model is Granite Vision 4.1 4B. To use the older CSV-only
+The default chart model is Granite Vision 4.1 4B. On Apple Silicon, it uses
+MLX when `mlx-vlm>=0.7.0` and MPS are available; otherwise it uses Transformers.
+To use the older CSV-only
 `ibm-granite/granite-vision-3.3-2b-chart2csv-preview` model, add
 `--chart-extraction-preset granite_vision` to the command. In Python, set
 `chart_extraction_options=ChartExtractionVlmEngineOptions.from_preset("granite_vision")`
 on `VlmPipelineOptions` or `PdfPipelineOptions`.
+
+To require MLX explicitly, select `--chart-extraction-preset granite_vision_v4_mlx`.
+This preset loads the same official
+`ibm-granite/granite-vision-4.1-4b` repository. In Python, use
+`ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4_mlx")`.
 
 ## Available local models
 

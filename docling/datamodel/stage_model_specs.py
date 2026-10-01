@@ -1978,6 +1978,7 @@ CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
         trust_remote_code=True,
         supported_engines={
             VlmEngineType.TRANSFORMERS,
+            VlmEngineType.MLX,
             VlmEngineType.API_LMSTUDIO,
             VlmEngineType.API_OLLAMA,
             VlmEngineType.API_OPENAI,
@@ -1989,6 +1990,7 @@ CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                 },
             ),
+            VlmEngineType.MLX: EngineModelConfig(min_engine_version="0.7.0"),
         },
         api_overrides={
             VlmEngineType.API_LMSTUDIO: ApiModelConfig(
@@ -2003,6 +2005,16 @@ CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_engine_type=VlmEngineType.TRANSFORMERS,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
     stage_options={"output_format": "granite_vision_charts"},
+)
+
+CHART_EXTRACTION_GRANITE_VISION_V4_MLX = StageModelPreset(
+    preset_id="granite_vision_v4_mlx",
+    name="Granite-Vision-4.1-4B (MLX)",
+    description="IBM Granite Vision 4.1-4B chart extraction on Apple Silicon",
+    model_spec=CHART_EXTRACTION_GRANITE_VISION_V4.model_spec,
+    scale=CHART_EXTRACTION_GRANITE_VISION_V4.scale,
+    default_engine_type=VlmEngineType.MLX,
+    stage_options=CHART_EXTRACTION_GRANITE_VISION_V4.stage_options,
 )
