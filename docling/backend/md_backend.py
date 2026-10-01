@@ -48,12 +48,6 @@ from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import detect_code_language
 from docling.utils.text_decoding import decode_text
 
-# marko is only installed by the `format-markdown` extra, but DocumentConverter
-# imports every backend eagerly. Importing it at module load would therefore
-# break `import docling` on installs that omit the extra (the slim packages in
-# particular). Guard the imports like the opendocument and xbrl backends do, and
-# surface the failure only when Markdown is actually parsed.
-# See https://github.com/docling-project/docling/issues/3613.
 _MARKO_AVAILABLE: bool = False
 _MARKO_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
@@ -146,20 +140,20 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         italic: bool = False,
         strikethrough: bool = False,
     ) -> Formatting:
-        """Return a copy of *current* with the requested flag(s) set.
+        """Return a copy of `current` with the requested flag(s) set.
 
-        If *current* is ``None`` a fresh ``Formatting`` instance is created.
+        If `current` is `None` a fresh `Formatting` instance is created.
         Always returns a new object so the caller's reference is never mutated
         in place.
 
         Args:
-            current: The inherited ``Formatting`` state, or ``None``.
-            bold: Set the bold flag when ``True``.
-            italic: Set the italic flag when ``True``.
-            strikethrough: Set the strikethrough flag when ``True``.
+            current: The inherited `Formatting` state, or `None`.
+            bold: Set the bold flag when `True`.
+            italic: Set the italic flag when `True`.
+            strikethrough: Set the strikethrough flag when `True`.
 
         Returns:
-            A ``Formatting`` instance with the requested flag(s) applied.
+            A `Formatting` instance with the requested flag(s) applied.
         """
         fmt = deepcopy(current) if current else Formatting()
         if bold:
@@ -172,18 +166,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _resolve_link_dest(dest: str) -> Optional[Union[AnyUrl, Path]]:
-        """Parse a link destination string into an ``AnyUrl`` or ``Path``.
+        """Parse a link destination string into an `AnyUrl` or `Path`.
 
         Shared between the paragraph inline-element walker and the table-cell
         inline walker so that link-destination resolution is not duplicated.
 
         Args:
-            dest: The raw destination string from a marko ``Link`` or
-                ``AutoLink`` element.
+            dest: The raw destination string from a marko `Link` or
+                `AutoLink` element.
 
         Returns:
-            An ``AnyUrl`` or ``Path`` instance, or ``None`` when the
-            destination cannot be parsed.
+            An `AnyUrl` or `Path` instance, or `None` when the destination
+            cannot be parsed.
         """
         return TypeAdapter(Optional[Union[AnyUrl, Path]]).validate_python(dest)
 
@@ -293,21 +287,16 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return MarkdownDocumentBackend._ENTITY_RE.sub(replace, text)
 
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
-        # This regex will match any sequence of underscores
         pattern = r"_+"
 
         def replace_match(match):
-            underscore_sequence = match.group(
-                0
-            )  # Get the full match (sequence of underscores)
+            underscore_sequence = match.group(0)
 
-            # Shorten the sequence if it exceeds max_length
             if len(underscore_sequence) > max_length:
                 return "_" * max_length
             else:
-                return underscore_sequence  # Leave it unchanged if it is shorter or equal to max_length
+                return underscore_sequence
 
-        # Use re.sub to replace long underscore sequences
         shortened_text = re.sub(pattern, replace_match, markdown_text)
 
         if len(shortened_text) != len(markdown_text):
@@ -345,10 +334,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         _log.debug("Starting MarkdownDocumentBackend...")
 
-        # Markdown file:
         self.path_or_stream = path_or_stream
         self.valid = True
-        self.markdown = ""  # To store original Markdown string
+        self.markdown = ""
 
         self.in_table = False
         self.in_pipeless_table = False
@@ -451,8 +439,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             num_rows = len(result_table)
             num_cols = len(result_table[0])
             self.in_table = False
-            self.md_table_buffer = []  # clean table markdown buffer
-            # Initialize Docling TableData
+            self.md_table_buffer = []
             table_data = TableData(
                 num_rows=num_rows, num_cols=num_cols, table_cells=tcells
             )
@@ -462,14 +449,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _cell_plain_text(cell: _gfm_el.TableCell) -> str:
-        """Return the plain-text content of a GFM ``TableCell``.
+        """Return the plain-text content of a GFM `TableCell`.
 
-        Unlike ``_inline_text``, this method handles ``CodeSpan`` nodes as
-        literal text (no HTML unescaping) and HTML-unescapes only ``RawText``
-        and ``Literal`` nodes.
+        Unlike `_inline_text`, this method treats `CodeSpan` nodes as literal
+        text (no HTML unescaping) and HTML-unescapes only `RawText` and
+        `Literal` nodes.
 
         Args:
-            cell: A parsed GFM ``TableCell`` element.
+            cell: A parsed GFM `TableCell` element.
 
         Returns:
             The plain-text string for the cell, without markup markers.
@@ -477,7 +464,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         def _node_text(node) -> str:
             if isinstance(node, marko.inline.CodeSpan):
-                # Code span content is literal — do not HTML-unescape.
                 return str(node.children)
             children = getattr(node, "children", None)
             if isinstance(children, str):
@@ -492,15 +478,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         A cell is considered rich when it contains any inline element that
         carries formatting (bold, italic, code span, link, image, or
-        strikethrough).  Plain cells that hold only ``RawText`` (or
-        ``Literal``) nodes are not rich.
+        strikethrough). Plain cells that hold only `RawText` or `Literal`
+        nodes are not rich.
 
         Args:
-            cell: A parsed GFM ``TableCell`` element whose ``children``
-                contain marko inline nodes.
+            cell: A parsed GFM `TableCell` element whose `children` contain
+                marko inline nodes.
 
         Returns:
-            ``True`` when rich inline content is detected, ``False`` otherwise.
+            `True` when rich inline content is detected, `False` otherwise.
         """
         rich_inline_types = (
             marko.inline.StrongEmphasis,
@@ -510,7 +496,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             marko.inline.AutoLink,
             marko.inline.Image,
         )
-        # Include GFM Strikethrough when available.
         if hasattr(_gfm_el, "Strikethrough"):
             rich_inline_types = (*rich_inline_types, _gfm_el.Strikethrough)
 
@@ -530,20 +515,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         parent_item: Optional[NodeItem],
     ) -> None:
-        """Convert a parsed GFM ``Table`` AST node into a Docling table.
+        """Convert a parsed GFM `Table` AST node into a Docling table.
 
-        Each cell whose content is plain text is stored as a ``TableCell``.
-        Cells that contain inline formatting (bold, italic, code spans, links
-        …) are stored as ``RichTableCell`` objects.  The cell's inline
-        children are collected in an ``InlineGroup`` so that the markdown
-        serializer renders them correctly on a single line.
+        Each cell whose content is plain text is stored as a `TableCell`.
+        Cells that contain inline formatting (bold, italic, code spans, links,
+        …) are stored as `RichTableCell` objects. The cell's inline children
+        are collected in an `InlineGroup` so that the markdown serializer
+        renders them correctly on a single line.
 
         Args:
-            table: The GFM ``Table`` element produced by the marko GFM
-                extension.
-            doc: The ``DoclingDocument`` being populated.
+            table: The GFM `Table` element produced by the marko GFM extension.
+            doc: The `DoclingDocument` being populated.
             parent_item: The docling node that will be the parent of the
-                resulting ``TableItem``.
+                resulting `TableItem`.
         """
         rows = table.children
         num_rows = len(rows)
@@ -555,16 +539,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         docling_table: TableItem = doc.add_table(data=table_data, parent=parent_item)
 
         for row_idx, row in enumerate(rows):
-            is_header_row = row_idx == 0  # GFM: first row is always the header
+            is_header_row = row_idx == 0  # first row is the header in GFM
             cells = row.children
             for col_idx, cell in enumerate(cells):
-                # Compute the plain-text representation of the cell.
                 cell_text = MarkdownDocumentBackend._cell_plain_text(cell).strip()
 
                 if MarkdownDocumentBackend._cell_has_rich_content(cell):
-                    # Create an InlineGroup to hold the cell's inline items.
-                    # Items placed in an InlineGroup are serialized on a single
-                    # line, which is the correct behaviour for table cell content.
                     inline_group = doc.add_inline_group(parent=docling_table)
                     inline_refs: list[RefItem] = []
                     for child in cell.children:
@@ -581,14 +561,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         group_name = (
                             f"rich_cell_group_{len(doc.tables) - 1}_{col_idx}_{row_idx}"
                         )
-                        # Wrap the InlineGroup in an UNSPECIFIED group so that
-                        # RichTableCell.ref validates (parent must be the table).
+                        # RichTableCell.ref must point to a group whose parent
+                        # is the table; wrap the InlineGroup accordingly.
                         cell_group = doc.add_group(
                             label=GroupLabel.UNSPECIFIED,
                             name=group_name,
                             parent=docling_table,
                         )
-                        # Move the InlineGroup under the cell group.
                         cell_group.children.append(inline_group.get_ref())
                         docling_table.children.remove(inline_group.get_ref())
                         inline_group.parent = cell_group.get_ref()
@@ -609,8 +588,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                             ),
                         )
                     else:
-                        # Fallback: no items were created (e.g. empty rich cell).
-                        # Clean up the empty InlineGroup.
+                        # No items created; discard the empty InlineGroup.
                         if inline_group.get_ref() in docling_table.children:
                             docling_table.children.remove(inline_group.get_ref())
                         doc.groups.remove(inline_group)
@@ -657,21 +635,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         """Process a single inline element from a GFM table cell.
 
         Recursively walks the inline AST of a table cell and creates the
-        appropriate Docling text or code items as children of ``inline_parent``,
-        collecting their references in ``collected_refs``.  Only inline content
+        appropriate Docling text or code items as children of `inline_parent`,
+        collecting their references in `collected_refs`. Only inline content
         permitted by the GFM specification inside a table cell is processed;
         block-level nodes are ignored.
 
         Args:
             element: A marko inline AST node.
-            doc: The ``DoclingDocument`` being populated.
-            inline_parent: The ``InlineGroup`` (or other ``NodeItem``) to use
-                as the parent for newly created text and code items.
-            collected_refs: Accumulator for the ``RefItem`` values of every
+            doc: The `DoclingDocument` being populated.
+            inline_parent: The `InlineGroup` (or other `NodeItem`) to use as
+                the parent for newly created text and code items.
+            collected_refs: Accumulator for the `RefItem` values of every
                 top-level doc item created while processing this cell.
-            formatting: Inherited ``Formatting`` from ancestor inline nodes
+            formatting: Inherited `Formatting` from ancestor inline nodes
                 (e.g. bold wrapping a link).
-            hyperlink: Inherited hyperlink URL from an ancestor ``Link`` node.
+            hyperlink: Inherited hyperlink URL from an ancestor `Link` node.
         """
         if isinstance(element, marko.inline.StrongEmphasis):
             formatting = MarkdownDocumentBackend._apply_formatting(
@@ -702,9 +680,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         elif isinstance(element, marko.inline.Link | marko.inline.AutoLink):
-            # Covers explicit links [text](url), angle-bracket autolinks
-            # <https://url>, and the GFM bare-URL extension (gfm_el.Url is a
-            # subclass of AutoLink).
+            # AutoLink covers <https://url> and the GFM bare-URL form (gfm_el.Url
+            # subclasses AutoLink).
             link_hyperlink = MarkdownDocumentBackend._resolve_link_dest(element.dest)
             for child in element.children:
                 self._iterate_cell_inline(
@@ -717,8 +694,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         elif isinstance(element, marko.inline.CodeSpan):
-            # Code content is literal; strip only the code text itself (not
-            # surrounding whitespace — there is none for a CodeSpan).
             snippet = str(element.children).strip()
             if snippet:
                 item = doc.add_code(
@@ -731,9 +706,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             raw = element.children if isinstance(element.children, str) else ""
-            # Strip whitespace to match the regular inline-group strategy used
-            # in paragraphs and list items: the serializer inserts a separator
-            # between adjacent items, so inter-run spaces must not be stored.
             text = unescape(raw.strip())
             if text:
                 item = doc.add_text(
@@ -745,10 +717,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
                 collected_refs.append(item.get_ref())
 
-        elif (
-            _MARKO_AVAILABLE
-            and hasattr(_gfm_el, "Strikethrough")
-            and isinstance(element, _gfm_el.Strikethrough)
+        elif hasattr(_gfm_el, "Strikethrough") and isinstance(
+            element, _gfm_el.Strikethrough
         ):
             formatting = MarkdownDocumentBackend._apply_formatting(
                 formatting, strikethrough=True
@@ -780,7 +750,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             collected_refs.append(pic.get_ref())
 
         else:
-            # Any other inline node: recurse into its children (if any).
             for child in getattr(element, "children", []):
                 if not isinstance(child, str):
                     self._iterate_cell_inline(
@@ -913,8 +882,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if element in visited:
             return
 
-        # Iterates over all elements in the AST
-        # Check for different element types and process relevant details
         if (
             isinstance(element, marko.block.Heading)
             or isinstance(element, marko.block.SetextHeading)
@@ -1069,7 +1036,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     cell_text = self._escape_pipes(cell_text)
                 self._append_table_text(cell_text)
             elif snippet_text:
-                # Not in table - close any pending table and process as regular text
                 self._close_table(doc)
 
                 if creation_stack:
@@ -1205,7 +1171,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 doc=doc,
                 parent_item=parent_item,
             )
-            # The GFM table is fully handled here; skip child iteration.
+            # Mark visited to skip the default child-iteration loop below.
             visited.add(element)
             return
 
@@ -1235,7 +1201,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             marko.inline.RawText,
         )
 
-        # Iterate through the element's children (if any)
         if hasattr(element, "children") and not isinstance(
             element, processed_block_types
         ):
@@ -1326,14 +1291,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         if self.is_valid():
-            # Parse the markdown into an abstract syntax tree (AST).
-            # The GFM extension is used so that tables are parsed as proper
-            # Table/TableRow/TableCell nodes with their inline children intact,
-            # which allows formatting inside cells (bold, italic, links, …) to
-            # be preserved as RichTableCell objects.
+            # The GFM extension gives tables a structured AST with inline
+            # children per cell, enabling RichTableCell for formatted content.
             marko_parser = Markdown(extensions=["gfm"])
             parsed_ast = marko_parser.parse(self.markdown)
-            # Start iterating from the root of the AST
             self._iterate_elements(
                 element=parsed_ast,
                 depth=0,
@@ -1346,11 +1307,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 list_item_counter_by_ref={},
                 list_last_item_by_ref={},
             )
-            self._close_table(doc=doc)  # handle any last hanging table
+            self._close_table(doc=doc)  # flush any trailing text-buffer table
 
-            # if HTML blocks were detected, export to HTML and delegate to HTML backend
             if self._html_blocks > 0:
-                # export to HTML
                 html_backend_cls = HTMLDocumentBackend
                 html_str = doc.export_to_html()
 
