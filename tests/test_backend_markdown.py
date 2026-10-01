@@ -968,7 +968,7 @@ def test_rich_table_cell_bold_and_italic():
     content (formatting and inline children) is accessible through
     ``RichTableCell.ref``.
     """
-    from docling_core.types.doc import Formatting, RichTableCell, TableCell
+    from docling_core.types.doc import Formatting, RichTableCell, TableCell, TextItem
 
     markdown = (
         "| **Header** | Plain |\n"
@@ -1001,7 +1001,9 @@ def test_rich_table_cell_bold_and_italic():
     inline = group.children[0].resolve(doc)
     items = [ref.resolve(doc) for ref in inline.children]
     fmt_items = [
-        i for i in items if getattr(i, "formatting", None) and i.formatting.italic
+        i
+        for i in items
+        if isinstance(i, TextItem) and i.formatting is not None and i.formatting.italic
     ]
     assert fmt_items, "Expected at least one italic TextItem inside the cell"
 
