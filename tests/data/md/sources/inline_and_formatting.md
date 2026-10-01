@@ -35,3 +35,4 @@ Some *`formatted_code`*
 | **A** **B**      | z                |
 | *italic* and **bold** | w           |
 | run `build` now  | code in a cell   |
+| visit [Docling](https://github.com/docling-project/docling) | link in a cell   |

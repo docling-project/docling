@@ -277,10 +277,27 @@ groups:
   parent:
     $ref: '#/tables/0'
   self_ref: '#/groups/26'
+- children:
+  - $ref: '#/texts/63'
+  - $ref: '#/texts/64'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/28'
+  self_ref: '#/groups/27'
+- children:
+  - $ref: '#/groups/27'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_7
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/28'
 key_value_items: []
 name: inline_and_formatting
 origin:
-  binary_hash: 4724758855956816018
+  binary_hash: 12173229376050275371
   filename: inline_and_formatting.md
   mimetype: text/markdown
 pages: {}
@@ -297,6 +314,7 @@ tables:
   - $ref: '#/groups/22'
   - $ref: '#/groups/24'
   - $ref: '#/groups/26'
+  - $ref: '#/groups/28'
   content_layer: body
   data:
     grid:
@@ -454,8 +472,30 @@ tables:
         start_col_offset_idx: 1
         start_row_offset_idx: 6
         text: code in a cell
+    - - col_span: 1
+        column_header: false
+        end_col_offset_idx: 1
+        end_row_offset_idx: 8
+        fillable: false
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 0
+        start_row_offset_idx: 7
+        text: visit Docling
+      - col_span: 1
+        column_header: false
+        end_col_offset_idx: 2
+        end_row_offset_idx: 8
+        fillable: false
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 1
+        start_row_offset_idx: 7
+        text: link in a cell
     num_cols: 2
-    num_rows: 7
+    num_rows: 8
     orientation: rot_0
     table_cells:
     - col_span: 1
@@ -626,6 +666,30 @@ tables:
       start_col_offset_idx: 1
       start_row_offset_idx: 6
       text: code in a cell
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 1
+      end_row_offset_idx: 8
+      fillable: false
+      ref:
+        $ref: '#/groups/28'
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 7
+      text: visit Docling
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 2
+      end_row_offset_idx: 8
+      fillable: false
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 7
+      text: link in a cell
   footnotes: []
   label: table
   parent:
@@ -1377,4 +1441,23 @@ texts:
   prov: []
   self_ref: '#/texts/62'
   text: now
+- children: []
+  content_layer: body
+  label: text
+  orig: visit
+  parent:
+    $ref: '#/groups/27'
+  prov: []
+  self_ref: '#/texts/63'
+  text: visit
+- children: []
+  content_layer: body
+  hyperlink: https://github.com/docling-project/docling
+  label: text
+  orig: Docling
+  parent:
+    $ref: '#/groups/27'
+  prov: []
+  self_ref: '#/texts/64'
+  text: Docling
 version: 1.10.0

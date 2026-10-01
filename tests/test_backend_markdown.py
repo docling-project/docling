@@ -961,6 +961,8 @@ def test_line_break_does_not_cross_block_boundary():
         ("text", "block"),
         ("text", "After"),
     ]
+
+
 def test_rich_table_cell_bold_and_italic():
     """Cells with bold or italic content are emitted as RichTableCell.
 
