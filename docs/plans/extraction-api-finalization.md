@@ -59,7 +59,7 @@ The contract is implemented end to end: top-level `extraction_target` holds sche
 
 Required lint/type/lock/generated-doc checks passed. The Docling/main merge's added-file size hook was skipped only for main's already-committed oversized PDF fixture; subsequent scoped validation passed normally. These focused selections overlap and are not a whole-repository or fresh live SaaS run. Python 3.12 avoids the workstation's optional MLX collection abort.
 
-Serve code/package CI runs on extraction branch pushes; container builds are excluded for this branch. Its installed-wheel job exports dependencies from `uv.lock` and imports the wheel with Python isolated mode: released dependencies lack `ExtractSourcesRequest`, while checking out the exporter source otherwise shadows the wheel and its packaged UI. Lock regeneration uses Serve CI's pinned uv 0.12.13.
+Serve CI runs on extraction branch pushes. Its installed-wheel job exports dependencies from `uv.lock` and imports the wheel with Python isolated mode: released dependencies lack `ExtractSourcesRequest`, while checking out the exporter source otherwise shadows the wheel and its packaged UI. Lock regeneration uses Serve CI's pinned uv 0.12.13.
 
 Historical September 23 live runs covered Granite/LM Studio and NuExtract3 GGUF/llama-server, PDF/DOCX matrices, Markdown/HTML, expanded S3 prefixes, encryption, page range 2–3, forced schema failure and artifacts before document callbacks. Original temporary logs are unavailable; retain the committed evidence/ledger. Historical broad runs included unrelated parser/cv2, MinIO and async/config/OTEL failures and should not be reported as fully green.
 
