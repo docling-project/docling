@@ -257,6 +257,96 @@ class TestRuntimeOptions:
         )
 
     @pytest.mark.parametrize(
+        ("device", "native_bf16", "user_dtype", "user_fallback", "expected_dtype"),
+        [
+            # CodeFormulaV2 keeps bfloat16 wherever bfloat16 is fast ...
+            ("cpu", True, None, None, "bfloat16"),
+            ("cuda:0", False, None, None, "bfloat16"),
+            # ... but bfloat16 is emulated, ~5-7x slower, on CPUs without it.
+            ("cpu", False, None, None, "float32"),
+            # The preset fallback also applies to an explicitly chosen dtype ...
+            ("cpu", False, "bfloat16", None, "float32"),
+            # ... and the user can pick another fallback, or opt out of it.
+            ("cpu", False, None, "float16", "float16"),
+            ("cpu", False, "bfloat16", "bfloat16", "bfloat16"),
+        ],
+    )
+    def test_codeformulav2_dtype_follows_device(
+        self,
+        monkeypatch,
+        device,
+        native_bf16,
+        user_dtype,
+        user_fallback,
+        expected_dtype,
+    ):
+        """CodeFormulaV2 must not run in emulated bfloat16 on plain CPUs."""
+        import docling.models.inference_engines.vlm.transformers_engine as tf_engine
+        from docling.datamodel.stage_model_specs import CODE_FORMULA_CODEFORMULAV2
+
+        captured_kwargs = {}
+
+        class FakeProcessor:
+            tokenizer = None
+
+        class FakeModel:
+            @classmethod
+            def from_pretrained(cls, *args, **kwargs):
+                captured_kwargs.update(kwargs)
+                return cls()
+
+            def eval(self):
+                return None
+
+        monkeypatch.setattr(
+            tf_engine.importlib.metadata,
+            "version",
+            lambda package: "5.8.0" if package == "transformers" else "0.0.0",
+        )
+        monkeypatch.setattr(
+            tf_engine,
+            "resolve_model_artifacts_path",
+            lambda **kwargs: "artifacts",
+        )
+        monkeypatch.setattr(
+            tf_engine.AutoProcessor,
+            "from_pretrained",
+            lambda *args, **kwargs: FakeProcessor(),
+        )
+        monkeypatch.setattr(tf_engine, "AutoModelForImageTextToText", FakeModel)
+        monkeypatch.setattr(
+            tf_engine.GenerationConfig,
+            "from_pretrained",
+            lambda *args, **kwargs: object(),
+        )
+        monkeypatch.setattr(
+            "docling.utils.torch_dtype.cpu_has_native_bfloat16",
+            lambda: native_bf16,
+        )
+
+        model_config = CODE_FORMULA_CODEFORMULAV2.model_spec.engine_overrides[
+            VlmEngineType.TRANSFORMERS
+        ]
+        engine = TransformersVlmEngine(
+            options=TransformersVlmEngineOptions(
+                torch_dtype=user_dtype,
+                torch_dtype_fallback=user_fallback,
+                compile_model=False,
+            ),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            artifacts_path=None,
+        )
+        engine.device = device
+        engine.model_config = model_config
+
+        engine._load_model_for_repo(
+            "docling-project/CodeFormulaV2",
+            model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+        )
+
+        assert captured_kwargs["dtype"] == expected_dtype
+
+    @pytest.mark.parametrize(
         ("transformers_version", "expected_trust_remote_code"),
         [("5.7.0", True), ("5.8.0", False), ("5.16.1", False)],
     )

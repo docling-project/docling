@@ -55,6 +55,7 @@ from docling.utils.granite_vision_utils import (
     GRANITE_VISION_4_REPO_ID,
     granite_vision_4_needs_remote_code,
 )
+from docling.utils.torch_dtype import resolve_torch_dtype
 from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
 if TYPE_CHECKING:
@@ -262,6 +263,15 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 self.model_config.torch_dtype
                 or self.model_config.extra_config.get("torch_dtype")
             )
+
+        # Fall back (e.g. bfloat16 -> float32 on CPUs without native bfloat16) when
+        # the device does not support the chosen dtype: options > model preset.
+        torch_dtype_fallback = self.options.torch_dtype_fallback or (
+            self.model_config.torch_dtype_fallback if self.model_config else None
+        )
+        torch_dtype = resolve_torch_dtype(
+            torch_dtype, torch_dtype_fallback, str(self.device)
+        )
 
         # Load model
         attn_implementation: Optional[str] = (

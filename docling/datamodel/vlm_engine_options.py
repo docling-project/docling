@@ -75,6 +75,15 @@ class TransformersVlmEngineOptions(BaseVlmEngineOptions):
         default=None, description="PyTorch dtype (e.g., 'float16', 'bfloat16')"
     )
 
+    torch_dtype_fallback: Optional[str] = Field(
+        default=None,
+        description=(
+            "Dtype used when the device does not support the chosen torch_dtype "
+            "(e.g., 'float32' for bfloat16 on a CPU without native bfloat16). "
+            "Overrides the model preset's fallback; no fallback when unset."
+        ),
+    )
+
     trust_remote_code: bool = Field(
         default=False, description="Allow execution of custom code from model repo"
     )
