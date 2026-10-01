@@ -1354,6 +1354,12 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
             "cpu",
             "--num-threads",
             "7",
+            "--enrich-chart-extraction",
+            "--chart-extraction-preset",
+            "granite_vision",
+            "--enrich-picture-description",
+            "--picture-description-max-new-tokens",
+            "128",
         ],
     )
 
@@ -1363,6 +1369,18 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
     assert captured_pipeline_options.accelerator_options.num_threads == 7
     assert captured_pipeline_options.generate_page_images is True
     assert captured_pipeline_options.generate_picture_images is True
+    assert captured_pipeline_options.do_chart_extraction is True
+    assert (
+        captured_pipeline_options.chart_extraction_options.model_spec.default_repo_id
+        == "ibm-granite/granite-vision-3.3-2b-chart2csv-preview"
+    )
+    assert captured_pipeline_options.do_picture_description is True
+    assert (
+        captured_pipeline_options.picture_description_options.generation_config[
+            "max_new_tokens"
+        ]
+        == 128
+    )
 
 
 def _capture_cli_engine_options(monkeypatch, extra_args, tmp_path, option_name):

@@ -114,6 +114,7 @@ from docling.datamodel.base_models import (
     InputFormat,
     OutputFormat,
 )
+from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.document import ConversionResult, DoclingVersion
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
@@ -292,6 +293,7 @@ else:
 
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
+chart_extraction_preset_ids = ChartExtractionVlmEngineOptions.list_preset_ids()
 
 DOCLING_ASCII_ART = r"""
                              ████ ██████
@@ -1070,6 +1072,16 @@ def convert(  # noqa: C901
             ..., help="Enable chart data extraction from bar, pie, and line charts."
         ),
     ] = False,
+    chart_extraction_preset: Annotated[
+        str,
+        typer.Option(
+            "--chart-extraction-preset",
+            help=(
+                "Choose the chart extraction preset. Available presets: "
+                f"{', '.join(chart_extraction_preset_ids)}"
+            ),
+        ),
+    ] = "granite_vision_v4",
     artifacts_path: Annotated[
         Path | None,
         typer.Option(..., help="If provided, the location of the model artifacts."),
@@ -1483,6 +1495,17 @@ def convert(  # noqa: C901
             table_structure_factory.create_options(kind=table_structure_engine)
         )
 
+        try:
+            chart_extraction_options = ChartExtractionVlmEngineOptions.from_preset(
+                chart_extraction_preset
+            )
+        except KeyError as exc:
+            raise typer.BadParameter(
+                f"Unknown chart extraction preset {chart_extraction_preset!r}. "
+                f"Available presets: {', '.join(chart_extraction_preset_ids)}",
+                param_hint="--chart-extraction-preset",
+            ) from exc
+
         if pipeline in {ProcessingPipeline.STANDARD, ProcessingPipeline.LEGACY}:
             pipeline_cls = (
                 LegacyStandardPdfPipeline
@@ -1504,6 +1527,7 @@ def convert(  # noqa: C901
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
                 do_chart_extraction=enrich_chart_extraction,
+                chart_extraction_options=chart_extraction_options,
                 document_timeout=document_timeout,
             )
             if isinstance(
@@ -1541,6 +1565,7 @@ def convert(  # noqa: C901
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
                 do_chart_extraction=enrich_chart_extraction,
+                chart_extraction_options=chart_extraction_options,
             )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
@@ -1637,6 +1662,7 @@ def convert(  # noqa: C901
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
                 do_chart_extraction=enrich_chart_extraction,
+                chart_extraction_options=chart_extraction_options,
                 document_timeout=document_timeout,
             )
             if parser_threads is not None:
@@ -1671,7 +1697,15 @@ def convert(  # noqa: C901
             pipeline_options = VlmPipelineOptions(
                 accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
+                do_picture_classification=enrich_picture_classes,
+                do_picture_description=enrich_picture_description,
+                do_chart_extraction=enrich_chart_extraction,
+                chart_extraction_options=chart_extraction_options,
             )
+            if picture_description_max_new_tokens is not None:
+                pipeline_options.picture_description_options.generation_config[
+                    "max_new_tokens"
+                ] = picture_description_max_new_tokens
             if _should_generate_export_images(image_export_mode, to_formats):
                 pipeline_options.generate_page_images = True
                 pipeline_options.generate_picture_images = True

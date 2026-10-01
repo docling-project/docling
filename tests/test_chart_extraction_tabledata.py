@@ -5,8 +5,21 @@
 
 import pandas as pd
 import pytest
+from docling_core.types.doc import (
+    DescriptionMetaField,
+    DoclingDocument,
+    PictureClassificationMetaField,
+    PictureMeta,
+    TableData,
+    TabularChartMetaField,
+)
+from docling_core.types.doc.document import PictureClassificationPrediction
+from PIL import Image
 
+from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.models.stages.chart_extraction.granite_vision import (
+    ChartExtractionVlmEngineModel,
     _dataframe_to_tabledata,
     _extract_csv_to_dataframe,
 )
@@ -94,3 +107,107 @@ def test_empty_chart_table_has_no_headers() -> None:
     assert table.num_rows == 0
     assert table.num_cols == 0
     assert table.table_cells == []
+
+
+def test_chart_enrichment_runs_only_missing_outputs_after_classification() -> None:
+    class Engine:
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def predict_batch(self, inputs):
+            self.prompts = [item.prompt for item in inputs]
+            return [type("Output", (), {"text": "```python\npass\n```"})()]
+
+        def cleanup(self) -> None:
+            pass
+
+    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4")
+    options.chart2summary = True
+    options.chart2code = True
+    model = ChartExtractionVlmEngineModel.__new__(ChartExtractionVlmEngineModel)
+    model.enabled = True
+    model.options = options
+    engine = Engine()
+    model.engine = engine
+
+    chart_data = TabularChartMetaField(
+        chart_data=TableData(num_rows=0, num_cols=0, table_cells=[])
+    )
+    description = DescriptionMetaField(text="Provided by VLM")
+    doc = DoclingDocument(name="chart")
+    picture = doc.add_picture()
+    picture.meta = PictureMeta(tabular_chart=chart_data, description=description)
+    assert not model.is_processable(doc, picture)
+
+    picture.meta.classification = PictureClassificationMetaField(
+        predictions=[PictureClassificationPrediction(class_name="bar_chart")]
+    )
+    assert model.is_processable(doc, picture)
+
+    image = Image.new("RGB", (10, 10), "white")
+    result = list(
+        model(
+            doc,
+            [ItemAndImageEnrichmentElement(item=picture, image=image)],
+        )
+    )
+
+    assert result == [picture]
+    assert engine.prompts == ["<chart2code>"]
+    assert picture.meta.tabular_chart is chart_data
+    assert picture.meta.description is description
+    assert picture.meta.code is not None
+
+
+def test_legacy_chart_preset_uses_its_csv_prompt_and_parser() -> None:
+    class Engine:
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def predict_batch(self, inputs):
+            self.prompts = [item.prompt for item in inputs]
+            return [type("Output", (), {"text": "Category,Value\nNorth,10"})()]
+
+        def cleanup(self) -> None:
+            pass
+
+    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision")
+    assert (
+        options.model_spec.default_repo_id
+        == "ibm-granite/granite-vision-3.3-2b-chart2csv-preview"
+    )
+    with pytest.raises(ValueError, match="supports CSV output only"):
+        ChartExtractionVlmEngineOptions.from_preset(
+            "granite_vision", chart2summary=True
+        )
+
+    model = ChartExtractionVlmEngineModel.__new__(ChartExtractionVlmEngineModel)
+    model.enabled = True
+    model.options = options
+    engine = Engine()
+    model.engine = engine
+
+    doc = DoclingDocument(name="chart")
+    picture = doc.add_picture()
+    picture.meta = PictureMeta(
+        classification=PictureClassificationMetaField(
+            predictions=[PictureClassificationPrediction(class_name="bar_chart")]
+        )
+    )
+    assert model.is_processable(doc, picture)
+
+    result = list(
+        model(
+            doc,
+            [
+                ItemAndImageEnrichmentElement(
+                    item=picture, image=Image.new("RGB", (10, 10), "white")
+                )
+            ],
+        )
+    )
+
+    assert result == [picture]
+    assert engine.prompts == [options.model_spec.prompt]
+    assert picture.meta.tabular_chart is not None
+    assert picture.meta.tabular_chart.chart_data.num_rows == 2

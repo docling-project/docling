@@ -33,6 +33,7 @@ class ChartExtractionOutputFormat(str, Enum):
     """
 
     GRANITE_VISION_CHARTS = "granite_vision_charts"
+    GRANITE_VISION_CHART2CSV = "granite_vision_chart2csv"
 
 
 class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
@@ -47,10 +48,9 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
     * ``chart2summary`` — generate a natural-language description (default: False)
     * ``chart2code``    — generate Python code that recreates the chart (default: False)
 
-    .. note::
-        The ``granite_vision`` V1 preset (ibm-granite/granite-vision-3.3-2b-chart2csv-preview)
-        was removed in this release. Use ``granite_vision_v4`` (the default) instead.
-        The last release supporting V1 was 2.x (see the changelog for migration guidance).
+    The ``granite_vision`` preset uses the older CSV-only Chart2CSV model and
+    its recommended plain-language prompt. ``granite_vision_v4`` remains the
+    default and additionally supports summaries and code.
 
     Examples::
 
@@ -127,6 +127,11 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
             raise ValueError(
                 "At least one of chart2csv, chart2summary, or chart2code must be True."
             )
+        if self.output_format == ChartExtractionOutputFormat.GRANITE_VISION_CHART2CSV:
+            if not self.chart2csv or self.chart2summary or self.chart2code:
+                raise ValueError(
+                    "The granite_vision Chart2CSV preset supports CSV output only."
+                )
         return self
 
     def active_prompts(self) -> list[str]:
@@ -148,6 +153,9 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
 
 from docling.datamodel import stage_model_specs as _stage_model_specs  # noqa: E402
 
+ChartExtractionVlmEngineOptions.register_preset(
+    _stage_model_specs.CHART_EXTRACTION_GRANITE_VISION
+)
 ChartExtractionVlmEngineOptions.register_preset(
     _stage_model_specs.CHART_EXTRACTION_GRANITE_VISION_V4
 )
@@ -181,10 +189,7 @@ class ChartExtractionModelKind(metaclass=_ChartExtractionModelKindMeta):
         Use :meth:`ChartExtractionVlmEngineOptions.from_preset` with
         ``'granite_vision_v4'`` instead.
 
-    .. note::
-        ``GRANITE_VISION`` (V1) support has been removed. References to
-        ``ChartExtractionModelKind.GRANITE_VISION`` will resolve to
-        ``'granite-vision-v4'`` with a deprecation warning.
+    ``GRANITE_VISION`` selects the older CSV-only Chart2CSV model.
     """
 
     GRANITE_VISION = "granite-vision"
@@ -214,9 +219,9 @@ class ChartExtractionModelKind(metaclass=_ChartExtractionModelKindMeta):
 
     _members: ClassVar[Dict[str, "_ChartExtractionModelKindMeta"]] = {}
 
-    # Map old enum values to new preset IDs (V1 → V4 with deprecation)
+    # Map legacy enum values to the registered preset IDs.
     _PRESET_MAP: ClassVar[Dict[str, str]] = {
-        "granite-vision": "granite_vision_v4",
+        "granite-vision": "granite_vision",
         "granite-vision-v4": "granite_vision_v4",
     }
 
@@ -236,9 +241,8 @@ class ChartExtractionModelOptions(ChartExtractionVlmEngineOptions):
 
     For backwards compatibility, instantiating this class emits a
     ``DeprecationWarning`` and returns a fully functional
-    ``ChartExtractionVlmEngineOptions`` configured from the ``granite_vision_v4``
-    preset. Passing ``model=ChartExtractionModelKind.GRANITE_VISION`` (V1) is
-    accepted but silently upgraded to V4 with an additional warning.
+    ``ChartExtractionVlmEngineOptions`` configured from the requested preset.
+    The default remains ``granite_vision_v4``.
     """
 
     kind: ClassVar[Literal["chart_extraction"]] = "chart_extraction"  # type: ignore[assignment]
@@ -268,18 +272,12 @@ class ChartExtractionModelOptions(ChartExtractionVlmEngineOptions):
                     f"Unknown model {model_str!r}. "
                     f"Valid values: {list(ChartExtractionModelKind._PRESET_MAP)}"
                 )
-            if model_str == ChartExtractionModelKind.GRANITE_VISION:
-                warnings.warn(
-                    "ChartExtractionModelKind.GRANITE_VISION (V1) is no longer supported "
-                    "and has been upgraded to granite_vision_v4.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-
         # Bootstrap from the preset so model_spec and engine_options are populated,
         # then allow the caller's remaining kwargs (chart2csv, etc.) to override.
         preset_instance = ChartExtractionVlmEngineOptions.from_preset(
-            "granite_vision_v4"
+            ChartExtractionModelKind._PRESET_MAP.get(
+                str(model_val), "granite_vision_v4"
+            )
         )
         merged = {**preset_instance.model_dump(), **data}
         super().__init__(**merged)

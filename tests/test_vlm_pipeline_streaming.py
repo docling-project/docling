@@ -154,6 +154,7 @@ def _run_pipeline(
     random_access: bool = False,
     failed_page_nos: set[int] | None = None,
     document_timeout: float | None = None,
+    do_chart_extraction: bool = False,
 ):
     tracker = _Tracker()
     backend = (
@@ -168,6 +169,9 @@ def _run_pipeline(
         generate_page_images=generate_page_images,
         generate_picture_images=generate_picture_images,
         images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=do_chart_extraction,
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",
@@ -216,6 +220,24 @@ def test_vlm_streams_out_of_order_pages_and_releases_each_batch(monkeypatch) -> 
         page._backend is None and not page._image_cache for page in conv_res.pages
     )
     assert all(page.image is None for page in conv_res.document.pages.values())
+
+
+def test_vlm_keeps_chart_crops_available_after_page_backends_close() -> None:
+    conv_res, tracker, _backend = _run_pipeline(
+        page_nos=[5],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        tag="picture",
+        do_chart_extraction=True,
+    )
+
+    assert tracker.live == 0
+    assert conv_res.document.pictures
+    picture = conv_res.document.pictures[0]
+    page = conv_res.pages[0]
+    assert page._backend is None
+    assert page.get_image(scale=2.0, cropbox=picture.prov[0].bbox) is not None
 
 
 def test_vlm_uses_indexed_loading_for_random_access_backends(monkeypatch) -> None:
@@ -291,6 +313,9 @@ def test_vlm_text_response_keeps_absolute_page_number_after_concatenation() -> N
         generate_page_images=False,
         generate_picture_images=False,
         images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=False,
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",
@@ -342,6 +367,9 @@ def test_chandra_page_assembly_preserves_source_provenance_and_reports_bad_respo
         generate_page_images=True,
         generate_picture_images=False,
         images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=False,
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",
