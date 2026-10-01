@@ -128,6 +128,8 @@ def _make_conversion_result(backend: PdfDocumentBackend, page_count: int):
         errors=[],
         timings={},
         status=None,
+        document=None,
+        _page_sizes_by_no={},
     )
 
 
@@ -152,7 +154,6 @@ def test_standard_pipeline_bounds_live_streaming_backends() -> None:
     backend = _StreamingBackend(list(range(page_count, 0, -1)), tracker)
     pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
     pipeline._run_seq = itertools.count(1)
-    pipeline._page_sizes_by_no = {}
     pipeline.keep_images = False
     pipeline.keep_backend = False
     pipeline.pipeline_options = SimpleNamespace(
@@ -171,6 +172,40 @@ def test_standard_pipeline_bounds_live_streaming_backends() -> None:
     assert [page.page_no for page in conv_res.pages] == list(range(1, page_count + 1))
     assert tracker.live == 0
     assert tracker.high_water <= 6
+
+
+def test_failed_page_sizes_are_kept_per_conversion() -> None:
+    """One pipeline instance serves every conversion made through a DocumentConverter,
+    so the page sizes recorded for failed pages belong to the conversion, not to the
+    pipeline: a later conversion must not wipe or replace an earlier one's sizes."""
+    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
+    pipeline._run_seq = itertools.count(1)
+    pipeline.keep_images = False
+    pipeline.keep_backend = False
+    pipeline.pipeline_options = SimpleNamespace(
+        heading_hierarchy_options=SimpleNamespace(enabled=False, use_bookmarks=False),
+        document_timeout=None,
+        stage_shutdown_timeout_seconds=1.0,
+        generate_parsed_pages=False,
+    )
+    pipeline._create_run_ctx = MethodType(
+        lambda self: _make_run_context(self._release_page_resources), pipeline
+    )
+    tracker = _BackendTracker()
+    first = _make_conversion_result(_StreamingBackend([1, 2, 3, 4], tracker), 4)
+    second = _make_conversion_result(_StreamingBackend([1], tracker), 1)
+
+    pipeline._build_document(first)
+    pipeline._build_document(second)
+
+    # Assemble the first conversion as if pages 2-4 had failed downstream.
+    first.document = DoclingDocument(name="first")
+    pipeline._add_failed_pages_to_document(first, expected_page_nos=[1, 2, 3, 4])
+
+    assert sorted(first.document.pages) == [1, 2, 3, 4]
+    assert [first.document.pages[n].size for n in (1, 2, 3, 4)] == [
+        Size(width=100, height=200)
+    ] * 4
 
 
 def test_legacy_pipeline_warns_and_delegates_to_standard(
