@@ -28,7 +28,10 @@ from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
-from docling.utils.table_rule_reconciler import reconcile_table_rows_with_rules
+from docling.utils.table_rule_reconciler import (
+    collect_horizontal_rules,
+    reconcile_table_rows_with_rules,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -304,9 +307,7 @@ class TableStructureModel(BaseTableStructureModel):
                     )
 
                     if self.options.reconcile_rows_with_rules:
-                        rules = page._backend.get_shape_lines(
-                            horizontal=True, vertical=False
-                        )
+                        rules = collect_horizontal_rules(page._backend)
                         if rules:
                             reconcile_table_rows_with_rules(
                                 tbl,

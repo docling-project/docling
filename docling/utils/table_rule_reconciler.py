@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Reconcile predicted table rows with rules drawn in the PDF vector layer.
 
 TableFormer predicts row boundaries from a fixed-resolution rendering of the
@@ -19,11 +22,15 @@ from __future__ import annotations
 import bisect
 import logging
 from statistics import median
+from typing import TYPE_CHECKING
 
 from docling_core.types.doc import BoundingBox
 from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.base_models import Table
+
+if TYPE_CHECKING:
+    from docling.backend.pdf_backend import PdfPageBackend
 
 _log = logging.getLogger(__name__)
 
@@ -34,6 +41,29 @@ _MIN_RULE_SPAN_FRAC = 0.7
 _RULE_MERGE_TOL = 2.0
 # Rules this close to the table's top/bottom edge duplicate the outer border.
 _EDGE_MARGIN = 3.0
+# Filled shapes no thicker than this are drawn rules rather than boxes (pt).
+_FILLED_RULE_MAX_THICKNESS = 2.5
+
+
+def collect_horizontal_rules(page_backend: PdfPageBackend) -> list[BoundingBox]:
+    """Horizontal rules on the page, whether stroked or drawn as thin fills.
+
+    ``get_shape_lines`` only reports stroked segments, so rules drawn as thin
+    filled rectangles (as in the #4028 fixture) are recovered from the
+    connected shape boxes. A filled rule that touches other shapes is merged
+    into a larger box and is not recovered.
+    """
+    rules = list(page_backend.get_shape_lines(horizontal=True, vertical=False) or [])
+    for bbox in page_backend.get_connected_shape_bounding_boxes() or []:
+        height = bbox.b - bbox.t
+        if height <= _FILLED_RULE_MAX_THICKNESS and bbox.r - bbox.l > height:
+            y = (bbox.t + bbox.b) / 2
+            rules.append(
+                BoundingBox(
+                    l=bbox.l, t=y, r=bbox.r, b=y, coord_origin=bbox.coord_origin
+                )
+            )
+    return rules
 
 
 def reconcile_table_rows_with_rules(
@@ -44,7 +74,7 @@ def reconcile_table_rows_with_rules(
     """Re-bin ``table``'s words into the row bands drawn by ``rules``.
 
     ``rules`` are horizontal shape lines in page coordinates (top-left
-    origin), as returned by ``PdfPageBackend.get_shape_lines``. ``word_cells``
+    origin), as returned by ``collect_horizontal_rules``. ``word_cells``
     are the text cells that were fed to cell matching, unscaled.
 
     Returns ``True`` when reconciliation was applied and ``False`` when it

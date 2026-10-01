@@ -1,18 +1,21 @@
-"""Tests for DoclingParsePageBackend.get_shape_lines (issue #4028).
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
 
-The base-class contract declares get_shape_lines but the docling-parse page
-backend returned None ("cannot answer"). Ruled tables commonly draw their row
-separators either as stroked lines or as thin filled rectangles; both must be
-reported so that table row reconciliation can see them.
+"""Tests for collecting table rules from the docling-parse backend (issue #4028).
+
+Ruled tables commonly draw their row separators either as stroked lines or as
+thin filled rectangles; both must be reported so that table row reconciliation
+can see them.
 """
 
 from pathlib import Path
 
 import pytest
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils.table_rule_reconciler import collect_horizontal_rules
 
 PAGE_W, PAGE_H = 595.0, 842.0
 
@@ -75,17 +78,16 @@ def _load_page(pdf_path: Path):
     in_doc = InputDocument(
         path_or_stream=pdf_path,
         format=InputFormat.PDF,
-        backend=DoclingParseDocumentBackend,
+        backend=ThreadedDoclingParseDocumentBackend,
     )
     backend = in_doc._backend
-    assert isinstance(backend, DoclingParseDocumentBackend)
-    return backend.load_page(0)
+    assert isinstance(backend, ThreadedDoclingParseDocumentBackend)
+    return next(backend.iter_pages())
 
 
 def test_reports_filled_and_stroked_horizontal_rules(ruled_page: Path):
     page = _load_page(ruled_page)
-    lines = page.get_shape_lines(horizontal=True, vertical=False)
-    assert lines is not None
+    lines = collect_horizontal_rules(page)
     ys = sorted(line.t for line in lines)
     assert len(ys) == 2
     assert ys[0] == pytest.approx(100.0, abs=1.0)
@@ -96,17 +98,8 @@ def test_reports_filled_and_stroked_horizontal_rules(ruled_page: Path):
         assert line.r - line.l == pytest.approx(460.0, abs=2.0)
 
 
-def test_reports_vertical_rules_separately(ruled_page: Path):
-    page = _load_page(ruled_page)
-    lines = page.get_shape_lines(horizontal=False, vertical=True)
-    assert lines is not None
-    assert len(lines) == 1
-    assert lines[0].l == pytest.approx(70.0, abs=1.0)
-    assert lines[0].r == pytest.approx(lines[0].l, abs=1.0)
-
-
-def test_text_is_not_reported_as_shape_lines(tmp_path: Path):
+def test_text_is_not_reported_as_rules(tmp_path: Path):
     pdf_path = tmp_path / "no-rules.pdf"
     _write_pdf(pdf_path, "BT 100 700 Td ET")
     page = _load_page(pdf_path)
-    assert page.get_shape_lines(horizontal=True, vertical=True) == []
+    assert collect_horizontal_rules(page) == []

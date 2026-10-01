@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for rule-based table row reconciliation (issue #4028).
 
 TableFormer predicts row boundaries visually and, on dense ruled tables, can
