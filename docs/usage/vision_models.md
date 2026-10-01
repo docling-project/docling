@@ -101,7 +101,9 @@ Other models can be configured by directly providing the Hugging Face `repo_id`,
 For example:
 
 ```python
-from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions, InferenceFramework, TransformersModelType
+from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.pipeline_options import VlmPipelineOptions
+from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions, InferenceFramework, ResponseFormat, TransformersModelType
 
 pipeline_options = VlmPipelineOptions(
     vlm_options=InlineVlmOptions(
@@ -131,6 +133,22 @@ Many remote inference services are provided, the key requirement is to offer an 
 More examples on how to connect with the remote inference services can be found in the following examples:
 
 - [vlm_pipeline_api_model.py](./../examples/vlm_pipeline_api_model.py)
+
+## Native MinerU and dots captions
+
+MinerU and dots caption blocks are linked when exactly one immediately adjacent
+native block maps to a compatible table or picture. MinerU's
+`table_caption`, `image_caption`, and `code_caption` labels constrain the owner
+type; generic captions from either model consider all three types. Both preceding
+and following blocks are considered, without geometry or text-based guesses.
+Skipped blocks remain barriers. Captions with no compatible neighbor or two
+compatible neighbors remain standalone text in DocLang. Caption text and its
+own provenance are preserved.
+
+Code captions and captions containing formatted child runs remain standalone:
+the minimum supported Docling Core version cannot faithfully serialize those
+associations in DocLang. A container's existing caption takes precedence;
+additional captions remain standalone because its DocLang head holds one caption.
 
 ## Chandra HTML output
 

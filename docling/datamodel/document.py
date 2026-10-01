@@ -774,7 +774,9 @@ class _DocumentConversionInput(BaseModel):
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
             mime = filetype.guess_mime(str(obj))
-            obj_ext = obj.suffix[1:] if obj.suffix else ""
+            # Lower-cased so that an upper-case extension (NOTES.VTT, page.HTML)
+            # maps to its format the same way it does for a DocumentStream.
+            obj_ext = obj.suffix[1:].lower() if obj.suffix else ""
             if mime is None:
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext)
             needs_content_sniff = mime is None or (
@@ -800,6 +802,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".presentationml.presentation"
                 elif suffix == ".pages":
                     mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
+                elif suffix == ".key":
+                    mime = FormatToMimeType[InputFormat.IWORK_KEYNOTE][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj
@@ -833,6 +837,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".presentationml.presentation"
                 elif objname.endswith(".pages"):
                     mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
+                elif objname.endswith(".key"):
+                    mime = FormatToMimeType[InputFormat.IWORK_KEYNOTE][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj.stream
@@ -1148,7 +1154,8 @@ class _DocumentConversionInput(BaseModel):
                 fileobj=content if isinstance(content, BytesIO) else None,
                 mode="r:gz",
             ) as tar:
-                for member in tar.getmembers():
+                # Iterate lazily so the member limit applies before all headers are read
+                for member in tar:
                     member_count += 1
                     if member_count > max_member_count:
                         _log.warning(

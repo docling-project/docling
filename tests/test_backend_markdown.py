@@ -238,6 +238,40 @@ def test_code_block_language_detection():
     ]
 
 
+def test_convert_table_keeps_inline_code_spans():
+    """A code span inside a GFM table cell is part of that cell.
+
+    The span keeps the words around it, a pipe inside it is not a column
+    separator, and its text is literal, so an entity in it is not decoded.
+    """
+    markdown = """| Command | Description |
+| --- | --- |
+| run `build` now | builds it |
+| `a | b` | keeps the pipe |
+| `&amp;` | stays literal |
+| clean | removes it |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    assert len(conv_result.document.tables) == 1
+    table_data = conv_result.document.tables[0].data
+    assert table_data.num_rows == 5
+    assert table_data.num_cols == 2
+    assert [cell.text for cell in table_data.table_cells] == [
+        "Command",
+        "Description",
+        "run build now",
+        "builds it",
+        "a | b",
+        "keeps the pipe",
+        "&amp;",
+        "stays literal",
+        "clean",
+        "removes it",
+    ]
+
+
 def test_convert_table_has_no_duplicate_cells():
     """
     Regression test:
@@ -523,6 +557,48 @@ def test_convert_table_escaped_pipe_does_not_add_a_column():
     assert len(table_data.table_cells) == 4
 
 
+def test_convert_table_cell_with_pipe_character_reference():
+    """
+    Regression test:
+    A pipe written as a character reference is cell content, in any of its
+    spellings. Only ``&#124;``, ``&#x7C;`` and ``&vert;`` were kept encoded until
+    the row was split; ``&#x7c;``, ``&verbar;`` and the rest were decoded first,
+    so the cell was cut at the pipe, the remainder shifted into the next column,
+    and the last cell of the row was dropped.
+    """
+    spellings = [
+        "&#124;",
+        "&#x7C;",
+        "&vert;",
+        "&#x7c;",
+        "&#x07C;",
+        "&#0124;",
+        "&verbar;",
+        "&VerticalLine;",
+    ]
+    expected = ["Metric", "Formula", "Notes", "MAE", "|y - x|", "same units"]
+
+    for pipe in spellings:
+        leading_pipes = f"""| Metric | Formula | Notes |
+| --- | --- | --- |
+| MAE | {pipe}y - x{pipe} | same units |
+"""
+        no_leading_pipes = f"""Metric | Formula | Notes
+--- | --- | ---
+MAE | {pipe}y - x{pipe} | same units
+"""
+        for markdown in (leading_pipes, no_leading_pipes):
+            conv_result = get_converter().convert_string(
+                markdown, format=InputFormat.MD
+            )
+            assert conv_result.status == ConversionStatus.SUCCESS
+
+            assert len(conv_result.document.tables) == 1, pipe
+            table_data = conv_result.document.tables[0].data
+            assert table_data.num_cols == 3, pipe
+            assert [cell.text for cell in table_data.table_cells] == expected, pipe
+
+
 def test_utf8_bom_does_not_hide_the_first_heading(tmp_path):
     """A leading UTF-8 BOM must not survive into the first line.
 
@@ -689,3 +765,36 @@ def test_standard_ordered_list_still_starts_at_one():
 
     exported = conv_result.document.export_to_markdown()
     assert exported == "1. alpha\n2. beta\n3. gamma"
+
+
+def test_convert_table_cell_whitespace_around_inline_emphasis():
+    """Verify that whitespace around inline emphasis inside table cells is preserved.
+
+    Leading space after emphasis, trailing space before emphasis, and space
+    between adjacent inline formatting runs must all be preserved.
+    """
+    markdown = (
+        "| Letter | Word |\n"
+        "|---|---|\n"
+        "| **C** Cadre | x |\n"
+        "| foo **bar** | y |\n"
+        "| **A** **B** | z |\n"
+        "| *italic* and **bold** | w |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    table = conv_result.document.tables[0].data
+    cell_texts = [cell.text for cell in table.table_cells]
+    assert cell_texts == [
+        "Letter",
+        "Word",
+        "C Cadre",
+        "x",
+        "foo bar",
+        "y",
+        "A B",
+        "z",
+        "italic and bold",
+        "w",
+    ]

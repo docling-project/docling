@@ -129,6 +129,7 @@ class InputFormat(str, Enum):
     EPUB = "epub"
     BOXNOTE = "boxnote"
     IWORK_PAGES = "iwork_pages"
+    IWORK_KEYNOTE = "iwork_keynote"
     EBCDIC = "ebcdic"
     AFP = "afp"
 
@@ -162,7 +163,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.DCLX: ["dclx"],
-    InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
+    InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp", "gif"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm", "xltx", "xltm"],
@@ -181,6 +182,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.EPUB: ["epub"],
     InputFormat.BOXNOTE: ["boxnote"],
     InputFormat.IWORK_PAGES: ["pages"],
+    InputFormat.IWORK_KEYNOTE: ["key"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
     InputFormat.AFP: ["afp"],
 }
@@ -275,6 +277,10 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.apple.pages",
         "application/x-iwork-pages-sffpages",
     ],
+    InputFormat.IWORK_KEYNOTE: [
+        "application/vnd.apple.keynote",
+        "application/x-iwork-keynote-sffkey",
+    ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
     InputFormat.AFP: ["application/vnd.ibm.modcap", "application/x-afp"],
 }
@@ -304,6 +310,7 @@ class VlmStopReason(str, Enum):
     STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
     END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
     CONTENT_FILTERED = "content_filter"  # Content filtered by API provider
+    INFERENCE_ERROR = "inference_error"  # Inference call failed (remote API or local engine), no output
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
@@ -389,6 +396,7 @@ class VlmPrediction(BaseModel):
     usage: Any | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
     input_prompt: str | None = None
+    error_message: str | None = None  # set when stop_reason is INFERENCE_ERROR
 
 
 @dataclass(frozen=True)
@@ -400,6 +408,7 @@ class ApiImageRequestResult:
     stop_reason: VlmStopReason
     usage: Any | None = None
     logprobs: Any | None = None
+    error: str | None = None  # set when stop_reason is INFERENCE_ERROR
 
 
 @dataclass(frozen=True)
@@ -499,6 +508,11 @@ class Page(BaseModel):
     _backend: Optional["PdfPageBackend"] = (
         None  # Internal PDF backend. By default it is cleared during assembling.
     )
+    # Visible vector geometry captured while the page backend is alive. These
+    # are transient pipeline signals and deliberately stay out of serialized
+    # conversion results.
+    _shape_lines: list[BoundingBox] | None = PrivateAttr(default=None)
+    _shape_bounding_boxes: list[BoundingBox] | None = PrivateAttr(default=None)
     _default_image_scale: float = 1.0  # Default image scale for external usage.
     _image_cache: dict[
         float, Image

@@ -50,6 +50,18 @@ def _make_retry_session() -> requests.Session:
     return session
 
 
+def _failed_request(reason: str) -> ApiImageRequestResult:
+    """Result for a request that produced no model output.
+
+    The failure is reported through ``VlmStopReason.INFERENCE_ERROR`` and ``error``
+    instead of an exception, so one failing page does not abort the document;
+    the pipelines turn it into a PARTIAL_SUCCESS with a per-page ErrorItem.
+    """
+    return ApiImageRequestResult(
+        text="", num_tokens=0, stop_reason=VlmStopReason.INFERENCE_ERROR, error=reason
+    )
+
+
 def _extract_text_from_tool_arguments(arguments: str | None) -> str:
     if arguments is None:
         return ""
@@ -206,7 +218,9 @@ def _post_openai_chat_completion(
 
     response_payload = _parse_response_json(response)
     if response_payload is None:
-        raise ValueError("API response was empty or invalid JSON")
+        raise ValueError(
+            f"HTTP {response.status_code}: response body was empty or not JSON"
+        )
 
     usage_key = _resolve_usage_response_key(
         usage_response_key=usage_response_key,
@@ -288,9 +302,9 @@ def api_image_request(
             )
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
-            return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+            return _failed_request(str(e))
     else:
-        return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+        return _failed_request("Could not encode the page image as PNG")
 
 
 def api_image_request_streaming(

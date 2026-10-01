@@ -40,6 +40,8 @@ from docling.models.postprocessing.list_marker_processor import (
 from docling.models.postprocessing.reading_order_rb import (
     PageElement as ReadingOrderPageElement,
     ReadingOrderPredictor,
+    SeparatorElement,
+    build_page_separators,
 )
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
@@ -48,6 +50,7 @@ class ReadingOrderOptions(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     model_names: str = ""  # e.g. "language;term;reference"
+    use_page_separators: bool = False
 
 
 class ReadingOrderModel:
@@ -691,6 +694,23 @@ class ReadingOrderModel:
     def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
         with TimeRecorder(conv_res, "reading_order", scope=ProfilingScope.DOCUMENT):
             page_elements = self._assembled_to_readingorder_elements(conv_res)
+            page_separators: list[SeparatorElement] = []
+            if self.options.use_page_separators:
+                elements_by_page: dict[int, list[ReadingOrderPageElement]] = {}
+                for element in page_elements:
+                    elements_by_page.setdefault(element.page_no, []).append(element)
+                for page in conv_res.pages:
+                    if page.size is None:
+                        continue
+                    page_separators.extend(
+                        build_page_separators(
+                            page_no=page.page_no,
+                            page_size=page.size,
+                            page_elements=elements_by_page.get(page.page_no, []),
+                            shape_lines=page._shape_lines,
+                            shape_bounding_boxes=page._shape_bounding_boxes,
+                        )
+                    )
             assembled_by_ref = {
                 self._element_ref(element): element
                 for element in conv_res.assembled.elements
@@ -723,7 +743,12 @@ class ReadingOrderModel:
 
             ordered_siblings = {
                 parent_ref: (
-                    self.ro_model.predict_reading_order(page_elements=siblings)
+                    self.ro_model.predict_reading_order(
+                        page_elements=siblings,
+                        page_separators=(
+                            page_separators if parent_ref is None else None
+                        ),
+                    )
                     if len(siblings) > 1
                     else siblings
                 )

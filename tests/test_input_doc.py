@@ -213,6 +213,27 @@ def test_guess_format_markdown_extension(tmp_path):
     assert dci._guess_format(markdown_path) is InputFormat.MD
 
 
+@pytest.mark.parametrize(
+    ("suffix", "content", "expected"),
+    [
+        ("VTT", b"WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n", InputFormat.VTT),
+        ("ADOC", b"= Title\n\nSome text\n", InputFormat.ASCIIDOC),
+        ("HTML", b"<p>no doctype and no html tag</p>\n", InputFormat.HTML),
+        ("EML", b"From: a@b.c\nTo: d@e.f\nSubject: hi\n\nbody\n", InputFormat.EMAIL),
+    ],
+)
+def test_guess_format_upper_case_extension_path(tmp_path, suffix, content, expected):
+    # The extension is what identifies these text formats; a path must resolve
+    # it case-insensitively, as a DocumentStream with the same name already does.
+    doc_path = tmp_path / f"document.{suffix}"
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=doc_path.name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
 def test_guess_format(tmp_path):
     """Test docling.datamodel.document._DocumentConversionInput.__guess_format"""
     dci = _DocumentConversionInput(path_or_stream_iterator=[])

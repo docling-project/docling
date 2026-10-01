@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import tarfile
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -8,7 +10,7 @@ import pytest
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend, MetsGbsPageBackend
 from docling.datamodel.backend_options import MetsGbsBackendOptions
 from docling.datamodel.base_models import BoundingBox, InputFormat
-from docling.datamodel.document import InputDocument
+from docling.datamodel.document import InputDocument, _DocumentConversionInput
 
 
 @pytest.fixture
@@ -212,3 +214,86 @@ def test_total_bytes_tracking_across_pages(test_doc_path):
 
     assert page_load_failed, "Expected page loading to fail due to total bytes limit"
     doc_backend.unload()
+
+
+def _repack_with_filler(
+    source: Path,
+    target: Path,
+    head: list[str],
+    filler_count: int,
+) -> None:
+    """Rewrite a METS-GBS archive with the `head` members first, then empty filler
+    members, then the remaining original members."""
+    with tarfile.open(source, mode="r:gz") as src:
+        members = {m.name: (m, src.extractfile(m).read()) for m in src.getmembers()}
+
+    with tarfile.open(target, mode="w:gz") as dst:
+        for name in head:
+            info, data = members[name]
+            dst.addfile(info, BytesIO(data))
+        for idx in range(filler_count):
+            dst.addfile(tarfile.TarInfo(name=f"filler/{idx:05d}.bin"), BytesIO())
+        for name, (info, data) in members.items():
+            if name not in head:
+                dst.addfile(info, BytesIO(data))
+
+
+def test_member_limit_enforced_while_iterating(test_doc_path, tmp_path):
+    """Page files beyond the member limit are not reached by reading all headers."""
+    archive = tmp_path / "filler_before_pages.tar.gz"
+    _repack_with_filler(
+        test_doc_path, archive, ["HARVARD_32044009881525.xml"], filler_count=2000
+    )
+    options = MetsGbsBackendOptions(max_member_count=50)
+
+    in_doc = InputDocument(
+        path_or_stream=archive,
+        format=InputFormat.METS_GBS,
+        backend=MetsGbsDocumentBackend,
+        backend_options=options,
+    )
+    assert in_doc.valid
+    doc_backend: MetsGbsDocumentBackend = in_doc._backend
+
+    with pytest.raises(ValueError, match="exceeds maximum member count limit"):
+        doc_backend.load_page(0)
+    assert len(doc_backend._tar.members) <= options.max_member_count + 1
+    doc_backend.unload()
+
+
+def test_members_after_needed_files_are_not_read(test_doc_path, tmp_path):
+    """A page loads without reading headers past the files it needs."""
+    archive = tmp_path / "filler_after_pages.tar.gz"
+    head = [
+        "HARVARD_32044009881525.xml",
+        "00000010.html",
+        "00000010.tif",
+        "00000010.txt",
+    ]
+    _repack_with_filler(test_doc_path, archive, head, filler_count=2000)
+    options = MetsGbsBackendOptions(max_member_count=50)
+
+    in_doc = InputDocument(
+        path_or_stream=archive,
+        format=InputFormat.METS_GBS,
+        backend=MetsGbsDocumentBackend,
+        backend_options=options,
+    )
+    assert in_doc.valid
+    doc_backend: MetsGbsDocumentBackend = in_doc._backend
+
+    page_backend: MetsGbsPageBackend = doc_backend.load_page(0)
+    assert page_backend.is_valid()
+    assert len(doc_backend._tar.members) <= len(head)
+    page_backend.unload()
+    doc_backend.unload()
+
+
+def test_format_detection_stops_at_member_limit(test_doc_path, tmp_path):
+    """Detection gives up once the default member limit is exceeded."""
+    archive = tmp_path / "filler_before_mets.tar.gz"
+    limit = MetsGbsBackendOptions().max_member_count
+    _repack_with_filler(test_doc_path, archive, [], filler_count=limit + 1)
+
+    assert _DocumentConversionInput._detect_mets_gbs(archive) is None
+    assert _DocumentConversionInput._detect_mets_gbs(test_doc_path) is not None

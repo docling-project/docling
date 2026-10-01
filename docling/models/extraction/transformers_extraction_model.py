@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import importlib.metadata
 import logging
 import sys
 import time
@@ -42,6 +43,10 @@ from docling.models.extraction.prompt_utils import (
 from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.granite_vision_utils import (
+    GRANITE_VISION_4_REPO_ID,
+    granite_vision_4_needs_remote_code,
+)
 from docling.utils.vlm_utils import strip_stop_strings
 
 _log = logging.getLogger(__name__)
@@ -105,6 +110,24 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
+            trust_remote_code = engine_options.trust_remote_code
+            attn_implementation: str | None = (
+                "flash_attention_2"
+                if self.device.startswith("cuda")
+                and accelerator_options.cuda_use_flash_attention2
+                else "sdpa"
+            )
+            if repo_id == GRANITE_VISION_4_REPO_ID:
+                if not granite_vision_4_needs_remote_code(
+                    importlib.metadata.version("transformers")
+                ):
+                    trust_remote_code = False
+                if attn_implementation == "sdpa":
+                    # The native granite4_vision Q-Former rejects an explicit sdpa
+                    # request before transformers 5.13; the transformers default
+                    # selects sdpa where the model supports it.
+                    attn_implementation = None
+
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     "ignore",
@@ -118,7 +141,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 )
                 self.processor = AutoProcessor.from_pretrained(
                     artifacts_path,
-                    trust_remote_code=engine_options.trust_remote_code,
+                    trust_remote_code=trust_remote_code,
                     revision=revision,
                     use_fast=True,
                 )
@@ -136,13 +159,8 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                         or self.model_spec.torch_dtype
                         or torch.bfloat16
                     ),
-                    _attn_implementation=(
-                        "flash_attention_2"
-                        if self.device.startswith("cuda")
-                        and accelerator_options.cuda_use_flash_attention2
-                        else "sdpa"
-                    ),
-                    trust_remote_code=engine_options.trust_remote_code,
+                    _attn_implementation=attn_implementation,
+                    trust_remote_code=trust_remote_code,
                     revision=revision,
                     quantization_config=quantization_config,
                 )

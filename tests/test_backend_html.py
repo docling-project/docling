@@ -8,6 +8,7 @@ import time
 from io import BytesIO
 from pathlib import Path, PurePath
 from unittest.mock import Mock, mock_open, patch
+from urllib.parse import quote
 
 import pytest
 import requests
@@ -19,6 +20,7 @@ from pydantic import AnyUrl, ValidationError
 from docling.backend.html_backend import (
     _BR_SENTINEL,
     HTMLDocumentBackend,
+    _warn_headers_without_origin,
 )
 from docling.backend.utils.image_resource_loader import (
     validate_url_safety as _validate_url_safety,
@@ -33,6 +35,7 @@ from docling.datamodel.document import (
 )
 from docling.document_converter import DocumentConverter, HTMLFormatOption
 from docling.exceptions import OperationNotAllowed
+from tests.fakes.image_server import PNG_1X1, SERVER_IP, local_server, use_test_network
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -48,17 +51,6 @@ def _create_html_converter(backend_options):
             InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
         },
     )
-
-
-def _create_mock_response(data=b"fake_image_data"):
-    """Helper to create a mock HTTP response for image fetching."""
-    mock_resp = Mock()
-    mock_resp.headers = {}
-    mock_resp.raise_for_status = Mock()
-    mock_resp.iter_content = Mock(return_value=[data])
-    mock_resp.is_redirect = False
-    mock_resp.is_permanent_redirect = False
-    return mock_resp
 
 
 def test_html_backend_options():
@@ -225,6 +217,38 @@ def test_table_zero_span_defaults_to_one():
     assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
         ["A", "B"],
         ["C", "D"],
+    ]
+
+
+@pytest.mark.parametrize(
+    "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
+)
+def test_table_oversized_spans_clamped_to_table_size(huge: str):
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    src = (
+        f'<table><tr><td rowspan="{huge}">A</td><td colspan="{huge}">B</td></tr>'
+        "<tr><td>C</td></tr></table>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
     ]
 
 
@@ -447,6 +471,33 @@ def test_ordered_lists():
         doc: DoclingDocument = backend.convert()
         assert doc
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
+
+
+def test_orig_keeps_source_text():
+    """Regression for #4423: `text` is sanitized, `orig` keeps the source text."""
+    html = (
+        "<html><body>"
+        "<p>See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept.</p>"
+        "<ul><li>Item 3\u20135 with <b>bold</b> \u201ctext\u201d</li></ul>"
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    items = {item.text: item for item in doc.texts if item.text}
+
+    paragraph = items['See §§ 3-5 and "quoted" text ... it\'s kept.']
+    assert (
+        paragraph.orig
+        == "See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept."
+    )
+    assert items["Item 3-5 with"].orig == "Item 3\u20135 with"
+    assert items['"text"'].orig == "\u201ctext\u201d"
 
 
 def test_nested_table_in_list_item():
@@ -696,9 +747,8 @@ def test_e2e_html_conversions(html_paths):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)
 
 
-@patch("docling.backend.utils.image_resource_loader.requests.get")
 @patch("docling.backend.utils.image_resource_loader.open", new_callable=mock_open)
-def test_e2e_html_conversion_with_images(mock_local, mock_remote):
+def test_e2e_html_conversion_with_images(mock_local, monkeypatch):
     source = "tests/data/html/sources/example_01.html"
     image_path = "tests/data/html/sources/example_image_01.png"
     with open(image_path, "rb") as f:
@@ -725,22 +775,14 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
             num_pic += 1
     assert num_pic == 1, "No embedded picture was found in the converted file"
 
-    # fetching image remotely - need to mock Session.get instead of requests.get
-    with patch(
-        "docling.backend.utils.image_resource_loader.requests.Session.get"
-    ) as mocked_session_get:
-        mock_resp = Mock()
-        mock_resp.status_code = 200
-        mock_resp.headers = {}
-        mock_resp.raise_for_status = Mock()
-        mock_resp.iter_content = Mock(return_value=[img_bytes])
-        mock_resp.is_redirect = False
-        mock_resp.is_permanent_redirect = False
-        mocked_session_get.return_value = mock_resp
-        source_location = "https://example.com/example_01.html"
-
+    # fetching image remotely from a local server
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    with local_server() as server:
+        server.files = {"/example_image_01.png": img_bytes}
         backend_options = HTMLBackendOptions(
-            enable_remote_fetch=True, fetch_images=True, source_uri=source_location
+            enable_remote_fetch=True,
+            fetch_images=True,
+            source_uri=server.url("images.test", "/example_01.html"),
         )
         converter = DocumentConverter(
             allowed_formats=[InputFormat.HTML],
@@ -749,13 +791,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
             },
         )
         res_remote = converter.convert(source)
-        # Verify the session.get was called
-        assert mocked_session_get.call_count == 1
-        call_args = mocked_session_get.call_args
-        assert call_args[0][0] == "https://example.com/example_image_01.png"
-        assert call_args[1]["stream"] is True
-        assert call_args[1]["headers"] == {"Range": "bytes=0-20971519"}
-        assert call_args[1]["timeout"] == (5, 30)
+        assert server.paths() == ["/example_image_01.png"]
     assert res_remote.document
     num_pic = 0
     for element, _ in res_remote.document.iterate_items():
@@ -813,22 +849,24 @@ def test_fetch_remote_images(monkeypatch):
         HTMLBackendOptions(fetch_images=False, source_uri="http://example.com")
     )
     with patch(
-        "docling.backend.utils.image_resource_loader.requests.get"
-    ) as mocked_get:
+        "docling.backend.utils.image_resource_loader._open_direct"
+    ) as mocked_open_direct:
         res = converter.convert(source)
-        mocked_get.assert_not_called()
+        mocked_open_direct.assert_not_called()
     assert res.document
 
     # no image fetching: the source location is False and enable_local_fetch is False
     converter = _create_html_converter(HTMLBackendOptions(fetch_images=True))
     with (
-        patch("docling.backend.utils.image_resource_loader.requests.get") as mocked_get,
+        patch(
+            "docling.backend.utils.image_resource_loader._open_direct"
+        ) as mocked_open_direct,
         pytest.warns(
             match="Fetching local resources is only allowed when set explicitly"
         ),
     ):
         res = converter.convert(source)
-        mocked_get.assert_not_called()
+        mocked_open_direct.assert_not_called()
     assert res.document
 
     # no image fetching: the enable_remote_fetch is False
@@ -836,30 +874,31 @@ def test_fetch_remote_images(monkeypatch):
         HTMLBackendOptions(fetch_images=True, source_uri="http://example.com")
     )
     with (
-        patch("docling.backend.utils.image_resource_loader.requests.get") as mocked_get,
+        patch(
+            "docling.backend.utils.image_resource_loader._open_direct"
+        ) as mocked_open_direct,
         pytest.warns(
             match="Fetching remote resources is only allowed when set explicitly"
         ),
     ):
         res = converter.convert(source)
-        mocked_get.assert_not_called()
+        mocked_open_direct.assert_not_called()
     assert res.document
 
     # image fetching: all conditions apply, source location is remote
-    converter = _create_html_converter(
-        HTMLBackendOptions(
-            enable_remote_fetch=True, fetch_images=True, source_uri="http://example.com"
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    with local_server() as server:
+        server.files = {"/example_image_01.png": b"not an image"}
+        converter = _create_html_converter(
+            HTMLBackendOptions(
+                enable_remote_fetch=True,
+                fetch_images=True,
+                source_uri=server.url("images.test", "/"),
+            )
         )
-    )
-    with (
-        patch(
-            "docling.backend.utils.image_resource_loader.requests.Session.get"
-        ) as mocked_session_get,
-        pytest.warns(UserWarning, match="Could not process an image"),
-    ):
-        mocked_session_get.return_value = _create_mock_response()
-        res = converter.convert(source)
-        mocked_session_get.assert_called_once()
+        with pytest.warns(UserWarning, match="Could not process an image"):
+            res = converter.convert(source)
+        assert server.paths() == ["/example_image_01.png"]
     assert res.document
 
     # image fetching: all conditions apply, local fetching allowed
@@ -878,36 +917,61 @@ def test_fetch_remote_images(monkeypatch):
         assert res.document
 
 
-def test_fetch_remote_images_with_custom_headers():
-    """Test that custom headers are passed when fetching remote images."""
+def test_fetch_remote_images_with_custom_headers(monkeypatch):
+    """Custom headers go to the source origin, or to the allowed origins if set."""
     custom_headers = {"Authorization": "Bearer test-token", "X-API-Key": "test-api-key"}
-    backend_options = HTMLBackendOptions(
-        enable_remote_fetch=True,
-        fetch_images=True,
-        source_uri="http://example.com",
-        headers=custom_headers,
-    )
-    # Verify sensitive headers are not exposed in string representation
-    repr_str = repr(backend_options)
-    assert (
-        "test-token" not in repr_str
-        and "test-api-key" not in repr_str
-        and "headers=" not in repr_str
-    )
+    # Sensitive headers are not exposed in the string representation.
+    repr_str = repr(HTMLBackendOptions(headers=custom_headers))
+    assert "test-token" not in repr_str and "headers=" not in repr_str
 
-    converter = _create_html_converter(backend_options)
-    with (
-        patch(
-            "docling.backend.utils.image_resource_loader.requests.Session.get"
-        ) as mocked_session_get,
-        pytest.warns(UserWarning, match="Could not process an image"),
-    ):
-        mocked_session_get.return_value = _create_mock_response()
-        res = converter.convert("./tests/data/html/sources/example_01.html")
-        headers_arg = mocked_session_get.call_args[1].get("headers", {})
-        assert headers_arg["Authorization"] == "Bearer test-token"
-        assert headers_arg["X-API-Key"] == "test-api-key" and "Range" in headers_arg
-    assert res.document
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    source = "./tests/data/html/sources/example_01.html"
+    with local_server() as server:
+        server.files = {"/example_image_01.png": PNG_1X1}
+        source_uri = server.url("images.test", "/example_01.html")
+
+        # Default: headers are sent to the source document's origin.
+        _create_html_converter(
+            HTMLBackendOptions(
+                enable_remote_fetch=True,
+                fetch_images=True,
+                source_uri=source_uri,
+                headers=custom_headers,
+            )
+        ).convert(source)
+        # An explicit allowlist replaces the source origin.
+        _create_html_converter(
+            HTMLBackendOptions(
+                enable_remote_fetch=True,
+                fetch_images=True,
+                source_uri=source_uri,
+                headers=custom_headers,
+                headers_allowed_origins=["https://cdn.example.com"],
+            )
+        ).convert(source)
+
+    first, second = server.requests
+    assert first.headers["Authorization"] == "Bearer test-token"
+    assert first.headers["X-API-Key"] == "test-api-key"
+    assert "Authorization" not in second.headers
+    assert "X-API-Key" not in second.headers
+
+
+def test_headers_without_allowed_origin_log_a_warning(caplog):
+    """Headers configured for a local source with no allowlist are reported once."""
+    _warn_headers_without_origin.cache_clear()
+    with caplog.at_level("WARNING", logger="docling.backend.html_backend"):
+        for _ in range(2):
+            _make_html_backend(
+                HTMLBackendOptions(enable_remote_fetch=True, headers={"X-Key": "k"})
+            )
+    messages = [r.getMessage() for r in caplog.records]
+    assert sum("headers_allowed_origins" in m for m in messages) == 1
+
+
+def test_headers_allowed_origins_must_be_http_urls():
+    with pytest.raises(ValidationError, match="Invalid origin"):
+        HTMLBackendOptions(headers_allowed_origins=["cdn.example.com"])
 
 
 def test_is_rich_table_cell(html_paths):
@@ -1234,43 +1298,13 @@ def test_validate_url_safety_rejects_private_ips():
 
 def test_load_image_data_enforces_size_limit(monkeypatch):
     """Test that image downloads are capped at the size limit."""
-
-    class MockResponse:
-        def __init__(self, content_size):
-            self.status_code = 200
-            self.headers = {"content-length": str(content_size)}
-            self._content_size = content_size
-
-        def raise_for_status(self):
-            pass
-
-        def iter_content(self, chunk_size=8192):
-            remaining = self._content_size
-            while remaining > 0:
-                chunk_len = min(chunk_size, remaining)
-                yield b"x" * chunk_len
-                remaining -= chunk_len
-
-    html_path = Path("./tests/data/html/sources/example_01.html")
-    in_doc = InputDocument(
-        path_or_stream=html_path,
-        format=InputFormat.HTML,
-        backend=HTMLDocumentBackend,
-        filename="test",
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    backend = _make_html_backend(
+        HTMLBackendOptions(enable_remote_fetch=True, max_remote_image_bytes=16)
     )
-    backend = HTMLDocumentBackend(
-        in_doc=in_doc,
-        path_or_stream=html_path,
-        options=HTMLBackendOptions(enable_remote_fetch=True),
-    )
-
-    oversized_response = MockResponse(25 * 1024 * 1024)  # 25 MB, exceeds 20 MB limit
-    monkeypatch.setattr(
-        requests.Session, "get", lambda *args, **kwargs: oversized_response
-    )
-
-    with pytest.raises(ValueError, match="Resource size exceeds limit"):
-        backend._load_image_data("http://example.com/huge_image.png")
+    with local_server() as server:
+        with pytest.raises(ValueError, match="Resource size exceeds limit"):
+            backend._load_image_data(server.url("images.test", "/img.png"))
 
 
 def test_load_image_data_enforces_data_uri_size_limit():
@@ -1462,6 +1496,56 @@ def test_browser_request_block_reason_policy():
     assert (
         backend._get_browser_request_block_reason("http://example.com/img.png") is None
     )
+
+
+def _require_chromium() -> None:
+    sync_api = pytest.importorskip("playwright.sync_api")
+    try:
+        with sync_api.sync_playwright() as playwright:
+            playwright.chromium.launch(headless=True).close()
+    except Exception as exc:
+        pytest.skip(f"Chromium is not available: {exc}")
+
+
+def test_browser_render_fetches_remote_resources_through_image_loader(
+    tmp_path, monkeypatch
+):
+    """Rendered pages get remote resources from the validated fetch path.
+
+    An allowed image is served, while an image that redirects to a non-public
+    address is refused before the redirect target is requested.
+    """
+    _require_chromium()
+    use_test_network(monkeypatch, {})
+    with local_server() as server:
+        server.files["/secret.png"] = PNG_1X1
+        allowed = server.url(SERVER_IP, "/img.png")
+        redirected = server.url(
+            SERVER_IP,
+            "/redirect?to=" + quote(server.url("localhost", "/secret.png"), safe=""),
+        )
+        html_path = tmp_path / "page.html"
+        html_path.write_text(
+            f'<html><body><img src="{allowed}"><img src="{redirected}"></body></html>'
+        )
+        in_doc = InputDocument(
+            path_or_stream=html_path,
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="page.html",
+        )
+        backend = HTMLDocumentBackend(
+            in_doc=in_doc,
+            path_or_stream=html_path,
+            options=HTMLBackendOptions(render_page=True, enable_remote_fetch=True),
+        )
+        with pytest.warns(UserWarning, match="restricted IP address"):
+            backend.convert()
+
+    paths = server.paths()
+    assert "/img.png" in paths
+    assert "/redirect" in paths
+    assert "/secret.png" not in paths
 
 
 def test_browser_request_block_reason_local_fetch_confined_to_source_directory():
@@ -1661,3 +1745,46 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+def test_gfm_task_list_renders_checkbox_with_text():
+    # <li><input type=checkbox>text</li> is the canonical GFM task list. The
+    # text belongs to the checkbox item; it used to become a separate list
+    # item, pushing the checkbox onto its own bullet *after* the text.
+    html = (
+        "<ul><li><input type='checkbox' checked>done</li>"
+        "<li><input type='checkbox'>todo</li></ul>"
+    )
+    stream = BytesIO(html.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="tasks.html",
+    )
+    doc = in_doc._backend.convert()
+
+    markdown = doc.export_to_markdown()
+    assert markdown == "- [x] done\n- [ ] todo"
+
+
+def test_task_list_item_keeps_nested_content_list_item():
+    # An <li> holding a checkbox plus real block content still gets its list
+    # item; only the pure checkbox+text form is consumed by the checkbox.
+    html = (
+        "<ul><li><input type='checkbox' checked>done<p>details paragraph</p></li></ul>"
+    )
+    stream = BytesIO(html.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="tasks_nested.html",
+    )
+    doc = in_doc._backend.convert()
+
+    markdown = doc.export_to_markdown()
+    assert "done" in markdown
+    assert "details paragraph" in markdown
+    # the checkbox must not be rendered as an empty extra bullet
+    assert "- [x] \n" not in markdown and "- [x] \r" not in markdown

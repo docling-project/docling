@@ -3,6 +3,7 @@
 
 import logging
 from collections.abc import Iterator
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
@@ -29,6 +30,7 @@ from docling.backend.msexcel_backend import (
     ExcelCell,
     ExcelTable,
     MsExcelDocumentBackend,
+    _order_comment_thread,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -181,6 +183,61 @@ def test_comment_cell_coordinates(documents) -> None:
     assert any("G12" in name for name in comment_names), (
         "Expected threaded comment for cell G12"
     )
+
+
+def test_threaded_comment_keeps_root_and_replies(documents) -> None:
+    """Test that a comment thread keeps its root comment and replies in order."""
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
+
+    thread = next(g for g in doc.groups if g.name.endswith("-F7"))
+    texts = [child.resolve(doc).text for child in thread.children]
+
+    assert len(texts) == 2
+    assert "Minimum number of saltwater ducks" in texts[0]
+    assert "I never thought it would be so low" in texts[1]
+
+
+@pytest.mark.parametrize(
+    ("entries", "expected"),
+    [
+        pytest.param(
+            [("c", "a", 3), ("b", "a", 2), ("a", None, 1)],
+            ["a", "b", "c"],
+            id="reversed-order",
+        ),
+        pytest.param(
+            [("p", "q", 1), ("q", "p", 2), ("a", None, 3)],
+            ["a", "p", "q"],
+            id="cycle",
+        ),
+        pytest.param(
+            [("r", "a", 3), ("a", None, 2), ("o", "gone", 1)],
+            ["o", "a", "r"],
+            id="orphaned-parent",
+        ),
+        pytest.param(
+            [("r2", "b", 4), ("b", None, 2), ("r1", "a", 3), ("a", None, 1)],
+            ["a", "r1", "b", "r2"],
+            id="multi-root",
+        ),
+    ],
+)
+def test_order_comment_thread(
+    entries: list[tuple[str, str | None, int]], expected: list[str]
+) -> None:
+    """Test that each comment comes before its replies, whatever the XML order."""
+    thread = _order_comment_thread(
+        [
+            (
+                comment_id,
+                parent_id,
+                ("Author", comment_id, datetime(2024, 1, 1, 0, minute)),
+            )
+            for comment_id, parent_id, minute in entries
+        ]
+    )
+
+    assert [text for _, text, _ in thread] == expected
 
 
 def test_e2e_excel_conversions(documents, libreoffice_available) -> None:
@@ -676,7 +733,7 @@ def test_merged_cells_are_indexed_once_and_preserve_semantics(tmp_path: Path) ->
     assert [(cell.row_span, cell.col_span) for cell in table.data if cell.col == 0] == [
         (1, 3)
     ] * 10
-    assert comment_map[(3, 3)] == ("Codex", "Synthetic note", None)
+    assert comment_map[(3, 3)] == [("Codex", "Synthetic note", None)]
 
 
 def test_split_leading_section_label_helper() -> None:
