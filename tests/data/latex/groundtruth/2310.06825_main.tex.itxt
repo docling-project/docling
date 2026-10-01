@@ -6,7 +6,7 @@ William El Sayed
   item-3 at level 1: picture
     item-3 at level 2: caption: Image: images/header.jpeg
   item-4 at level 1: section_header: Abstract
-  item-5 at level 1: text: We introduce , a 7billion-parame ... mistral.ai/news/announcing-mistral-7b/
+  item-5 at level 1: text: We introduce , a 7–billion-param ... mistral.ai/news/announcing-mistral-7b/
   item-6 at level 1: section_header: Introduction
   item-7 at level 1: text: =-1 In the rapidly evolving doma ... rmance on non-code related benchmarks.
   item-8 at level 1: text: leverages grouped-query attentio ... hanced performance and efficiency of .
@@ -17,7 +17,7 @@ William El Sayed
   item-13 at level 1: text: .
 Integration with Hugging Face
   item-14 at level 1: footnote: https://huggingface.co/mistralai
-  item-15 at level 1: text: is also streamlined for easier i ... tly outperforms the 2 13B  Chat model.
+  item-15 at level 1: text: is also streamlined for easier i ... ly outperforms the 2 13B – Chat model.
   item-16 at level 1: text: =-1 takes a significant step in  ... wide range of real-world applications.
   item-17 at level 1: section_header: Architectural details
   item-18 at level 1: section: group figure
@@ -47,11 +47,11 @@ During pr ... de of the sliding window (left block).
   item-38 at level 1: section_header: Results
   item-39 at level 1: text: We compare to , and re-run all b ... ariety of tasks categorized as follow:
   item-40 at level 1: list: group list
-    item-41 at level 2: list_item: Commonsense Reasoning (0-shot):  ... CommonsenseQA[talmor2018commonsenseqa]
-    item-42 at level 2: list_item: World Knowledge (5-shot): Natura ... 9natural], TriviaQA[joshi2017triviaqa]
-    item-43 at level 2: list_item: Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]
-    item-44 at level 2: list_item: Math: GSM8K[cobbe2021training] ( ... ycks2021measuring] (4-shot) with maj@4
-    item-45 at level 2: list_item: Code: Humaneval[chen2021evaluati ... ) and MBPP[austin2021program] (3-shot)
+    item-41 at level 2: list_item: Commonsense Reasoning (0-shot):  ... ommonsenseQA [talmor2018commonsenseqa]
+    item-42 at level 2: list_item: World Knowledge (5-shot): Natura ... natural], TriviaQA [joshi2017triviaqa]
+    item-43 at level 2: list_item: Reading Comprehension (0-shot):  ...  [clark2019boolq], QuAC [choi2018quac]
+    item-44 at level 2: list_item: Math: GSM8K [cobbe2021training]  ... ycks2021measuring] (4-shot) with maj@4
+    item-45 at level 2: list_item: Code: Humaneval [chen2021evaluat ...  and MBPP [austin2021program] (3-shot)
     item-46 at level 2: list_item: Popular aggregated results: MMLU ... nglish multiple-choice questions only)
   item-47 at level 1: text: Detailed results for , 2 7B/13B, ... erformance of with 2 7B/13B, and 1 34B
   item-48 at level 1: footnote: Since 2 34B was not open-sourced, we report results for 1 34B.
@@ -73,14 +73,14 @@ surpass ... mathematics, and reasoning benchmarks.
   item-61 at level 1: caption: Image: images/230927_effective_sizes.png
   item-62 at level 1: text: r0.48
   item-63 at level 1: table with [9x3]
-  item-64 at level 1: text: tableComparison of Chat models.  ...  and is comparable to 13B Chat models.
+  item-64 at level 1: text: tableComparison of Chat models.  ... nd is comparable to 13B – Chat models.
   item-65 at level 1: section_header: Instruction Finetuning
   item-66 at level 1: text: =-1 To evaluate the generalizati ...  on https://llmboxing.com/leaderboard.
   item-67 at level 1: text: In this evaluation, participants ... ompared to 4143 times for Llama 2 13B.
   item-68 at level 1: section_header: Adding guardrails for front-facing applications
   item-69 at level 1: text: =-1 The ability to enforce guard ... force quality content in applications.
   item-70 at level 1: section_header: System prompt to enforce guardrails
-  item-71 at level 1: text: We introduce a system prompt (se ... as indicated in Table[tab:guardrails].
+  item-71 at level 1: text: We introduce a system prompt (se ... s indicated in Table [tab:guardrails].
   item-72 at level 1: text: 0.98Always assist with care, res ... plies promote fairness and positivity.
   item-73 at level 1: text: r0.38
   item-74 at level 1: table with [5x2]
@@ -100,7 +100,7 @@ surpass ... mathematics, and reasoning benchmarks.
   item-88 at level 1: section: group figure
     item-89 at level 2: picture
       item-89 at level 3: caption: Image: images/llama_vs_mistral_example.png
-    item-90 at level 2: text: Human evaluation of vs 213BChat  ... cribes in the contents in more detail.
+    item-90 at level 2: text: Human evaluation of vs 2 13B – C ... cribes in the contents in more detail.
   item-91 at level 1: caption: Image: images/llama_vs_mistral_example.png
   item-92 at level 1: text: ref
   item-93 at level 1: text: plain
