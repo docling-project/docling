@@ -152,6 +152,32 @@ def test_backslash_escaped_quotes_are_a_load_error():
     assert conv_result.status == ConversionStatus.FAILURE
 
 
+@pytest.mark.parametrize("delimiter", [",", ";", "\t", "|"])
+def test_quoted_newline_with_delimiter_in_first_physical_line(delimiter):
+    """A delimiter inside an unfinished quoted field must not win sniffing."""
+    csv_bytes = (
+        f'"Title: details\ncontinued"{delimiter}value\n1{delimiter}2\n'
+    ).encode()
+    doc = (
+        get_converter()
+        .convert(
+            DocumentStream(name="multiline.csv", stream=BytesIO(csv_bytes)),
+            raises_on_error=True,
+        )
+        .document
+    )
+
+    table_data = doc.tables[0].data
+    assert table_data.num_rows == 2
+    assert table_data.num_cols == 2
+    assert [cell.text for cell in table_data.table_cells] == [
+        "Title: details\ncontinued",
+        "value",
+        "1",
+        "2",
+    ]
+
+
 def test_empty_csv():
     """Regression test: converting an empty CSV file should not raise an IndexError."""
     conv_result = get_converter().convert(

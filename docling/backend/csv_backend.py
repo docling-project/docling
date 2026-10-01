@@ -30,15 +30,20 @@ def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialec
     """Detect the dialect from the first line, falling back to a larger sample.
 
     The first line is enough for most files and is what the sniffer reads best:
-    it rejects samples whose rows hold different numbers of delimiters. It is
-    not enough when a quoted field spans several lines, because the line is cut
-    mid-quote; retrying with a sample that closes the quote recovers those.
+    it rejects samples whose rows hold different numbers of delimiters. A
+    successful sniff must also parse as a complete record: a line cut inside a
+    quoted field can otherwise mistake its content for a delimiter. Retrying
+    with a sample that closes the quote recovers those.
     `read_sample` is only called on that fallback path.
 
     Raises csv.Error if neither can be detected.
     """
     try:
-        return csv.Sniffer().sniff(head, _DELIMITERS)
+        dialect = csv.Sniffer().sniff(head, _DELIMITERS)
+        # Sniffer can succeed on a delimiter inside an unfinished quoted field.
+        # Only trust the first-line dialect if it also parses a complete record.
+        next(csv.reader([head], dialect=dialect, doublequote=True, strict=True))
+        return dialect
     except csv.Error:
         return csv.Sniffer().sniff(read_sample(), _DELIMITERS)
 
@@ -90,9 +95,9 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
     def convert(self) -> DoclingDocument:
         """Parse the CSV content into a DoclingDocument.
 
-        Dialect detection sniffs the first line; a larger sample is only read
-        when that fails (e.g. a quoted field spanning multiple lines cuts the
-        first line mid-quote). If sniffing fails entirely, `csv.excel`
+        Dialect detection sniffs and validates the first line; a larger sample
+        is only read when that fails (e.g. a quoted field spanning multiple
+        lines cuts the first line mid-quote). If sniffing fails entirely, `csv.excel`
         (comma delimiter) is used as the fallback.
 
         `doublequote=True` is passed explicitly because `csv.Sniffer` only
