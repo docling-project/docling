@@ -27,11 +27,11 @@ Some *`formatted_code`*
 
 ## Table Heading
 
-| Bold Heading | Italic Heading |
+| **Bold Heading** | *Italic Heading* |
 | - | - |
 | data a | data b |
-| C Cadre | x |
-| foo bar | y |
-| A B | z |
-| italic and bold | w |
-| run build now | code in a cell |
+| **C** Cadre | x |
+| foo **bar** | y |
+| **A** **B** | z |
+| *italic* and **bold** | w |
+| run `build` now | code in a cell |
