@@ -11,6 +11,8 @@ Docling supports multiple OCR engines that can be installed as extra packages:
 - [tesseract-CLI](https://github.com/tesseract-ocr/tesseract)
 - [tesserocr](https://github.com/sirfz/tesserocr)
 
+Docling can also send OCR requests to a remote inference server, see [KServe v2](#kserve-v2).
+
 ## Language selection
 
 Every OCR engine takes its languages through the same field, `OcrOptions.lang`.
@@ -86,7 +88,7 @@ RapidOcrOptions(lang=["iso:zh-Hans"]).lang # -> ["iso:zh-Hans"], the same PP-OCR
 Two cases need the bare code:
 
 - the model has no `(language, script)` name at all -- see
-  [Models no tag can name](#models-no-tag-can-name)
+  [Models no tag can name](#when-an-engine-has-no-model)
 - you want the engine's reading of a code that is also a tag for something else -- see
   [Codes that shadow a tag](#codes-that-shadow-a-tag)
 
@@ -257,3 +259,31 @@ languages the running macOS reports, instead of mapping it through a table: `iso
 Some Vision codes carry a region that is not ISO valid like `vi-VT`. Such cases should be passed as
 bare/native inputs. An empty `lang` list lets Vision choose.
 
+## KServe v2
+
+`KserveV2OcrOptions` runs OCR on a model served by a KServe v2-compatible inference server, such as
+Triton Inference Server, over gRPC or HTTP. Page crops are sent to that server, so the pipeline
+must opt in to remote services with `enable_remote_services=True`; otherwise building the pipeline
+raises `OperationNotAllowed`. See [Using remote services](../usage/advanced_options.md#using-remote-services).
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import KserveV2OcrOptions, PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(
+    do_ocr=True,
+    enable_remote_services=True,
+    ocr_options=KserveV2OcrOptions(
+        url="localhost:8001",
+        transport="grpc",
+        model_name="rapidocr",
+        lang=["en"],
+    ),
+)
+converter = DocumentConverter(
+    format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}
+)
+```
+
+The server receives `lang` verbatim, and only its first entry, see [Language selection](#language-selection).

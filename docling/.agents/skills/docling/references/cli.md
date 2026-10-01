@@ -18,6 +18,8 @@ docling <source> [--to md|json|html|text|doctags] [--output DIR]
 - `<source>` is a **local path or an http(s) URL** — both work directly.
 - Output files are named after the input (`report.pdf` → `report.md`).
 - `--output` defaults to the current directory. Use `--output /tmp/` to redirect.
+- For one input and one output format, `--output-file PATH` writes to an exact
+  filename instead of deriving it from the input.
 - `--to` may be repeated to emit several formats in one run.
 
 ```bash
@@ -25,6 +27,7 @@ docling report.pdf --to md --output /tmp/              # Markdown (readable)
 docling report.pdf --to json --output /tmp/            # DoclingDocument JSON (lossless)
 docling https://arxiv.org/pdf/2408.09869 --to md       # convert a URL
 docling report.pdf --to md --to json --output /tmp/    # both at once
+docling report.pdf --to dclx --output-file /tmp/named-result.dclx
 ```
 
 Supported input formats include: `pdf`, `docx`/`doc`, `pptx`/`ppt`, `xlsx`/`xls`,
@@ -46,8 +49,19 @@ Docling has three pipeline families for PDFs and images. Choose with `--pipeline
 docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
+
+For PDFs, visible horizontal and vertical rules are used as reading-order
+signals by default. Disable this to compare against rule-free ordering:
+
+```bash
+docling report.pdf --from pdf --no-reading-order-separators --output /tmp/
+```
+
+When diagnosing a VLM parser, add `--debug-vlm-native-output` to save each
+page's unparsed model response in the shared `debug_<document>/` directory.
 
 Decision guide:
 
@@ -107,6 +121,7 @@ docling report.pdf --enrich-picture-description --output /tmp/
 | `�` replacement characters | Try a different `--ocr-engine`, or `--pipeline vlm` |
 | Same line repeated many times | `--pipeline vlm` (or hybrid `force_backend_text`, Python SDK only) |
 | Choose GPU/CPU explicitly | `--device cuda` / `--device cpu` / `--device mps` |
+| HTML images on remote hosts | `--html-image-fetch remote`; add auth with `--html-image-headers '{"Authorization": "Bearer T"}'` (sent only to the source page's origin, or to each `--html-image-headers-origin https://cdn.example.com`) |
 
 ## Remote VLM services from the CLI
 

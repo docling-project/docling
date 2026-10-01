@@ -6,12 +6,16 @@ import time
 from pathlib import Path
 
 import pytest
+from matplotlib.figure import Figure
 
 from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.backend_options import (
+    PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
+)
 from docling.datamodel.base_models import ConversionStatus, InputFormat, Page
 from docling.datamodel.pipeline_options import (
     ThreadedPdfPipelineOptions,
@@ -49,21 +53,6 @@ def _make_threaded_converter(**kwargs) -> DocumentConverter:
     )
 
 
-def _make_standard_converter() -> DocumentConverter:
-    return DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(
-                pipeline_cls=StandardPdfPipeline,
-                backend=DoclingParseDocumentBackend,
-                pipeline_options=ThreadedPdfPipelineOptions(
-                    do_table_structure=False,
-                    do_ocr=False,
-                ),
-            )
-        }
-    )
-
-
 def test_threaded_pipeline_multiple_documents():
     converter = _make_threaded_converter()
     converter.initialize_pipeline(InputFormat.PDF)
@@ -72,17 +61,6 @@ def test_threaded_pipeline_multiple_documents():
 
     assert len(results) == len(_TEST_FILES)
     assert all(r.status == ConversionStatus.SUCCESS for r in results)
-
-
-def test_threaded_and_standard_backends_convert_with_standard_pipeline():
-    threaded_converter = _make_threaded_converter()
-    standard_converter = _make_standard_converter()
-
-    threaded_result = threaded_converter.convert(_SINGLE_FILE)
-    standard_result = standard_converter.convert(_SINGLE_FILE)
-
-    assert threaded_result.status == ConversionStatus.SUCCESS
-    assert standard_result.status == ConversionStatus.SUCCESS
 
 
 def test_threaded_pipeline_with_pypdfium_backend():
@@ -103,6 +81,78 @@ def test_threaded_pipeline_with_pypdfium_backend():
     for i in range(3):
         result = converter.convert(_SINGLE_FILE)
         assert result.status == ConversionStatus.SUCCESS, f"iteration {i} failed"
+
+
+def test_threaded_docling_parse_table_matches_pypdfium(tmp_path: Path):
+    """Both PDF backends must preserve the table from issue #3512."""
+    pdf_path = tmp_path / "table_repro.pdf"
+    rows = [
+        ["Area of expertise", "Product Management", "Product Marketing"],
+        ["Document Cloud", "Vamsi Vutukuru", "Nora Yau"],
+        ["Acrobat", "Alex Chen", "Maria Lopez"],
+        ["Sign", "Sam Patel", "Lena Frei"],
+    ]
+
+    figure = Figure(figsize=(8.27, 11.69))
+    axis = figure.subplots()
+    axis.axis("off")
+    axis.text(
+        0.5,
+        0.95,
+        "Contacts available for customer meetings",
+        ha="center",
+        fontsize=14,
+    )
+    table = axis.table(
+        cellText=rows[1:],
+        colLabels=rows[0],
+        loc="center",
+        cellLoc="center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(11)
+    table.scale(1, 2.2)
+    figure.savefig(pdf_path)
+
+    documents = []
+    backend_configs = [
+        (PyPdfiumDocumentBackend, PdfBackendOptions()),
+        (
+            ThreadedDoclingParseDocumentBackend,
+            ThreadedDoclingParseBackendOptions(parser_threads=1),
+        ),
+    ]
+    for backend, backend_options in backend_configs:
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_cls=StandardPdfPipeline,
+                    backend=backend,
+                    backend_options=backend_options,
+                    pipeline_options=ThreadedPdfPipelineOptions(do_ocr=False),
+                )
+            }
+        )
+        result = converter.convert(pdf_path)
+
+        assert result.status == ConversionStatus.SUCCESS
+        documents.append(result.document)
+
+    expected_cells = [cell for row in rows for cell in row]
+    for document in documents:
+        assert len(document.tables) == 1
+        assert len(document.texts) == 1
+        assert [
+            cell.text.strip() for cell in document.tables[0].data.table_cells
+        ] == expected_cells
+
+    pypdfium_document, threaded_document = documents
+    assert pypdfium_document.tables[0].data.num_rows == (
+        threaded_document.tables[0].data.num_rows
+    )
+    assert pypdfium_document.tables[0].data.num_cols == (
+        threaded_document.tables[0].data.num_cols
+    )
 
 
 def test_threaded_pipeline_page_range():

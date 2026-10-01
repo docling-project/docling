@@ -215,14 +215,10 @@ def test_picture_description_scale_must_be_positive() -> None:
 
 
 def test_picture_description_preset_batch_size_must_be_positive() -> None:
-    options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm", batch_size=0)
-
     with pytest.raises(ValueError, match="batch_size"):
-        _ConfiguredPictureDescriptionModel(options)
+        PictureDescriptionVlmEngineOptions.from_preset("smolvlm", batch_size=0)
 
 
 def test_picture_description_preset_scale_must_be_positive() -> None:
-    options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm", scale=0)
-
     with pytest.raises(ValueError, match="scale"):
-        _ConfiguredPictureDescriptionModel(options)
+        PictureDescriptionVlmEngineOptions.from_preset("smolvlm", scale=0)

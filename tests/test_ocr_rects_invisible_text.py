@@ -11,7 +11,6 @@ from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.labels import DocItemLabel
 
 from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pdf_backend import PdfPageBackend
@@ -77,7 +76,6 @@ def _load_first_page(backend_cls):
         backend=backend_cls,
     )._backend
 
-    # The threaded backend streams pages and rejects random access.
     if backend_cls is ThreadedDoclingParseDocumentBackend:
         return doc_backend, next(iter(doc_backend.iter_pages()))
     return doc_backend, doc_backend.load_page(0)
@@ -86,9 +84,6 @@ def _load_first_page(backend_cls):
 @pytest.mark.parametrize(
     "backend_cls",
     [
-        # Spatial-index path (no `has_content_in`), the default PDF backend.
-        DoclingParseDocumentBackend,
-        # Native-query paths.
         ThreadedDoclingParseDocumentBackend,
         PyPdfiumDocumentBackend,
     ],

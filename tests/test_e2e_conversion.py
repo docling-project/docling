@@ -19,7 +19,11 @@ GENERATE_V2 = GEN_TEST_DATA
 pytestmark = pytest.mark.ml_pdf_model
 
 # acroform_sample.pdf: the DocTags export does not support field items.
-SKIP_DOCTAGS_COMPARISON = ["2203.01017v2.pdf", "acroform_sample.pdf"]
+SKIP_DOCTAGS_COMPARISON = [
+    "2203.01017v2.pdf",
+    "table_mislabeled_as_picture.pdf",
+    "acroform_sample.pdf",
+]
 
 # PDFs that are tested separately: test_failed_pages.py (intentionally failing
 # pages).

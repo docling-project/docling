@@ -18,7 +18,9 @@ from docling_core.types.doc import (
 from docling_core.types.doc.items.form import FieldItem, FieldValueItem
 from docling_core.types.doc.page import BoundingRectangle, PdfWidget, TextCell
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.datamodel.base_models import (
     AssembledUnit,
     Cluster,
@@ -101,10 +103,10 @@ def test_docling_parse_exposes_complete_widget_contract_in_native_order() -> Non
     input_doc = InputDocument(
         path_or_stream=FORM_PDF,
         format=InputFormat.PDF,
-        backend=DoclingParseDocumentBackend,
+        backend=ThreadedDoclingParseDocumentBackend,
     )
     backend = input_doc._backend
-    page = backend.load_page(0)
+    page = next(backend.iter_pages())
     try:
         segmented_page = page.get_segmented_page()
         assert segmented_page is not None

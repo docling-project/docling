@@ -50,6 +50,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
+    KserveV2OcrOptions,
     LayoutPostprocessorOptions,
     ThreadedPdfPipelineOptions,
 )
@@ -613,6 +614,9 @@ class StandardPdfPipeline(ConvertPipeline):
                 skip_cell_extraction=resolve_skip_cell_extraction(
                     self.pipeline_options
                 ),
+                capture_reading_order_separators=(
+                    self.pipeline_options.use_reading_order_separators
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)
@@ -651,7 +655,11 @@ class StandardPdfPipeline(ConvertPipeline):
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
-        self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.reading_order_model = ReadingOrderModel(
+            options=ReadingOrderOptions(
+                use_page_separators=self.pipeline_options.use_reading_order_separators
+            )
+        )
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
         )
@@ -694,11 +702,19 @@ class StandardPdfPipeline(ConvertPipeline):
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
+        # Only engines that call a remote service take this flag; other OCR
+        # engines, including external plugins, keep the base constructor.
+        extra: dict[str, bool] = {}
+        if isinstance(self.pipeline_options.ocr_options, KserveV2OcrOptions):
+            extra["enable_remote_services"] = (
+                self.pipeline_options.enable_remote_services
+            )
         return factory.create_instance(
             options=self.pipeline_options.ocr_options,
             enabled=self.pipeline_options.do_ocr,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            **extra,
         )
 
     def _release_page_resources(self, item: ThreadedItem) -> None:

@@ -774,12 +774,19 @@ class _DocumentConversionInput(BaseModel):
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
             mime = filetype.guess_mime(str(obj))
-            obj_ext = obj.suffix[1:] if obj.suffix else ""
+            # Lower-cased so that an upper-case extension (NOTES.VTT, page.HTML)
+            # maps to its format the same way it does for a DocumentStream.
+            obj_ext = obj.suffix[1:].lower() if obj.suffix else ""
             if mime is None:
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext)
             needs_content_sniff = mime is None or (
                 mime is not None
-                and mime.lower() in {"application/xml", "application/xhtml+xml"}
+                and mime.lower()
+                in {
+                    "application/octet-stream",
+                    "application/xml",
+                    "application/xhtml+xml",
+                }
             )
             if needs_content_sniff:
                 with obj.open("rb") as f:
@@ -795,6 +802,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".presentationml.presentation"
                 elif suffix == ".pages":
                     mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
+                elif suffix == ".key":
+                    mime = FormatToMimeType[InputFormat.IWORK_KEYNOTE][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj
@@ -828,6 +837,8 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".presentationml.presentation"
                 elif objname.endswith(".pages"):
                     mime = FormatToMimeType[InputFormat.IWORK_PAGES][0]
+                elif objname.endswith(".key"):
+                    mime = FormatToMimeType[InputFormat.IWORK_KEYNOTE][0]
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
                         obj.stream
@@ -839,6 +850,9 @@ class _DocumentConversionInput(BaseModel):
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
                 mime = detected_mime
 
+        if not mime or mime.lower() == "application/octet-stream":
+            if detected_afp := _DocumentConversionInput._detect_afp(content):
+                mime = detected_afp
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
@@ -996,6 +1010,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.BOXNOTE][0]
         elif ext in FormatToExtensions[InputFormat.EBCDIC]:
             mime = FormatToMimeType[InputFormat.EBCDIC][0]
+        elif ext in FormatToExtensions[InputFormat.AFP]:
+            mime = FormatToMimeType[InputFormat.AFP][0]
         elif ext in FormatToExtensions[InputFormat.PDF]:
             mime = FormatToMimeType[InputFormat.PDF][0]
         elif ext in FormatToExtensions[InputFormat.DOCX]:
@@ -1029,6 +1045,21 @@ class _DocumentConversionInput(BaseModel):
                 else FormatToMimeType[InputFormat.EMAIL][0]
             )
         return mime
+
+    @staticmethod
+    def _detect_afp(content: bytes) -> Optional[str]:
+        """Detect an AFP MO:DCA structured-field introducer.
+
+        The two-byte length excludes the leading X'5A' carriage-control byte and
+        includes the eight-byte structured-field introducer. Only the header is
+        required here because format sniffing reads a bounded prefix of the file.
+        """
+        if len(content) < 9 or content[0] != 0x5A:
+            return None
+        field_length = int.from_bytes(content[1:3], byteorder="big")
+        if not 8 <= field_length <= 32767 or content[3] != 0xD3:
+            return None
+        return FormatToMimeType[InputFormat.AFP][0]
 
     @staticmethod
     def _detect_html_xhtml(
@@ -1123,7 +1154,8 @@ class _DocumentConversionInput(BaseModel):
                 fileobj=content if isinstance(content, BytesIO) else None,
                 mode="r:gz",
             ) as tar:
-                for member in tar.getmembers():
+                # Iterate lazily so the member limit applies before all headers are read
+                for member in tar:
                     member_count += 1
                     if member_count > max_member_count:
                         _log.warning(

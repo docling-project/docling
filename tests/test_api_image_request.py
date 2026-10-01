@@ -157,6 +157,46 @@ class TestApiImageRequest:
         assert response.num_tokens == 100
         assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
 
+    @pytest.mark.parametrize(
+        ("content", "reasoning_content", "expected_text"),
+        [
+            (
+                "",
+                "<div data-label='Text'>hello</div>",
+                "<div data-label='Text'>hello</div>",
+            ),
+            ("answer", "thinking...", "answer"),
+        ],
+    )
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_content_or_reasoning_content(
+        self,
+        mock_session_factory,
+        sample_image,
+        mock_response_factory,
+        content,
+        reasoning_content,
+        expected_text,
+    ):
+        """Content wins, unless it is empty and reasoning_content holds the answer."""
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_response_factory(
+                message={
+                    "role": "assistant",
+                    "content": content,
+                    "reasoning_content": reasoning_content,
+                }
+            )
+        )
+
+        response = api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+        assert response.text == expected_text
+
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_exposes_full_usage_payload(
         self, mock_session_factory, sample_image, mock_response_factory
@@ -297,7 +337,7 @@ class TestApiImageRequest:
         assert response.usage == {"total_tokens": 44, "cache_read_tokens": 5}
 
     @patch("docling.utils.api_image_request._make_retry_session")
-    def test_invalid_json_response_logs_preview_and_returns_unspecified(
+    def test_invalid_json_response_logs_preview_and_returns_inference_error(
         self, mock_session_factory, sample_image, caplog
     ):
         """Test that malformed provider responses include useful diagnostics."""
@@ -318,12 +358,13 @@ class TestApiImageRequest:
 
         assert response.text == ""
         assert response.num_tokens == 0
-        assert response.stop_reason == VlmStopReason.UNSPECIFIED
+        assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
+        assert response.error == "HTTP 200: response body was empty or not JSON"
         assert "API response body was not JSON" in caplog.text
         assert "not-json" in caplog.text
 
     @patch("docling.utils.api_image_request._make_retry_session")
-    def test_empty_api_response_logs_status_and_returns_unspecified(
+    def test_empty_api_response_logs_status_and_returns_inference_error(
         self, mock_session_factory, sample_image, caplog
     ):
         """Test that empty provider responses include useful diagnostics."""
@@ -344,9 +385,38 @@ class TestApiImageRequest:
 
         assert response.text == ""
         assert response.num_tokens == 0
-        assert response.stop_reason == VlmStopReason.UNSPECIFIED
+        assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
+        assert response.error == "HTTP 200: response body was empty or not JSON"
         assert "API response body was empty" in caplog.text
         assert "status=200" in caplog.text
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_http_error_status_returns_inference_error_with_the_reason(
+        self, mock_session_factory, sample_image
+    ):
+        """A rejected request is a failure the caller can see, not an empty page:
+        stop_reason is INFERENCE_ERROR and ``error`` keeps the provider's status and
+        message (docling#4009)."""
+        mock_resp = MagicMock()
+        mock_resp.ok = False
+        mock_resp.status_code = 400
+        mock_resp.text = '{"error": {"message": "Unsupported parameter: temperature"}}'
+        mock_resp.headers = {"content-type": "application/json"}
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_resp
+        )
+
+        response = api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+        assert response.text == ""
+        assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
+        assert response.error is not None
+        assert response.error.startswith("HTTP 400: ")
+        assert "Unsupported parameter: temperature" in response.error
 
     def test_retry_session_retries_transient_api_errors(self):
         """Test that remote API calls retry common transient failures."""

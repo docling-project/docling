@@ -9,7 +9,7 @@ from docling_core.types.doc import DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
 
@@ -325,6 +325,35 @@ def test_latex_input_cycle_detection(tmp_path):
     doc = backend.convert()
     md = doc.export_to_markdown()
     assert "A content" in md
+
+
+@pytest.mark.parametrize(
+    ("encoding", "inputenc"), [("utf-8", "utf8"), ("latin-1", "latin1")]
+)
+def test_latex_input_file_in_main_file_encoding(tmp_path, encoding, inputenc):
+    """An \\input file in the same encoding as the main file is kept."""
+    main_file = tmp_path / "main.tex"
+    main_file.write_text(
+        "\\documentclass{article}\n"
+        f"\\usepackage[{inputenc}]{{inputenc}}\n"
+        "\\begin{document}\n"
+        "Résumé of the thesis.\n\n"
+        "\\input{chapter}\n"
+        "\\end{document}\n",
+        encoding=encoding,
+    )
+    (tmp_path / "chapter.tex").write_text(
+        "\\section{Méthode}\nThe chapter body.\n", encoding=encoding
+    )
+
+    conv_result = get_latex_converter().convert(main_file)
+    md = conv_result.document.export_to_markdown()
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert conv_result.errors == []
+    assert "Résumé of the thesis." in md
+    assert "Méthode" in md
+    assert "The chapter body." in md
 
 
 def test_latex_author_date():

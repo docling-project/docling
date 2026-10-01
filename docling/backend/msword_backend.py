@@ -35,6 +35,7 @@ from docling_core.types.doc import (
     TableData,
     TableItem,
     TabularChartMetaField,
+    TextItem,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
 from lxml import etree
@@ -63,6 +64,8 @@ try:  # pragma: no cover - import-time guard
     from docx import Document
     from docx.document import Document as DocxDocument
     from docx.enum.style import WD_STYLE_TYPE
+    from docx.opc.constants import RELATIONSHIP_TYPE as DOCX_RT
+    from docx.oxml import parse_xml as docx_parse_xml
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
@@ -133,6 +136,39 @@ _OPC_RELS_NS: Final[str] = (
 )
 """XML namespace URI for OPC ``*.rels`` relationship parts."""
 
+_W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+_A_NS: Final[str] = "http://schemas.openxmlformats.org/drawingml/2006/main"
+_C_NS: Final[str] = "http://schemas.openxmlformats.org/drawingml/2006/chart"
+_R_NS: Final[str] = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+)
+_WP_NS: Final[str] = (
+    "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+)
+_MC_NS: Final[str] = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+_V_NS: Final[str] = "urn:schemas-microsoft-com:vml"
+_WPS_NS: Final[str] = (
+    "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+)
+_W10_NS: Final[str] = "urn:schemas-microsoft-com:office:word"
+_A14_NS: Final[str] = "http://schemas.microsoft.com/office/drawing/2010/main"
+_W14_NS: Final[str] = "http://schemas.microsoft.com/office/word/2010/wordml"
+_W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
+
+_OOXML_NAMESPACES: Final[dict[str, str]] = {
+    "a": _A_NS,
+    "c": _C_NS,
+    "r": _R_NS,
+    "w": _W_NS,
+    "wp": _WP_NS,
+    "mc": _MC_NS,
+    "v": _V_NS,
+    "wps": _WPS_NS,
+    "w10": _W10_NS,
+    "a14": _A14_NS,
+    "w14": _W14_NS,
+}
+
 _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
 """OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
 
@@ -158,6 +194,9 @@ _STRICT_OOXML_NS_RE: Final = re.compile(
 )
 """Matches Strict OOXML namespace/relationship URIs."""
 
+_MAX_HEADING_LEVEL: Final[int] = 9
+"""OOXML headings are 1-9. Values outside that range are clamped."""
+
 _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
     {
         "decimal",
@@ -166,6 +205,15 @@ _VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
         "lowerLetter",
         "upperLetter",
         "decimalZero",
+        "chineseCounting",
+        "chineseCountingThousand",
+        "chineseLegalSimplified",
+        "ideographDigital",
+        "ideographTraditional",
+        "ideographZodiac",
+        "japaneseCounting",
+        "decimalFullWidth",
+        "decimalEnclosedCircle",
     }
 )
 """OOXML numFmt values that produce visible list/heading markers."""
@@ -212,8 +260,215 @@ def _int_to_roman_marker(value: int) -> str:
     return "".join(parts)
 
 
+# East Asian numFmt rendering. Character sets follow ECMA-376-1:2016 §17.18.59
+# (ST_NumberFormat). Where the standard's prose and its examples disagree, or
+# are silent, the rules follow the markers rendered by Microsoft Word 16.112
+# (macOS) for a probe document, as noted on each helper.
+_CJK_DIGITS: Final[str] = "一二三四五六七八九"
+_CHINESE_LEGAL_DIGITS: Final[str] = "壹贰叁肆伍陆柒捌玖"
+_CHINESE_COUNTING_POSITIONAL_DIGITS: Final[str] = "\u25cb" + _CJK_DIGITS
+_IDEOGRAPH_DIGITAL_DIGITS: Final[str] = "\u3007" + _CJK_DIGITS
+_FULLWIDTH_DIGITS: Final[str] = "".join(chr(0xFF10 + digit) for digit in range(10))
+_HEAVENLY_STEMS: Final[str] = "甲乙丙丁戊己庚辛壬癸"
+_EARTHLY_BRANCHES: Final[str] = "子丑寅卯辰巳午未申酉戌亥"
+_ENCLOSED_CIRCLE_NUMBERS: Final[str] = "".join(
+    chr(code_point) for code_point in range(0x2460, 0x2474)
+)
+_CJK_GROUPED_NUMBER_LIMIT: Final[int] = 1_000_000
+"""Word renders an empty marker from this value on ([MS-OI29500] 2.1.548 j)."""
+
+
+def _int_to_positional_marker(value: int, digits: str) -> str:
+    """Write each decimal digit of ``value`` with ``digits`` (index 0 is zero)."""
+    if value < 0:
+        return str(value)
+    return "".join(digits[int(char)] for char in str(value))
+
+
+def _int_to_sequence_marker(value: int, symbols: str) -> str:
+    """Map 1..len(symbols) to one symbol each; other values stay decimal.
+
+    ECMA-376 specifies the decimal fallback for ideographTraditional,
+    ideographZodiac and decimalEnclosedCircle, and Word renders the same.
+    """
+    if 1 <= value <= len(symbols):
+        return symbols[value - 1]
+    return str(value)
+
+
+def _int_to_chinese_grouped_marker(
+    value: int,
+    digits: str,
+    units: tuple[str, str, str, str],
+    myriad: str,
+    zero: str,
+) -> str:
+    """Write 1..999,999 with Chinese unit characters (ten, hundred, thousand).
+
+    Every non-zero digit is followed by its unit, the ten-thousands group is
+    closed by ``myriad``, and one ``zero`` is written for each run of zero
+    digits that is followed by a non-zero digit: 101 -> 一百〇一,
+    100010 -> 一十万〇一十, 909090 -> 九十万〇九千〇九十. This matches Word. It
+    differs from [MS-OI29500] 2.1.548 e, which says Word omits the zero for
+    10,000-100,000.
+    """
+    parts: list[str] = []
+    pending_zero = False
+    text = str(value)
+    for power, char in zip(range(len(text) - 1, -1, -1), text):
+        digit = int(char)
+        if digit == 0:
+            pending_zero = bool(parts)
+        else:
+            if pending_zero:
+                parts.append(zero)
+                pending_zero = False
+            parts.append(digits[digit - 1] + units[power % 4])
+        if power == 4:
+            parts.append(myriad)
+    return "".join(parts)
+
+
+def _int_to_chinese_counting_marker(value: int) -> str:
+    """Render chineseCounting: 十 and 二十一 up to 99, then digit by digit.
+
+    ECMA-376 gives 0-10 as U+25CB, 一 ... 十 and the pattern 十, 十一, ..., 九十九,
+    一○○, 一○一. Word renders the same, including U+25CB (not U+3007) as zero.
+    """
+    if value < 0:
+        return str(value)
+    if value >= 100 or value == 0:
+        return _int_to_positional_marker(value, _CHINESE_COUNTING_POSITIONAL_DIGITS)
+    tens, ones = divmod(value, 10)
+    text = ""
+    if tens > 0:
+        text = ("" if tens == 1 else _CJK_DIGITS[tens - 1]) + "十"
+    if ones > 0:
+        text += _CJK_DIGITS[ones - 1]
+    return text
+
+
+def _int_to_chinese_counting_thousand_marker(value: int) -> str:
+    """Render chineseCountingThousand the way Word does.
+
+    Word writes 10-19 as 十 ... 十九 and every other ten with its digit
+    (110 -> 一百一十, 100000 -> 一十万), and uses U+3007 as the zero
+    (101 -> 一百〇一). The ECMA-376 text lists U+96F6 as the zero and its
+    example shows 一十 for 10; Word's output is used here because it is what
+    document authors see. Values from 1,000,000 render empty, as in Word.
+    """
+    if value < 0:
+        return str(value)
+    if value == 0:
+        return "\u3007"
+    if value >= _CJK_GROUPED_NUMBER_LIMIT:
+        return ""
+    if 10 <= value <= 19:
+        return "十" + (_CJK_DIGITS[value - 11] if value > 10 else "")
+    return _int_to_chinese_grouped_marker(
+        value,
+        digits=_CJK_DIGITS,
+        units=("", "十", "百", "千"),
+        myriad="万",
+        zero="\u3007",
+    )
+
+
+def _int_to_chinese_legal_marker(value: int) -> str:
+    """Render chineseLegalSimplified (壹, 贰, ..., 壹拾, 壹佰零壹).
+
+    Digits and units follow ECMA-376; 10 keeps its leading 壹. Ten thousand is
+    U+842C as rendered by Word ([MS-OI29500] 2.1.548 q), not the U+4E07 of the
+    standard. Values from 1,000,000 render empty, as in Word.
+    """
+    if value < 0:
+        return str(value)
+    if value == 0:
+        return "零"
+    if value >= _CJK_GROUPED_NUMBER_LIMIT:
+        return ""
+    return _int_to_chinese_grouped_marker(
+        value,
+        digits=_CHINESE_LEGAL_DIGITS,
+        units=("", "拾", "佰", "仟"),
+        myriad="萬",
+        zero="零",
+    )
+
+
+def _japanese_counting_group(value: int, explicit_one_thousand: bool) -> str:
+    """Write 1..9999 with 千, 百, 十; a digit 1 is omitted before its unit."""
+    parts: list[str] = []
+    for unit_value, unit in ((1000, "千"), (100, "百"), (10, "十")):
+        digit, value = divmod(value, unit_value)
+        if digit == 0:
+            continue
+        keep_digit = digit > 1 or (unit == "千" and explicit_one_thousand)
+        parts.append((_CJK_DIGITS[digit - 1] if keep_digit else "") + unit)
+    if value > 0:
+        parts.append(_CJK_DIGITS[value - 1])
+    return "".join(parts)
+
+
+def _int_to_japanese_counting_marker(value: int) -> str:
+    """Render japaneseCounting (十, 百一, 千百, 一万一千, 十万).
+
+    ECMA-376 gives the character set and the pattern up to 二十一. The rules
+    above that follow Word: no zero character inside a number, 百 and 十
+    without a leading 一, 千 without 一 below 10,000 and 一千 after a 万 group.
+    Values from 1,000,000 render empty, as in Word.
+    """
+    if value < 0:
+        return str(value)
+    if value == 0:
+        return "\u3007"
+    if value >= _CJK_GROUPED_NUMBER_LIMIT:
+        return ""
+    myriads, rest = divmod(value, 10_000)
+    text = ""
+    if myriads > 0:
+        text = (
+            _CJK_DIGITS[0]
+            if myriads == 1
+            else _japanese_counting_group(myriads, explicit_one_thousand=False)
+        ) + "万"
+    if rest > 0:
+        text += _japanese_counting_group(rest, explicit_one_thousand=myriads > 0)
+    return text
+
+
+_CJK_ENUM_FORMATTERS: Final[dict[str, Callable[[int], str]]] = {
+    "chineseCounting": _int_to_chinese_counting_marker,
+    "chineseCountingThousand": _int_to_chinese_counting_thousand_marker,
+    "chineseLegalSimplified": _int_to_chinese_legal_marker,
+    "ideographDigital": lambda value: _int_to_positional_marker(
+        value, _IDEOGRAPH_DIGITAL_DIGITS
+    ),
+    "ideographTraditional": lambda value: _int_to_sequence_marker(
+        value, _HEAVENLY_STEMS
+    ),
+    # ECMA-376 lists U+620C (戌), the eleventh Earthly Branch; Word 16.112
+    # renders U+620D (戍), the adjacent code point, which reads "garrison" and
+    # breaks the 子丑寅卯 sequence. Unlike the other deviations followed in this
+    # module, this one changes the character a reader sees rather than how a
+    # number is spelled, so the standard is kept here on purpose.
+    "ideographZodiac": lambda value: _int_to_sequence_marker(value, _EARTHLY_BRANCHES),
+    "japaneseCounting": _int_to_japanese_counting_marker,
+    "decimalFullWidth": lambda value: _int_to_positional_marker(
+        value, _FULLWIDTH_DIGITS
+    ),
+    "decimalEnclosedCircle": lambda value: _int_to_sequence_marker(
+        value, _ENCLOSED_CIRCLE_NUMBERS
+    ),
+}
+"""East Asian ``w:numFmt`` values mapped to their counter renderers."""
+
+
 def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
     """Render a list counter using an OOXML ``w:numFmt`` value."""
+    cjk_formatter = _CJK_ENUM_FORMATTERS.get(num_fmt) if num_fmt is not None else None
+    if cjk_formatter is not None and counter >= 0:
+        return cjk_formatter(counter)
     if num_fmt == "lowerLetter":
         return _int_to_letter_marker(counter)
     if num_fmt == "upperLetter":
@@ -409,23 +664,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         layout spacers and discarded during parsing.
     """
 
-    _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-    _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
-
-    _BLIP_NAMESPACES: Final = {
-        "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-        "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
-        "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-        "w": _W_NS,
-        "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
-        "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
-        "v": "urn:schemas-microsoft-com:vml",
-        "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
-        "w10": "urn:schemas-microsoft-com:office:word",
-        "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
-        "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
-    }
-
     SPACER_IMAGE_AREA_THRESHOLD: Final[int] = 25
     """Images with an area (w*h) below this are dropped as layout artifacts."""
 
@@ -544,15 +782,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 path_or_stream, in_doc.format.value, "docx"
             )
         super().__init__(in_doc, path_or_stream, options)
-        self.XML_KEY = f"{self._W_NS_CLARK}val"
-        self.xml_namespaces = {
-            "w": "http://schemas.microsoft.com/office/word/2003/wordml"
-        }
-        self.blip_xpath_expr = etree.XPath(
-            ".//a:blip", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-        )
+        self.XML_KEY = f"{_W_NS_CLARK}val"
+        self.blip_xpath_expr = etree.XPath(".//a:blip", namespaces=_OOXML_NAMESPACES)
         self.vml_imagedata_xpath_expr = etree.XPath(
-            ".//v:imagedata", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+            ".//v:imagedata", namespaces=_OOXML_NAMESPACES
         )
         # self.initialise(path_or_stream)
         # Word file:
@@ -561,6 +794,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Initialise the parents for the hierarchy
         self.max_levels: int = 10
         self.level_at_new_list: int | None = None
+        self.level_start_ilevel: int = 0
         self.parents: dict[int, NodeItem | None] = {}
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
@@ -671,6 +905,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_header_footer(self.docx_obj, doc)
             # Add comments and link them to annotated paragraphs
             self._add_comments(self.docx_obj, doc)
+            # Add footnotes and endnotes (their body text lives in a separate part;
+            # the in-body reference is otherwise silently empty, see docstring below)
+            self._add_footnotes_and_endnotes(self.docx_obj, doc)
 
             return doc
         else:
@@ -778,13 +1015,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             The list group to use (either reused or newly created).
         """
         if self._can_reuse_list_group(numid, parent):
-            # When reusing a list group, remove any empty text item that was added
-            # between the last list item and this one (from closing the list)
-            if doc.texts and len(doc.texts) > 0:
-                last_text = doc.texts[-1]
-                if not last_text.text or not last_text.text.strip():
-                    doc.delete_items(node_items=[last_text])
-            return self.last_list_group
+            # Reuse only if nothing but empty paragraphs (added when the list was
+            # closed) follows the cached group in its parent. Otherwise the new
+            # items would be placed before the intervening content, e.g. a table.
+            container = parent if parent is not None else doc.body
+            trailing_empty: list[TextItem] = []
+            for ref in reversed(container.children):
+                item = ref.resolve(doc)
+                if isinstance(item, TextItem) and not item.text.strip():
+                    trailing_empty.append(item)
+                    continue
+                if item.self_ref == self.last_list_group.self_ref:
+                    if trailing_empty:
+                        doc.delete_items(node_items=trailing_empty)
+                    return self.last_list_group
+                break
 
         list_gr = doc.add_list_group(
             name="list",
@@ -833,6 +1078,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "indents": self.history["indents"].copy(),
         }
         saved_level_at_new_list = self.level_at_new_list
+        saved_level_start_ilevel = self.level_start_ilevel
         saved_parents = self.parents.copy()
         # Save and clear list group cache to prevent reuse across table cells
         saved_last_list_group = self.last_list_group
@@ -845,6 +1091,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         finally:
             self.history = saved_history
             self.level_at_new_list = saved_level_at_new_list
+            self.level_start_ilevel = saved_level_start_ilevel
             self.parents = saved_parents
             self.last_list_group = saved_last_list_group
             self.last_list_group_numid = saved_last_list_group_numid
@@ -862,7 +1109,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Check for Inline Images (blip elements)
             _raw_drawing_blip = self.blip_xpath_expr(element)
             _raw_drawingml_els = element.findall(
-                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                ".//w:drawing", namespaces=_OOXML_NAMESPACES
             )
             _raw_vml_images = self.vml_imagedata_xpath_expr(element)
 
@@ -884,7 +1131,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Modern Word textboxes
                 txbx_xpath = etree.XPath(
                     ".//w:txbxContent|.//v:textbox//w:p",
-                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                    namespaces=_OOXML_NAMESPACES,
                 )
                 textbox_elements = txbx_xpath(element)
 
@@ -893,7 +1140,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Additional checks for textboxes in DrawingML and VML formats
                     alt_txbx_xpath = etree.XPath(
                         ".//wps:txbx//w:p|.//w10:wrap//w:p|.//v:textbox//w:txbxContent//w:p",
-                        namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                        namespaces=_OOXML_NAMESPACES,
                     )
                     textbox_elements = alt_txbx_xpath(element)
 
@@ -901,7 +1148,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if not textbox_elements:
                         shape_text_xpath = etree.XPath(
                             ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
-                            namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                            namespaces=_OOXML_NAMESPACES,
                         )
                         shape_text_elements = shape_text_xpath(element)
                         if shape_text_elements:
@@ -953,7 +1200,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # would match there and its paragraphs would never be walked.
             elif tag_name == "sdt":
                 sdt_content = element.find(
-                    "./w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    "./w:sdtContent", namespaces=_OOXML_NAMESPACES
                 )
                 if sdt_content is not None:
                     # Recursively walk the SDT content to catch textboxes, tables, and nested structures
@@ -966,10 +1213,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for Text after the Image
                 if (
                     tag_name == "p"
-                    and element.find(
-                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                    )
-                    is not None
+                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
                 ):
                     te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
@@ -980,10 +1224,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for Text after the VML Image
                 if (
                     tag_name == "p"
-                    and element.find(
-                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                    )
-                    is not None
+                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
                 ):
                     te2 = self._handle_text_elements(element, doc)
                     added_elements.extend(te2)
@@ -1025,10 +1266,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Always process text in paragraph
                 if (
                     tag_name == "p"
-                    and element.find(
-                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                    )
-                    is not None
+                    and element.find(".//w:t", namespaces=_OOXML_NAMESPACES) is not None
                 ):
                     te = self._handle_text_elements(element, doc, skip_empty_text=True)
                     added_elements.extend(te)
@@ -1086,11 +1324,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_numId_and_ilvl(
         self, paragraph: Paragraph
     ) -> tuple[int | None, int | None]:
-        # Access the XML element of the paragraph
+        # w:numPr is only valid as a child of the paragraph's own w:pPr, so read
+        # it from there. A descendant search also reaches the paragraphs nested
+        # inside an anchored textbox and would take their numbering as this
+        # paragraph's own.
         numPr = paragraph._element.find(
-            ".//w:numPr", namespaces=paragraph._element.nsmap
+            "w:pPr/w:numPr", namespaces=paragraph._element.nsmap
         )
-
         if numPr is not None:
             # Get the numId element and extract the value
             numId_elem = numPr.find("w:numId", namespaces=paragraph._element.nsmap)
@@ -1131,14 +1371,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
             style_elem = getattr(style, "element", None)
             if style_elem is not None:
-                style_numPr = style_elem.find(f".//{self._W_NS_CLARK}numPr")
+                style_numPr = style_elem.find(f".//{_W_NS_CLARK}numPr")
                 if style_numPr is not None:
                     if numId is None:
-                        numId_elem = style_numPr.find(f"{self._W_NS_CLARK}numId")
+                        numId_elem = style_numPr.find(f"{_W_NS_CLARK}numId")
                         if numId_elem is not None:
                             numId = numId_elem.get(self.XML_KEY)
                     if ilvl is None:
-                        ilvl_elem = style_numPr.find(f"{self._W_NS_CLARK}ilvl")
+                        ilvl_elem = style_numPr.find(f"{_W_NS_CLARK}ilvl")
                         if ilvl_elem is not None:
                             ilvl = ilvl_elem.get(self.XML_KEY)
             if numId is not None and ilvl is not None:
@@ -1166,7 +1406,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return None
 
             numbering_root = numbering_part.element
-            namespaces = {"w": self._W_NS}
+            namespaces = _OOXML_NAMESPACES
 
             num_element = numbering_root.find(
                 f".//w:num[@w:numId='{numid}']", namespaces=namespaces
@@ -1203,7 +1443,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         lvl_element = self._get_level_element(numid, ilvl)
         if lvl_element is None:
             return None
-        namespaces = {"w": self._W_NS}
+        namespaces = _OOXML_NAMESPACES
         num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
         if num_fmt_element is None:
             return None
@@ -1213,7 +1453,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """Read the start value from the abstractNum definition."""
         lvl_element = self._get_level_element(numid, ilvl)
         if lvl_element is not None:
-            namespaces = {"w": self._W_NS}
+            namespaces = _OOXML_NAMESPACES
             start_element = lvl_element.find(".//w:start", namespaces=namespaces)
             if start_element is not None:
                 val = start_element.get(self.XML_KEY)
@@ -1252,7 +1492,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         the default ``1.2.3.`` fallback.
         """
         lvl_element = self._get_level_element(numid, ilvl)
-        namespaces = {"w": self._W_NS}
+        namespaces = _OOXML_NAMESPACES
         lvl_text = None
         num_fmt = None
         if lvl_element is not None:
@@ -1311,7 +1551,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if lvl_element is None:
                 return False
 
-            namespaces = {"w": self._W_NS}
+            namespaces = _OOXML_NAMESPACES
             num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
             if num_fmt_element is None:
                 return False
@@ -1346,9 +1586,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         # Look for outlineLvl in the style's paragraph properties
-        outline_elem = style_elem.find(f".//{self._W_NS_CLARK}outlineLvl")
+        outline_elem = style_elem.find(f".//{_W_NS_CLARK}outlineLvl")
         if outline_elem is not None:
-            val = outline_elem.get(f"{self._W_NS_CLARK}val")
+            val = outline_elem.get(f"{_W_NS_CLARK}val")
             if val is not None:
                 try:
                     # Convert 0-indexed outlineLvl to 1-indexed heading level
@@ -1370,9 +1610,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if parts[1].strip().lower() == "heading":
                 label_str = "Heading"
                 label_level = self._str_to_int(parts[0], None)
-            # Ensure heading level is at least 1 (e.g., custom "Heading 0" styles)
-            if isinstance(label_level, int) and label_level < 1:
-                label_level = 1
+            # OOXML headings are 1-9. Custom names like Heading 0 or Heading 111
+            # are clamped into that range.
+            if isinstance(label_level, int):
+                label_level = min(max(1, label_level), _MAX_HEADING_LEVEL)
             return label_str, label_level
 
         return style_label, None
@@ -1643,35 +1884,66 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_format_from_run(
         cls, run: Run, paragraph: Paragraph | None = None
     ) -> Formatting | None:
+        """Extract a `Formatting` instance from a python-docx `Run`.
+
+        Bold detection uses a three-step fallback because `run.bold` only
+        reports formatting that is set explicitly on the run or its character
+        style; it returns `None` (not `False`) when the property is inherited:
+
+        1. `run.bold` — reads `<w:b>` via the python-docx API.
+        2. Raw XPath on the run element — catches edge cases where `<w:b>` is
+           present in the XML but not surfaced by python-docx.
+        3. `<w:pPr><w:rPr><w:b>` — paragraph-mark bold, which Word propagates
+           to runs that carry no explicit bold setting of their own.
+        4. Paragraph style chain — walks `base_style` links so that a run in a
+           bold paragraph style is reported as bold even when the run itself
+           carries no `<w:b>`.
+
+        Note:
+            `<w:bCs>` (complex-script bold, the OOXML counterpart of `<w:b>`
+            for Arabic/Hebrew characters) is intentionally excluded from all
+            bold checks. Word also emits `<w:bCs>` as a font-theme artefact
+            alongside `<w:szCs>` and `<w:rFonts cstheme="…">` when applying
+            complex-script font specifications, even when the user has not
+            applied bold formatting. Word writes `<w:b>` even for Arabic text
+            when the user explicitly presses Bold, so `<w:b>` alone is the
+            reliable signal for user-applied bold. The same reasoning applies
+            to `<w:iCs>` (complex-script italic), but the italic path has no
+            XPath fallback so `<w:iCs>` is already ignored by construction.
+            Unlike bold and italic, the remaining properties (`<w:strike>`,
+            `<w:u>`, `<w:vertAlign>`) have no complex-script counterparts in
+            OOXML and are read directly from the python-docx API.
+
+        Args:
+            run: The python-docx run whose formatting should be extracted.
+            paragraph: The paragraph that contains `run`. Required for the
+                paragraph-mark and style-chain bold checks; if `None` those
+                two steps are skipped.
+
+        Returns:
+            A `Formatting` instance populated from the run's properties, or
+            `None` if the run cannot be inspected.
+        """
         is_bold = run.bold
 
         if not is_bold:
             try:
-                # Check the raw XML of the run itself for <w:b> tags
                 if run._element is not None:
-                    b_tags = run._element.xpath(".//w:b | .//w:bCs")
+                    b_tags = run._element.xpath(".//w:b")
                     for b in b_tags:
-                        val = b.get(
-                            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-                        )
+                        val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
                             is_bold = True
                             break
 
-                # Check the paragraph's direct formatting properties
                 if not is_bold and run._parent._element is not None:
-                    pPr_b = run._parent._element.xpath(
-                        "./w:pPr/w:rPr/w:b | ./w:pPr/w:rPr/w:bCs"
-                    )
+                    pPr_b = run._parent._element.xpath("./w:pPr/w:rPr/w:b")
                     for b in pPr_b:
-                        val = b.get(
-                            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-                        )
+                        val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
                             is_bold = True
                             break
 
-                # Recursively climb the paragraph's Master Style Sheet
                 if (
                     not is_bold
                     and paragraph is not None
@@ -1691,7 +1963,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         is_italic = run.italic or False
         is_strikethrough = run.font.strike or False
-        # Convert any non-None underline value to True
         is_underline = bool(run.underline is not None and run.underline)
         is_sub = run.font.subscript or False
         is_sup = run.font.superscript or False
@@ -1757,7 +2028,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 text = "".join(
                     child.xpath(
                         ".//w:sdtContent//w:t/text()",
-                        namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                        namespaces=_OOXML_NAMESPACES,
                     )
                 )
                 if len(text) == 0:
@@ -1765,7 +2036,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 runs = child.xpath(
                     ".//w:sdtContent//w:r",
-                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                    namespaces=_OOXML_NAMESPACES,
                 )
                 fmt = (
                     self._get_format_from_run(Run(runs[0], paragraph), paragraph)
@@ -1861,9 +2132,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             True if the element contains a checkbox, False otherwise.
         """
         try:
-            checkboxes = element.findall(
-                f".//{{{self._BLIP_NAMESPACES['w14']}}}checkbox"
-            )
+            checkboxes = element.findall(f".//{{{_OOXML_NAMESPACES['w14']}}}checkbox")
             return len(checkboxes) > 0
         except (AttributeError, TypeError):
             return False
@@ -1878,7 +2147,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             True if checked (w14:checked val="1"), False if unchecked
                 (val="0" or missing).
         """
-        w14_ns = self._BLIP_NAMESPACES["w14"]
+        w14_ns = _OOXML_NAMESPACES["w14"]
         checkboxes = element.findall(f".//{{{w14_ns}}}checkbox")
         if not checkboxes:
             return False
@@ -2131,9 +2400,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Extract embedded images inside the text box
             tb_drawing_blip = self.blip_xpath_expr(p)
             tb_vml_images = self.vml_imagedata_xpath_expr(p)
-            tb_drawingml_els = p.findall(
-                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-            )
+            tb_drawingml_els = p.findall(".//w:drawing", namespaces=_OOXML_NAMESPACES)
 
             if tb_drawing_blip:
                 pics = self._handle_pictures(tb_drawing_blip, doc)
@@ -2353,6 +2620,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
+            # Same reason as for headings below: the parents stack is cleared here.
+            self.level_at_new_list = None
             te = doc.add_text(
                 parent=None,
                 label=DocItemLabel.TITLE,
@@ -2362,6 +2631,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
+            # _add_heading clears the parents tail; reset list context so the
+            # next list item opens fresh under this heading.
+            self.level_at_new_list = None
             is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
@@ -2523,8 +2795,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if key >= curr_level:
                         self.parents[key] = None
 
-            # Defense in depth: ensure level is at least 1
-            curr_level = max(1, curr_level)
+            # Defense in depth: OOXML headings are 1-9.
+            curr_level = min(max(1, curr_level), _MAX_HEADING_LEVEL)
             current_level = curr_level
             parent_level = curr_level - 1
             add_level = curr_level
@@ -2695,6 +2967,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if elem_ref is not None:
                 elem_ref.append(e3.get_ref())
 
+    def _slot_for(self, word_ilevel: int) -> int:
+        """Map a Word ``w:ilvl`` value to the internal parents-slot index.
+
+        When a list starts at ``w:ilvl`` 0, the mapping is simply
+        ``level_at_new_list + word_ilevel``.  When it starts at a higher
+        level we must subtract the starting level so that the first item
+        always lands at ``level_at_new_list``.
+
+        Items shallower than the starting level (``word_ilevel <
+        level_start_ilevel``, e.g. a resumed list whose first post-gap item
+        sits at level 1 and later returns to level 0) are clamped to the list
+        base so they stay inside the current list instead of mapping below it.
+        """
+        return self.level_at_new_list + max(0, word_ilevel - self.level_start_ilevel)
+
     def _manage_list_structure(
         self,
         *,
@@ -2735,6 +3022,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._prev_numid() == numid and self.level_at_new_list is None
         ):  # Open new list
             self.level_at_new_list = level
+            self.level_start_ilevel = ilevel
             # Only reset counters the first time a numId is opened. A numId
             # that reappears after an intervening list of a different numId is
             # the same Word list resuming, and must keep its numbering.
@@ -2760,8 +3048,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and prev_indent < ilevel
         ):  # Open indented list
             for i in range(
-                self.level_at_new_list + prev_indent + 1,
-                self.level_at_new_list + ilevel + 1,
+                self._slot_for(prev_indent) + 1,
+                self._slot_for(ilevel) + 1,
             ):
                 list_gr1 = doc.add_list_group(
                     name="list",
@@ -2770,7 +3058,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
-            use_level = self.level_at_new_list + ilevel
+            use_level = self._slot_for(ilevel)
 
         elif (
             self._prev_numid() == numid
@@ -2779,9 +3067,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and ilevel < prev_indent
         ):  # Close list
             for k in self.parents:
-                if k > self.level_at_new_list + ilevel:
+                if k > self._slot_for(ilevel):
                     self.parents[k] = None
-            use_level = self.level_at_new_list + ilevel
+            use_level = self._slot_for(ilevel)
 
         elif self._prev_numid() == numid and isinstance(
             self.parents.get(level - 1), ListGroup
@@ -2794,13 +3082,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ):
             # New list sequence
             if self.level_at_new_list is not None:
-                use_level = self.level_at_new_list + ilevel
+                use_level = self._slot_for(ilevel)
                 for k in list(self.parents.keys()):
                     if k > use_level:
                         self.parents[k] = None
             else:
                 use_level = level
                 self.level_at_new_list = use_level
+                self.level_start_ilevel = ilevel
 
             # Only reset counters the first time a numId is opened. A numId
             # that reappears after an intervening list of a different numId is
@@ -2975,7 +3264,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elif tag_name == "sdt":
                 sdt_content = child.find(
                     "./w:sdtContent",
-                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                    namespaces=_OOXML_NAMESPACES,
                 )
                 if sdt_content is not None:
                     cells.extend(MsWordDocumentBackend._row_cells(sdt_content))
@@ -3125,9 +3414,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for item in element:
             if self.blip_xpath_expr(item):
                 return True
-            if item.findall(
-                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-            ):
+            if item.findall(".//w:drawing", namespaces=_OOXML_NAMESPACES):
                 return True
 
         return False
@@ -3155,7 +3442,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         tc = cell._tc
 
         # must contain only one paragraph
-        paragraphs = list(tc.iterchildren(f"{self._W_NS_CLARK}p"))
+        paragraphs = list(tc.iterchildren(f"{_W_NS_CLARK}p"))
         if len(paragraphs) > 1:
             return True
 
@@ -3170,7 +3457,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # paragraph must contain runs with no run-properties
         for para in paragraphs:
-            runs = list(para.iterchildren(f"{self._W_NS_CLARK}r"))
+            runs = list(para.iterchildren(f"{_W_NS_CLARK}r"))
             for rn in runs:
                 item: Run = Run(rn, self.docx_obj)
                 if item is not None:
@@ -3346,7 +3633,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for image in drawing_blip:
                 image_data = self._get_image_from_relationship(
                     image,
-                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed",
+                    f"{{{_R_NS}}}embed",
                     "image",
                 )
                 pil_image: Image.Image | None = None
@@ -3419,7 +3706,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for imagedata in vml_imagedatas:
                 image_data = self._get_image_from_relationship(
                     imagedata,
-                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id",
+                    f"{{{_R_NS}}}id",
                     "VML image",
                 )
                 pil_image: Image.Image | None = None
@@ -3494,9 +3781,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         references a ``word/charts/chartN.xml`` part (rather than an ``a:blip``
         image or a shape).
         """
-        return (
-            drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES) is not None
-        )
+        return drawing_el.find(".//c:chart", namespaces=_OOXML_NAMESPACES) is not None
 
     def _resolve_chart_root(self, drawing_el: Any) -> Any | None:
         """Resolve a charted ``w:drawing`` to the root of its chart part.
@@ -3506,10 +3791,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         hardened XML parser. Returns None when the relationship or payload is
         missing or malformed.
         """
-        chart_ref = drawing_el.find(".//c:chart", namespaces=self._BLIP_NAMESPACES)
+        chart_ref = drawing_el.find(".//c:chart", namespaces=_OOXML_NAMESPACES)
         if chart_ref is None:
             return None
-        rid = chart_ref.get(f"{{{self._BLIP_NAMESPACES['r']}}}id")
+        rid = chart_ref.get(f"{{{_OOXML_NAMESPACES['r']}}}id")
         if not rid:
             return None
         try:
@@ -3530,7 +3815,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         mapped to a docling classification label; unknown or combination charts
         fall back to OTHER_CHART.
         """
-        plot_area = chart_root.find(".//c:plotArea", namespaces=self._BLIP_NAMESPACES)
+        plot_area = chart_root.find(".//c:plotArea", namespaces=_OOXML_NAMESPACES)
         if plot_area is not None:
             for child in plot_area:
                 label = _CHART_TAGNAME_TO_CLASSIFICATION.get(
@@ -3568,7 +3853,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         if node is None:
             return []
-        ns = self._BLIP_NAMESPACES
+        ns = _OOXML_NAMESPACES
         cache = None
         for tag in ("numCache", "strCache", "numLit", "strLit"):
             cache = node.find(f".//c:{tag}", namespaces=ns)
@@ -3602,13 +3887,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _chart_series_name(self, series: Any) -> str:
         """Return a chart series' name from its ``c:tx`` (cached ref or literal)."""
-        tx = series.find("c:tx", namespaces=self._BLIP_NAMESPACES)
+        tx = series.find("c:tx", namespaces=_OOXML_NAMESPACES)
         if tx is None:
             return ""
         cached = self._read_chart_cache(tx)
         if cached:
             return cached[0]
-        literal = tx.find("c:v", namespaces=self._BLIP_NAMESPACES)
+        literal = tx.find("c:v", namespaces=_OOXML_NAMESPACES)
         return self._chart_cell_text(literal.text) if literal is not None else ""
 
     def _chart_title_text(self, chart_root: Any) -> str | None:
@@ -3617,7 +3902,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         A chart title is DrawingML rich text (``a:t`` runs) under ``c:chart/
         c:title``; some charts instead reference a cell, cached in a ``c:strRef``.
         """
-        ns = self._BLIP_NAMESPACES
+        ns = _OOXML_NAMESPACES
         chart = chart_root.find("c:chart", namespaces=ns)
         if chart is None:
             return None
@@ -3651,7 +3936,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             A TableData, or None if the chart exposes no usable series.
         """
-        ns = self._BLIP_NAMESPACES
+        ns = _OOXML_NAMESPACES
         series_list = chart_root.findall(".//c:ser", namespaces=ns)
         if not series_list:
             return None
@@ -3826,7 +4111,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         txbx_xpath = etree.XPath(
             ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//a:p//a:t",
-            namespaces=self._BLIP_NAMESPACES,
+            namespaces=_OOXML_NAMESPACES,
         )
         emitted_partnames: set[str] = set()
 
@@ -3880,6 +4165,63 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.content_layer = current_layer
         self.parents = base_parents
         self.level = base_level
+
+    def _add_footnotes_and_endnotes(
+        self, docx_obj: DocxDocument, doc: DoclingDocument
+    ) -> None:
+        """Add footnote and endnote body text to the furniture layer.
+
+        A footnote/endnote reference in the body (``w:footnoteReference``/
+        ``w:endnoteReference``) carries no text of its own - python-docx's
+        ``Run.text`` only concatenates ``w:t`` nodes, so a run containing one of
+        these references contributes an empty string. The actual body text lives
+        in a separate ``word/footnotes.xml``/``word/endnotes.xml`` part that
+        python-docx has no high-level model for (unlike headers/footers); without
+        reading it directly here, that content is silently dropped.
+
+        Each note's body becomes its own ``FOOTNOTE`` item in the furniture layer,
+        the same layer headers/footers use: available to callers, out of the
+        reading order by default. Separator/continuation-separator placeholders
+        (present in every Word-authored document, holding no user content) are
+        skipped.
+
+        Args:
+            docx_obj: A docx Document object to be parsed.
+            doc: A DoclingDocument object to add the footnotes/endnotes to.
+        """
+        skip_types = {"separator", "continuationSeparator", "continuationNotice"}
+        note_parts = {
+            DOCX_RT.FOOTNOTES: "footnote",
+            DOCX_RT.ENDNOTES: "endnote",
+        }
+
+        for reltype, tag_name in note_parts.items():
+            matches = [
+                rel for rel in docx_obj.part.rels.values() if rel.reltype == reltype
+            ]
+            if not matches:
+                continue
+            try:
+                root = docx_parse_xml(matches[0].target_part.blob)
+            except Exception:
+                _log.warning(f"Failed to parse {tag_name}s part")
+                continue
+
+            for note in root.findall(f"{_W_NS_CLARK}{tag_name}"):
+                if note.get(f"{_W_NS_CLARK}type") in skip_types:
+                    continue
+                texts = [
+                    text
+                    for p_elm in note.findall(f"{_W_NS_CLARK}p")
+                    if (text := Paragraph(p_elm, docx_obj).text.strip())
+                ]
+                if not texts:
+                    continue
+                doc.add_text(
+                    label=DocItemLabel.FOOTNOTE,
+                    text=" ".join(texts),
+                    content_layer=ContentLayer.FURNITURE,
+                )
 
     def _add_comments(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
         """Add document comments (reviewer annotations) and link to annotated items.
@@ -3984,9 +4326,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return
 
         # Parse the document body for comment range markers
-        namespaces = {
-            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-        }
+        namespaces = _OOXML_NAMESPACES
 
         try:
             # Find all paragraphs with comment ranges
@@ -4002,16 +4342,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 comment_ids = set()
 
                 for start_marker in comment_starts:
-                    comment_id = start_marker.get(
-                        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-                    )
+                    comment_id = start_marker.get(f"{_W_NS_CLARK}id")
                     if comment_id:
                         comment_ids.add(comment_id)
 
                 for end_marker in comment_ends:
-                    comment_id = end_marker.get(
-                        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-                    )
+                    comment_id = end_marker.get(f"{_W_NS_CLARK}id")
                     if comment_id:
                         comment_ids.add(comment_id)
 
@@ -4027,30 +4363,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _get_comment_ids_for_element(self, element: BaseOxmlElement) -> set[str]:
         """Return the set of comment IDs attached to a paragraph element."""
-        namespaces = {
-            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-        }
+        namespaces = _OOXML_NAMESPACES
         comment_ids: set[str] = set()
 
         for marker in element.findall(".//w:commentRangeStart", namespaces):
-            comment_id = marker.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-            )
+            comment_id = marker.get(f"{_W_NS_CLARK}id")
             if comment_id:
                 comment_ids.add(comment_id)
 
         for marker in element.findall(".//w:commentRangeEnd", namespaces):
-            comment_id = marker.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-            )
+            comment_id = marker.get(f"{_W_NS_CLARK}id")
             if comment_id:
                 comment_ids.add(comment_id)
 
         # Some documents only contain commentReference nodes without range markers
         for marker in element.findall(".//w:commentReference", namespaces):
-            comment_id = marker.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
-            )
+            comment_id = marker.get(f"{_W_NS_CLARK}id")
             if comment_id:
                 comment_ids.add(comment_id)
 

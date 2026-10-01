@@ -6,7 +6,13 @@
 import json
 
 import pytest
-from docling_core.types.doc import DocItemLabel, Size
+from docling_core.types.doc import (
+    CodeItem,
+    DocItemLabel,
+    RichTableCell,
+    Script,
+    Size,
+)
 
 from docling.utils.dots_utils import _clean_json, parse_dots_json
 
@@ -53,6 +59,28 @@ class TestParseTableElement:
         # Table should have parsed cells
         assert item.data.num_rows == 2
         assert item.data.num_cols == 2
+
+    def test_rich_cells_and_caption(self, page_size: Size):
+        html = (
+            "<table><caption>Results <sup>1</sup></caption>"
+            "<tr><td><b>Bold</b> <i>value</i><sup>1</sup><sub>2</sub></td></tr></table>"
+        )
+        data = [{"bbox": [0, 0, 100, 100], "category": "Table", "text": html}]
+
+        doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+
+        table = doc.tables[0]
+        assert isinstance(table.data.table_cells[0], RichTableCell)
+        assert len(table.captions) == 1
+        assert table.captions[0].resolve(doc).text == "Results 1"
+        assert "<caption>" in doc.export_to_doclang()
+        assert any(item.formatting and item.formatting.bold for item in doc.texts)
+        assert any(item.formatting and item.formatting.italic for item in doc.texts)
+        assert {Script.SUPER, Script.SUB} <= {
+            item.formatting.script for item in doc.texts if item.formatting
+        }
+        assert table.prov
+        assert all(not item.prov for item in doc.texts)
 
 
 class TestParsePictureNoTextField:
@@ -147,6 +175,50 @@ class TestParseMultipleCategories:
         assert DocItemLabel.SECTION_HEADER in labels
         assert DocItemLabel.TEXT in labels
         assert DocItemLabel.PICTURE in labels
+
+    def test_normalizes_headings_code_and_inline_html(self, page_size: Size):
+        data = [
+            {"bbox": [0, 0, 100, 20], "category": "Title", "text": "# Title"},
+            {
+                "bbox": [0, 30, 100, 50],
+                "category": "Section-header",
+                "text": "### Section",
+            },
+            {
+                "bbox": [0, 60, 100, 100],
+                "category": "Text",
+                "text": "```python\nprint('ok')\n```",
+            },
+            {
+                "bbox": [0, 110, 100, 140],
+                "category": "Text",
+                "text": "H<sub>2</sub>O",
+            },
+            {
+                "bbox": [0, 150, 100, 180],
+                "category": "List-item",
+                "text": "Keep the inequality $0<a<2$ literal.",
+            },
+        ]
+
+        doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+
+        assert (doc.texts[0].text, doc.texts[0].orig) == ("Title", "# Title")
+        assert (doc.texts[1].text, doc.texts[1].orig, doc.texts[1].level) == (
+            "Section",
+            "### Section",
+            2,
+        )
+        code = next(item for item in doc.texts if isinstance(item, CodeItem))
+        assert code.text == "print('ok')"
+        assert code.orig == "```python\nprint('ok')\n```"
+        assert any(
+            item.text == "2" and item.formatting.script == Script.SUB
+            for item in doc.texts
+        )
+        assert any(
+            item.text == "Keep the inequality $0<a<2$ literal." for item in doc.texts
+        )
 
 
 class TestCleanJson:

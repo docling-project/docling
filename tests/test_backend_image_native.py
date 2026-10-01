@@ -20,6 +20,8 @@ from docling.document_converter import DocumentConverter, ImageFormatOption
 from docling.document_extractor import DocumentExtractor
 from docling.exceptions import DocumentLoadError
 
+_EXIF_ORIENTATION_TAG = 0x0112
+
 
 def _make_png_stream(
     width: int = 64,
@@ -53,6 +55,26 @@ def _make_multipage_tiff_stream(
     )
     buf.seek(0)
     return DocumentStream(name="test.tiff", stream=buf)
+
+
+def _make_jpeg_stream(
+    width: int = 200,
+    height: int = 100,
+    orientation: int | None = None,
+    dpi: tuple[float, float] | None = None,
+) -> DocumentStream:
+    """A white frame with a black marker in the top-left corner."""
+    img = Image.new("RGB", (width, height), "white")
+    img.paste((0, 0, 0), (0, 0, max(1, width // 4), max(1, height // 4)))
+    save_kwargs: dict = {} if dpi is None else {"dpi": dpi}
+    if orientation is not None:
+        exif = Image.Exif()
+        exif[_EXIF_ORIENTATION_TAG] = orientation
+        save_kwargs["exif"] = exif
+    buf = BytesIO()
+    img.save(buf, format="JPEG", **save_kwargs)
+    buf.seek(0)
+    return DocumentStream(name="test.jpg", stream=buf)
 
 
 def test_docs_builder_uses_image_backend_for_image_stream():
@@ -132,6 +154,37 @@ def test_one_dpi_defaults_to_72_dpi():
     page_backend = _get_backend_from_stream(stream).load_page(0)
 
     assert page_backend.get_size().as_tuple() == (64, 48)
+
+
+def test_exif_orientation_rotates_the_frame():
+    """A quarter-turn orientation tag rotates the frame instead of being ignored.
+
+    A camera writes the sensor readout plus the tag, so without this the page
+    reaches OCR and layout on its side.
+    """
+    page_backend = _get_backend_from_stream(
+        _make_jpeg_stream(width=200, height=100, orientation=6)
+    ).load_page(0)
+    image = page_backend.get_page_image()
+
+    assert page_backend.get_size().as_tuple() == (100, 200)
+    assert min(image.getpixel((2, 2))) > 128
+    assert min(image.getpixel((image.width - 3, 2))) < 128
+
+
+def test_exif_orientation_swaps_dpi_axes():
+    """The DPI axes follow the rotation, keeping the physical page size right.
+
+    ``ImageOps.exif_transpose`` swaps the pixel dimensions but leaves
+    ``info["dpi"]`` untouched, which would otherwise turn a square 72x72 pt page
+    into 36x144.
+    """
+    page_backend = _get_backend_from_stream(
+        _make_jpeg_stream(width=300, height=150, orientation=6, dpi=(300, 150))
+    ).load_page(0)
+
+    assert page_backend.get_size().as_tuple() == (72, 72)
+    assert min(page_backend.get_page_image().getpixel((2, 2))) > 128
 
 
 def test_get_page_image_full():
