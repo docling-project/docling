@@ -132,6 +132,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     _ENTITY_RE = re.compile(r"&(#\d+|#x[0-9a-fA-F]+|\w+);")
     _DELIMITER_CELL_RE = re.compile(r":?-+:?")
     _PIPE_ENTITY = "&#124;"
+    _BR_TAG_RE = re.compile(r"<br[\s/>]", re.IGNORECASE)
 
     @staticmethod
     def _split_table_row(row: str) -> list[str]:
@@ -810,6 +811,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+
+        elif self.in_table and isinstance(
+            element, marko.inline.InlineHTML | marko.inline.AutoLink
+        ):
+            _log.debug(" - Inline HTML or autolink in a table: %s", element.children)
+            # The text inside a tag pair and the URL of an autolink arrive as
+            # RawText children, so only a <br> adds to the cell: a line break,
+            # as the HTML backend gives for <br> in a cell.
+            if isinstance(element, marko.inline.InlineHTML) and self._BR_TAG_RE.match(
+                str(element.children)
+            ):
+                self._append_table_text("\n")
         else:
             if not isinstance(element, str):
                 self._close_table(doc)

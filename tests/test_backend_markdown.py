@@ -272,6 +272,35 @@ def test_convert_table_keeps_inline_code_spans():
     ]
 
 
+def test_convert_table_keeps_inline_html_and_autolinks():
+    """Inline HTML and an autolink inside a GFM table cell are part of that cell.
+
+    A <br> is a line break in the cell, the text inside other tags stays
+    without the tags, and an autolink keeps its URL.
+    """
+    markdown = """| Name<br>(unit) | Value |
+| --- | --- |
+| CO<sub>2</sub> | <kbd>Ctrl</kbd>+<kbd>C</kbd> |
+| a<br>b<br/>c<br />d | see <https://x.org> now |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    assert conv_result.document.texts == []
+    assert len(conv_result.document.tables) == 1
+    table_data = conv_result.document.tables[0].data
+    assert table_data.num_rows == 3
+    assert table_data.num_cols == 2
+    assert [cell.text for cell in table_data.table_cells] == [
+        "Name\n(unit)",
+        "Value",
+        "CO2",
+        "Ctrl+C",
+        "a\nb\nc\nd",
+        "see https://x.org now",
+    ]
+
+
 def test_convert_table_has_no_duplicate_cells():
     """
     Regression test:
