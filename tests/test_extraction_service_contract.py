@@ -584,6 +584,29 @@ def test_extract_failure_status_respects_raises_on_error():
     assert document.status == ConversionStatus.FAILURE
 
 
+def test_extract_exception_includes_item_errors():
+    document = _doc(status=ConversionStatus.FAILURE)
+    document.items = [
+        ExtractionItem(
+            scope=PageScope(page_no=3),
+            errors=[
+                ErrorItem(
+                    component_type=DoclingComponentType.MODEL,
+                    module_name="ExtractionVlmPipeline",
+                    error_message="Model API request timed out",
+                    category=FailureCategory.INFERENCE_FAILURE,
+                )
+            ],
+        )
+    ]
+    client, _ = _extract_client([document])
+    with (
+        client,
+        pytest.raises(ExtractionError, match="page 3: Model API request timed out"),
+    ):
+        client.extract("https://example.com/report.pdf", TARGET)
+
+
 def test_extract_all_runs_one_job_per_source(monkeypatch):
     # Serve rejects more than 3 sources per request by default; one source is
     # rejected on its own to check that a failed job does not end the iterator.

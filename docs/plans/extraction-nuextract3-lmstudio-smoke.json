@@ -39,7 +39,7 @@
   },
   "environment": {
     "python": "3.13.5",
-    "python_path": "/Users/cau/Documents/Development/docling_release/.venv/bin/python",
+    "python_path": "../docling_release/.venv/bin/python",
     "published_core": "2.96.0",
     "torch": "2.14.0",
     "transformers": "5.16.1",

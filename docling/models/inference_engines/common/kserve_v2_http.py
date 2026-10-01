@@ -273,9 +273,8 @@ class KserveV2HttpClient:
             raise requests.exceptions.HTTPError(
                 backend_error_message(
                     f"HTTP error {response.status_code} from model {self.model_name}",
-                    exc,
+                    RuntimeError(f"{exc}: {response.text}"),
                 )
-                + f": {response.text}"
             ) from exc
 
     @property

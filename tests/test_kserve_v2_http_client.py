@@ -228,6 +228,21 @@ def test_error_statuses_are_raised_as_http_errors(kserve, status):
         _infer_once(_client(kserve))
 
 
+@pytest.mark.parametrize("debug_enabled", [False, True])
+def test_http_error_body_follows_debug_setting(kserve, monkeypatch, debug_enabled):
+    from docling.datamodel.settings import settings
+    from tests.fakes.http_service import Response
+
+    monkeypatch.setattr(settings.debug, "error_details", debug_enabled)
+    body = "upstream private-backend.internal:8080 failed"
+    kserve.service.add_route(
+        "POST", r".*/infer", lambda request, match: Response(body=body, status=500)
+    )
+    with pytest.raises(requests.exceptions.HTTPError, match="500") as exc_info:
+        _infer_once(_client(kserve))
+    assert (body in str(exc_info.value)) is debug_enabled
+
+
 def test_a_malformed_response_body_is_reported_as_such(kserve):
     from tests.fakes.http_service import Response
 

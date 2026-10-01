@@ -365,8 +365,9 @@ def test_dynamic_vllm_constraints_and_provider_rejection_without_fallback(
         ),
         model.model_spec,
     )
-    with pytest.raises(RuntimeError, match="compilation rejected"):
+    with pytest.raises(RuntimeError, match="status 400") as exc_info:
         list(model.process([[TextContentItem(text="invoice")]], other))
+    assert "compilation rejected" not in str(exc_info.value)
     assert post.call_count == 2
     assert (
         post.call_args.kwargs["json"]["response_format"]["json_schema"]["schema"]

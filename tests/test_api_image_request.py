@@ -501,6 +501,32 @@ class TestApiImageRequest:
         assert response.usage == {"total_tokens": 3}
 
 
+@pytest.mark.parametrize("debug_enabled", [False, True])
+@patch("docling.utils.api_image_request._make_retry_session")
+def test_http_error_body_follows_debug_setting(
+    mock_session_factory, monkeypatch, debug_enabled
+):
+    from docling.datamodel.settings import settings
+
+    monkeypatch.setattr(settings.debug, "error_details", debug_enabled)
+    response = (
+        mock_session_factory.return_value.__enter__.return_value.post.return_value
+    )
+    response.ok = False
+    response.status_code = 500
+    response.text = "upstream private-backend.internal:8080 failed"
+    with pytest.raises(RuntimeError, match="status 500") as exc_info:
+        _post_openai_chat_completion(
+            payload={},
+            url="https://model.example/v1/chat/completions",
+            timeout=1,
+            headers=None,
+            usage_response_key=None,
+            token_extract_key=None,
+        )
+    assert (response.text in str(exc_info.value)) is debug_enabled
+
+
 @pytest.mark.parametrize(
     ("raised", "expected"),
     [

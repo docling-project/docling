@@ -198,8 +198,10 @@ def _post_openai_chat_completion(
         ) from exc
     if not response.ok:
         raise RuntimeError(
-            f"API request failed with status {response.status_code}: "
-            f"{_response_preview(response.text)}"
+            backend_error_message(
+                f"API request failed with status {response.status_code}",
+                RuntimeError(_response_preview(response.text)),
+            )
         )
 
     response_payload = _parse_response_json(response)

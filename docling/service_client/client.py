@@ -57,6 +57,7 @@ from docling.datamodel.extraction import (
     DocumentExtractionResult,
     ExtractionItem,
     ExtractionTarget,
+    PageScope,
 )
 from docling.datamodel.service.callbacks import CallbackSpec
 from docling.datamodel.service.chunking import (
@@ -585,8 +586,16 @@ class _BaseDoclingServiceClient:
     @staticmethod
     def _extraction_failure_message(document: DocumentExtractionResult) -> str:
         filename = document.input.file.name
-        if document.errors:
-            messages = "; ".join(item.error_message for item in document.errors)
+        errors = [error.error_message for error in document.errors]
+        for item in document.items:
+            scope = (
+                f"page {item.scope.page_no}"
+                if isinstance(item.scope, PageScope)
+                else "document"
+            )
+            errors.extend(f"{scope}: {error.error_message}" for error in item.errors)
+        if errors:
+            messages = "; ".join(errors)
             return (
                 f"Extraction failed for {filename} with status "
                 f"{document.status.value}. Errors: {messages}"

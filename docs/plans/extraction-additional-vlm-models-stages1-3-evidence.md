@@ -89,14 +89,14 @@ shown):
 
 ```sh
 # Existing baseline, outside sandbox: 71 passed, 27 existing warnings, exit 0.
-PYTHONPATH=/Users/cau/Documents/Development/docling-second \
-  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest \
+PYTHONPATH=../docling-second \
+  ../docling_release/.venv/bin/python -m pytest \
   -m 'not ml_vlm' tests/test_extraction_api.py tests/test_extraction_text_channel.py \
   tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
   tests/test_service_datamodels.py
 
 # Official converter evaluation, exit 0; fixture results linked below.
-uv venv --python /Users/cau/Documents/Development/docling_release/.venv/bin/python \
+uv venv --python ../docling_release/.venv/bin/python \
   /tmp/docling-numind-eval-venv
 uv pip install --python /tmp/docling-numind-eval-venv/bin/python \
   /tmp/numind-0.4.0-py3-none-any.whl
@@ -110,8 +110,8 @@ uv lock --locked
 
 # Final gates + regressions, outside sandbox: 144 passed, 4 skipped,
 # 27 existing warnings, exit 0, 12.82 seconds.
-CI=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
-  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+CI=1 PYTHONPATH=../docling-second \
+  ../docling_release/.venv/bin/python -m pytest -q \
   tests/test_extraction_templates.py tests/test_extraction.py \
   tests/test_extraction_api.py tests/test_extraction_text_channel.py \
   tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
@@ -157,7 +157,7 @@ Actual logs (temporary local evidence):
 
 ### Current checkpoint: stage 2
 
-- Location: `/Users/cau/Documents/Development/docling-second` only. Branch
+- Location: `../docling-second` only. Branch
   `cau/extraction-api-service-models`, stage 2 implementation base
   `0e53ddc943ad36e30c424573c37f5ce4c8ebc20d`. The subsequent user request
   authorized a signed-off stage 2 commit; resolve its ID with `git log -1`.
@@ -264,11 +264,11 @@ git status --short --untracked-files=all
 git ls-files --others --exclude-standard
 
 # Environment check: versions/path above, exit 0.
-/Users/cau/Documents/Development/docling_release/.venv/bin/python -c 'import sys,importlib.metadata as m,docling_core; print(sys.version); print(docling_core.__path__); print({p:m.version(p) for p in ["torch","transformers","pydantic","jsonschema","pytest","polyfactory"]})'
+../docling_release/.venv/bin/python -c 'import sys,importlib.metadata as m,docling_core; print(sys.version); print(docling_core.__path__); print({p:m.version(p) for p in ["torch","transformers","pydantic","jsonschema","pytest","polyfactory"]})'
 
 # Baseline, outside sandbox: 144 passed, 4 skipped, 27 warnings; exit 0, 12.97s.
-CI=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
-  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+CI=1 PYTHONPATH=../docling-second \
+  ../docling_release/.venv/bin/python -m pytest -q \
   tests/test_extraction_templates.py tests/test_extraction.py \
   tests/test_extraction_api.py tests/test_extraction_text_channel.py \
   tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
@@ -277,8 +277,8 @@ CI=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
 
 # Final gates/regressions, outside sandbox: 225 passed, 4 skipped, 2 deselected;
 # 27 existing warnings, exit 0. HF_HUB_OFFLINE prevents downloads.
-CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
-  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=../docling-second \
+  ../docling_release/.venv/bin/python -m pytest -q \
   tests/test_extraction_templates.py tests/test_extraction.py \
   tests/test_extraction_api.py tests/test_extraction_text_channel.py \
   tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
@@ -293,7 +293,7 @@ git archive HEAD | tar -x -C /tmp/docling-stage2-baseline-source
 # Working directory: /tmp/docling-stage2-baseline-source.
 # 2 failed, 4 deselected, 4 warnings; exit 1, 8.11s.
 CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/tmp/docling-stage2-baseline-source \
-  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+  ../docling_release/.venv/bin/python -m pytest -q \
   tests/test_interfaces.py -k 'test_convert_path or test_convert_stream' \
   > /tmp/docling-stage2-interface-baseline.log 2>&1
 
@@ -338,7 +338,7 @@ Temporary local evidence:
 
 ### Current checkpoint: stage 3 — done
 
-- Worktree: `/Users/cau/Documents/Development/docling-second`, branch
+- Worktree: `../docling-second`, branch
   `cau/extraction-api-service-models`, implementation base HEAD
   `b0e888f846d82c24b5ba64e587f1dd64bd568c5f`. Initial `git status --short`
   was empty. Final changes are only the paths below. The subsequent user request authorized
@@ -453,12 +453,12 @@ git branch --show-current
 git rev-parse HEAD
 
 # Environment: published Core/site-packages and versions above; exit 0.
-/Users/cau/Documents/Development/docling_release/.venv/bin/python -c 'import sys,importlib.metadata as m,docling_core; print(sys.version); print(docling_core.__path__); print({p:m.version(p) for p in ["torch","transformers","pydantic","jsonschema","pytest","polyfactory"]})'
+../docling_release/.venv/bin/python -c 'import sys,importlib.metadata as m,docling_core; print(sys.version); print(docling_core.__path__); print({p:m.version(p) for p in ["torch","transformers","pydantic","jsonschema","pytest","polyfactory"]})'
 
 # Baseline outside sandbox: 225 passed, 4 skipped, 2 deselected, 27 warnings;
 # exit 0, 14.99s. Initial sandbox attempt aborted on existing MLX imports, exit 134.
-CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
-  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=../docling-second \
+  ../docling_release/.venv/bin/python -m pytest -q \
   tests/test_extraction_templates.py tests/test_extraction.py \
   tests/test_extraction_api.py tests/test_extraction_text_channel.py \
   tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
@@ -469,8 +469,8 @@ CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second
 
 # Final acceptance gates + regressions outside sandbox: 331 passed, 4 skipped,
 # 2 deselected, 31 warnings; exit 0, 16.23s.
-CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=/Users/cau/Documents/Development/docling-second \
-  /Users/cau/Documents/Development/docling_release/.venv/bin/python -m pytest -q \
+CI=1 HF_HUB_OFFLINE=1 PYTHONPATH=../docling-second \
+  ../docling_release/.venv/bin/python -m pytest -q \
   tests/test_extraction_templates.py tests/test_extraction.py \
   tests/test_extraction_api.py tests/test_extraction_text_channel.py \
   tests/test_extraction_dclx.py tests/test_extraction_vlm_streaming.py \
@@ -506,6 +506,6 @@ Temporary evidence:
 Resume prompt (only this file path needs to be carried into a new conversation):
 
 > Continue the next incomplete stage in
-> `/Users/cau/Documents/Development/docling-second/docs/plans/extraction-additional-vlm-models-execution.md`.
+> `../docling-second/docs/plans/extraction-additional-vlm-models-execution.md`.
 > Implement that stage, verify its gates and update the checkpoint. Preserve
 > unrelated work; stop if docling-core needs changes. Do not commit or publish.
