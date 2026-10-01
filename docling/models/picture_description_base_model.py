@@ -100,9 +100,7 @@ class PictureDescriptionBaseModel(
             if describe_image:
                 elements.append(el.item)
                 img = el.image
-                if img.mode == "P" and isinstance(
-                    img.info.get("transparency"), bytes
-                ):
+                if img.mode == "P" and isinstance(img.info.get("transparency"), bytes):
                     img = img.convert("RGBA")
                 images.append(img.convert("RGB"))
 
