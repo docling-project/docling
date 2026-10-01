@@ -8,8 +8,10 @@ from __future__ import annotations
 import statistics
 from collections import defaultdict
 
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
+from docling_core.types.doc.page import PdfWidget
 
+from docling.datamodel.base_models import Cluster
 from docling.models.stages.form_field.keying.geometry import (
     contains,
     gap,
@@ -19,20 +21,28 @@ from docling.models.stages.form_field.keying.geometry import (
 )
 from docling.models.stages.form_field.keying.types import (
     Label,
-    Region,
     Scope,
-    Snapshot,
     Value,
+    is_skipped,
 )
 
-# Pages with more text atoms than this (the development forms have at most
-# 401 labels) skip caption joining and abstain from free-form keying.
+# Pages with more text atoms than this skip caption joining and abstain from
+# free-form keying.
 MAX_LABELS = 3000
+# Layout regions whose cells never become labels.
+NOT_LABELS = {
+    DocItemLabel.FORM,
+    DocItemLabel.KEY_VALUE_REGION,
+    DocItemLabel.TABLE,
+    DocItemLabel.DOCUMENT_INDEX,
+    DocItemLabel.PICTURE,
+}
 
 
-def regions(snapshot: Snapshot) -> list[Region]:
-    found: dict[int, Region] = {}
-    pending = list(snapshot.layout)
+def regions(clusters: list[Cluster]) -> list[Cluster]:
+    """Every layout cluster once, children included, ordered by id."""
+    found: dict[int, Cluster] = {}
+    pending = list(clusters)
     while pending:
         region = pending.pop()
         if region.id not in found:
@@ -42,12 +52,18 @@ def regions(snapshot: Snapshot) -> list[Region]:
 
 
 def scope_of(
-    bbox: BoundingBox, snapshot: Snapshot, found: list[Region] | None = None
+    bbox: BoundingBox, found: list[Cluster], table_cells: dict[int, list[TableCell]]
 ) -> Scope:
+    """The detected table, and its cell, that a top-left box belongs to.
+
+    ``found`` is the flat list of layout clusters (see ``regions``) and
+    ``table_cells`` the detected cells of each table cluster, by cluster id.
+    """
     tables = [
         r
-        for r in (regions(snapshot) if found is None else found)
-        if r.label in {"table", "document_index"} and overlap(r.bbox, bbox) > 0
+        for r in found
+        if r.label in {DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX}
+        and overlap(r.bbox, bbox) > 0
     ]
     if not tables:
         return Scope()
@@ -58,59 +74,43 @@ def scope_of(
         not contains(other.bbox, table.bbox) for other in tables if other.id != table.id
     ):
         return Scope(table.id)
-    structure = snapshot.tables.table_map.get(table.id)
-    cells = (
-        []
-        if structure is None
-        else [
-            i
-            for i, cell in enumerate(structure.table_cells)
-            if cell.bbox is not None and contains(cell.bbox, bbox)
-        ]
-    )
+    cells = [
+        i
+        for i, cell in enumerate(table_cells.get(table.id, []))
+        if cell.bbox is not None and contains(cell.bbox, bbox)
+    ]
     return Scope(table.id, cells[0] if len(cells) == 1 else None)
 
 
-def inputs(snapshot: Snapshot) -> tuple[list[Value], list[Label], float]:
-    found = regions(snapshot)
+def inputs(
+    widgets: list[PdfWidget],
+    found: list[Cluster],
+    table_cells: dict[int, list[TableCell]],
+    page_height: float,
+) -> tuple[list[Value], list[Label], float, dict[int, set[tuple[int, int]]]]:
+    """Values, labels, the median text height, and where each text atom came from."""
     values = []
-    seen_indices: set[int] = set()
-    for native in snapshot.widgets:
-        if native.index in seen_indices:
-            raise ValueError(f"Duplicate native widget index: {native.index}")
-        seen_indices.add(native.index)
-        bbox = native.rect.to_bounding_box().to_top_left_origin(snapshot.size.height)
-        if (
-            bbox.width <= 0
-            or bbox.height <= 0
-            or (
-                native.widget_field_type == "/Btn"
-                and native.widget_field_flags & (1 << 16)
-            )
-        ):
+    for native in widgets:
+        bbox = native.rect.to_bounding_box().to_top_left_origin(page_height)
+        if is_skipped(native, bbox):
             continue
-        values.append(Value(native, bbox, scope_of(bbox, snapshot, found)))
+        values.append(Value(native, bbox, scope_of(bbox, found, table_cells)))
 
     # Atom identity is source-backed and shared by all overlapping span choices.
     atoms: dict[tuple, int] = {}
+    sources: dict[int, set[tuple[int, int]]] = defaultdict(set)
     labels: dict[tuple[frozenset[int], Scope], Label] = {}
     heights = []
     for region in found:
-        if region.label in {
-            "form",
-            "key_value_region",
-            "table",
-            "document_index",
-            "picture",
-        }:
+        if region.label in NOT_LABELS:
             continue
         by_scope: dict[Scope, list[tuple[int, str, BoundingBox]]] = defaultdict(list)
         for cell in region.cells:
             text = cell.text.strip()
-            box = cell.rect.to_bounding_box().to_top_left_origin(snapshot.size.height)
+            box = cell.rect.to_bounding_box().to_top_left_origin(page_height)
             if not text or box.area() <= 0:
                 continue
-            scope = scope_of(box, snapshot, found)
+            scope = scope_of(box, found, table_cells)
             if not scope.eligible:
                 continue
             if any(
@@ -123,13 +123,14 @@ def inputs(snapshot: Snapshot) -> tuple[list[Value], list[Label], float]:
             atom = atoms.setdefault(
                 (cell.index, tuple(box.as_tuple()), text), len(atoms)
             )
+            sources[atom].add((region.id, cell.index))
             heights.append(box.height)
             by_scope[scope].append((atom, text, box))
         for scope, cells in by_scope.items():
             for bundle in [cells, *[[cell] for cell in cells]]:
                 ids = frozenset(c[0] for c in bundle)
                 bbox = BoundingBox.enclosing_bbox([c[2] for c in bundle])
-                if scope_of(bbox, snapshot, found) != scope:
+                if scope_of(bbox, found, table_cells) != scope:
                     continue
                 labels[ids, scope] = Label(
                     " ".join(c[1] for c in bundle),
@@ -141,9 +142,9 @@ def inputs(snapshot: Snapshot) -> tuple[list[Value], list[Label], float]:
                 )
     h = statistics.median(heights) if heights else 1.0
     if len(labels) > MAX_LABELS:
-        # Joining captions compares every pair of blocks; a page this far
-        # beyond the development forms abstains in assign() anyway.
-        return values, list(labels.values()), h
+        # Joining captions compares every pair of blocks; a page this large
+        # abstains in assign() anyway.
+        return values, list(labels.values()), h, sources
     # Rebuild whole captions the layout split into pieces: first the pieces of
     # one text line, then the lines of one caption. Joined captions compete
     # with their pieces; they never replace them.
@@ -152,7 +153,7 @@ def inputs(snapshot: Snapshot) -> tuple[list[Value], list[Label], float]:
     )
     for label in [*blocks, *stacks(blocks, values, h)]:
         labels.setdefault((label.atoms, label.scope), label)
-    return values, list(labels.values()), h
+    return values, list(labels.values()), h, sources
 
 
 def joined(parts: list[Label]) -> Label:
@@ -261,7 +262,13 @@ def stacks(blocks: list[Label], values: list[Value], h: float) -> list[Label]:
         for b in blocks
         if lettered(b.text)
         and b.bbox.height <= 1.5 * h
-        and b.role not in {"section_header", "page_header", "page_footer", "title"}
+        and b.role
+        not in {
+            DocItemLabel.SECTION_HEADER,
+            DocItemLabel.PAGE_HEADER,
+            DocItemLabel.PAGE_FOOTER,
+            DocItemLabel.TITLE,
+        }
         and not any(
             overlap(b.bbox, v.bbox) > 0
             and span_overlap(b.bbox.t, b.bbox.b, v.bbox.t, v.bbox.b)

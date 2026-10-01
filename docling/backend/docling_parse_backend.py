@@ -67,6 +67,13 @@ def _widgets_to_page_frame(seg_page: SegmentedPdfPage) -> None:
     page) but widget rectangles in raw PDF user space. When the crop box does
     not start at the user-space origin, the widgets would sit off their printed
     captions and off the page render; shift them by the crop box origin.
+
+    FIXME: blocks merging. This corrects docling-parse output inside docling.
+    The widget rectangles must be reported in the crop-box frame by
+    docling-parse itself (widget extraction came with docling-parse 7.22.0,
+    docling-project/docling-parse#334). Once that is fixed there, this function
+    would shift the widgets a second time: delete it together with its two
+    call sites and raise the docling-parse lower bound to the fixed release.
     """
     if not seg_page.widgets:
         return
@@ -585,7 +592,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         ]
 
     def get_thin_shape_boxes(
-        self, *, max_thickness: float = 3.5
+        self, *, max_thickness: float
     ) -> Optional[list[BoundingBox]]:
         if not self.is_valid():
             return []

@@ -740,16 +740,34 @@ class ReadingOrderModel:
                 ),
                 parent=field_item,
             )
+        self._add_field_values(
+            item,
+            out_doc=out_doc,
+            parent=field_item,
+            page_no=page_no,
+            page_height=page_height,
+        )
+
+    def _add_field_values(
+        self,
+        item: FieldItemPrediction,
+        *,
+        out_doc: DoclingDocument,
+        parent: NodeItem,
+        page_no: int,
+        page_height: float,
+    ) -> None:
+        """The item's values, then its context as a hint."""
         for value in item.values:
             self._add_field_value(
                 value,
                 out_doc=out_doc,
-                parent=field_item,
+                parent=parent,
                 page_no=page_no,
                 page_height=page_height,
             )
         if item.context_text:
-            out_doc.add_field_hint(text=item.context_text, parent=field_item)
+            out_doc.add_field_hint(text=item.context_text, parent=parent)
 
     def _add_field_value(
         self,
@@ -821,18 +839,13 @@ class ReadingOrderModel:
                 item_parent = parent
             field_item = out_doc.add_field_item(parent=item_parent)
             out_doc.add_field_key(text=cap_text, prov=prov, parent=field_item)
-            for value in element.field_item.values:
-                self._add_field_value(
-                    value,
-                    out_doc=out_doc,
-                    parent=field_item,
-                    page_no=element.page_no,
-                    page_height=page_height,
-                )
-            if element.field_item.context_text:
-                out_doc.add_field_hint(
-                    text=element.field_item.context_text, parent=field_item
-                )
+            self._add_field_values(
+                element.field_item,
+                out_doc=out_doc,
+                parent=field_item,
+                page_no=element.page_no,
+                page_height=page_height,
+            )
             return field_item, current_list
         if label == DocItemLabel.LIST_ITEM:
             if current_list is None:

@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, TableCell
 
+from docling.datamodel.base_models import Cluster
 from docling.models.stages.form_field.keying.candidates import siblings
 from docling.models.stages.form_field.keying.geometry import (
     band_index,
@@ -16,39 +17,41 @@ from docling.models.stages.form_field.keying.geometry import (
     lettered,
     span_overlap,
 )
-from docling.models.stages.form_field.keying.inputs import regions
 from docling.models.stages.form_field.keying.rules import printed_cell, rules_of
 from docling.models.stages.form_field.keying.types import (
     Candidate,
     Label,
     Scope,
-    Snapshot,
     TableSlot,
     Value,
 )
 
 
 def table_fields(
-    snapshot: Snapshot, values: list[Value], labels: list[Label]
+    found: list[Cluster],
+    table_cells: dict[int, list[TableCell]],
+    rule_boxes: list[BoundingBox],
+    page_height: float,
+    values: list[Value],
+    labels: list[Label],
 ) -> tuple[list[Candidate], dict[int, TableSlot]]:
-    """Keys for values inside detected tables, read from the table's own cells.
+    """The grid cell of each value inside a detected table, and its key.
 
-    A value sits in the row and column whose bands it overlaps most; a band
-    is the extent of the single-span cells of that row or column, because
-    detected cell boxes cover their text rather than the printed cell. The
-    key is the lettered text of the value's own cell; otherwise the first
-    lettered cell to its left, the row caption. The first column header above
-    is kept as context, and is the key only when there is no row caption. Cell
-    text is used whole; codes and units without letters never key a value,
-    and neither does cell text that repeats the value itself (a filled field
-    rendered into the page). Appends the cell labels it uses to ``labels``.
+    A value is keyed only by lettered text of its own cell. A row caption or a
+    column header elsewhere in the table never keys a value: the table's
+    headers already carry that association. Cell text is used whole; codes
+    and units without letters never key a value, and neither does cell text
+    that repeats the value itself (a filled field rendered into the page).
+    Appends the cell labels it uses to ``labels``.
 
-    Also returns the grid cell of each value, whatever its key: for a value
-    inside one detected cell, that cell; otherwise the row and column above.
-    A value between bands (text at the top of its printed cell, the box
-    below) takes the nearest band only when every row, or every column, of
-    the grid has one: a missing band would hand its values to a neighbour,
-    so such a value gets no cell.
+    A value inside one detected cell sits in that cell. Otherwise it sits in
+    the row and column whose bands it overlaps most; a band is the extent of
+    the single-span cells of that row or column, because detected cell boxes
+    cover their text rather than the printed cell. A value between bands
+    (text at the top of its printed cell, the box below) takes the nearest
+    band only when every row, or every column, of the grid has one: a missing
+    band would hand its values to a neighbour, so such a value gets no cell,
+    and no key.
 
     Printed rules correct the bands where the detected grid differs from the
     printed table. When rules close a printed cell around the value and that
@@ -61,12 +64,12 @@ def table_fields(
     """
     fields: list[Candidate] = []
     slots: dict[int, TableSlot] = {}
-    rules = rules_of(snapshot.rules)
-    frames = {region.id: region.bbox for region in regions(snapshot)}
-    for table_id, structure in sorted(snapshot.tables.table_map.items()):
+    rules = rules_of(rule_boxes)
+    frames = {region.id: region.bbox for region in found}
+    for table_id, detected in sorted(table_cells.items()):
         for i, v in enumerate(values):
             if v.scope.table == table_id and v.scope.cell is not None:
-                cell = structure.table_cells[v.scope.cell]
+                cell = detected[v.scope.cell]
                 slots[i] = TableSlot(
                     table_id,
                     (cell.start_row_offset_idx, cell.end_row_offset_idx),
@@ -78,8 +81,8 @@ def table_fields(
             if v.scope.table == table_id and not v.scope.eligible
         ]
         cells = [
-            (cell, cell.bbox.to_top_left_origin(snapshot.size.height))
-            for cell in structure.table_cells
+            (cell, cell.bbox.to_top_left_origin(page_height))
+            for cell in detected
             if cell.bbox is not None
         ]
         rows: dict[int, list[BoundingBox]] = defaultdict(list)
@@ -97,8 +100,8 @@ def table_fields(
         column_bands = {
             c: (min(b.l for b in bs), max(b.r for b in bs)) for c, bs in columns.items()
         }
-        grid_rows = max(cell.end_row_offset_idx for cell in structure.table_cells)
-        grid_columns = max(cell.end_col_offset_idx for cell in structure.table_cells)
+        grid_rows = max(cell.end_row_offset_idx for cell in detected)
+        grid_columns = max(cell.end_col_offset_idx for cell in detected)
 
         def at(row: int, column: int) -> list[int]:
             return [
@@ -120,7 +123,7 @@ def table_fields(
                         box,
                         frozenset(),
                         Scope(table_id),
-                        "table_cell",
+                        None,
                     )
                 )
             return indices[k]
@@ -170,26 +173,6 @@ def table_fields(
                 ),
                 None,
             )
-            caption = next(
-                (
-                    k
-                    for c in range(column - 1, -1, -1)
-                    for k in at(row, c)
-                    if k not in home and lettered(cells[k][0].text)
-                ),
-                None,
-            )
-            header = next(
-                (
-                    k
-                    for r in range(row - 1, -1, -1)
-                    for k in at(r, column)
-                    if k not in home
-                    and cells[k][0].column_header
-                    and cells[k][0].text.strip()
-                ),
-                None,
-            )
             # A cell found through its printed text needs no band check; the
             # text's column may be one no single-span cell lies in.
             placed = by_print or (
@@ -214,19 +197,8 @@ def table_fields(
                     else (spans.start_col_offset_idx, spans.end_col_offset_idx),
                     None if own is None else label_of(own),
                 )
-            key = next((k for k in (own, caption, header) if k is not None), None)
-            if key is None:
-                continue
-            context = header if header is not None and header != key else None
-            fields.append(
-                Candidate(
-                    (i,),
-                    label_of(key),
-                    "table_cell",
-                    {},
-                    context=None if context is None else label_of(context),
-                )
-            )
+                if own is not None:
+                    fields.append(Candidate((i,), label_of(own), "table_cell", {}))
     return fields, slots
 
 

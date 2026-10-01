@@ -1,69 +1,37 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Input contract and internal data of the AcroForm keying.
-
-The snapshot models are a self-contained copy of one page's inputs (native
-widgets, layout regions, detected table cells and printed rules), independent
-of installed parser bindings, so the keying reads no live pipeline objects.
-"""
+"""Internal data of the AcroForm keying."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Literal
 
-from docling_core.types.doc import BoundingBox, Size, TableCell
-from docling_core.types.doc.page import BoundingRectangle, TextCell
-from pydantic import BaseModel, Field
+from docling_core.types.doc import BoundingBox, DocItemLabel
+from docling_core.types.doc.page import PdfWidget
 
-# Match the existing form stage's text-container coverage threshold. This
-# tolerates imperfect text bounds only for inline-clause proposals; detected
-# table/cell ownership still requires complete containment in scope_of().
-INLINE_WIDGET_COVERAGE = 0.8
+# How much of a widget a text container or FORM region must cover to hold it.
+# This tolerates imperfect text bounds; detected table/cell ownership still
+# requires complete containment in scope_of().
+WIDGET_COVERAGE = 0.8
+# Field flag bit 17 of a /Btn widget (PDF 32000-1, table 226): a push button.
+PUSHBUTTON_FLAG = 1 << 16
 
 Side = Literal["inside", "up", "down", "left", "right"]
 
 
-class NativeWidget(BaseModel):
-    """Explicit snapshot contract, independent of installed parser bindings."""
+def is_skipped(widget: PdfWidget, bbox: BoundingBox) -> bool:
+    """Widgets that carry no field value for the document.
 
-    index: int
-    rect: BoundingRectangle
-    widget_text: str | None = None
-    widget_description: str | None = None
-    widget_field_name: str | None = None
-    widget_field_type: str | None = None
-    widget_field_flags: int
-    widget_appearance_state: str | None
-
-
-class Region(BaseModel):
-    id: int
-    label: str
-    bbox: BoundingBox
-    cells: list[TextCell] = Field(default_factory=list)
-    children: list[Region] = Field(default_factory=list)
-
-
-class DetectedTable(BaseModel):
-    table_cells: list[TableCell]
-
-
-class Tables(BaseModel):
-    table_map: dict[int, DetectedTable] = Field(default_factory=dict)
-
-
-class Snapshot(BaseModel):
-    page: int
-    size: Size
-    widgets: list[NativeWidget]
-    layout: list[Region]
-    tables: Tables
-    # Printed rules (top-left boxes): stroked segments and thin filled shapes.
-    # Read only for pages with detected tables, where they place values in
-    # cells.
-    rules: list[BoundingBox] = Field(default_factory=list)
+    A widget of zero height or width is an artifact (Well-Tagged PDF 1.0,
+    8.9.2.4.13). Push buttons trigger actions and hold no value.
+    """
+    if bbox.width <= 0 or bbox.height <= 0:
+        return True
+    return widget.widget_field_type == "/Btn" and bool(
+        widget.widget_field_flags & PUSHBUTTON_FLAG
+    )
 
 
 @dataclass(frozen=True)
@@ -78,7 +46,7 @@ class Scope:
 
 @dataclass
 class Value:
-    native: NativeWidget
+    native: PdfWidget
     bbox: BoundingBox
     scope: Scope
 
@@ -93,7 +61,7 @@ class Label:
     bbox: BoundingBox
     atoms: frozenset[int]
     scope: Scope
-    role: str
+    role: DocItemLabel | None  # Layout label of the source block; None for table cells.
     fragment: bool = False
     stack: bool = False  # Joined from vertically adjacent layout blocks.
 
@@ -136,6 +104,8 @@ class Assignment:
     candidates: list[Candidate]
     selected: list[int]
     solver_status: str
-    objective: float
     # Positions in the value list -> their cell, for values in detected tables.
     slots: dict[int, TableSlot] = field(default_factory=dict)
+    # Text atom -> the (cluster id, cell index) pairs it was read from; more
+    # than one cluster when the layout put the cell in two clusters.
+    sources: dict[int, set[tuple[int, int]]] = field(default_factory=dict)

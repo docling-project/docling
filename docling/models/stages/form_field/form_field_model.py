@@ -3,16 +3,18 @@
 
 """Native AcroForm widgets keyed to their printed captions.
 
-The stage runs after table structure. For every page with widgets it builds
-the keying snapshot (widgets, layout regions, detected table cells), lets
-``keying.assign`` choose the caption of each value, and turns the result into
-``FieldRegionPrediction``s: one item per association, with the caption as key
-and the column header of a grid as context. Items are placed as the original
+The stage runs after table structure. For every page with widgets it passes
+the widgets, layout clusters and detected table cells to ``keying.assign``,
+which chooses the caption of each value, and turns the result into
+``FieldRegionPrediction``s: one item per association, with the caption as key.
+Outside detected tables, a value in a grid of like values also keeps the
+caption along its other axis as context. Items are placed as the original
 stage placed its values: a paragraph that inlines all of an item's widgets
 hosts the item in place, otherwise the enclosing FORM region does, otherwise a
 page-wide region. A value in a cell of a detected table goes into that cell
 instead (``page.predictions.table_fields``), keyed only by text printed in the
-same cell: the table's headers already carry the association. Caption text
+same cell and without context: the table's headers already carry the
+association. Caption text
 that became a key leaves the body, and text blocks that merely re-render a
 filled value are dropped. A page whose keying
 fails keeps its values, without keys.
@@ -38,28 +40,19 @@ from docling.datamodel.document import ConversionResult
 from docling.models.base_layout_model import PAGE_HEADER_LABELS, TEXT_ELEM_LABELS
 from docling.models.base_model import BasePageModel
 from docling.models.stages.form_field.keying import (
+    PUSHBUTTON_FLAG,
+    WIDGET_COVERAGE,
     Assignment,
-    Candidate,
-    DetectedTable,
     Label,
-    NativeWidget,
-    Region,
-    Snapshot,
-    Tables,
     assign,
+    is_skipped,
+    regions,
 )
+from docling.models.stages.form_field.keying.rules import THIN
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
 
-# Layout regions whose cells never become labels (same list as keying.inputs).
-NOT_LABELS = {
-    DocItemLabel.FORM,
-    DocItemLabel.KEY_VALUE_REGION,
-    DocItemLabel.TABLE,
-    DocItemLabel.DOCUMENT_INDEX,
-    DocItemLabel.PICTURE,
-}
 # Paragraphs that may host an item in place. Code, and captions or footnotes
 # attached to a table or picture, take reading-order paths that ignore
 # TextElement.field_item.
@@ -78,7 +71,6 @@ class _Unit:
     item: FieldItemPrediction
     positions: list[int]  # indices into Assignment.values
     consumed: Label | None  # label whose text leaves the body
-    candidate: Candidate | None = None  # the association behind a keyed item
 
 
 @dataclass
@@ -94,91 +86,61 @@ class _Plan:
 
 def _walk(clusters: list[Cluster]) -> dict[int, Cluster]:
     """Every cluster by id, children included."""
-    found: dict[int, Cluster] = {}
-    pending = list(clusters)
-    while pending:
-        cluster = pending.pop()
-        if cluster.id not in found:
-            found[cluster.id] = cluster
-            pending.extend(cluster.children)
-    return found
+    return {cluster.id: cluster for cluster in regions(clusters)}
 
 
 def _printable(cluster: Cluster) -> set[int]:
     return {cell.index for cell in cluster.cells if cell.text.strip()}
 
 
-def _rounded(box: BoundingBox) -> tuple[float, ...]:
-    return tuple(round(x, 3) for x in box.as_tuple())
-
-
-def to_snapshot(page: Page) -> Snapshot:
-    """The keying input of a live page, copied out of the pipeline objects."""
+def _assign(page: Page) -> Assignment:
+    """Key the page's widgets from its layout, table structure and printed rules."""
     assert page.size is not None and page.parsed_page is not None
     assert page.predictions.layout is not None
     structure = page.predictions.tablestructure
+    table_cells = (
+        {}
+        if structure is None
+        else {
+            table_id: table.table_cells
+            for table_id, table in structure.table_map.items()
+        }
+    )
+    # Printed rules only place values in the cells of detected tables. Both
+    # queries are needed: stroked segments give the edges of a cell border
+    # drawn as one rectangle (its own box is not thin), and thin boxes give
+    # rules drawn as filled rectangles. Only ThreadedDoclingParsePageBackend,
+    # the default backend, answers the second; elsewhere it returns None.
     rules: list[BoundingBox] = []
-    if structure is not None and structure.table_map and page._backend is not None:
+    if table_cells and page._backend is not None:
         rules = [
             *(page._backend.get_shape_lines() or []),
-            *(page._backend.get_thin_shape_boxes() or []),
+            *(page._backend.get_thin_shape_boxes(max_thickness=THIN) or []),
         ]
-    return Snapshot(
-        page=page.page_no,
-        size=page.size,
-        widgets=[
-            NativeWidget.model_validate(w.model_dump())
-            for w in page.parsed_page.widgets
-        ],
-        # Copies: committing the plan later edits the live clusters.
-        layout=[
-            Region.model_validate(c.model_dump(mode="json"))
-            for c in page.predictions.layout.clusters
-        ],
-        tables=Tables(
-            table_map={}
-            if structure is None
-            else {
-                table_id: DetectedTable(table_cells=table.table_cells)
-                for table_id, table in structure.table_map.items()
-            }
-        ),
-        rules=rules,
+    return assign(
+        page.parsed_page.widgets,
+        page.predictions.layout.clusters,
+        table_cells,
+        page.size.height,
+        rules,
     )
 
 
 def _atom_sources(
-    assignment: Assignment, page: Page
+    assignment: Assignment,
 ) -> tuple[dict[int, tuple[int, int]], set[int]]:
     """Atom -> (cluster id, cell index), plus clusters that must stay in the body.
 
-    Labels keep no cluster id, but keying.inputs emits a one-cell label with
-    the cell's own box and text for every cell it keeps. A cell the layout put
-    in two clusters leaves both clusters in place ("unsure").
+    A cell the layout put in two clusters leaves both clusters in place
+    ("unsure").
     """
-    assert page.size is not None and page.predictions.layout is not None
-    where: dict[tuple[tuple[float, ...], str], set[tuple[int, int]]] = defaultdict(set)
-    for cluster in _walk(page.predictions.layout.clusters).values():
-        if cluster.label in NOT_LABELS:
-            continue
-        for cell in cluster.cells:
-            if text := cell.text.strip():
-                box = cell.rect.to_bounding_box().to_top_left_origin(page.size.height)
-                where[_rounded(box), text].add((cluster.id, cell.index))
-    sources: dict[int, tuple[int, int]] = {}
-    unsure: set[int] = set()
-    for label in assignment.labels:
-        if len(label.atoms) != 1:
-            continue
-        (atom,) = label.atoms
-        found = where[_rounded(label.bbox), label.text]
-        if not found:
-            raise ValueError(
-                f"Page {page.page_no}: label {label.text!r} has no layout cell"
-            )
-        sources[atom] = min(found)
-        if len({cluster_id for cluster_id, _ in found}) > 1:
-            unsure |= {cluster_id for cluster_id, _ in found}
+    sources = {atom: min(found) for atom, found in assignment.sources.items()}
+    unsure = {
+        cluster_id
+        for found in assignment.sources.values()
+        if len({cluster_id for cluster_id, _ in found}) > 1
+        for cluster_id, _ in found
+    }
     return sources, unsure
 
 
@@ -207,7 +169,6 @@ def _build_units(
                 list(candidate.members),
                 # Table-cell labels have no atoms: the table keeps its text.
                 label if label.atoms else None,
-                candidate,
             )
         )
         owned.update(candidate.members)
@@ -224,11 +185,10 @@ def _cell_units(
 ) -> tuple[list[TableFieldPrediction], list[_Unit]]:
     """Units whose values all sit in one table cell, grouped into that cell.
 
-    The table's own row and column headers carry the association there, so an
-    item keeps only a key printed in the same cell: a caption keyed inside one
-    detected cell, or the lettered text of the value's own cell. A row caption
-    or a column header from elsewhere in the table is not repeated as key or
-    hint. Returns the cells, then the units placed as before.
+    The table's own row and column headers carry the association there, and
+    keying.tables keys such a value only by text of its own cell, so the item
+    keeps its key and drops any context. Returns the cells, then the units
+    placed as before.
     """
     cells: dict[tuple[int, tuple[int, int], tuple[int, int]], list[_Unit]] = (
         defaultdict(list)
@@ -241,14 +201,7 @@ def _cell_units(
             continue
         (slot,) = slots
         assert slot is not None
-        candidate = unit.candidate
-        own = candidate is not None and (
-            candidate.kind != "table_cell" or candidate.label == slot.key
-        )
-        update: dict[str, object] = {"context_text": ""}
-        if not own:
-            update |= {"key_text": "", "key_bbox": None}
-        unit.item = unit.item.model_copy(update=update)
+        unit.item = unit.item.model_copy(update={"context_text": ""})
         cells[slot.table, slot.rows, slot.columns].append(unit)
     placed = [
         TableFieldPrediction(
@@ -300,7 +253,7 @@ def _inline_hosts(
             and {sources[atom][1] for atom in unit.consumed.atoms} == _printable(host)
             and all(
                 assignment.values[m].bbox.intersection_over_self(host.bbox)
-                >= PdfFormFieldModel._FORM_COVERAGE_THRESHOLD
+                >= WIDGET_COVERAGE
                 for m in unit.positions
             )
         ):
@@ -315,13 +268,8 @@ def _place(
     page: Page,
 ) -> list[FieldRegionPrediction]:
     """The three placement routes: inline paragraph, FORM region, page-wide."""
-    assert page.predictions.layout is not None
-    forms = [
-        c for c in page.predictions.layout.clusters if c.label == DocItemLabel.FORM
-    ]
     regions: list[FieldRegionPrediction] = []
-    by_form: dict[int, list[FieldItemPrediction]] = defaultdict(list)
-    loose: list[FieldItemPrediction] = []
+    rest: list[tuple[BoundingBox, FieldItemPrediction]] = []
     for k, unit in enumerate(units):
         host = hosts.get(k)
         if host is not None:
@@ -331,11 +279,25 @@ def _place(
                 )
             )
             continue
-        first = assignment.values[min(unit.positions)].bbox
-        form = PdfFormFieldModel._match_form(first, forms)
-        (loose if form is None else by_form[form.id]).append(unit.item)
+        rest.append((assignment.values[min(unit.positions)].bbox, unit.item))
+    return regions + _form_regions(rest, page)
+
+
+def _form_regions(
+    items: list[tuple[BoundingBox, FieldItemPrediction]], page: Page
+) -> list[FieldRegionPrediction]:
+    """Items grouped by the FORM region holding their box; the rest page-wide."""
+    assert page.predictions.layout is not None
+    forms = [
+        c for c in page.predictions.layout.clusters if c.label == DocItemLabel.FORM
+    ]
+    by_form: dict[int, list[FieldItemPrediction]] = defaultdict(list)
+    loose: list[FieldItemPrediction] = []
+    for bbox, item in items:
+        form = PdfFormFieldModel._match_form(bbox, forms)
+        (loose if form is None else by_form[form.id]).append(item)
     boxes = {form.id: form.bbox for form in forms}
-    regions += [
+    regions = [
         FieldRegionPrediction(
             source_container_id=form_id, bbox=boxes[form_id], items=items
         )
@@ -390,8 +352,6 @@ def _consumed_clusters(
 
 
 class PdfFormFieldModel(BasePageModel):
-    _FORM_COVERAGE_THRESHOLD = 0.8
-    _PUSHBUTTON_FLAG = 1 << 16
     # A rendered-text cluster counts as a widget's duplicate only when this much
     # of it sits inside the widget rect. Guards against deleting ordinary printed
     # text that merely equals a field value by coincidence.
@@ -399,30 +359,6 @@ class PdfFormFieldModel(BasePageModel):
 
     def __init__(self, *, enabled: bool) -> None:
         self.enabled = enabled
-        if enabled:
-            # The keying's integer program needs scipy.optimize.milp (SciPy
-            # 1.9+). Fail at construction rather than page by page.
-            try:
-                from scipy.optimize import milp
-            except ImportError as error:
-                raise ImportError(
-                    "extract_form_fields requires SciPy 1.9 or later "
-                    "(scipy.optimize.milp)"
-                ) from error
-
-    @classmethod
-    def _is_skipped(cls, widget: PdfWidget, bbox: BoundingBox) -> bool:
-        """Widgets that carry no field value for the document.
-
-        A widget of zero height or width is an artifact (Well-Tagged PDF 1.0,
-        8.9.2.4.13). Push buttons trigger actions and hold no value. The same
-        rule lives in keying.inputs, so both sides see the same values.
-        """
-        if bbox.width <= 0 or bbox.height <= 0:
-            return True
-        return widget.widget_field_type == "/Btn" and bool(
-            widget.widget_field_flags & cls._PUSHBUTTON_FLAG
-        )
 
     @staticmethod
     def _normalize_text(text: str) -> str:
@@ -441,7 +377,7 @@ class PdfFormFieldModel(BasePageModel):
         source_value = widget.widget_text or ""
         if (
             widget.widget_field_type == "/Btn"
-            and not widget.widget_field_flags & cls._PUSHBUTTON_FLAG
+            and not widget.widget_field_flags & PUSHBUTTON_FLAG
         ):
             # A checkbox/radio widget carries state, not text. Encode the state
             # as a nested checkbox child (see FieldValuePrediction.checkbox) and
@@ -465,8 +401,7 @@ class PdfFormFieldModel(BasePageModel):
         matches = [
             (widget_bbox.intersection_over_self(form.bbox), form)
             for form in forms
-            if widget_bbox.intersection_over_self(form.bbox)
-            > cls._FORM_COVERAGE_THRESHOLD
+            if widget_bbox.intersection_over_self(form.bbox) > WIDGET_COVERAGE
         ]
         if not matches:
             return None
@@ -527,7 +462,7 @@ class PdfFormFieldModel(BasePageModel):
         """Compute the page's field regions and edits without touching the page."""
         assert page.size is not None and page.parsed_page is not None
         assert page.predictions.layout is not None
-        assignment = assign(to_snapshot(page))
+        assignment = _assign(page)
         if assignment.solver_status != "optimal":
             _log.warning(
                 "Form field keying abstained on page %d (%s); free-form values are "
@@ -535,12 +470,8 @@ class PdfFormFieldModel(BasePageModel):
                 page.page_no,
                 assignment.solver_status,
             )
-        widgets = {w.index: w for w in page.parsed_page.widgets}
-        values = [
-            self._normalize_widget(widgets[v.native.index], v.bbox)
-            for v in assignment.values
-        ]
-        sources, unsure = _atom_sources(assignment, page)
+        values = [self._normalize_widget(v.native, v.bbox) for v in assignment.values]
+        sources, unsure = _atom_sources(assignment)
         units = _build_units(assignment, values)
         in_cells, rest = _cell_units(units, assignment)
         hosts = _inline_hosts(rest, assignment, sources, page, unsure)
@@ -553,39 +484,13 @@ class PdfFormFieldModel(BasePageModel):
     def _keyless_plan(self, page: Page) -> _Plan:
         """Every retained widget as an unkeyed value, placed by FORM region."""
         assert page.size is not None and page.parsed_page is not None
-        assert page.predictions.layout is not None
-        forms = [
-            c for c in page.predictions.layout.clusters if c.label == DocItemLabel.FORM
-        ]
-        by_form: dict[int, list[FieldItemPrediction]] = defaultdict(list)
-        loose: list[FieldItemPrediction] = []
         values: list[FieldValuePrediction] = []
         for widget in page.parsed_page.widgets:
             bbox = widget.rect.to_bounding_box().to_top_left_origin(page.size.height)
-            if self._is_skipped(widget, bbox):
-                continue
-            value = self._normalize_widget(widget, bbox)
-            values.append(value)
-            form = self._match_form(bbox, forms)
-            item = FieldItemPrediction(values=[value])
-            (loose if form is None else by_form[form.id]).append(item)
-        boxes = {form.id: form.bbox for form in forms}
-        regions = [
-            FieldRegionPrediction(
-                source_container_id=form_id, bbox=boxes[form_id], items=items
-            )
-            for form_id, items in by_form.items()
-        ]
-        if loose:
-            regions.append(
-                FieldRegionPrediction(
-                    bbox=BoundingBox.enclosing_bbox(
-                        [value.bbox for item in loose for value in item.values]
-                    ),
-                    items=loose,
-                )
-            )
-        return _Plan(regions, set(), set(), values)
+            if not is_skipped(widget, bbox):
+                values.append(self._normalize_widget(widget, bbox))
+        items = [(value.bbox, FieldItemPrediction(values=[value])) for value in values]
+        return _Plan(_form_regions(items, page), set(), set(), values)
 
     def _commit(self, page: Page, plan: _Plan) -> None:
         """Write the plan to the page; restore the layout if that fails."""
@@ -597,7 +502,7 @@ class PdfFormFieldModel(BasePageModel):
             page.predictions.field_regions = plan.regions
             page.predictions.table_fields = plan.table_fields
             self._drop_clusters(page, plan.dropped)
-            self._suppress_duplicate_text(page, plan.values, keep=plan.hosts)
+            self._suppress_duplicate_text(page, plan.values, keep=frozenset(plan.hosts))
         except Exception:
             _log.warning(
                 "Form field extraction failed on page %d; page left unchanged",
@@ -616,7 +521,7 @@ class PdfFormFieldModel(BasePageModel):
         page: Page,
         values: list[FieldValuePrediction],
         *,
-        keep: set[int] = frozenset(),  # type: ignore[assignment]
+        keep: frozenset[int] = frozenset(),
     ) -> None:
         """Drop plain text clusters that merely re-render a native field value.
 
@@ -628,9 +533,9 @@ class PdfFormFieldModel(BasePageModel):
         matches a value from being deleted. A paragraph that hosts a field
         item in place (``keep``) is the item's key, not a duplicate.
 
-        ponytail: leaves the ~10% of values the layout model glues onto a
-        neighbouring label (value is a substring of a larger line, not an equal
-        twin); excising a suffix mid-string is the risky over-editing we avoid.
+        A value the layout model glued onto a neighbouring label (a substring
+        of a larger line, not an equal twin) is left in place: cutting it out
+        of the line risks removing printed text.
         """
         assert page.predictions.layout is not None
         by_text: dict[str, list[BoundingBox]] = {}

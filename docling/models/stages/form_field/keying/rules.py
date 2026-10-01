@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from docling_core.types.doc import BoundingBox
 
-# A painted shape at most this thick is a rule (the backend's default too).
+# A painted shape at most this thick is a rule.
 THIN = 3.5
 # Shorter marks are ticks, dots or glyph parts, not cell borders.
 MIN_LENGTH = 5.0

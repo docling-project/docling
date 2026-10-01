@@ -10,7 +10,7 @@ from collections import defaultdict
 from collections.abc import Callable
 
 import numpy as np
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, DocItemLabel
 
 from docling.models.stages.form_field.keying.geometry import (
     anchors,
@@ -23,7 +23,7 @@ from docling.models.stages.form_field.keying.geometry import (
     span_overlap,
 )
 from docling.models.stages.form_field.keying.types import (
-    INLINE_WIDGET_COVERAGE,
+    WIDGET_COVERAGE,
     Candidate,
     Label,
     Scope,
@@ -64,7 +64,10 @@ def local_features(
 
 def role_cost(label: Label, values: list[Value], h: float) -> float:
     role = 3.0 * (not lettered(label.text))
-    role += 3.0 * (label.role in {"page_header", "page_footer", "footnote"})
+    role += 3.0 * (
+        label.role
+        in {DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER, DocItemLabel.FOOTNOTE}
+    )
     # A short printed component between two text boxes is weak key evidence.
     # The rule uses position and length, never a fixture/token blacklist.
     component = (
@@ -182,8 +185,7 @@ def candidates_for(
         contained = tuple(
             i
             for i in eligible
-            if values[i].bbox.intersection_over_self(label.bbox)
-            >= INLINE_WIDGET_COVERAGE
+            if values[i].bbox.intersection_over_self(label.bbox) >= WIDGET_COVERAGE
         )
         for i in eligible:
             facing = side_of(label.bbox, values[i].bbox)

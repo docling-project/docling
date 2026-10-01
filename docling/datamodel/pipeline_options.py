@@ -2057,9 +2057,10 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             description=(
                 "Extract native interactive PDF widgets (AcroForm) as format-neutral fillable field values, "
                 "each keyed to the printed caption the page geometry assigns to it: the caption in or beside "
-                "its cell, a whole paragraph that inlines the widget, or the row caption of a detected table "
-                "cell (with the column header as a hint). Requires the docling-parse backend, which supplies "
-                "page widgets; table keys need table structure. Raw widget metadata remains available only "
+                "its cell, or a whole paragraph that inlines the widget. A widget in a detected table goes "
+                "into its table cell, keyed only by text printed in that same cell; row captions and column "
+                "headers are not used as keys or hints. Requires the docling-parse backend, which supplies "
+                "page widgets; table cells need table structure. Raw widget metadata remains available only "
                 "on retained parsed pages. Scanned or flattened forms and backends without page widgets are "
                 "unaffected."
             )

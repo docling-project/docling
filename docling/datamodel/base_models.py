@@ -424,8 +424,9 @@ class FieldItemPrediction(BaseModel):
     # the keying chose (a caption, a table cell, or a whole paragraph that
     # inlines the widgets). key_bbox is the prov of the key. Keyless items
     # (key_text == "") carry a single value and reproduce the flat field_item
-    # shape. context_text is a secondary, location-less caption -- typically the
-    # column header of a value keyed by its row caption -- emitted as a hint.
+    # shape. context_text is a secondary, location-less caption emitted as a
+    # hint: outside detected tables, the caption along the other axis of a
+    # grid of like values. Items in a table cell never carry one.
     key_text: str = ""
     key_bbox: BoundingBox | None = None
     values: list[FieldValuePrediction] = []

@@ -877,7 +877,7 @@ def test_threaded_backend_reports_thin_filled_shapes(tmp_path):
         page_backend = next(iter(doc_backend.iter_pages()))
         assert page_backend.get_shape_lines() == []
 
-        (rule,) = page_backend.get_thin_shape_boxes()
+        (rule,) = page_backend.get_thin_shape_boxes(max_thickness=3.5)
         assert rule.coord_origin == CoordOrigin.TOPLEFT
         assert (rule.l, rule.t, rule.r, rule.b) == pytest.approx((20, 49.5, 180, 50))
     finally:

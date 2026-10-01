@@ -89,7 +89,7 @@ class PdfPageBackend(ABC):
         return None
 
     def get_thin_shape_boxes(
-        self, *, max_thickness: float = 3.5
+        self, *, max_thickness: float
     ) -> Optional[list[BoundingBox]]:
         """Return the boxes of painted shapes no thicker than `max_thickness`.
 

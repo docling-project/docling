@@ -1,24 +1,33 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Behavioral checks of the AcroForm keying, independent of native models."""
+"""Behavioral checks of the AcroForm keying on small synthetic pages."""
+
+from dataclasses import dataclass, field, replace
 
 import pytest
-from docling_core.types.doc import BoundingBox, Size, TableCell
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
+from docling_core.types.doc.page import BoundingRectangle, PdfWidget, TextCell
 
-pytest.importorskip("scipy", minversion="1.9")
-
+from docling.datamodel.base_models import Cluster
 from docling.models.stages.form_field.keying import (
-    DetectedTable,
-    NativeWidget,
-    Region,
+    Assignment,
     Scope,
-    Snapshot,
-    Tables,
     assign,
+    regions,
     scope_of,
 )
+
+
+@dataclass
+class KeyingPage:
+    """The arguments of ``assign`` for one synthetic page."""
+
+    widgets: list[PdfWidget]
+    layout: list[Cluster]
+    tables: dict[int, list[TableCell]] = field(default_factory=dict)
+    height: float = 400
+    rules: list[BoundingBox] = field(default_factory=list)
 
 
 def box(left: float, top: float, right: float, bottom: float) -> BoundingBox:
@@ -27,8 +36,8 @@ def box(left: float, top: float, right: float, bottom: float) -> BoundingBox:
 
 def widget(
     index: int, bbox: BoundingBox, *, checkbox: bool = False, name: str | None = None
-) -> NativeWidget:
-    return NativeWidget(
+) -> PdfWidget:
+    return PdfWidget(
         index=index,
         rect=BoundingRectangle.from_bounding_box(bbox),
         widget_field_type="/Btn" if checkbox else "/Tx",
@@ -39,10 +48,10 @@ def widget(
     )
 
 
-def label(index: int, text: str, bbox: BoundingBox) -> Region:
-    return Region(
+def label(index: int, text: str, bbox: BoundingBox) -> Cluster:
+    return Cluster(
         id=index,
-        label="text",
+        label=DocItemLabel.TEXT,
         bbox=bbox,
         cells=[
             TextCell(
@@ -56,20 +65,24 @@ def label(index: int, text: str, bbox: BoundingBox) -> Region:
     )
 
 
+def table(bbox: BoundingBox) -> Cluster:
+    return Cluster(id=100, label=DocItemLabel.TABLE, bbox=bbox)
+
+
 def snapshot(
-    widgets: list[NativeWidget], labels: list[Region], tables: Tables | None = None
-) -> Snapshot:
-    return Snapshot(
-        page=1,
-        size=Size(width=400, height=400),
-        widgets=widgets,
-        layout=labels,
-        tables=tables or Tables(),
-    )
+    widgets: list[PdfWidget],
+    labels: list[Cluster],
+    tables: dict[int, list[TableCell]] | None = None,
+) -> KeyingPage:
+    return KeyingPage(widgets, labels, tables or {})
 
 
-def chosen(page: Snapshot) -> tuple[list[int], list[tuple[str, list[int], str]]]:
-    result = assign(page)
+def keyed(page: KeyingPage) -> Assignment:
+    return assign(page.widgets, page.layout, page.tables, page.height, page.rules)
+
+
+def chosen(page: KeyingPage) -> tuple[list[int], list[tuple[str, list[int], str]]]:
+    result = keyed(page)
     assert result.solver_status == "optimal"
     fields = [
         (
@@ -83,7 +96,7 @@ def chosen(page: Snapshot) -> tuple[list[int], list[tuple[str, list[int], str]]]
 
 
 def test_table_exception_requires_one_cell_and_never_uses_other_cell_header():
-    table = Region(id=100, label="table", bbox=box(0, 40, 200, 200))
+    table_region = table(box(0, 40, 200, 200))
     cells = [
         TableCell(
             bbox=box(0, 40, 100, 200),
@@ -105,27 +118,33 @@ def test_table_exception_requires_one_cell_and_never_uses_other_cell_header():
     page = snapshot(
         [widget(0, box(82, 80, 98, 95)), widget(1, box(110, 150, 170, 170))],
         [
-            table,
+            table_region,
             label(1, "Local name", box(10, 82, 65, 92)),
             label(2, "Other cell", box(101, 81, 165, 91)),
             label(3, "Outside table", box(80, 25, 180, 35)),
         ],
-        Tables(table_map={100: DetectedTable(table_cells=cells)}),
+        {100: cells},
     )
     order, fields = chosen(page)
     assert order == [0, 1]
     assert ("field_key", [0], "Local name") in fields
     assert all(text != "Outside table" for _, _, text in fields)
-    assert scope_of(box(95, 80, 105, 90), page) == Scope(100)
+    assert scope_of(box(95, 80, 105, 90), regions(page.layout), page.tables) == Scope(
+        100
+    )
     # Even near-total coverage must not move a cross-cell widget into one cell.
-    assert scope_of(box(82, 80, 100.1, 95), page) == Scope(100)
-    assert scope_of(box(82, 80, 98, 95), page) == Scope(100, 0)
+    assert scope_of(box(82, 80, 100.1, 95), regions(page.layout), page.tables) == Scope(
+        100
+    )
+    assert scope_of(box(82, 80, 98, 95), regions(page.layout), page.tables) == Scope(
+        100, 0
+    )
 
     # A detected table with no usable cells stays excluded, even with an
     # attractive nearby label. Removing detection restores ordinary pairing.
-    page.tables = Tables()
+    page.tables = {}
     assert chosen(page)[1] == []
-    page.layout.remove(table)
+    page.layout.remove(table_region)
     assert chosen(page)[1]
 
 
@@ -176,11 +195,6 @@ def test_shared_question_keeps_captions_and_interleaved_native_values():
     assert ("option_caption", [0], "English") in fields
     assert ("option_caption", [2], "French") in fields
     assert ("field_key", [1], "Your name") in fields
-    # A snapshot round-trip retains the interleaved native order.
-    assert chosen(Snapshot.model_validate_json(page.model_dump_json())) == (
-        order,
-        fields,
-    )
 
 
 @pytest.mark.parametrize("scale, offset", [(1, 0), (3.5, 23)])
@@ -201,7 +215,7 @@ def test_inline_checkbox_and_date_share_clause_without_duplicate_ownership(
         # text bounds. The neighboring control has only 10% and must not join.
         [label(1, text, positioned(5, 55, 250, 68))],
     )
-    page.size = Size(width=400 * scale + offset, height=400 * scale + offset)
+    page.height = 400 * scale + offset
     order, fields = chosen(page)
     assert order == [7, 2, 9]
     assert fields == [("inline_clause", [7, 2], text)]
@@ -217,9 +231,9 @@ def test_option_checkboxes_inside_a_sentence_keep_their_own_captions():
         ("Yes", box(132, 50, 150, 58)),
         ("No", box(172, 50, 186, 58)),
     ]
-    row = Region(
+    row = Cluster(
         id=1,
-        label="text",
+        label=DocItemLabel.TEXT,
         bbox=box(10, 50, 186, 58),
         cells=[
             TextCell(
@@ -259,7 +273,7 @@ def test_shared_business_number_is_not_split_at_printed_component():
     assert fields == [("composite_field", [0, 1], "Business Number")]
 
 
-def test_detected_table_keys_values_by_row_caption_with_column_context():
+def test_row_caption_and_column_header_never_key_a_value_in_a_detected_table():
     def cell(row: int, column: int, text: str, bbox: BoundingBox, header=False):
         return TableCell(
             bbox=bbox,
@@ -290,25 +304,14 @@ def test_detected_table_keys_values_by_row_caption_with_column_context():
             widget(2, box(140, 80, 200, 94)),
             widget(3, box(240, 80, 300, 94)),
         ],
-        [Region(id=100, label="table", bbox=box(5, 35, 305, 100))],
-        Tables(table_map={100: DetectedTable(table_cells=cells)}),
+        [table(box(5, 35, 305, 100))],
+        {100: cells},
     )
-    result = assign(page)
-    keys = {
-        result.values[c.members[0]].native.index: (
-            result.labels[c.label].text,
-            result.labels[c.context].text if c.context is not None else None,
-        )
-        for c in (result.candidates[i] for i in result.selected)
-        if c.kind == "table_cell"
-    }
-    assert keys == {
-        0: ("Financial services", "From head office"),
-        1: ("Financial services", "From third parties"),
-        2: ("Taxable goods", "From head office"),
-        3: ("Taxable goods", "From third parties"),
-    }
-    # Each value also gets the cell of its line code: a code has no letters,
+    result = keyed(page)
+    # "Financial services" (row caption) and "From head office" (column header)
+    # sit in other cells: the table already carries that association.
+    assert result.selected == []
+    # Each value still gets the cell of its line code: a code has no letters,
     # so the cell has no key of its own.
     cells = {
         result.values[i].native.index: (slot.table, slot.rows, slot.columns, slot.key)
@@ -335,7 +338,7 @@ def grid_cell(
     )
 
 
-def ruled(page: Snapshot, *lines: tuple[str, float, float, float]) -> Snapshot:
+def ruled(page: KeyingPage, *lines: tuple[str, float, float, float]) -> KeyingPage:
     """The page with printed rules: ("h", y, x0, x1) or ("v", x, y0, y1), 0.5 pt thick."""
     boxes = [
         box(start, at - 0.25, end, at + 0.25)
@@ -343,7 +346,7 @@ def ruled(page: Snapshot, *lines: tuple[str, float, float, float]) -> Snapshot:
         else box(at - 0.25, start, at + 0.25, end)
         for kind, at, start, end in lines
     ]
-    return page.model_copy(update={"rules": boxes})
+    return replace(page, rules=boxes)
 
 
 def test_printed_cell_moves_a_box_to_the_caption_printed_over_it():
@@ -353,20 +356,16 @@ def test_printed_cell_moves_a_box_to_the_caption_printed_over_it():
     # the caption's cell, keyed by it.
     page = snapshot(
         [widget(0, box(5, 29, 95, 39))],
-        [Region(id=100, label="table", bbox=box(0, 0, 200, 100))],
-        Tables(
-            table_map={
-                100: DetectedTable(
-                    table_cells=[
-                        grid_cell(0, 0, "Personal data", box(2, 2, 60, 30), columns=2),
-                        grid_cell(1, 0, "Name:", box(5, 22, 40, 28)),
-                        grid_cell(1, 1, "Date:", box(105, 22, 140, 28)),
-                        grid_cell(2, 0, "Total", box(5, 62, 40, 68)),
-                        grid_cell(2, 1, "Sum", box(105, 62, 140, 68)),
-                    ]
-                )
-            }
-        ),
+        [table(box(0, 0, 200, 100))],
+        {
+            100: [
+                grid_cell(0, 0, "Personal data", box(2, 2, 60, 30), columns=2),
+                grid_cell(1, 0, "Name:", box(5, 22, 40, 28)),
+                grid_cell(1, 1, "Date:", box(105, 22, 140, 28)),
+                grid_cell(2, 0, "Total", box(5, 62, 40, 68)),
+                grid_cell(2, 1, "Sum", box(105, 62, 140, 68)),
+            ]
+        },
     )
 
     def placed(result):
@@ -378,7 +377,7 @@ def test_printed_cell_moves_a_box_to_the_caption_printed_over_it():
         )
         return slot.rows, slot.columns, key
 
-    assert placed(assign(page)) == ((0, 1), (0, 2), "Personal data")
+    assert placed(keyed(page)) == ((0, 1), (0, 2), "Personal data")
     printed = ruled(
         page,
         ("h", 20, 0, 200),
@@ -387,7 +386,7 @@ def test_printed_cell_moves_a_box_to_the_caption_printed_over_it():
         ("v", 100, 20, 40),
         ("v", 200, 0, 100),
     )
-    assert placed(assign(printed)) == ((1, 2), (0, 1), "Name:")
+    assert placed(keyed(printed)) == ((1, 2), (0, 1), "Name:")
 
 
 def test_value_in_a_printed_column_the_grid_lost_gets_no_cell():
@@ -396,20 +395,16 @@ def test_value_in_a_printed_column_the_grid_lost_gets_no_cell():
     # it gets no cell instead of the row number's.
     page = snapshot(
         [widget(0, box(120, 20, 190, 30))],
-        [Region(id=100, label="table", bbox=box(0, 0, 200, 60))],
-        Tables(
-            table_map={
-                100: DetectedTable(
-                    table_cells=[
-                        grid_cell(0, 0, "Name", box(5, 2, 40, 8)),
-                        grid_cell(1, 0, "1", box(5, 22, 15, 28)),
-                        grid_cell(2, 0, "2", box(5, 42, 15, 48)),
-                    ]
-                )
-            }
-        ),
+        [table(box(0, 0, 200, 60))],
+        {
+            100: [
+                grid_cell(0, 0, "Name", box(5, 2, 40, 8)),
+                grid_cell(1, 0, "1", box(5, 22, 15, 28)),
+                grid_cell(2, 0, "2", box(5, 42, 15, 48)),
+            ]
+        },
     )
-    assert [(s.rows, s.columns) for s in assign(page).slots.values()] == [
+    assert [(s.rows, s.columns) for s in keyed(page).slots.values()] == [
         ((1, 2), (0, 1))
     ]
     printed = ruled(
@@ -420,7 +415,7 @@ def test_value_in_a_printed_column_the_grid_lost_gets_no_cell():
         ("v", 100, 0, 60),
         ("v", 200, 0, 60),
     )
-    assert assign(printed).slots == {}
+    assert keyed(printed).slots == {}
 
 
 def test_row_caption_is_shared_by_like_sized_values_but_not_operand_boxes():
@@ -507,18 +502,10 @@ def test_close_call_follows_the_side_of_aligned_sibling_options():
     assert ("option_caption", [2], "Type 2") in fields
 
 
-def test_duplicate_widget_identity_is_rejected():
-    page = snapshot(
-        [widget(1, box(10, 10, 20, 20)), widget(1, box(30, 10, 40, 20))], []
-    )
-    with pytest.raises(ValueError, match="Duplicate native widget"):
-        assign(page)
-
-
 def test_layout_child_repeated_at_top_level_is_not_consumed_twice():
     caption = label(1, "Name", box(10, 60, 45, 70))
-    container = Region(
-        id=2, label="form", bbox=box(0, 40, 200, 100), children=[caption]
+    container = Cluster(
+        id=2, label=DocItemLabel.FORM, bbox=box(0, 40, 200, 100), children=[caption]
     )
     # The second box is not a like-sized sibling, so it may only take "Name"
     # if the repeated child produced a second copy of the caption.

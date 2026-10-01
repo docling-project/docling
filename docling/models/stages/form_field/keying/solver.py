@@ -11,13 +11,22 @@ from collections.abc import Callable
 from itertools import combinations
 
 import numpy as np
+from docling_core.types.doc import BoundingBox, TableCell
+from docling_core.types.doc.page import PdfWidget
+from scipy.optimize import Bounds, LinearConstraint, milp
+from scipy.sparse import coo_matrix
 
+from docling.datamodel.base_models import Cluster
 from docling.models.stages.form_field.keying.candidates import (
     candidates_for,
     siblings,
 )
 from docling.models.stages.form_field.keying.geometry import anchors, span_overlap
-from docling.models.stages.form_field.keying.inputs import MAX_LABELS, inputs
+from docling.models.stages.form_field.keying.inputs import (
+    MAX_LABELS,
+    inputs,
+    regions,
+)
 from docling.models.stages.form_field.keying.symmetry import (
     SIDE_COST,
     mark_sequences,
@@ -29,19 +38,21 @@ from docling.models.stages.form_field.keying.types import (
     Assignment,
     Candidate,
     Label,
-    Snapshot,
     TableSlot,
     Value,
 )
 
 # Page size limits. Candidate construction scans every label against every
 # value, and the pairwise penalties every pair of surviving candidates, both in
-# Python; a page far beyond the forms this was built on (at most 163 values,
-# 401 labels and 361 surviving candidates) would hold the stage's thread for
-# tens of seconds. Such a page keeps its table keys and leaves free-form
-# values unkeyed, as a solver timeout does.
+# Python; a page beyond these limits would hold the stage's thread for tens of
+# seconds. Such a page keeps its table keys and leaves free-form values
+# unkeyed, as a solver timeout does.
 MAX_LABEL_VALUE_PAIRS = 1_000_000
 MAX_ACTIVE_CANDIDATES = 1000
+# Cost of leaving a value without a key.
+NULL_COST = 3.0
+# Seconds the MILP solver may spend on one page.
+TIME_LIMIT = 10.0
 
 
 def crossing(
@@ -154,36 +165,15 @@ def abstained(
     labels: list[Label],
     candidates: list[Candidate],
     status: str,
-    null_cost: float,
     slots: dict[int, TableSlot],
 ) -> Assignment:
     """No free-form key on this page; the table keys and cells still hold."""
     fixed = [i for i, c in enumerate(candidates) if c.kind == "table_cell"]
-    return Assignment(
-        values,
-        labels,
-        candidates,
-        fixed,
-        status,
-        null_cost * sum(v.scope.eligible for v in values),
-        slots,
-    )
-
-
-def _validated(null_cost: float, time_limit: float) -> None:
-    if (
-        not math.isfinite(null_cost)
-        or null_cost <= 0
-        or not math.isfinite(time_limit)
-        or time_limit <= 0
-    ):
-        raise ValueError("Costs and time limits must be positive and finite")
+    return Assignment(values, labels, candidates, fixed, status, slots)
 
 
 def _sparse(rows: list[dict[int, float]], columns: int):
     """The constraint matrix, rows and columns in their construction order."""
-    from scipy.sparse import coo_matrix
-
     rr, cc, data = [], [], []
     for r, row in enumerate(rows):
         for c, coefficient in row.items():
@@ -226,37 +216,60 @@ def _one_side_per_structure(
 
 
 def assign(
-    snapshot: Snapshot, *, null_cost: float = 3.0, time_limit: float = 10.0
+    widgets: list[PdfWidget],
+    clusters: list[Cluster],
+    table_cells: dict[int, list[TableCell]],
+    page_height: float,
+    rules: list[BoundingBox] | None = None,
 ) -> Assignment:
-    _validated(null_cost, time_limit)
-    # SciPy's MILP solver is only needed when a page has widgets; keep the
-    # import off the pipeline's import path.
-    from scipy.optimize import Bounds, LinearConstraint, milp
+    """Choose the caption of every widget value on one page.
 
-    values, labels, h = inputs(snapshot)
+    ``clusters`` are the page's layout clusters and ``table_cells`` the
+    detected cells of each table cluster, by cluster id. ``rules`` are the
+    boxes of printed rules (top-left origin); they are only read for values in
+    detected tables. Nothing passed in is modified.
+    """
+    found = regions(clusters)
+    values, labels, h, sources = inputs(widgets, found, table_cells, page_height)
+
+    def keyed_in_tables() -> tuple[list[Candidate], dict[int, TableSlot]]:
+        return table_fields(
+            found, table_cells, rules or [], page_height, values, labels
+        )
+
+    assignment = _solve(values, labels, h, keyed_in_tables)
+    assignment.sources = sources
+    return assignment
+
+
+def _solve(
+    values: list[Value],
+    labels: list[Label],
+    h: float,
+    keyed_in_tables: Callable[[], tuple[list[Candidate], dict[int, TableSlot]]],
+) -> Assignment:
     if len(labels) > MAX_LABELS or len(values) * len(labels) > MAX_LABEL_VALUE_PAIRS:
-        tables, slots = table_fields(snapshot, values, labels)
+        tables, slots = keyed_in_tables()
         return abstained(
             values,
             labels,
             tables,
             f"skipped: {len(values)} values x {len(labels)} labels exceed the page limit",
-            null_cost,
             slots,
         )
     proposed = candidates_for(values, labels, h)
     # A decided alternating run fixes which caption each of its values reads.
-    mark_sequences(proposed, sequences(values, labels, proposed, null_cost, h))
+    mark_sequences(proposed, sequences(values, labels, proposed, NULL_COST, h))
     # Values in detected tables are keyed from their own cells, outside the
     # free-form search: table text never competes with free-form captions.
-    tables, slots = table_fields(snapshot, values, labels)
+    tables, slots = keyed_in_tables()
     fixed = list(range(len(proposed), len(proposed) + len(tables)))
     # A candidate worse than leaving all its members blank cannot help: all
     # remaining interactions are penalties. Keep the full list for diagnostics.
     active = [
         i
         for i, c in enumerate(proposed)
-        if c.cost < (0 if c.kind == "choice_group" else null_cost * len(c.members))
+        if c.cost < (0 if c.kind == "choice_group" else NULL_COST * len(c.members))
     ]
     if len(active) > MAX_ACTIVE_CANDIDATES:
         return abstained(
@@ -264,7 +277,6 @@ def assign(
             labels,
             proposed + tables,
             f"skipped: {len(active)} candidates exceed the page limit",
-            null_cost,
             slots,
         )
     costs = [proposed[i].cost for i in active]
@@ -289,7 +301,7 @@ def assign(
         if not value.scope.eligible:
             continue
         owners[i][len(costs)] = 1.0
-        costs.append(null_cost)
+        costs.append(NULL_COST)
         constraint(owners[i], 1, 1)
     for coefficients in questions.values():
         constraint(coefficients, 0, 1)
@@ -311,8 +323,7 @@ def assign(
             first, second = proposed[active[ga[0]]], proposed[active[gb[0]]]
             if not co_owners(first, second, values):
                 constraint({sa: 1, sb: 1}, 0, 1)
-    # ponytail: quadratic candidate scan for small saved pages; partition by
-    # connected candidates before considering larger documents.
+    # Every pair of candidates is compared; MAX_ACTIVE_CANDIDATES bounds this.
     for a, b in combinations(range(len(active)), 2):
         ca, cb = proposed[active[a]], proposed[active[b]]
         if labels[ca.label].scope != labels[cb.label].scope:
@@ -344,7 +355,7 @@ def assign(
                     constraint({x: 1, y: 1, len(costs): -1}, -math.inf, 1)
                     costs.append(0.5)
     _one_side_per_structure(
-        structures(values, labels, proposed, null_cost),
+        structures(values, labels, proposed, NULL_COST),
         facing,
         proposed,
         active,
@@ -352,29 +363,26 @@ def assign(
         constraint,
     )
     if not costs:
-        return Assignment(values, labels, proposed + tables, fixed, "optimal", 0, slots)
+        return Assignment(values, labels, proposed + tables, fixed, "optimal", slots)
     matrix = _sparse(rows, len(costs))
     result = milp(
         np.array(costs),
         integrality=np.ones(len(costs)),
         bounds=Bounds(0, 1),
         constraints=LinearConstraint(matrix, lower, upper),
-        options={"time_limit": time_limit, "mip_rel_gap": 0.0},
+        options={"time_limit": TIME_LIMIT, "mip_rel_gap": 0.0},
     )
     if result.status != 0:
         # Abstain on timeout: no unsupported confidence claims about a partial
         # solution and no missing native values.
-        return abstained(
-            values, labels, proposed + tables, str(result.message), null_cost, slots
-        )
+        return abstained(values, labels, proposed + tables, str(result.message), slots)
     selected = [index for column, index in enumerate(active) if result.x[column] > 0.5]
-    add_context([proposed[i] for i in selected], proposed, values, null_cost)
+    add_context([proposed[i] for i in selected], proposed, values, NULL_COST)
     return Assignment(
         values,
         labels,
         proposed + tables,
         selected + fixed,
         "optimal",
-        float(result.fun),
         slots,
     )

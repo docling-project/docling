@@ -32,7 +32,9 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.models.stages.form_field import form_field_model
 from docling.models.stages.form_field.form_field_model import PdfFormFieldModel
+from docling.models.stages.form_field.keying import PUSHBUTTON_FLAG
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -168,7 +170,7 @@ def test_field_mapping_assembly_and_materialization_preserve_regions_and_order()
             BoundingBox(l=60, t=80, r=90, b=90),
             "Submit",
             field_type="/Btn",
-            field_flags=PdfFormFieldModel._PUSHBUTTON_FLAG,
+            field_flags=PUSHBUTTON_FLAG,
         ),
     ]
     page = Page(page_no=1, size=Size(width=100, height=100))
@@ -649,7 +651,8 @@ def test_text_in_the_widgets_own_cell_stays_in_the_rich_cell(
 def test_widget_between_columns_of_an_incomplete_grid_stays_out_of_the_table() -> None:
     # A three-column grid whose middle column has no text has no band there:
     # a widget in that column, overlapping neither neighbour's band, has no
-    # reliable cell and keeps its keyed item after the table, as before.
+    # reliable cell and stays after the table, without a key: the row caption
+    # sits in another cell and never keys it.
     def cell(text, bbox, row, col):
         return TableCell(
             text=text,
@@ -692,7 +695,7 @@ def test_widget_between_columns_of_an_incomplete_grid_stays_out_of_the_table() -
     assert page.predictions.table_fields == []
     (region,) = page.predictions.field_regions
     (item,) = region.items
-    assert item.key_text == "Total income"
+    assert item.key_text == ""
     assert [value.text for value in item.values] == ["1,000"]
 
 
@@ -710,17 +713,20 @@ def test_widget_in_table_without_structure_stays_keyless() -> None:
     assert [value.text for value in item.values] == ["1,000"]
 
 
-def test_keying_failure_keeps_values_without_keys(caplog) -> None:
-    # Two widgets sharing one native index is malformed input the keying
-    # rejects. The page must not fail: its values come through unkeyed and the
-    # caption stays in the body.
+def test_keying_failure_keeps_values_without_keys(caplog, monkeypatch) -> None:
+    # The page must not fail when the keying raises: its values come through
+    # unkeyed and the caption stays in the body.
+    def failing(*args, **kwargs):
+        raise RuntimeError("keying failed")
+
+    monkeypatch.setattr(form_field_model, "assign", failing)
     caption = _text_cluster(2, BoundingBox(l=22, t=10, r=80, b=18), "Full name")
     form = Cluster(
         id=1, label=DocItemLabel.FORM, bbox=BoundingBox(l=0, t=0, r=100, b=60)
     )
     widgets = [
         _widget(0, BoundingBox(l=10, t=10, r=18, b=18), "Ada"),
-        _widget(0, BoundingBox(l=10, t=30, r=18, b=38), "Lovelace"),
+        _widget(1, BoundingBox(l=10, t=30, r=18, b=38), "Lovelace"),
     ]
     page = Page(page_no=1, size=Size(width=100, height=100))
     page.parsed_page = MagicMock(widgets=widgets)
@@ -741,9 +747,8 @@ def test_keying_failure_keeps_values_without_keys(caplog) -> None:
 
 def test_inline_host_is_not_dropped_as_rendered_duplicate() -> None:
     # A filled widget whose painted value the layout absorbed into a paragraph
-    # slightly larger than the widget: the paragraph keys the widget and hosts
-    # the item in place, so it must stay in the layout even though its text
-    # equals the value's and most of it sits inside the widget rect.
+    # slightly larger than the widget: the paragraph hosts the item in place,
+    # so dropping it as a duplicate of the value would lose the value.
     host = _text_cluster(1, BoundingBox(l=10, t=10, r=90, b=20), "Amount 12")
     widgets = [_widget(0, BoundingBox(l=12, t=11, r=88, b=19), "Amount 12")]
     page = Page(page_no=1, size=Size(width=100, height=100))
@@ -754,5 +759,5 @@ def test_inline_host_is_not_dropped_as_rendered_duplicate() -> None:
 
     (region,) = page.predictions.field_regions
     assert region.source_container_id == host.id
-    assert region.items[0].key_text == "Amount 12"
+    assert [value.text for value in region.items[0].values] == ["Amount 12"]
     assert host in page.predictions.layout.clusters
