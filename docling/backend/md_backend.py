@@ -12,7 +12,7 @@ from enum import Enum
 from html import unescape
 from io import BytesIO
 from pathlib import Path
-from typing import Literal, Optional, Union, cast
+from typing import Literal, cast
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -92,10 +92,7 @@ class _ListItemCreationPayload(BaseModel):
 
 
 _CreationPayload = Annotated[
-    Union[
-        _HeadingCreationPayload,
-        _ListItemCreationPayload,
-    ],
+    _HeadingCreationPayload | _ListItemCreationPayload,
     Field(discriminator="kind"),
 ]
 
@@ -134,7 +131,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _apply_formatting(
-        current: Optional[Formatting],
+        current: Formatting | None,
         *,
         bold: bool = False,
         italic: bool = False,
@@ -165,7 +162,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return fmt
 
     @staticmethod
-    def _resolve_link_dest(dest: str) -> Optional[Union[AnyUrl, Path]]:
+    def _resolve_link_dest(dest: str) -> AnyUrl | Path | None:
         """Parse a link destination string into an `AnyUrl` or `Path`.
 
         Shared between the paragraph inline-element walker and the table-cell
@@ -179,7 +176,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             An `AnyUrl` or `Path` instance, or `None` when the destination
             cannot be parsed.
         """
-        return TypeAdapter(Optional[Union[AnyUrl, Path]]).validate_python(dest)
+        return TypeAdapter(AnyUrl | Path | None).validate_python(dest)
 
     @staticmethod
     def _split_table_row(row: str) -> list[str]:
@@ -321,8 +318,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def __init__(
         self,
         in_doc: InputDocument,
-        path_or_stream: Union[BytesIO, Path],
-        options: Optional[MarkdownBackendOptions] = None,
+        path_or_stream: BytesIO | Path,
+        options: MarkdownBackendOptions | None = None,
     ):
         # Raised first so a missing optional dependency gives an actionable
         # message rather than a NameError when marko is dereferenced below.
@@ -344,7 +341,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self._pending_hard_line_break = False
         self._pending_soft_line_break = False
         self._html_blocks: int = 0
-        self._image_loader: Optional[ImageResourceLoader] = None
+        self._image_loader: ImageResourceLoader | None = None
 
         # A leading BOM is dropped. Kept, it prefixes the first line, so a
         # leading "# Title" is parsed as paragraph text and the BOM reaches the
@@ -513,7 +510,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self,
         table: _gfm_el.Table,
         doc: DoclingDocument,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
     ) -> None:
         """Convert a parsed GFM `Table` AST node into a Docling table.
 
@@ -629,8 +626,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         inline_parent: NodeItem,
         collected_refs: list[RefItem],
-        formatting: Optional[Formatting],
-        hyperlink: Optional[Union[AnyUrl, Path]],
+        formatting: Formatting | None,
+        hyperlink: AnyUrl | Path | None,
     ) -> None:
         """Process a single inline element from a GFM table cell.
 
@@ -764,12 +761,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def _create_list_item(
         self,
         doc: DoclingDocument,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
         text: str,
         enumerated: bool,
         marker: str = "",
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ):
         item = doc.add_list_item(
             text=text,
@@ -784,11 +781,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def _create_heading_item(
         self,
         doc: DoclingDocument,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
         text: str,
         level: int,
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ):
         if level == 1:
             item = doc.add_title(
@@ -813,14 +810,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         creation_stack: list[_CreationPayload],
         snippet_text: str,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
         list_ordered_flag_by_ref: dict[str, bool],
         list_start_by_ref: dict[str, int],
         list_item_counter_by_ref: dict[str, int],
         list_last_item_by_ref: dict[str, ListItem],
-        formatting: Optional[Formatting],
-        hyperlink: Optional[Union[AnyUrl, Path]],
-    ) -> Optional[NodeItem]:
+        formatting: Formatting | None,
+        hyperlink: AnyUrl | Path | None,
+    ) -> NodeItem | None:
         """Lazily create list items / headings when we first see their inline content.
 
         Important: Marko list items/headings can contain inline nodes that are NOT RawText
@@ -875,9 +872,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         list_start_by_ref: dict[str, int],
         list_item_counter_by_ref: dict[str, int],
         list_last_item_by_ref: dict[str, ListItem],
-        parent_item: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        parent_item: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ):
         if element in visited:
             return
@@ -934,7 +931,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 if parent_item
                 else False
             )
-            parent_ref: Optional[str] = parent_item.self_ref if parent_item else None
+            parent_ref: str | None = parent_item.self_ref if parent_item else None
             marker = ""
             if enumerated and parent_ref is not None:
                 start = list_start_by_ref.get(parent_ref, 1)
@@ -951,9 +948,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if len(non_list_children) > 1 and not _only_plain_line_breaks(
                 non_list_children
             ):  # inline group will be created further down
-                parent_ref: Optional[str] = (
-                    parent_item.self_ref if parent_item else None
-                )
+                parent_ref: str | None = parent_item.self_ref if parent_item else None
                 parent_item = self._create_list_item(
                     doc=doc,
                     parent_item=parent_item,
@@ -977,7 +972,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._close_table(doc)
             _log.debug(" - Image with alt: %s, url: %s", element.title, element.dest)
 
-            fig_caption: Optional[TextItem] = None
+            fig_caption: TextItem | None = None
             if element.title is not None and element.title != "":
                 title = unescape(element.title)
                 fig_caption = doc.add_text(
@@ -1249,7 +1244,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
         return self._image_loader
 
-    def _load_image_ref(self, dest: str) -> Optional[ImageRef]:
+    def _load_image_ref(self, dest: str) -> ImageRef | None:
         """Resolve and decode a Markdown image source into an ``ImageRef``.
 
         Returns ``None`` when image loading is disabled, the source is empty, or
