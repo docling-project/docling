@@ -12,4 +12,4 @@ Updated 2026-10-01. All seven original findings are implemented and committed th
 
 C1's top-level `extraction_target` is implemented downstream in Jobkit `e75bb73` and Serve `367f3d2`. No downstream C1 work remains.
 
-October 1 local follow-up fixes preserve item-level failure reasons in raised SDK exceptions; see [the finalization assessment](extraction-api-finalization.md). Original review details remain in Git history.
+Published October 1 fixes preserve item-level failure reasons in raised SDK exceptions; see [the finalization assessment](extraction-api-finalization.md). Original review details remain in Git history.

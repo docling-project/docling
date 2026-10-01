@@ -26,9 +26,9 @@ Updated 2026-10-01. Implementation and stage 11 are complete. This is the curren
 | 8 | Docling service/client contract | Complete; `c2d5347`, followed by C1/client review fixes through `1d3f63d2` |
 | 9 | Jobkit forwarding, identity, storage, callbacks | Complete; `7f641bf`, followed by contract/preset/storage fixes |
 | 10 | Serve admission/endpoint | Complete; `00cd751c`, followed by C1/preset/source-target fixes |
-| 11 | Gap closure and final matrix | Completed 2026-09-23; plan updates committed in `804c4014`; smoke runners prepared for Git on 2026-10-01 |
+| 11 | Gap closure and final matrix | Completed 2026-09-23; plan updates committed in `804c4014`; smoke runners committed and pushed on 2026-10-01 |
 
-PR #4201's head is an ancestor of #4218. Its API-engine/multi-format/channel work is already included. Settle whether #4201 merges first or is superseded when finalizing the PRs.
+PR #4201's head is an ancestor of #4218. Its API-engine/multi-format/channel work is already included. #4218 now targets main directly; #4201 can be marked superseded.
 
 `NuExtractTransformersModel` removal is accepted: it was not a public-facing import. No compatibility shim or further decision is required.
 
@@ -38,7 +38,7 @@ Historical live runs on September 23 covered Granite through LM Studio and NuExt
 
 Callbacks use the shared lifecycle events. Delivery uses independent threads, so arrival order is not guaranteed. The smoke checks event counts and artifact availability rather than assuming arrival order.
 
-The September 24 transport-debug fixes landed in Docling `7f237215`, Jobkit `af845006` and Serve `b85ead7`. October 1 local changes also gate raw HTTP error bodies behind debug and preserve item reasons in SDK exceptions and callbacks. These fixes are committed locally and require push and release/deployment inclusion.
+The September 24 transport-debug fixes landed in Docling `7f237215`, Jobkit `af845006` and Serve `b85ead7`. Published October 1 fixes also gate raw HTTP error bodies, preserve scoped item reasons in SDK exceptions/callbacks, and classify wrapped read timeouts safely. Branches and downstream locks are pushed; main conflicts and Docling DCO are resolved. Include these fixes in releases/deployment.
 
 ## Tests and remaining work
 
@@ -50,4 +50,4 @@ Run the affected committed tests with a compatible environment; use each reposit
 
 Historical stage 11 broad runs also had unrelated parser/cv2, MinIO bucket and async-fixture/config/OTEL failures; retain that distinction when describing coverage. Original temporary live logs are no longer available. Tests and fresh finalization results are summarized in the assessment.
 
-Finish delivery, resolve merge conflicts/DCO, publish Docling→Jobkit→Serve and replace branch pins with release floors. Rerun the formerly timing-out SaaS request at its new 60-second server timeout and then the corrected 147-case benchmark. The harness now lives in the standalone [docling-extractbench repository](https://github.ibm.com/docling-project/docling-extractbench/), which uses ExtractBench as a pinned dependency. Extraction billing work units/operation identification and metrics remain a separate scoped follow-up.
+Publish Docling→Jobkit→Serve and replace branch sources with release floors. Rerun the formerly timing-out SaaS request at its new 60-second server timeout and then the corrected 147-case benchmark. The harness lives in the standalone [docling-extractbench repository](https://github.ibm.com/docling-project/docling-extractbench/), which follows Docling's extraction branch and uses ExtractBench as a pinned dependency. Extraction billing work units/operation identification and metrics remain a separate scoped follow-up.
