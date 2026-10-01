@@ -5,22 +5,21 @@ import enum
 import math
 import warnings
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Literal, Optional
+from typing import Annotated, Literal, Optional
 
 from docling_core.types.doc.document import DoclingDocument
 from pydantic import AliasChoices, AnyUrl, BaseModel, ConfigDict, Field
 
 from docling.datamodel.base_models import (
+    ConfidenceReport,
     ConversionStatus,
     ErrorItem,
     FailureCategory,
+    PageConfidenceScores,
     QualityGrade,
 )
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
 from docling.utils.profiling import ProfilingItem
-
-if TYPE_CHECKING:
-    from docling.datamodel.base_models import ConfidenceReport, PageConfidenceScores
 
 
 def _nan_to_none(value: float) -> Optional[float]:
@@ -33,10 +32,6 @@ class ConfidenceScores(BaseModel):
     Plain stored floats (NaN coerced to null) rather than a reuse of
     docling's ``ConfidenceReport``, so the wire schema carries no numpy
     computed fields and deserializing clients don't recompute anything.
-
-    Document-level only. A per-page breakdown can be added later as an
-    optional ``pages`` field without breaking this shape (adding an optional
-    field is non-breaking on its own).
     """
 
     parse_score: Optional[float] = None
@@ -47,11 +42,11 @@ class ConfidenceScores(BaseModel):
     low_score: Optional[float] = None
     mean_grade: QualityGrade = QualityGrade.UNSPECIFIED
     low_grade: QualityGrade = QualityGrade.UNSPECIFIED
+    pages: Optional[dict[int, "ConfidenceScores"]] = None
 
     @classmethod
-    def from_scores(
-        cls, scores: "PageConfidenceScores | ConfidenceReport"
-    ) -> "ConfidenceScores":
+    def from_scores(cls, scores: PageConfidenceScores) -> "ConfidenceScores":
+        pages = scores.pages if isinstance(scores, ConfidenceReport) else None
         return cls(
             parse_score=_nan_to_none(scores.parse_score),
             layout_score=_nan_to_none(scores.layout_score),
@@ -61,6 +56,14 @@ class ConfidenceScores(BaseModel):
             low_score=_nan_to_none(scores.low_score),
             mean_grade=scores.mean_grade,
             low_grade=scores.low_grade,
+            pages=(
+                {
+                    page_no: cls.from_scores(page_scores)
+                    for page_no, page_scores in pages.items()
+                }
+                if pages
+                else None
+            ),
         )
 
 
