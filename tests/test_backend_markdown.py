@@ -737,6 +737,59 @@ def test_convert_line_breaks():
     assert list_items[1].text == "Item 2"
 
 
+def test_convert_line_break_next_to_code_span():
+    """Text after a line break is not merged into a preceding code span.
+
+    A code span is its own item, so the prose that follows it stays a separate
+    TextItem whether the break comes before or after the span (soft or hard),
+    also inside a list item.
+    """
+    opt = MarkdownBackendOptions()
+
+    def items(markdown: str):
+        doc = _convert_markdown(markdown, opt)
+        return [(str(t.label), t.text) for t in doc.texts]
+
+    expected = [("text", "Already in"), ("code", "Reference/"), ("text", ". Done.")]
+
+    # No break: the reference behaviour
+    assert items("Already in `Reference/`. Done.") == expected
+
+    # Soft break before the code span
+    assert items("Already in\n`Reference/`. Done.") == expected
+
+    # Hard break before the code span
+    assert items("Already in  \n`Reference/`. Done.") == expected
+
+    # Soft break after the code span
+    assert items("Already in `Reference/`\n. Done.") == expected
+
+    # Hard break after the code span: the break is kept as a leading '\\n' on
+    # the run that follows, as across a formatting boundary.
+    assert items("Already in `Reference/`  \n. Done.") == [
+        ("text", "Already in"),
+        ("code", "Reference/"),
+        ("text", "\n. Done."),
+    ]
+
+    # Two code spans after a soft break
+    assert items("Already in\n`Reference/` and `Other/`. Done.") == [
+        ("text", "Already in"),
+        ("code", "Reference/"),
+        ("text", "and"),
+        ("code", "Other/"),
+        ("text", ". Done."),
+    ]
+
+    # Inside a list item (its mixed content lives in an inline group)
+    assert items("- Already in\n  `Reference/`. Done.") == [
+        ("list_item", ""),
+        ("text", "Already in"),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
+
+
 def test_ordered_list_preserves_start_number():
     """Ordered lists that start at a number other than 1 must preserve that number.
 

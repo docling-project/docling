@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Literal, Optional, Union, cast
 
 from docling_core.types.doc import (
+    CodeItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -702,9 +703,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     self._pending_hard_line_break = False
                     self._pending_soft_line_break = False
                 else:
+                    # A code span is its own item: text after a break never
+                    # joins it (that would type prose as code).
+                    last_is_code = bool(doc.texts) and isinstance(
+                        doc.texts[-1], CodeItem
+                    )
                     if (
                         self._pending_hard_line_break
                         and doc.texts
+                        and not last_is_code
                         and doc.texts[-1].formatting == formatting
                         and doc.texts[-1].hyperlink == hyperlink
                     ):
@@ -713,6 +720,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     elif (
                         self._pending_soft_line_break
                         and doc.texts
+                        and not last_is_code
                         and doc.texts[-1].formatting == formatting
                         and doc.texts[-1].hyperlink == hyperlink
                     ):
@@ -765,6 +773,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+                # The code span consumed the break that preceded it, like a
+                # text run does.
+                self._pending_hard_line_break = False
+                self._pending_soft_line_break = False
 
         elif (
             isinstance(element, marko.block.CodeBlock | marko.block.FencedCode)
