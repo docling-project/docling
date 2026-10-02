@@ -6,7 +6,13 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import CodeItem, CodeLanguageLabel, PictureItem
+from docling_core.types.doc import (
+    CodeItem,
+    CodeLanguageLabel,
+    ListGroup,
+    ListItem,
+    PictureItem,
+)
 from PIL import Image
 
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -735,6 +741,45 @@ def test_convert_line_breaks():
     assert len(list_items) == 2
     assert list_items[0].text == "First Second"
     assert list_items[1].text == "Item 2"
+
+
+def test_list_item_keeps_its_following_blocks():
+    markdown = (
+        "1. Install the package.\n"
+        "2. Set the API key.\n"
+        "\n"
+        "   Use the key from the dashboard.\n"
+        "\n"
+        "   ```\n"
+        "   export API_KEY=...\n"
+        "   ```\n"
+        "3. Run the import.\n"
+    )
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    item = next(t for t in doc.texts if t.text == "Set the API key.")
+    children = [ref.resolve(doc) for ref in item.children]
+    assert [child.text for child in children] == [
+        "Use the key from the dashboard.",
+        "export API_KEY=...",
+    ]
+    for group in doc.groups:
+        if isinstance(group, ListGroup):
+            assert all(isinstance(ref.resolve(doc), ListItem) for ref in group.children)
+
+
+def test_list_item_paragraph_survives_an_html_block():
+    markdown = (
+        '<p align="center">Project</p>\n'
+        "\n"
+        "1. Install the package.\n"
+        "2. Set the API key.\n"
+        "\n"
+        "   Use the key from the dashboard.\n"
+    )
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert "Use the key from the dashboard." in doc.export_to_markdown()
 
 
 def test_ordered_list_preserves_start_number():
