@@ -94,6 +94,36 @@ def test_latex_lstlisting_environment():
     assert len(code_items) >= 1
 
 
+@pytest.mark.parametrize("env_name", ["verbatim", "lstlisting"])
+def test_latex_code_environment_keeps_first_line_indentation(env_name):
+    """Indentation on the first code line is content, not padding.
+
+    Stripping the whole body removed it from the first line only, so the
+    lines no longer lined up and the code's structure changed.
+    """
+    latex_content = (
+        "\\documentclass{article}\n"
+        "\\begin{document}\n"
+        f"\\begin{{{env_name}}}\n"
+        "  key: 1\n"
+        "  sub:\n"
+        "    x: 2\n"
+        f"\\end{{{env_name}}}\n"
+        "\\end{document}\n"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    code_texts = [t.text for t in doc.texts if t.label == DocItemLabel.CODE]
+    assert code_texts == ["  key: 1\n  sub:\n    x: 2"]
+
+
 def test_latex_subequations_environment():
     """Test subequations wrapper environment passes through inner equations."""
     latex_content = rb"""
