@@ -165,6 +165,7 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _ODFDO_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream, options)
         self.path_or_stream: BytesIO | Path = path_or_stream
+        self.page_range = in_doc.limits.page_range
         self.valid: bool = False
         self.odf_obj: OdfDocument = _load_odf_document(
             path_or_stream, self.document_hash
@@ -1647,7 +1648,10 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
+        start_page, end_page = self.page_range
         for slide_idx, page in enumerate(self.odf_obj.body.get_draw_pages()):
+            if not start_page <= slide_idx + 1 <= end_page:
+                continue
             slide_name = page.name or f"slide-{slide_idx + 1}"
             slide_group = doc.add_group(
                 name=f"slide-{slide_idx}",
@@ -1862,13 +1866,17 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             else None
         )
 
+        start_page, end_page = self.page_range
         page_no = 0
         for sheet_idx, table in enumerate(self.odf_obj.body.tables):
             if sheet_names_filter is not None and table.name not in sheet_names_filter:
                 _log.debug(f"Skipping sheet {sheet_idx}: {table.name} (filtered out)")
                 continue
 
+            # Page numbers are positions within the filtered sheets, as in XLSX.
             page_no += 1
+            if not start_page <= page_no <= end_page:
+                continue
             _log.info(f"Processing sheet {sheet_idx}: {table.name} as page {page_no}")
 
             # Add page for this sheet

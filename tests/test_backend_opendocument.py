@@ -288,6 +288,30 @@ def test_odp_conversion(odp_path: Path):
     } <= body_texts
 
 
+def test_ods_page_range(ods_path: Path):
+    """page_range selects sheets, keeping their page numbers, as for XLSX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(
+        ods_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    assert set(doc.pages) == {2}
+    assert [g.name for g in doc.groups] == ["sheet: Sheet2"]
+    assert len(doc.tables) == 1
+
+
+def test_odp_page_range(odp_path: Path):
+    """page_range selects slides, as for PPTX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(
+        odp_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    texts = {t.text for t in doc.texts}
+    assert "Second Slide Heading" in texts
+    assert not {"Slide One", "Headline Slide", "First bullet"} & texts
+
+
 @pytest.mark.parametrize(
     ("input_format", "document_type", "suffix"),
     [
