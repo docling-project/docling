@@ -82,11 +82,11 @@ The table repr ... of tokens, terminated with "NL" token.
   item-69 at level 1: section_header: Hyper Parameter Optimization
   item-70 at level 1: text: We have chosen the PubTabNet dat ... up in the inference runtime over HTML.
   item-71 at level 1: text: HPO performed in OTSL and HTML r ... r mAP score than the HTML counterpart.
-  item-72 at level 1: table with [11x8]
+  item-72 at level 1: table with [10x8]
   item-73 at level 1: section_header: Quantitative Results
   item-74 at level 1: text: We picked the model parameter co ...  that contain sparse and large tables.
   item-75 at level 1: text: TSR and cell detection results c ... eFormer] (with enc=6, dec=6, heads=8).
-  item-76 at level 1: table with [9x7]
+  item-76 at level 1: table with [8x7]
   item-77 at level 1: paragraph: Additionally, the results show t ... f the reduced sequence representation.
   item-78 at level 1: section_header: Qualitative Results
   item-79 at level 1: text: To illustrate the qualitative di ... ructure prediction and bounding boxes.

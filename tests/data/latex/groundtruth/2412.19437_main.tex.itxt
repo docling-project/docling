@@ -14,7 +14,7 @@ item-0 at level 0: unspecified: group _root_
   item-12 at level 1: text: In order to achieve efficient tr ... , we achieve high training efficiency.
   item-13 at level 1: text: During pre-training, we train De ...  model accuracy and generation length.
   item-14 at level 1: text: We evaluate DeepSeek-V3 on a com ... of standard and open-ended benchmarks.
-  item-15 at level 1: table with [4x5]
+  item-15 at level 1: table with [3x5]
   item-16 at level 1: text: Training costs of DeepSeek-V3, a ... ntal price of H800 is $2 per GPU hour.
   item-17 at level 1: text: Lastly, we emphasize again the e ... on architectures, algorithms, or data.
   item-18 at level 1: paragraph: Our main contribution includes:
@@ -126,7 +126,7 @@ Our MTP strate ... urther improve the generation latency.
     item-99 at level 2: text: Example DualPipe scheduling for  ... rlapped computation and communication.
   item-100 at level 1: caption: Image: figures/dualpipe.pdf
   item-101 at level 1: text: In addition, even in more genera ...  as the number of micro-batches grows.
-  item-102 at level 1: table with [5x4]
+  item-102 at level 1: table with [4x4]
   item-103 at level 1: text: Comparison of pipeline bubbles a ... verlapped forward and backward chunks.
   item-104 at level 1: section_header: Efficient Implementation of Cross-Node All-to-All Communication
   item-105 at level 1: text: In order to ensure sufficient co ... ilize the bandwidths of IB and NVLink.
@@ -239,20 +239,20 @@ We em ...  to 0.1 for the remaining 4.8T tokens.
   item-199 at level 1: text: Code datasets include HumanEval[ ... P[mbpp], and CRUXEval[gu2024cruxeval].
   item-200 at level 1: text: Standardized exams include AGIEv ... udes both English and Chinese subsets.
   item-201 at level 1: text: Following our previous work[dsvi ... ong models using different tokenizers.
-  item-202 at level 1: table with [38x9]
+  item-202 at level 1: table with [37x7]
   item-203 at level 1: text: Comparison among DeepSeek-V3-Bas ... ks, especially on math and code tasks.
   item-204 at level 1: section_header: Evaluation Results
   item-205 at level 1: text: In Table[tab:main], we compare t ... oming the strongest open-source model.
   item-206 at level 1: text: From a more detailed perspective ... series, DROP, C-Eval, CMMLU, and CCPM.
   item-207 at level 1: text: Due to our efficient architectur ... han training 72B or 405B dense models.
-  item-208 at level 1: table with [16x6]
+  item-208 at level 1: table with [15x6]
   item-209 at level 1: text: Ablation results for the MTP str ...  on most of the evaluation benchmarks.
   item-210 at level 1: section_header: Discussion
   item-211 at level 1: section_header: Ablation Studies for Multi-Token Prediction
   item-212 at level 1: text: In Table[tab:ablation_nextn], we ...  on most of the evaluation benchmarks.
   item-213 at level 1: section_header: Ablation Studies for the Auxiliary-Loss-Free Balancing Strategy
   item-214 at level 1: text: In Table[tab:ablation_noaux_tc], ...  on most of the evaluation benchmarks.
-  item-215 at level 1: table with [16x6]
+  item-215 at level 1: table with [15x6]
   item-216 at level 1: text: Ablation results for the auxilia ...  on most of the evaluation benchmarks.
   item-217 at level 1: section_header: Batch-Wise Load Balance VS. Sequence-Wise Load Balance
   item-218 at level 1: text: The key distinction between auxi ... t specialization patterns as expected.
@@ -307,7 +307,7 @@ We conduct c ... rformed through their respective APIs.
   item-257 at level 1: footnote: https://github.com/openai/simple-evals
   item-258 at level 1: text: . 
 We utilize the Zero-Eval prom ... mum of 8192 tokens for each benchmark.
-  item-259 at level 1: table with [28x10]
+  item-259 at level 1: table with [27x9]
   item-260 at level 1: text: Comparison between DeepSeek-V3 a ... against frontier closed-source models.
   item-261 at level 1: section_header: Standard Evaluation
   item-262 at level 1: text: Table[tab:chat] presents the eva ... els like GPT-4o and Claude-3.5-Sonnet.
@@ -320,21 +320,21 @@ Coding ... pabilities in algorithm-focused tasks.
   item-267 at level 1: text: Chinese Benchmarks.
 Qwen and Dee ... ns that DeepSeek-V3 is pre-trained on.
   item-268 at level 1: text: On C-Eval, a representative benc ... guage reasoning and educational tasks.
-  item-269 at level 1: table with [8x3]
+  item-269 at level 1: table with [7x3]
   item-270 at level 1: text: English open-ended conversation  ... gth-controlled win rate as the metric.
   item-271 at level 1: section_header: Open-Ended Evaluation
   item-272 at level 1: text: In addition to standard benchmar ... can accomplish in challenging domains.
   item-273 at level 1: text: Similarly, DeepSeek-V3 showcases ... the effectiveness of its advancements.
   item-274 at level 1: section_header: DeepSeek-V3 as a Generative Reward Model
   item-275 at level 1: text: We compare the judgment ability  ... d robustness of the alignment process.
-  item-276 at level 1: table with [9x6]
+  item-276 at level 1: table with [8x6]
   item-277 at level 1: text: Performances of GPT-4o, Claude-3.5-sonnet and DeepSeek-V3 on RewardBench.
   item-278 at level 1: section_header: Discussion
   item-279 at level 1: section_header: Distillation from DeepSeek-R1
   item-280 at level 1: paragraph: We ablate the contribution of di ... he expert checkpoints described above.
   item-281 at level 1: text: Table[tab:distill] demonstrates  ... tings for DeepSeek-V3 in distillation.
   item-282 at level 1: paragraph: Our research suggests that knowl ... portant direction for future research.
-  item-283 at level 1: table with [5x5]
+  item-283 at level 1: table with [4x5]
   item-284 at level 1: text: The contribution of distillation ... re the same as in Table\ref{tab:chat}.
   item-285 at level 1: section_header: Self-Rewarding
   item-286 at level 1: text: Rewards play a pivotal role in R ... del capabilities in general scenarios.
