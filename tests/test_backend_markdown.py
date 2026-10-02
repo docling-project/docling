@@ -238,6 +238,39 @@ def test_code_block_language_detection():
     ]
 
 
+def test_code_block_keeps_first_line_indentation():
+    """Indentation on a code block's first line is content, not padding.
+
+    Stripping the whole snippet removed it from the first line only, so the
+    lines no longer lined up: YAML changed structure and Python stopped parsing.
+    """
+    markdown = (
+        "```yaml\n"
+        "  key: 1\n"
+        "  sub:\n"
+        "    x: 2\n"
+        "```\n\n"
+        "Indented block:\n\n"
+        "      deeper\n"
+        "    base\n\n"
+        "```\n"
+        "\n"
+        "    after blank line\n"
+        "```\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    code_texts = [
+        item.text for item in conv_result.document.texts if isinstance(item, CodeItem)
+    ]
+    assert code_texts == [
+        "  key: 1\n  sub:\n    x: 2",
+        "  deeper\nbase",
+        "    after blank line",
+    ]
+
+
 def test_convert_table_keeps_inline_code_spans():
     """A code span inside a GFM table cell is part of that cell.
 
