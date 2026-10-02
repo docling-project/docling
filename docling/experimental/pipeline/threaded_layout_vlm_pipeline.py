@@ -67,6 +67,48 @@ from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
 
+def _build_layout_aware_prompt(base_prompt: str, internal_page: Optional[Page]) -> str:
+    if base_prompt != DOCLING_BASE_PAGE_PROMPT:
+        return base_prompt
+    if internal_page is None:
+        return ""
+
+    if not internal_page.size:
+        _log.warning(
+            f"Page size not available for page {internal_page.page_no}. Cannot enhance prompt with layout info."
+        )
+        return ""
+
+    if not internal_page.predictions.layout:
+        return ""
+
+    from docling_core.types.doc.tokens import DocumentToken
+
+    layout_elements = []
+    for cluster in internal_page.predictions.layout.clusters:
+        tag_name = DocumentToken.create_token_name_from_doc_item_label(
+            label=cluster.label
+        )
+        if tag_name == DocumentToken.TABLE:
+            tag_name = "otsl"
+        if tag_name == "section_header_level_1":
+            tag_name = "section_header"
+
+        location_tokens = DocumentToken.get_location(
+            bbox=cluster.bbox.as_tuple(),
+            page_w=internal_page.size.width,
+            page_h=internal_page.size.height,
+        )
+        layout_elements.append(f"<{tag_name}>{location_tokens}</{tag_name}>")
+
+    if not layout_elements:
+        return ""
+
+    layout_prompt = "<layout>\n" + "\n".join(layout_elements) + "</layout>"
+    _log.debug("Enhanced Prompt with Layout Info: %s\n", layout_prompt)
+    return layout_prompt
+
+
 
 class ThreadedLayoutVlmPipeline(BasePipeline):
     """Two-stage threaded pipeline: Layout Model → VLM Model."""
@@ -120,65 +162,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 *,
                 _internal_page: Optional[Page] = None,
             ) -> str:
-                base_prompt = self.prompt
-                augmented_prompt = base_prompt
-
-                # Only augment convert to docling base prompts
-                if base_prompt != DOCLING_BASE_PAGE_PROMPT:
-                    return base_prompt
-
-                # In this layout-aware pipeline, _internal_page is always provided
-                if _internal_page is None:
-                    return base_prompt
-
-                if not _internal_page.size:
-                    _log.warning(
-                        f"Page size not available for page {_internal_page.page_no}. Cannot enhance prompt with layout info."
-                    )
-                    return base_prompt
-
-                if _internal_page.predictions.layout:
-                    from docling_core.types.doc.tokens import DocumentToken
-
-                    layout_elements = []
-                    for cluster in _internal_page.predictions.layout.clusters:
-                        # Get proper tag name from DocItemLabel
-                        tag_name = DocumentToken.create_token_name_from_doc_item_label(
-                            label=cluster.label
-                        )
-
-                        # Replace TABLE by otsl for consistency with doctags
-                        if tag_name == DocumentToken.TABLE:
-                            tag_name = "otsl"
-
-                        # Remove section level details
-                        if tag_name == "section_header_level_1":
-                            tag_name = "section_header"
-
-                        # Convert bbox to tuple and get location tokens
-                        bbox_tuple = cluster.bbox.as_tuple()
-                        location_tokens = DocumentToken.get_location(
-                            bbox=bbox_tuple,
-                            page_w=_internal_page.size.width,
-                            page_h=_internal_page.size.height,
-                        )
-
-                        # Create XML element with DocTags format
-                        xml_element = f"<{tag_name}>{location_tokens}</{tag_name}>"
-                        layout_elements.append(xml_element)
-
-                    if layout_elements:
-                        # Join elements with newlines and wrap in layout tags
-                        layout_xml = (
-                            "<layout>\n" + "\n".join(layout_elements) + "</layout>"
-                        )
-                        augmented_prompt += f"\n{layout_xml}"
-
-                    _log.debug(
-                        "Enhanced Prompt with Layout Info: %s\n", augmented_prompt
-                    )
-
-                return augmented_prompt
+                return _build_layout_aware_prompt(self.prompt, _internal_page)
 
         vlm_options = LayoutAwareVlmOptions(**base_vlm_options.model_dump())
 
