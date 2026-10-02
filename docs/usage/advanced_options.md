@@ -211,31 +211,17 @@ See [PDF heading levels](./heading_levels.md) for the signals, their precedence 
 
 ### Apple iWork options
 
-Pages (`.pages`), Numbers (`.numbers`) and Keynote (`.key`) share their options,
-since they share their container. All three need the `format-iwork` extra.
+Pages (`.pages`), Numbers (`.numbers`) and Keynote (`.key`) share their
+options, since they share their container.
 
-#### What each one becomes
-
-A **Pages** document converts to a flow of text, like a Word document: its
-headers, footers and footnotes go into the `furniture` content layer and its
-comments into `notes`.
-
-A **Keynote** presentation converts to one chapter group per slide, holding what
-is on that slide, with the slide's presenter notes and comments in `notes`
-under it.
-
-A **Numbers** spreadsheet converts to one page and one sheet group per sheet,
-the way an Excel or OpenDocument spreadsheet does. The difference is that a
-Numbers sheet is a canvas rather than one big grid: it holds separate tables,
-charts and sticky notes side by side, each positioned in its own right. So each
-table arrives as its own table item — captioned with the name Numbers gives it,
-and carrying its own header rows and columns — and the things on a sheet come out
-in the order they are laid out down the page rather than the order the file
-happens to store them in.
-
-Those `furniture` and `notes` layers stay out of the reading order by default.
-To include them in an export, pass the extra layers explicitly (this applies to
-any `DoclingDocument`, not just these):
+In a Pages document, headers, footers and footnotes go into the `furniture`
+content layer and comments into `notes`. In a Keynote presentation, each slide
+becomes a chapter group holding what is on it, and the presenter notes and
+comments of that slide go into `notes` under it. In a Numbers spreadsheet, each
+sheet becomes a page and a sheet group, and the sticky notes on it go into
+`notes`. Either way those layers stay out of the reading order by default; to
+include them in an export, pass the extra layers explicitly (this applies to any
+`DoclingDocument`, not just these):
 
 ```python
 from docling_core.types.doc import ContentLayer
@@ -259,34 +245,16 @@ print(deck.export_to_markdown(
     included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
 ))
 
-# Numbers: the sticky notes on a sheet are notes.
+# Numbers: the sticky notes on each sheet are notes.
 budget = converter.convert("budget.numbers").document
 print(budget.export_to_markdown(
     included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
 ))
 ```
 
-#### Spreadsheet cells and charts
-
-A cell is read as the value it holds, not as the text you happen to see:
-numbers, dates, durations, checkboxes and the results Numbers last computed for
-its formulas all come through. Numbers has stored numbers as decimals since
-2017, so a cell you typed `0.1` into reads back as `0.1` rather than as the
-binary fraction nearest to it.
-
-A chart becomes a picture item carrying the data it plots — categories down the
-first column, one column per series — which is the same shape the Excel backend
-gives a chart. Numbers keeps no image of a chart, but it does keep its own copy
-of the numbers behind it, so a chart still reads correctly even if the table it
-was built from has since been deleted.
-
-#### Choosing sheets
-
-`sheet_names` converts only the sheets you name, and `page_range` narrows the
-selection further, since each sheet is a page:
-A chart on a Keynote slide becomes a picture classified by its kind, with the
-data it plots in the picture's `meta.tabular_chart` and its title as the
-caption, which is the shape the PowerPoint backend gives a chart. Keynote keeps
+A chart on a Keynote slide or a Numbers sheet becomes a picture classified by
+its kind, with the data it plots in the picture's `meta.tabular_chart` and its
+title as the caption, which is the shape the PowerPoint backend gives a chart. Keynote keeps
 no picture of a chart, so the picture itself is empty unless you opt into
 `render_chart_images`. That rebuilds each chart from its data as an Office chart
 and draws it with LibreOffice, so it needs a LibreOffice installation. The image
@@ -296,18 +264,6 @@ two-axis, bubble or interactive chart gets none:
 ```python
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.document_converter import DocumentConverter, IWorkNumbersFormatOption
-
-doc_converter = DocumentConverter(
-    format_options={
-        InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(
-            backend_options=IWorkBackendOptions(sheet_names=["Summary", "Q1"])
-        )
-    }
-)
-```
-
-#### Size limits
 from docling.document_converter import DocumentConverter, IWorkKeynoteFormatOption
 
 converter = DocumentConverter(
@@ -324,7 +280,25 @@ for picture in deck.pictures:
 ```
 
 Charts are read from Keynote 6 and later; a chart in an iWork '09 presentation
-is not read.
+is not read. `render_chart_images` draws Keynote charts only — a Numbers chart
+carries its data and its classification, but no image.
+
+`sheet_names` converts only the sheets it names, and `page_range` narrows the
+selection further, since each sheet is a page:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, IWorkNumbersFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(
+            backend_options=IWorkBackendOptions(sheet_names=["Summary", "Q1"])
+        )
+    }
+)
+```
 
 The container is untrusted input, so size limits apply. They can be tuned with
 `IWorkBackendOptions`, which all three formats take:
@@ -349,16 +323,6 @@ doc_converter = DocumentConverter(
 )
 ```
 
-!!! note "Not yet extracted from a Numbers spreadsheet"
-
-    Images and shapes are skipped, and so is a comment attached to one cell
-    rather than to the sheet. A chart's *kind* — pie, bar, line — is not read
-    yet, so every chart is labelled simply as a chart. The number format beside
-    a cell is not applied either, so a currency or percentage cell reads as the
-    plain number it holds, exactly as it does for Excel and OpenDocument. A cell
-    driven by a pop-up menu gives the label it shows in an iWork '09 document,
-    but only the menu position in a 2013-or-later one. Password-protected
-    documents cannot be read.
 ### Docling JSON input
 
 A `DoclingDocument` JSON file can be converted again, e.g. to re-export it to
@@ -391,6 +355,52 @@ Relative image paths are resolved against the current working directory. The
 `docling` CLI has no option for this and always ignores local image references
 in JSON input; save the document with `ImageRefMode.EMBEDDED` if it has to go
 through the CLI again with its images.
+
+### Fetch HTML images from remote hosts
+
+The HTML backend only downloads images referenced by a page when you opt in with
+`fetch_images=True` and `enable_remote_fetch=True` (the CLI equivalent is
+`--html-image-fetch remote`). Downloads connect only to public, globally
+routable addresses: every address of a host is checked, every redirect is
+checked again before it is followed (up to `max_redirects`), and downloads stop
+at `max_remote_image_bytes`. When `render_page=True`, the browser requests
+remote resources through the same download path, and navigating the page away
+from the source document is refused.
+
+`headers` adds HTTP headers, such as credentials, to these downloads. They are
+sent only to the origin of the source document and dropped on redirects to
+other origins. To send them to other hosts, such as a CDN, list the allowed
+origins in `headers_allowed_origins` (this replaces the default, so include the
+source origin too if it needs the headers). For a local file or a stream
+without a remote `source_uri`, headers are only sent when
+`headers_allowed_origins` is set.
+
+```python
+from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, HTMLFormatOption
+
+html_options = HTMLBackendOptions(
+    fetch_images=True,
+    enable_remote_fetch=True,
+    headers={"Authorization": "Bearer TOKEN"},
+    headers_allowed_origins=["https://example.com", "https://cdn.example.com"],
+)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.HTML: HTMLFormatOption(backend_options=html_options)
+    }
+)
+result = converter.convert("https://example.com/page.html")
+```
+
+On the CLI, pass `--html-image-headers` with a JSON object and repeat
+`--html-image-headers-origin` for each allowed origin.
+
+When a proxy is configured through the `HTTP_PROXY` / `HTTPS_PROXY`
+environment variables, downloads go through the proxy and Docling does not check
+the destination addresses; the proxy is then responsible for restricting which
+destinations it connects to.
 
 ## Impose limits on the document size
 
