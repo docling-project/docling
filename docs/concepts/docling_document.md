@@ -47,6 +47,54 @@ Below example shows how all items in the first page are nested below the `title`
 
 ![doc_hierarchy_1](../assets/docling_doc_hierarchy_1.png)
 
+### Reassembling complete VLM page ranges
+
+`DocumentConverter.convert(source, page_range=(first, last))` uses inclusive,
+one-based page numbers. The VLM pipeline preserves those source page numbers in
+the returned document and its provenance. An external scheduler can distribute
+ranges to separate workers, each with its own converter, and assemble their
+documents afterwards.
+
+For a **complete document**, sort successful ranges by their first page, check
+that they cover every page from 1 through the source page count exactly once,
+then call `DoclingDocument.concatenate(docs)`. This method normally renumbers
+documents into a continuous sequence. For an ordered, gap-free partition starting
+at page 1, each offset is zero and source page numbers are preserved.
+
+```python
+from docling_core.types.doc import DoclingDocument
+from docling.datamodel.base_models import ConversionStatus
+
+# Each result comes from the same source and VLM configuration.
+results = sorted(results, key=lambda result: min(result.document.pages))
+next_page = 1
+for result in results:
+    if result.status != ConversionStatus.SUCCESS:
+        raise ValueError("A range did not complete successfully")
+    pages = sorted(result.document.pages)
+    if not pages or pages != list(range(next_page, next_page + len(pages))):
+        raise ValueError("Missing, overlapping, or unordered pages")
+    next_page += len(pages)
+if next_page != source_page_count + 1:
+    raise ValueError("The final range is missing pages")
+document = DoclingDocument.concatenate([result.document for result in results])
+```
+
+The VLM pipeline interprets each page independently. With the same page responses,
+range conversion retains the same page-local reading order, lists, tables,
+headers, and footers as whole conversion. It does not infer relationships across
+pages, such as joining a table or list that continues onto another page.
+Model responses can vary with inference batching, so this structural property
+does not promise identical model predictions.
+
+This recipe requires complete coverage. A subset starting after page 1, a missing
+page, or a failed range must not be concatenated as though it were a complete
+document. It also does not establish equivalence for other pipelines with
+document-wide assembly or enrichment. Conversion results' status, errors,
+timings, and source metadata are separate from `DoclingDocument.concatenate`;
+callers must handle them explicitly. Each range opens the source independently,
+so measure the extra backend and rendering work when choosing a range size.
+
 ### Grouping
 
 Below example shows how all items under the heading "Let's swim" (`#/texts/5`) are nested as children. The children of
