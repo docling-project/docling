@@ -167,6 +167,27 @@ def test_cli_exports_doclang(tmp_path):
     assert "DocLang CLI" in content
 
 
+def test_cli_exports_plain_text_without_markdown_markers(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text(
+        "# Title\n\nSome **bold** text and a [link](https://example.com).\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [str(source), "--from", "md", "--to", "text", "--output", str(output)],
+    )
+
+    assert result.exit_code == 0
+    content = (output / "input.txt").read_text(encoding="utf-8")
+    assert content.startswith("Title")
+    assert "Some bold text and a link" in content
+    for marker in ("#", "**", "](", "https://example.com"):
+        assert marker not in content
+
+
 def test_cli_exports_dclx(tmp_path):
     source = tmp_path / "input.md"
     source.write_text("# DCLX CLI\n\nHello from Markdown.", encoding="utf-8")
