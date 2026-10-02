@@ -7,7 +7,8 @@ from typer.testing import CliRunner
 
 from docling.cli.main import app
 
-runner = CliRunner()
+# `TERM=dumb` turns off rich styling, which otherwise splits option names.
+runner = CliRunner(env={"TERM": "dumb"})
 FORM_PDF = Path("tests/data/pdf/sources/acroform_sample.pdf")
 
 
