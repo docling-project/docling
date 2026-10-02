@@ -82,6 +82,19 @@ def scope_of(
     return Scope(table.id, cells[0] if len(cells) == 1 else None)
 
 
+def paints_value(box: BoundingBox, text: str, values: list[Value]) -> bool:
+    """Whether the text is a filled value its widget paints into the page.
+
+    Such text sits inside the widget's box and equals the widget's value; it
+    is the value itself, never a caption.
+    """
+    return any(
+        contains(v.bbox, box)
+        and "".join(text.split()) == "".join((v.native.widget_text or "").split())
+        for v in values
+    )
+
+
 def inputs(
     widgets: list[PdfWidget],
     found: list[Cluster],
@@ -113,12 +126,7 @@ def inputs(
             scope = scope_of(box, found, table_cells)
             if not scope.eligible:
                 continue
-            if any(
-                contains(v.bbox, box)
-                and "".join(text.split())
-                == "".join((v.native.widget_text or "").split())
-                for v in values
-            ):
+            if paints_value(box, text, values):
                 continue
             atom = atoms.setdefault(
                 (cell.index, tuple(box.as_tuple()), text), len(atoms)

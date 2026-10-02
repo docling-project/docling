@@ -14,4 +14,4 @@ Monthly mail digest
 
 - [x] 
 
-I agree to the terms Subscribe to newsletter Monthly mail digest See example.org for details
+[See example.org for details](https://example.org/)

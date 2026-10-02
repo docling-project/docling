@@ -311,19 +311,20 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 651.62,
-            "r": 219.72,
+            "t": 571.62,
+            "r": 218.06,
             "b": 560.52,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            92
+            27
           ]
         }
       ],
-      "orig": "I agree to the terms Subscribe to newsletter Monthly mail digest See example.org for details",
-      "text": "I agree to the terms Subscribe to newsletter Monthly mail digest See example.org for details"
+      "orig": "See example.org for details",
+      "text": "See example.org for details",
+      "hyperlink": "https://example.org/"
     }
   ],
   "pictures": [],
