@@ -23,6 +23,7 @@ Security Note:
 from __future__ import annotations
 
 import logging
+import re
 import traceback
 import warnings
 from dataclasses import dataclass, replace
@@ -79,6 +80,9 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
+_XML_INDENTED_LINE_BREAK_RE: Final[re.Pattern[str]] = re.compile(
+    r"[^\S\r\n]*(?:\r\n?|\n)(?:[^\S\r\n]*(?:\r\n?|\n))*[^\S\r\n]*"
+)
 
 _RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
     ".jpg",
@@ -783,7 +787,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
         segments: list[InlineSegment] = []
         if node.text:
-            text = node.text.replace("\n", " ")
+            text = JatsDocumentBackend._normalize_xml_line_breaks(node.text)
             if text:
                 segments.append(
                     InlineSegment(
@@ -813,7 +817,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     JatsDocumentBackend._walk_inline_formula(child, current, hyperlink)
                 )
             if child.tail:
-                tail = child.tail.replace("\n", " ")
+                tail = JatsDocumentBackend._normalize_xml_line_breaks(child.tail)
                 if tail:
                     segments.append(
                         InlineSegment(
@@ -826,6 +830,16 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return segments
 
     @staticmethod
+    def _normalize_xml_line_breaks(text: str) -> str:
+        """Remove XML formatting indentation around line breaks.
+
+        Same-line whitespace is significant and remains untouched. A run of
+        line breaks and its surrounding indentation, however, comes from the
+        source XML layout and represents a single word boundary.
+        """
+        return _XML_INDENTED_LINE_BREAK_RE.sub(" ", text)
+
+    @staticmethod
     def _append_run(
         segments: list[InlineSegment],
         text: str,
@@ -833,7 +847,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         hyperlink: AnyUrl | Path | None = None,
     ) -> None:
         """Append text, coalescing when formatting and hyperlink both match."""
-        text = text.replace("\n", " ")
+        text = JatsDocumentBackend._normalize_xml_line_breaks(text)
         if not text:
             return
         if (

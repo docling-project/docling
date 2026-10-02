@@ -390,6 +390,31 @@ def test_jats_abstract_styling_preserves_inline_runs():
         assert abstract_runs(paragraph) == expected, f"{paragraph!r}"
 
 
+def test_jats_inline_runs_drop_xml_indentation_but_keep_same_line_whitespace():
+    paragraph = """<p>Alpha  beta <italic>Yersinia pestis</italic> is
+              critical  here.</p>"""
+    documents = [
+        convert_jats_article_meta(
+            f"""
+      <title-group><article-title>Abstract Spacing Test</article-title></title-group>
+      <abstract>{paragraph}</abstract>
+"""
+        ),
+        convert_jats_body(f"<sec><title>Body Spacing Test</title>{paragraph}</sec>"),
+    ]
+
+    italic = (False, True, False, False, Script.BASELINE)
+    expected = [
+        (DocItemLabel.TEXT, "Alpha  beta", None),
+        (DocItemLabel.TEXT, "Yersinia pestis", italic),
+        (DocItemLabel.TEXT, "is critical  here.", None),
+    ]
+    for doc in documents:
+        groups = _inline_group_items(doc)
+        assert len(groups) == 1
+        assert [_formatting_tuple(item) for item in groups[0]] == expected
+
+
 def test_jats_structured_abstract_styling_is_preserved():
     doc = convert_jats_article_meta(
         """

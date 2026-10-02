@@ -214,8 +214,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is               critical for its life style and pathogenesis. Using cDNA microarray technology, we have               analyzed the global gene expression of this deadly pathogen when grown under different               stress conditions",
-      "text": "is               critical for its life style and pathogenesis. Using cDNA microarray technology, we have               analyzed the global gene expression of this deadly pathogen when grown under different               stress conditions"
+      "orig": "is critical for its life style and pathogenesis. Using cDNA microarray technology, we have analyzed the global gene expression of this deadly pathogen when grown under different stress conditions",
+      "text": "is critical for its life style and pathogenesis. Using cDNA microarray technology, we have analyzed the global gene expression of this deadly pathogen when grown under different stress conditions"
     },
     {
       "self_ref": "#/texts/7",
@@ -274,8 +274,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To provide us with a comprehensive view of environmental modulation of global gene               expression in",
-      "text": "To provide us with a comprehensive view of environmental modulation of global gene               expression in"
+      "orig": "To provide us with a comprehensive view of environmental modulation of global gene expression in",
+      "text": "To provide us with a comprehensive view of environmental modulation of global gene expression in"
     },
     {
       "self_ref": "#/texts/11",
@@ -305,8 +305,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", we have analyzed the gene expression profiles               of 25 different stress conditions. Almost all known virulence genes of",
-      "text": ", we have analyzed the gene expression profiles               of 25 different stress conditions. Almost all known virulence genes of"
+      "orig": ", we have analyzed the gene expression profiles of 25 different stress conditions. Almost all known virulence genes of",
+      "text": ", we have analyzed the gene expression profiles of 25 different stress conditions. Almost all known virulence genes of"
     },
     {
       "self_ref": "#/texts/13",
@@ -336,8 +336,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "were               differentially regulated under multiple environmental perturbations. Clustering enabled               us to functionally classify co-expressed genes, including some uncharacterized genes.               Collections of operons were predicted from the microarray data, and some of these were               confirmed by reverse-transcription polymerase chain reaction (RT-PCR). Several               regulatory DNA motifs, probably recognized by the regulatory protein Fur, PurR, or Fnr,               were predicted from the clustered genes, and a Fur binding site in the corresponding               promoter regions was verified by electrophoretic mobility shift assay (EMSA).",
-      "text": "were               differentially regulated under multiple environmental perturbations. Clustering enabled               us to functionally classify co-expressed genes, including some uncharacterized genes.               Collections of operons were predicted from the microarray data, and some of these were               confirmed by reverse-transcription polymerase chain reaction (RT-PCR). Several               regulatory DNA motifs, probably recognized by the regulatory protein Fur, PurR, or Fnr,               were predicted from the clustered genes, and a Fur binding site in the corresponding               promoter regions was verified by electrophoretic mobility shift assay (EMSA)."
+      "orig": "were differentially regulated under multiple environmental perturbations. Clustering enabled us to functionally classify co-expressed genes, including some uncharacterized genes. Collections of operons were predicted from the microarray data, and some of these were confirmed by reverse-transcription polymerase chain reaction (RT-PCR). Several regulatory DNA motifs, probably recognized by the regulatory protein Fur, PurR, or Fnr, were predicted from the clustered genes, and a Fur binding site in the corresponding promoter regions was verified by electrophoretic mobility shift assay (EMSA).",
+      "text": "were differentially regulated under multiple environmental perturbations. Clustering enabled us to functionally classify co-expressed genes, including some uncharacterized genes. Collections of operons were predicted from the microarray data, and some of these were confirmed by reverse-transcription polymerase chain reaction (RT-PCR). Several regulatory DNA motifs, probably recognized by the regulatory protein Fur, PurR, or Fnr, were predicted from the clustered genes, and a Fur binding site in the corresponding promoter regions was verified by electrophoretic mobility shift assay (EMSA)."
     },
     {
       "self_ref": "#/texts/15",
@@ -365,8 +365,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The comparative transcriptomics analysis we present here not only benefits our               understanding of the molecular determinants of pathogenesis and cellular regulatory               circuits in",
-      "text": "The comparative transcriptomics analysis we present here not only benefits our               understanding of the molecular determinants of pathogenesis and cellular regulatory               circuits in"
+      "orig": "The comparative transcriptomics analysis we present here not only benefits our understanding of the molecular determinants of pathogenesis and cellular regulatory circuits in",
+      "text": "The comparative transcriptomics analysis we present here not only benefits our understanding of the molecular determinants of pathogenesis and cellular regulatory circuits in"
     },
     {
       "self_ref": "#/texts/17",
@@ -396,8 +396,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", it also serves as a basis for integrating               increasing volumes of microarray data using existing methods.",
-      "text": ", it also serves as a basis for integrating               increasing volumes of microarray data using existing methods."
+      "orig": ", it also serves as a basis for integrating increasing volumes of microarray data using existing methods.",
+      "text": ", it also serves as a basis for integrating increasing volumes of microarray data using existing methods."
     },
     {
       "self_ref": "#/texts/19",
@@ -425,8 +425,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Yersinia pestis is the causative agent of plague, one of the most devastating           infectious diseases in human history.",
-      "text": "Yersinia pestis is the causative agent of plague, one of the most devastating           infectious diseases in human history."
+      "orig": "Yersinia pestis is the causative agent of plague, one of the most devastating infectious diseases in human history.",
+      "text": "Yersinia pestis is the causative agent of plague, one of the most devastating infectious diseases in human history."
     }
   ],
   "pictures": [],
