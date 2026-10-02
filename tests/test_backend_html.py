@@ -13,7 +13,12 @@ from urllib.parse import quote
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import DocItemLabel, PictureItem, RichTableCell
+from docling_core.types.doc import (
+    DocItemLabel,
+    GroupLabel,
+    PictureItem,
+    RichTableCell,
+)
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -218,6 +223,77 @@ def test_table_zero_span_defaults_to_one():
         ["A", "B"],
         ["C", "D"],
     ]
+
+
+def test_nested_block_content_preserves_following_text_order():
+    """Regression for #4422: text after nested blocks stays after them."""
+    html = b"""
+    <html><body>
+    <ol>
+      <li><p>Intro:</p>
+        <ol>
+          <li><p>First nested.</p></li>
+          <li><p>Second nested.</p></li>
+        </ol>
+        <p>After the nested list.</p>
+      </li>
+    </ol>
+    <p>Next paragraph.</p>
+    </body></html>
+    """
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="nested_block_trailing_text.html",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    texts = [
+        getattr(item, "text", "")
+        for item, _ in doc.iterate_items()
+        if getattr(item, "text", "")
+    ]
+    assert texts.index("Intro:") < texts.index("First nested.")
+    assert texts.index("First nested.") < texts.index("Second nested.")
+    assert texts.index("Second nested.") < texts.index("After the nested list.")
+    assert texts[-1] == "Next paragraph."
+
+
+def test_nested_table_and_description_list_trailing_text_order():
+    """Regression for #4422: trailing content after nested table/list stays ordered."""
+    html = b"""
+    <html><body>
+    <ul>
+      <li>Intro<table><tr><td>A</td></tr></table><p>After the table.</p></li>
+    </ul>
+    <dl>
+      <dt>Term</dt>
+      <dd>Intro<ul><li>x</li></ul><p>After the list.</p></dd>
+    </dl>
+    </body></html>
+    """
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="nested_block_trailing_text_2.html",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    texts = [
+        getattr(item, "text", "")
+        for item, _ in doc.iterate_items()
+        if getattr(item, "text", "")
+    ]
+    assert texts.index("Intro") < texts.index("A")
+    assert texts.index("A") < texts.index("After the table.")
+    assert texts.index("Intro") < texts.index("x")
+    assert texts.index("x") < texts.index("After the list.")
 
 
 @pytest.mark.parametrize(
@@ -541,6 +617,51 @@ def test_nested_table_in_list_item():
     assert "3. Third step." in md
     # Cell text lives in the table, not duplicated into the list item text.
     assert md.count("Fault type.") == 1
+
+
+def test_list_non_li_children():
+    """Regression for #4424: children of <ul>/<ol> other than <li> are kept in
+    document order. They are invalid HTML, but common in CMS output.
+
+    Previously <p> and <table> children were dropped, and a <ol> child was added
+    directly to the parent list group, which broke the numbering.
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<p>Intro.</p>"
+        b"<li>First.</li>"
+        b"<p>About the first.</p>"
+        b"<li>Second.</li>"
+        b"<ol><li>Nested.</li></ol>"
+        b"<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>"
+        b"<li>Third.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    # Content before the first <li> precedes the list. Any other content closes
+    # the list and is emitted at the parent level, like in the DOCX backend.
+    assert [child.resolve(doc).label for child in doc.body.children] == [
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TABLE,
+        GroupLabel.LIST,
+    ]
+    # A nested list stays a sub-list of the preceding list item.
+    nested_list = texts["Nested."].parent.resolve(doc)
+    assert nested_list.parent.cref == texts["Second."].self_ref
+    # The list items that follow an interruption continue the numbering.
+    assert "3. Third." in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize(
