@@ -1515,6 +1515,52 @@ def _require_chromium() -> None:
         pytest.skip(f"Chromium is not available: {exc}")
 
 
+def _make_stream_backend(src: bytes, name: str) -> HTMLDocumentBackend:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename=name,
+    )
+    return HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(src),
+        options=HTMLBackendOptions(render_page=True),
+    )
+
+
+def test_browser_render_decodes_stream_with_declared_encoding():
+    """A rendered stream keeps the text of a non-UTF-8 document.
+
+    A stream reaches Chromium through `page.set_content`, so the bytes are
+    decoded here instead of by the browser honouring `<meta charset>` the way
+    a `page.goto` on a path does. Decoding as UTF-8 garbled every non-ASCII
+    character of a legacy encoded document while the conversion still
+    reported success.
+    """
+    text = "Привет, мир"
+    src = (
+        '<html><head><meta charset="windows-1251"></head>'
+        f"<body><p>{text}</p></body></html>"
+    ).encode("cp1251")
+
+    backend = _make_stream_backend(src, "page.html")
+
+    rendered = backend._get_render_html_text()
+    assert text in rendered
+    assert BeautifulSoup(rendered, "html.parser").get_text() == text
+
+
+def test_browser_render_decodes_utf8_stream_unchanged():
+    """A UTF-8 document without a charset declaration still decodes as UTF-8."""
+    text = "café"
+    src = f"<html><body><p>{text}</p></body></html>".encode()
+
+    rendered = _make_stream_backend(src, "page.html")._get_render_html_text()
+
+    assert BeautifulSoup(rendered, "html.parser").get_text() == text
+
+
 def test_browser_render_fetches_remote_resources_through_image_loader(
     tmp_path, monkeypatch
 ):
