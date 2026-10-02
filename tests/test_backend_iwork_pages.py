@@ -30,6 +30,11 @@ from docling_core.types.doc.items.text import ListItem
 from PIL import Image as PILImage
 
 from docling.backend.iwork import iwa
+from docling.backend.iwork.archives import (
+    iwa_formatting,
+    iwa_list_style,
+    iwa_style_name,
+)
 from docling.backend.iwork.content import label_for_style
 from docling.backend.iwork.iwa import (
     IWAObject,
@@ -37,12 +42,7 @@ from docling.backend.iwork.iwa import (
     iter_objects,
     read_fields,
 )
-from docling.backend.iwork.pages_iwa import (
-    iwa_formatting,
-    iwa_list_style,
-    iwa_style_name,
-)
-from docling.backend.iwork.pages_xml import legacy_formatting
+from docling.backend.iwork.legacy import legacy_formatting
 from docling.backend.iwork_backend import IWorkPagesDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
@@ -696,9 +696,10 @@ def test_iwa_list_styles_decode_to_their_real_labels():
     not by its nesting depth: Pages leaves a style in force over plain paragraphs
     too and marks them with the "None" style. Check that against the styles the
     fixture's template actually defines."""
+    objects = _iwa_objects(PAGES_2013)
     by_name = {
-        iwa_style_name(obj.payload): iwa_list_style(obj.payload)
-        for obj in _iwa_objects(PAGES_2013).values()
+        iwa_style_name(obj.payload): iwa_list_style(obj.payload, objects)
+        for obj in objects.values()
         if obj.message_type == 2023
     }
 

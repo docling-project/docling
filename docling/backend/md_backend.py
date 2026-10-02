@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 import warnings
@@ -41,6 +42,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import detect_code_language
+from docling.utils.text_decoding import decode_text
 
 # marko is only installed by the `format-markdown` extra, but DocumentConverter
 # imports every backend eagerly. Importing it at module load would therefore
@@ -129,6 +131,7 @@ def _only_plain_line_breaks(children: list) -> bool:
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     _ENTITY_RE = re.compile(r"&(#\d+|#x[0-9a-fA-F]+|\w+);")
     _DELIMITER_CELL_RE = re.compile(r":?-+:?")
+    _PIPE_ENTITY = "&#124;"
 
     @staticmethod
     def _split_table_row(row: str) -> list[str]:
@@ -153,6 +156,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         )
 
     @staticmethod
+    def _escape_pipes(text: str) -> str:
+        """Carry a pipe that is cell content rather than a cell delimiter.
+
+        An entity is how the row buffer already spells such a pipe: a source
+        ``&#124;`` survives ``_unescape_except_pipe`` intact and ``_close_table``
+        turns it back into ``|`` once the cells are split. A backslash-escaped
+        pipe has to join it there, because Marko resolves ``\\|`` to a Literal
+        node holding a bare ``|``, which the buffer cannot tell from markup.
+        """
+        return text.replace("|", MarkdownDocumentBackend._PIPE_ENTITY)
+
+    @staticmethod
     def _inline_text(node) -> str:
         """The text of an inline node, its markers dropped.
 
@@ -161,6 +176,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         """
         children = getattr(node, "children", None)
         if isinstance(children, str):
+            # A Literal is a backslash escape, so its pipe is content.
+            if isinstance(node, marko.inline.Literal):
+                return MarkdownDocumentBackend._escape_pipes(children)
             return children
         return "".join(
             MarkdownDocumentBackend._inline_text(child) for child in children or []
@@ -199,16 +217,24 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             MarkdownDocumentBackend._split_table_row(lines[1])
         )
 
+    # md_table_buffer holds the rows of the table being read, one string per
+    # row, in a form _split_table_row can split on "|" and _close_table decodes
+    # exactly once with unescape(): a RawText is decoded on the way in except
+    # for the pipe entities, so a pipe that is cell content survives the split;
+    # literal text, such as a code span, is entity-encoded on the way in and
+    # its pipes become &#124;.
     @staticmethod
     def _unescape_except_pipe(text: str) -> str:
         def replace(match):
             entity = match.group(0)
+            decoded = unescape(entity)
 
-            # entities that represent |
-            if entity in ("&#124;", "&#x7C;", "&vert;"):
+            # Any spelling of | (&#x7c;, &verbar;, ...) stays encoded so it is not
+            # taken for a cell delimiter; _close_table unescapes it after the split.
+            if decoded == "|":
                 return entity
 
-            return unescape(entity)
+            return decoded
 
         return MarkdownDocumentBackend._ENTITY_RE.sub(replace, text)
 
@@ -278,35 +304,42 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self._html_blocks: int = 0
         self._image_loader: Optional[ImageResourceLoader] = None
 
-        # utf-8-sig drops a leading BOM. Kept, it prefixes the first line, so a
+        # A leading BOM is dropped. Kept, it prefixes the first line, so a
         # leading "# Title" is parsed as paragraph text and the BOM reaches the
-        # output. Equivalent to utf-8 when no BOM is present.
+        # output.
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8-sig")
-                # remove invalid sequences
-                # very long sequences of underscores will lead to unnecessary long processing times.
-                # In any proper Markdown files, underscores have to be escaped,
-                # otherwise they represent emphasis (bold or italic)
-                self.markdown = self._shorten_underscore_sequences(text_stream)
-                self.markdown = self._shorten_leading_dash_sequences(self.markdown)
-            if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8-sig") as f:
-                    md_content = f.read()
-                    # remove invalid sequences
-                    # very long sequences of underscores will lead to unnecessary long processing times.
-                    # In any proper Markdown files, underscores have to be escaped,
-                    # otherwise they represent emphasis (bold or italic)
-                    self.markdown = self._shorten_underscore_sequences(md_content)
-                    self.markdown = self._shorten_leading_dash_sequences(self.markdown)
+            md_content = decode_text(self.path_or_stream, options.encoding)
+            # remove invalid sequences
+            # very long sequences of underscores will lead to unnecessary long processing times.
+            # In any proper Markdown files, underscores have to be escaped,
+            # otherwise they represent emphasis (bold or italic)
+            self.markdown = self._shorten_underscore_sequences(md_content)
+            self.markdown = self._shorten_leading_dash_sequences(self.markdown)
             self.valid = True
 
             _log.debug(self.markdown)
+        except DocumentLoadError:
+            # Already carries a message naming what could not be decoded.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
             ) from e
         return
+
+    @staticmethod
+    def _encode_table_literal(text: str) -> str:
+        """Encode literal text for md_table_buffer: entities are escaped so the
+        decode in _close_table returns the text as written, and a pipe is not
+        a column separator."""
+        return MarkdownDocumentBackend._escape_pipes(html.escape(text, quote=False))
+
+    def _append_table_text(self, text: str) -> None:
+        """Add text to the current row of md_table_buffer."""
+        if self.md_table_buffer:
+            self.md_table_buffer[-1] += text
+        else:
+            self.md_table_buffer.append(text)
 
     def _close_table(self, doc: DoclingDocument):
         self.in_pipeless_table = False
@@ -626,25 +659,29 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element.children if isinstance(element.children, str) else ""
             )
             snippet_text = unescape(original_text.strip())
+            # A Literal is a backslash escape, so a pipe it holds is content
+            # and not markup: it cannot open a table of its own.
+            is_escape = isinstance(element, marko.inline.Literal)
             is_table_row = bool(snippet_text) and (
                 # A header cell in bold or a link arrives as its own node with
                 # no pipe in it, so once the paragraph is known to be a table,
                 # every piece of it belongs to that table, pipe or not.
                 self.in_pipeless_table
                 or (
-                    "|" in snippet_text
+                    not is_escape
+                    and "|" in snippet_text
                     and (self.in_table or original_text.lstrip().startswith("|"))
                 )
             )
             if is_table_row:
                 self.in_table = True
-            if self.in_table and snippet_text:
-                snippet_text = self._unescape_except_pipe(original_text.strip())
-                # If we're in a table, keep adding text (for formatted content in cells)
-                if self.md_table_buffer:
-                    self.md_table_buffer[len(self.md_table_buffer) - 1] += snippet_text
-                else:
-                    self.md_table_buffer.append(snippet_text)
+            if self.in_table and original_text:
+                # Whitespace is kept: a cell can be several nodes ("run ", a
+                # code span, " now"), and _split_table_row strips the cell once.
+                cell_text = self._unescape_except_pipe(original_text)
+                if is_escape:
+                    cell_text = self._escape_pipes(cell_text)
+                self._append_table_text(cell_text)
             elif snippet_text:
                 # Not in table - close any pending table and process as regular text
                 self._close_table(doc)
@@ -694,38 +731,48 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     self._pending_soft_line_break = False
 
         elif isinstance(element, marko.inline.CodeSpan):
-            self._close_table(doc)
             _log.debug(" - Code Span: %s", element.children)
-            snippet_text = str(element.children).strip()
-            # If this CodeSpan is the only content of a list item / heading, Marko won't
-            # emit RawText. Flush pending creations here to avoid leaking payloads.
-            if creation_stack and snippet_text:
-                parent_item = self._flush_creation_stack(
-                    doc=doc,
-                    creation_stack=creation_stack,
-                    snippet_text=snippet_text,
-                    parent_item=parent_item,
-                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
-                    list_start_by_ref=list_start_by_ref,
-                    list_item_counter_by_ref=list_item_counter_by_ref,
-                    list_last_item_by_ref=list_last_item_by_ref,
+            snippet_text = str(element.children)
+            if self.in_table:
+                # A CodeSpan does not delimit cells; keep its content in the
+                # current buffer slot. Its text is literal, so it is encoded for
+                # the one decode in _close_table, and a pipe in it is not a
+                # column separator.
+                self._append_table_text(self._encode_table_literal(snippet_text))
+            else:
+                self._close_table(doc)
+                snippet_text = snippet_text.strip()
+                # If this CodeSpan is the only content of a list item / heading, Marko won't
+                # emit RawText. Flush pending creations here to avoid leaking payloads.
+                if creation_stack and snippet_text:
+                    parent_item = self._flush_creation_stack(
+                        doc=doc,
+                        creation_stack=creation_stack,
+                        snippet_text=snippet_text,
+                        parent_item=parent_item,
+                        list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                        list_start_by_ref=list_start_by_ref,
+                        list_item_counter_by_ref=list_item_counter_by_ref,
+                        list_last_item_by_ref=list_last_item_by_ref,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
+                    # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
+                    return
+                doc.add_code(
+                    parent=parent_item,
+                    text=snippet_text,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
-                # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
-                return
-            doc.add_code(
-                parent=parent_item,
-                text=snippet_text,
-                formatting=formatting,
-                hyperlink=hyperlink,
-            )
 
         elif (
             isinstance(element, marko.block.CodeBlock | marko.block.FencedCode)
             and len(element.children) > 0
             and isinstance((child := element.children[0]), marko.inline.RawText)
-            and len(snippet_text := (child.children.strip())) > 0
+            # Drop blank lines around the code but keep the first line's
+            # indentation, which is part of the code.
+            and len(snippet_text := child.children.lstrip("\n").rstrip()) > 0
         ):
             self._close_table(doc)
             _log.debug(" - Code Block: %s", element.children)

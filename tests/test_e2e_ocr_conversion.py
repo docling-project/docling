@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
@@ -53,7 +53,7 @@ def get_converter(ocr_options: OcrOptions):
         format_options={
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=pipeline_options,
-                backend=DoclingParseDocumentBackend,  # PdfFormatOption().backend,
+                backend=ThreadedDoclingParseDocumentBackend,
             )
         }
     )
