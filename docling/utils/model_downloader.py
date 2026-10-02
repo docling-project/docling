@@ -28,6 +28,7 @@ from docling.models.stages.ocr.nemotron_ocr_model import (
     NemotronOcrModel,
     nemotron_ocr_model_dir,
 )
+from docling.models.stages.ocr.pp_ocrv6 import PpOcrv6Model
 from docling.models.stages.ocr.rapid_ocr_model import (
     _RAPIDOCR_DEFAULT_LANGUAGE,
     RapidOcrModel,
@@ -71,6 +72,7 @@ def download_models(
     with_granite_chart_extraction: bool = False,
     with_granite_chart_extraction_v4: bool = False,
     with_rapidocr: bool = True,
+    with_paddleocr: bool = False,
     rapidocr_models: Optional[list[str]] = None,
     with_easyocr: bool = False,
     easyocr_languages: Optional[list[str]] = None,  # BCP-47 tags
@@ -262,6 +264,14 @@ def download_models(
                 force=force,
                 progress=progress,
             )
+
+    if with_paddleocr:
+        _log.info("Downloading PP-OCRv6 tiny safetensors models...")
+        PpOcrv6Model.download_models(
+            local_dir=output_dir / PpOcrv6Model._model_repo_folder,
+            force=force,
+            progress=progress,
+        )
 
     if with_easyocr:
         _log.info("Downloading easyocr models...")

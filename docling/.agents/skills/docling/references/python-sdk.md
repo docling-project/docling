@@ -75,18 +75,21 @@ Useful `PdfPipelineOptions` / base fields:
 
 ```python
 from docling.datamodel.pipeline_options import (
-    PdfPipelineOptions, RapidOcrOptions, TesseractOcrOptions, OcrMacOptions,
+    PdfPipelineOptions, PpOcrv6Options, RapidOcrOptions, TesseractOcrOptions, OcrMacOptions,
 )
 
 # Default is EasyOCR:
 opts = PdfPipelineOptions(do_ocr=True)
 # Alternatives:
 opts = PdfPipelineOptions(do_ocr=True, ocr_options=RapidOcrOptions())    # lightweight
+opts = PdfPipelineOptions(do_ocr=True, ocr_options=PpOcrv6Options(lang=["auto"]))  # tiny safetensors
 opts = PdfPipelineOptions(do_ocr=True, ocr_options=TesseractOcrOptions())# system Tesseract
 opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())      # macOS only
 ```
 
 Each engine is an optional dependency — see [slim-packaging.md](slim-packaging.md).
+PaddleOCR's fixed tiny recognizer accepts an expected language for coverage
+validation, but it does not use that language to constrain decoding.
 
 OCR can also run on a remote KServe v2 / Triton server. Page crops are sent to
 that server, so `enable_remote_services=True` is required:

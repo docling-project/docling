@@ -45,6 +45,7 @@ Extras compose — combine them with commas:
 
 **OCR engines** — install only the one(s) you use
 - `feat-ocr-rapidocr` (lightweight), `feat-ocr-rapidocr-onnx`
+- `feat-ocr-paddleocr` (PP-OCRv6 tiny with safetensors)
 - `feat-ocr-easyocr`
 - `feat-ocr-tesserocr` (needs system Tesseract)
 - `feat-ocr-mac` (macOS Vision)

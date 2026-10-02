@@ -82,6 +82,7 @@ OCR is on by default in the standard pipeline. Control it with:
 ```bash
 docling scan.pdf --ocr-engine easyocr --output /tmp/     # default engine
 docling scan.pdf --ocr-engine rapidocr --output /tmp/    # lightweight
+docling scan.pdf --ocr-engine paddleocr --ocr-lang auto --output /tmp/ # PP-OCRv6 tiny
 docling scan.pdf --ocr-engine tesserocr --output /tmp/   # needs system Tesseract
 docling scan.pdf --ocr-engine ocrmac --output /tmp/      # macOS Vision (mac only)
 docling scan.pdf --force-ocr --output /tmp/              # re-OCR even extractable text
@@ -92,6 +93,9 @@ docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `i
 
 OCR engines are optional dependencies — see
 [slim-packaging.md](slim-packaging.md) for the `feat-ocr-*` extras.
+PaddleOCR requires `docling[paddleocr]` or `docling-slim[feat-ocr-paddleocr]`.
+Its `auto` language uses a fixed multilingual model; a named language checks
+model coverage but does not constrain recognition.
 
 ## Tables, enrichment, and other content
 

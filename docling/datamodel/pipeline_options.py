@@ -200,7 +200,7 @@ class OcrOptions(BaseOptions):
     See Also:
         `OcrAutoOptions`: Automatic engine selection based on availability.
         `EasyOcrOptions`, `TesseractCliOcrOptions`, `TesseractOcrOptions`,
-        `RapidOcrOptions`, `OcrMacOptions`, `NemotronOcrOptions`: Engine-specific
+        `RapidOcrOptions`, `PpOcrv6Options`, `OcrMacOptions`, `NemotronOcrOptions`: Engine-specific
         configurations.
     """
 
@@ -344,6 +344,27 @@ class OcrAutoOptions(OcrOptions):
 
 # Inference backends RapidOCR supports
 RapidOcrBackend = Literal["onnxruntime", "openvino", "paddle", "torch"]
+
+
+class PpOcrv6Options(OcrOptions):
+    """PaddleOCR with the PP-OCRv6 tiny safetensors detector and recognizer.
+
+    The fixed recognizer reads multiple languages. A language request checks model
+    coverage, but does not constrain its decoder. Use ``auto`` for no language hint.
+    """
+
+    kind: ClassVar[Literal["paddleocr"]] = "paddleocr"
+    lang: Annotated[
+        list[str],
+        Field(
+            description=(
+                "Expected OCR language, as a PaddleOCR code or an iso: tag. "
+                "Use ['auto'] (the default) for multilingual recognition. "
+                "The fixed tiny recognizer does not use this as a decoding constraint."
+            ),
+            examples=[["auto"], ["en"], ["iso:de"]],
+        ),
+    ] = ["auto"]
 
 
 class RapidOcrOptions(OcrOptions):
@@ -1328,6 +1349,7 @@ class OcrEngine(str, Enum):
         TESSERACT: Tesseract OCR via Python bindings (tesserocr library).
         OCRMAC: Native macOS Vision framework OCR (Apple platforms only).
         RAPIDOCR: Lightweight OCR with multiple backend options (ONNX, OpenVINO, PaddlePaddle).
+        PADDLEOCR: PP-OCRv6 tiny using safetensors with the Transformers engine.
     """
 
     AUTO = "auto"
@@ -1336,6 +1358,7 @@ class OcrEngine(str, Enum):
     TESSERACT = "tesseract"
     OCRMAC = "ocrmac"
     RAPIDOCR = "rapidocr"
+    PADDLEOCR = "paddleocr"
 
 
 class PipelineOptions(BaseOptions):
