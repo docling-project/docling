@@ -399,6 +399,10 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+# FIXME: blocks merging. Temporary pin until docling-project/docling-parse#376
+# (widget rectangles in the crop-box frame) is released; then remove this line
+# and raise the docling-parse lower bound to that release.
+docling-parse = { git = "https://github.com/docling-project/docling-parse.git", branch = "fix/widget-rect-page-boundary-373" }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
 

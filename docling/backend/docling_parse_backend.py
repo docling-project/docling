@@ -68,45 +68,6 @@ _INVISIBLE_RENDERING_MODES = frozenset(
 )
 
 
-def _widgets_to_page_frame(seg_page: SegmentedPdfPage) -> None:
-    """Express widget rectangles in the page frame their text cells use.
-
-    docling-parse reports text cells relative to the crop box (the visible
-    page) but widget rectangles in raw PDF user space. When the crop box does
-    not start at the user-space origin, the widgets would sit off their printed
-    captions and off the page render; shift them by the crop box origin.
-
-    FIXME: blocks merging. This corrects docling-parse output inside docling.
-    The widget rectangles must be reported in the crop-box frame by
-    docling-parse itself (widget extraction came with docling-parse 7.22.0,
-    docling-project/docling-parse#334). Once that is fixed there, this function
-    would shift the widgets a second time: delete it together with its two
-    call sites and raise the docling-parse lower bound to the fixed release.
-    """
-    if not seg_page.widgets:
-        return
-    crop = seg_page.dimension.crop_bbox
-    if crop.coord_origin != CoordOrigin.BOTTOMLEFT:
-        return
-    dx, dy = crop.l, min(crop.b, crop.t)
-    if dx == 0 and dy == 0:
-        return
-    for widget in seg_page.widgets:
-        rect = widget.rect
-        widget.rect = rect.model_copy(
-            update={
-                "r_x0": rect.r_x0 - dx,
-                "r_x1": rect.r_x1 - dx,
-                "r_x2": rect.r_x2 - dx,
-                "r_x3": rect.r_x3 - dx,
-                "r_y0": rect.r_y0 - dy,
-                "r_y1": rect.r_y1 - dy,
-                "r_y2": rect.r_y2 - dy,
-                "r_y3": rect.r_y3 - dy,
-            }
-        )
-
-
 def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
     """Keep only the cells that paint ink on the page"""
     return [
@@ -206,7 +167,6 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
                 tc.to_top_left_origin(page_height)
             for tc in seg_page.word_cells:
                 tc.to_top_left_origin(page_height)
-            _widgets_to_page_frame(seg_page)
             self._seg_page = seg_page
         return self._seg_page
 
