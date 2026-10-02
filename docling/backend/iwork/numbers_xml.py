@@ -17,25 +17,31 @@ values it last plotted in a property list of its own rather than inline.
 import logging
 import plistlib
 import zipfile
-from decimal import Decimal
 from xml.etree.ElementTree import Element
 
 from docling.backend.iwork.content import Chart, ChartKind, ChartSeries
 from docling.backend.iwork.legacy import (
     SF_ATTR_HEADER_ROWS,
+    SF_ATTR_NAME,
     SF_ATTR_NUMCOLS,
     SF_ATTR_NUMROWS,
     SF_CELL_TEXT,
     SF_DATASOURCE,
     SF_GRID,
+    SF_NAMESPACE,
+    SF_PARAGRAPH,
     SF_TABULAR_MODEL,
+    SFA_ATTR_ID,
+    SFA_ATTR_IDREF,
     SFA_ATTR_STRING,
+    SFA_NAMESPACE,
     float_attr,
     int_attr,
     legacy_geometry,
     parse_index,
 )
 from docling.backend.iwork.numbers_content import (
+    MAX_TABLE_CELLS,
     Cell,
     Comment,
     PlacedChart,
@@ -46,39 +52,22 @@ from docling.backend.iwork.numbers_content import (
     format_number,
     sheet_order,
 )
-from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
 NUMBERS_KIND = "Numbers"
 """What Numbers calls its documents, for the error messages of a shared reader."""
 
-MAX_LEGACY_XML_BYTES = 100 * 1024 * 1024
-"""Ceiling on a decompressed ``index.xml.gz``.
-
-The stored size of a gzipped member says nothing about what it expands to, so
-the output is capped rather than the input.
-"""
-
-SF_NAMESPACE = "http://developer.apple.com/namespaces/sf"
-SFA_NAMESPACE = "http://developer.apple.com/namespaces/sfa"
 LS_NAMESPACE = "http://developer.apple.com/namespaces/ls"
 
 LS_WORKSPACE = f"{{{LS_NAMESPACE}}}workspace"
 LS_ATTR_WORKSPACE_NAME = f"{{{LS_NAMESPACE}}}workspace-name"
 
 SF_TABULAR_INFO = f"{{{SF_NAMESPACE}}}tabular-info"
-SF_TABULAR_MODEL = f"{{{SF_NAMESPACE}}}tabular-model"
-SF_GEOMETRY = f"{{{SF_NAMESPACE}}}geometry"
-SF_POSITION = f"{{{SF_NAMESPACE}}}position"
-SF_SIZE = f"{{{SF_NAMESPACE}}}size"
-SF_GRID = f"{{{SF_NAMESPACE}}}grid"
 SF_ROWS = f"{{{SF_NAMESPACE}}}rows"
 SF_GRID_ROW = f"{{{SF_NAMESPACE}}}grid-row"
 SF_COLUMNS = f"{{{SF_NAMESPACE}}}columns"
 SF_GRID_COLUMN = f"{{{SF_NAMESPACE}}}grid-column"
-SF_DATASOURCE = f"{{{SF_NAMESPACE}}}datasource"
-SF_CELL_TEXT = f"{{{SF_NAMESPACE}}}ct"
 SF_RESULT = f"{{{SF_NAMESPACE}}}r"
 SF_PROXIED_CELL = f"{{{SF_NAMESPACE}}}proxied-cell-ref"
 SF_CHART_INFO = f"{{{SF_NAMESPACE}}}chart-info"
@@ -87,26 +76,14 @@ SF_CHART_COLUMN_NAMES = f"{{{SF_NAMESPACE}}}chart-column_names"
 SF_CHART_ROW_NAMES = f"{{{SF_NAMESPACE}}}chart-row_names"
 SF_ENTITY_ID = f"{{{SF_NAMESPACE}}}entity-id"
 SF_STICKY_NOTE = f"{{{SF_NAMESPACE}}}sticky-note"
-SF_PARAGRAPH = f"{{{SF_NAMESPACE}}}p"
 
-SF_ATTR_NAME = f"{{{SF_NAMESPACE}}}name"
-SF_ATTR_NUMCOLS = f"{{{SF_NAMESPACE}}}numcols"
-SF_ATTR_NUMROWS = f"{{{SF_NAMESPACE}}}numrows"
-SF_ATTR_HEADER_ROWS = f"{{{SF_NAMESPACE}}}num-header-rows"
 SF_ATTR_HEADER_COLS = f"{{{SF_NAMESPACE}}}num-header-columns"
 SF_ATTR_CELL_COUNT = f"{{{SF_NAMESPACE}}}nc"
 SF_ATTR_VALUE = f"{{{SF_NAMESPACE}}}v"
 SF_ATTR_CELL_DATE = f"{{{SF_NAMESPACE}}}cell-date"
 SF_ATTR_COL_SPAN = f"{{{SF_NAMESPACE}}}col-span"
 
-SFA_ATTR_STRING = f"{{{SFA_NAMESPACE}}}s"
 SFA_ATTR_TEXT = f"{{{SFA_NAMESPACE}}}string"
-SFA_ATTR_ID = f"{{{SFA_NAMESPACE}}}ID"
-SFA_ATTR_IDREF = f"{{{SFA_NAMESPACE}}}IDREF"
-SFA_ATTR_X = f"{{{SFA_NAMESPACE}}}x"
-SFA_ATTR_Y = f"{{{SFA_NAMESPACE}}}y"
-SFA_ATTR_W = f"{{{SFA_NAMESPACE}}}w"
-SFA_ATTR_H = f"{{{SFA_NAMESPACE}}}h"
 
 TEXT_CELL = f"{{{SF_NAMESPACE}}}t"
 NUMBER_CELL = f"{{{SF_NAMESPACE}}}n"
@@ -142,9 +119,6 @@ SHARE_ROWS_KEY = "rows"
 SHARE_ROW_NAME_KEY = "rowName"
 SHARE_ROW_VALUES_KEY = "rowValues"
 """Keys of a chart share: its series, and one entry per category."""
-
-MAX_TABLE_CELLS = 4_000_000
-"""Cells one table may declare before it is rejected as implausible."""
 
 
 def read_content(
@@ -565,25 +539,3 @@ def read_comment(note: Element) -> Comment | None:
     if not text:
         return None
     return Comment(text=text, author="", timestamp=None, geometry=legacy_geometry(note))
-
-
-def int_attr(element: Element, name: str) -> int | None:
-    """Read an integer attribute, tolerating absent or malformed values."""
-    raw = element.get(name)
-    if raw is None:
-        return None
-    try:
-        return int(raw)
-    except ValueError:
-        return None
-
-
-def float_attr(element: Element, name: str) -> float | None:
-    """Read a floating point attribute, tolerating absent or malformed values."""
-    raw = element.get(name)
-    if raw is None:
-        return None
-    try:
-        return float(raw)
-    except ValueError:
-        return None

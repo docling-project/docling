@@ -17,14 +17,15 @@ lives in :mod:`docling.backend.iwork.iwa`.
 import logging
 import struct
 import zipfile
-from decimal import Decimal
+from datetime import datetime
 
 from docling.backend.iwork import archives, cells
 from docling.backend.iwork.archives import drawable_geometry, read_objects
 from docling.backend.iwork.charts import TSCH_CHART_DRAWABLE, iwa_chart
 from docling.backend.iwork.content import Geometry
-from docling.backend.iwork.iwa import IWAObject, read_reference
+from docling.backend.iwork.iwa import IWAObject
 from docling.backend.iwork.numbers_content import (
+    MAX_TABLE_CELLS,
     Cell,
     Comment,
     PlacedChart,
@@ -107,14 +108,6 @@ ANNOTATION_AUTHOR_FIELD = 3
 
 AUTHOR_NAME_FIELD = 1
 """Fields leading from a comment archive to its text, date and author."""
-
-MAX_TABLE_CELLS = 4_000_000
-"""Cells a single table may claim before it is rejected as implausible.
-
-The row and column counts come from the document, so a corrupt or hostile one
-can declare a grid far larger than it stores. Numbers' own ceiling is a million
-cells per table.
-"""
 
 
 def read_content(
@@ -365,7 +358,7 @@ def read_comment(info: IWAObject, objects: dict[int, IWAObject]) -> Comment | No
     )
 
 
-def timestamp(raw: int | bytes | None):
+def timestamp(raw: int | bytes | None) -> datetime | None:
     """Read a ``TSP.Date``, which counts seconds from the Apple epoch."""
     if not isinstance(raw, bytes):
         return None
@@ -420,11 +413,3 @@ def text_of(raw: int | bytes | None) -> str | None:
 def count(raw: int | bytes | None) -> int:
     """Read a non-negative count field, treating anything else as zero."""
     return raw if isinstance(raw, int) and raw >= 0 else 0
-
-
-def nested(
-    fields: dict[int, list[int | bytes]], field_no: int
-) -> dict[int, list[int | bytes]]:
-    """Decode a sub-message of an already-decoded one, or nothing when absent."""
-    raw = fields.get(field_no, [None])[0]
-    return archives.safe_fields(raw) if isinstance(raw, bytes) else {}

@@ -22,6 +22,14 @@ from typing import NamedTuple
 
 from docling.backend.iwork.content import Chart, Geometry
 
+MAX_TABLE_CELLS = 4_000_000
+"""Cells one table may declare before it is rejected as implausible.
+
+The row and column counts come from the document, so a corrupt or hostile one can
+declare a grid far larger than it stores. Numbers' own ceiling is a million cells
+per table, and both readers hold a table to this one.
+"""
+
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 """Instant Numbers counts its dates and times from."""
 
