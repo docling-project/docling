@@ -15,9 +15,9 @@ page-wide region. A value in a cell of a detected table goes into that cell
 instead (``page.predictions.table_fields``), keyed only by text printed in the
 same cell and without context: the table's headers already carry the
 association. Caption text
-that became a key leaves the body, and text blocks that merely re-render a
-filled value are dropped. A page whose keying
-fails keeps its values, without keys.
+that became a key leaves the body, also when it shares a text block with
+text that did not, and text blocks that merely re-render a filled value are
+dropped. A page whose keying fails keeps its values, without keys.
 """
 
 import logging
@@ -46,6 +46,7 @@ from docling.models.stages.form_field.keying import (
     Label,
     assign,
     is_skipped,
+    paints_value,
     regions,
 )
 from docling.models.stages.form_field.keying.rules import THIN
@@ -78,7 +79,8 @@ class _Plan:
     """Everything the stage writes to a page, computed before any edit."""
 
     regions: list[FieldRegionPrediction]
-    dropped: set[int]  # clusters whose text became keys
+    dropped: set[int]  # clusters whose text all became keys
+    trimmed: dict[int, set[int]]  # cluster id -> its cells used as keys or values
     hosts: set[int]  # paragraphs that carry an item in place; never dropped
     values: list[FieldValuePrediction]
     table_fields: list[TableFieldPrediction] = field(default_factory=list)
@@ -329,14 +331,20 @@ def _table_children(page: Page) -> set[int]:
 def _consumed_clusters(
     units: list[_Unit],
     sources: dict[int, tuple[int, int]],
+    assignment: Assignment,
     page: Page,
     keep: set[int],
-) -> set[int]:
-    """Clusters whose every printable cell became key text.
+) -> tuple[set[int], dict[int, set[int]]]:
+    """Clusters whose text became key text, wholly or in part.
 
-    A cluster only partly used stays in the body, so its text shows twice.
+    Returns the clusters whose every printable cell became a key, which leave
+    the body, then the clusters only partly used, with the cells that became
+    keys: those cells leave the cluster and the rest stays in the body. In a
+    cluster that gives a key, a cell that merely repeats a filled value (see
+    keying.paints_value) counts as used too, so no paragraph is left holding
+    only the values of the fields its captions keyed.
     """
-    assert page.predictions.layout is not None
+    assert page.size is not None and page.predictions.layout is not None
     clusters = _walk(page.predictions.layout.clusters)
     used: dict[int, set[int]] = defaultdict(set)
     for unit in units:
@@ -344,11 +352,27 @@ def _consumed_clusters(
             for atom in unit.consumed.atoms:
                 cluster_id, cell_index = sources[atom]
                 used[cluster_id].add(cell_index)
-    return {
-        cluster_id
-        for cluster_id, cells in used.items()
-        if cluster_id not in keep and cells >= _printable(clusters[cluster_id])
-    }
+    dropped: set[int] = set()
+    trimmed: dict[int, set[int]] = {}
+    for cluster_id, cells in used.items():
+        if cluster_id in keep:
+            continue
+        cluster = clusters[cluster_id]
+        cells = cells | {
+            cell.index
+            for cell in cluster.cells
+            if cell.text.strip()
+            and paints_value(
+                cell.rect.to_bounding_box().to_top_left_origin(page.size.height),
+                cell.text.strip(),
+                assignment.values,
+            )
+        }
+        if cells >= _printable(cluster):
+            dropped.add(cluster_id)
+        else:
+            trimmed[cluster_id] = cells
+    return dropped, trimmed
 
 
 class PdfFormFieldModel(BasePageModel):
@@ -478,8 +502,8 @@ class PdfFormFieldModel(BasePageModel):
         regions = _place(rest, hosts, assignment, page)
         host_ids = {host.id for host in hosts.values()}
         keep = unsure | _table_children(page) | host_ids
-        dropped = _consumed_clusters(units, sources, page, keep)
-        return _Plan(regions, dropped, host_ids, values, in_cells)
+        dropped, trimmed = _consumed_clusters(units, sources, assignment, page, keep)
+        return _Plan(regions, dropped, trimmed, host_ids, values, in_cells)
 
     def _keyless_plan(self, page: Page) -> _Plan:
         """Every retained widget as an unkeyed value, placed by FORM region."""
@@ -490,7 +514,7 @@ class PdfFormFieldModel(BasePageModel):
             if not is_skipped(widget, bbox):
                 values.append(self._normalize_widget(widget, bbox))
         items = [(value.bbox, FieldItemPrediction(values=[value])) for value in values]
-        return _Plan(_form_regions(items, page), set(), set(), values)
+        return _Plan(_form_regions(items, page), set(), {}, set(), values)
 
     def _commit(self, page: Page, plan: _Plan) -> None:
         """Write the plan to the page; restore the layout if that fails."""
@@ -498,10 +522,16 @@ class PdfFormFieldModel(BasePageModel):
         layout = page.predictions.layout
         clusters = list(layout.clusters)
         children = {cluster.id: cluster.children for cluster in clusters}
+        trimmed = [
+            (cluster, cluster.cells, cluster.bbox)
+            for cluster_id, cluster in _walk(clusters).items()
+            if cluster_id in plan.trimmed
+        ]
         try:
             page.predictions.field_regions = plan.regions
             page.predictions.table_fields = plan.table_fields
             self._drop_clusters(page, plan.dropped)
+            self._trim_clusters(page, plan.trimmed)
             self._suppress_duplicate_text(page, plan.values, keep=frozenset(plan.hosts))
         except Exception:
             _log.warning(
@@ -513,6 +543,9 @@ class PdfFormFieldModel(BasePageModel):
             page.predictions.table_fields = []
             for cluster in clusters:
                 cluster.children = children[cluster.id]
+            for cluster, cells, bbox in trimmed:
+                cluster.cells = cells
+                cluster.bbox = bbox
             layout.clusters = clusters
 
     @classmethod
@@ -560,6 +593,26 @@ class PdfFormFieldModel(BasePageModel):
             if cluster.id not in keep and is_duplicate(cluster)
         }
         cls._drop_clusters(page, dropped_ids)
+
+    @staticmethod
+    def _trim_clusters(page: Page, trimmed: dict[int, set[int]]) -> None:
+        """Remove the given cells from their clusters and refit their boxes.
+
+        The cells left in a cluster always include printable text (a cluster
+        whose every printable cell became a key is dropped instead), and the
+        box encloses them as the layout postprocessor fits text clusters.
+        """
+        if not trimmed:
+            return
+        assert page.predictions.layout is not None
+        for cluster_id, cluster in _walk(page.predictions.layout.clusters).items():
+            used = trimmed.get(cluster_id)
+            if not used:
+                continue
+            cluster.cells = [cell for cell in cluster.cells if cell.index not in used]
+            cluster.bbox = BoundingBox.enclosing_bbox(
+                [cell.rect.to_bounding_box() for cell in cluster.cells]
+            )
 
     @staticmethod
     def _drop_clusters(page: Page, dropped_ids: set[int]) -> None:

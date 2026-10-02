@@ -373,11 +373,13 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     result = _convert(extract_form_fields=True)
 
     assert result.pages[0].assembled is not None
-    # The layout detector merges the three checkbox lines into one text cluster,
-    # but each checkbox has its own caption printed beside it: they are options,
+    # The layout detector merges the three checkbox lines and the note below
+    # them into one text cluster, but each checkbox has its own caption printed
+    # beside it: they are options,
     # not blanks of one sentence, so each keeps its own caption. The text field
     # binds its detached "Full name:" label. All four land in the page-wide
-    # region; the merged paragraph, only partly used as keys, stays in the body.
+    # region; the captions leave the merged paragraph, and its last line, which
+    # keys nothing, stays in the body.
     assert [
         region.source_container_id
         for region in result.pages[0].predictions.field_regions
@@ -432,6 +434,12 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     assert not any(
         name in {item.text for item in result.document.texts} for name in EXPECTED_NAMES
     )
+    body = [
+        item.text
+        for item in result.document.texts
+        if item.label in {DocItemLabel.TEXT, DocItemLabel.PARAGRAPH}
+    ]
+    assert body == ["See example.org for details"]
     serialized = json.dumps(result.document.export_to_dict())
     assert "widget_field_name" not in serialized
     assert "widget_appearance_state" not in serialized
@@ -745,6 +753,136 @@ def test_keying_failure_keeps_values_without_keys(caplog, monkeypatch) -> None:
         ("", "Lovelace"),
     ]
     assert caption in page.predictions.layout.clusters
+
+
+def _options_page() -> tuple[Page, Cluster]:
+    """Three checkboxes with their option captions, then a note, in one cluster.
+
+    acroform_sample.pdf at a quarter of its size: the layout model merges the
+    four text lines into one text cluster.
+    """
+    lines = [
+        ("I agree to the terms", 35, 49.75),
+        ("Subscribe to newsletter", 42.5, 55),
+        ("Monthly mail digest", 50, 49.5),
+    ]
+    note = ("See example.org for details", BoundingBox(l=18, t=55, r=54.5, b=57.75))
+    boxes = [
+        (text, BoundingBox(l=23.75, t=top, r=right, b=top + 2.75))
+        for text, top, right in lines
+    ]
+    cells = [
+        TextCell(
+            index=i,
+            rect=BoundingRectangle.from_bounding_box(box),
+            text=text,
+            orig=text,
+            from_ocr=False,
+        )
+        for i, (text, box) in enumerate([*boxes, note])
+    ]
+    paragraph = Cluster(
+        id=1,
+        label=DocItemLabel.TEXT,
+        bbox=BoundingBox(l=18, t=35, r=55, b=57.75),
+        cells=cells,
+    )
+    widgets = [
+        _widget(
+            i,
+            BoundingBox(l=18, t=top, r=21.5, b=top + 3.5),
+            "",
+            field_type="/Btn",
+            appearance_state="/Off",
+        )
+        for i, (_, top, _) in enumerate(lines)
+    ]
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(widgets=widgets)
+    page.predictions.layout = LayoutPrediction(clusters=[paragraph])
+    return page, paragraph
+
+
+def test_captions_used_as_keys_leave_a_partly_used_paragraph() -> None:
+    # Each checkbox keys its own option caption, but the note is no caption, so
+    # the paragraph is only partly used: the captions leave it, and the note
+    # stays in the body with a box fitted to it, instead of the whole paragraph
+    # repeating the captions after the fields.
+    page, paragraph = _options_page()
+
+    list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
+
+    assert [
+        item.key_text
+        for region in page.predictions.field_regions
+        for item in region.items
+    ] == ["I agree to the terms", "Subscribe to newsletter", "Monthly mail digest"]
+    assert page.predictions.layout.clusters == [paragraph]
+    assert [cell.text for cell in paragraph.cells] == ["See example.org for details"]
+    assert paragraph.bbox == BoundingBox(l=18, t=55, r=54.5, b=57.75)
+
+
+def test_filled_values_do_not_remain_as_a_paragraph_after_their_captions() -> None:
+    # A filled form: the page paints each widget's value, and the layout model
+    # merges two caption-and-value lines into one text cluster. Both captions
+    # become keys and the painted values are the fields' own values, so
+    # nothing of the cluster is left for the body.
+    def cell(index: int, text: str, bbox: BoundingBox) -> TextCell:
+        return TextCell(
+            index=index,
+            rect=BoundingRectangle.from_bounding_box(bbox),
+            text=text,
+            orig=text,
+            from_ocr=False,
+        )
+
+    paragraph = Cluster(
+        id=1,
+        label=DocItemLabel.TEXT,
+        bbox=BoundingBox(l=10, t=10, r=50, b=20),
+        cells=[
+            cell(0, "Full name:", BoundingBox(l=10, t=10, r=28, b=14)),
+            cell(1, "John Smith", BoundingBox(l=31, t=10, r=50, b=14)),
+            cell(2, "City:", BoundingBox(l=10, t=16, r=20, b=20)),
+            cell(3, "Paris", BoundingBox(l=31, t=16, r=40, b=20)),
+        ],
+    )
+    widgets = [
+        _widget(0, BoundingBox(l=30, t=9.5, r=70, b=14.5), "John Smith"),
+        _widget(1, BoundingBox(l=30, t=15.5, r=70, b=20.5), "Paris"),
+    ]
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(widgets=widgets)
+    page.predictions.layout = LayoutPrediction(clusters=[paragraph])
+
+    list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
+
+    assert [
+        (item.key_text, [value.text for value in item.values])
+        for region in page.predictions.field_regions
+        for item in region.items
+    ] == [("Full name:", ["John Smith"]), ("City:", ["Paris"])]
+    assert page.predictions.layout.clusters == []
+
+
+def test_failed_commit_restores_a_trimmed_paragraph(caplog, monkeypatch) -> None:
+    # Writing the plan fails after the captions left the paragraph: the page
+    # is left unchanged, so the paragraph gets its cells and box back.
+    page, paragraph = _options_page()
+    cells, bbox = list(paragraph.cells), paragraph.bbox
+
+    def failing(*args, **kwargs):
+        raise RuntimeError("commit failed")
+
+    monkeypatch.setattr(PdfFormFieldModel, "_suppress_duplicate_text", failing)
+    with caplog.at_level("WARNING"):
+        list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
+
+    assert "Form field extraction failed on page 1" in caplog.text
+    assert page.predictions.field_regions == []
+    assert page.predictions.layout.clusters == [paragraph]
+    assert paragraph.cells == cells
+    assert paragraph.bbox == bbox
 
 
 def test_inline_host_is_not_dropped_as_rendered_duplicate() -> None:

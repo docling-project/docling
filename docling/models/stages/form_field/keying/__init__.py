@@ -10,7 +10,11 @@ detected table is keyed only by text of its own cell. The module reads no
 files, keeps no state and does not modify its inputs.
 """
 
-from docling.models.stages.form_field.keying.inputs import regions, scope_of
+from docling.models.stages.form_field.keying.inputs import (
+    paints_value,
+    regions,
+    scope_of,
+)
 from docling.models.stages.form_field.keying.solver import assign
 from docling.models.stages.form_field.keying.types import (
     PUSHBUTTON_FLAG,
@@ -31,6 +35,7 @@ __all__ = [
     "Scope",
     "assign",
     "is_skipped",
+    "paints_value",
     "regions",
     "scope_of",
 ]
