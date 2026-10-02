@@ -6,7 +6,7 @@
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import ContentLayer, DoclingDocument
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat, VlmPrediction
 from docling.datamodel.pipeline_options import VlmPipelineOptions
@@ -37,6 +37,10 @@ def test_complete_page_ranges_equal_whole_vlm_conversion(monkeypatch, response_f
                 text = (
                     f"<doctag><page_header><loc_0><loc_0><loc_100><loc_10>Header</page_header>"
                     f"<text><loc_10><loc_10><loc_90><loc_90>Page {page.page_no}</text>"
+                    "<key_value_region><loc_10><loc_10><loc_90><loc_90>"
+                    "<key_0><loc_10><loc_10><loc_40><loc_40>Page<link_1></key_0>"
+                    f"<value_1><loc_50><loc_10><loc_90><loc_40>{page.page_no}</value_1>"
+                    "</key_value_region>"
                     "<page_footer><loc_0><loc_90><loc_100><loc_100>Footer</page_footer></doctag>"
                 )
             page.predictions.vlm_response = VlmPrediction(text=text)
@@ -75,8 +79,20 @@ def test_complete_page_ranges_equal_whole_vlm_conversion(monkeypatch, response_f
         assert sorted(result.document.pages) == list(range(start, end + 1))
         assert all(
             start <= prov.page_no <= end
-            for item, _ in result.document.iterate_items()
+            for item, _ in result.document.iterate_items(
+                included_content_layers=set(ContentLayer)
+            )
             for prov in item.prov
         )
+        if response_format == ResponseFormat.DOCTAGS:
+            assert len(result.document.key_value_items) == end - start + 1
+            for item, page_no in zip(
+                result.document.key_value_items, range(start, end + 1)
+            ):
+                assert len(item.graph.cells) == 2
+                assert all(
+                    cell.prov is not None and cell.prov.page_no == page_no
+                    for cell in item.graph.cells
+                )
     merged = DoclingDocument.concatenate([result.document for result in parts])
     assert merged.export_to_dict() == whole.document.export_to_dict()
