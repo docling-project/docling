@@ -277,7 +277,9 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
 
         except Exception as e:
             _log.error(f"Error processing code/formula batch: {e}")
-            outputs = [""] * len(images)
+            # Keep the text the backend already extracted instead of erasing it.
+            yield from elements
+            return
 
         # Post-process outputs
         outputs = self._post_process(outputs)
