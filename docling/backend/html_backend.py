@@ -2891,6 +2891,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return False
         return li.find(_BLOCK_TAGS) is None
 
+    @staticmethod
+    def _description_list_children(dl: Tag) -> list[PageElement]:
+        """The <dt>/<dd> elements of a <dl>, including those wrapped in a <div>
+        (HTML allows wrapping each group of <dt> and <dd> elements in a <div>)."""
+        children: list[PageElement] = []
+        for child in dl.find_all(["dt", "dd", "div"], recursive=False):
+            if isinstance(child, Tag) and child.name == "div":
+                children.extend(child.find_all(["dt", "dd"], recursive=False))
+            else:
+                children.append(child)
+        return children
+
     def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
         tag_name = tag.name.lower()
         start: Optional[int] = None
@@ -2928,13 +2940,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             current_dt_item = None
             dd_group = None  # Group for multiple <dd> under same <dt>
 
-            # HTML allows wrapping each group of <dt> and <dd> elements in a <div>
-            children = []
-            for child in tag.find_all(["dt", "dd", "div"], recursive=False):
-                if isinstance(child, Tag) and child.name == "div":
-                    children.extend(child.find_all(["dt", "dd"], recursive=False))
-                else:
-                    children.append(child)
+            children = self._description_list_children(tag)
 
             for i, child in enumerate(children):
                 if not isinstance(child, Tag):
