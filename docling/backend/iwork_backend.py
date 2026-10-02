@@ -1269,17 +1269,20 @@ def _add_sheet_table(
             )
         )
 
+    prov = _sheet_prov(table.geometry, page_no)
     caption = (
-        doc.add_text(label=DocItemLabel.CAPTION, text=table.name, parent=parent)
+        doc.add_text(
+            label=DocItemLabel.CAPTION,
+            text=table.name,
+            parent=parent,
+            # The caption names the table, so it came from where the table sits,
+            # and its span is the name — the same way a chart's title is placed.
+            prov=prov.model_copy(update={"charspan": (0, len(table.name))}),
+        )
         if table.name
         else None
     )
-    doc.add_table(
-        data=data,
-        caption=caption,
-        parent=parent,
-        prov=_sheet_prov(table.geometry, page_no),
-    )
+    doc.add_table(data=data, caption=caption, parent=parent, prov=prov)
 
 
 def _add_sheet_comment(

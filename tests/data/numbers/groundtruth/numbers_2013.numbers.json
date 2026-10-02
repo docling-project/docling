@@ -102,7 +102,22 @@
       "children": [],
       "content_layer": "body",
       "label": "caption",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 495.0,
+            "t": 48.38,
+            "r": 764.0,
+            "b": 164.69,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            18
+          ]
+        }
+      ],
       "orig": "Account Categories",
       "text": "Account Categories"
     },
@@ -141,7 +156,22 @@
       "children": [],
       "content_layer": "body",
       "label": "caption",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 229.32,
+            "r": 764.0,
+            "b": 461.96,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            12
+          ]
+        }
+      ],
       "orig": "Transactions",
       "text": "Transactions"
     },
@@ -165,7 +195,22 @@
       "children": [],
       "content_layer": "body",
       "label": "caption",
-      "prov": [],
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 0.0,
+            "t": 10.0,
+            "r": 360.0,
+            "b": 176.17,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            7
+          ]
+        }
+      ],
       "orig": "Table 1",
       "text": "Table 1"
     }
