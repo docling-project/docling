@@ -487,6 +487,20 @@ class MsWordBackendOptions(BaseBackendOptions):
         ),
     )
 
+    use_outline_level_for_headings: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to treat a paragraph's outline level as a heading signal "
+                "when no name-based signal exists. Required for localized heading "
+                "styles that carry an outline level but lack 'heading' in their "
+                "name. Known limitation: styles that use the outline level only "
+                "for TOC participation will also be promoted to headings. Set to "
+                "`False` to disable this behavior."
+            )
+        ),
+    ] = True
+
 
 class OdsBackendOptions(BaseBackendOptions):
     """Options specific to the ODS (OpenDocument Spreadsheet) backend."""
