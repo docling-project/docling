@@ -2080,6 +2080,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for text, _format, _hyperlink in self._iter_paragraph_content(paragraph)
         )
 
+    def _get_cell_text(self, cell: _Cell) -> str:
+        """Return a table cell's text, one line per paragraph.
+
+        ``_Cell.text`` only reads runs and hyperlinks that are direct children
+        of a paragraph, so a cell would lose the text of an inline content
+        control, a simple field such as a mail-merge field, a smart tag or a
+        tracked insertion. Read each paragraph the way body paragraphs are read.
+        """
+        return "\n".join(
+            self._get_paragraph_text(paragraph) for paragraph in cell.paragraphs
+        )
+
     def _get_paragraph_elements(self, paragraph: Paragraph):
         """
         Extract paragraph elements along with their formatting and hyperlink
@@ -3337,13 +3349,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     continue
 
                 cell = _Cell(tc, table)
+                cell_text = self._get_cell_text(cell)
 
                 # Detect equations in cell text
                 text, equations = self._handle_equations_in_text(
-                    element=cell._element, text=cell.text
+                    element=cell._element, text=cell_text
                 )
                 if len(equations) == 0:
-                    text = cell.text
+                    text = cell_text
                 else:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
