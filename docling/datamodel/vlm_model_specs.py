@@ -9,6 +9,10 @@ from pydantic import (
 )
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.extraction_options import (
+    GRANITE_VISION_4_1_API,
+    NU_EXTRACT_API,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,

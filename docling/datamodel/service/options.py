@@ -4,7 +4,7 @@
 # Define the input options for the API
 import json
 import warnings
-from typing import Annotated, Any, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 from docling_core.types.doc import ImageRefMode, PictureClassificationLabel
 from pydantic import (
@@ -24,6 +24,10 @@ from docling.datamodel.base_models import InputFormat, OutputFormat
 
 # Import new engine system (available in docling>=2.73.0)
 from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
+from docling.datamodel.extraction_options import (
+    ChannelSelection,
+    ExtractionVlmOptions,
+)
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
     HeadingHierarchyOptions,
@@ -1196,4 +1200,72 @@ class ConvertDocumentsOptions(BaseModel):
                 "Cannot specify both chunking_preset and chunking_options."
             )
 
+        return self
+
+
+class ExtractDocumentsOptions(BaseModel):
+    """Operator-gated model configuration for extraction.
+
+    Purely operational: model selection, decode mode, input channel, and page
+    range. The extraction contract (what to extract) lives on
+    ``ExtractSourcesRequest.extraction_target``, and the request's top-level
+    ``target`` selects the destination for the resulting artifacts. Every field
+    defaults, so ``ExtractDocumentsOptions()`` is a valid "use server defaults".
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    output_mode: Literal["prompt_only", "schema_constrained"] = "prompt_only"
+
+    extraction_preset: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description=(
+                "Preset ID naming a registered extraction model. Validated "
+                'against the operator\'s allow-list. Use "default" for the '
+                "operator-controlled default (also used when unset), or a "
+                'specific preset such as "nuextract_2b".'
+            ),
+            examples=["default", "nuextract_2b", "granite_vision_4_1"],
+        ),
+    ] = None
+
+    extraction_custom_config: Annotated[
+        Optional[Union[ExtractionVlmOptions, dict]],
+        Field(
+            default=None,
+            description=(
+                "Custom extraction model configuration (model spec + engine "
+                "options). Only honored when the operator enables custom config; "
+                "rejected otherwise."
+            ),
+        ),
+    ] = None
+
+    input_channels: Annotated[
+        Optional[ChannelSelection],
+        Field(
+            default=None,
+            description=(
+                "Which payload channel(s) to send the model. Defaults to AUTO "
+                "server-side (image for PDF/IMAGE, text for DOCX/HTML/MD/DCLX)."
+            ),
+        ),
+    ] = None
+
+    page_range: Annotated[
+        PageRange,
+        Field(
+            description="Only extract a range of pages. The page number starts at 1.",
+            examples=[DEFAULT_PAGE_RANGE, (1, 4)],
+        ),
+    ] = DEFAULT_PAGE_RANGE
+
+    @model_validator(mode="after")
+    def validate_model_selection(self) -> Self:
+        if self.extraction_preset and self.extraction_custom_config is not None:
+            raise ValueError(
+                "Cannot specify both extraction_preset and extraction_custom_config."
+            )
         return self

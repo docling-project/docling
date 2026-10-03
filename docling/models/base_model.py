@@ -4,7 +4,20 @@
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Any, Generic, Optional, Protocol, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Optional,
+    Protocol,
+    Type,
+    Union,
+    runtime_checkable,
+)
+
+if TYPE_CHECKING:
+    from docling.datamodel.extraction import ContentItem
+    from docling.models.extraction.prompt_utils import _PreparedTarget
 
 import numpy as np
 from docling_core.types.doc import (
@@ -66,6 +79,17 @@ class BaseVlmModel(ABC):
         Raises:
             ValueError: If prompt list length doesn't match image count.
         """
+
+
+@runtime_checkable
+class SupportsContentExtraction(Protocol):
+    """Extraction models that accept multi-channel content-item requests."""
+
+    def process(
+        self,
+        requests: Iterable[list["ContentItem"]],
+        target: "_PreparedTarget",
+    ) -> Iterable[VlmPrediction]: ...
 
 
 class BaseVlmPageModel(BasePageModel, BaseVlmModel):

@@ -1,91 +1,143 @@
 # Structured extraction (DocumentExtractor)
 
-Beta feature. Conversion (`DocumentConverter`) turns a document into a full
-`DoclingDocument`. **Extraction** (`DocumentExtractor`) does something different:
-it pulls **specific, typed fields** out of a document according to a template —
-e.g. invoice number and total from a scanned invoice, or a set of contract
-fields. Use it when the user wants *values*, not the whole document.
-
-Requires the `extract-core` extra (see [slim-packaging.md](slim-packaging.md)):
+Extraction pulls selected fields from a source into JSON objects. Conversion
+produces a full `DoclingDocument`. Install the formats and engine you use:
 
 ```bash
 pip install "docling-slim[extract-core,format-pdf,models-vlm-inline]"
-# (included in the full `docling` package)
 ```
 
-## Entry point
+## Source and target
 
 ```python
-from docling.document_extractor import DocumentExtractor
-from docling.datamodel.base_models import InputFormat
-
-extractor = DocumentExtractor(allowed_formats=[InputFormat.PDF, InputFormat.IMAGE])
-```
-
-`extract(source, template, ...)` returns an `ExtractionResult`;
-`extract_all(sources, template, ...)` returns an iterator of them. `source` is a
-path, URL, or `DocumentStream`.
-
-## Templates — four ways to describe what to pull
-
-The `template` argument accepts a string, a dict, a Pydantic model **class**, or
-a Pydantic model **instance** (`Union[str, dict, BaseModel, Type[BaseModel]]`).
-
-```python
-# 1. JSON-ish string
-result = extractor.extract(source="invoice.pdf",
-                           template='{"bill_no": "string", "total": "float"}')
-
-# 2. dict template
-result = extractor.extract(source="invoice.pdf",
-                           template={"bill_no": "string", "total": "float"})
-
-# 3. Pydantic model class (recommended — typed, self-documenting)
 from pydantic import BaseModel
+from docling.datamodel.extraction import ExtractionTarget, ExtractionTemplate
+from docling.document_extractor import DocumentExtractor
 
 class Invoice(BaseModel):
     bill_no: str
     total: float
 
-result = extractor.extract(source="invoice.pdf", template=Invoice)
-
-# 4. Pydantic instance (fields double as examples / defaults)
-result = extractor.extract(source="invoice.pdf",
-                           template=Invoice(bill_no="INV-0001", total=0.0))
+extractor = DocumentExtractor()
+target = ExtractionTarget.from_pydantic(
+    Invoice,
+    template=ExtractionTemplate(
+        format="nuextract", value={"bill_no": "string", "total": "number"}
+    ),
+    instructions="Copy the invoice identifier exactly",
+)
+result = extractor.extract(source="invoice.pdf", target=target)
+for item in result.items:
+    print(item.scope, item.extracted_data, item.validation_status, item.errors)
 ```
 
-Prefer a **Pydantic model class** for durable schemas — it documents intent and
-gives you validation on the way out.
+`extract_all(source=[...], target=target, raises_on_error=False)` yields one
+`DocumentExtractionResult` per source. The envelope's `input`, `status`, and
+`errors` identify the owning document; `items` contains its ordered outcomes.
+Each item retains raw output, errors, token/usage metadata, and stop reason.
+`PageScope.page_no` is the absolute positive source page; `DocumentScope` has no
+page number. Paginated inputs make one independent request per selected page,
+including text. Unpaginated sources make one document-scoped text request.
+Chunks are internal and are never caller inputs.
 
-## Reading the result
+`output_schema` is the original JSON Schema used for validation.
+`ExtractionTarget.from_pydantic(Model)` transfers `model_json_schema()`, without
+Python validators or generated sample values. A tagged `template` guides the
+model and never becomes a schema. At least one schema or template is required;
+instructions alone are invalid. Missing values are neither repaired nor coerced.
+Validation is `not_requested` without a schema, `not_run` after inference/parse
+failure, or `passed`/`failed`. Schema failure cannot report success.
 
-`ExtractionResult` has `status` (a `ConversionStatus`), `errors`, and `pages`
-(one `ExtractedPageData` per page). Each page carries `extracted_data`
-(the dict of pulled fields), `raw_text`, and per-page `errors`.
+## Models, templates, and engines
+
+Configure `VlmExtractionPipelineOptions.vlm_options` using
+`ExtractionVlmOptions.from_preset(...)`, and pass it through an
+`ExtractionFormatOption` for each configured input format.
+
+| Preset | Guidance | Implemented engines |
+|---|---|---|
+| `nuextract_2b` (default) | Tagged native `nuextract`, or bounded schema conversion | Transformers; documented API transport |
+| `granite_vision_4_1` | Tagged `example_json`, schema-only, or both | Transformers; API (image channel) |
+| `nuextract_3` | Native `nuextract`, or bounded schema conversion | Transformers; explicitly configured vLLM API |
+| `lift` | `example_json`, schema-only, or both; output schema required | Transformers; explicitly configured vLLM API |
+
+Generic caller examples are explicit JSON values, for example:
 
 ```python
-from docling.datamodel.base_models import ConversionStatus
-
-result = extractor.extract(source="invoice.pdf", template=Invoice)
-
-if result.status in (ConversionStatus.SUCCESS, ConversionStatus.PARTIAL_SUCCESS):
-    for page in result.pages:
-        print(page.page_no, page.extracted_data)   # e.g. {"bill_no": "...", "total": 42.0}
-else:
-    print("extraction failed:", result.errors)
+target = ExtractionTarget.from_pydantic(
+    Invoice,
+    template=ExtractionTemplate(
+        format="example_json", value={"bill_no": "INV-42", "total": 4.2}
+    ),
+    instructions="Read values from the source; examples are illustrations",
+)
 ```
 
-## Many documents
+Select a generic preset for that target. NuExtract's native dialect describes
+types, not sample data. Unsupported formats/schema conversion fail before
+inference; examples do not supply hidden schemas. Each cached extractor prepares
+fresh targets per call.
 
-```python
-for result in extractor.extract_all(
-    source=["a.pdf", "b.pdf", "https://example.com/c.pdf"],
-    template=Invoice,
-    raises_on_error=False,     # keep going past individual failures
-):
-    print(result.input.file.name, result.status)
-```
+API extraction requires `enable_remote_services=True` and an
+`ApiVlmEngineOptions` endpoint. `output_mode="prompt_only"` is the default;
+`schema_constrained` requires an output schema and explicitly configured vLLM API.
+It rejects unsupported decoder assertions before HTTP and never retries without
+constraints after rejection. Original-schema validation runs in either mode.
 
-See [python-sdk.md](python-sdk.md) for the same status/error handling pattern on
-the conversion side, and [service-client.md](service-client.md) to run
-extraction-style workloads against a remote service.
+NuExtract3 and Lift have offline contract coverage; their local/vLLM live
+verification remains unrun. Installed NuExtract3 LM Studio is incompatible with
+caller-template delivery; its preset rejects named LM Studio/Ollama/OpenAI
+engines. Lift's weight license needs operator review. Presets do not certify
+quality, capacity, or deployment eligibility. Qwen3.5/Gemma integrations are deferred.
+
+## Formats and channels
+
+PDF/IMAGE supply images. DOCX/HTML/MD supply text. DCLX supplies structured text
+and archived page images where present. `input_channels` chooses `AUTO`, `IMAGE`,
+`TEXT`, or `IMAGE_AND_TEXT`. AUTO prefers supported images and falls back to
+text; mixed content is explicit. Forced channels must be supported by both
+source and model. Granite accepts images only. All other implemented presets
+accept text, images, and mixed content.
+
+Paginated text is selected by provenance; ambiguous/unscoped text is rejected
+rather than attributed to page 1. Markdown uses normalized input; other text
+formats serialize their `DoclingDocument`. PDF rendering and image copies are
+bounded and released as the pipeline advances.
+
+## Service wire contract
+
+`ExtractSourcesRequest(extraction_target=target, sources=[...], options=..., target=...)`
+carries the extraction contract on the top-level `extraction_target` field. The
+top-level `target` independently selects an in-body or artifact-storage
+destination. `options` (`ExtractDocumentsOptions`) is purely operational — model
+selection, channel, absolute `page_range`, and `output_mode` — and every field
+defaults. No Python classes, validators, grouping fields, or public chunks are
+accepted over the wire.
+
+`output_mode="schema_constrained"` without `extraction_target.output_schema` is
+rejected by request validation (client `ValidationError`, serve 422).
+
+Sync and async clients expose `extract` / `extract_all` (in-body convenience,
+same `target=` argument and `DocumentExtractionResult` as the local
+`DocumentExtractor`) and `submit_extract` (job handle, storage targets,
+callbacks), which mirrors the wire request: `source, extraction_target,
+options=..., target=<destination>`. The endpoint is `/v1/extract/source/async`;
+the returned job supports polling/watching/result retrieval. `submit_extract`
+in-body results are `ExtractDocumentResponse.documents`, containing JSON-safe
+`ExtractionDocumentResult`s with `source_index`, `source_uri`, `filename`,
+`status`, `errors`, and canonical `items`. Presigned and storage
+destinations return `PresignedUrlConvertResponse` /
+`PresignedUrlConvertDocumentResponse`, as for `submit`. `extract_all` runs one job
+per source with bounded concurrency. Runtime backends are never serialized.
+Deployment requires matching Jobkit/Serve contracts; their migration follows this
+Docling stage. See [service-client.md](service-client.md).
+
+## Legacy SDK compatibility
+
+The released `template=` SDK input still accepts strings, dictionaries, Pydantic
+classes and instances, emits a deprecation warning, and returns
+`ExtractionResult.pages`. Classes retain legacy style-dependent sample/schema
+serialization; they do not implicitly acquire new output validation. Unpaginated
+sources require `target=`. Released inline options/imports and `process_images()`
+remain available. The unreleased service wire accepts only the explicit target
+and item envelopes, with no old `template`/`pages` aliases.

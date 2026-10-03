@@ -35,8 +35,15 @@ from docling.models.inference_engines.common.kserve_v2_utils import (
     encode_bytes_element,
     encode_bytes_tensor,
 )
+from docling.utils.utils import backend_error_message
 
 _log = logging.getLogger(__name__)
+
+
+def _rpc_status(exc: Exception) -> str:
+    # Only the status code: details() and str(exc) name the peer address.
+    code = getattr(exc, "code", None)
+    return code().name if callable(code) else "UNKNOWN"
 
 
 def _invalid_grpc_url(original: str) -> ValueError:
@@ -250,7 +257,11 @@ class KserveV2GrpcClient:
             )
         except grpc.RpcError as exc:
             raise RuntimeError(
-                f"gRPC metadata call failed for model {self.model_name}: {exc}"
+                backend_error_message(
+                    f"gRPC metadata call failed for model {self.model_name}: "
+                    f"{_rpc_status(exc)}",
+                    exc,
+                )
             ) from exc
 
         inputs = [
@@ -348,7 +359,11 @@ class KserveV2GrpcClient:
             )
         except grpc.RpcError as exc:
             raise RuntimeError(
-                f"gRPC infer call failed for model {self.model_name}: {exc}"
+                backend_error_message(
+                    f"gRPC infer call failed for model {self.model_name}: "
+                    f"{_rpc_status(exc)}",
+                    exc,
+                )
             ) from exc
 
         if _log.isEnabledFor(logging.DEBUG):

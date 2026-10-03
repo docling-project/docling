@@ -9,6 +9,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, ClassVar, Literal
 
+from docling_core.transforms.serializer.markdown import MarkdownParams
 from docling_core.types.doc import PictureClassificationLabel
 from docling_core.types.doc.page import TextCellUnit
 from pydantic import (
@@ -17,6 +18,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    SerializeAsAny,
     computed_field,
     field_validator,
     model_validator,
@@ -36,7 +38,13 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelOptions,
     ChartExtractionVlmEngineOptions,
 )
-from docling.datamodel.extraction_options import ExtractionPromptStyle
+from docling.datamodel.extraction_options import (
+    NU_EXTRACT_2B_TRANSFORMERS,
+    ChannelSelection,
+    ExtractionPromptStyle,
+    ExtractionVlmModelSpec,
+    ExtractionVlmOptions,
+)
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
@@ -71,7 +79,6 @@ from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_TRANSFORMERS,
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
-    NU_EXTRACT_2B_TRANSFORMERS,
     SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,
@@ -1063,7 +1070,7 @@ class PictureDescriptionVlmEngineOptions(
         "picture_description_vlm_engine"
     )
 
-    model_spec: VlmModelSpec = Field(
+    model_spec: SerializeAsAny[VlmModelSpec] = Field(
         description="Model specification with runtime-specific overrides"
     )
     prompt: Annotated[
@@ -1130,7 +1137,7 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         )
     """
 
-    model_spec: VlmModelSpec = Field(
+    model_spec: SerializeAsAny[VlmModelSpec] = Field(
         description="Model specification with runtime-specific overrides"
     )
 
@@ -1166,7 +1173,7 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         options = CodeFormulaVlmOptions.from_preset("granite_docling")
     """
 
-    model_spec: VlmModelSpec = Field(
+    model_spec: SerializeAsAny[VlmModelSpec] = Field(
         description="Model specification with runtime-specific overrides"
     )
 
@@ -1906,30 +1913,119 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     Unlike `VlmPipelineOptions` which converts pages to document format,
     this pipeline targets extraction of specific entities or key-value pairs.
 
-    Supported models:
-        - ``NU_EXTRACT_2B_TRANSFORMERS`` (default) with ``ExtractionPromptStyle.NUEXTRACT``
-        - ``GRANITE_VISION_4_1_TRANSFORMERS`` with ``ExtractionPromptStyle.GRANITE_VISION``
+    The model spec, prompt style, and channel capability travel with
+    ``vlm_options`` (an ``ExtractionVlmOptions``); the engine type selects the
+    execution path. Use a preset for the common case::
+
+        ExtractionVlmOptions.from_preset("nuextract_2b")   # or "granite_vision_4_1"
+
+    Named specs: ``NU_EXTRACT_2B_TRANSFORMERS`` (default),
+    ``GRANITE_VISION_4_1_TRANSFORMERS``, ``GRANITE_VISION_4_1_API``,
+    ``NU_EXTRACT_API``.
+
+    Deprecated: passing a plain ``InlineVlmOptions`` as ``vlm_options`` together
+    with the pipeline-level ``extraction_prompt_style`` field (the released
+    ``main`` shape) still works but warns and will be unsupported in a future
+    release.
     """
 
     vlm_options: Annotated[
-        InlineVlmOptions,
+        ExtractionVlmOptions,
         Field(
             description=(
-                "Vision-Language Model (VLM) configuration for structured information extraction. Specifies which VLM "
-                "to use and its parameters for extracting structured data from documents using vision models."
+                "VLM configuration for structured extraction: an "
+                "`ExtractionVlmOptions` pairing a model spec (repo, prompt style, "
+                "channel capability) with an engine (local transformers or a "
+                "remote OpenAI-conformant endpoint; the latter requires "
+                "`enable_remote_services=True`)."
             )
         ),
     ] = NU_EXTRACT_2B_TRANSFORMERS
 
     extraction_prompt_style: Annotated[
-        "ExtractionPromptStyle",
+        ExtractionPromptStyle | None,
         Field(
             description=(
-                "Prompt style to use for extraction. Determines how the template "
-                "is formatted and passed to the model."
+                "Deprecated. Only consulted when `vlm_options` is a legacy plain "
+                "`InlineVlmOptions`; the prompt style now lives on the model spec. "
+                "Will be removed in a future release."
             )
         ),
-    ] = ExtractionPromptStyle.NUEXTRACT
+    ] = None
+
+    input_channels: Annotated[
+        ChannelSelection,
+        Field(
+            description=(
+                "Which payload channel(s) to send the model. `AUTO` uses "
+                "the page image if the format has one, otherwise the document text. "
+                "`IMAGE` / `TEXT` force a single channel (requesting one a format "
+                "cannot provide is a loud error). `IMAGE_AND_TEXT` is an explicit "
+                "opt-in and never chosen by `AUTO`."
+            )
+        ),
+    ] = ChannelSelection.AUTO
+
+    markdown_params: Annotated[
+        MarkdownParams | None,
+        Field(
+            description=(
+                "docling-core markdown serialization options for the text channel "
+                "of serialized formats (DOCX, HTML). `None` uses convert's defaults. "
+                "Ignored for Markdown input, which passes through as-is."
+            )
+        ),
+    ] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_legacy_vlm_options(cls, data):
+        """Adapt deprecated flat extraction options."""
+        if not isinstance(data, dict):
+            return data
+        vlm = data.get("vlm_options")
+        if vlm is None or isinstance(vlm, ExtractionVlmOptions):
+            return data
+
+        if isinstance(vlm, dict) and vlm.get("kind") == "inline_model_options":
+            vlm = InlineVlmOptions.model_validate(vlm)
+
+        style = data.get("extraction_prompt_style") or ExtractionPromptStyle.NUEXTRACT
+        if isinstance(vlm, InlineVlmOptions):
+            warnings.warn(
+                "Passing a plain InlineVlmOptions as `vlm_options` (with "
+                "`extraction_prompt_style`) is deprecated and will be unsupported "
+                "in a future release. Use ExtractionVlmOptions.from_preset(...) or "
+                "one of the named extraction specs.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            data = {
+                **data,
+                "vlm_options": ExtractionVlmOptions.from_legacy_inline_options(
+                    vlm, style
+                ),
+            }
+        return data
+
+    @model_validator(mode="after")
+    def _validate_channel_capability(self) -> "VlmExtractionPipelineOptions":
+        """Reject channel choices unsupported by the model."""
+        spec = self.vlm_options.model_spec
+        channel = self.input_channels
+        if channel in (ChannelSelection.IMAGE, ChannelSelection.IMAGE_AND_TEXT):
+            if not spec.accepts_image:
+                raise ValueError(
+                    f"input_channels={channel.value} but model '{spec.name}' does "
+                    f"not accept an image payload."
+                )
+        if channel in (ChannelSelection.TEXT, ChannelSelection.IMAGE_AND_TEXT):
+            if not spec.accepts_text:
+                raise ValueError(
+                    f"input_channels={channel.value} but model '{spec.name}' does "
+                    f"not accept a text payload."
+                )
+        return self
 
 
 class HeadingHierarchyOptions(BaseModel):

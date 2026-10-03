@@ -1,0 +1,53 @@
+{
+  "supported": [
+    {
+      "name": "primitives_and_optional",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "Customer name"},
+          "count": {"type": "integer", "default": 1},
+          "total": {"type": "number"},
+          "active": {"type": "boolean"}
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "template": {"name": "string", "count": "integer", "total": "number", "active": "boolean"}
+    },
+    {
+      "name": "nested_arrays_enums_nullable",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "address": {"type": "object", "properties": {"city": {"type": ["string", "null"]}}},
+          "items": {"type": "array", "items": {"type": "object", "properties": {
+            "quantity": {"type": "integer"},
+            "category": {"type": "string", "enum": ["food", "books"]}
+          }}},
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "status": {"anyOf": [{"type": "string", "enum": ["open", "closed"]}, {"type": "null"}]}
+        }
+      },
+      "template": {"address": {"city": "string"}, "items": [{"quantity": "integer", "category": ["food", "books"]}], "tags": ["string"], "status": ["open", "closed"]}
+    },
+    {
+      "name": "local_reference",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$defs": {"Address": {"type": "object", "description": "Postal address", "properties": {"city": {"type": "string"}}}},
+        "type": "object",
+        "properties": {"address": {"anyOf": [{"$ref": "#/$defs/Address"}, {"type": "null"}]}}
+      },
+      "template": {"address": {"city": "string"}}
+    }
+  ],
+  "unsupported": [
+    {"name": "union", "node": {"anyOf": [{"type": "string"}, {"type": "integer"}]}, "path": "#/properties/value/anyOf"},
+    {"name": "tuple", "node": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "number"}]}, "path": "#/properties/value/prefixItems"},
+    {"name": "dynamic_keys", "node": {"type": "object", "additionalProperties": {"type": "string"}}, "path": "#/properties/value/additionalProperties"},
+    {"name": "singleton_enum", "node": {"type": "string", "enum": ["only"]}, "path": "#/properties/value/enum"},
+    {"name": "numeric_enum", "node": {"type": "integer", "enum": [1, 2]}, "path": "#/properties/value/enum"},
+    {"name": "composition", "node": {"allOf": [{"type": "string"}, {"minLength": 3}]}, "path": "#/properties/value/allOf"}
+  ]
+}

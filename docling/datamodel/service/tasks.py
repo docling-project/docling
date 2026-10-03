@@ -9,6 +9,7 @@ from pydantic import BaseModel
 class TaskType(str, enum.Enum):
     CONVERT = "convert"
     CHUNK = "chunk"
+    EXTRACT = "extract"
 
 
 class TaskProcessingMeta(BaseModel):
