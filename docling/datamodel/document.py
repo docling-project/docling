@@ -33,6 +33,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     PictureItem,
     SectionHeaderItem,
+    Size,
     TableItem,
     TextItem,
 )
@@ -595,6 +596,11 @@ class ConversionResult(ConversionAssets):
     # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
     # the heading stage resets it to None once consumed.
     _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+    # Page sizes recorded while the PDF pipeline produces pages, so that pages which
+    # fail later can still be added to the document with their real size. Kept on the
+    # conversion result (not on the pipeline) because one pipeline instance is shared
+    # by every conversion made through the same DocumentConverter.
+    _page_sizes_by_no: dict[int, Size] = PrivateAttr(default_factory=dict)
 
 
 class _DummyBackend(AbstractDocumentBackend):
