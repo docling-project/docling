@@ -39,7 +39,6 @@ try:  # pragma: no cover - import-time guard
         LatexMacroNode,
         LatexMathNode,
         LatexWalker,
-        LatexWalkerParseError,
     )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
@@ -69,8 +68,8 @@ class TextHelperMixin:
         """Return the Unicode text of an accent or letter macro.
 
         ``\\'e`` gives ``é``, ``\\~n`` gives ``ñ`` and ``\\ss`` gives ``ß``.
-        ``None`` means the node is not one of these: another macro, an accent
-        that was parsed without an argument, or a name the document redefines.
+        ``None`` means the node is not one of these: another macro, or a name
+        the document redefines.
         """
         name = node.macroname
         if name in self._custom_macros:
@@ -78,8 +77,6 @@ class TextHelperMixin:
         if name in MACROS_ACCENTS:
             args = node.nodeargd.argnlist if node.nodeargd else []
             arg = next((a for a in args if a is not None), None)
-            if arg is None:
-                return None
             if self._uses_custom_macro(arg):
                 text = self._accent_custom_macro_arg(name, arg)
             else:
@@ -107,13 +104,10 @@ class TextHelperMixin:
         text = ""
         for _ in range(10):
             text = self._nodes_to_text(nodes)
-            try:
-                walker = LatexWalker(
-                    text, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
-                )
-                nodes, _, _ = walker.get_latex_nodes()
-            except LatexWalkerParseError:
-                return text
+            walker = LatexWalker(
+                text, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
+            )
+            nodes, _, _ = walker.get_latex_nodes()
             if not any(self._uses_custom_macro(n) for n in nodes):
                 base = "".join(n.latex_verbatim() for n in nodes)
                 return LatexNodes2Text().latex_to_text(f"\\{name}{{{base}}}")
