@@ -94,17 +94,19 @@ def test_latex_lstlisting_environment():
     assert len(code_items) >= 1
 
 
+@pytest.mark.parametrize("lead", ["", "   ", "\n   "])
 @pytest.mark.parametrize("env_name", ["verbatim", "lstlisting"])
-def test_latex_code_environment_keeps_first_line_indentation(env_name):
+def test_latex_code_environment_keeps_first_line_indentation(env_name, lead):
     """Indentation on the first code line is content, not padding.
 
     Stripping the whole body removed it from the first line only, so the
-    lines no longer lined up and the code's structure changed.
+    lines no longer lined up and the code's structure changed. Leading lines
+    holding only whitespace are still dropped.
     """
     latex_content = (
         "\\documentclass{article}\n"
         "\\begin{document}\n"
-        f"\\begin{{{env_name}}}\n"
+        f"\\begin{{{env_name}}}{lead}\n"
         "  key: 1\n"
         "  sub:\n"
         "    x: 2\n"

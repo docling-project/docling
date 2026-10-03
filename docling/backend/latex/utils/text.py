@@ -114,9 +114,7 @@ class TextHelperMixin:
         pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"
         match = re.search(pattern, latex_str, re.DOTALL)
         if match:
-            # Drop blank lines around the code but keep the first line's
-            # indentation, which is part of the code.
-            return match.group(1).lstrip("\r\n").rstrip()
+            return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
         return latex_str
 
     def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
