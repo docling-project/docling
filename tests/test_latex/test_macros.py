@@ -543,9 +543,12 @@ def test_latex_accent_on_custom_macro():
     \newcommand{\dotless}{\i}
     \newcommand{\letter}{e}
     \newcommand{\chained}{\letter}
+    \newcommand{\cycle}{\cycle}
     \begin{document}
     \section{caf\'{\chained}}
     caf\'{\vowel} followed by text, caf\'\vowel, caf\'{\chained}, \'{\dotless}.
+
+    x\'{\cycle}y.
     \end{document}
     """
     in_doc = InputDocument(
@@ -558,7 +561,12 @@ def test_latex_accent_on_custom_macro():
     doc = backend.convert()
 
     texts = [t.text for t in doc.texts]
-    assert texts == ["café", "café followed by text, café, café, í."]
+    # A macro that never resolves stops expanding and keeps its text, unaccented.
+    assert texts == [
+        "café",
+        "café followed by text, café, café, í.",
+        "x\\cycley.",
+    ]
 
 
 def test_latex_renewcommand():
