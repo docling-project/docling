@@ -100,6 +100,7 @@ pip install docling-slim[service-client]
 |-------|-------------|----------|
 | `feat-ocr-rapidocr` | RapidOCR (lightweight) | Fast OCR |
 | `feat-ocr-rapidocr-onnx` | RapidOCR with ONNX runtime | Optimized OCR |
+| `feat-ocr-paddleocr` | PaddleOCR PP-OCRv6 tiny with safetensors | Multilingual OCR |
 | `feat-ocr-easyocr` | EasyOCR | Multi-language OCR |
 | `feat-ocr-tesserocr` | Tesseract OCR | High-accuracy OCR |
 | `feat-ocr-mac` | macOS native OCR | macOS only |

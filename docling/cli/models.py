@@ -72,6 +72,7 @@ class _AvailableModels(str, Enum):
     GRANITE_CHART_EXTRACTION = "granite_chart_extraction"
     GRANITE_CHART_EXTRACTION_V4 = "granite_chart_extraction_v4"
     RAPIDOCR = "rapidocr"
+    PADDLEOCR = "paddleocr"
     EASYOCR = "easyocr"
     NEMOTRON_OCR_V2 = "nemotron_ocr_v2"
 
@@ -249,6 +250,7 @@ def download(
         with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
         in to_download,
         with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
+        with_paddleocr=_AvailableModels.PADDLEOCR in to_download,
         rapidocr_models=rapidocr_backend_lang,
         rapidocr_model_size=rapidocr_model_size,
         with_easyocr=_AvailableModels.EASYOCR in to_download,

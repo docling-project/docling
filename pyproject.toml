@@ -206,6 +206,13 @@ feat-ocr-rapidocr-onnx = [
   'onnxruntime>=1.24.1,<2.0.0 ; python_version >= "3.14"',
 ]
 
+feat-ocr-paddleocr = [
+  'paddleocr>=3.7.0,<4.0.0',
+  'transformers>=5.4.0,<6.0.0',
+  'torch>=2.2.2,<3.0.0',
+  'safetensors>=0.4.0,<1.0.0',
+]
+
 feat-ocr-easyocr = [
   'easyocr>=1.7,<2.0',
   # easyocr declares scikit-image with no lower bound; without this pin,

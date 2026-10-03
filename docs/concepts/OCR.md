@@ -5,6 +5,7 @@
 Docling supports multiple OCR engines that can be installed as extra packages:
 
 - [RapidOCR](https://github.com/RapidAI/RapidOCR)
+- [PaddleOCR PP-OCRv6 tiny](https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_safetensors)
 - [Nemotron-OCR](https://huggingface.co/nvidia/nemotron-ocr-v2)
 - [EasyOCR](https://github.com/jaidedai/easyocr)
 - [ocrmac](https://github.com/straussmaximilian/ocrmac)
@@ -62,6 +63,7 @@ On the CLI, omitting `--ocr-lang` applies the engine's default languages; an emp
 |                   | detection; needs the `osd` file    |
 | EasyOCR           | English (`en`)                     |
 | RapidOCR          | The Simplified Chinese default     |
+| PaddleOCR         | Multilingual tiny recognizer (`auto`) |
 | KServe            | Sends `en`                         |
 | Nemotron-OCR      | The English model                  |
 | ocrmac            | Vision's own automatic behaviour   |
@@ -150,6 +152,33 @@ TesseractOcrCli has no model for the OCR language 'iso:th-Thai'. No traineddata 
 Engines that run one language at a time (RapidOCR, Nemotron-OCR) take the **first** tag and warn
 about the rest. The KServe client also sends only the first entry.
 
+
+## PaddleOCR PP-OCRv6 tiny
+
+Install `docling[paddleocr]` or `docling-slim[feat-ocr-paddleocr]` to enable the
+PaddleOCR engine. Select it with `--ocr-engine paddleocr` or in Python:
+
+```python
+from docling.datamodel.pipeline_options import PdfPipelineOptions, PpOcrv6Options
+
+pipeline_options = PdfPipelineOptions(
+    ocr_options=PpOcrv6Options(lang=["auto"]),
+)
+```
+
+The engine uses the PP-OCRv6 tiny detection and recognition models through
+PaddleOCR's `transformers` engine. Both checkpoints are loaded as safetensors.
+`lang=["auto"]` is the default. You may give one expected language, such as
+`lang=["iso:de"]` or `lang=["chinese_cht"]`, to check that the tiny model supports
+it. PaddleOCR ignores its own `lang` parameter when model names are fixed, so
+this option does **not** constrain recognition or translate text. The tiny
+recognizer reads its supported languages with the same weights; Japanese is
+not supported by this tiny model.
+
+For offline use, prefetch both snapshots with
+`docling-tools models download paddleocr -o /path/to/models` and pass that path
+as the pipeline's `artifacts_path`. PaddleOCR remains an explicit selection;
+installing the extra does not change automatic OCR engine selection.
 
 ## RapidOCR
 
