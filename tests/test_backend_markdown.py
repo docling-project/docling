@@ -257,6 +257,11 @@ def test_code_block_keeps_first_line_indentation():
         "\n"
         "    after blank line\n"
         "```\n"
+        "\n"
+        "```\n"
+        "   \n"
+        "    after spaces-only line\n"
+        "```\n"
     )
     conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
     assert conv_result.status == ConversionStatus.SUCCESS
@@ -268,6 +273,7 @@ def test_code_block_keeps_first_line_indentation():
         "  key: 1\n  sub:\n    x: 2",
         "  deeper\nbase",
         "    after blank line",
+        "    after spaces-only line",
     ]
 
 
