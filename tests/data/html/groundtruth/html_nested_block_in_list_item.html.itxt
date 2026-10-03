@@ -31,3 +31,10 @@ item-0 at level 0: unspecified: group _root_
           item-30 at level 5: list: group list
             item-31 at level 6: list_item: Nested detail 1
             item-32 at level 6: list_item: Nested detail 2
+    item-33 at level 2: section_header: Paragraph between list items
+      item-34 at level 3: list: group list
+        item-35 at level 4: list_item: First item
+      item-36 at level 3: text: A paragraph placed directly inside the list.
+      item-37 at level 3: list: group list
+        item-38 at level 4: list_item: Second item
+      item-39 at level 3: text: After.
