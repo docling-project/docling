@@ -23,7 +23,7 @@ from docling_core.types.doc import (
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
@@ -868,6 +868,60 @@ def test_inline_sdt_references(tmp_path):
 
     assert "Impact (Hagman G 1984). After." in markdown
     assert "(Standalone citation)" in markdown
+
+
+_W_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+
+
+def _w_run(text: str) -> str:
+    return f'<w:r><w:t xml:space="preserve">{text}</w:t></w:r>'
+
+
+def _append_to_body(document, xml: str) -> None:
+    body = document.element.body
+    body.insert(len(body) - 1, parse_xml(xml))
+
+
+def test_runs_in_moves_and_bidirectional_spans_are_read(tmp_path):
+    """Text moved with track changes on, and text in w:dir or w:bdo, belongs to its paragraph."""
+    revision = 'w:author="Reviewer" w:date="2024-01-01T00:00:00Z"'
+    d = Document()
+    for content in (
+        f'<w:moveFrom w:id="1" {revision}>{_w_run("Moved away")}</w:moveFrom>'
+        f'<w:moveTo w:id="2" {revision}>{_w_run("Moved here")}</w:moveTo>',
+        _w_run("Before ") + f'<w:dir w:val="rtl">{_w_run("embedded")}</w:dir>',
+        _w_run("Before ") + f'<w:bdo w:val="rtl">{_w_run("overridden")}</w:bdo>',
+    ):
+        _append_to_body(d, f"<w:p {_W_NS}>{content}</w:p>")
+
+    doc = _convert_built(d, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "Moved here",
+        "Before embedded",
+        "Before overridden",
+    ]
+
+
+def test_paragraphs_and_tables_in_block_custom_xml_are_read(tmp_path):
+    """Custom XML markup around body paragraphs and tables does not hide them."""
+    d = Document()
+    d.add_paragraph("Before")
+    _append_to_body(
+        d,
+        f'<w:customXml {_W_NS} w:element="clause">'
+        f"<w:p>{_w_run('In custom XML')}</w:p>"
+        "<w:tbl><w:tblPr/><w:tblGrid><w:gridCol/><w:gridCol/></w:tblGrid><w:tr>"
+        f"<w:tc><w:p>{_w_run('Name')}</w:p></w:tc>"
+        f"<w:tc><w:p>{_w_run('Value')}</w:p></w:tc>"
+        "</w:tr></w:tbl></w:customXml>",
+    )
+    d.add_paragraph("After")
+
+    doc = _convert_built(d, tmp_path)
+
+    assert [item.text for item in doc.texts] == ["Before", "In custom XML", "After"]
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["Name", "Value"]
 
 
 def test_block_sdt_tables_are_extracted():
