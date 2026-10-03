@@ -180,7 +180,7 @@ def test_exif_orientation_swaps_dpi_axes():
     into 36x144.
     """
     page_backend = _get_backend_from_stream(
-        _make_jpeg_stream(width=300, height=150, orientation=6, dpi=(300, 150))
+        _make_jpeg_stream(width=144, height=72, orientation=6, dpi=(144, 72))
     ).load_page(0)
 
     assert page_backend.get_size().as_tuple() == (72, 72)
@@ -210,7 +210,7 @@ def test_get_page_image_scaled():
     assert img.height == round(height * scale)
 
 
-def test_300_dpi_tiff_uses_72_dpi_document_geometry():
+def test_300_dpi_tiff_is_capped_at_144_dpi():
     stream = _make_multipage_tiff_stream(
         num_pages=1,
         size=(2550, 3300),
@@ -218,22 +218,21 @@ def test_300_dpi_tiff_uses_72_dpi_document_geometry():
     )
     page_backend = _get_backend_from_stream(stream).load_page(0)
 
-    assert page_backend.get_size().as_tuple() == pytest.approx((612, 792))
-    assert page_backend.get_page_image().size == (612, 792)
-    assert page_backend.get_page_image(scale=3).size == (1836, 2376)
-    assert page_backend.get_page_image(scale=300 / 72).size == (2550, 3300)
+    assert page_backend.get_size().as_tuple() == pytest.approx((1275, 1650))
+    assert page_backend.get_page_image().size == (1275, 1650)
+    assert page_backend.get_page_image(scale=2).size == (2550, 3300)
     assert next(page_backend.get_bitmap_rects()).as_tuple() == pytest.approx(
-        (0, 0, 612, 792)
+        (0, 0, 1275, 1650)
     )
-    assert next(page_backend.get_bitmap_rects(scale=3)).as_tuple() == pytest.approx(
-        (0, 0, 1836, 2376)
+    assert next(page_backend.get_bitmap_rects(scale=2)).as_tuple() == pytest.approx(
+        (0, 0, 2550, 3300)
     )
 
 
 def test_tiff_centimeter_resolution_is_converted_to_dpi():
     tiff_info = TiffImagePlugin.ImageFileDirectory_v2()
-    tiff_info[TiffImagePlugin.X_RESOLUTION] = 100
-    tiff_info[TiffImagePlugin.Y_RESOLUTION] = 50
+    tiff_info[TiffImagePlugin.X_RESOLUTION] = 50
+    tiff_info[TiffImagePlugin.Y_RESOLUTION] = 25
     tiff_info[TiffImagePlugin.RESOLUTION_UNIT] = "cm"
     buf = BytesIO()
     Image.new("RGB", (254, 127)).save(buf, format="TIFF", tiffinfo=tiff_info)
@@ -243,7 +242,7 @@ def test_tiff_centimeter_resolution_is_converted_to_dpi():
         DocumentStream(name="test.tiff", stream=buf)
     ).load_page(0)
 
-    assert page_backend.get_size().as_tuple() == pytest.approx((72, 72))
+    assert page_backend.get_size().as_tuple() == pytest.approx((144, 144))
 
 
 @pytest.mark.parametrize(
@@ -252,7 +251,7 @@ def test_tiff_centimeter_resolution_is_converted_to_dpi():
 )
 def test_image_dpi_is_applied_independently_per_axis(image_format, suffix):
     buf = BytesIO()
-    Image.new("RGB", (300, 150)).save(buf, format=image_format, dpi=(300, 150))
+    Image.new("RGB", (144, 72)).save(buf, format=image_format, dpi=(144, 72))
     buf.seek(0)
     page_backend = _get_backend_from_stream(
         DocumentStream(name=f"test.{suffix}", stream=buf)
@@ -294,25 +293,25 @@ def test_crop_uses_logical_coordinates_for_high_dpi_image():
     image = Image.new("RGB", (300, 300), "red")
     image.paste("blue", (75, 75, 225, 225))
     buf = BytesIO()
-    image.save(buf, format="PNG", dpi=(300, 300))
+    image.save(buf, format="PNG", dpi=(144, 144))
     buf.seek(0)
     page_backend = _get_backend_from_stream(
         DocumentStream(name="test.png", stream=buf)
     ).load_page(0)
 
     crop = page_backend.get_page_image(
-        scale=2,
+        scale=1,
         cropbox=BoundingBox(
-            l=18,
-            t=18,
-            r=54,
-            b=54,
+            l=37.5,
+            t=37.5,
+            r=112.5,
+            b=112.5,
             coord_origin=CoordOrigin.TOPLEFT,
         ),
     )
 
-    assert crop.size == (72, 72)
-    assert crop.getpixel((36, 36)) == (0, 0, 255)
+    assert crop.size == (75, 75)
+    assert crop.getpixel((37, 37)) == (0, 0, 255)
 
 
 def test_get_bitmap_rects():
