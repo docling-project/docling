@@ -1305,8 +1305,36 @@ def test_parse_page_range_is_shared_with_convert_remote():
         _parse_page_range("4-2")
 
 
+@pytest.mark.parametrize(
+    ("preset_id", "device", "repo_id", "engine_type"),
+    [
+        (
+            "granite_vision",
+            "cpu",
+            "ibm-granite/granite-vision-3.3-2b-chart2csv-preview",
+            "transformers",
+        ),
+        (
+            "granite_vision_v4_mlx",
+            "mps",
+            "ibm-granite/granite-vision-4.1-4b",
+            "mlx",
+        ),
+        (
+            "granite_vision_v4",
+            "mps",
+            "ibm-granite/granite-vision-4.1-4b",
+            "auto_inline",
+        ),
+    ],
+)
 def test_cli_passes_accelerator_options_to_vlm_pipeline(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    preset_id: str,
+    device: str,
+    repo_id: str,
+    engine_type: str,
 ) -> None:
     captured_pipeline_options: VlmPipelineOptions | None = None
 
@@ -1351,18 +1379,42 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
             "--pipeline",
             "vlm",
             "--device",
-            "cpu",
+            device,
             "--num-threads",
             "7",
+            "--enrich-chart-extraction",
+            "--chart-extraction-preset",
+            preset_id,
+            "--enrich-picture-description",
+            "--picture-description-max-new-tokens",
+            "128",
         ],
     )
 
     assert result.exit_code == 0
     assert captured_pipeline_options is not None
-    assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice.CPU
+    assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice(
+        device
+    )
     assert captured_pipeline_options.accelerator_options.num_threads == 7
     assert captured_pipeline_options.generate_page_images is True
     assert captured_pipeline_options.generate_picture_images is True
+    assert captured_pipeline_options.do_chart_extraction is True
+    assert (
+        captured_pipeline_options.chart_extraction_options.model_spec.default_repo_id
+        == repo_id
+    )
+    assert (
+        captured_pipeline_options.chart_extraction_options.engine_options.engine_type.value
+        == engine_type
+    )
+    assert captured_pipeline_options.do_picture_description is True
+    assert (
+        captured_pipeline_options.picture_description_options.generation_config[
+            "max_new_tokens"
+        ]
+        == 128
+    )
 
 
 def _capture_cli_engine_options(monkeypatch, extra_args, tmp_path, option_name):

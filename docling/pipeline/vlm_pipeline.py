@@ -84,9 +84,31 @@ class VlmPipeline(PaginatedPipeline):
         else:
             self._initialize_legacy_vlm_models(pipeline_options)
 
-        self.enrichment_pipe: list = [
-            # Other models working on `NodeItem` elements in the DoclingDocument
-        ]
+    def _release_page_resources(self, page: Page) -> None:
+        scales: set[float] = set()
+        if self.pipeline_options.do_picture_classification:
+            scales.add(2.0)
+        if self.pipeline_options.do_picture_description:
+            scales.add(self.pipeline_options.picture_description_options.scale)
+        if self.pipeline_options.do_chart_extraction:
+            scales.add(2.0)
+        if scales and page.size is not None:
+            if page._backend is not None and page._backend.is_valid():
+                # Enrichment runs after page assembly and its iterator is closed.
+                # Cache the scales needed to crop pictures after backend cleanup.
+                for scale in scales:
+                    page.get_image(scale=scale)
+                page._backend.unload()
+                page._backend = None
+            page.parsed_page = None
+            return
+        super()._release_page_resources(page)
+
+    def _unload(self, conv_res: ConversionResult) -> ConversionResult:
+        result = super()._unload(conv_res)
+        for page in conv_res.pages:
+            page._image_cache = {}
+        return result
 
     def _initialize_new_runtime_system(
         self, pipeline_options: VlmPipelineOptions

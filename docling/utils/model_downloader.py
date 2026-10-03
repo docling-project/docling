@@ -220,10 +220,20 @@ def download_models(
         )
 
     if with_granite_chart_extraction:
-        _log.warning(
-            "with_granite_chart_extraction=True: the Granite Vision V1 chart extraction "
-            "model (granite-vision-3.3-2b-chart2csv-preview) is no longer supported. "
-            "Use with_granite_chart_extraction_v4=True instead."
+        from docling.datamodel.chart_extraction_options import (
+            ChartExtractionVlmEngineOptions,
+        )
+
+        preset = ChartExtractionVlmEngineOptions.get_preset("granite_vision")
+        repo_id = preset.model_spec.get_repo_id(preset.default_engine_type)
+        revision = preset.model_spec.get_revision(preset.default_engine_type)
+        _log.info(f"Downloading Granite Vision 3.3 Chart2CSV model ({repo_id})...")
+        download_hf_model(
+            repo_id=repo_id,
+            revision=revision,
+            local_dir=output_dir / repo_id.replace("/", "--"),
+            force=force,
+            progress=progress,
         )
 
     if with_granite_chart_extraction_v4:
