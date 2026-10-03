@@ -963,6 +963,47 @@ def test_cli_directory_includes_gif_images(tmp_path, monkeypatch):
     assert sorted(path.name for path in captured["paths"]) == ["photo.gif", "photo.png"]
 
 
+def test_cli_applies_video_options_to_videos_in_a_directory(tmp_path, monkeypatch):
+    """Video options apply when the video is found by expanding a directory."""
+    captured: dict[InputFormat, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            captured.update(format_options)
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "videos"
+    source.mkdir()
+    (source / "talk.mp4").write_bytes(b"not a real video")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--video-frame-interval",
+            "2",
+            "--output",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert InputFormat.VIDEO in captured
+    assert captured[InputFormat.VIDEO].pipeline_options.frame_interval_seconds == 2.0
+
+
 def test_cli_audio_extensions_coverage():
     """Test that audio/video extensions are correctly split across InputFormat."""
     from docling.datamodel.base_models import FormatToExtensions, InputFormat
