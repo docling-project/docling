@@ -21,8 +21,8 @@ def clamp_span(span: int, limit: int) -> int:
     return max(1, min(span, limit))
 
 
-def table_width(row_col_spans: Iterable[Sequence[int]]) -> int:
-    """Return the number of columns of a table, given the colspans of each row.
+def declared_table_width(row_cell_spans: Sequence[Sequence[tuple[int, int]]]) -> int:
+    """Return the width the rows declare, ignoring what a rowspan shifts.
 
     The declared width is the widest row, summing its colspans. Columns to the
     right of the last column in which some cell starts hold no cell of their
@@ -30,10 +30,42 @@ def table_width(row_col_spans: Iterable[Sequence[int]]) -> int:
     """
     width = 0
     last_start = -1
-    for spans in row_col_spans:
+    for cells in row_cell_spans:
         col = 0
-        for span in spans:
+        for col_span, _ in cells:
             last_start = max(last_start, col)
-            col += span
+            col += col_span
         width = max(width, col)
     return min(width, last_start + 1)
+
+
+def table_width(row_cell_spans: Iterable[Sequence[tuple[int, int]]]) -> int:
+    """Return the number of columns of a table, given the spans of each row.
+
+    Each row is a sequence of ``(col_span, row_span)`` pairs in document order.
+    A cell goes in the first column of its row that no earlier cell still
+    covers, so a cell whose rowspan reaches into a later row shifts the cells of
+    that row to the right, and the table is wide enough to keep them: without
+    that, the shifted cells start at or past the table's last column and the
+    grid drops them.
+
+    A cell covers the columns it holds inside the declared width, the same way
+    the grid trims a colspan that sticks out of the table: a declared span that
+    is already wider than the table cannot also push the rows below it sideways,
+    which would widen the grid for every row it reaches.
+    """
+    rows = list(row_cell_spans)
+    declared = declared_table_width(rows)
+    # Last row, exclusive, that the cells placed so far cover the column in.
+    covered_until: dict[int, int] = {}
+    last_start = -1
+    for row_idx, cells in enumerate(rows):
+        col = 0
+        for col_span, row_span in cells:
+            while covered_until.get(col, 0) > row_idx:
+                col += 1
+            last_start = max(last_start, col)
+            for c in range(col, min(col + col_span, declared)):
+                covered_until[c] = max(covered_until.get(c, 0), row_idx + row_span)
+            col += col_span
+    return max(declared, last_start + 1)
