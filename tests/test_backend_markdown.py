@@ -831,3 +831,59 @@ def test_convert_table_cell_whitespace_around_inline_emphasis():
         "italic and bold",
         "w",
     ]
+
+
+def test_line_break_does_not_cross_block_boundary():
+    """A line break only joins runs of its own paragraph.
+
+    When no text run follows a break inside its paragraph (the paragraph ends in
+    inline HTML such as ``<br>``, a code span or an image without alt text, or
+    the next lines are table rows), the next block starts with no break pending:
+    its text is not joined onto the paragraph, a code block or the marker item
+    of an HTML block.
+    """
+    opt = MarkdownBackendOptions()
+
+    def items(markdown: str):
+        doc = _convert_markdown(markdown, opt)
+        return [(str(t.label), t.text) for t in doc.texts]
+
+    # Paragraph ending in inline HTML, then another paragraph
+    assert items("Intro\n<br>\n\nAfter") == [("text", "Intro"), ("text", "After")]
+
+    # Same with a hard break
+    assert items("Intro  \n<br>\n\nAfter") == [("text", "Intro"), ("text", "After")]
+
+    # Followed by a block quote
+    assert items("Intro\n<br>\n\n> quoted") == [("text", "Intro"), ("text", "quoted")]
+
+    # The lines after the break are table rows
+    assert items("Intro\n| A | B |\n|---|---|\n| 1 | 2 |\n\nAfter") == [
+        ("text", "Intro"),
+        ("text", "After"),
+    ]
+
+    # The paragraph ends in an image without alt text
+    assert items("Intro\n![](x.png)\n\nAfter") == [("text", "Intro"), ("text", "After")]
+
+    # A fenced code block does not take in the paragraph after it
+    assert items("Intro\n<br>\n\n```\ncode\n```\n\nAfter") == [
+        ("text", "Intro"),
+        ("code", "code"),
+        ("text", "After"),
+    ]
+
+    # A code span at the end of a paragraph does not take in the next paragraph
+    assert items("Intro\n`code`\n\nAfter") == [
+        ("text", "Intro"),
+        ("code", "code"),
+        ("text", "After"),
+    ]
+
+    # An HTML block: the next paragraph used to be joined onto the block's
+    # marker item, so the HTML round trip in convert() raised a RuntimeError.
+    assert items("Intro\n<br>\n\n<div>block</div>\n\nAfter") == [
+        ("text", "Intro"),
+        ("text", "block"),
+        ("text", "After"),
+    ]

@@ -527,6 +527,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if element in visited:
             return
 
+        # A line break only joins runs of the same paragraph. When no text run
+        # follows the break inside it (for example, the paragraph ends in inline
+        # HTML or a code span, or the next lines are table rows), the pending
+        # flag would otherwise join the first run of a later block onto the
+        # last text item.
+        if isinstance(element, marko.block.BlockElement):
+            self._pending_hard_line_break = False
+            self._pending_soft_line_break = False
+
         # Iterates over all elements in the AST
         # Check for different element types and process relevant details
         if (
