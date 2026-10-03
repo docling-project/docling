@@ -488,6 +488,24 @@ def test_cli_html_fetches_local_images_per_input(tmp_path):
     _assert_markdown_embeds_png(output / "second.md", second_png)
 
 
+def test_cli_latex_reads_included_files_next_to_the_source(tmp_path):
+    """Files pulled in with \\input are read from the source's own directory."""
+    source = tmp_path / "paper"
+    source.mkdir()
+    (source / "main.tex").write_text(
+        "\\documentclass{article}\n\\begin{document}\n\\input{body}\n\\end{document}\n"
+    )
+    (source / "body.tex").write_text("Text from the included file.\n")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app, [str(source / "main.tex"), "--to", "md", "--output", str(output)]
+    )
+
+    assert result.exit_code == 0
+    assert "Text from the included file." in (output / "main.md").read_text()
+
+
 def test_cli_directory_skips_office_lock_files(tmp_path):
     """~$ lock files are excluded regardless of the Office extension.
 
