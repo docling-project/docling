@@ -216,9 +216,12 @@ def _is_html_source(source: str, from_formats: list[InputFormat]) -> bool:
 
 
 def _is_latex_source(path: Path, from_formats: list[InputFormat]) -> bool:
-    return InputFormat.LATEX in from_formats and _name_matches_format(
-        path.name, InputFormat.LATEX
-    )
+    if InputFormat.LATEX not in from_formats:
+        return False
+    if len(from_formats) == 1:
+        return True
+
+    return _name_matches_format(path.name, InputFormat.LATEX)
 
 
 # Office writes a ~$ lock file next to an open document. Word, Excel, and

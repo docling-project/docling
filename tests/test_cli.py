@@ -506,6 +506,41 @@ def test_cli_latex_reads_included_files_next_to_the_source(tmp_path):
     assert "Text from the included file." in (output / "main.md").read_text()
 
 
+def test_cli_from_latex_keeps_any_source_in_place(tmp_path, monkeypatch):
+    """With --from latex alone, a file is handed over in place whatever its name."""
+    captured: dict[str, list[Path]] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["paths"] = [Path(path) for path in input_doc_paths]
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "paper" / "paper.ltx"
+    source.parent.mkdir()
+    source.write_text("\\documentclass{article}\n")
+
+    result = runner.invoke(
+        app,
+        [str(source), "--from", "latex", "--output", str(tmp_path / "out")],
+    )
+
+    assert result.exit_code == 0
+    assert captured["paths"] == [source]
+
+
 def test_cli_directory_skips_office_lock_files(tmp_path):
     """~$ lock files are excluded regardless of the Office extension.
 
