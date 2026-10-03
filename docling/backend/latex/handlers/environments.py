@@ -15,6 +15,7 @@ from docling_core.types.doc.document import (
     DoclingDocument,
     Formatting,
     GroupLabel,
+    ListItem,
     NodeItem,
     PictureMeta,
 )
@@ -32,7 +33,11 @@ if TYPE_CHECKING:
     )
 
 try:  # pragma: no cover - import-time guard
-    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexMacroNode,
+    )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
@@ -327,13 +332,72 @@ class EnvironmentHandlerMixin:
             items.append(current_item)
 
         for item_nodes in items:
-            self._process_nodes(
-                item_nodes,
-                doc,
-                list_group,
-                formatting,
-                text_label=DocItemLabel.LIST_ITEM,
-            )
+            self._process_list_item(item_nodes, doc, list_group, formatting)
+
+        # The items are added through the generic text path, which creates
+        # unnumbered list items. Number the direct items of an enumerate; a
+        # nested list keeps its own kind.
+        if node.envname == "enumerate":
+            for child in list_group.children:
+                item = child.resolve(doc)
+                if isinstance(item, ListItem):
+                    item.enumerated = True
+
+    def _process_list_item(
+        self,
+        item_nodes: list,
+        doc: DoclingDocument,
+        list_group: NodeItem,
+        formatting: Formatting | None = None,
+    ):
+        """Add the content of one ``\\item`` to ``list_group``.
+
+        The text up to the first paragraph break or nested list becomes the list
+        item. Everything after it (further paragraphs, nested lists and the text
+        between them) is added inside that item, as in the other backends. Kept
+        as siblings, each would also take a position in the numbering of an
+        enumerate.
+        """
+        item_start = len(list_group.children)
+        owner: ListItem | None = None
+        pending: list = []
+
+        def flush_pending():
+            nonlocal owner
+            if owner is None:
+                self._process_nodes(
+                    pending,
+                    doc,
+                    list_group,
+                    formatting,
+                    text_label=DocItemLabel.LIST_ITEM,
+                )
+                for child in list_group.children[item_start:]:
+                    item = child.resolve(doc)
+                    if isinstance(item, ListItem):
+                        owner = item
+                        break
+            else:
+                self._process_nodes(pending, doc, owner, formatting)
+            pending.clear()
+
+        nodes = list(item_nodes)
+        idx = 0
+        while idx < len(nodes):
+            n = nodes[idx]
+            if isinstance(n, LatexEnvironmentNode) and n.envname in ENV_LIST:
+                flush_pending()
+                self._process_list(n, doc, owner or list_group, formatting)
+            elif owner is None and isinstance(n, LatexCharsNode) and "\n\n" in n.chars:
+                head, tail = n.chars.split("\n\n", 1)
+                pending.append(LatexCharsNode(chars=head))
+                flush_pending()
+                # Re-examine the rest: it may hold a further paragraph break.
+                nodes.insert(idx + 1, LatexCharsNode(chars=tail))
+            else:
+                pending.append(n)
+            idx += 1
+        flush_pending()
 
     def _process_bibliography(
         self,
