@@ -1137,9 +1137,18 @@ def _odf_chart_classification(chart_content: Any) -> PictureClassificationLabel:
     return PictureClassificationLabel.OTHER_CHART
 
 
+def _odf_chart_title(chart_content: Any) -> str | None:
+    """Read the chart object's own title, the way the PowerPoint backend emits one."""
+    for title in chart_content.get_elements("descendant::chart:title"):
+        text = title.text_content.strip()
+        if text:
+            return text
+    return None
+
+
 def _chart_data_from_frame(
     frame: Frame, odf_obj: OdfDocument | None
-) -> tuple[TableData, PictureClassificationLabel] | None:
+) -> tuple[TableData, PictureClassificationLabel, str | None] | None:
     if odf_obj is None:
         return None
 
@@ -1157,6 +1166,7 @@ def _chart_data_from_frame(
         # from the package only fails once the part is actually read.
         chart_classification = _odf_chart_classification(chart_content)
         chart_tables = chart_content.get_elements("descendant::table:table")
+        chart_title = _odf_chart_title(chart_content)
     except Exception as e:
         _log.warning(
             "Could not read embedded OpenDocument object %s: %s", object_href, e
@@ -1166,7 +1176,7 @@ def _chart_data_from_frame(
         if isinstance(table, OdfTable) and table.name == "local-table":
             table_data = _table_data_from_odf(table)
             if table_data is not None:
-                return table_data, chart_classification
+                return table_data, chart_classification, chart_title
     return None
 
 
@@ -1192,7 +1202,7 @@ def _add_odf_charts(
         chart_result = _chart_data_from_frame(frame, odf_obj)
         if chart_result is None:
             continue
-        chart_data, chart_classification = chart_result
+        chart_data, chart_classification, chart_title = chart_result
         chart = doc.add_picture(parent=parent, content_layer=content_layer)
         chart.label = DocItemLabel.PICTURE
         chart.meta = PictureMeta(
@@ -1201,7 +1211,9 @@ def _add_odf_charts(
                     PictureClassificationPrediction(class_name=chart_classification)
                 ]
             ),
-            tabular_chart=TabularChartMetaField(chart_data=chart_data),
+            tabular_chart=TabularChartMetaField(
+                chart_data=chart_data, title=chart_title
+            ),
         )
         chart_count += 1
     return chart_count
