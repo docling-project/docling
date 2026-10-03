@@ -1179,5 +1179,8 @@ class _DocumentConversionInput(BaseModel):
         except Exception as e:
             _log.warning(f"Error during METS-GBS format detection: {e}")
             return None
+        finally:
+            if isinstance(content, BytesIO):
+                content.seek(0)
 
         return None
