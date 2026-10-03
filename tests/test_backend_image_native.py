@@ -187,6 +187,35 @@ def test_exif_orientation_swaps_dpi_axes():
     assert min(page_backend.get_page_image().getpixel((2, 2))) > 128
 
 
+@pytest.mark.parametrize("mode", ["RGBA", "LA", "P"])
+def test_transparent_background_is_flattened_onto_white(mode):
+    """Transparent pixels become white instead of the colour stored under them.
+
+    Fully transparent pixels usually store black, so dropping the alpha channel
+    turned dark text on a transparent background into a black page.
+    """
+    img = Image.new("RGBA", (64, 48), (0, 0, 0, 0))
+    img.paste((0, 0, 0, 255), (0, 0, 16, 12))
+    if mode == "LA":
+        img = img.convert("LA")
+    elif mode == "P":
+        # Index 0 is transparent black, index 1 opaque black.
+        img = Image.new("P", (64, 48), 0)
+        img.putpalette([0, 0, 0, 0, 0, 0])
+        img.paste(1, (0, 0, 16, 12))
+    buf = BytesIO()
+    img.save(buf, format="PNG", **({"transparency": 0} if mode == "P" else {}))
+    buf.seek(0)
+
+    page_backend = _get_backend_from_stream(
+        DocumentStream(name="test.png", stream=buf)
+    ).load_page(0)
+    image = page_backend.get_page_image()
+
+    assert image.getpixel((63, 47)) == (255, 255, 255)
+    assert image.getpixel((2, 2)) == (0, 0, 0)
+
+
 def test_get_page_image_full():
     """Test getting full page image."""
     width, height = 100, 80
