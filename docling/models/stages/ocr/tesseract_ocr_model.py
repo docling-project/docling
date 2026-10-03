@@ -257,7 +257,8 @@ class TesseractOcrModel(BaseOcrModel):
 
                             # Extract text within the bounding box
                             text = local_reader.GetUTF8Text().strip()
-                            confidence = local_reader.MeanTextConf()
+                            # tesserocr reports 0-100; cell confidences are 0-1
+                            confidence = local_reader.MeanTextConf() / 100.0
                             left, top = box["x"], box["y"]
                             right = left + box["w"]
                             bottom = top + box["h"]
