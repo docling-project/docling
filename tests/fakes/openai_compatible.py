@@ -42,6 +42,8 @@ class FakeOpenAiApi:
     completion: str = DEFAULT_COMPLETION
     #: Emitted one SSE chunk at a time when the caller asks for a stream.
     stream_chunks: list[str] = field(default_factory=list)
+    #: One logprob per stream chunk, sent in the chunk's ``choices[0].logprobs``.
+    stream_logprobs: list[float] = field(default_factory=list)
     prompt_tokens: int = 11
     completion_tokens: int = 7
     #: Set to omit the usage block, as some gateways do.
@@ -95,12 +97,24 @@ class FakeOpenAiApi:
         """Emit the OpenAI streaming delta format, terminated by [DONE]."""
         for line in self.stream_preamble:
             yield f"{line}\n\n".encode()
-        for piece in self._chunks():
+        for i, piece in enumerate(self._chunks()):
+            choice: dict[str, Any] = {"index": 0, "delta": {"content": piece}}
+            if i < len(self.stream_logprobs):
+                choice["logprobs"] = {
+                    "content": [
+                        {
+                            "token": piece,
+                            "logprob": self.stream_logprobs[i],
+                            "bytes": list(piece.encode()),
+                            "top_logprobs": [],
+                        }
+                    ]
+                }
             event = {
                 "id": "chatcmpl-fake-1",
                 "model": model,
                 "created": 1_700_000_000,
-                "choices": [{"index": 0, "delta": {"content": piece}}],
+                "choices": [choice],
             }
             yield f"data: {json.dumps(event)}\n\n".encode()
         usage = self._usage()
