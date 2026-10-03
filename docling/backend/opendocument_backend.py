@@ -1203,7 +1203,22 @@ def _add_odf_charts(
         if chart_result is None:
             continue
         chart_data, chart_classification, chart_title = chart_result
-        chart = doc.add_picture(parent=parent, content_layer=content_layer)
+        # A chart's title is the caption of its picture, next to the data in the
+        # meta, the shape the PowerPoint/Word/Excel/iWork backends give a chart.
+        # A chart showing no title gets no caption; nothing is invented.
+        caption = (
+            doc.add_text(
+                label=DocItemLabel.CAPTION,
+                text=chart_title,
+                parent=parent,
+                content_layer=content_layer,
+            )
+            if chart_title
+            else None
+        )
+        chart = doc.add_picture(
+            parent=parent, content_layer=content_layer, caption=caption
+        )
         chart.label = DocItemLabel.PICTURE
         chart.meta = PictureMeta(
             classification=PictureClassificationMetaField(
