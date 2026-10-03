@@ -182,6 +182,57 @@ def test_latex_enumerate_item_with_block_content(content: bytes):
     assert "continuation" in md
 
 
+@pytest.mark.parametrize(
+    ("start", "child_labels"),
+    [
+        (rb"\footnote{A note.}", [DocItemLabel.FOOTNOTE]),
+        (rb"\newline", []),
+    ],
+    ids=["footnote", "newline"],
+)
+def test_latex_enumerate_item_starting_with_footnote_or_newline(
+    start: bytes, child_labels: list[DocItemLabel]
+):
+    """The text after a leading footnote or line break is the text of the item.
+
+    A footnote stays attached to the item; a line break before any content has
+    nothing to break.
+    """
+    latex_content = (
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item """
+        + start
+        + rb""" First
+    \item Second
+    \end{enumerate}
+    \end{document}
+    """
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    outer_items = [child.resolve(doc) for child in outer.children]
+    assert [item.text for item in outer_items] == ["First", "Second"]
+    assert all(item.enumerated for item in outer_items)
+    assert [
+        child.resolve(doc).label for child in outer_items[0].children
+    ] == child_labels
+
+    md = doc.export_to_markdown()
+    assert md.startswith("1. First\n")
+    assert md.endswith("\n2. Second")
+
+
 def test_latex_enumerate_empty_item_keeps_numbering():
     """An empty ``\\item`` still takes a number, as in the typeset document."""
     latex_content = rb"""

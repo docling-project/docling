@@ -204,12 +204,20 @@ class LatexDocumentBackend(
         """Add ``nodes`` to ``doc`` under ``parent``.
 
         If ``text_target`` is given, the first text flushed while it still has no
-        text and no children becomes its text instead of a new child item.
+        text, and no children other than footnotes, becomes its text instead of
+        a new child item.
         """
         if nodes is None:
             return
 
         text_buffer: list[str] = []
+
+        def takes_text(target: ListItem) -> bool:
+            # A footnote is attached to the text, so it does not come before it.
+            return not target.text and all(
+                child.resolve(doc).label == DocItemLabel.FOOTNOTE
+                for child in target.children
+            )
 
         def flush_text_buffer():
             if text_buffer:
@@ -217,8 +225,7 @@ class LatexDocumentBackend(
                 if (
                     combined_text
                     and text_target is not None
-                    and not text_target.text
-                    and not text_target.children
+                    and takes_text(text_target)
                 ):
                     text_target.text = combined_text
                     text_target.orig = combined_text

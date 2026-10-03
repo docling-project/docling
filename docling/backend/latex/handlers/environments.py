@@ -33,7 +33,11 @@ if TYPE_CHECKING:
     )
 
 try:  # pragma: no cover - import-time guard
-    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexMacroNode,
+    )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
@@ -359,12 +363,24 @@ class EnvironmentHandlerMixin:
         buffer and would otherwise add further siblings. The leading text becomes
         the text of the list item itself.
         """
+        # A ``\newline`` before any content has nothing to break; it would add
+        # an empty text item ahead of the text of the list item.
+        nodes = []
+        content_seen = False
+        for n in item_nodes:
+            if not content_seen:
+                if isinstance(n, LatexMacroNode) and n.macroname == "newline":
+                    continue
+                content_seen = not (
+                    (isinstance(n, LatexMacroNode) and n.macroname == "item")
+                    or (isinstance(n, LatexCharsNode) and not n.chars.strip())
+                )
+            nodes.append(n)
+
         list_item = doc.add_list_item(
             text="", enumerated=enumerated, parent=list_group, formatting=formatting
         )
-        self._process_nodes(
-            item_nodes, doc, list_item, formatting, text_target=list_item
-        )
+        self._process_nodes(nodes, doc, list_item, formatting, text_target=list_item)
 
     def _process_bibliography(
         self,
