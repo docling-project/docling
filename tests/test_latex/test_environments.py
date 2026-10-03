@@ -126,6 +126,38 @@ def test_latex_code_environment_keeps_first_line_indentation(env_name, lead):
     assert code_texts == ["  key: 1\n  sub:\n    x: 2"]
 
 
+@pytest.mark.parametrize(
+    "opening",
+    [
+        "\\begin{minted}{python}",
+        "\\begin{minted}[linenos, frame=lines]{python}",
+        "\\begin{lstlisting}[language=Python, caption={A [nested] cap}]",
+    ],
+)
+def test_latex_code_environment_skips_its_arguments(opening):
+    """Environment arguments are markup, not the first line of the code."""
+    env_name = opening[len("\\begin{") : opening.index("}")]
+    latex_content = (
+        "\\documentclass{article}\n"
+        "\\begin{document}\n"
+        f"{opening}\n"
+        "    x = 1\n"
+        f"\\end{{{env_name}}}\n"
+        "\\end{document}\n"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    code_texts = [t.text for t in doc.texts if t.label == DocItemLabel.CODE]
+    assert code_texts == ["    x = 1"]
+
+
 def test_latex_subequations_environment():
     """Test subequations wrapper environment passes through inner equations."""
     latex_content = rb"""

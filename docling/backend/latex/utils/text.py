@@ -39,6 +39,13 @@ except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
 
+# A {...} group, allowing one level of nested braces.
+_BRACED_GROUP = r"\{(?:[^{}]|\{[^{}]*\})*\}"
+# A [...] optional argument whose braced values may contain brackets,
+# as in [caption={A [b] c}].
+_OPTIONAL_ARGUMENT = rf"\[(?:[^\[\]{{}}]|{_BRACED_GROUP})*\]"
+
+
 class TextHelperMixin:
     if TYPE_CHECKING:
         _custom_macros: dict[str, str]
@@ -111,7 +118,13 @@ class TextHelperMixin:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
     def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str:
-        pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"
+        name = re.escape(env_name)
+        # minted takes the code's language as a mandatory {argument}.
+        language = _BRACED_GROUP if env_name == "minted" else ""
+        pattern = (
+            rf"\\begin\{{{name}\}}(?:{_OPTIONAL_ARGUMENT})?{language}"
+            rf"(.*?)\\end\{{{name}\}}"
+        )
         match = re.search(pattern, latex_str, re.DOTALL)
         if match:
             return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
