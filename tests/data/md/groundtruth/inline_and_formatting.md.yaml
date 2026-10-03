@@ -11,7 +11,6 @@ body:
   - $ref: '#/texts/43'
   - $ref: '#/texts/47'
   - $ref: '#/texts/48'
-  - $ref: '#/groups/13'
   - $ref: '#/tables/0'
   content_layer: body
   label: unspecified
@@ -159,17 +158,146 @@ groups:
   parent:
     $ref: '#/texts/43'
   self_ref: '#/groups/12'
-- children: []
+- children:
+  - $ref: '#/texts/49'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/14'
   self_ref: '#/groups/13'
+- children:
+  - $ref: '#/groups/13'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_0
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/14'
+- children:
+  - $ref: '#/texts/50'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/16'
+  self_ref: '#/groups/15'
+- children:
+  - $ref: '#/groups/15'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_1_0
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/16'
+- children:
+  - $ref: '#/texts/51'
+  - $ref: '#/texts/52'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/18'
+  self_ref: '#/groups/17'
+- children:
+  - $ref: '#/groups/17'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_2
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/18'
+- children:
+  - $ref: '#/texts/53'
+  - $ref: '#/texts/54'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/20'
+  self_ref: '#/groups/19'
+- children:
+  - $ref: '#/groups/19'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_3
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/20'
+- children:
+  - $ref: '#/texts/55'
+  - $ref: '#/texts/56'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/22'
+  self_ref: '#/groups/21'
+- children:
+  - $ref: '#/groups/21'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_4
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/22'
+- children:
+  - $ref: '#/texts/57'
+  - $ref: '#/texts/58'
+  - $ref: '#/texts/59'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/24'
+  self_ref: '#/groups/23'
+- children:
+  - $ref: '#/groups/23'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_5
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/24'
+- children:
+  - $ref: '#/texts/60'
+  - $ref: '#/texts/61'
+  - $ref: '#/texts/62'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/26'
+  self_ref: '#/groups/25'
+- children:
+  - $ref: '#/groups/25'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_6
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/26'
+- children:
+  - $ref: '#/texts/63'
+  - $ref: '#/texts/64'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/28'
+  self_ref: '#/groups/27'
+- children:
+  - $ref: '#/groups/27'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_7
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/28'
 key_value_items: []
 name: inline_and_formatting
 origin:
-  binary_hash: 4724758855956816018
+  binary_hash: 12173229376050275371
   filename: inline_and_formatting.md
   mimetype: text/markdown
 pages: {}
@@ -178,7 +306,15 @@ schema_name: DoclingDocument
 tables:
 - annotations: []
   captions: []
-  children: []
+  children:
+  - $ref: '#/groups/14'
+  - $ref: '#/groups/16'
+  - $ref: '#/groups/18'
+  - $ref: '#/groups/20'
+  - $ref: '#/groups/22'
+  - $ref: '#/groups/24'
+  - $ref: '#/groups/26'
+  - $ref: '#/groups/28'
   content_layer: body
   data:
     grid:
@@ -336,8 +472,30 @@ tables:
         start_col_offset_idx: 1
         start_row_offset_idx: 6
         text: code in a cell
+    - - col_span: 1
+        column_header: false
+        end_col_offset_idx: 1
+        end_row_offset_idx: 8
+        fillable: false
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 0
+        start_row_offset_idx: 7
+        text: visit Docling
+      - col_span: 1
+        column_header: false
+        end_col_offset_idx: 2
+        end_row_offset_idx: 8
+        fillable: false
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 1
+        start_row_offset_idx: 7
+        text: link in a cell
     num_cols: 2
-    num_rows: 7
+    num_rows: 8
     orientation: rot_0
     table_cells:
     - col_span: 1
@@ -345,6 +503,8 @@ tables:
       end_col_offset_idx: 1
       end_row_offset_idx: 1
       fillable: false
+      ref:
+        $ref: '#/groups/14'
       row_header: false
       row_section: false
       row_span: 1
@@ -356,6 +516,8 @@ tables:
       end_col_offset_idx: 2
       end_row_offset_idx: 1
       fillable: false
+      ref:
+        $ref: '#/groups/16'
       row_header: false
       row_section: false
       row_span: 1
@@ -389,6 +551,8 @@ tables:
       end_col_offset_idx: 1
       end_row_offset_idx: 3
       fillable: false
+      ref:
+        $ref: '#/groups/18'
       row_header: false
       row_section: false
       row_span: 1
@@ -411,6 +575,8 @@ tables:
       end_col_offset_idx: 1
       end_row_offset_idx: 4
       fillable: false
+      ref:
+        $ref: '#/groups/20'
       row_header: false
       row_section: false
       row_span: 1
@@ -433,6 +599,8 @@ tables:
       end_col_offset_idx: 1
       end_row_offset_idx: 5
       fillable: false
+      ref:
+        $ref: '#/groups/22'
       row_header: false
       row_section: false
       row_span: 1
@@ -455,6 +623,8 @@ tables:
       end_col_offset_idx: 1
       end_row_offset_idx: 6
       fillable: false
+      ref:
+        $ref: '#/groups/24'
       row_header: false
       row_section: false
       row_span: 1
@@ -477,6 +647,8 @@ tables:
       end_col_offset_idx: 1
       end_row_offset_idx: 7
       fillable: false
+      ref:
+        $ref: '#/groups/26'
       row_header: false
       row_section: false
       row_span: 1
@@ -494,6 +666,30 @@ tables:
       start_col_offset_idx: 1
       start_row_offset_idx: 6
       text: code in a cell
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 1
+      end_row_offset_idx: 8
+      fillable: false
+      ref:
+        $ref: '#/groups/28'
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 7
+      text: visit Docling
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 2
+      end_row_offset_idx: 8
+      fillable: false
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 7
+      text: link in a cell
   footnotes: []
   label: table
   parent:
@@ -1067,4 +1263,201 @@ texts:
   prov: []
   self_ref: '#/texts/48'
   text: Table Heading
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: Bold Heading
+  parent:
+    $ref: '#/groups/13'
+  prov: []
+  self_ref: '#/texts/49'
+  text: Bold Heading
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: Italic Heading
+  parent:
+    $ref: '#/groups/15'
+  prov: []
+  self_ref: '#/texts/50'
+  text: Italic Heading
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: C
+  parent:
+    $ref: '#/groups/17'
+  prov: []
+  self_ref: '#/texts/51'
+  text: C
+- children: []
+  content_layer: body
+  label: text
+  orig: Cadre
+  parent:
+    $ref: '#/groups/17'
+  prov: []
+  self_ref: '#/texts/52'
+  text: Cadre
+- children: []
+  content_layer: body
+  label: text
+  orig: foo
+  parent:
+    $ref: '#/groups/19'
+  prov: []
+  self_ref: '#/texts/53'
+  text: foo
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: bar
+  parent:
+    $ref: '#/groups/19'
+  prov: []
+  self_ref: '#/texts/54'
+  text: bar
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: A
+  parent:
+    $ref: '#/groups/21'
+  prov: []
+  self_ref: '#/texts/55'
+  text: A
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: B
+  parent:
+    $ref: '#/groups/21'
+  prov: []
+  self_ref: '#/texts/56'
+  text: B
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: italic
+  parent:
+    $ref: '#/groups/23'
+  prov: []
+  self_ref: '#/texts/57'
+  text: italic
+- children: []
+  content_layer: body
+  label: text
+  orig: and
+  parent:
+    $ref: '#/groups/23'
+  prov: []
+  self_ref: '#/texts/58'
+  text: and
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: bold
+  parent:
+    $ref: '#/groups/23'
+  prov: []
+  self_ref: '#/texts/59'
+  text: bold
+- children: []
+  content_layer: body
+  label: text
+  orig: run
+  parent:
+    $ref: '#/groups/25'
+  prov: []
+  self_ref: '#/texts/60'
+  text: run
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  label: code
+  orig: build
+  parent:
+    $ref: '#/groups/25'
+  prov: []
+  references: []
+  self_ref: '#/texts/61'
+  text: build
+- children: []
+  content_layer: body
+  label: text
+  orig: now
+  parent:
+    $ref: '#/groups/25'
+  prov: []
+  self_ref: '#/texts/62'
+  text: now
+- children: []
+  content_layer: body
+  label: text
+  orig: visit
+  parent:
+    $ref: '#/groups/27'
+  prov: []
+  self_ref: '#/texts/63'
+  text: visit
+- children: []
+  content_layer: body
+  hyperlink: https://github.com/docling-project/docling
+  label: text
+  orig: Docling
+  parent:
+    $ref: '#/groups/27'
+  prov: []
+  self_ref: '#/texts/64'
+  text: Docling
 version: 1.10.0
