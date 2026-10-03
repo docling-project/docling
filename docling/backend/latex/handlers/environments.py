@@ -32,7 +32,11 @@ if TYPE_CHECKING:
     )
 
 try:  # pragma: no cover - import-time guard
-    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexMacroNode,
+    )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
@@ -61,6 +65,7 @@ class EnvironmentHandlerMixin:
         def _parse_table(self, node: Any) -> Any: ...
         def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str: ...
         def _extract_macro_arg(self, node: Any) -> str: ...
+        def _nodes_to_text(self, nodes: Any) -> str: ...
 
     def _find_document_env(self, nodes, depth: int = 0):
         if nodes is None or depth > 10:
@@ -318,8 +323,19 @@ class EnvironmentHandlerMixin:
                         items.append(current_item)
                     current_item = []
 
-                    if n.nodeargd and n.nodeargd.argnlist:
-                        current_item.append(n)
+                    # \item[label] holds the term of a description, or a custom
+                    # marker in the other lists. Keep it at the start of the item;
+                    # the whitespace after "]" separates it from the text.
+                    args = n.nodeargd.argnlist if n.nodeargd else []
+                    label = (
+                        self._nodes_to_text(args[0].nodelist)
+                        if args and args[0] is not None
+                        else ""
+                    )
+                    if label:
+                        if node.envname == "description":
+                            label += ":"
+                        current_item.append(LatexCharsNode(chars=label))
                 else:
                     current_item.append(n)
 
