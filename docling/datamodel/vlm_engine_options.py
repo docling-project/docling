@@ -221,7 +221,11 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
 
     params: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Additional API parameters (model, max_tokens, etc.)",
+        description=(
+            "Additional API parameters (model, max_tokens, etc.). They override "
+            "the request-level defaults the engine sets; a key set to None is "
+            "left out of the request."
+        ),
     )
 
     timeout: float = Field(default=60.0, description="Request timeout in seconds")
