@@ -885,6 +885,11 @@ def test_odt_text_document_embedded_chart():
     )
     assert chart.meta.tabular_chart is not None
 
+    # This fixture's chart carries no <chart:title>: the title stays unset and
+    # no caption is invented for it.
+    assert chart.meta.tabular_chart.title is None
+    assert not chart.captions
+
     table_data = chart.meta.tabular_chart.chart_data
     assert table_data.num_rows == 5
     assert table_data.num_cols == 4
@@ -899,7 +904,7 @@ def test_odt_text_document_embedded_chart():
 
 
 def test_odt_embedded_chart_title_is_read(tmp_path: Path):
-    """An embedded chart's own chart:title reaches TabularChartMetaField.title.
+    """An embedded chart's own chart:title reaches the meta and a caption.
 
     The PowerPoint backend emits a native chart's title as a text item, but the
     ODF backend read only the chart's local table, so a chart embedded in an ODP
@@ -938,6 +943,12 @@ def test_odt_embedded_chart_title_is_read(tmp_path: Path):
 
     assert len(charts) == 1
     assert charts[0].meta.tabular_chart.title == "Chart Title"
+
+    captions = [
+        item for item in res.document.texts if item.label == DocItemLabel.CAPTION
+    ]
+    assert [item.text for item in captions] == ["Chart Title"]
+    assert charts[0].caption_text(res.document) == "Chart Title"
 
 
 def test_odt_dangling_embedded_object_is_skipped(tmp_path: Path):
