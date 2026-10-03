@@ -512,7 +512,10 @@ def test_latex_accent_macro():
     latex_content = rb"""
     \documentclass{article}
     \begin{document}
-    caf\'{e} and na\"{i}ve.
+    \section{G\"odel}
+    caf\'{e} and na\"{i}ve, Espa\~na, J{\"u}rgen, {\c{C}}a\u{g}lar, \`a la.
+
+    {\o}, \ss{}, \aa, \v{s}, \'{\i}, http://x.org/\~{}user.
     \end{document}
     """
     in_doc = InputDocument(
@@ -524,9 +527,12 @@ def test_latex_accent_macro():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    md = doc.export_to_markdown()
-    assert "caf" in md
-    assert len(doc.texts) > 0
+    texts = [t.text for t in doc.texts]
+    assert texts == [
+        "Gödel",
+        "café and naïve, España, Jürgen, Çağlar, à la.",
+        "ø, ß, å, š, í, http://x.org/~user.",
+    ]
 
 
 def test_latex_renewcommand():

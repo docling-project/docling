@@ -19,7 +19,6 @@ from docling_core.types.doc.document import (
 from PIL import Image
 
 from docling.backend.latex.constants import (
-    MACROS_ACCENTS,
     MACROS_CITATION,
     MACROS_COLOR,
     MACROS_COLOR_INLINE,
@@ -91,6 +90,7 @@ class MacroHandlerMixin:
             text_label: Any = ...,
         ) -> None: ...
         def _nodes_to_text(self, nodes: Any) -> str: ...
+        def _char_macro_to_text(self, node: Any) -> str | None: ...
 
     def _preprocess_custom_macros(self, latex_text: str) -> str:
         latex_text = re.sub(r"\\be\b", r"\\begin{equation}", latex_text)
@@ -193,7 +193,10 @@ class MacroHandlerMixin:
         flush_fn: Callable[[], None],
         following_nodes=None,
     ) -> int:
-        if node.macroname in MACROS_INLINE_VERBATIM:
+        char_text = self._char_macro_to_text(node)
+        if char_text is not None:
+            text_buffer.append(char_text)
+        elif node.macroname in MACROS_INLINE_VERBATIM:
             if node.macroname == "~":
                 text_buffer.append(" ")
             else:
@@ -446,20 +449,6 @@ class MacroHandlerMixin:
                 formatting=formatting,
                 label=(text_label or DocItemLabel.TEXT),
             )
-
-        elif node.macroname in MACROS_ACCENTS:
-            try:
-                from pylatexenc.latex2text import LatexNodes2Text
-
-                text = LatexNodes2Text().nodelist_to_text([node])
-                doc.add_text(
-                    parent=parent,
-                    text=text,
-                    formatting=formatting,
-                    label=(text_label or DocItemLabel.TEXT),
-                )
-            except Exception:
-                pass
 
         elif node.macroname == "href":
             if node.nodeargd and len(node.nodeargd.argnlist) >= 2:

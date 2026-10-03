@@ -667,8 +667,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ashish VaswaniEqual contribution. Listing order is random. Jakob proposed replacing RNNs with self-attention and started the effort to evaluate this idea.\nAshish, with Illia, designed and implemented the first Transformer models and has been crucially involved in every aspect of this work. Noam proposed scaled dot-product attention, multi-head attention and the parameter-free position representation and became the other person involved in nearly every detail. Niki designed, implemented, tuned and evaluated countless model variants in our original codebase and tensor2tensor. Llion also experimented with novel model variants, was responsible for our initial codebase, and efficient inference and visualizations. Lukasz and Aidan spent countless long days designing various parts of and implementing tensor2tensor, replacing our earlier codebase, greatly improving results and massively accelerating our research.\n\n Google Brain\n\n avaswani@google.com\n\n Noam Shazeer[1]\n\n Google Brain\n\n noam@google.com\n\n Niki Parmar[1]\n\n Google Research\n\n nikip@google.com\n \n Jakob Uszkoreit[1]\n\n Google Research\n\n usz@google.com\n\n Llion Jones[1]\n\n Google Research\n\n llion@google.com\n \n Aidan N. Gomez[1] Work performed while at Google Brain.\n\n University of Toronto\n\n aidan@cs.toronto.edu\n ukasz Kaiser[1]\n\n Google Brain\n\n lukaszkaiser@google.com\n\n Illia Polosukhin[1] Work performed while at Google Research.\n\n illia.polosukhin@gmail.com",
-      "text": "Ashish VaswaniEqual contribution. Listing order is random. Jakob proposed replacing RNNs with self-attention and started the effort to evaluate this idea.\nAshish, with Illia, designed and implemented the first Transformer models and has been crucially involved in every aspect of this work. Noam proposed scaled dot-product attention, multi-head attention and the parameter-free position representation and became the other person involved in nearly every detail. Niki designed, implemented, tuned and evaluated countless model variants in our original codebase and tensor2tensor. Llion also experimented with novel model variants, was responsible for our initial codebase, and efficient inference and visualizations. Lukasz and Aidan spent countless long days designing various parts of and implementing tensor2tensor, replacing our earlier codebase, greatly improving results and massively accelerating our research.\n\n Google Brain\n\n avaswani@google.com\n\n Noam Shazeer[1]\n\n Google Brain\n\n noam@google.com\n\n Niki Parmar[1]\n\n Google Research\n\n nikip@google.com\n \n Jakob Uszkoreit[1]\n\n Google Research\n\n usz@google.com\n\n Llion Jones[1]\n\n Google Research\n\n llion@google.com\n \n Aidan N. Gomez[1] Work performed while at Google Brain.\n\n University of Toronto\n\n aidan@cs.toronto.edu\n ukasz Kaiser[1]\n\n Google Brain\n\n lukaszkaiser@google.com\n\n Illia Polosukhin[1] Work performed while at Google Research.\n\n illia.polosukhin@gmail.com"
+      "orig": "Ashish VaswaniEqual contribution. Listing order is random. Jakob proposed replacing RNNs with self-attention and started the effort to evaluate this idea.\nAshish, with Illia, designed and implemented the first Transformer models and has been crucially involved in every aspect of this work. Noam proposed scaled dot-product attention, multi-head attention and the parameter-free position representation and became the other person involved in nearly every detail. Niki designed, implemented, tuned and evaluated countless model variants in our original codebase and tensor2tensor. Llion also experimented with novel model variants, was responsible for our initial codebase, and efficient inference and visualizations. Lukasz and Aidan spent countless long days designing various parts of and implementing tensor2tensor, replacing our earlier codebase, greatly improving results and massively accelerating our research.\n\n Google Brain\n\n avaswani@google.com\n\n Noam Shazeer[1]\n\n Google Brain\n\n noam@google.com\n\n Niki Parmar[1]\n\n Google Research\n\n nikip@google.com\n \n Jakob Uszkoreit[1]\n\n Google Research\n\n usz@google.com\n\n Llion Jones[1]\n\n Google Research\n\n llion@google.com\n \n Aidan N. Gomez[1] Work performed while at Google Brain.\n\n University of Toronto\n\n aidan@cs.toronto.edu\n Łukasz Kaiser[1]\n\n Google Brain\n\n lukaszkaiser@google.com\n\n Illia Polosukhin[1] Work performed while at Google Research.\n\n illia.polosukhin@gmail.com",
+      "text": "Ashish VaswaniEqual contribution. Listing order is random. Jakob proposed replacing RNNs with self-attention and started the effort to evaluate this idea.\nAshish, with Illia, designed and implemented the first Transformer models and has been crucially involved in every aspect of this work. Noam proposed scaled dot-product attention, multi-head attention and the parameter-free position representation and became the other person involved in nearly every detail. Niki designed, implemented, tuned and evaluated countless model variants in our original codebase and tensor2tensor. Llion also experimented with novel model variants, was responsible for our initial codebase, and efficient inference and visualizations. Lukasz and Aidan spent countless long days designing various parts of and implementing tensor2tensor, replacing our earlier codebase, greatly improving results and massively accelerating our research.\n\n Google Brain\n\n avaswani@google.com\n\n Noam Shazeer[1]\n\n Google Brain\n\n noam@google.com\n\n Niki Parmar[1]\n\n Google Research\n\n nikip@google.com\n \n Jakob Uszkoreit[1]\n\n Google Research\n\n usz@google.com\n\n Llion Jones[1]\n\n Google Research\n\n llion@google.com\n \n Aidan N. Gomez[1] Work performed while at Google Brain.\n\n University of Toronto\n\n aidan@cs.toronto.edu\n Łukasz Kaiser[1]\n\n Google Brain\n\n lukaszkaiser@google.com\n\n Illia Polosukhin[1] Work performed while at Google Research.\n\n illia.polosukhin@gmail.com"
     },
     {
       "self_ref": "#/texts/2",
@@ -2151,8 +2151,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "gruEval14\nJunyoung Chung, Caglar Gulcehre, Kyunghyun Cho, and Yoshua\n  Bengio.\nEmpirical evaluation of gated recurrent neural networks on sequence\n  modeling.\nCoRR, abs/1412.3555, 2014.",
-      "text": "gruEval14\nJunyoung Chung, Caglar Gulcehre, Kyunghyun Cho, and Yoshua\n  Bengio.\nEmpirical evaluation of gated recurrent neural networks on sequence\n  modeling.\nCoRR, abs/1412.3555, 2014.",
+      "orig": "gruEval14\nJunyoung Chung, Çaglar Gülçehre, Kyunghyun Cho, and Yoshua\n  Bengio.\nEmpirical evaluation of gated recurrent neural networks on sequence\n  modeling.\nCoRR, abs/1412.3555, 2014.",
+      "text": "gruEval14\nJunyoung Chung, Çaglar Gülçehre, Kyunghyun Cho, and Yoshua\n  Bengio.\nEmpirical evaluation of gated recurrent neural networks on sequence\n  modeling.\nCoRR, abs/1412.3555, 2014.",
       "enumerated": false,
       "marker": ""
     },
@@ -2221,8 +2221,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "hochreiter2001gradient\nSepp Hochreiter, Yoshua Bengio, Paolo Frasconi, and Jurgen Schmidhuber.\nGradient flow in recurrent nets: the difficulty of learning long-term\n  dependencies, 2001.",
-      "text": "hochreiter2001gradient\nSepp Hochreiter, Yoshua Bengio, Paolo Frasconi, and Jurgen Schmidhuber.\nGradient flow in recurrent nets: the difficulty of learning long-term\n  dependencies, 2001.",
+      "orig": "hochreiter2001gradient\nSepp Hochreiter, Yoshua Bengio, Paolo Frasconi, and Jürgen Schmidhuber.\nGradient flow in recurrent nets: the difficulty of learning long-term\n  dependencies, 2001.",
+      "text": "hochreiter2001gradient\nSepp Hochreiter, Yoshua Bengio, Paolo Frasconi, and Jürgen Schmidhuber.\nGradient flow in recurrent nets: the difficulty of learning long-term\n  dependencies, 2001.",
       "enumerated": false,
       "marker": ""
     },
@@ -2235,8 +2235,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "hochreiter1997\nSepp Hochreiter and Jurgen Schmidhuber.\nLong short-term memory.\nNeural computation, 9(8):17351780, 1997.",
-      "text": "hochreiter1997\nSepp Hochreiter and Jurgen Schmidhuber.\nLong short-term memory.\nNeural computation, 9(8):17351780, 1997.",
+      "orig": "hochreiter1997\nSepp Hochreiter and Jürgen Schmidhuber.\nLong short-term memory.\nNeural computation, 9(8):17351780, 1997.",
+      "text": "hochreiter1997\nSepp Hochreiter and Jürgen Schmidhuber.\nLong short-term memory.\nNeural computation, 9(8):17351780, 1997.",
       "enumerated": false,
       "marker": ""
     },
@@ -2277,8 +2277,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "extendedngpu\nukasz Kaiser and Samy Bengio.\nCan active memory replace attention?\nIn Advances in Neural Information Processing Systems, (NIPS),\n  2016.",
-      "text": "extendedngpu\nukasz Kaiser and Samy Bengio.\nCan active memory replace attention?\nIn Advances in Neural Information Processing Systems, (NIPS),\n  2016.",
+      "orig": "extendedngpu\nŁukasz Kaiser and Samy Bengio.\nCan active memory replace attention?\nIn Advances in Neural Information Processing Systems, (NIPS),\n  2016.",
+      "text": "extendedngpu\nŁukasz Kaiser and Samy Bengio.\nCan active memory replace attention?\nIn Advances in Neural Information Processing Systems, (NIPS),\n  2016.",
       "enumerated": false,
       "marker": ""
     },
@@ -2291,8 +2291,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "neural_gpu\nukasz Kaiser and Ilya Sutskever.\nNeural GPUs learn algorithms.\nIn International Conference on Learning Representations\n (ICLR), 2016.",
-      "text": "neural_gpu\nukasz Kaiser and Ilya Sutskever.\nNeural GPUs learn algorithms.\nIn International Conference on Learning Representations\n (ICLR), 2016.",
+      "orig": "neural_gpu\nŁukasz Kaiser and Ilya Sutskever.\nNeural GPUs learn algorithms.\nIn International Conference on Learning Representations\n (ICLR), 2016.",
+      "text": "neural_gpu\nŁukasz Kaiser and Ilya Sutskever.\nNeural GPUs learn algorithms.\nIn International Conference on Learning Representations\n (ICLR), 2016.",
       "enumerated": false,
       "marker": ""
     },
