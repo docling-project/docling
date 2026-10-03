@@ -195,11 +195,23 @@ class ThreadedQueue:
             return True
 
     # ------------------------------------------------------------ get_batch()
-    def get_batch(self, size: int, timeout: float | None = None) -> list[ThreadedItem]:
-        """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout."""
+    def get_batch(
+        self, size: int, timeout: float | None = None, *, require_full: bool = False
+    ) -> list[ThreadedItem]:
+        """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout.
+
+        With *require_full*, wait for *size* items instead of taking whatever happens to be
+        queued, so that a batch is decided by the item stream rather than by how fast the
+        upstream stage was.  A short batch is then only returned once the queue is closed,
+        which is what ends a run.  *timeout* is ignored in that mode: honouring it would put
+        the wall clock back into the decision.
+        """
         with self._not_empty:
             start = time.monotonic()
-            while not self._items and not self._closed:
+            while self._waiting_for_more(size=size, require_full=require_full):
+                if require_full:
+                    self._not_empty.wait()
+                    continue
                 if timeout is not None:
                     remaining = timeout - (time.monotonic() - start)
                     if remaining <= 0:
@@ -213,6 +225,16 @@ class ThreadedQueue:
             if batch:
                 self._not_full.notify_all()
             return batch
+
+    def _waiting_for_more(self, *, size: int, require_full: bool) -> bool:
+        """Whether `get_batch` must keep waiting.  Caller holds the lock."""
+        if self._closed:
+            return False
+        if not require_full:
+            return not self._items
+        # A queue shorter than the batch can never hold one: the producer blocks at `_max`
+        # while we wait for more, and both sides stop.  Take what the queue can carry.
+        return len(self._items) < min(size, self._max)
 
     # ---------------------------------------------------------------- close()
     def close(self) -> None:
@@ -241,11 +263,13 @@ class ThreadedPipelineStage:
         shutdown_timeout: float = 15.0,
         postprocess: Callable[[ThreadedItem], None] | None = None,
         timed_out_run_ids: set[int] | None = None,
+        require_full_batches: bool = False,
     ) -> None:
         self.name = name
         self.model = model
         self.batch_size = batch_size
         self.batch_timeout = batch_timeout
+        self.require_full_batches = require_full_batches
         self.shutdown_timeout = shutdown_timeout
         self.input_queue = ThreadedQueue(queue_max_size)
         self._outputs: list[ThreadedQueue] = []
@@ -290,7 +314,11 @@ class ThreadedPipelineStage:
     def _run(self) -> None:
         try:
             while self._running:
-                batch = self.input_queue.get_batch(self.batch_size, self.batch_timeout)
+                batch = self.input_queue.get_batch(
+                    self.batch_size,
+                    self.batch_timeout,
+                    require_full=self.require_full_batches,
+                )
                 if not batch and self.input_queue.closed:
                     break
                 processed = self._process_batch(batch)
@@ -731,6 +759,8 @@ class StandardPdfPipeline(ConvertPipeline):
     def _create_run_ctx(self) -> RunContext:
         opts = self.pipeline_options
         timed_out_run_ids: set[int] = set()
+        # No `require_full_batches` here: this stage takes one page at a time, so its batch
+        # is the same whether the machine is busy or idle.
         preprocess = PreprocessThreadedStage(
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
@@ -743,6 +773,7 @@ class StandardPdfPipeline(ConvertPipeline):
             model=self.ocr_model,
             batch_size=opts.ocr_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
+            require_full_batches=opts.deterministic_batching,
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
@@ -752,6 +783,7 @@ class StandardPdfPipeline(ConvertPipeline):
             model=self.layout_model,
             batch_size=opts.layout_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
+            require_full_batches=opts.deterministic_batching,
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
@@ -761,6 +793,7 @@ class StandardPdfPipeline(ConvertPipeline):
             model=self.layout_postprocessing_model,
             batch_size=1,
             batch_timeout=opts.batch_polling_interval_seconds,
+            require_full_batches=opts.deterministic_batching,
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
@@ -770,6 +803,7 @@ class StandardPdfPipeline(ConvertPipeline):
             model=self.table_model,
             batch_size=opts.table_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
+            require_full_batches=opts.deterministic_batching,
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
@@ -779,6 +813,7 @@ class StandardPdfPipeline(ConvertPipeline):
             model=self.assemble_model,
             batch_size=1,
             batch_timeout=opts.batch_polling_interval_seconds,
+            require_full_batches=opts.deterministic_batching,
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             postprocess=self._release_page_resources,
