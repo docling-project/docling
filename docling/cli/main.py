@@ -1241,6 +1241,7 @@ def convert(  # noqa: C901
         FormatOption,
         HTMLFormatOption,
         IWorkKeynoteFormatOption,
+        IWorkNumbersFormatOption,
         IWorkPagesFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
@@ -1580,6 +1581,9 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.DOCX: WordFormatOption(

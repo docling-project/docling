@@ -18,7 +18,8 @@ schemas, so every number below was established against real documents.
 import logging
 import struct
 import zipfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from decimal import Decimal
 from typing import NamedTuple, TypeVar
 
 from docling_core.types.doc import (
@@ -27,6 +28,10 @@ from docling_core.types.doc import (
     TableData,
 )
 
+from docling.backend.iwork.cells import (
+    CellValues,
+    iwa_cell_text,
+)
 from docling.backend.iwork.content import (
     SCRIPTS,
     Block,
@@ -57,15 +62,13 @@ _log = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
-class CellValues(NamedTuple):
-    """A table's shared value lists, keyed as its cells reference them.
+class Placement(NamedTuple):
+    """Where one stored cell sits in a table, and where to find its bytes."""
 
-    Cells reference their contents by key rather than holding them, so two cells
-    with the same text share one entry.
-    """
-
-    strings: dict[int, str] = {}
-    rich_text: dict[int, str] = {}
+    row: int
+    col: int
+    storage: bytes
+    start: int
 
 
 MAX_REFERENCE_DEPTH = 4
@@ -325,6 +328,57 @@ TST_TEXT_REF = 6218
 It holds nothing but a reference to the ``TSWP.StorageArchive`` with the text.
 """
 
+TILE_LIST_FIELD = 1
+
+TILE_ENTRY_ROW_FIELD = 1
+
+TILE_ENTRY_TILE_FIELD = 2
+"""Fields of the tile list: each entry's first row, and the tile itself."""
+
+STORE_STRINGS_FIELD = 4
+
+STORE_RICH_TEXT_FIELD = 17
+"""Fields of a table's data store: its tiles, and its two value lists.
+
+A cell holding plain text references the string list; one holding styled text
+references the rich text list instead, whose entries point at a whole
+``TSWP.StorageArchive``.
+"""
+
+LIST_ENTRIES_FIELD = 3
+
+LIST_SEGMENTS_FIELD = 4
+"""Fields of ``TST.TableDataList``: its entries, and the segments they spill into.
+
+A list long enough to be split keeps its entries in referenced segments instead,
+which have the same entry shape.
+"""
+
+ENTRY_KEY_FIELD = 1
+
+ENTRY_STRING_FIELD = 3
+
+ENTRY_RICH_TEXT_FIELD = 9
+"""Fields of one value list entry: the key cells reference it by, and its value."""
+
+TST_TEXT_REF = 6218
+"""Message type of the indirection a rich text entry points at.
+
+It holds nothing but a reference to the ``TSWP.StorageArchive`` with the text.
+"""
+
+RICH_TEXT_STORAGE = 2001
+"""Message type of ``TSWP.StorageArchive``, where a styled cell parks its text.
+
+TSWP is Apple's text engine, so a cell whose text carries formatting keeps it in
+the same archive the body of a Pages document uses. Only the text is wanted here
+— what a table cell is styled with is not recovered — so the archive is read for
+that one field rather than through the text engine proper.
+"""
+
+RICH_TEXT_FIELD = 3
+"""Field of ``TSWP.StorageArchive`` holding the text itself."""
+
 TILE_ROWS_FIELD = 5
 
 ROW_INDEX_FIELD = 1
@@ -345,46 +399,6 @@ negative offset marks a column with no cell. Pages 5.2 moved both to their own
 fields and started scaling the offsets by four, keeping the older pair in place
 for the benefit of releases that could not read the new one, so the newer pair
 is preferred when it is there.
-"""
-
-CELL_VERSION_LEGACY = 4
-
-CELL_VERSION_CURRENT = 5
-"""Storage versions of a packed cell, in byte 0."""
-
-CELL_TYPE_TEXT = 3
-
-CELL_TYPE_RICH_TEXT = 9
-"""Value types of a packed cell, in byte 1, that carry text."""
-
-CELL_KEY_OFFSET = 16
-"""Where a version 4 cell keeps the key of its string."""
-
-CELL_FLAGS_OFFSET = 8
-
-CELL_VALUES_OFFSET = 12
-"""Where a version 5 cell keeps its flags, and where its values begin.
-
-The flags say which values are present; each one that is takes a fixed width,
-so the position of any of them depends on all the ones before it.
-"""
-
-CELL_FLAG_STRING = 0x8
-
-CELL_FLAG_RICH_TEXT = 0x10
-
-CELL_VALUE_WIDTHS = (
-    (0x1, 16),
-    (0x2, 8),
-    (0x4, 8),
-    (CELL_FLAG_STRING, 4),
-    (CELL_FLAG_RICH_TEXT, 4),
-)
-"""The values a version 5 cell may hold, in the order they are laid out.
-
-A decimal, a double and a duration come first, then the keys of the string and
-the rich text a cell may reference. Nothing after the rich text key is needed,
-so the walk stops there.
 """
 
 STORAGE_PARAGRAPH_STYLE_FIELD = 5
@@ -672,17 +686,26 @@ def iwa_table(model: IWAObject, objects: dict[int, IWAObject]) -> TableData | No
         return None
 
     header_rows = fields.get(TABLE_HEADER_ROWS_FIELD, [0])[0]
+    if not isinstance(header_rows, int):
+        header_rows = 0
     store = safe_fields(store_raw)
     values = iwa_cell_values(store, objects)
 
     cells: list[TableCell] = []
-    for tile in iwa_tiles(store, objects):
-        cells.extend(
-            iwa_tile_cells(
-                tile,
-                values,
-                num_cols,
-                header_rows if isinstance(header_rows, int) else 0,
+    for placed in iwa_placements(store, objects):
+        if placed.row >= num_rows or placed.col >= num_cols:
+            continue
+        text = iwa_cell_text(placed.storage, placed.start, values)
+        if text is None:
+            continue
+        cells.append(
+            TableCell(
+                text=text,
+                start_row_offset_idx=placed.row,
+                end_row_offset_idx=placed.row + 1,
+                start_col_offset_idx=placed.col,
+                end_col_offset_idx=placed.col + 1,
+                column_header=placed.row < header_rows,
             )
         )
 
@@ -773,37 +796,51 @@ def iwa_entry_rich_text(
     return iwa_storage_text(safe_fields(storage.payload)).strip() or None
 
 
-def iwa_tiles(
+def iwa_placements(
     store: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
-) -> list[IWAObject]:
-    """Resolve the tiles a table's data store points at."""
-    tiles: list[IWAObject] = []
+) -> Iterator[Placement]:
+    """Walk a table's tiles, yielding where each stored cell sits.
+
+    A table taller than one tile is split across several, and each tile numbers
+    its rows from its own start rather than from the table's, so the entry's
+    first row is added back here.
+
+    Args:
+        store: The table's decoded data store.
+        objects: Every object in the document, keyed by identifier.
+
+    Yields:
+        One placement per stored cell, in tile order.
+    """
     container = store.get(STORE_TILES_FIELD, [None])[0]
     if not isinstance(container, bytes):
-        return tiles
+        return
 
-    for entry in safe_fields(container).get(1, []):
+    for entry in safe_fields(container).get(TILE_LIST_FIELD, []):
         if not isinstance(entry, bytes):
             continue
-        reference = safe_fields(entry).get(2, [None])[0]
+        parsed = safe_fields(entry)
+        first_row = parsed.get(TILE_ENTRY_ROW_FIELD, [0])[0]
+        reference = parsed.get(TILE_ENTRY_TILE_FIELD, [None])[0]
         target = read_reference(reference) if isinstance(reference, bytes) else None
         tile = objects.get(target) if target is not None else None
-        if tile is not None and tile.message_type == TST_TILE:
-            tiles.append(tile)
-    return tiles
+        if tile is None or tile.message_type != TST_TILE:
+            continue
+        yield from iwa_tile_placements(
+            tile, first_row if isinstance(first_row, int) else 0
+        )
 
 
-def iwa_tile_cells(
-    tile: IWAObject, values: CellValues, num_cols: int, header_rows: int
-) -> list[TableCell]:
-    """Read one tile's cells, placing them by each row's per-column offsets."""
-    cells: list[TableCell] = []
-
+def iwa_tile_placements(tile: IWAObject, first_row: int) -> Iterator[Placement]:
+    """Walk one tile's rows, placing each cell by its per-column offset."""
     for row_message in safe_fields(tile.payload).get(TILE_ROWS_FIELD, []):
         if not isinstance(row_message, bytes):
             continue
         row = safe_fields(row_message)
         row_index = row.get(ROW_INDEX_FIELD, [None])[0]
+        if not isinstance(row_index, int):
+            continue
+
         storage = row.get(ROW_WIDE_STORAGE_FIELD, [None])[0]
         offsets = row.get(ROW_WIDE_OFFSETS_FIELD, [None])[0]
         scale = 4 if row.get(ROW_WIDE_OFFSETS_FLAG, [0])[0] else 1
@@ -811,82 +848,16 @@ def iwa_tile_cells(
             storage = row.get(ROW_STORAGE_FIELD, [None])[0]
             offsets = row.get(ROW_OFFSETS_FIELD, [None])[0]
             scale = 1
-        if not isinstance(row_index, int):
-            continue
         if not isinstance(storage, bytes) or not isinstance(offsets, bytes):
             continue
 
-        for column in range(min(num_cols, len(offsets) // 2)):
+        for column in range(len(offsets) // 2):
             start = int.from_bytes(
                 offsets[column * 2 : column * 2 + 2], "little", signed=True
             )
-            text = iwa_cell_text(storage, start * scale, values)
-            if text is None:
+            if start < 0:
                 continue
-            cells.append(
-                TableCell(
-                    text=text,
-                    start_row_offset_idx=row_index,
-                    end_row_offset_idx=row_index + 1,
-                    start_col_offset_idx=column,
-                    end_col_offset_idx=column + 1,
-                    column_header=row_index < header_rows,
-                )
-            )
-
-    return cells
-
-
-def iwa_cell_text(storage: bytes, start: int, values: CellValues) -> str | None:
-    """Read one packed cell, or None when there is nothing readable there.
-
-    Only the layouts that carry text are decoded. Any other value type — a
-    number, a date, a formula result — is skipped rather than guessed at from
-    bytes whose meaning has not been established against a real document.
-
-    Args:
-        storage: The row's packed cell buffer.
-        start: Where in the buffer this cell begins.
-        values: The table's shared value lists.
-
-    Returns:
-        The cell's text, or None when it holds none.
-    """
-    if start < 0 or start + CELL_VALUES_OFFSET > len(storage):
-        return None
-
-    version = storage[start]
-    if version == CELL_VERSION_LEGACY:
-        if storage[start + 1] != CELL_TYPE_TEXT:
-            return None
-        key_at = start + CELL_KEY_OFFSET
-        if key_at + 4 > len(storage):
-            return None
-        return values.strings.get(read_uint32(storage, key_at))
-
-    if version != CELL_VERSION_CURRENT:
-        return None
-    if storage[start + 1] not in (CELL_TYPE_TEXT, CELL_TYPE_RICH_TEXT):
-        return None
-
-    flags = read_uint32(storage, start + CELL_FLAGS_OFFSET)
-    offset = start + CELL_VALUES_OFFSET
-    for flag, width in CELL_VALUE_WIDTHS:
-        if not flags & flag:
-            continue
-        if offset + width > len(storage):
-            return None
-        if flag == CELL_FLAG_STRING:
-            return values.strings.get(read_uint32(storage, offset))
-        if flag == CELL_FLAG_RICH_TEXT:
-            return values.rich_text.get(read_uint32(storage, offset))
-        offset += width
-    return None
-
-
-def read_uint32(buffer: bytes, at: int) -> int:
-    """Read a little-endian 32-bit value out of a packed cell buffer."""
-    return int.from_bytes(buffer[at : at + 4], "little")
+            yield Placement(first_row + row_index, column, storage, start * scale)
 
 
 def read_objects(
