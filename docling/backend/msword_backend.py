@@ -7,6 +7,7 @@ import logging
 import re
 import warnings
 import zipfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -69,7 +70,7 @@ try:  # pragma: no cover - import-time guard
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
-    from docx.styles.style import BaseStyle, ParagraphStyle
+    from docx.styles.style import BaseStyle, CharacterStyle, ParagraphStyle
     from docx.table import Table, _Cell
     from docx.text.hyperlink import Hyperlink
     from docx.text.paragraph import Paragraph
@@ -1470,6 +1471,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
         return num_fmt_element.get(self.XML_KEY)
 
+    def _iter_style_chain(self, style: BaseStyle | None) -> Iterator[CharacterStyle]:
+        """Yield ``style`` and its ``basedOn`` ancestors.
+
+        Stops at a style type without ``base_style`` (e.g. a numbering style
+        reached through a malformed chain) and at ``_MAX_STYLE_INHERITANCE_DEPTH``
+        to guard against cycles.
+        """
+        depth = 0
+        while (
+            isinstance(style, CharacterStyle)
+            and depth < self._MAX_STYLE_INHERITANCE_DEPTH
+        ):
+            yield style
+            style = style.base_style
+            depth += 1
+
     def _get_list_left_indent(self, paragraph: Paragraph, numid: int, ilvl: int) -> int:
         """Return a list paragraph's effective left indentation in twips.
 
@@ -1493,18 +1510,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         left = _left(paragraph._p)
         if left is None:
             left = _left(self._get_level_element(numid, ilvl))
-        style = paragraph.style if left is None else None
-        depth = 0
-        while (
-            left is None
-            and style is not None
-            and depth < self._MAX_STYLE_INHERITANCE_DEPTH
-        ):
-            left = _left(style.element)
-            # A malformed basedOn chain can hop to a style type that lacks
-            # base_style; getattr keeps the walk safe.
-            style = getattr(style, "base_style", None)
-            depth += 1
+        if left is None:
+            for style in self._iter_style_chain(paragraph.style):
+                left = _left(style.element)
+                if left is not None:
+                    break
         return left or 0
 
     def _get_start_value(self, numid: int, ilvl: int) -> int:
