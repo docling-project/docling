@@ -69,13 +69,24 @@ def test_rowspan_only_cell_specifier_keeps_the_row() -> None:
 
     assert doc.tables, "the table was dropped entirely"
     table = doc.tables[0]
-    assert (table.data.num_rows, table.data.num_cols) == (2, 2)
-    assert [cell.text for cell in table.data.table_cells] == ["A", "B", "tall", "x"]
+    # The trailing single-cell row "|y" is kept: cells flow into the grid, so it
+    # lands in row 3, column 1, with the second column left empty.
+    assert (table.data.num_rows, table.data.num_cols) == (3, 2)
+    assert [cell.text for cell in table.data.table_cells] == [
+        "A",
+        "B",
+        "tall",
+        "x",
+        "y",
+    ]
     assert [item.text for item in doc.texts] == []
 
 
 def test_incomplete_table_does_not_emit_an_empty_table() -> None:
-    for row in (b"|3", b"2+|wide"):
+    # A trailing row with fewer cells than the table's column count is kept and
+    # padded with an empty cell (matching how Asciidoctor fills the grid), so no
+    # empty phantom table is emitted and no cell content is lost.
+    for row, first in ((b"|3", "3"), (b"2+|wide", "wide")):
         src = b"|===\n|A |B\n" + row + b"\n|===\n"
         in_doc = InputDocument(
             path_or_stream=BytesIO(src),
@@ -86,8 +97,37 @@ def test_incomplete_table_does_not_emit_an_empty_table() -> None:
         doc = in_doc._backend.convert()
 
         assert len(doc.tables) == 1
-        assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (1, 2)
-        assert [cell.text for cell in doc.tables[0].data.table_cells] == ["A", "B"]
+        assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (2, 2)
+        assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+            "A",
+            "B",
+            first,
+        ]
+
+
+def test_single_cell_per_line_table_is_not_truncated() -> None:
+    # Vertical AsciiDoc tables write one cell per line. A single-| line used to
+    # be read as the end of the table: the first such line was silently
+    # dropped, the remaining ones leaked into the document as literal text, and
+    # the closing |=== reopened an empty table that vanished at EOF.
+    src = b"|===\n|Name\n|Age\n|Alice\n|30\n|===\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="vertical-table.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.tables) == 1
+    assert (doc.tables[0].data.num_rows, doc.tables[0].data.num_cols) == (4, 1)
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Name",
+        "Age",
+        "Alice",
+        "30",
+    ]
+    assert [item.text for item in doc.texts] == []
 
 
 def test_source_listing_block_becomes_code_item() -> None:
@@ -159,10 +199,36 @@ def test_stray_dashes_are_not_swallowed() -> None:
     )
     doc = in_doc._backend.convert()
 
-    # the content after the stray "--" must survive (joined into one paragraph,
-    # as there was no blank line between the lines)
+    # the content after the stray "--" must survive; the unmatched open-block
+    # marker breaks the paragraph instead of rendering as text (matching
+    # asciidoctor, where an unclosed open block starts a separate block)
     texts = [item.text for item in doc.texts]
-    assert len(texts) == 1 and "before" in texts[0] and "after" in texts[0]
+    assert texts == ["before", "after"]
+
+
+def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
+    # "[cols=...]", "[[id]]" and admonition names like "[NOTE]" are block
+    # metadata for whatever follows; they used to leak into the document body
+    # as literal text items.
+    src = (
+        b":_mod-docs-content-type: PROCEDURE\n"
+        b":experimental:\n"
+        b"[[table-id]]\n"
+        b'[cols="2"]\n'
+        b"|===\n| a | b\n| c | d\n|===\n"
+        b"\n"
+        b"[NOTE]\nThis is a caveat.\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="attributes.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.tables) == 1
+    assert [item.text for item in doc.texts] == ["This is a caveat."]
 
 
 def test_unclosed_table_at_end_keeps_caption() -> None:
@@ -528,3 +594,156 @@ def test_heading_flushes_pending_paragraph() -> None:
         if item.label.value == "paragraph"
     }
     assert paras == {"body": "S1.1", "body2": "S2"}
+
+
+def test_block_title_without_floating_target_keeps_content() -> None:
+    # A block title followed by a paragraph used to absorb every following
+    # line as "multiline caption" and drop all of it at EOF.
+    src = b"para one\n\n.Procedure\nDo the thing.\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="block-title-paragraph.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert "para one" in texts
+    assert any("Do the thing." in t for t in texts)
+
+
+def test_block_title_blank_line_separates_paragraphs() -> None:
+    src = b".Overview\n\nBody text.\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="block-title-blank.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert "Overview" in texts
+    assert "Body text." in texts
+
+
+def test_content_block_delimiters_not_leaked() -> None:
+    # paired example/sidebar/open/passthrough/quote/listing delimiters used
+    # to render as literal text around their content
+    src = b"====\nexample content\n====\nafter\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="example-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert any("example content" in t for t in texts)
+    assert not any("====" in t for t in texts)
+    assert "after" in texts
+
+
+def test_content_block_delimiter_variants() -> None:
+    for delim in (b"----", b"****", b"____", b"++++"):
+        src = delim + b"\ninner\n" + delim + b"\n"
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(src),
+            format=InputFormat.ASCIIDOC,
+            backend=AsciiDocBackend,
+            filename="delim.adoc",
+        )
+        doc = in_doc._backend.convert()
+        texts = [item.text for item, _ in doc.iterate_items()]
+        assert any("inner" in t for t in texts), f"{delim!r}: {texts}"
+        assert not any(delim.decode() in t for t in texts), f"{delim!r}: {texts}"
+
+
+def test_stray_delimiter_without_closer_kept() -> None:
+    # a "--" line with no matching closer (e.g. inside a changelog) must not
+    # swallow the rest of the document
+    src = b"changelog\n--\nnote\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="stray.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert "changelog" in texts
+    assert "note" in texts
+
+
+def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
+    # "**" and "***" mark nested bullet items, the same way ".." does for
+    # ordered lists. They used to fall through to paragraph text, which lost the
+    # nesting and moved that text after the rest of the list.
+    source = b"""* apple
+* banana
+** banana split
+*** with cherries
+** banana bread
+* cherry
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="nested-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    list_items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [item.text for item in list_items] == [
+        "apple",
+        "banana",
+        "banana split",
+        "with cherries",
+        "banana bread",
+        "cherry",
+    ]
+    assert not any(item.enumerated for item in list_items)
+    assert doc.export_to_markdown() == (
+        "- apple\n"
+        "- banana\n"
+        "    - banana split\n"
+        "        - with cherries\n"
+        "    - banana bread\n"
+        "- cherry"
+    )
+
+
+def test_line_comments_not_body_text() -> None:
+    # a line starting with // is a comment; it used to render as a paragraph
+    src = b"// a comment line\nreal para\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="comments.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert not any("comment line" in t for t in texts)
+    assert "real para" in texts
+
+
+def test_comment_block_hides_content() -> None:
+    # //// delimited comment blocks hide everything up to the closer
+    src = b"////\nhidden text\n////\nvisible\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="comment-block.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert not any("hidden" in t for t in texts)
+    assert "visible" in texts
