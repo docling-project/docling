@@ -535,6 +535,30 @@ def test_latex_accent_macro():
     ]
 
 
+def test_latex_accent_on_custom_macro():
+    """An accent keeps a document macro in its argument: \\'{\\vowel} -> é."""
+    latex_content = rb"""
+    \documentclass{article}
+    \newcommand{\vowel}{e}
+    \newcommand{\dotless}{\i}
+    \begin{document}
+    \section{caf\'{\vowel}}
+    caf\'{\vowel} followed by text, caf\'\vowel, \'{\dotless}.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    texts = [t.text for t in doc.texts]
+    assert texts == ["café", "café followed by text, café, í."]
+
+
 def test_latex_renewcommand():
     """Test \\renewcommand and \\providecommand macros are expanded"""
     latex_content = rb"""

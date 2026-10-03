@@ -74,16 +74,36 @@ class TextHelperMixin:
             return None
         if name in MACROS_ACCENTS:
             args = node.nodeargd.argnlist if node.nodeargd else []
-            if not any(arg is not None for arg in args):
+            arg = next((a for a in args if a is not None), None)
+            if arg is None:
                 return None
-        elif name not in MACROS_LETTERS:
+            if self._uses_custom_macro(arg):
+                # latex2text does not know the document's macros and would
+                # drop them, so expand the argument first: \'{\vowel} -> \'{e}.
+                base = self._nodes_to_text([arg])
+                text = LatexNodes2Text().latex_to_text(f"\\{name}{{{base}}}")
+            else:
+                text = LatexNodes2Text().nodelist_to_text([node])
+        elif name in MACROS_LETTERS:
+            text = LatexNodes2Text().nodelist_to_text([node])
+        else:
             return None
-        text = LatexNodes2Text().nodelist_to_text([node])
         # \~{} and \^{} are the usual way to typeset a literal ~ or ^, which
         # latex2text renders as an empty string.
         if not text and name in ("~", "^"):
             return name
         return text
+
+    def _uses_custom_macro(self, node) -> bool:
+        """Whether ``node`` or anything nested in it is a document macro."""
+        if isinstance(node, LatexMacroNode):
+            if node.macroname in self._custom_macros:
+                return True
+            args = node.nodeargd.argnlist if node.nodeargd else []
+            return any(self._uses_custom_macro(a) for a in args if a is not None)
+        if isinstance(node, LatexGroupNode):
+            return any(self._uses_custom_macro(n) for n in node.nodelist or [])
+        return False
 
     def _process_chars_node(
         self,
