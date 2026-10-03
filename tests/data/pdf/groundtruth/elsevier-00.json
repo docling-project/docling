@@ -9163,10 +9163,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 36.26,
+            "l": 36.25,
             "t": 732.36,
             "r": 96.3,
-            "b": 665.72,
+            "b": 665.71,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -9194,7 +9194,7 @@
           "bbox": {
             "l": 500.33,
             "t": 738.97,
-            "r": 558.17,
+            "r": 558.15,
             "b": 666.99,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9226,9 +9226,9 @@
           "page_no": 3,
           "bbox": {
             "l": 126.41,
-            "t": 736.51,
-            "r": 468.01,
-            "b": 444.38,
+            "t": 736.5,
+            "r": 468.02,
+            "b": 444.37,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -9262,10 +9262,10 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 126.33,
-            "t": 738.77,
-            "r": 467.81,
-            "b": 312.09,
+            "l": 126.32,
+            "t": 738.73,
+            "r": 467.83,
+            "b": 312.14,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -9302,7 +9302,7 @@
             "l": 126.73,
             "t": 530.95,
             "r": 467.97,
-            "b": 147.09,
+            "b": 147.08,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -9336,10 +9336,10 @@
         {
           "page_no": 6,
           "bbox": {
-            "l": 126.63,
+            "l": 126.62,
             "t": 738.61,
-            "r": 467.8,
-            "b": 354.02,
+            "r": 467.82,
+            "b": 354.01,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -9373,9 +9373,9 @@
         {
           "page_no": 8,
           "bbox": {
-            "l": 126.85,
-            "t": 559.19,
-            "r": 467.81,
+            "l": 126.86,
+            "t": 559.18,
+            "r": 467.8,
             "b": 175.69,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -9413,7 +9413,7 @@
             "l": 126.82,
             "t": 738.53,
             "r": 468.11,
-            "b": 92.52,
+            "b": 92.5,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -9448,7 +9448,7 @@
           "page_no": 10,
           "bbox": {
             "l": 126.41,
-            "t": 738.5,
+            "t": 738.49,
             "r": 467.62,
             "b": 357.48,
             "coord_origin": "BOTTOMLEFT"
@@ -9485,9 +9485,9 @@
           "page_no": 14,
           "bbox": {
             "l": 126.15,
-            "t": 313.69,
+            "t": 313.68,
             "r": 467.64,
-            "b": 67.81,
+            "b": 67.8,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -9521,10 +9521,10 @@
         {
           "page_no": 15,
           "bbox": {
-            "l": 55.88,
-            "t": 738.54,
-            "r": 539.28,
-            "b": 122.51,
+            "l": 55.87,
+            "t": 738.62,
+            "r": 539.25,
+            "b": 122.48,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -9560,10 +9560,10 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 36.96,
-            "t": 720.1,
+            "l": 36.98,
+            "t": 720.12,
             "r": 558.11,
-            "b": 478.62,
+            "b": 478.61,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -13242,9 +13242,9 @@
         {
           "page_no": 11,
           "bbox": {
-            "l": 36.95,
-            "t": 719.74,
-            "r": 557.92,
+            "l": 36.91,
+            "t": 719.75,
+            "r": 557.91,
             "b": 461.06,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -16925,7 +16925,7 @@
           "page_no": 12,
           "bbox": {
             "l": 37.41,
-            "t": 302.21,
+            "t": 302.2,
             "r": 558.22,
             "b": 52.27,
             "coord_origin": "BOTTOMLEFT"
@@ -17210,7 +17210,7 @@
               "l": 349.06,
               "t": 535.49,
               "r": 374.9,
-              "b": 549.9,
+              "b": 541.34,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17219,7 +17219,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
-            "text": "Benguela Local",
+            "text": "Benguela",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17230,7 +17230,7 @@
               "l": 456.04,
               "t": 535.49,
               "r": 481.87,
-              "b": 549.9,
+              "b": 541.34,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17239,7 +17239,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "Benguela Local",
+            "text": "Benguela",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17307,6 +17307,46 @@
           },
           {
             "bbox": {
+              "l": 349.06,
+              "t": 544.06,
+              "r": 364.02,
+              "b": 549.9,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "Local",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 456.04,
+              "t": 544.06,
+              "r": 471.0,
+              "b": 549.9,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 4,
+            "end_col_offset_idx": 5,
+            "text": "Local",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
               "l": 43.6,
               "t": 552.62,
               "r": 118.34,
@@ -17329,8 +17369,8 @@
             "bbox": {
               "l": 134.65,
               "t": 552.62,
-              "r": 222.26,
-              "b": 575.59,
+              "r": 216.82,
+              "b": 558.46,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17339,7 +17379,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Difficult: All-terrain vehicle Sheet 227/228: Lobito (Galv\u02dcao and Portugal, 1971)",
+            "text": "Difficult: All-terrain vehicle",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17370,7 +17410,7 @@
               "l": 349.06,
               "t": 552.62,
               "r": 436.67,
-              "b": 575.59,
+              "b": 567.02,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17379,7 +17419,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
-            "text": "Easy: Bus Sheet 227/228: Lobito (Galv\u02dcao and Portugal, 1971)",
+            "text": "Easy: Bus Sheet 227/228: Lobito (Galv\u02dcao",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17390,7 +17430,7 @@
               "l": 456.04,
               "t": 552.62,
               "r": 543.65,
-              "b": 575.59,
+              "b": 567.02,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17399,7 +17439,27 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "Moderate: All-terrain vehicle Sheet 227/228: Lobito (Galv\u02dcao and Portugal, 1971)",
+            "text": "Moderate: All-terrain vehicle Sheet 227/228: Lobito (Galv\u02dcao",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 134.65,
+              "t": 560.79,
+              "r": 222.26,
+              "b": 575.59,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Sheet 227/228: Lobito (Galv\u02dcao and Portugal, 1971)",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17427,6 +17487,46 @@
           },
           {
             "bbox": {
+              "l": 349.06,
+              "t": 569.74,
+              "r": 405.78,
+              "b": 575.59,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "and Portugal, 1971)",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
+              "l": 456.04,
+              "t": 569.74,
+              "r": 512.76,
+              "b": 584.15,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 4,
+            "end_col_offset_idx": 5,
+            "text": "and Portugal, 1971) Benguela Sub-basin",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "bbox": {
               "l": 43.6,
               "t": 578.3,
               "r": 109.94,
@@ -17435,8 +17535,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
+            "start_row_offset_idx": 6,
+            "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
             "text": "Basin setting (Guiraud et al., 2010)",
@@ -17507,49 +17607,9 @@
           },
           {
             "bbox": {
-              "l": 456.04,
-              "t": 578.3,
-              "r": 511.16,
-              "b": 584.15,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
-            "text": "Benguela Sub-basin",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
               "l": 43.6,
               "t": 595.48,
               "r": 111.22,
-              "b": 601.32,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 6,
-            "end_row_offset_idx": 7,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "Geological domains of",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 49.56,
-              "t": 604.04,
-              "r": 72.78,
               "b": 609.88,
               "coord_origin": "TOPLEFT"
             },
@@ -17559,7 +17619,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "interest",
+            "text": "Geological domains of interest",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17709,8 +17769,8 @@
             "bbox": {
               "l": 349.06,
               "t": 638.28,
-              "r": 367.58,
-              "b": 644.13,
+              "r": 444.7,
+              "b": 652.69,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17719,7 +17779,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
-            "text": "Albian",
+            "text": "Albian fms",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17729,8 +17789,8 @@
             "bbox": {
               "l": 456.04,
               "t": 638.28,
-              "r": 527.24,
-              "b": 644.13,
+              "r": 541.64,
+              "b": 652.69,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17739,7 +17799,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "Albian and Cenomanian?",
+            "text": "Albian and Cenomanian? Catumbela and Quissonde fms",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17750,7 +17810,7 @@
               "l": 43.6,
               "t": 646.84,
               "r": 115.58,
-              "b": 661.25,
+              "b": 669.86,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17759,7 +17819,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Lithostratigraphic units Detailed stratigraphy",
+            "text": "Lithostratigraphic units Detailed stratigraphy Geological knowledge",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17770,7 +17830,7 @@
               "l": 134.65,
               "t": 646.84,
               "r": 220.31,
-              "b": 661.25,
+              "b": 669.86,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17779,7 +17839,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Catumbela and Quissonde fms Moderate",
+            "text": "Catumbela and Quissonde fms Moderate Moderate",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17809,7 +17869,7 @@
             "bbox": {
               "l": 349.06,
               "t": 646.84,
-              "r": 444.7,
+              "r": 433.01,
               "b": 661.25,
               "coord_origin": "TOPLEFT"
             },
@@ -17819,7 +17879,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
-            "text": "Binga, Tuenza and Catumbela fms Low",
+            "text": "Binga, Tuenza and Catumbela Low",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17828,8 +17888,8 @@
           {
             "bbox": {
               "l": 456.04,
-              "t": 646.84,
-              "r": 541.64,
+              "t": 655.4,
+              "r": 467.89,
               "b": 661.25,
               "coord_origin": "TOPLEFT"
             },
@@ -17839,47 +17899,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "Catumbela and Quissonde fms Low",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 43.6,
-              "t": 664.02,
-              "r": 110.64,
-              "b": 669.86,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 10,
-            "end_row_offset_idx": 11,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "Geological knowledge",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 134.65,
-              "t": 664.02,
-              "r": 161.45,
-              "b": 669.86,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 10,
-            "end_row_offset_idx": 11,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "Moderate",
+            "text": "Low",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17889,8 +17909,8 @@
             "bbox": {
               "l": 242.08,
               "t": 664.02,
-              "r": 268.89,
-              "b": 669.86,
+              "r": 303.24,
+              "b": 678.43,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17899,7 +17919,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "Moderate",
+            "text": "Moderate Segundo et al. (2014)",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17910,7 +17930,7 @@
               "l": 349.06,
               "t": 664.02,
               "r": 360.91,
-              "b": 669.86,
+              "b": 678.43,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17919,7 +17939,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
-            "text": "Low",
+            "text": "Low No",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17930,7 +17950,7 @@
               "l": 456.04,
               "t": 664.02,
               "r": 467.89,
-              "b": 669.86,
+              "b": 678.43,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -17939,7 +17959,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "Low",
+            "text": "Low No",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -17955,8 +17975,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 11,
-            "end_row_offset_idx": 12,
+            "start_row_offset_idx": 10,
+            "end_row_offset_idx": 11,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
             "text": "Publications",
@@ -17975,71 +17995,11 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 11,
-            "end_row_offset_idx": 12,
+            "start_row_offset_idx": 10,
+            "end_row_offset_idx": 11,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
             "text": "Tavares et al. (2007) Segundo et al. (2014)",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 242.08,
-              "t": 672.58,
-              "r": 303.24,
-              "b": 678.43,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 11,
-            "end_row_offset_idx": 12,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "Segundo et al. (2014)",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 349.06,
-              "t": 672.58,
-              "r": 357.13,
-              "b": 678.43,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 11,
-            "end_row_offset_idx": 12,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
-            "text": "No",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 456.04,
-              "t": 672.58,
-              "r": 464.1,
-              "b": 678.43,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 11,
-            "end_row_offset_idx": 12,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
-            "text": "No",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -18055,8 +18015,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 12,
-            "end_row_offset_idx": 13,
+            "start_row_offset_idx": 11,
+            "end_row_offset_idx": 12,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
             "text": "Main heritage values",
@@ -18075,8 +18035,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 12,
-            "end_row_offset_idx": 13,
+            "start_row_offset_idx": 11,
+            "end_row_offset_idx": 12,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
             "text": "Stratigraphy",
@@ -18095,8 +18055,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 12,
-            "end_row_offset_idx": 13,
+            "start_row_offset_idx": 11,
+            "end_row_offset_idx": 12,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
             "text": "Stratigraphy Tectonics",
@@ -18115,8 +18075,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 12,
-            "end_row_offset_idx": 13,
+            "start_row_offset_idx": 11,
+            "end_row_offset_idx": 12,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
             "text": "Stratigraphy Geomorphology",
@@ -18135,8 +18095,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 12,
-            "end_row_offset_idx": 13,
+            "start_row_offset_idx": 11,
+            "end_row_offset_idx": 12,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
             "text": "Geomorphology Stratigraphy",
@@ -18195,8 +18155,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 13,
-            "end_row_offset_idx": 14,
+            "start_row_offset_idx": 12,
+            "end_row_offset_idx": 13,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
             "text": "Moderate",
@@ -18215,8 +18175,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 13,
-            "end_row_offset_idx": 14,
+            "start_row_offset_idx": 12,
+            "end_row_offset_idx": 13,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
             "text": "Moderate",
@@ -18235,8 +18195,8 @@
             },
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 13,
-            "end_row_offset_idx": 14,
+            "start_row_offset_idx": 12,
+            "end_row_offset_idx": 13,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
             "text": "High",
@@ -18820,7 +18780,7 @@
                 "l": 349.06,
                 "t": 535.49,
                 "r": 374.9,
-                "b": 549.9,
+                "b": 541.34,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -18829,7 +18789,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "Benguela Local",
+              "text": "Benguela",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18840,7 +18800,7 @@
                 "l": 456.04,
                 "t": 535.49,
                 "r": 481.87,
-                "b": 549.9,
+                "b": 541.34,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -18849,7 +18809,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "Benguela Local",
+              "text": "Benguela",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18918,26 +18878,40 @@
               "fillable": false
             },
             {
+              "bbox": {
+                "l": 349.06,
+                "t": 544.06,
+                "r": 364.02,
+                "b": 549.9,
+                "coord_origin": "TOPLEFT"
+              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "",
+              "text": "Local",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
+              "bbox": {
+                "l": 456.04,
+                "t": 544.06,
+                "r": 471.0,
+                "b": 549.9,
+                "coord_origin": "TOPLEFT"
+              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "",
+              "text": "Local",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -18969,8 +18943,8 @@
               "bbox": {
                 "l": 134.65,
                 "t": 552.62,
-                "r": 222.26,
-                "b": 575.59,
+                "r": 216.82,
+                "b": 558.46,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -18979,7 +18953,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Difficult: All-terrain vehicle Sheet 227/228: Lobito (Galv\u02dcao and Portugal, 1971)",
+              "text": "Difficult: All-terrain vehicle",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19010,7 +18984,7 @@
                 "l": 349.06,
                 "t": 552.62,
                 "r": 436.67,
-                "b": 575.59,
+                "b": 567.02,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -19019,7 +18993,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "Easy: Bus Sheet 227/228: Lobito (Galv\u02dcao and Portugal, 1971)",
+              "text": "Easy: Bus Sheet 227/228: Lobito (Galv\u02dcao",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19030,7 +19004,7 @@
                 "l": 456.04,
                 "t": 552.62,
                 "r": 543.65,
-                "b": 575.59,
+                "b": 567.02,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -19039,7 +19013,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "Moderate: All-terrain vehicle Sheet 227/228: Lobito (Galv\u02dcao and Portugal, 1971)",
+              "text": "Moderate: All-terrain vehicle Sheet 227/228: Lobito (Galv\u02dcao",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19048,33 +19022,33 @@
           ],
           [
             {
-              "bbox": {
-                "l": 43.6,
-                "t": 578.3,
-                "r": 109.94,
-                "b": 592.71,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Basin setting (Guiraud et al., 2010)",
+              "text": "",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
+              "bbox": {
+                "l": 134.65,
+                "t": 560.79,
+                "r": 222.26,
+                "b": 575.59,
+                "coord_origin": "TOPLEFT"
+              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "",
+              "text": "Sheet 227/228: Lobito (Galv\u02dcao and Portugal, 1971)",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19101,13 +19075,20 @@
               "fillable": false
             },
             {
+              "bbox": {
+                "l": 349.06,
+                "t": 569.74,
+                "r": 405.78,
+                "b": 575.59,
+                "coord_origin": "TOPLEFT"
+              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "",
+              "text": "and Portugal, 1971)",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19116,8 +19097,8 @@
             {
               "bbox": {
                 "l": 456.04,
-                "t": 578.3,
-                "r": 511.16,
+                "t": 569.74,
+                "r": 512.76,
                 "b": 584.15,
                 "coord_origin": "TOPLEFT"
               },
@@ -19127,7 +19108,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "Benguela Sub-basin",
+              "text": "and Portugal, 1971) Benguela Sub-basin",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19138,9 +19119,9 @@
             {
               "bbox": {
                 "l": 43.6,
-                "t": 595.48,
-                "r": 111.22,
-                "b": 601.32,
+                "t": 578.3,
+                "r": 109.94,
+                "b": 592.71,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -19149,7 +19130,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Geological domains of",
+              "text": "Basin setting (Guiraud et al., 2010)",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19232,9 +19213,9 @@
           [
             {
               "bbox": {
-                "l": 49.56,
-                "t": 604.04,
-                "r": 72.78,
+                "l": 43.6,
+                "t": 595.48,
+                "r": 111.22,
                 "b": 609.88,
                 "coord_origin": "TOPLEFT"
               },
@@ -19244,7 +19225,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "interest",
+              "text": "Geological domains of interest",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19396,8 +19377,8 @@
               "bbox": {
                 "l": 349.06,
                 "t": 638.28,
-                "r": 367.58,
-                "b": 644.13,
+                "r": 444.7,
+                "b": 652.69,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -19406,7 +19387,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "Albian",
+              "text": "Albian fms",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19416,8 +19397,8 @@
               "bbox": {
                 "l": 456.04,
                 "t": 638.28,
-                "r": 527.24,
-                "b": 644.13,
+                "r": 541.64,
+                "b": 652.69,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -19426,7 +19407,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "Albian and Cenomanian?",
+              "text": "Albian and Cenomanian? Catumbela and Quissonde fms",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19439,7 +19420,7 @@
                 "l": 43.6,
                 "t": 646.84,
                 "r": 115.58,
-                "b": 661.25,
+                "b": 669.86,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -19448,7 +19429,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Lithostratigraphic units Detailed stratigraphy",
+              "text": "Lithostratigraphic units Detailed stratigraphy Geological knowledge",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19459,7 +19440,7 @@
                 "l": 134.65,
                 "t": 646.84,
                 "r": 220.31,
-                "b": 661.25,
+                "b": 669.86,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -19468,7 +19449,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Catumbela and Quissonde fms Moderate",
+              "text": "Catumbela and Quissonde fms Moderate Moderate",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19498,7 +19479,7 @@
               "bbox": {
                 "l": 349.06,
                 "t": 646.84,
-                "r": 444.7,
+                "r": 433.01,
                 "b": 661.25,
                 "coord_origin": "TOPLEFT"
               },
@@ -19508,7 +19489,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "Binga, Tuenza and Catumbela fms Low",
+              "text": "Binga, Tuenza and Catumbela Low",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19517,117 +19498,15 @@
             {
               "bbox": {
                 "l": 456.04,
-                "t": 646.84,
-                "r": 541.64,
-                "b": 661.25,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 9,
-              "end_row_offset_idx": 10,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
-              "text": "Catumbela and Quissonde fms Low",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "bbox": {
-                "l": 43.6,
-                "t": 664.02,
-                "r": 110.64,
-                "b": 669.86,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 10,
-              "end_row_offset_idx": 11,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "Geological knowledge",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 134.65,
-                "t": 664.02,
-                "r": 161.45,
-                "b": 669.86,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 10,
-              "end_row_offset_idx": 11,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "Moderate",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 242.08,
-                "t": 664.02,
-                "r": 268.89,
-                "b": 669.86,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 10,
-              "end_row_offset_idx": 11,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "Moderate",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 349.06,
-                "t": 664.02,
-                "r": 360.91,
-                "b": 669.86,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 10,
-              "end_row_offset_idx": 11,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "Low",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 456.04,
-                "t": 664.02,
+                "t": 655.4,
                 "r": 467.89,
-                "b": 669.86,
+                "b": 661.25,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 10,
-              "end_row_offset_idx": 11,
+              "start_row_offset_idx": 9,
+              "end_row_offset_idx": 10,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
               "text": "Low",
@@ -19648,8 +19527,8 @@
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 11,
-              "end_row_offset_idx": 12,
+              "start_row_offset_idx": 10,
+              "end_row_offset_idx": 11,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "Publications",
@@ -19668,8 +19547,8 @@
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 11,
-              "end_row_offset_idx": 12,
+              "start_row_offset_idx": 10,
+              "end_row_offset_idx": 11,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
               "text": "Tavares et al. (2007) Segundo et al. (2014)",
@@ -19681,18 +19560,18 @@
             {
               "bbox": {
                 "l": 242.08,
-                "t": 672.58,
+                "t": 664.02,
                 "r": 303.24,
                 "b": 678.43,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 11,
-              "end_row_offset_idx": 12,
+              "start_row_offset_idx": 10,
+              "end_row_offset_idx": 11,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Segundo et al. (2014)",
+              "text": "Moderate Segundo et al. (2014)",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19701,18 +19580,18 @@
             {
               "bbox": {
                 "l": 349.06,
-                "t": 672.58,
-                "r": 357.13,
+                "t": 664.02,
+                "r": 360.91,
                 "b": 678.43,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 11,
-              "end_row_offset_idx": 12,
+              "start_row_offset_idx": 10,
+              "end_row_offset_idx": 11,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "No",
+              "text": "Low No",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19721,18 +19600,18 @@
             {
               "bbox": {
                 "l": 456.04,
-                "t": 672.58,
-                "r": 464.1,
+                "t": 664.02,
+                "r": 467.89,
                 "b": 678.43,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 11,
-              "end_row_offset_idx": 12,
+              "start_row_offset_idx": 10,
+              "end_row_offset_idx": 11,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "No",
+              "text": "Low No",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19750,8 +19629,8 @@
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 12,
-              "end_row_offset_idx": 13,
+              "start_row_offset_idx": 11,
+              "end_row_offset_idx": 12,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "Main heritage values",
@@ -19770,8 +19649,8 @@
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 12,
-              "end_row_offset_idx": 13,
+              "start_row_offset_idx": 11,
+              "end_row_offset_idx": 12,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
               "text": "Stratigraphy",
@@ -19790,8 +19669,8 @@
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 12,
-              "end_row_offset_idx": 13,
+              "start_row_offset_idx": 11,
+              "end_row_offset_idx": 12,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
               "text": "Stratigraphy Tectonics",
@@ -19810,8 +19689,8 @@
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 12,
-              "end_row_offset_idx": 13,
+              "start_row_offset_idx": 11,
+              "end_row_offset_idx": 12,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
               "text": "Stratigraphy Geomorphology",
@@ -19830,11 +19709,99 @@
               },
               "row_span": 1,
               "col_span": 1,
+              "start_row_offset_idx": 11,
+              "end_row_offset_idx": 12,
+              "start_col_offset_idx": 4,
+              "end_col_offset_idx": 5,
+              "text": "Geomorphology Stratigraphy",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 12,
+              "end_row_offset_idx": 13,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 12,
+              "end_row_offset_idx": 13,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "bbox": {
+                "l": 242.08,
+                "t": 706.82,
+                "r": 268.89,
+                "b": 712.67,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 12,
+              "end_row_offset_idx": 13,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Moderate",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "bbox": {
+                "l": 349.06,
+                "t": 706.82,
+                "r": 375.86,
+                "b": 712.67,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 12,
+              "end_row_offset_idx": 13,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "Moderate",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "bbox": {
+                "l": 456.04,
+                "t": 706.82,
+                "r": 469.71,
+                "b": 712.67,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
               "start_row_offset_idx": 12,
               "end_row_offset_idx": 13,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "Geomorphology Stratigraphy",
+              "text": "High",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -19883,60 +19850,39 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 242.08,
-                "t": 706.82,
-                "r": 268.89,
-                "b": 712.67,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 13,
               "end_row_offset_idx": 14,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Moderate",
+              "text": "",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 349.06,
-                "t": 706.82,
-                "r": 375.86,
-                "b": 712.67,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 13,
               "end_row_offset_idx": 14,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "Moderate",
+              "text": "",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 456.04,
-                "t": 706.82,
-                "r": 469.71,
-                "b": 712.67,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 13,
               "end_row_offset_idx": 14,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "High",
+              "text": "",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -20267,7 +20213,7 @@
           "bbox": {
             "l": 91.47,
             "t": 709.42,
-            "r": 503.64,
+            "r": 503.65,
             "b": 651.15,
             "coord_origin": "BOTTOMLEFT"
           },
