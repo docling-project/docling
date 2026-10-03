@@ -129,6 +129,59 @@ def test_latex_enumerate_numbering_with_nested_content():
     assert "Second paragraph of the second item." in md
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        rb"\[x=1\]",
+        rb"\begin{equation}x=1\end{equation}",
+        rb"\href{https://example.com}{a link}",
+        rb"\begin{quote}A quote.\end{quote}",
+    ],
+    ids=["display_math", "equation", "href", "quote"],
+)
+def test_latex_enumerate_item_with_block_content(content: bytes):
+    """Content that flushes the text buffer stays inside its item.
+
+    Added as siblings in the list, the content and the text after it would each
+    take a number, e.g. ``1. First``, the formula, ``3. continuation``,
+    ``4. Second``.
+    """
+    latex_content = (
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item First """
+        + content
+        + rb""" continuation
+    \item Second
+    \end{enumerate}
+    \end{document}
+    """
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    outer_items = [child.resolve(doc) for child in outer.children]
+    assert [(item.label, item.text) for item in outer_items] == [
+        (DocItemLabel.LIST_ITEM, "First"),
+        (DocItemLabel.LIST_ITEM, "Second"),
+    ]
+    assert all(item.enumerated for item in outer_items)
+
+    md = doc.export_to_markdown()
+    assert md.startswith("1. First\n")
+    assert md.endswith("\n2. Second")
+    assert "continuation" in md
+
+
 def test_latex_description_list():
     """Test description list with optional item labels"""
     latex_content = b"""
