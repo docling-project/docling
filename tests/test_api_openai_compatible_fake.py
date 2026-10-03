@@ -28,6 +28,10 @@ from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
     ApiVlmEngine,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineInput
+from docling.models.stages.vlm_convert.vlm_convert_model import (
+    _prediction_from_engine_output,
+)
+from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
     api_image_request,
     api_image_request_streaming,
@@ -207,6 +211,21 @@ def test_malformed_json_chunks_are_skipped(api, endpoint, image):
     assert result.text == "good"
 
 
+def test_streamed_logprobs_are_collected_in_order(api, endpoint, image):
+    api.stream_chunks = ["Hel", "lo"]
+    api.stream_logprobs = [-0.25, -1.5]
+
+    result = api_image_request_streaming(
+        image, "describe", endpoint, model="m", logprobs=True
+    )
+
+    assert result.logprobs is not None
+    assert [(t.token, t.logprob) for t in result.logprobs.content] == [
+        ("Hel", -0.25),
+        ("lo", -1.5),
+    ]
+
+
 # -- the engine layer ----------------------------------------------------
 
 
@@ -235,6 +254,37 @@ def test_engine_options_drive_the_outgoing_request(api, image):
     assert body["temperature"] == 0.25
     sent = api.service.requests_for("POST", r"/v1/chat/completions")[-1].headers
     assert sent["x-tenant"] == "acme"
+
+
+def test_engine_keeps_logprobs_when_a_stopper_aborts_the_stream(api, image):
+    """A custom stopper switches the engine to streaming; generated tokens
+    must still reach the prediction, up to the point where it stopped."""
+
+    class _StopOnLoop(GenerationStopper):
+        def should_stop(self, s: str) -> bool:
+            return "loop" in s
+
+    api.stream_chunks = ["ok ", "loop", " not read"]
+    api.stream_logprobs = [-0.1, -0.2, -0.3]
+    engine = _engine(api, params={"model": "m", "logprobs": True})
+
+    outputs = engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=image,
+                prompt="describe",
+                extra_generation_config={"custom_stopping_criteria": [_StopOnLoop]},
+            )
+        ]
+    )
+
+    assert _sent_body(api)["stream"] is True
+    prediction = _prediction_from_engine_output(outputs[0])
+    assert prediction.text == "ok loop"
+    assert [(t.text, t.logprob) for t in prediction.generated_tokens] == [
+        ("ok ", -0.1),
+        ("loop", -0.2),
+    ]
 
 
 def test_engine_requires_remote_services_to_be_enabled(api):

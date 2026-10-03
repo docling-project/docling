@@ -249,6 +249,9 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             options = MetsGbsBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: MetsGbsBackendOptions
+        # Hashing the input document reads the stream to its end.
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
         self._tar: tarfile.TarFile = (
             tarfile.open(name=self.path_or_stream, mode="r:gz")
             if isinstance(self.path_or_stream, Path)

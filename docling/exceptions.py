@@ -65,3 +65,30 @@ class OcrLanguageNotSupportedError(BaseError):
             )
             message = f"{message} Supported: {tags}."
         super().__init__(message)
+
+
+class RapidOcrModelSizeNotSupportedError(BaseError):
+    """Raised when RapidOCR has no det/rec checkpoint at the requested
+    `model_size` for the resolved PP-OCRv6 language.
+    """
+
+    def __init__(
+        self,
+        backend: str,
+        language: str,
+        ppocr_version: str,
+        model_size: str,
+        detail: str | None = None,
+    ):
+        self.backend = backend
+        self.language = language
+        self.ppocr_version = ppocr_version
+        self.model_size = model_size
+        self.detail = detail
+        message = (
+            f"RapidOCR (backend={backend}) has no {ppocr_version} "
+            f"model_size={model_size!r} checkpoint for language {language!r}."
+        )
+        if detail:
+            message = f"{message} {detail}"
+        super().__init__(message)

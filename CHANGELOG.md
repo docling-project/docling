@@ -1,3 +1,21 @@
+## [v2.133.0](https://github.com/docling-project/docling/releases/tag/v2.133.0) - 2026-10-03
+
+### Feature
+
+* **ocr:** Allow configuring RapidOCR model size ([#4500](https://github.com/docling-project/docling/issues/4500)) ([`a1c5ff2`](https://github.com/docling-project/docling/commit/a1c5ff2a8c5ab2bf87d7c1eb896b5bc351f51220))
+
+### Fix
+
+* **opendocument:** Read the chart object's own title ([#4463](https://github.com/docling-project/docling/issues/4463)) ([`4c109c2`](https://github.com/docling-project/docling/commit/4c109c255f3655af2c6f2c0be8c8677adee41a8a))
+* **code-formula:** Keep the extracted text when a batch fails ([#4495](https://github.com/docling-project/docling/issues/4495)) ([`a25aa1d`](https://github.com/docling-project/docling/commit/a25aa1dedccf74572df0385cde0cf02fb059b92c))
+* **latex:** Decode Windows-1252 sources and 8-bit TikZ dependencies ([#4475](https://github.com/docling-project/docling/issues/4475)) ([`b5aa0ef`](https://github.com/docling-project/docling/commit/b5aa0ef38aa5577b812496d70b1ca9f6d0142b00))
+* **md:** Keep the first-line indentation of code blocks ([#4487](https://github.com/docling-project/docling/issues/4487)) ([`cc937ec`](https://github.com/docling-project/docling/commit/cc937ec6c07b2ae5a71b7e3b726cade46083086b))
+* **html:** Keep dt/dd groups wrapped in div elements in description lists ([#4390](https://github.com/docling-project/docling/issues/4390)) ([`f1c42e3`](https://github.com/docling-project/docling/commit/f1c42e394e3f5c40375c83edf01f8de762bb64f9))
+* **latex:** Decode \input files the same way as the main file ([#4441](https://github.com/docling-project/docling/issues/4441)) ([`bba2ec5`](https://github.com/docling-project/docling/commit/bba2ec58fe58af1be630fea5cc0d35b0ad2a472e))
+* **docx:** Read w:numPr from the paragraph's own properties (#4456) ([#4457](https://github.com/docling-project/docling/issues/4457)) ([`1d4b9ae`](https://github.com/docling-project/docling/commit/1d4b9ae17b8a18ed723a0c9fc6e01bef080b3387))
+* **csv:** Sniff dialect after leading empty lines ([#4467](https://github.com/docling-project/docling/issues/4467)) ([`2dd8c53`](https://github.com/docling-project/docling/commit/2dd8c533cdefeb77ccefaf3f47fe3be9714ff782))
+* Detect the format of path inputs with an upper-case extension ([#4430](https://github.com/docling-project/docling/issues/4430)) ([`89935d5`](https://github.com/docling-project/docling/commit/89935d50fa378f1b32f576a40d9acbe7ab4e209e))
+
 ## [v2.132.0](https://github.com/docling-project/docling/releases/tag/v2.132.0) - 2026-10-01
 
 ### Feature

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Literal, Optional, Union, cast
 
 from docling_core.types.doc import (
+    CodeItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -527,6 +528,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if element in visited:
             return
 
+        # A line break only joins runs of the same paragraph. When no text run
+        # follows the break inside it (for example, the paragraph ends in inline
+        # HTML or a code span, or the next lines are table rows), the pending
+        # flag would otherwise join the first run of a later block onto the
+        # last text item.
+        if isinstance(element, marko.block.BlockElement):
+            self._pending_hard_line_break = False
+            self._pending_soft_line_break = False
+
         # Iterates over all elements in the AST
         # Check for different element types and process relevant details
         if (
@@ -702,9 +712,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     self._pending_hard_line_break = False
                     self._pending_soft_line_break = False
                 else:
+                    # A code span is its own item: text after a break never
+                    # joins it (that would type prose as code).
+                    last_is_code = bool(doc.texts) and isinstance(
+                        doc.texts[-1], CodeItem
+                    )
                     if (
                         self._pending_hard_line_break
                         and doc.texts
+                        and not last_is_code
                         and doc.texts[-1].formatting == formatting
                         and doc.texts[-1].hyperlink == hyperlink
                     ):
@@ -713,6 +729,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     elif (
                         self._pending_soft_line_break
                         and doc.texts
+                        and not last_is_code
                         and doc.texts[-1].formatting == formatting
                         and doc.texts[-1].hyperlink == hyperlink
                     ):
@@ -765,6 +782,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+                # The code span consumed the break that preceded it, like a
+                # text run does.
+                self._pending_hard_line_break = False
+                self._pending_soft_line_break = False
 
         elif (
             isinstance(element, marko.block.CodeBlock | marko.block.FencedCode)

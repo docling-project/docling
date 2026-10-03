@@ -1738,8 +1738,11 @@ def convert(  # noqa: C901
         # imports above: docling.pipeline.video_pipeline transitively pulls
         # in the ASR/diarization ML stack and video_frame_sampling pulls in
         # scipy, so we avoid paying that cost unless video input is used.
+        # Check the expanded inputs, not the raw sources, so that videos found
+        # in a directory or downloaded from a URL get these options too.
         has_video_source = InputFormat.VIDEO in from_formats and any(
-            _name_matches_format(src, InputFormat.VIDEO) for src in source
+            _name_matches_format(str(path), InputFormat.VIDEO)
+            for path in input_doc_paths
         )
         if has_video_source:
             from docling.datamodel.pipeline_options import VideoPipelineOptions

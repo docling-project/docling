@@ -288,7 +288,13 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         ]
         width = table_width(
             [
-                [_declared_span(cell, "colspan", MAX_COLSPAN) for cell in cells]
+                [
+                    (
+                        _declared_span(cell, "colspan", MAX_COLSPAN),
+                        _declared_span(cell, "rowspan", MAX_ROWSPAN),
+                    )
+                    for cell in cells
+                ]
                 for cells in row_cells
             ]
         )
