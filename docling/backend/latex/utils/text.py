@@ -25,6 +25,7 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 
 if TYPE_CHECKING:
     from typing import Any
@@ -37,6 +38,8 @@ try:  # pragma: no cover - import-time guard
         LatexGroupNode,
         LatexMacroNode,
         LatexMathNode,
+        LatexWalker,
+        LatexWalkerParseError,
     )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
@@ -78,10 +81,7 @@ class TextHelperMixin:
             if arg is None:
                 return None
             if self._uses_custom_macro(arg):
-                # latex2text does not know the document's macros and would
-                # drop them, so expand the argument first: \'{\vowel} -> \'{e}.
-                base = self._nodes_to_text([arg])
-                text = LatexNodes2Text().latex_to_text(f"\\{name}{{{base}}}")
+                text = self._accent_custom_macro_arg(name, arg)
             else:
                 text = LatexNodes2Text().nodelist_to_text([node])
         elif name in MACROS_LETTERS:
@@ -92,6 +92,31 @@ class TextHelperMixin:
         # latex2text renders as an empty string.
         if not text and name in ("~", "^"):
             return name
+        return text
+
+    def _accent_custom_macro_arg(self, name: str, arg) -> str:
+        """Apply accent ``name`` to an argument that uses document macros.
+
+        latex2text does not know the document's macros and would drop them,
+        so expand them first, one level at a time to follow chains such as
+        ``\\newcommand{\\vowel}{\\letter}``: ``\\'{\\vowel}`` -> ``\\'{\\letter}``
+        -> ``\\'{e}``. An argument that never resolves, e.g. a macro defined
+        in terms of itself, is kept without the accent.
+        """
+        nodes = [arg]
+        text = ""
+        for _ in range(10):
+            text = self._nodes_to_text(nodes)
+            try:
+                walker = LatexWalker(
+                    text, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
+                )
+                nodes, _, _ = walker.get_latex_nodes()
+            except LatexWalkerParseError:
+                return text
+            if not any(self._uses_custom_macro(n) for n in nodes):
+                base = "".join(n.latex_verbatim() for n in nodes)
+                return LatexNodes2Text().latex_to_text(f"\\{name}{{{base}}}")
         return text
 
     def _uses_custom_macro(self, node) -> bool:

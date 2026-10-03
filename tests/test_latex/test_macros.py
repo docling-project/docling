@@ -541,9 +541,11 @@ def test_latex_accent_on_custom_macro():
     \documentclass{article}
     \newcommand{\vowel}{e}
     \newcommand{\dotless}{\i}
+    \newcommand{\letter}{e}
+    \newcommand{\chained}{\letter}
     \begin{document}
-    \section{caf\'{\vowel}}
-    caf\'{\vowel} followed by text, caf\'\vowel, \'{\dotless}.
+    \section{caf\'{\chained}}
+    caf\'{\vowel} followed by text, caf\'\vowel, caf\'{\chained}, \'{\dotless}.
     \end{document}
     """
     in_doc = InputDocument(
@@ -556,7 +558,7 @@ def test_latex_accent_on_custom_macro():
     doc = backend.convert()
 
     texts = [t.text for t in doc.texts]
-    assert texts == ["café", "café followed by text, café, í."]
+    assert texts == ["café", "café followed by text, café, café, í."]
 
 
 def test_latex_renewcommand():
