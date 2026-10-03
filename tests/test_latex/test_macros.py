@@ -512,7 +512,10 @@ def test_latex_accent_macro():
     latex_content = rb"""
     \documentclass{article}
     \begin{document}
-    caf\'{e} and na\"{i}ve.
+    \section{G\"odel}
+    caf\'{e} and na\"{i}ve, Espa\~na, J{\"u}rgen, {\c{C}}a\u{g}lar, \`a la.
+
+    {\o}, \ss{}, \aa, \v{s}, \'{\i}, http://x.org/\~{}user.
     \end{document}
     """
     in_doc = InputDocument(
@@ -524,9 +527,36 @@ def test_latex_accent_macro():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    md = doc.export_to_markdown()
-    assert "caf" in md
-    assert len(doc.texts) > 0
+    texts = [t.text for t in doc.texts]
+    assert texts == [
+        "Gödel",
+        "café and naïve, España, Jürgen, Çağlar, à la.",
+        "ø, ß, å, š, í, http://x.org/~user.",
+    ]
+
+
+def test_latex_accent_on_custom_macro():
+    """An accent keeps a document macro in its argument: \\'{\\vowel} -> é."""
+    latex_content = rb"""
+    \documentclass{article}
+    \newcommand{\vowel}{e}
+    \newcommand{\dotless}{\i}
+    \begin{document}
+    \section{caf\'{\vowel}}
+    caf\'{\vowel} followed by text, caf\'\vowel, \'{\dotless}.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    texts = [t.text for t in doc.texts]
+    assert texts == ["café", "café followed by text, café, í."]
 
 
 def test_latex_renewcommand():

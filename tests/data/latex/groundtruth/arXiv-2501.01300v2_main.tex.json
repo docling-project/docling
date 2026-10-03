@@ -338,8 +338,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "1]Sipaz Sharma[orcid=0000-0001-6916-2233]\nsipaz.sharma@tum.de\n[1]organization=Physik Department, Technische Universitat Munchen,\n addressline=James-Franck-Strae 1, \n city=Garchingb.Munchen,\n postcode=D-85748, \n country=Germany",
-      "text": "1]Sipaz Sharma[orcid=0000-0001-6916-2233]\nsipaz.sharma@tum.de\n[1]organization=Physik Department, Technische Universitat Munchen,\n addressline=James-Franck-Strae 1, \n city=Garchingb.Munchen,\n postcode=D-85748, \n country=Germany"
+      "orig": "1]Sipaz Sharma[orcid=0000-0001-6916-2233]\nsipaz.sharma@tum.de\n[1]organization=Physik Department, Technische Universität München,\n addressline=James-Franck-Straße 1, \n city=Garchingb.München,\n postcode=D-85748, \n country=Germany",
+      "text": "1]Sipaz Sharma[orcid=0000-0001-6916-2233]\nsipaz.sharma@tum.de\n[1]organization=Physik Department, Technische Universität München,\n addressline=James-Franck-Straße 1, \n city=Garchingb.München,\n postcode=D-85748, \n country=Germany"
     },
     {
       "self_ref": "#/texts/6",
@@ -362,8 +362,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "2]Frithjof Karsch\n        [2]organization=Fakultat fur Physik, Universitat Bielefeld,\n \taddressline=Universitätsstraße 25, \n \tcity=Bielefeld,\n \tpostcode=D-33615, \n \tcountry=Germany",
-      "text": "2]Frithjof Karsch\n        [2]organization=Fakultat fur Physik, Universitat Bielefeld,\n \taddressline=Universitätsstraße 25, \n \tcity=Bielefeld,\n \tpostcode=D-33615, \n \tcountry=Germany"
+      "orig": "2]Frithjof Karsch\n        [2]organization=Fakultät für Physik, Universität Bielefeld,\n \taddressline=Universitätsstraße 25, \n \tcity=Bielefeld,\n \tpostcode=D-33615, \n \tcountry=Germany",
+      "text": "2]Frithjof Karsch\n        [2]organization=Fakultät für Physik, Universität Bielefeld,\n \taddressline=Universitätsstraße 25, \n \tcity=Bielefeld,\n \tpostcode=D-33615, \n \tcountry=Germany"
     },
     {
       "self_ref": "#/texts/8",
