@@ -7,11 +7,12 @@ import logging
 import re
 import warnings
 import zipfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Final
+from typing import Any, Callable, Final, NamedTuple
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
@@ -69,7 +70,7 @@ try:  # pragma: no cover - import-time guard
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
-    from docx.styles.style import BaseStyle, ParagraphStyle
+    from docx.styles.style import BaseStyle, CharacterStyle, ParagraphStyle
     from docx.table import Table, _Cell
     from docx.text.hyperlink import Hyperlink
     from docx.text.paragraph import Paragraph
@@ -646,6 +647,21 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
     return normalized
 
 
+class _NestedList(NamedTuple):
+    """A list opened under an open list's item for its larger left indentation.
+
+    ``slot`` and ``start_ilevel`` locate the nested list's own levels in the
+    parents stack; the ``outer_*`` fields describe the item it hangs from, with
+    ``outer_left_indent`` being that item's left indentation in twips.
+    """
+
+    slot: int
+    start_ilevel: int
+    outer_numid: int
+    outer_ilevel: int | None
+    outer_left_indent: int
+
+
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Backend for parsing Word documents (DOCX and DOC files).
 
@@ -821,6 +837,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.last_list_group: ListGroup | None = None
         self.last_list_group_numid: int | None = None
         self.last_list_group_parent: NodeItem | None = None
+        # Lists nested under an open list's item by left indentation, innermost
+        # last, and the last list item's effective left indentation in twips
+        self.nested_lists: list[_NestedList] = []
+        self.last_list_left_indent: int = 0
         # Set starting content layer
         self.content_layer = ContentLayer.BODY
 
@@ -1079,6 +1099,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         }
         saved_level_at_new_list = self.level_at_new_list
         saved_level_start_ilevel = self.level_start_ilevel
+        saved_nested_lists = self.nested_lists.copy()
+        saved_last_list_left_indent = self.last_list_left_indent
         saved_parents = self.parents.copy()
         # Save and clear list group cache to prevent reuse across table cells
         saved_last_list_group = self.last_list_group
@@ -1092,6 +1114,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.history = saved_history
             self.level_at_new_list = saved_level_at_new_list
             self.level_start_ilevel = saved_level_start_ilevel
+            self.nested_lists = saved_nested_lists
+            self.last_list_left_indent = saved_last_list_left_indent
             self.parents = saved_parents
             self.last_list_group = saved_last_list_group
             self.last_list_group_numid = saved_last_list_group_numid
@@ -1448,6 +1472,52 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if num_fmt_element is None:
             return None
         return num_fmt_element.get(self.XML_KEY)
+
+    def _iter_style_chain(self, style: BaseStyle | None) -> Iterator[CharacterStyle]:
+        """Yield ``style`` and its ``basedOn`` ancestors.
+
+        Stops at a style type without ``base_style`` (e.g. a numbering style
+        reached through a malformed chain) and at ``_MAX_STYLE_INHERITANCE_DEPTH``
+        to guard against cycles.
+        """
+        depth = 0
+        while (
+            isinstance(style, CharacterStyle)
+            and depth < self._MAX_STYLE_INHERITANCE_DEPTH
+        ):
+            yield style
+            style = style.base_style
+            depth += 1
+
+    def _get_list_left_indent(self, paragraph: Paragraph, numid: int, ilvl: int) -> int:
+        """Return a list paragraph's effective left indentation in twips.
+
+        Word takes ``w:ind`` from the paragraph itself, else from its numbering
+        level, else from its style's ``basedOn`` chain. ``w:start`` is the
+        direction-neutral name of ``w:left``. No value at all means 0.
+        """
+
+        def _left(element: BaseOxmlElement | None) -> int | None:
+            if element is None:
+                return None
+            ind = element.find(f"{_W_NS_CLARK}pPr/{_W_NS_CLARK}ind")
+            if ind is None:
+                return None
+            for attr in ("left", "start"):
+                value = self._str_to_int(ind.get(f"{_W_NS_CLARK}{attr}"), None)
+                if value is not None:
+                    return value
+            return None
+
+        left = _left(paragraph._p)
+        if left is None:
+            left = _left(self._get_level_element(numid, ilvl))
+        if left is None:
+            for style in self._iter_style_chain(paragraph.style):
+                left = _left(style.element)
+                if left is not None:
+                    break
+        return left or 0
 
     def _get_start_value(self, numid: int, ilvl: int) -> int:
         """Read the start value from the abstractNum definition."""
@@ -2562,6 +2632,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ):
             # Check if this is actually a numbered list by examining the numFmt
             is_numbered = self._has_visible_numbering_format(numid, ilevel)
+            left_indent = self._get_list_left_indent(paragraph, numid, ilevel)
 
             # If there are equations in the list item, handle them specially
             if len(equations) > 0:
@@ -2569,6 +2640,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     doc=doc,
                     numid=numid,
                     ilevel=ilevel,
+                    left_indent=left_indent,
                     text=text,
                     equations=equations,
                     is_numbered=is_numbered,
@@ -2578,6 +2650,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     doc=doc,
                     numid=numid,
                     ilevel=ilevel,
+                    left_indent=left_indent,
                     elements=paragraph_elements,
                     is_numbered=is_numbered,
                 )
@@ -2591,7 +2664,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ):  # Close list. A Code paragraph after a list must close it even if it
             # carries a stray/inherited numId, then be re-parented at body level
             # by the Code branch below (otherwise it nests inside the ListGroup).
-            self.last_numid = self._prev_numid()
+            # Lists nested by left indentation close with the outermost list,
+            # whose group is the one cached below.
+            self.last_numid = (
+                self.nested_lists[0].outer_numid
+                if self.nested_lists and self.level_at_new_list is not None
+                else self._prev_numid()
+            )
+            self.nested_lists = []
             if text and text.strip():
                 # Substantive body text breaks list continuity
                 self._clear_list_group_cache()
@@ -2979,7 +3059,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         level_start_ilevel``, e.g. a resumed list whose first post-gap item
         sits at level 1 and later returns to level 0) are clamped to the list
         base so they stay inside the current list instead of mapping below it.
+
+        Inside a list nested by left indentation (see
+        ``_manage_list_structure``), levels are mapped from that nested list's
+        own slot and starting level.
         """
+        if self.nested_lists:
+            nested = self.nested_lists[-1]
+            return nested.slot + max(0, word_ilevel - nested.start_ilevel)
         return self.level_at_new_list + max(0, word_ilevel - self.level_start_ilevel)
 
     def _manage_list_structure(
@@ -2988,6 +3075,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         numid: int,
         ilevel: int,
+        left_indent: int = 0,
     ) -> tuple[list[RefItem], int]:
         """Manage list structure and return elem_ref and use_level.
 
@@ -3005,10 +3093,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         intervening block resumes its numbering instead of restarting at 1
         (see #3896).
 
+        Word's multi-level list styles ("List Bullet 2", "List Number 2", ...)
+        each have their own numId at ``w:ilvl`` 0 and differ only in their left
+        indentation. So when an item of another numId follows an open list's
+        item and has a larger left indentation, its list is nested under that
+        item. A later item of another numId whose left indentation is no larger
+        than that item's closes the nested list again and is placed as if it
+        came right after that item.
+
         Args:
             doc: The DoclingDocument being constructed.
             numid: The numbering ID from the DOCX paragraph properties.
             ilevel: The indentation level from the DOCX paragraph properties.
+            left_indent: The paragraph's effective left indentation in twips.
 
         Returns:
             A tuple containing the list of references to created list groups and
@@ -3016,13 +3113,45 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         elem_ref: list[RefItem] = []
         level = self._get_level()
+        prev_numid = self._prev_numid()
         prev_indent = self._prev_indent()
 
-        if self._prev_numid() is None or (
-            self._prev_numid() == numid and self.level_at_new_list is None
+        if (
+            prev_numid is not None
+            and prev_numid != numid
+            and self.level_at_new_list is not None
+            and isinstance(self.parents.get(level - 1), ListGroup)
+        ):
+            closed: _NestedList | None = None
+            while (
+                self.nested_lists
+                and left_indent <= self.nested_lists[-1].outer_left_indent
+            ):
+                closed = self.nested_lists.pop()
+            if closed is not None:  # Back out to the item it hangs from
+                for k in self.parents:
+                    if k >= closed.slot:
+                        self.parents[k] = None
+                level = self._get_level()
+                prev_numid = closed.outer_numid
+                prev_indent = closed.outer_ilevel
+            elif left_indent > self.last_list_left_indent:  # Nest under the open item
+                self.nested_lists.append(
+                    _NestedList(
+                        slot=level,
+                        start_ilevel=ilevel,
+                        outer_numid=prev_numid,
+                        outer_ilevel=prev_indent,
+                        outer_left_indent=self.last_list_left_indent,
+                    )
+                )
+
+        if prev_numid is None or (
+            prev_numid == numid and self.level_at_new_list is None
         ):  # Open new list
             self.level_at_new_list = level
             self.level_start_ilevel = ilevel
+            self.nested_lists = []
             # Only reset counters the first time a numId is opened. A numId
             # that reappears after an intervening list of a different numId is
             # the same Word list resuming, and must keep its numbering.
@@ -3042,7 +3171,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.last_numid = numid
 
         elif (
-            self._prev_numid() == numid
+            prev_numid == numid
             and self.level_at_new_list is not None
             and prev_indent is not None
             and prev_indent < ilevel
@@ -3061,7 +3190,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             use_level = self._slot_for(ilevel)
 
         elif (
-            self._prev_numid() == numid
+            prev_numid == numid
             and self.level_at_new_list is not None
             and prev_indent is not None
             and ilevel < prev_indent
@@ -3071,13 +3200,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     self.parents[k] = None
             use_level = self._slot_for(ilevel)
 
-        elif self._prev_numid() == numid and isinstance(
-            self.parents.get(level - 1), ListGroup
-        ):
+        elif prev_numid == numid and isinstance(self.parents.get(level - 1), ListGroup):
             # Continue existing list
             use_level = level - 1
 
-        elif self._prev_numid() != numid or not isinstance(
+        elif prev_numid != numid or not isinstance(
             self.parents.get(level - 1), ListGroup
         ):
             # New list sequence
@@ -3090,6 +3217,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 use_level = level
                 self.level_at_new_list = use_level
                 self.level_start_ilevel = ilevel
+                self.nested_lists = []
 
             # Only reset counters the first time a numId is opened. A numId
             # that reappears after an intervening list of a different numId is
@@ -3110,6 +3238,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         else:
             use_level = level - 1
 
+        self.last_list_left_indent = left_indent
         return elem_ref, use_level
 
     def _add_list_item(
@@ -3118,6 +3247,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         numid: int,
         ilevel: int,
+        left_indent: int,
         elements: list,
         is_numbered: bool = False,
     ) -> list[RefItem]:
@@ -3127,6 +3257,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             doc: The DoclingDocument being constructed.
             numid: The numbering ID from the DOCX paragraph properties.
             ilevel: The indentation level from the DOCX paragraph properties.
+            left_indent: The paragraph's effective left indentation in twips.
             elements: List of (text, formatting, hyperlink) tuples representing the paragraph content.
             is_numbered: Whether this is a numbered list (True) or bulleted list (False).
 
@@ -3137,7 +3268,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return []
 
         elem_ref, use_level = self._manage_list_structure(
-            doc=doc, numid=numid, ilevel=ilevel
+            doc=doc, numid=numid, ilevel=ilevel, left_indent=left_indent
         )
 
         if is_numbered:
@@ -3157,6 +3288,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         numid: int,
         ilevel: int,
+        left_indent: int,
         text: str,
         equations: list[str],
         is_numbered: bool = False,
@@ -3172,6 +3304,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             doc: The DoclingDocument being constructed.
             numid: The numbering ID from the DOCX paragraph properties.
             ilevel: The indentation level from the DOCX paragraph properties.
+            left_indent: The paragraph's effective left indentation in twips.
             text: The paragraph text with equation placeholders (e.g., "<eq>formula</eq>").
             equations: List of equation strings with markers (e.g., ["<eq>A=B</eq>", ...]).
             is_numbered: Whether this is a numbered list (True) or bulleted list (False).
@@ -3180,7 +3313,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             List of references to created document elements.
         """
         elem_ref, use_level = self._manage_list_structure(
-            doc=doc, numid=numid, ilevel=ilevel
+            doc=doc, numid=numid, ilevel=ilevel, left_indent=left_indent
         )
 
         if is_numbered:
@@ -4138,6 +4271,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for i in range(-1, self.max_levels):
                 self.parents[i] = None
             self.level = 0
+            # Likewise, lists nested by left indentation in the body end here.
+            self.nested_lists = []
 
             self.parents[0] = doc.add_group(
                 label=GroupLabel.SECTION,
