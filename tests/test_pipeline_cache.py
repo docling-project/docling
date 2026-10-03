@@ -1,5 +1,8 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
+import os
+import subprocess
+import sys
 
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
@@ -8,6 +11,27 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions,
 )
 from docling.utils.pipeline_cache import create_pipeline_options_hash
+
+
+def test_hash_is_stable_across_processes():
+    # Set iteration order depends on PYTHONHASHSEED, so compare fresh
+    # interpreters: an in-process comparison can never see the difference.
+    code = (
+        "from docling.datamodel.pipeline_options import PdfPipelineOptions;"
+        "from docling.utils.pipeline_cache import create_pipeline_options_hash;"
+        "print(create_pipeline_options_hash(PdfPipelineOptions()))"
+    )
+    hashes = {
+        subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": seed},
+        ).stdout.strip()
+        for seed in ("0", "1")
+    }
+    assert len(hashes) == 1, hashes
 
 
 def test_hash_is_stable():

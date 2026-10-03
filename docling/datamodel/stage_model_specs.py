@@ -15,7 +15,7 @@ import logging
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Set
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
@@ -162,6 +162,16 @@ class VlmModelSpec(BaseModel):
     supported_engines: Set[VlmEngineType] | None = Field(
         default=None, description="Set of supported engines (None = all supported)"
     )
+
+    @field_serializer("supported_engines", when_used="json")
+    def _serialize_supported_engines(
+        self, value: Set[VlmEngineType] | None
+    ) -> List[VlmEngineType] | None:
+        # Set iteration order follows per-process string hashing; sort so the
+        # JSON (and the pipeline options hash built from it) is reproducible.
+        if value is None:
+            return None
+        return sorted(value)
 
     engine_overrides: Dict[VlmEngineType, EngineModelConfig] = Field(
         default_factory=dict, description="Engine-specific configuration overrides"
