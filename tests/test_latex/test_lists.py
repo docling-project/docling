@@ -79,7 +79,8 @@ def test_latex_description_list():
     \\begin{document}
     \\begin{description}
     \\item[Term1] Definition one
-    \\item[Term2] Definition two
+    \\item[\\textbf{Term2}] Definition two
+    \\item Definition without a term
     \\end{description}
     \\end{document}
     """
@@ -93,7 +94,36 @@ def test_latex_description_list():
     doc = backend.convert()
 
     list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
-    assert len(list_items) >= 2
+    assert [item.text for item in list_items] == [
+        "Term1: Definition one",
+        "Term2: Definition two",
+        "Definition without a term",
+    ]
+
+
+def test_latex_list_custom_item_label():
+    """Test the custom label of an itemize item is kept, an empty one adds nothing"""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{itemize}
+    \item[(a)] First
+    \item[] Second
+    \item Third
+    \end{itemize}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert [item.text for item in list_items] == ["(a) First", "Second", "Third"]
 
 
 def test_latex_list_nested():
