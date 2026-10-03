@@ -574,6 +574,44 @@ def test_readingorder_multipage():
 """
 
 
+# Regression tests: predict_merges must not join text across a column gutter.
+
+
+def _text(cid: int, l: float, r: float, b: float, t: float, text: str) -> PageElement:  # noqa: E741
+    return PageElement(
+        cid=cid,
+        text=text,
+        page_no=1,
+        page_size=Size(width=612.0, height=792.0),
+        label=DocItemLabel.TEXT,
+        l=l,
+        r=r,
+        b=b,
+        t=t,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+
+def test_predict_merges_does_not_join_across_column_gutter():
+    # 40pt gutter vs. 12pt line height: a column boundary, not a split word.
+    left = _text(0, l=60, r=290, b=680, t=692, text="a well-known compari-")
+    right = _text(1, l=330, r=550, b=680, t=692, text="son of two methods")
+
+    merges = ReadingOrderPredictor().predict_merges(sorted_elements=[left, right])
+
+    assert merges == {}
+
+
+def test_predict_merges_still_joins_a_genuine_split_line():
+    # 2pt gap vs. 12pt line height: a real mid-line split, should still merge.
+    left = _text(0, l=60, r=290, b=680, t=692, text="a well-known compari-")
+    right = _text(1, l=292, r=420, b=680, t=692, text="son of two methods")
+
+    merges = ReadingOrderPredictor().predict_merges(sorted_elements=[left, right])
+
+    assert merges == {0: [1]}
+
+
 def test_reading_order_near_boundary_clusters(monkeypatch):
     """Regression for #3940: two clusters that almost share a horizontal
     boundary must not build a malformed rtree query rectangle.
