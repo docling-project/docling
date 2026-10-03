@@ -15,11 +15,14 @@ result = converter.convert("report.pdf")   # local path or http(s) URL
 
 doc = result.document                       # a DoclingDocument
 print(doc.export_to_markdown())
-data = doc.export_to_dict()                 # structured / lossless
+data = doc.export_to_dict()                 # preserves the extracted structure
 ```
 
 `result.status` reports success/failure; `result.document` is always a
-`DoclingDocument`.
+`DoclingDocument`. For exact values, formulas, complex tables, or suspicious
+output, use [quality-verification.md](quality-verification.md). Preserve raw
+structured output and provenance alongside readable exports; successful
+conversion does not establish accuracy against the source.
 
 ## Configuring the pipeline with PipelineOptions
 
