@@ -126,6 +126,9 @@ DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
 _MHTML_SYNTHETIC_BASE = "thismessage:/"
 
+# Text-bearing block tags whose text is separated from surrounding inline text
+_TEXT_BLOCK_TAGS: Final = {"p", "li", "th", "td"}
+
 
 # Tags that initiate distinct Docling items
 _BLOCK_TAGS: Final = {
@@ -5163,6 +5166,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         This method is equivalent to `PageElement.get_text()` but also considers
         certain tags. When called on a <p> or <li> tags, it returns the text with a
         trailing space, otherwise the text is concatenated without separators.
+        Inline text preceding a block tag gets a separating space, unless it
+        already ends with whitespace.
         """
 
         def _extract_text_recursively(item: PageElement) -> list[str]:
@@ -5176,10 +5181,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 tag = cast(Tag, item)
                 parts: list[str] = []
                 for child in tag:
-                    parts.extend(_extract_text_recursively(child))
+                    child_parts = _extract_text_recursively(child)
+                    if (
+                        isinstance(child, Tag)
+                        and child.name in _TEXT_BLOCK_TAGS
+                        and parts
+                        and parts[-1]
+                        and not parts[-1][-1].isspace()
+                    ):
+                        parts.append(" ")
+                    parts.extend(child_parts)
                 result.append(
                     "".join(parts) + " "
-                    if tag.name in {"p", "li", "th", "td"}
+                    if tag.name in _TEXT_BLOCK_TAGS
                     else "".join(parts)
                 )
 
