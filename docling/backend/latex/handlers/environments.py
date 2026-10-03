@@ -17,6 +17,7 @@ from docling_core.types.doc.document import (
     GroupLabel,
     NodeItem,
     PictureMeta,
+    TextItem,
 )
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
@@ -327,13 +328,52 @@ class EnvironmentHandlerMixin:
             items.append(current_item)
 
         for item_nodes in items:
-            self._process_nodes(
+            self._process_list_item(
                 item_nodes,
                 doc,
                 list_group,
                 formatting,
-                text_label=DocItemLabel.LIST_ITEM,
+                enumerated=node.envname == "enumerate",
             )
+
+    def _process_list_item(
+        self,
+        item_nodes: list,
+        doc: DoclingDocument,
+        list_group: NodeItem,
+        formatting: Formatting | None = None,
+        enumerated: bool = False,
+    ):
+        """Add the content of one ``\\item`` to ``list_group`` as one list item.
+
+        docling-core numbers an item by its position among the children of its
+        list group, so every ``\\item`` must add exactly one child. The content
+        is added inside the list item, as in the other backends: a paragraph
+        break, display math, a link, a quote or a nested list each flush the text
+        buffer and would otherwise add further siblings. The leading text then
+        becomes the text of the list item itself.
+        """
+        list_item = doc.add_list_item(
+            text="", enumerated=enumerated, parent=list_group, formatting=formatting
+        )
+        self._process_nodes(item_nodes, doc, list_item, formatting)
+
+        if not list_item.children:
+            # Nothing to show, e.g. whitespace before the first ``\item``.
+            doc.delete_items(node_items=[list_item])
+            return
+
+        first = list_item.children[0].resolve(doc)
+        if (
+            type(first) is TextItem
+            and first.label in (DocItemLabel.TEXT, DocItemLabel.PARAGRAPH)
+            and not first.children
+        ):
+            list_item.text = first.text
+            list_item.orig = first.orig
+            list_item.formatting = first.formatting
+            list_item.hyperlink = first.hyperlink
+            doc.delete_items(node_items=[first])
 
     def _process_bibliography(
         self,
