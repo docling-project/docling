@@ -10,7 +10,14 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-from docling_core.types.doc import ContentLayer, DocItem, DoclingDocument, NodeItem
+from docling_core.types.doc import (
+    ContentLayer,
+    DocItem,
+    DoclingDocument,
+    FormItem,
+    KeyValueItem,
+    NodeItem,
+)
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -136,6 +143,10 @@ class BasePipeline(ABC):
             if isinstance(item, DocItem):
                 for provenance in item.prov:
                     provenance.page_no = page_no_map[provenance.page_no]
+                if isinstance(item, (KeyValueItem, FormItem)):
+                    for cell in item.graph.cells:
+                        if cell.prov is not None:
+                            cell.prov.page_no = page_no_map[cell.prov.page_no]
         return document
 
     @staticmethod
