@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
-from docling_core.types.doc.document import Formatting
+from docling_core.types.doc.document import Formatting, ListItem
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin
@@ -198,7 +198,14 @@ class LatexDocumentBackend(
         parent: NodeItem | None = None,
         formatting: Formatting | None = None,
         text_label: DocItemLabel | None = None,
+        *,
+        text_target: ListItem | None = None,
     ):
+        """Add ``nodes`` to ``doc`` under ``parent``.
+
+        If ``text_target`` is given, the first text flushed while it still has no
+        text and no children becomes its text instead of a new child item.
+        """
         if nodes is None:
             return
 
@@ -207,7 +214,15 @@ class LatexDocumentBackend(
         def flush_text_buffer():
             if text_buffer:
                 combined_text = "".join(text_buffer).strip()
-                if combined_text:
+                if (
+                    combined_text
+                    and text_target is not None
+                    and not text_target.text
+                    and not text_target.children
+                ):
+                    text_target.text = combined_text
+                    text_target.orig = combined_text
+                elif combined_text:
                     doc.add_text(
                         parent=parent,
                         label=text_label or DocItemLabel.TEXT,

@@ -15,9 +15,9 @@ from docling_core.types.doc.document import (
     DoclingDocument,
     Formatting,
     GroupLabel,
+    ListItem,
     NodeItem,
     PictureMeta,
-    TextItem,
 )
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
@@ -33,7 +33,11 @@ if TYPE_CHECKING:
     )
 
 try:  # pragma: no cover - import-time guard
-    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexMacroNode,
+    )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
@@ -57,6 +61,8 @@ class EnvironmentHandlerMixin:
             parent: Any = ...,
             formatting: Any = ...,
             text_label: Any = ...,
+            *,
+            text_target: Any = ...,
         ) -> None: ...
         def _clean_math(self, latex_str: str, env_name: str) -> str: ...
         def _parse_table(self, node: Any) -> Any: ...
@@ -327,14 +333,28 @@ class EnvironmentHandlerMixin:
         if current_item:
             items.append(current_item)
 
+        empty_items = []
         for item_nodes in items:
-            self._process_list_item(
+            # Skip the whitespace before the first ``\item`` without creating
+            # an item for it.
+            if all(
+                isinstance(n, LatexCharsNode) and not n.chars.strip()
+                for n in item_nodes
+            ):
+                continue
+            list_item = self._process_list_item(
                 item_nodes,
                 doc,
                 list_group,
                 formatting,
                 enumerated=node.envname == "enumerate",
             )
+            if not list_item.text and not list_item.children:
+                empty_items.append(list_item)
+
+        # Deleting rescans the whole document, so do it once per list.
+        if empty_items:
+            doc.delete_items(node_items=empty_items)
 
     def _process_list_item(
         self,
@@ -343,37 +363,23 @@ class EnvironmentHandlerMixin:
         list_group: NodeItem,
         formatting: Formatting | None = None,
         enumerated: bool = False,
-    ):
+    ) -> ListItem:
         """Add the content of one ``\\item`` to ``list_group`` as one list item.
 
         docling-core numbers an item by its position among the children of its
         list group, so every ``\\item`` must add exactly one child. The content
         is added inside the list item, as in the other backends: a paragraph
         break, display math, a link, a quote or a nested list each flush the text
-        buffer and would otherwise add further siblings. The leading text then
-        becomes the text of the list item itself.
+        buffer and would otherwise add further siblings. The leading text becomes
+        the text of the list item itself.
         """
         list_item = doc.add_list_item(
             text="", enumerated=enumerated, parent=list_group, formatting=formatting
         )
-        self._process_nodes(item_nodes, doc, list_item, formatting)
-
-        if not list_item.children:
-            # Nothing to show, e.g. whitespace before the first ``\item``.
-            doc.delete_items(node_items=[list_item])
-            return
-
-        first = list_item.children[0].resolve(doc)
-        if (
-            type(first) is TextItem
-            and first.label in (DocItemLabel.TEXT, DocItemLabel.PARAGRAPH)
-            and not first.children
-        ):
-            list_item.text = first.text
-            list_item.orig = first.orig
-            list_item.formatting = first.formatting
-            list_item.hyperlink = first.hyperlink
-            doc.delete_items(node_items=[first])
+        self._process_nodes(
+            item_nodes, doc, list_item, formatting, text_target=list_item
+        )
+        return list_item
 
     def _process_bibliography(
         self,
