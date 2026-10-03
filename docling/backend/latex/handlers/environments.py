@@ -33,11 +33,7 @@ if TYPE_CHECKING:
     )
 
 try:  # pragma: no cover - import-time guard
-    from pylatexenc.latexwalker import (
-        LatexCharsNode,
-        LatexEnvironmentNode,
-        LatexMacroNode,
-    )
+    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
@@ -315,46 +311,36 @@ class EnvironmentHandlerMixin:
     ):
         list_group = doc.add_group(parent=parent, name="list", label=GroupLabel.LIST)
 
-        items = []
-        current_item: list = []
+        leading: list = []
+        items: list[list] = []
 
         if node.nodelist is not None:
             for n in node.nodelist:
                 if isinstance(n, LatexMacroNode) and n.macroname == "item":
-                    if current_item:
-                        items.append(current_item)
-                    current_item = []
-
-                    if n.nodeargd and n.nodeargd.argnlist:
-                        current_item.append(n)
+                    items.append([n] if n.nodeargd and n.nodeargd.argnlist else [])
+                elif items:
+                    items[-1].append(n)
                 else:
-                    current_item.append(n)
+                    leading.append(n)
 
-        if current_item:
-            items.append(current_item)
+        enumerated = node.envname == "enumerate"
 
-        empty_items = []
+        # Whitespace, comments and macros such as ``\setlength`` before the
+        # first ``\item`` add nothing; stray text there becomes a list item.
+        self._process_nodes(
+            leading, doc, list_group, formatting, text_label=DocItemLabel.LIST_ITEM
+        )
+        for child in list_group.children:
+            stray = child.resolve(doc)
+            if isinstance(stray, ListItem):
+                stray.enumerated = enumerated
+
+        # Every ``\item`` adds a list item, even an empty one, so that the
+        # numbering matches the document.
         for item_nodes in items:
-            # Skip the whitespace before the first ``\item`` without creating
-            # an item for it.
-            if all(
-                isinstance(n, LatexCharsNode) and not n.chars.strip()
-                for n in item_nodes
-            ):
-                continue
-            list_item = self._process_list_item(
-                item_nodes,
-                doc,
-                list_group,
-                formatting,
-                enumerated=node.envname == "enumerate",
+            self._process_list_item(
+                item_nodes, doc, list_group, formatting, enumerated=enumerated
             )
-            if not list_item.text and not list_item.children:
-                empty_items.append(list_item)
-
-        # Deleting rescans the whole document, so do it once per list.
-        if empty_items:
-            doc.delete_items(node_items=empty_items)
 
     def _process_list_item(
         self,
@@ -363,7 +349,7 @@ class EnvironmentHandlerMixin:
         list_group: NodeItem,
         formatting: Formatting | None = None,
         enumerated: bool = False,
-    ) -> ListItem:
+    ):
         """Add the content of one ``\\item`` to ``list_group`` as one list item.
 
         docling-core numbers an item by its position among the children of its
@@ -379,7 +365,6 @@ class EnvironmentHandlerMixin:
         self._process_nodes(
             item_nodes, doc, list_item, formatting, text_target=list_item
         )
-        return list_item
 
     def _process_bibliography(
         self,

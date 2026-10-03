@@ -182,6 +182,76 @@ def test_latex_enumerate_item_with_block_content(content: bytes):
     assert "continuation" in md
 
 
+def test_latex_enumerate_empty_item_keeps_numbering():
+    """An empty ``\\item`` still takes a number, as in the typeset document."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item One
+    \item
+    \item \label{it:three}
+    \item Four
+    \end{enumerate}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    outer_items = [child.resolve(doc) for child in outer.children]
+    assert [item.text for item in outer_items] == ["One", "", "", "Four"]
+    assert all(item.enumerated for item in outer_items)
+    assert doc.export_to_markdown().endswith("\n4. Four")
+
+
+@pytest.mark.parametrize(
+    ("leading", "expected_md"),
+    [
+        (rb"% The steps.", "1. One\n2. Two"),
+        (rb"\setlength{\itemsep}{0pt}", "1. One\n2. Two"),
+        (rb"\label{list:steps}", "1. One\n2. Two"),
+        (rb"Stray text.", "1. Stray text.\n2. One\n3. Two"),
+    ],
+    ids=["comment", "setlength", "label", "stray_text"],
+)
+def test_latex_enumerate_content_before_first_item(leading: bytes, expected_md: str):
+    """Content before the first ``\\item`` does not add an item to the list.
+
+    Stray text there, a LaTeX error, is kept as a numbered item.
+    """
+    latex_content = (
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    """
+        + leading
+        + rb"""
+    \item One
+    \item Two
+    \end{enumerate}
+    \end{document}
+    """
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert doc.export_to_markdown() == expected_md
+
+
 def test_latex_description_list():
     """Test description list with optional item labels"""
     latex_content = b"""
