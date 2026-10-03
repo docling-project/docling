@@ -73,6 +73,15 @@ class EngineModelConfig(BaseModel):
         description="Override torch dtype for this engine (e.g., 'bfloat16')",
     )
 
+    torch_dtype_fallback: str | None = Field(
+        default=None,
+        description=(
+            "Dtype to use when the device does not support the preferred "
+            "torch_dtype (e.g. 'float32' for bfloat16 on a CPU without native "
+            "bfloat16). No fallback is applied when unset."
+        ),
+    )
+
     min_engine_version: str | None = Field(
         default=None,
         description=(
@@ -102,6 +111,7 @@ class EngineModelConfig(BaseModel):
             repo_id=self.repo_id or base_repo_id,
             revision=self.revision or base_revision,
             torch_dtype=self.torch_dtype,
+            torch_dtype_fallback=self.torch_dtype_fallback,
             min_engine_version=self.min_engine_version,
             extra_config=self.extra_config,
         )
@@ -274,17 +284,20 @@ class VlmModelSpec(BaseModel):
         # Get engine-specific extra_config, torch_dtype and version requirement
         extra_config = {}
         torch_dtype = None
+        torch_dtype_fallback = None
         min_engine_version = None
         if engine_type in self.engine_overrides:
             override = self.engine_overrides[engine_type]
             extra_config = override.extra_config.copy()
             torch_dtype = override.torch_dtype
+            torch_dtype_fallback = override.torch_dtype_fallback
             min_engine_version = override.min_engine_version
 
         return EngineModelConfig(
             repo_id=repo_id,
             revision=revision,
             torch_dtype=torch_dtype,
+            torch_dtype_fallback=torch_dtype_fallback,
             min_engine_version=min_engine_version,
             extra_config=extra_config,
         )
@@ -782,7 +795,6 @@ class ObjectDetectionStagePresetMixin:
         **overrides: Any,
     ):
         from docling.datamodel.object_detection_engine_options import (
-            ApiKserveV2ObjectDetectionEngineOptions,
             OnnxRuntimeObjectDetectionEngineOptions,
             TransformersObjectDetectionEngineOptions,
         )
@@ -892,7 +904,6 @@ class ImageClassificationStagePresetMixin:
         **overrides: Any,
     ):
         from docling.datamodel.image_classification_engine_options import (
-            ApiKserveV2ImageClassificationEngineOptions,
             OnnxRuntimeImageClassificationEngineOptions,
             TransformersImageClassificationEngineOptions,
         )
@@ -1740,6 +1751,7 @@ CODE_FORMULA_CODEFORMULAV2 = StageModelPreset(
         stop_strings=["</doctag>", "<end_of_utterance>"],
         engine_overrides={
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype_fallback="float32",
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "extra_generation_config": {"skip_special_tokens": False},
