@@ -252,6 +252,74 @@ def test_table_oversized_spans_clamped_to_table_size(huge: str):
     ]
 
 
+def test_table_rowspan_shifts_later_cells_into_the_table():
+    # A cell goes in the first column of its row that no earlier cell still
+    # covers, so a rowspan pushes the cells of the rows it reaches to the
+    # right: here "North" holds column 0 of all three rows, so Q1 lands in
+    # column 1 and 10 in column 2, and the table is three columns wide. The
+    # width used to be the colspan sum of the widest row (two), which put 10
+    # and 20 past the last column: they were dropped from the grid and from
+    # the exported markdown.
+    src = (
+        b'<table><tr><td rowspan="3">North</td></tr>'
+        b"<tr><td>Q1</td><td>10</td></tr>"
+        b"<tr><td>Q2</td><td>20</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (3, 3)
+    assert [[cell.text if cell else "" for cell in row] for row in data.grid] == [
+        ["North", "", ""],
+        ["North", "Q1", "10"],
+        ["North", "Q2", "20"],
+    ]
+    assert "10" in doc.export_to_markdown()
+
+
+def test_table_row_header_rowspan_keeps_the_row_cells():
+    # The row-header form of the same shift: the spanning "<th>2025</th>" row
+    # holds column 0, so the cells of the data rows start in column 1 and the
+    # table needs a column the header row does not declare.
+    src = (
+        b"<table>"
+        b"<tr><th>Month</th><th>Revenue</th></tr>"
+        b'<tr><th rowspan="2">2025</th></tr>'
+        b"<tr><td>January</td><td>$134</td></tr>"
+        b"<tr><td>February</td><td>$150</td></tr>"
+        b"</table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert [cell.text for cell in data.table_cells] == [
+        "Month",
+        "Revenue",
+        "2025",
+        "January",
+        "$134",
+        "February",
+        "$150",
+    ]
+    grid_texts = [cell.text for row in data.grid for cell in row if cell.text]
+    assert grid_texts == [cell.text for cell in data.table_cells]
+    assert "$134" in doc.export_to_markdown()
+
+
 def test_table_inside_figure_is_parsed():
     """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
     html = (

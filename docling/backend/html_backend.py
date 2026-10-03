@@ -3104,9 +3104,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             t.unwrap()
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
-        row_col_spans: list[list[int]] = []
+        row_cell_spans: list[list[tuple[int, int]]] = []
         for row in tag("tr", recursive=False):
-            col_spans: list[int] = []
+            cell_spans: list[tuple[int, int]] = []
             is_row_header = True
             if not isinstance(row, Tag):
                 continue
@@ -3115,13 +3115,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     continue
                 cell_tag = cast(Tag, cell)
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
-                col_spans.append(col_span)
+                cell_spans.append((col_span, row_span))
                 if cell_tag.name == "td" or row_span == 1:
                     is_row_header = False
-            row_col_spans.append(col_spans)
+            row_cell_spans.append(cell_spans)
             if not is_row_header:
                 num_rows += 1
-        return num_rows, table_width(row_col_spans)
+        return num_rows, table_width(row_cell_spans)
 
     def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
         added_refs = []
