@@ -18,12 +18,15 @@ from .verify_utils import check_conversion_result_v2
 GENERATE_V2 = GEN_TEST_DATA
 pytestmark = pytest.mark.ml_pdf_model
 
+# acroform_sample.pdf: the DocTags export does not support field items.
 SKIP_DOCTAGS_COMPARISON = [
     "2203.01017v2.pdf",
     "table_mislabeled_as_picture.pdf",
+    "acroform_sample.pdf",
 ]
 
-# PDFs that are tested separately in test_failed_pages.py (intentionally failing pages)
+# PDFs that are tested separately: test_failed_pages.py (intentionally failing
+# pages).
 SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf"]
 
 
@@ -46,6 +49,7 @@ def get_converter():
     pipeline_options.table_structure_options.do_cell_matching = True
     pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
     pipeline_options.generate_parsed_pages = True
+    pipeline_options.extract_form_fields = True
 
     converter = DocumentConverter(
         format_options={

@@ -107,6 +107,26 @@ The options in this list require the explicit `enable_remote_services=True` when
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
 
+### Extract native PDF form fields
+
+Set `PdfPipelineOptions(extract_form_fields=True)` (CLI: `--extract-form-fields`)
+to convert native PDF widgets (AcroForm) into format-neutral `FieldItem` objects
+with fillable `FieldValueItem` children. Each field is keyed to the printed
+caption that the page geometry assigns to it: the caption inside or beside its
+cell, or a whole paragraph that inlines the widget. A widget inside a detected
+table goes into its table cell instead (a rich table cell holding the field),
+keyed only by text printed in that same cell: the table's row and column
+headers already name it. A caption that becomes a key leaves the body text.
+Keys are chosen from layout geometry only; PDF field names are not used as
+keys.
+
+The docling-parse backend supplies the widgets. Scanned or flattened forms,
+backends without page widgets and full-page OCR produce no field items; table
+cells need `do_table_structure=True`. Raw widget metadata is not stored in the
+`DoclingDocument`; keep parsed pages with `generate_parsed_pages=True` when
+that PDF-specific data is needed. Field items are not supported by the DocTags
+export.
+
 ### Image resolution and scale
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
