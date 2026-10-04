@@ -793,7 +793,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             and isinstance((child := element.children[0]), marko.inline.RawText)
             # Drop blank lines around the code but keep the first line's
             # indentation, which is part of the code.
-            and len(snippet_text := child.children.lstrip("\n").rstrip()) > 0
+            and len(
+                snippet_text := re.sub(
+                    r"\A(?:[ \t]*\r?\n)+", "", child.children
+                ).rstrip()
+            )
+            > 0
         ):
             self._close_table(doc)
             _log.debug(" - Code Block: %s", element.children)
