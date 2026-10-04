@@ -360,7 +360,7 @@ def convert_remote(
         option_kwargs["image_export_mode"] = image_export_mode
     if parsed_page_range is not None:
         option_kwargs["page_range"] = parsed_page_range
-    options = ConvertDocumentsRequestOptions(**option_kwargs)
+    options = ConvertDocumentsRequestOptions.model_validate(option_kwargs)
     # Local export must match what the service produced: resolved value (the
     # user's override, or the options model default when unset).
     resolved_image_mode = options.image_export_mode

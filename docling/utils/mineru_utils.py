@@ -439,6 +439,7 @@ def parse_mineru2(
                 prov=provenance,
             )
             if region.type == "text":
+                assert isinstance(text_item, TextItem)
                 previous_text_item = text_item
     link_adjacent_captions(document, block_starts, caption_owners)
     return document

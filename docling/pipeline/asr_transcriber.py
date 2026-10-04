@@ -209,7 +209,7 @@ class _NativeWhisperModel:
 
         if self.enabled:
             try:
-                import whisper  # type: ignore
+                import whisper
             except ImportError:
                 if sys.version_info < (3, 14):
                     raise ImportError(
@@ -349,7 +349,11 @@ class _NativeWhisperModel:
             language=self.language,
             word_timestamps=self.word_timestamps,
             beam_size=self.beam_size,
-            condition_on_previous_text=self.condition_on_previous_text,
+            condition_on_previous_text=(
+                True
+                if self.condition_on_previous_text is None
+                else self.condition_on_previous_text
+            ),
             temperature=self.temperature,
         )
 
@@ -389,7 +393,7 @@ class _MlxWhisperModel:
 
         if self.enabled:
             try:
-                import mlx_whisper  # type: ignore
+                import mlx_whisper
             except ImportError:
                 raise ImportError(
                     "mlx-whisper is not installed. Please install it via "
@@ -606,7 +610,7 @@ class _WhisperS2TModel:
             self.initial_prompt = asr_options.initial_prompt
             self.word_timestamps = asr_options.word_timestamps
 
-    def _parse_device(self, device_str: str) -> tuple:
+    def _parse_device(self, device_str: str) -> tuple[str, int]:
         """Parse device string like 'cuda:0' into ('cuda', 0)."""
         if ":" in device_str:
             parts = device_str.split(":")

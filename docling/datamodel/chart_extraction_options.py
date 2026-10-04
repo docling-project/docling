@@ -164,10 +164,12 @@ class _ChartExtractionModelKindMeta(type):
     ``ChartExtractionModelKind["GRANITE_VISION"]`` does not raise TypeError.
     """
 
-    def __iter__(cls) -> Iterator[Any]:
+    _members: ClassVar[dict[str, "ChartExtractionModelKind._Member"]]
+
+    def __iter__(cls) -> Iterator["ChartExtractionModelKind._Member"]:
         return iter(cls._members.values())
 
-    def __getitem__(cls, item: str) -> Any:
+    def __getitem__(cls, item: str) -> "ChartExtractionModelKind._Member":
         return cls._members[item]
 
     def __contains__(cls, item: object) -> bool:
@@ -216,7 +218,7 @@ class ChartExtractionModelKind(metaclass=_ChartExtractionModelKindMeta):
         def __hash__(self) -> int:
             return hash(self.value)
 
-    _members: ClassVar[Dict[str, "_ChartExtractionModelKindMeta"]] = {}
+    _members: ClassVar[dict[str, _Member]] = {}
 
     # Map old enum values to new preset IDs (V1 → V4 with deprecation)
     _PRESET_MAP: ClassVar[Dict[str, str]] = {
@@ -231,7 +233,7 @@ for _name, _val in [
     ("GRANITE_VISION_V4", ChartExtractionModelKind.GRANITE_VISION_V4),
 ]:
     _member = ChartExtractionModelKind._Member(_name, _val)
-    ChartExtractionModelKind._members[_name] = _member  # type: ignore[assignment]
+    ChartExtractionModelKind._members[_name] = _member
     setattr(ChartExtractionModelKind, _name, _member)
 
 

@@ -15,7 +15,6 @@ from pydantic import (
     PositiveInt,
     PrivateAttr,
     SecretStr,
-    conint,
     field_validator,
     model_validator,
 )
@@ -327,7 +326,7 @@ class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
             "are consumed at, so pages are not rendered a second time on request."
         ),
     )
-    release_native_memory_every_n_pages: conint(ge=0) = Field(
+    release_native_memory_every_n_pages: Annotated[int, Field(ge=0)] = Field(
         128,
         description=(
             "Release native parser memory after every N decoded pages in the "

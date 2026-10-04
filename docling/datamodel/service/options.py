@@ -661,7 +661,9 @@ class ConvertDocumentsOptions(BaseModel):
     ] = None
 
     chart_extraction_custom_config: Annotated[
-        Optional[SerializeAsAny[Union[ChartExtractionVlmEngineOptions, dict]]],
+        Optional[
+            SerializeAsAny[Union[ChartExtractionVlmEngineOptions, dict[str, Any]]]
+        ],
         Field(
             default=None,
             description=(
@@ -806,7 +808,7 @@ class ConvertDocumentsOptions(BaseModel):
 
     # Option 2: Custom configuration (if allowed by config)
     vlm_pipeline_custom_config: Annotated[
-        Optional[Union[VlmConvertOptions, dict]],
+        Optional[Union[VlmConvertOptions, dict[str, Any]]],
         Field(
             default=None,
             description="Custom VLM configuration including model spec and engine options. "
@@ -815,7 +817,7 @@ class ConvertDocumentsOptions(BaseModel):
     ] = None
 
     picture_description_custom_config: Annotated[
-        Optional[Union[PictureDescriptionVlmEngineOptions, dict]],
+        Optional[Union[PictureDescriptionVlmEngineOptions, dict[str, Any]]],
         Field(
             default=None,
             description="Custom picture description configuration including model spec and engine options.",
@@ -823,7 +825,7 @@ class ConvertDocumentsOptions(BaseModel):
     ] = None
 
     code_formula_custom_config: Annotated[
-        Optional[Union[CodeFormulaVlmOptions, dict]],
+        Optional[Union[CodeFormulaVlmOptions, dict[str, Any]]],
         Field(
             default=None,
             description="Custom code/formula extraction configuration including model spec and engine options.",

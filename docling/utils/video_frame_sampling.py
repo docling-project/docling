@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Final
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -282,7 +283,7 @@ _AUTO_PROMINENCE_K: Final[float] = 5.0
 Higher = stricter (fewer scenes on busy video); lower = more sensitive."""
 
 
-def _auto_prominence(diffs: np.ndarray) -> float:
+def _auto_prominence(diffs: NDArray[np.float64]) -> float:
     """Adapt the scene-cut threshold to how busy the video is.
 
     Uses the median frame difference as the ambient-motion floor and the
@@ -527,7 +528,7 @@ class SimpleSceneChangeFrameSampler:
         self.sharpness_candidates = sharpness_candidates
         self.runner = runner if runner is not None else FfmpegRunner()
 
-    def _probe_diffs(self, video_path: Path) -> tuple[list[float], np.ndarray]:
+    def _probe_diffs(self, video_path: Path) -> tuple[list[float], NDArray[np.float64]]:
         """Decode probe thumbnails at ``probe_fps`` and diff consecutive frames.
 
         Returns:
@@ -549,7 +550,7 @@ class SimpleSceneChangeFrameSampler:
             video_path, self.probe_fps, self.probe_size, self.runner, _on_frame
         )
         timestamps = [i / self.probe_fps for i in range(count)]
-        return timestamps, np.array(diffs)
+        return timestamps, np.array(diffs, dtype=np.float64)
 
     @staticmethod
     def _mean_abs_diff(a: Image.Image, b: Image.Image) -> float:

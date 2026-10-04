@@ -3,6 +3,7 @@
 
 import re
 from pathlib import Path
+from typing import TypedDict
 
 import typer
 from docling_core.types.doc import ImageRefMode
@@ -32,7 +33,22 @@ def _should_generate_export_images(
     )
 
 
-def _export_flags_from_formats(to_formats: list[OutputFormat]) -> dict[str, bool]:
+class _ExportFlags(TypedDict):
+    export_json: bool
+    export_yaml: bool
+    export_html: bool
+    export_html_split_page: bool
+    export_md: bool
+    export_txt: bool
+    export_doctags: bool
+    export_vtt: bool
+    export_doclang: bool
+    export_dclx: bool
+    export_chunks: bool
+    export_latex: bool
+
+
+def _export_flags_from_formats(to_formats: list[OutputFormat]) -> _ExportFlags:
     """Expand requested output formats into the per-format export booleans.
 
     The returned keys match the ``export_*`` keyword arguments of

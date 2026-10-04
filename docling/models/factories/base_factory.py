@@ -28,7 +28,7 @@ class FactoryMeta(BaseModel):
 class BaseFactory(Generic[A], metaclass=ABCMeta):
     default_plugin_name = "docling"
 
-    def __init__(self, plugin_attr_name: str, plugin_name=default_plugin_name):
+    def __init__(self, plugin_attr_name: str, plugin_name: str = default_plugin_name):
         self.plugin_name = plugin_name
         self.plugin_attr_name = plugin_attr_name
 
@@ -39,7 +39,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
     def registered_kind(self) -> list[str]:
         return [opt.kind for opt in self._classes.keys()]
 
-    def get_enum(self) -> enum.Enum:
+    def get_enum(self) -> type[enum.Enum]:
         return enum.Enum(
             self.plugin_attr_name + "_enum",
             names={kind: kind for kind in self.registered_kind},
@@ -52,7 +52,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         return self._classes
 
     @property
-    def registered_meta(self):
+    def registered_meta(self) -> dict[Type[BaseOptions], FactoryMeta]:
         return self._meta
 
     def create_instance(self, options: BaseOptions, **kwargs) -> A:

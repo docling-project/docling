@@ -27,19 +27,19 @@ class ProfilingItem(BaseModel):
     start_timestamps: List[datetime] = []
 
     def total(self) -> float:
-        return np.sum(self.times)  # type: ignore
+        return float(np.sum(self.times))
 
     def avg(self) -> float:
-        return np.average(self.times)  # type: ignore
+        return float(np.average(self.times))
 
     def std(self) -> float:
-        return np.std(self.times)  # type: ignore
+        return float(np.std(self.times))
 
     def mean(self) -> float:
-        return np.mean(self.times)  # type: ignore
+        return float(np.mean(self.times))
 
     def percentile(self, perc: float) -> float:
-        return np.percentile(self.times, perc)  # type: ignore
+        return float(np.percentile(self.times, perc))
 
 
 class TimeRecorder:

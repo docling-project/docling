@@ -208,7 +208,12 @@ def test_native_and_mlx_transcribe_language_handling(monkeypatch, tmp_path):
         mm.mlx_whisper.transcribe.assert_called()
 
 
-def test_native_whisper_passes_decode_options_to_transcribe(tmp_path):
+@pytest.mark.parametrize(
+    "condition, expected", [(False, False), (True, True), (None, True)]
+)
+def test_native_whisper_passes_decode_options_to_transcribe(
+    tmp_path, condition, expected
+):
     """Native Whisper forwards decoding options to whisper.transcribe."""
     from docling.pipeline.asr_pipeline import _NativeWhisperModel
 
@@ -216,7 +221,7 @@ def test_native_whisper_passes_decode_options_to_transcribe(tmp_path):
         repo_id="tiny",
         word_timestamps=False,
         beam_size=3,
-        condition_on_previous_text=False,
+        condition_on_previous_text=condition,
     )
 
     with patch.dict("sys.modules", {"whisper": Mock()}):
@@ -236,7 +241,7 @@ def test_native_whisper_passes_decode_options_to_transcribe(tmp_path):
     call_kwargs = model.model.transcribe.call_args.kwargs
 
     assert call_kwargs["beam_size"] == 3
-    assert call_kwargs["condition_on_previous_text"] is False
+    assert call_kwargs["condition_on_previous_text"] is expected
 
 
 def test_native_init_with_artifacts_path_and_device_logging(tmp_path):

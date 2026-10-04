@@ -880,6 +880,7 @@ class DocumentConverter:
         self, in_doc: InputDocument, raises_on_error: bool
     ) -> ConversionResult:
         if in_doc.valid:
+            assert in_doc.format is not None
             pipeline_started = False
             try:
                 pipeline = self._get_pipeline(in_doc.format)

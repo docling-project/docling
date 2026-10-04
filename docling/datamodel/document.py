@@ -143,7 +143,7 @@ class InputDocument(BaseModel):
     limits: DocumentLimits = Field(
         DocumentLimits(), description="Limits in the input document for the conversion."
     )
-    format: Annotated[InputFormat, Field(description="The document format.")]
+    format: Annotated[InputFormat | None, Field(description="The document format.")]
 
     filesize: Optional[int] = Field(
         None, description="Size of the input file, in bytes."
@@ -157,7 +157,7 @@ class InputDocument(BaseModel):
     def __init__(
         self,
         path_or_stream: Union[BytesIO, Path],
-        format: InputFormat,
+        format: InputFormat | None,
         backend: Type[AbstractDocumentBackend],
         backend_options: Optional[BackendOptions] = None,
         filename: Optional[str] = None,
@@ -648,6 +648,7 @@ class _DocumentConversionInput(BaseModel):
         self,
         format_options: Mapping[InputFormat, "BaseFormatOption"],
     ) -> Iterable[InputDocument]:
+        limits = self.limits or DocumentLimits()
         for item in self.path_or_stream_iterator:
             # `backend_input` is what backend_options_for_input() sees: the raw
             # URL string (not the HttpSource model) so HTML source_uri resolution
@@ -667,7 +668,7 @@ class _DocumentConversionInput(BaseModel):
                     obj = resolve_source_to_stream(
                         source_uri,
                         req_headers,
-                        max_file_size=self.limits.max_file_size,
+                        max_file_size=limits.max_file_size,
                     )
                 except FileSizeLimitExceededError as exc:
                     yield self._build_invalid_input_document(
@@ -677,7 +678,7 @@ class _DocumentConversionInput(BaseModel):
                         rejection=InputRejection(
                             message=(
                                 f"File size {exc.size} exceeds the max_file_size "
-                                f"limit of {self.limits.max_file_size} bytes."
+                                f"limit of {limits.max_file_size} bytes."
                             ),
                             category=FailureCategory.POLICY,
                         ),
@@ -726,7 +727,7 @@ class _DocumentConversionInput(BaseModel):
 
             yield InputDocument(
                 path_or_stream=path_or_stream,
-                format=format,  # type: ignore[arg-type]
+                format=format,
                 filename=obj.name,
                 limits=self.limits,
                 backend=backend,
@@ -825,7 +826,7 @@ class _DocumentConversionInput(BaseModel):
                     if office_mime is not None:
                         mime = office_mime
 
-        elif isinstance(obj, DocumentStream):
+        else:
             if _DocumentConversionInput._has_doclang_extension(obj.name):
                 return InputFormat.XML_DOCLANG
             if _DocumentConversionInput._has_dclx_extension(obj.name):

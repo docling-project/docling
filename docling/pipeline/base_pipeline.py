@@ -59,7 +59,9 @@ class BasePipeline(ABC):
     def __init__(self, pipeline_options: PipelineOptions):
         self.pipeline_options = pipeline_options
         self.keep_images = False
-        self.build_pipe: List[Callable] = []
+        self.build_pipe: List[
+            Callable[[ConversionResult, Iterable[Page]], Iterable[Page]]
+        ] = []
         self.enrichment_pipe: List[GenericEnrichmentModel[Any]] = []
 
         self.artifacts_path: Optional[Path] = None

@@ -68,7 +68,9 @@ def parse_markdown_heading(text: str) -> tuple[str, int | None]:
     match = _MARKDOWN_HEADING_PATTERN.match(text)
     if match is None:
         return text, None
-    return match.group(2), len(match.group(1))
+    heading = match.group(2)
+    assert isinstance(heading, str)
+    return heading, len(match.group(1))
 
 
 def strip_stop_strings(texts: list[str], stop_strings: list[str]) -> list[str]:

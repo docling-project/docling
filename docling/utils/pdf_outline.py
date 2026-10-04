@@ -89,6 +89,8 @@ def _dest_top_pdf(dest: pdfium.PdfDest) -> tuple[int | None, float | None]:
     mode, pos = dest.get_view()
     idx = _view_top_index().get(mode)
     y_pdf = pos[idx] if idx is not None and idx < len(pos) else None
+    assert page_index is None or isinstance(page_index, int)
+    assert y_pdf is None or isinstance(y_pdf, (int, float))
     return page_index, y_pdf
 
 

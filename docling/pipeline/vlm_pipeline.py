@@ -84,9 +84,7 @@ class VlmPipeline(PaginatedPipeline):
         else:
             self._initialize_legacy_vlm_models(pipeline_options)
 
-        self.enrichment_pipe: list = [
-            # Other models working on `NodeItem` elements in the DoclingDocument
-        ]
+        self.enrichment_pipe = []
 
     def _initialize_new_runtime_system(
         self, pipeline_options: VlmPipelineOptions
@@ -134,6 +132,8 @@ class VlmPipeline(PaginatedPipeline):
         Note:
             This method is deprecated and will be removed in a future version.
         """
+        vlm_options = pipeline_options.vlm_options
+        assert isinstance(vlm_options, (InlineVlmOptions, ApiVlmOptions))
         # Legacy path - using old InlineVlmOptions or ApiVlmOptions
         warnings.warn(
             "Using legacy VLM options (InlineVlmOptions/ApiVlmOptions) is deprecated. "
@@ -147,21 +147,20 @@ class VlmPipeline(PaginatedPipeline):
         # force_backend_text = True - get text from backend using bounding boxes predicted by SmolDocling doctags
         self.force_backend_text = (
             pipeline_options.force_backend_text
-            and pipeline_options.vlm_options.response_format == ResponseFormat.DOCTAGS  # type: ignore[union-attr]
+            and vlm_options.response_format == ResponseFormat.DOCTAGS
         )
 
         self.keep_images = self.pipeline_options.generate_page_images
 
-        if isinstance(pipeline_options.vlm_options, ApiVlmOptions):
+        if isinstance(vlm_options, ApiVlmOptions):
             self.build_pipe = [
                 ApiVlmModel(
                     enabled=True,
                     enable_remote_services=self.pipeline_options.enable_remote_services,
-                    vlm_options=cast(ApiVlmOptions, self.pipeline_options.vlm_options),
+                    vlm_options=vlm_options,
                 ),
             ]
-        elif isinstance(self.pipeline_options.vlm_options, InlineVlmOptions):
-            vlm_options = cast(InlineVlmOptions, self.pipeline_options.vlm_options)
+        else:
             if vlm_options.inference_framework == InferenceFramework.MLX:
                 self.build_pipe = [
                     HuggingFaceMlxModel(
@@ -202,9 +201,7 @@ class VlmPipeline(PaginatedPipeline):
 
     def _initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:
         with TimeRecorder(conv_res, "page_init"):
-            images_scale = self.pipeline_options.images_scale
-            if images_scale is not None:
-                page._default_image_scale = images_scale
+            page._default_image_scale = self.pipeline_options.images_scale
             if page._backend is not None and page._backend.is_valid():
                 page.size = page._backend.get_size()
 
@@ -708,7 +705,9 @@ class VlmPipeline(PaginatedPipeline):
 
         if mtch:
             # Return only the content of the first capturing group
-            return mtch.group(1)
+            code = mtch.group(1)
+            assert isinstance(code, str)
+            return code
         else:
             # No code blocks found, return original text
             return text
