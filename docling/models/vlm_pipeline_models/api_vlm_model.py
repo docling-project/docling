@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Union
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL.Image import Image
 from typing_extensions import override
 
@@ -14,7 +15,6 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BaseVlmPageModel
-from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
     api_image_request,
     api_image_request_streaming,
@@ -102,7 +102,7 @@ class ApiVlmModel(BaseVlmPageModel):
     @override
     def process_images(
         self,
-        image_batch: Iterable[Union[Image, np.ndarray]],
+        image_batch: Iterable[Union[Image, NDArray[np.generic]]],
         prompt: Union[str, list[str]],
     ) -> Iterable[VlmPrediction]:
         """Process raw images without page metadata."""
@@ -111,7 +111,7 @@ class ApiVlmModel(BaseVlmPageModel):
         # Handle prompt parameter
         if isinstance(prompt, str):
             prompts = [prompt] * len(images)
-        elif isinstance(prompt, list):
+        else:
             if len(prompt) != len(images):
                 raise ValueError(
                     f"Prompt list length ({len(prompt)}) must match image count ({len(images)})"
@@ -141,18 +141,17 @@ class ApiVlmModel(BaseVlmPageModel):
             stop_reason = VlmStopReason.UNSPECIFIED
             error_message = None
 
-            if self.vlm_options.custom_stopping_criteria:
-                # Instantiate any GenerationStopper classes before passing to streaming
-                instantiated_stoppers = []
-                for criteria in self.vlm_options.custom_stopping_criteria:
-                    if isinstance(criteria, GenerationStopper):
-                        instantiated_stoppers.append(criteria)
-                    elif isinstance(criteria, type) and issubclass(
-                        criteria, GenerationStopper
-                    ):
-                        instantiated_stoppers.append(criteria())
-                    # Skip non-GenerationStopper criteria (should have been caught in validation)
+            request_params = self.params.copy()
+            usage_response_key = request_params.pop("usage_response_key", "usage")
+            token_extract_key = request_params.pop("token_extract_key", None)
+            if usage_response_key is not None and not isinstance(
+                usage_response_key, str
+            ):
+                raise ValueError("usage_response_key must be a string or None")
+            if token_extract_key is not None and not isinstance(token_extract_key, str):
+                raise ValueError("token_extract_key must be a string or None")
 
+            if self.vlm_options.custom_stopping_criteria:
                 # Streaming path with early abort support
                 api_response = api_image_request_streaming(
                     image=image,
@@ -160,8 +159,10 @@ class ApiVlmModel(BaseVlmPageModel):
                     url=self.vlm_options.url,
                     timeout=self.timeout,
                     headers=self.vlm_options.headers,
-                    generation_stoppers=instantiated_stoppers,
-                    **self.params,
+                    generation_stoppers=self.vlm_options.custom_stopping_criteria,
+                    usage_response_key=usage_response_key,
+                    token_extract_key=token_extract_key,
+                    **request_params,
                 )
                 page_tags = api_response.text
                 num_tokens = api_response.num_tokens
@@ -173,7 +174,9 @@ class ApiVlmModel(BaseVlmPageModel):
                     url=self.vlm_options.url,
                     timeout=self.timeout,
                     headers=self.vlm_options.headers,
-                    **self.params,
+                    usage_response_key=usage_response_key,
+                    token_extract_key=token_extract_key,
+                    **request_params,
                 )
                 page_tags = api_response.text
                 num_tokens = api_response.num_tokens

@@ -84,10 +84,16 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
             )
 
         try:
-            from transformers import AutoImageProcessor
+            from transformers.image_processing_utils import BaseImageProcessor
+            from transformers.models.auto.image_processing_auto import (
+                AutoImageProcessor,
+            )
 
             _log.debug("Loading image processor from %s", model_folder)
-            return AutoImageProcessor.from_pretrained(str(model_folder))
+            processor = AutoImageProcessor.from_pretrained(str(model_folder))
+            if not isinstance(processor, BaseImageProcessor):
+                raise TypeError("Expected a HuggingFace image processor")
+            return processor
         except Exception as exc:
             raise RuntimeError(
                 f"Failed to load image processor from {model_folder}: {exc}"
@@ -96,7 +102,7 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
     def _load_label_mapping(self, model_folder: Path) -> Dict[int, str]:
         """Load label mapping from HuggingFace model config."""
         try:
-            from transformers import AutoConfig
+            from transformers.models.auto.configuration_auto import AutoConfig
 
             config = AutoConfig.from_pretrained(str(model_folder))
             return {

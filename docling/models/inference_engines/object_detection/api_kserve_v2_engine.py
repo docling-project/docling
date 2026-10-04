@@ -187,9 +187,9 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
         assert self._output_boxes_name is not None
         assert self._output_scores_name is not None
 
-        if _log.isEnabledFor(logging.DEBUG):
-            _t_preproc_start = time.time()
-            _t_preproc_mono = time.monotonic()
+        debug_logging = _log.isEnabledFor(logging.DEBUG)
+        _t_preproc_start = time.time() if debug_logging else None
+        _t_preproc_mono = time.monotonic() if debug_logging else None
         images = [item.image.convert("RGB") for item in input_batch]
         processed_inputs = self._processor(images=images, return_tensors="np")
 
@@ -198,7 +198,7 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
             [[image.width, image.height] for image in images],
             dtype=np.int64,
         )
-        if _log.isEnabledFor(logging.DEBUG):
+        if _t_preproc_start is not None and _t_preproc_mono is not None:
             _log.debug(
                 "PIPELINE_PROFILING KServe object-detection HF preprocessor: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
                 len(input_batch),

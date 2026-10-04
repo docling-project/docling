@@ -16,7 +16,7 @@ from typing_extensions import override
 
 if TYPE_CHECKING:
     import torch
-    from transformers import AutoModelForObjectDetection
+    from transformers.modeling_utils import PreTrainedModel
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.object_detection_engine_options import (
@@ -67,7 +67,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             artifacts_path=artifacts_path,
         )
         self.options: TransformersObjectDetectionEngineOptions = options
-        self._model: Optional[AutoModelForObjectDetection] = None
+        self._model: Optional[PreTrainedModel] = None
         self._device: Optional[torch.device] = None
 
     def _resolve_device(self) -> torch.device:
@@ -121,7 +121,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
     def initialize(self) -> None:
         """Initialize PyTorch model and preprocessor."""
         import torch
-        from transformers import AutoModelForObjectDetection
+        from transformers.models.auto.modeling_auto import AutoModelForObjectDetection
 
         _log.info("Initializing Transformers object-detection engine")
 
@@ -143,7 +143,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Load preprocessor (source of truth for preprocessing)
         self._processor = self._load_preprocessor(model_folder)
-        _log.debug(f"Loaded preprocessor with size: {self._processor.size}")  # type: ignore[attr-defined]
+        _log.debug("Loaded preprocessor: %s", type(self._processor).__name__)
 
         # Load label mapping from config
         self._id_to_label = self._load_label_mapping(model_folder)
@@ -234,7 +234,9 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             outputs = self._model(**inputs)  # type: ignore[operator]
 
         # Post-process using HuggingFace processor
-        results = self._processor.post_process_object_detection(  # type: ignore[attr-defined]
+        # Detection-specific processors supply this method; BaseImageProcessor
+        # does not declare the post-processing methods of its model subclasses.
+        results = self._processor.post_process_object_detection(  # ty: ignore[unresolved-attribute]
             outputs,
             target_sizes=target_sizes,  # type: ignore[arg-type]
             threshold=self.options.score_threshold,

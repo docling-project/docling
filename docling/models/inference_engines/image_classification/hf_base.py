@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.models.inference_engines.common import HfVisionModelMixin
@@ -73,7 +74,7 @@ class HfImageClassificationEngineBase(
         self,
         *,
         input_batch: list[ImageClassificationEngineInput],
-        probs_batch: np.ndarray,
+        probs_batch: NDArray[np.float16 | np.float32 | np.float64],
     ) -> list[ImageClassificationEngineOutput]:
         """Build outputs from a probability matrix of shape [batch, num_classes]."""
         batch_outputs: list[ImageClassificationEngineOutput] = []
@@ -100,8 +101,10 @@ class HfImageClassificationEngineBase(
         return batch_outputs
 
     @staticmethod
-    def _softmax(logits: np.ndarray) -> np.ndarray:
+    def _softmax(logits: NDArray[np.float32]) -> NDArray[np.float32]:
         """Compute softmax probabilities over class dimension."""
         shifted = logits - np.max(logits, axis=1, keepdims=True)
         exp_values = np.exp(shifted)
-        return exp_values / np.sum(exp_values, axis=1, keepdims=True)
+        return np.asarray(
+            exp_values / np.sum(exp_values, axis=1, keepdims=True), dtype=np.float32
+        )
