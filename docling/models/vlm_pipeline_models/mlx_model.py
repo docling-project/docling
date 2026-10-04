@@ -271,6 +271,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                         if isinstance(raw_logprobs, (list, np.ndarray)):  # ty: ignore[redundant-condition-strict]
                             logprobs = np.asarray(raw_logprobs)
                         else:
+                            # MLX is an optional Apple Silicon dependency.
                             import mlx.core as mx
 
                             if not isinstance(raw_logprobs, mx.array):

@@ -539,7 +539,7 @@ class _WhisperS2TModel:
 
         if self.enabled:
             try:
-                import whisper_s2t  # type: ignore
+                import whisper_s2t
             except ImportError:
                 raise ImportError(
                     "whisper_s2t is not installed. Please install it via "
