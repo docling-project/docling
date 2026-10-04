@@ -3,6 +3,12 @@
 This file provides guidance to AI coding agents when working with code in this
 repository.
 
+## Communication
+
+Use ASD-STE100 Simplified Technical English when you communicate with the user.
+Use short sentences, active voice, and consistent terms. Keep code identifiers,
+API names, and quoted source text exact. State the result and any limits clearly.
+
 ## Project overview
 
 Docling is a Python SDK and CLI for converting PDFs, Office files, HTML,
