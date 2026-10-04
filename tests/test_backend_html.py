@@ -817,6 +817,35 @@ def test_list_non_li_children_stay_in_table_cell():
     assert texts["After."].parent.resolve(doc) == doc.body
 
 
+def test_list_item_without_text():
+    """Regression for #4462: a <li> without text keeps its table or image.
+
+    Previously no list item was created for it, so its content was dropped and the
+    following items were numbered as if it did not exist.
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<li><table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>"
+        b"<li><div><img src='chart.png'></div></li>"
+        b"<li>Third.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+    assert [item.text for item in list_items] == ["", "", "Third."]
+    assert doc.tables[0].parent.cref == list_items[0].self_ref
+    assert doc.pictures[0].parent.cref == list_items[1].self_ref
+    assert "3. Third." in doc.export_to_markdown()
+
+
 @pytest.mark.parametrize(
     "inner",
     [
