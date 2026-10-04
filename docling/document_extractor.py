@@ -277,6 +277,7 @@ class DocumentExtractor:
                 errors=build_invalid_input_errors(in_doc),
             )
 
+        assert in_doc.format is not None
         pipeline = self._get_pipeline(in_doc.format)
         if pipeline is None:
             if raises_on_error:
