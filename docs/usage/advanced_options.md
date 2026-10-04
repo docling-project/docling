@@ -468,6 +468,111 @@ converter = DocumentConverter()
 result = converter.convert(source)
 ```
 
+## Track conversion progress
+
+To see progress without writing any code, turn on the built-in printer:
+
+```python
+from docling.document_converter import DocumentConverter
+
+converter = DocumentConverter(show_progress=True)
+result = converter.convert("report.pdf")
+```
+
+It prints one line per document to stderr, with the pages done:
+
+```text
+[1] Converting report.pdf
+  pages 9/9
+Finished report.pdf: success
+```
+
+When enrichment is enabled (picture classification or description, chart
+extraction, code and formulas), each step adds a line such as
+`DocumentPictureClassifier 3/3`.
+
+On a terminal the `pages` and enrichment lines update in place; in a log file
+only their final value is written. For a batch, give the printer the number
+of documents to get `[3/12]` instead of `[3]`:
+
+```python
+from docling.utils.progress import ProgressPrinter
+
+printer = ProgressPrinter(total_documents=len(sources))
+for result in DocumentConverter(progress_callback=printer).convert_all(sources):
+    ...
+```
+
+On the command line the same output is on by default when stderr is a
+terminal. `--no-progress` or `--quiet` turns it off, and `--progress` turns it
+on for pipes and log files.
+
+### Your own progress callback
+
+Pass a `progress_callback` to `DocumentConverter` to drive your own progress
+bar or forward the events elsewhere. The callback receives one event object at
+a time (see `docling.datamodel.progress`):
+
+| Event | When |
+| --- | --- |
+| `DocumentStartedProgress` | An input document is picked up, including inputs that are then skipped. |
+| `PhaseStartedProgress` | The document enters the `initialize` (pipeline set-up, slow only while the models of a new pipeline load), `build`, `assemble` or `enrich` phase. Every format reports them. |
+| `PageCompletedProgress` | A page went through all page-level models, table structure included. PDF and image pipelines only. |
+| `EnrichmentProgress` | Item counts of one enrichment step (picture classification, picture description, chart extraction, code and formula), reported per batch. |
+| `DocumentCompletedProgress` | The document finished, with its `ConversionStatus`. Always the last event of a document, also when it failed. |
+
+Every event carries `document_index`, the position of the document in the
+`convert_all` call, and `document_name`.
+
+```python
+from tqdm import tqdm
+
+from docling.datamodel.progress import (
+    ConversionProgressEvent,
+    DocumentCompletedProgress,
+    EnrichmentProgress,
+    PageCompletedProgress,
+)
+from docling.document_converter import DocumentConverter
+
+bars: dict[str, tqdm] = {}
+
+
+def show_progress(event: ConversionProgressEvent) -> None:
+    if isinstance(event, PageCompletedProgress):
+        key, done, total = "pages", event.completed_pages, event.total_pages
+    elif isinstance(event, EnrichmentProgress):
+        key, done, total = event.step, event.completed_items, event.total_items
+    elif isinstance(event, DocumentCompletedProgress):
+        for bar in bars.values():
+            bar.close()
+        bars.clear()
+        return
+    else:
+        return
+    if key not in bars:
+        bars[key] = tqdm(total=total, desc=key)
+    bars[key].update(done - bars[key].n)
+
+
+converter = DocumentConverter(progress_callback=show_progress)
+result = converter.convert("https://arxiv.org/pdf/2408.09869")
+```
+
+Things to know:
+
+- Pages can finish out of order. Use `completed_pages`, not `page_no`, for
+  the progress value. `total_pages` counts the pages selected by `page_range`.
+- Enrichment runs after the last page, on the whole document, so the page bar
+  reaching 100% does not mean the document is done. Watch the
+  `EnrichmentProgress` events, or wait for `DocumentCompletedProgress`.
+- Failed pages, and pages cut by `document_timeout`, are reported with
+  `success=False`, so `completed_pages` always reaches `total_pages`.
+- Exceptions raised by the callback are logged and ignored.
+- For a single document all events come from the thread that called
+  `convert`. With `settings.perf.doc_batch_concurrency > 1` several documents
+  report at once from worker threads, so the callback must be thread-safe.
+
 ## Limit resource usage
 
 You can limit the CPU threads used by Docling by setting the environment variable `OMP_NUM_THREADS` accordingly. The default setting is using 4 CPU threads.

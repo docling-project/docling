@@ -114,6 +114,7 @@ docling report.pdf --enrich-picture-description --output /tmp/
 | Password-protected PDF | `--pdf-password PASSWORD` (raises `ConversionError` if wrong) |
 | Very large document (500+ pages) | Standard, add `--no-tables` for speed; set `--device` / `--num-threads` |
 | Only part of a document is needed | `--page-range 1-4` (or a single page, `--page-range 4`); page numbers start at 1 |
+| Long run, want to see progress | Shown on stderr by default in a terminal (document position, pages, enrichment items); `--progress` forces it for pipes, `--no-progress` / `-q` hides it |
 | Complex / multi-column layout | `--pipeline vlm` (standard may misorder reading flow) |
 | Handwriting or formulas | `--pipeline vlm` only |
 | Output near-empty | Enable OCR, or switch to `--pipeline vlm` |
