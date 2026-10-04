@@ -156,13 +156,12 @@ def tesseract_box_to_bounding_rectangle(
         if original_offset.coord_origin is not CoordOrigin.TOPLEFT:
             msg = f"expected coordinate origin to be {CoordOrigin.TOPLEFT.value}"
             raise ValueError(msg)
-        if original_offset is not None:
-            rect.r_x0 += original_offset.l
-            rect.r_x1 += original_offset.l
-            rect.r_x2 += original_offset.l
-            rect.r_x3 += original_offset.l
-            rect.r_y0 += original_offset.t
-            rect.r_y1 += original_offset.t
-            rect.r_y2 += original_offset.t
-            rect.r_y3 += original_offset.t
+        rect.r_x0 += original_offset.l
+        rect.r_x1 += original_offset.l
+        rect.r_x2 += original_offset.l
+        rect.r_x3 += original_offset.l
+        rect.r_y0 += original_offset.t
+        rect.r_y1 += original_offset.t
+        rect.r_y2 += original_offset.t
+        rect.r_y3 += original_offset.t
     return rect

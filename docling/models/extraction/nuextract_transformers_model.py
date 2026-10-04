@@ -9,8 +9,15 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL.Image import Image
-from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationConfig
+
+# Transformers exposes the model lazily when its torch dependency is installed.
+from transformers import (
+    AutoModelForImageTextToText,  # ty: ignore[possibly-missing-import]
+    AutoProcessor,
+    GenerationConfig,
+)
 from typing_extensions import override
 
 from docling.datamodel.accelerator_options import (
@@ -88,7 +95,11 @@ def process_all_vision_info(messages, examples=None):
     )
 
     # Ensure examples batch matches messages batch if provided
-    if examples and len(examples_batch) != len(messages_batch):
+    if (
+        examples
+        and examples_batch is not None
+        and len(examples_batch) != len(messages_batch)
+    ):
         if not is_batch and len(examples_batch) == 1:
             # Single example set for a single input is fine
             pass
@@ -99,7 +110,7 @@ def process_all_vision_info(messages, examples=None):
     all_images = []
     for i, message_group in enumerate(messages_batch):
         # Get example images for this input
-        if examples and i < len(examples_batch):
+        if examples and examples_batch is not None and i < len(examples_batch):
             input_example_images = extract_example_images(examples_batch[i])
             all_images.extend(input_example_images)
 
@@ -163,7 +174,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 trust_remote_code=vlm_options.trust_remote_code,
             )
             if sys.version_info < (3, 14):
-                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+                self.vlm_model = torch.compile(self.vlm_model)
             else:
                 self.vlm_model.eval()
 
@@ -173,7 +184,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
     @override
     def process_images(
         self,
-        image_batch: Iterable[Union[Image, np.ndarray]],
+        image_batch: Iterable[Union[Image, NDArray[np.generic]]],
         prompt: Union[str, list[str]],
     ) -> Iterable[VlmPrediction]:
         """
@@ -288,7 +299,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         trimmed_sequences = generated_ids[:, input_len:]
 
         # Decode with the processor/tokenizer
-        decoded_texts: list[str] = self.processor.batch_decode(
+        decoded_texts = self.processor.batch_decode(
             trimmed_sequences,
             skip_special_tokens=True,
             clean_up_tokenization_spaces=False,
@@ -296,15 +307,16 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
 
         # Optional logging
         num_tokens = None
-        if generated_ids.shape[0] > 0:  # type: ignore
+        if generated_ids.shape[0] > 0:
             # Todo: confirm num tokens is actually from first item, code was already like this
             num_tokens = int(generated_ids[0].shape[0])
             _log.debug(
                 f"Generated {num_tokens} tokens in {generation_time:.2f}s "
-                f"for batch size {generated_ids.shape[0]}."  # type: ignore
+                f"for batch size {generated_ids.shape[0]}."
             )
 
         for text in decoded_texts:
+            assert isinstance(text, str)
             # Apply decode_response to the output text
             decoded_text = self.vlm_options.decode_response(text)
             yield VlmPrediction(

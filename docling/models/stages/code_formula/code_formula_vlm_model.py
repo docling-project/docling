@@ -22,6 +22,7 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.labels import CodeLanguageLabel
+from numpy.typing import NDArray
 from PIL import Image
 from typing_extensions import override
 
@@ -253,7 +254,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             raise RuntimeError("Engine not initialized")
 
         labels: List[str] = []
-        images: List[Union[Image.Image, np.ndarray]] = []
+        images: List[Union[Image.Image, NDArray[np.generic]]] = []
         elements: List[Union[CodeItem, TextItem]] = []
 
         for el in element_batch:
@@ -262,7 +263,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             labels.append(el.item.label)
             images.append(el.image)
 
-        extra_generation_config: dict = {
+        extra_generation_config: dict[str, object] = {
             "skip_special_tokens": False,  # Keep special tokens for post-processing
         }
         # API engines switch to streaming when given a stopper, so they only get
@@ -321,5 +322,5 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
                 self.engine.cleanup()
             except Exception as e:
                 # _log may be None during interpreter shutdown
-                if _log is not None:
+                if _log is not None:  # ty: ignore[redundant-condition-strict]
                     _log.warning(f"Error cleaning up engine: {e}")

@@ -427,7 +427,7 @@ def _item_page_and_top(
         return None, None
     prov = item.prov[0]
     page = document.pages.get(prov.page_no)
-    if page is not None and page.size is not None:
+    if page is not None:
         return prov.page_no, prov.bbox.to_top_left_origin(page.size.height).t
     return prov.page_no, None
 

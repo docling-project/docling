@@ -5,11 +5,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Iterable, Optional, Type
+from typing import TYPE_CHECKING, Iterable, Optional, Type, TypedDict
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
-from typing_extensions import override
+from typing_extensions import NotRequired, override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -36,6 +36,15 @@ from docling.utils.ocr_language import (
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    import tesserocr
+
+
+class _TesserocrInitKwargs(TypedDict):
+    init: bool
+    oem: tesserocr.OEM
+    path: NotRequired[str]
 
 
 class TesseractOcrModel(BaseOcrModel):
@@ -113,7 +122,7 @@ class TesseractOcrModel(BaseOcrModel):
             # Needs the installed language list and the prefix, so it runs here.
             self._native_codes = self.resolve_ocr_languages()
 
-            tesserocr_kwargs = {
+            tesserocr_kwargs: _TesserocrInitKwargs = {
                 "init": True,
                 "oem": tesserocr.OEM.DEFAULT,
             }
@@ -129,11 +138,15 @@ class TesseractOcrModel(BaseOcrModel):
             )
             if self._auto_script:
                 # No `lang`: the per-page OSD pass picks a script reader instead.
-                self._reader = tesserocr.PyTessBaseAPI(psm=main_psm, **tesserocr_kwargs)
+                # The native API accepts int PSM values; its stub requires PSM.
+                self._reader = tesserocr.PyTessBaseAPI(
+                    psm=main_psm,  # ty: ignore[invalid-argument-type]
+                    **tesserocr_kwargs,
+                )
             else:
                 self._reader = tesserocr.PyTessBaseAPI(
                     lang="+".join(self._native_codes),
-                    psm=main_psm,
+                    psm=main_psm,  # ty: ignore[invalid-argument-type]
                     **tesserocr_kwargs,
                 )
             # OSD reader must use PSM.OSD_ONLY for orientation detection
@@ -201,7 +214,8 @@ class TesseractOcrModel(BaseOcrModel):
                         osd = self._osd_reader.DetectOrientationScript()
 
                         # No text, or Orientation and Script detection failure
-                        if osd is None:
+                        # The method documents None on failure despite its dict annotation.
+                        if osd is None:  # ty: ignore[redundant-condition-strict]
                             _log.error(
                                 "OSD failed for doc (doc %s, page: %s, "
                                 "OCR rectangle: %s)",
@@ -238,9 +252,11 @@ class TesseractOcrModel(BaseOcrModel):
                                         tesserocr.PyTessBaseAPI(
                                             path=self._reader.GetDatapath(),
                                             lang=lang,
-                                            psm=self.options.psm
-                                            if self.options.psm is not None
-                                            else tesserocr.PSM.AUTO,
+                                            psm=(
+                                                self.options.psm
+                                                if self.options.psm is not None
+                                                else tesserocr.PSM.AUTO
+                                            ),  # ty: ignore[invalid-argument-type]
                                             init=True,
                                             oem=tesserocr.OEM.DEFAULT,
                                         )

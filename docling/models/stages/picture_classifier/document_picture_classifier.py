@@ -16,6 +16,7 @@ from docling_core.types.doc import (
     PictureMeta,
 )
 from docling_core.types.doc.document import PictureClassificationPrediction
+from numpy.typing import NDArray
 from PIL import Image
 from typing_extensions import override
 
@@ -155,21 +156,13 @@ class DocumentPictureClassifier(
         if self.engine is None:
             raise RuntimeError("Picture classifier engine is not initialized.")
 
-        images: List[Union[Image.Image, np.ndarray]] = []
+        images: List[Union[Image.Image, NDArray[np.generic]]] = []
         elements: List[PictureItem] = []
         for i, el in enumerate(element_batch):
             assert isinstance(el.item, PictureItem)
             elements.append(el.item)
 
-            raw_image = el.image
-            if isinstance(raw_image, Image.Image):
-                raw_image = raw_image.convert("RGB")
-            elif isinstance(raw_image, np.ndarray):
-                raw_image = Image.fromarray(raw_image).convert("RGB")
-            else:
-                raise TypeError(
-                    "Supported input formats are PIL.Image.Image or numpy.ndarray."
-                )
+            raw_image = el.image.convert("RGB")
             images.append(raw_image)
 
         engine_input_batch = [
@@ -208,7 +201,7 @@ class DocumentPictureClassifier(
                 predictions=predictions,
             )
 
-            if item.meta is not None and isinstance(item.meta, PictureMeta):
+            if item.meta is not None:
                 item.meta.classification = classification_data
             else:
                 item.meta = PictureMeta(classification=classification_data)

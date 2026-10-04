@@ -7,7 +7,7 @@ Each function takes a processor, images, and templates and returns
 tokenized inputs ready for model.generate().
 """
 
-from typing import Any
+from typing import Any, cast
 
 from PIL.Image import Image
 
@@ -109,14 +109,17 @@ def _build_extraction_prompt(template: str) -> str:
     )
 
 
-def _process_all_vision_info(messages: list, examples: list | None = None) -> Any:
+def _process_all_vision_info(
+    messages: list[dict[str, Any]] | list[list[dict[str, Any]]],
+    examples: list[dict[str, Any]] | list[list[dict[str, Any]] | None] | None = None,
+) -> Any:
     """Process vision info from messages using qwen-vl-utils.
 
     Adapted from NuExtract source code.
     """
     from qwen_vl_utils import fetch_image, process_vision_info
 
-    def extract_example_images(example_item: Any) -> list:
+    def extract_example_images(example_item: Any) -> list[Image]:
         if not example_item:
             return []
         examples_to_process = (
@@ -131,8 +134,11 @@ def _process_all_vision_info(messages: list, examples: list | None = None) -> An
                 images.append(fetch_image(example["input"]))
         return images
 
-    is_batch = messages and isinstance(messages[0], list)
-    messages_batch = messages if is_batch else [messages]
+    is_batch = bool(messages) and isinstance(messages[0], list)
+    if is_batch:
+        messages_batch = cast(list[list[dict[str, Any]]], messages)
+    else:
+        messages_batch = [cast(list[dict[str, Any]], messages)]
     is_batch_examples = (
         examples
         and isinstance(examples, list)

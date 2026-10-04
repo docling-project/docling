@@ -90,7 +90,7 @@ class TableCropsLayoutModel(BaseLayoutModel):
             cells=[],
         )
 
-        clusters = [cluster]
+        clusters: list[Cluster] = [cluster]
 
         if not self.options.skip_cell_assignment:
             page_cells = list(page.cells)

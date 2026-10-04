@@ -11,6 +11,7 @@ from typing import List, Optional, Type
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from numpy.typing import NDArray
 from PIL import Image
 from typing_extensions import override
 
@@ -142,7 +143,7 @@ class KserveV2OcrModel(BaseOcrModel):
             self.options.transport,
         )
 
-    def _preprocess_image(self, image: Image.Image) -> np.ndarray:
+    def _preprocess_image(self, image: Image.Image) -> NDArray[np.generic]:
         """Preprocess image for KServe v2 OCR inference.
 
         Converts PIL image to numpy array with shape (1, H, W, C) in UINT8 format,
@@ -164,9 +165,9 @@ class KserveV2OcrModel(BaseOcrModel):
 
     def _create_text_cells(
         self,
-        boxes: np.ndarray,
-        txts: np.ndarray,
-        scores: np.ndarray,
+        boxes: NDArray[np.generic],
+        txts: NDArray[np.generic],
+        scores: NDArray[np.generic],
         ocr_rect: BoundingBox,
     ) -> List[TextCell]:
         """Convert KServe v2 OCR outputs to TextCell objects.

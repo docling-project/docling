@@ -14,6 +14,7 @@ from docling_core.types.doc import (
     NodeItem,
     PictureItem,
 )
+from numpy.typing import NDArray
 from PIL.Image import Image
 from typing_extensions import TypeVar, override
 
@@ -52,7 +53,7 @@ class BaseVlmModel(ABC):
     @abstractmethod
     def process_images(
         self,
-        image_batch: Iterable[Union[Image, np.ndarray]],
+        image_batch: Iterable[Union[Image, NDArray[np.generic]]],
         prompt: Union[str, list[str]],
     ) -> Iterable[VlmPrediction]:
         """Process raw images without page metadata.
@@ -137,6 +138,7 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
             prompt = self.processor.apply_chat_template(
                 messages, add_generation_prompt=True
             )
+            assert isinstance(prompt, str)
             return prompt
 
         raise RuntimeError(

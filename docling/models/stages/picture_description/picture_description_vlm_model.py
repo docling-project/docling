@@ -62,7 +62,8 @@ class PictureDescriptionVlmModel(
             try:
                 import torch
                 from transformers import (
-                    AutoModelForImageTextToText,
+                    # Transformers exposes this model lazily when torch is installed.
+                    AutoModelForImageTextToText,  # ty: ignore[possibly-missing-import]
                     AutoProcessor,
                 )
             except ImportError:
@@ -88,7 +89,7 @@ class PictureDescriptionVlmModel(
                     ),
                 )
                 if sys.version_info < (3, 14):
-                    self.model = torch.compile(self.model)  # type: ignore
+                    self.model = torch.compile(self.model)
                 else:
                     self.model.eval()
 

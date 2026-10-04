@@ -61,4 +61,5 @@ class HFStoppingCriteriaWrapper(StoppingCriteria):
             except Exception as e:
                 _log.info(f"Error in TextStopper.should_stop: {e}")
                 continue
-        return is_done  # type: ignore[return-value]
+        # torch.zeros returns Tensor in the stubs even with dtype=torch.bool.
+        return is_done  # ty: ignore[invalid-return-type]

@@ -112,7 +112,9 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             self.provenance = f"{self.repo_id} ({engine_type.value})"
 
     def _resolve_runtime_engine_type(self) -> VlmEngineType:
-        selected_engine_type = getattr(self.engine, "selected_engine_type", None)
+        selected_engine_type = (
+            self.engine.selected_engine_type if self.engine is not None else None
+        )
         if selected_engine_type is not None:
             return selected_engine_type
         return self.options.engine_options.engine_type
