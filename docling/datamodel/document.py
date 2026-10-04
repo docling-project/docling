@@ -861,6 +861,7 @@ class _DocumentConversionInput(BaseModel):
             if detected_afp := _DocumentConversionInput._detect_afp(content):
                 mime = detected_afp
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
+        mime = mime or _DocumentConversionInput._detect_latex(content, obj_ext)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
         formats = MimeTypeToFormat.get(mime, [])
@@ -1110,6 +1111,26 @@ class _DocumentConversionInput(BaseModel):
         ):
             return "application/xml"
 
+        return None
+
+    @staticmethod
+    def _detect_latex(content: bytes, ext: Optional[str] = None) -> Optional[str]:
+        """Guess the mime type of a LaTeX document from its content.
+
+        Args:
+            content: A short piece of a document from its beginning.
+            ext: The file extension, if any. A plain-text extension keeps its
+              Markdown fallback even when the text quotes LaTeX.
+
+        Returns:
+            The LaTeX mime type if a line starts with ``\\documentclass`` (or
+              LaTeX 2.09 ``\\documentstyle``), or None.
+        """
+        if (ext or "").lower() in FormatToExtensions[InputFormat.MD]:
+            return None
+        content_str = content.decode("utf-8", errors="ignore").lstrip("﻿")
+        if re.search(r"^[ \t]*\\document(?:class|style)\b", content_str, re.MULTILINE):
+            return FormatToMimeType[InputFormat.LATEX][0]
         return None
 
     @staticmethod
