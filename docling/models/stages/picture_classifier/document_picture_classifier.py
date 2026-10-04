@@ -17,6 +17,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -105,6 +106,7 @@ class DocumentPictureClassifier(
             self.engine.initialize()
             self._classes = self.engine.get_label_mapping()
 
+    @override
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         """
         Determines if the given element can be processed by the classifier.
@@ -123,6 +125,7 @@ class DocumentPictureClassifier(
         """
         return self.enabled and isinstance(element, PictureItem)
 
+    @override
     def __call__(
         self,
         doc: DoclingDocument,

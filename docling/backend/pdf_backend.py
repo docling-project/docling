@@ -10,6 +10,7 @@ from typing import ClassVar, Optional, Set, Union
 from docling_core.types.doc import BoundingBox, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from PIL import Image
+from typing_extensions import override
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.datamodel.backend_options import PdfBackendOptions
@@ -138,6 +139,7 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         pass
 
     @abstractmethod
+    @override
     def page_count(self) -> int:
         pass
 
@@ -155,10 +157,12 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         return []
 
     @classmethod
+    @override
     def supported_formats(cls) -> Set[InputFormat]:
         return {InputFormat.PDF}
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return True
 

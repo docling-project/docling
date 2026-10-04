@@ -23,6 +23,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -122,6 +123,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
 
             _log.info("CodeFormulaVlmModel initialized successfully")
 
+    @override
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         """Determine if an element can be processed by this stage.
 
@@ -227,6 +229,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
 
         return [clean_text(t) for t in texts]
 
+    @override
     def __call__(
         self,
         doc: DoclingDocument,

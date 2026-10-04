@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, Type, Union
 
 from PIL import Image
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ApiImageRequestResult
@@ -23,6 +24,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
     # elements_batch_size = 4
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         return PictureDescriptionApiOptions
 
@@ -51,6 +53,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                     "pipeline_options.enable_remote_services=True."
                 )
 
+    @override
     def _annotate_images(
         self, images: Iterable[Image.Image]
     ) -> Iterable[ApiImageRequestResult]:

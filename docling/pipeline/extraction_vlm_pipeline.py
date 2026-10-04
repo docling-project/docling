@@ -10,6 +10,7 @@ from typing import Optional
 
 from PIL.Image import Image
 from pydantic import BaseModel
+from typing_extensions import override
 
 from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
 from docling.datamodel.base_models import (
@@ -54,6 +55,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             prompt_style=pipeline_options.extraction_prompt_style,
         )
 
+    @override
     def _extract_data(
         self,
         ext_res: ExtractionResult,
@@ -158,6 +160,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
 
         return ext_res
 
+    @override
     def _determine_status(self, ext_res: ExtractionResult) -> ConversionStatus:
         """Determine the status based on extraction results."""
         if ext_res.pages and not any(page.errors for page in ext_res.pages):
@@ -232,5 +235,6 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             raise ValueError(f"Unsupported template type: {type(template)}")
 
     @classmethod
+    @override
     def get_default_options(cls) -> PipelineOptions:
         return VlmExtractionPipelineOptions()

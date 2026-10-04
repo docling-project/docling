@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from typing import Type
 
+from typing_extensions import override
+
 from docling.datamodel.base_models import Page, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import BaseTableStructureOptions
@@ -20,6 +22,7 @@ class BaseTableStructureModel(BasePageModel, BaseModelWithOptions, ABC):
 
     @classmethod
     @abstractmethod
+    @override
     def get_options_type(cls) -> Type[BaseTableStructureOptions]:
         """Return the options type supported by this table model."""
 
@@ -31,6 +34,7 @@ class BaseTableStructureModel(BasePageModel, BaseModelWithOptions, ABC):
     ) -> Sequence[TableStructurePrediction]:
         """Produce table structure predictions for the provided pages."""
 
+    @override
     def __call__(
         self,
         conv_res: ConversionResult,

@@ -196,6 +196,7 @@ class VlmPipeline(PaginatedPipeline):
                     f"Could not instantiate the right type of VLM pipeline: {vlm_options.inference_framework}"
                 )
 
+    @override
     def initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:
         raise NotImplementedError("VlmPipeline initializes pages in _build_document()")
 
@@ -212,6 +213,7 @@ class VlmPipeline(PaginatedPipeline):
 
         return page
 
+    @override
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         if not isinstance(conv_res.input._backend, PdfDocumentBackend):
             raise RuntimeError(
@@ -441,6 +443,7 @@ class VlmPipeline(PaginatedPipeline):
             status = ConversionStatus.PARTIAL_SUCCESS
         return status
 
+    @override
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         return conv_res
 
@@ -804,9 +807,11 @@ class VlmPipeline(PaginatedPipeline):
             )
 
     @classmethod
+    @override
     def get_default_options(cls) -> VlmPipelineOptions:
         return VlmPipelineOptions()
 
     @classmethod
+    @override
     def is_backend_supported(cls, backend: AbstractDocumentBackend):
         return isinstance(backend, PdfDocumentBackend)

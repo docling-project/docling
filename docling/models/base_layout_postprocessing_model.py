@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from typing import Type
 
+from typing_extensions import override
+
 from docling.datamodel.base_models import LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import BaseLayoutPostprocessorOptions
@@ -18,6 +20,7 @@ class BaseLayoutPostprocessingModel(BasePageModel, BaseModelWithOptions, ABC):
 
     @classmethod
     @abstractmethod
+    @override
     def get_options_type(cls) -> Type[BaseLayoutPostprocessorOptions]:
         """Return the options type supported by this post-processing model."""
 
@@ -29,6 +32,7 @@ class BaseLayoutPostprocessingModel(BasePageModel, BaseModelWithOptions, ABC):
     ) -> Sequence[LayoutPrediction]:
         """Finalize raw layout predictions for the provided pages."""
 
+    @override
     def __call__(
         self,
         conv_res: ConversionResult,

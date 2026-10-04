@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Final, Optional, Set, Union
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
+from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.backend_options import CsvBackendOptions
@@ -76,22 +77,27 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             ) from e
         return
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return False
 
+    @override
     def unload(self):
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.close()
         self.path_or_stream = None
 
     @classmethod
+    @override
     def supported_formats(cls) -> Set[InputFormat]:
         return {InputFormat.CSV}
 
+    @override
     def convert(self) -> DoclingDocument:
         """Parse the CSV content into a DoclingDocument.
 

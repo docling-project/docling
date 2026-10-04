@@ -927,22 +927,27 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         )
         return self._get_image_loader().load_image_ref(dest, base_path)
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
+    @override
     def unload(self):
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.close()
         self.path_or_stream = None
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return False
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.MD}
 
+    @override
     def convert(self) -> DoclingDocument:
         _log.debug("converting Markdown...")
 

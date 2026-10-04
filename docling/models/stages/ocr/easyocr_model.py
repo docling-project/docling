@@ -13,6 +13,7 @@ from typing import List, Optional, Type
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -229,6 +230,7 @@ class EasyOcrModel(BaseOcrModel):
                     verbose=False,
                 )
 
+    @override
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         r"""Report the native and BCP74 languages without script whenever it is not needed"""
         tags: set[str] = set()
@@ -246,6 +248,7 @@ class EasyOcrModel(BaseOcrModel):
                 native.add(code)
         return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
+    @override
     def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:
         code = _easyocr_code(language)
         if code is None:
@@ -305,6 +308,7 @@ class EasyOcrModel(BaseOcrModel):
 
         return local_dir
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -375,5 +379,6 @@ class EasyOcrModel(BaseOcrModel):
                 yield page
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[OcrOptions]:
         return EasyOcrOptions

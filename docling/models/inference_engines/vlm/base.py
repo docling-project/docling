@@ -22,6 +22,7 @@ from typing import (
 from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, Field, SerializeAsAny, field_validator
 from pydantic_core import PydanticUndefined
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -81,6 +82,7 @@ class BaseVlmEngineOptions(BaseModel):
     _registry: ClassVar[Dict[VlmEngineType, Type["BaseVlmEngineOptions"]]] = {}
 
     @classmethod
+    @override
     def __pydantic_init_subclass__(cls, **kwargs):
         super().__pydantic_init_subclass__(**kwargs)
 

@@ -14,6 +14,7 @@ import numpy as np
 from packaging import version
 from PIL.Image import Image
 from transformers import StoppingCriteria, StoppingCriteriaList, StopStringCriteria
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
@@ -190,6 +191,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 artifacts_path, revision=vlm_options.revision
             )
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -246,6 +248,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         for page in valid_pages:
             yield page
 
+    @override
     def process_images(
         self,
         image_batch: Iterable[Union[Image, np.ndarray]],

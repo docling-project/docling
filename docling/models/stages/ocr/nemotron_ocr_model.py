@@ -14,6 +14,7 @@ from typing import Any, Optional, Type, TypedDict, cast
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -172,6 +173,7 @@ class NemotronOcrModel(BaseOcrModel):
                 lang=code,
             )
 
+    @override
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         r"""Report the BCP74 and native languages without script whenever it is not needed"""
         return OcrLanguageSupport(
@@ -184,6 +186,7 @@ class NemotronOcrModel(BaseOcrModel):
             native=sorted(_NEMOTRON_CODE_TO_ARTIFACT),
         )
 
+    @override
     def map_ocr_language(self, language: OcrLanguage) -> str:
         if language.is_passthrough():
             # `english`, `multilingual`: nemotron's own recognizer names.
@@ -381,6 +384,7 @@ class NemotronOcrModel(BaseOcrModel):
 
         buffer.clear()
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -467,5 +471,6 @@ class NemotronOcrModel(BaseOcrModel):
         yield from drain_completed()
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[OcrOptions]:
         return NemotronOcrOptions

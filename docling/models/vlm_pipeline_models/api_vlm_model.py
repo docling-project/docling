@@ -7,6 +7,7 @@ from typing import Union
 
 import numpy as np
 from PIL.Image import Image
+from typing_extensions import override
 
 from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
 from docling.datamodel.document import ConversionResult
@@ -48,6 +49,7 @@ class ApiVlmModel(BaseVlmPageModel):
                 "temperature": self.vlm_options.temperature,
             }
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -97,6 +99,7 @@ class ApiVlmModel(BaseVlmPageModel):
         for page in original_order:
             yield page
 
+    @override
     def process_images(
         self,
         image_batch: Iterable[Union[Image, np.ndarray]],

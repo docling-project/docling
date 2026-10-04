@@ -17,6 +17,7 @@ from docling_core.types.doc.page import (
     TextCell,
 )
 from PIL import Image
+from typing_extensions import override
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -130,15 +131,19 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         self._seg_page: Optional[SegmentedPdfPage] = None
 
     @property
+    @override
     def page_no(self) -> int:
         return self._result.page_number
 
+    @override
     def is_valid(self) -> bool:
         return self._result.success
 
+    @override
     def get_error_message(self) -> str:
         return self._result.error_message
 
+    @override
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:
@@ -155,6 +160,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
 
         return text_piece
 
+    @override
     def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
         if not self.is_valid():
             return None
@@ -170,18 +176,21 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             self._seg_page = seg_page
         return self._seg_page
 
+    @override
     def get_text_cells(self) -> Iterable[TextCell]:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:
             return []
         return segmented_page.textline_cells
 
+    @override
     def get_visible_text_cells(self) -> Optional[list[TextCell]]:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:
             return []
         return _visible_text_cells(segmented_page.textline_cells)
 
+    @override
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:
@@ -197,6 +206,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
                 cropboxes.append(cropbox.scaled(scale=scale))
         return cropboxes
 
+    @override
     def has_content_in(
         self,
         *,
@@ -211,6 +221,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             bbox=bbox, chars=chars, shapes=shapes, bitmaps=bitmaps
         )
 
+    @override
     def get_shape_lines(
         self,
         *,
@@ -229,6 +240,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             )
         ]
 
+    @override
     def get_connected_shape_bounding_boxes(
         self, *, tolerance: float = 0.0
     ) -> Optional[list[BoundingBox]]:
@@ -243,6 +255,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             )
         ]
 
+    @override
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
@@ -253,9 +266,11 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             )
         return self._result.get_image(scale=scale, cropbox=cropbox).convert("RGB")
 
+    @override
     def get_size(self) -> Size:
         return Size(width=self._result.page_width, height=self._result.page_height)
 
+    @override
     def unload(self) -> None:
         return None
 
@@ -344,29 +359,35 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
                 f"docling-parse could not load document {self.document_hash}."
             ) from e
 
+    @override
     def is_valid(self) -> bool:
         return not self._closed and self.page_count() > 0
 
+    @override
     def page_count(self) -> int:
         return self.parser.page_count(self.doc_key)
 
+    @override
     def get_document_outline(self) -> list[_PdfOutlineItem]:
         """Extract the outline from the threaded parser's document annotations."""
         annotations = self.parser.get_annotations(self.doc_key)
         toc = annotations.table_of_contents if annotations is not None else None
         return extract_outline_from_docling_parse(toc)
 
+    @override
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(
             "ThreadedDoclingParseDocumentBackend only supports iter_pages()."
         )
 
+    @override
     def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
         self._iterating = True
         for result in self.parser.iterate_results():
             yield ThreadedDoclingParsePageBackend(result, rendered=self._render_pages)
         self._iterating = False
 
+    @override
     def unload(self) -> None:
         if self._closed:
             return

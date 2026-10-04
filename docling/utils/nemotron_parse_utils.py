@@ -26,6 +26,7 @@ from docling_core.types.doc import (
     TabularChartMetaField,
 )
 from PIL import Image as PILImage
+from typing_extensions import override
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -72,14 +73,17 @@ class _MarkdownTextParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self._parts: list[str] = []
 
+    @override
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag.lower() == "br":
             self._append_break()
 
+    @override
     def handle_endtag(self, tag: str) -> None:
         if tag.lower() in self._BLOCK_TAGS:
             self._append_break()
 
+    @override
     def handle_data(self, data: str) -> None:
         self._parts.append(re.sub(r"\s+", " ", data))
 

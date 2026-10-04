@@ -8,6 +8,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
+from typing_extensions import override
+
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import PdfBackendOptions
 
@@ -33,6 +35,7 @@ class ManagedPdfiumDocumentBackend(PdfDocumentBackend, ABC):
     def _close_native_document(self) -> None:
         pass
 
+    @override
     def unload(self) -> None:
         if self._closed:
             return
@@ -51,6 +54,7 @@ class ManagedPdfiumPageBackend(PdfPageBackend, ABC):
     def _close_native_page(self) -> None:
         pass
 
+    @override
     def unload(self) -> None:
         if self._closed:
             return

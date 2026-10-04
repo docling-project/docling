@@ -5,6 +5,7 @@ import logging
 
 import torch
 from transformers import StoppingCriteria
+from typing_extensions import override
 
 from docling.models.utils.generation_utils import GenerationStopper
 
@@ -28,6 +29,7 @@ class HFStoppingCriteriaWrapper(StoppingCriteria):
         self.stopper = stopper
         self.skip_special_tokens = skip_special_tokens
 
+    @override
     def __call__(self, input_ids, scores, **kwargs) -> torch.BoolTensor:
         """Flag the rows whose decoded tail trips the stopper.
 

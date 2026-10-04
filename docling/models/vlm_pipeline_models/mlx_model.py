@@ -12,6 +12,7 @@ from typing import Union
 import numpy as np
 from PIL.Image import Image
 from transformers import StoppingCriteria
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
@@ -114,6 +115,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                             f"Found {criteria.__name__}. Use GenerationStopper instead."
                         )
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -170,6 +172,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         for page in valid_pages:
             yield page
 
+    @override
     def process_images(
         self,
         image_batch: Iterable[Union[Image, np.ndarray]],

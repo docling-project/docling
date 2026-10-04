@@ -13,6 +13,7 @@ from docling_core.types.doc.page import TextCell
 from PIL import ImageDraw
 from PIL.Image import Image
 from pydantic import BaseModel
+from typing_extensions import override
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
@@ -56,6 +57,7 @@ class PagePreprocessingModel(BasePageModel):
             r"(?:/\w+\s*){2,}"
         )  # Two or more "/token " sequences
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:

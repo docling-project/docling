@@ -11,6 +11,7 @@ from typing import Any, ClassVar, Literal, cast
 import torch
 from docling_core.types.doc import DocItemLabel
 from transformers import AutoModelForImageTextToText, AutoProcessor
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Page, Table, TableStructurePrediction
@@ -64,6 +65,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             self._load_model(artifacts_path)
 
     @classmethod
+    @override
     def get_options_type(cls) -> type[GraniteVisionTableStructureOptions]:
         return GraniteVisionTableStructureOptions
 
@@ -119,6 +121,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             )
         self._model.eval()
 
+    @override
     def predict_tables(
         self,
         conv_res: ConversionResult,

@@ -12,6 +12,7 @@ from io import BytesIO
 from pathlib import Path
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
+from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
@@ -200,14 +201,17 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         return email_message.as_bytes()
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return False
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.EMAIL}
 
@@ -316,6 +320,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             labels.append(f"{filename} ({content_type})" if content_type else filename)
         return labels
 
+    @override
     def convert(self) -> DoclingDocument:
         if not self.is_valid() or self.mail is None:
             raise RuntimeError(

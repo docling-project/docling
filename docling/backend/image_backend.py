@@ -17,6 +17,7 @@ from docling_core.types.doc.page import (
     TextCell,
 )
 from PIL import Image, ImageOps
+from typing_extensions import override
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
@@ -93,16 +94,20 @@ class _ImagePageBackend(PdfPageBackend):
         self.valid: bool = self._image is not None
 
     @property
+    @override
     def page_no(self) -> int:
         return self._page_no + 1
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
+    @override
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         # No text extraction from raw images without OCR
         return ""
 
+    @override
     def get_segmented_page(self) -> SegmentedPdfPage:
         # Return empty segmented page with proper dimensions for raw images
         assert self._image is not None
@@ -134,10 +139,12 @@ class _ImagePageBackend(PdfPageBackend):
             has_lines=False,
         )
 
+    @override
     def get_text_cells(self) -> Iterable[TextCell]:
         # No text cells on raw images
         return []
 
+    @override
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         # For raw images, the entire page is a bitmap
         assert self._image is not None
@@ -153,6 +160,7 @@ class _ImagePageBackend(PdfPageBackend):
             full_page_bbox = full_page_bbox.scaled(scale=scale)
         yield full_page_bbox
 
+    @override
     def get_page_image(
         self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
@@ -194,6 +202,7 @@ class _ImagePageBackend(PdfPageBackend):
             box=source_box,
         )
 
+    @override
     def get_size(self) -> Size:
         assert self._image is not None
         return Size(
@@ -201,6 +210,7 @@ class _ImagePageBackend(PdfPageBackend):
             height=self._image.height * _POINTS_PER_INCH / self._dpi[1],
         )
 
+    @override
     def unload(self):
         # Help GC and free memory
         self._image = None
@@ -263,12 +273,15 @@ class ImageDocumentBackend(PdfDocumentBackend):
                 f"Could not load image for document {self.file}"
             ) from e
 
+    @override
     def is_valid(self) -> bool:
         return len(self._frames) > 0
 
+    @override
     def page_count(self) -> int:
         return len(self._frames)
 
+    @override
     def load_page(self, page_no: int) -> _ImagePageBackend:
         if not (0 <= page_no < len(self._frames)):
             raise IndexError(f"Page index out of range: {page_no}")
@@ -277,14 +290,17 @@ class ImageDocumentBackend(PdfDocumentBackend):
         )
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         # Only IMAGE here; PDF handling remains in PDF-oriented backends
         return {InputFormat.IMAGE}
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return True
 
+    @override
     def unload(self):
         for frame in self._frames:
             frame.close()

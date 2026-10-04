@@ -15,7 +15,7 @@ from docling_core.types.doc import (
     PictureItem,
 )
 from PIL.Image import Image
-from typing_extensions import TypeVar
+from typing_extensions import TypeVar, override
 
 from docling.datamodel.base_models import (
     ItemAndImageEnrichmentElement,
@@ -98,6 +98,7 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
             return self.vlm_options.build_prompt(page.parsed_page)
 
     @abstractmethod
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -167,6 +168,7 @@ class GenericEnrichmentModel(ABC, Generic[EnrichElementT]):
 
 
 class BaseEnrichmentModel(GenericEnrichmentModel[NodeItem]):
+    @override
     def prepare_element(
         self, conv_res: ConversionResult, element: NodeItem
     ) -> Optional[NodeItem]:
@@ -181,6 +183,7 @@ class BaseItemAndImageEnrichmentModel(
     images_scale: float
     expansion_factor: float = 0.0
 
+    @override
     def prepare_element(
         self, conv_res: ConversionResult, element: NodeItem
     ) -> Optional[ItemAndImageEnrichmentElement]:

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
+from typing_extensions import override
 
 if TYPE_CHECKING:
     import onnxruntime as ort
@@ -98,6 +99,7 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
             filename = extra_filename
         return filename
 
+    @override
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
         import onnxruntime as ort
@@ -157,6 +159,7 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
             )
         return ["CPUExecutionProvider"]
 
+    @override
     def predict_batch(
         self, input_batch: List[ObjectDetectionEngineInput]
     ) -> List[ObjectDetectionEngineOutput]:

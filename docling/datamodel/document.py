@@ -49,6 +49,7 @@ from pydantic import (
     TypeAdapter,
     ValidationError,
 )
+from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -601,17 +602,21 @@ class _DummyBackend(AbstractDocumentBackend):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    @override
     def is_valid(self) -> bool:
         return False
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         return set()
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return False
 
+    @override
     def unload(self):
         return super().unload()
 

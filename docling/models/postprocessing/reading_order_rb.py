@@ -13,6 +13,7 @@ from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import RefItem
 from docling_core.types.doc.labels import DocItemLabel
 from rtree import index as rtree_index
+from typing_extensions import override
 
 _log = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class PageElement(BoundingBox):
 
     label: DocItemLabel
 
+    @override
     def __str__(self):
         return f"{self.cid:6.2f}\t{self.label!s:<10}\t{self.l:6.2f}, {self.b:6.2f}, {self.r:6.2f}, {self.t:6.2f}"
 

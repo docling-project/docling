@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional, Type, Union
 
 from PIL import Image
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ApiImageRequestResult, VlmStopReason
@@ -62,6 +63,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
     """
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         return PictureDescriptionVlmEngineOptions
 
@@ -154,6 +156,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             for image in image_list
         ]
 
+    @override
     def _annotate_images(
         self, images: Iterable[Image.Image]
     ) -> Iterable[ApiImageRequestResult]:

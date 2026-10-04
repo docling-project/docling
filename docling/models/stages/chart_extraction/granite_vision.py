@@ -23,6 +23,7 @@ from docling_core.types.doc import (
     TabularChartMetaField,
 )
 from docling_core.types.doc.document import CodeMetaField
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -110,6 +111,7 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
     # BaseItemAndImageEnrichmentModel protocol
     # ------------------------------------------------------------------
 
+    @override
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         if not self.enabled:
             return False
@@ -130,6 +132,7 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
             return selected_engine_type
         return self.options.engine_options.engine_type
 
+    @override
     def __call__(
         self,
         doc: DoclingDocument,

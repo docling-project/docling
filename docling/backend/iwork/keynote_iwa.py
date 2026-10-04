@@ -19,6 +19,7 @@ rather than from a style called "Title".
 import zipfile
 
 from docling_core.types.doc import DocItemLabel
+from typing_extensions import override
 
 from docling.backend.iwork.archives import (
     SHAPE_STORAGE_FIELD,
@@ -348,6 +349,7 @@ class KeynoteReader(IWAReader):
             for block in self._drawable_blocks(identifier)
         ], []
 
+    @override
     def _drawable_blocks(self, identifier: int) -> list[Block]:
         """Read a drawable, reading a chart here and deferring anything else.
 

@@ -10,6 +10,8 @@ import platform
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Union
 
+from typing_extensions import override
+
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
@@ -172,6 +174,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         )
         return engine_version_satisfied(engine_type, required)
 
+    @override
     def initialize(self) -> None:
         """Initialize by selecting and creating the actual engine."""
         if self._initialized:
@@ -245,6 +248,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
             f"Auto-inline engine initialized with {self.selected_engine_type.value}"
         )
 
+    @override
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs using the selected engine.
 
@@ -262,6 +266,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         # Delegate to the actual engine's batch implementation
         return self.actual_engine.predict_batch(input_batch)
 
+    @override
     def cleanup(self) -> None:
         """Clean up the actual engine resources."""
         if self.actual_engine is not None:

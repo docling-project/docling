@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from typing import List, Type
 
 import numpy as np
+from typing_extensions import override
 
 from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
@@ -34,9 +35,11 @@ class LayoutPostprocessingModel(BaseLayoutPostprocessingModel):
         self.options = options
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[LayoutPostprocessorOptions]:
         return LayoutPostprocessorOptions
 
+    @override
     def postprocess_layout(
         self,
         conv_res: ConversionResult,

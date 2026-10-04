@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.image_classification_engine_options import (
@@ -90,6 +91,7 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
         output_name = metadata.outputs[0].name
         return input_name, output_name
 
+    @override
     def initialize(self) -> None:
         """Initialize preprocessor/labels and prepare remote client."""
         _log.info("Initializing KServe v2 image-classification engine")
@@ -143,6 +145,7 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
             self._output_name,
         )
 
+    @override
     def predict_batch(
         self, input_batch: List[ImageClassificationEngineInput]
     ) -> List[ImageClassificationEngineOutput]:

@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, Union
 
 import numpy as np
 from PIL.Image import Image
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import (
@@ -210,6 +211,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             **gen_cfg,
         )
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -269,6 +271,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         for page in original_order:
             yield page
 
+    @override
     def process_images(
         self,
         image_batch: Iterable[Union[Image, np.ndarray]],

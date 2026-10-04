@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Type, get_args
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -667,9 +668,11 @@ class RapidOcrModel(BaseOcrModel):
                 params=params,
             )
 
+    @override
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         return _ppocr_supported_languages(_rapidocr_vocabulary(self.options.backend))
 
+    @override
     def resolve_ocr_languages(self) -> list[str]:
         # An empty `lang` list means "the engine's own default", which for PP-OCR
         # is the Simplified Chinese recognizer. Resolved the same way a request
@@ -687,6 +690,7 @@ class RapidOcrModel(BaseOcrModel):
             return [code]
         return super().resolve_ocr_languages()
 
+    @override
     def map_ocr_language(self, language: OcrLanguage) -> str:
         code = _ppocr_code(language, _rapidocr_vocabulary(self.options.backend))
         if code is None:
@@ -741,6 +745,7 @@ class RapidOcrModel(BaseOcrModel):
                     fw.write(buf.read())
         return local_dir
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -819,5 +824,6 @@ class RapidOcrModel(BaseOcrModel):
                 yield page
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[OcrOptions]:
         return RapidOcrOptions

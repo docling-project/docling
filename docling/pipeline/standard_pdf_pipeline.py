@@ -37,6 +37,7 @@ from docling_core.types.doc import (
     Size,
     TableItem,
 )
+from typing_extensions import override
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, iter_pdf_page_backends
@@ -433,6 +434,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
             timed_out_run_ids=timed_out_run_ids,
         )
 
+    @override
     def _process_batch(self, batch: Sequence[ThreadedItem]) -> list[ThreadedItem]:
         groups: dict[int, list[ThreadedItem]] = defaultdict(list)
         for itm in batch:
@@ -712,6 +714,7 @@ class StandardPdfPipeline(ConvertPipeline):
             **extra,
         )
 
+    @override
     def _release_page_resources(self, item: ThreadedItem) -> None:
         page = item.payload
         if page is None:
@@ -806,6 +809,7 @@ class StandardPdfPipeline(ConvertPipeline):
     def _get_expected_page_nos(self, conv_res: ConversionResult) -> list[int]:
         return get_expected_page_nos(conv_res)
 
+    @override
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Stream-build the document with a dedicated producer thread.
 
@@ -1045,6 +1049,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 p.parsed_page = None
 
     # ---------------------------------------------------------------- assemble
+    @override
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         elements, headers, body = [], [], []
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
@@ -1186,16 +1191,20 @@ class StandardPdfPipeline(ConvertPipeline):
 
     # ---------------------------------------------------------------- misc
     @classmethod
+    @override
     def get_default_options(cls) -> ThreadedPdfPipelineOptions:
         return ThreadedPdfPipelineOptions()
 
     @classmethod
+    @override
     def is_backend_supported(cls, backend: AbstractDocumentBackend) -> bool:
         return isinstance(backend, PdfDocumentBackend)
 
+    @override
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         return conv_res.status
 
+    @override
     def _unload(self, conv_res: ConversionResult) -> None:
         self._page_sizes_by_no = {}
         for p in conv_res.pages:

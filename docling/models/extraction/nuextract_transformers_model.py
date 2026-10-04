@@ -11,6 +11,7 @@ from typing import Any, Optional, Union
 import numpy as np
 from PIL.Image import Image
 from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationConfig
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
@@ -169,6 +170,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(artifacts_path)
 
+    @override
     def process_images(
         self,
         image_batch: Iterable[Union[Image, np.ndarray]],

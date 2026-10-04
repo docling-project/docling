@@ -18,6 +18,7 @@ from typing import Any, Iterator
 
 import lxml.etree as ET
 from lxml.etree import _Element
+from typing_extensions import override
 
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexencode import UnicodeToLatexEncoder
@@ -243,6 +244,7 @@ class Pr(Tag2Method):
         self.__innerdict = {}
         self.text = self.process_children(elm)
 
+    @override
     def __str__(self) -> str:
         """Return string representation."""
         return self.text
@@ -318,6 +320,7 @@ class oMath2Latex(Tag2Method):
         )
         self._latex = self.process_children(element)
 
+    @override
     def __str__(self) -> str:
         """Return LaTeX string with normalized spacing."""
         return self.latex.replace("  ", " ")
@@ -326,6 +329,7 @@ class oMath2Latex(Tag2Method):
         """Return unicode representation."""
         return self.__str__()
 
+    @override
     def process_unknow(self, elm: _Element, stag: str) -> Any | None:
         """Handle unknown element types.
 

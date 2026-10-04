@@ -8,6 +8,7 @@ from collections.abc import Iterable, Sequence
 from typing import Type
 
 from docling_core.types.doc import DocItemLabel
+from typing_extensions import override
 
 from docling.datamodel.base_models import LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
@@ -42,6 +43,7 @@ class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
 
     @classmethod
     @abstractmethod
+    @override
     def get_options_type(cls) -> Type[BaseLayoutOptions]:
         """Return the options type supported by this layout model."""
 
@@ -53,6 +55,7 @@ class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
     ) -> Sequence[LayoutPrediction]:
         """Produce layout predictions for the provided pages."""
 
+    @override
     def __call__(
         self,
         conv_res: ConversionResult,

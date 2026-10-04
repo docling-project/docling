@@ -21,7 +21,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import deprecated
+from typing_extensions import deprecated, override
 
 from docling.datamodel import (
     asr_model_specs,
@@ -1677,6 +1677,7 @@ class LayoutOptions(BaseLayoutOptions):
         ),
     ] = DOCLING_LAYOUT_HERON
 
+    @override
     def model_post_init(self, context: Any, /) -> None:
         super().model_post_init(context)
         warnings.warn(

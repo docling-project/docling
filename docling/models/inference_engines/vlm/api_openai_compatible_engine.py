@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, List, Optional
 
 from PIL.Image import Image
+from typing_extensions import override
 
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.exceptions import OperationNotAllowed
@@ -81,6 +82,7 @@ class ApiVlmEngine(BaseVlmEngine):
         # not mixed in (prevents conflicts for vendor-specific keys like model_id).
         self.user_params: dict = self.options.params.copy()
 
+    @override
     def initialize(self) -> None:
         """Initialize the API engine.
 
@@ -100,6 +102,7 @@ class ApiVlmEngine(BaseVlmEngine):
         self._initialized = True
         _log.info("API runtime initialized")
 
+    @override
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs using concurrent API requests.
 
@@ -236,6 +239,7 @@ class ApiVlmEngine(BaseVlmEngine):
 
         return outputs
 
+    @override
     def cleanup(self) -> None:
         """Clean up API runtime resources.
 

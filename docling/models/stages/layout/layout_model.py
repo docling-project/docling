@@ -13,6 +13,8 @@ import warnings
 from pathlib import Path
 from typing import Optional
 
+from typing_extensions import override
+
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_HERON,
@@ -80,6 +82,7 @@ class LayoutModel(LayoutObjectDetectionModel):
         )
 
     @classmethod
+    @override
     def get_options_type(cls) -> type[LayoutOptions]:  # ty: ignore[invalid-method-override]
         # LayoutFactory dispatches on the exact options type, so the shim must
         # keep claiming LayoutOptions rather than inheriting the parent's.

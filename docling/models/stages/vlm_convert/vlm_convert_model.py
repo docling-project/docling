@@ -13,6 +13,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from PIL import Image as PILImage
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import (
@@ -253,6 +254,7 @@ class VlmConvertModel(BasePageModel):
             )
         return combined_outputs
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
