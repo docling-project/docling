@@ -3,14 +3,16 @@
 
 import threading
 from collections.abc import Iterable
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Optional
 
 import pytest
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem, TextItem
+from typer.testing import CliRunner
 
 from docling.backend.md_backend import MarkdownDocumentBackend
+from docling.cli.main import app
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
@@ -38,6 +40,7 @@ from docling.document_converter import (
 from docling.models.base_model import GenericEnrichmentModel
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
+from docling.utils.progress import ProgressPrinter
 
 PDF_4_PAGES = Path("tests/data/pdf/sources/normal_4pages.pdf")
 PDF_9_PAGES = Path("tests/data/pdf/sources/2206.01062.pdf")
@@ -219,6 +222,69 @@ def test_concurrent_documents_each_report_in_order_from_one_thread(monkeypatch):
         assert isinstance(events[-1], DocumentCompletedProgress)
         assert len(recorder.threads_by_doc[index]) == 1
     assert threading.current_thread().name not in recorder.threads
+
+
+def test_printer_writes_final_lines_when_not_on_a_terminal():
+    stream = StringIO()
+    converter = _converter_with(
+        _EnrichedMarkdownPipeline, ProgressPrinter(total_documents=2, stream=stream)
+    )
+    text = "\n\n".join(["one", "two", "skip me"])
+
+    list(converter.convert_all([_md("a.md", text), _md("b.md", "# Only a title")]))
+
+    assert stream.getvalue().splitlines() == [
+        "[1/2] Converting a.md",
+        "  _TagModel 3/3",
+        "  _ParagraphModel 2/2",
+        "Finished a.md: success",
+        "[2/2] Converting b.md",
+        "Finished b.md: success",
+    ]
+
+
+def test_printer_updates_lines_in_place_on_a_terminal():
+    class _Terminal(StringIO):
+        def isatty(self) -> bool:
+            return True
+
+    stream = _Terminal()
+    converter = _converter_with(
+        _EnrichedMarkdownPipeline, ProgressPrinter(stream=stream)
+    )
+
+    converter.convert(_md("a.md", "\n\n".join(["one", "two", "three"])))
+
+    assert stream.getvalue() == (
+        "[1] Converting a.md\n"
+        "\r  _TagModel 0/3\r  _TagModel 2/3\r  _TagModel 3/3\n"
+        "\r  _ParagraphModel 0/3\r  _ParagraphModel 2/3\r  _ParagraphModel 3/3\n"
+        "Finished a.md: success\n"
+    )
+
+
+def test_show_progress_prints_without_a_callback(capsys):
+    DocumentConverter(show_progress=True).convert(_md("doc.md"))
+
+    assert capsys.readouterr().err.splitlines() == [
+        "[1] Converting doc.md",
+        "Finished doc.md: success",
+    ]
+
+
+def test_cli_progress_is_on_by_request_and_off_for_pipes(tmp_path):
+    source = tmp_path / "doc.md"
+    source.write_text("# Title\n\nSome text.", encoding="utf-8")
+    args = [str(source), "--from", "md", "--output", str(tmp_path)]
+
+    requested = CliRunner().invoke(app, [*args, "--progress"])
+    default = CliRunner().invoke(app, args)
+
+    assert requested.exit_code == default.exit_code == 0
+    assert "[1/1] Converting doc.md" in requested.output
+    assert "Finished doc.md: success" in requested.output
+    # CliRunner output is not a terminal, like a pipe or an AI agent.
+    assert "Converting doc.md" not in default.output
 
 
 def test_native_pdf_pages_are_reported_for_the_selected_range():

@@ -141,6 +141,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.utils.profiling import ProfilingItem
+from docling.utils.progress import ProgressPrinter
 
 # The local model stack (scipy, torch, …) is absent on lightweight installs
 # (docling-slim[service-client] / docling-client).  Guard these imports so the
@@ -1228,6 +1229,14 @@ def convert(  # noqa: C901
             help="If enabled, it saves the profiling summaries to json.",
         ),
     ] = False,
+    progress: Annotated[
+        bool | None,
+        typer.Option(
+            "--progress/--no-progress",
+            help="Show page and enrichment progress on stderr. On by default "
+            "when stderr is a terminal and --quiet is not given.",
+        ),
+    ] = None,
 ):
     # Heavy backend/converter/pipeline imports are deferred to here so the CLI
     # (and `convert-remote`) stay importable without the local PDF stack
@@ -1284,6 +1293,9 @@ def convert(  # noqa: C901
 
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
+    if progress is None:
+        progress = not quiet and ProgressPrinter.is_terminal(sys.stderr)
+
     if verbose == 0:
         logging.basicConfig(level=logging.WARNING, format=log_format)
         if not quiet:
@@ -1291,8 +1303,12 @@ def convert(  # noqa: C901
             # long-running conversions (e.g. directories of audio files) can see
             # which input is currently in flight. --quiet opts back out for callers
             # (e.g. AI agents) that need fully silent output.
-            logging.getLogger("docling.pipeline.base_pipeline").setLevel(logging.INFO)
-            logging.getLogger("docling.document_converter").setLevel(logging.INFO)
+            # The progress printer shows the same per-file lines, and more.
+            if not progress:
+                logging.getLogger("docling.pipeline.base_pipeline").setLevel(
+                    logging.INFO
+                )
+                logging.getLogger("docling.document_converter").setLevel(logging.INFO)
             # Model download, load and inference are the other long-running steps
             # with no output of their own: without these a multi-gigabyte fetch or
             # a slow first inference looks like the CLI has hung.
@@ -1802,6 +1818,8 @@ def convert(  # noqa: C901
             allowed_formats=from_formats,
             format_options=format_options,
         )
+        if progress:
+            doc_converter.progress_printer = ProgressPrinter(len(input_doc_paths))
 
         start_time = time.time()
 

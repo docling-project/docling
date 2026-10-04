@@ -117,6 +117,7 @@ from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.video_pipeline import VideoPipeline
 from docling.utils.pipeline_cache import create_pipeline_options_hash
+from docling.utils.progress import ProgressPrinter
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -461,6 +462,7 @@ class DocumentConverter:
         allowed_formats: Optional[list[InputFormat]] = None,
         format_options: Optional[dict[InputFormat, FormatOption]] = None,
         progress_callback: Optional[ProgressCallback] = None,
+        show_progress: bool = False,
     ) -> None:
         """Initialize the converter based on format preferences.
 
@@ -475,6 +477,9 @@ class DocumentConverter:
                 raises are logged and ignored. With
                 `settings.perf.doc_batch_concurrency > 1` it is called from
                 several threads at once and must be thread-safe.
+            show_progress: Print progress to stderr with the built-in
+                `ProgressPrinter`, without writing a callback. Can be combined
+                with `progress_callback`.
 
         Examples:
             Create a converter with default settings (all formats allowed):
@@ -498,11 +503,18 @@ class DocumentConverter:
             ...         ),
             ...     }
             ... )
+
+            Print page and enrichment progress to stderr:
+
+            >>> converter = DocumentConverter(show_progress=True)
         """
         self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
         self.progress_callback: Optional[ProgressCallback] = progress_callback
+        self.progress_printer: Optional[ProgressPrinter] = (
+            ProgressPrinter() if show_progress else None
+        )
 
         # Normalize format options: ensure IMAGE format uses ImageDocumentBackend
         # for backward compatibility (old code might use PdfFormatOption or other backends for images)
@@ -864,7 +876,11 @@ class DocumentConverter:
         self, indexed_doc: tuple[int, InputDocument], raises_on_error: bool
     ) -> ConversionResult:
         document_index, in_doc = indexed_doc
-        callbacks = [] if self.progress_callback is None else [self.progress_callback]
+        callbacks = [
+            callback
+            for callback in (self.progress_callback, self.progress_printer)
+            if callback is not None
+        ]
         progress = ProgressReporter(callbacks, in_doc.file.name, document_index)
         progress.document_started()
         status = ConversionStatus.FAILURE
