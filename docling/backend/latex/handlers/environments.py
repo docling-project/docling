@@ -15,9 +15,9 @@ from docling_core.types.doc.document import (
     DoclingDocument,
     Formatting,
     GroupLabel,
-    ListItem,
     NodeItem,
     PictureMeta,
+    TextItem,
 )
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
@@ -338,29 +338,29 @@ class EnvironmentHandlerMixin:
             items.append((current_marker, current_item))
 
         for marker, item_nodes in items:
-            first_child = len(list_group.children)
-            self._process_nodes(
-                item_nodes,
-                doc,
-                list_group,
-                formatting,
-                text_label=DocItemLabel.LIST_ITEM,
-            )
             if not marker:
+                self._process_nodes(
+                    item_nodes,
+                    doc,
+                    list_group,
+                    formatting,
+                    text_label=DocItemLabel.LIST_ITEM,
+                )
                 continue
-            # the marker belongs to the first list item the \item produced
-            list_item = next(
-                (
-                    child
-                    for ref in list_group.children[first_child:]
-                    if isinstance(child := ref.resolve(doc), ListItem)
-                ),
-                None,
-            )
-            if list_item is None:
-                doc.add_list_item(text="", marker=marker, parent=list_group)
-            else:
-                list_item.marker = marker
+
+            # A labelled item exists before its definition, which goes under it,
+            # so the term stays first even when the definition starts with a
+            # formula or a nested list. Leading text becomes the item text.
+            list_item = doc.add_list_item(text="", marker=marker, parent=list_group)
+            self._process_nodes(item_nodes, doc, list_item, formatting)
+            if list_item.children:
+                first = list_item.children[0].resolve(doc)
+                if isinstance(first, TextItem) and first.label == DocItemLabel.TEXT:
+                    list_item.text = first.text
+                    list_item.orig = first.orig
+                    list_item.formatting = first.formatting
+                    list_item.hyperlink = first.hyperlink
+                    doc.delete_items(node_items=[first])
 
     def _process_bibliography(
         self,

@@ -133,6 +133,46 @@ def test_latex_list_custom_item_label():
     ]
 
 
+def test_latex_description_term_before_block_definition():
+    """Test a term stays first when its definition starts with block content"""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{description}
+    \item[Energy] \[E=mc^2\]
+    \item[Units] \begin{itemize}\item joule\end{itemize}
+    \item[Speed] Distance per time.
+    \end{description}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    list_group = next(g for g in doc.groups if g.label == GroupLabel.LIST)
+    energy, units, speed = (ref.resolve(doc) for ref in list_group.children)
+
+    assert (energy.marker, energy.text) == ("Energy:", "")
+    (formula,) = (ref.resolve(doc) for ref in energy.children)
+    assert (formula.label, formula.text) == (DocItemLabel.FORMULA, "E=mc^2")
+
+    assert units.marker == "Units:"
+    (nested,) = (ref.resolve(doc) for ref in units.children)
+    assert nested.label == GroupLabel.LIST
+    assert [ref.resolve(doc).text for ref in nested.children] == ["joule"]
+
+    assert (speed.marker, speed.text, speed.children) == (
+        "Speed:",
+        "Distance per time.",
+        [],
+    )
+
+
 def test_latex_list_nested():
     """Test nested lists (itemize within itemize, enumerate within itemize)"""
     latex_content = b"""
