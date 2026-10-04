@@ -9,7 +9,7 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
 endobj
 4 0 obj
-<< /Length 284 >>
+<< /Length 372 >>
 stream
 BT
 /F1 18 Tf
@@ -32,6 +32,12 @@ ET
 176 100 4 24 re f
 0.8 w
 140 112 m 200 112 l S
+BT
+/F1 18 Tf
+1 0 0 1 40 40 Tm
+(Programmatic text above a rule) Tj
+ET
+40 33 230 0.8 re f
 endstream
 endobj
 5 0 obj
@@ -44,9 +50,9 @@ xref
 0000000058 00000 n 
 0000000115 00000 n 
 0000000241 00000 n 
-0000000575 00000 n 
+0000000663 00000 n 
 trailer
 << /Size 6 /Root 1 0 R >>
 startxref
-645
+733
 %%EOF

@@ -61,6 +61,8 @@ STROKED_GLYPHS = BoundingBox(l=30, t=70, r=220, b=105, coord_origin=CoordOrigin.
 RULE_THROUGH_GLYPHS = BoundingBox(
     l=30, t=170, r=220, b=205, coord_origin=CoordOrigin.TOPLEFT
 )
+# A rule drawn as a filled rectangle, which no stroked-segment report mentions.
+FILLED_RULE = BoundingBox(l=30, t=235, r=280, b=270, coord_origin=CoordOrigin.TOPLEFT)
 
 
 class _OcrRectsOnlyModel(BaseOcrModel):
@@ -235,5 +237,39 @@ def test_shape_extent_outranks_the_stroked_segment_report(
         rects = model._find_pdf_aware_layout_ocr_rects(_make_page(page_backend, region))
         assert len(rects) == 1
         assert rects[0].intersection_over_self(region) > 0
+    finally:
+        doc_backend.unload()
+
+
+@pytest.mark.parametrize(
+    ("backend_cls", "native_queries"),
+    [
+        (ThreadedDoclingParseDocumentBackend, True),
+        (PyPdfiumDocumentBackend, True),
+        (ThreadedDoclingParseDocumentBackend, False),
+    ],
+    ids=["threaded", "pypdfium2", "threaded-spatial-index"],
+)
+def test_a_rule_drawn_as_a_filled_rectangle_does_not_force_ocr(
+    backend_cls, native_queries, monkeypatch
+):
+    """Plenty of producers draw rules as filled rectangles rather than strokes.
+
+    `get_shape_lines` reports only stroked segments and so never mentions these,
+    which is why the shape's extent, not that report, has to decide what a rule is.
+    """
+    doc_backend, page_backend = _load_first_page(backend_cls, EDGE_FIXTURE)
+    model = _make_model()
+    if not native_queries:
+        # No backend lacks `has_content_in` any more; force the fallback path.
+        monkeypatch.setattr(page_backend, "has_content_in", lambda **kwargs: None)
+
+    try:
+        # Clipped at the bbox edge by some backends, so match the start of the line.
+        assert "Programmatic" in page_backend.get_text_in_rect(FILLED_RULE)
+        rects = model._find_pdf_aware_layout_ocr_rects(
+            _make_page(page_backend, FILLED_RULE)
+        )
+        assert rects == []
     finally:
         doc_backend.unload()
