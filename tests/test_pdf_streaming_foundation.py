@@ -17,6 +17,7 @@ from docling.backend.pdf_backend import (
 )
 from docling.datamodel.base_models import Page, PagePredictions, VlmPrediction
 from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
 from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 from docling.pipeline.standard_pdf_pipeline import (
@@ -128,6 +129,7 @@ def _make_conversion_result(backend: PdfDocumentBackend, page_count: int):
         errors=[],
         timings={},
         status=None,
+        _progress=ProgressReporter(),
     )
 
 

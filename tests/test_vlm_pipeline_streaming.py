@@ -20,6 +20,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
+from docling.datamodel.progress import PageCompletedProgress, ProgressReporter
 from docling.datamodel.settings import DocumentLimits, settings
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
@@ -154,6 +155,7 @@ def _run_pipeline(
     random_access: bool = False,
     failed_page_nos: set[int] | None = None,
     document_timeout: float | None = None,
+    progress: ProgressReporter | None = None,
 ):
     tracker = _Tracker()
     backend = (
@@ -188,6 +190,7 @@ def _run_pipeline(
         pages=[],
         status=ConversionStatus.STARTED,
         timings={},
+        _progress=progress or ProgressReporter(),
     )
     pipeline._build_document(conv_res)
     return conv_res, tracker, backend
@@ -275,6 +278,33 @@ def test_vlm_timeout_stops_iteration_and_releases_live_pages(monkeypatch) -> Non
     assert conv_res.errors[0].category == FailureCategory.TIMEOUT
     assert conv_res.status == ConversionStatus.PARTIAL_SUCCESS
     assert tracker.live == 0
+
+
+def test_vlm_reports_each_page_once_including_failed_and_timed_out(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings.perf, "page_batch_size", 2)
+    events: list[PageCompletedProgress] = []
+
+    _run_pipeline(
+        page_nos=[9, 5, 7, 6, 8],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        failed_page_nos={5},
+        document_timeout=0.0,
+        progress=ProgressReporter([events.append]),
+    )
+
+    assert {ev.page_no: ev.success for ev in events} == {
+        5: False,
+        9: True,
+        7: True,
+        6: False,
+        8: False,
+    }
+    assert [ev.completed_pages for ev in events] == [1, 2, 3, 4, 5]
+    assert {ev.total_pages for ev in events} == {5}
 
 
 def test_vlm_text_response_keeps_absolute_page_number_after_concatenation() -> None:

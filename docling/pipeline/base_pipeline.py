@@ -364,6 +364,12 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     pipeline_pages = self._apply_on_pages(conv_res, init_pages)
 
                     for p in pipeline_pages:  # Must exhaust!
+                        conv_res._progress.page_completed(
+                            p.page_no,
+                            total_pages=len(conv_res.pages),
+                            success=p._backend is not None and p._backend.is_valid(),
+                        )
+
                         # Cleanup cached images
                         if not self.keep_images:
                             p._image_cache = {}
@@ -415,6 +421,11 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     f"{trace}"
                 )
                 raise e
+
+            conv_res._progress.fail_unfinished_pages(
+                [page.page_no for page in conv_res.pages],
+                total_pages=len(conv_res.pages),
+            )
 
             # Filter out uninitialized pages (those with size=None) that may remain
             # after timeout or processing failures to prevent assertion errors downstream
