@@ -136,11 +136,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     DEFAULT_DILATION_SIZE = 20
 
-    # A connected shape at least this many times longer than it is thick is a rule, an
-    # underline or a table border rather than part of an outlined glyph. Only consulted
-    # where the backend cannot report stroked segments itself (`get_shape_lines`).
-    # Measured on the test fixtures: a 0.8pt rule reports 145:1 (pypdfium2 inflates it
-    # to 2pt thick), while the stems of a 24pt vector "HI" report 6:1 and 1.3:1.
+    # A rule, an underline or a table border is at least this many times longer than it
+    # is thick; anything stubbier may be part of an outlined glyph. Measured on the test
+    # fixtures: a 0.8pt rule reports 145:1 (pypdfium2 inflates it to 2pt thick), while
+    # vector letterforms report 1.3:1 to 6:1 whether drawn filled or stroked, and a rule
+    # merged with the glyph it crosses reports 2.6:1.
     RULE_LIKE_ASPECT_RATIO = 12.0
 
     # Whether the engine can run several languages at once
@@ -284,16 +284,20 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         return max(bbox.width, bbox.height) / thickness >= cls.RULE_LIKE_ASPECT_RATIO
 
     @classmethod
-    def _is_stroked_segment(
-        cls, shape: BoundingBox, line_boxes: list[BoundingBox] | None
-    ) -> bool:
-        """Whether a shape is a stroked segment: a rule, an underline, a border.
+    def _is_rule(cls, shape: BoundingBox, line_boxes: list[BoundingBox] | None) -> bool:
+        """Whether a shape is a rule, an underline or a table border.
 
-        `line_boxes` is what the backend reported for the page, or None when it
-        cannot report stroked segments at all -- then the shape's own extent decides.
+        The shape's extent is the necessary condition, and a backend's report of
+        stroked segments (`line_boxes`, None when it cannot report them) only
+        confirms it. Taking the report alone would misread two constructions, both
+        of which do need OCR: letterforms drawn as stroked axis-aligned segments
+        are reported exactly as a rule is, and a rule crossing a glyph merges with
+        it into one connected shape that then overlaps a reported segment.
         """
+        if not cls._is_rule_like(shape):
+            return False
         if line_boxes is None:
-            return cls._is_rule_like(shape)
+            return True
         return any(cls._boxes_touch(shape, line) for line in line_boxes)
 
     def _find_pdf_aware_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
@@ -312,8 +316,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
            those is both slow and lossier than the text layer (#4174, #4139). But
            the converse is just as lossy -- a glyph drawn as a filled path is absent
            from the text layer, so a cluster mixing one with real text still needs
-           OCR (#4209). Stroked segments separate the two: a rule is reported by
-           `get_shape_lines`, an outlined glyph is not.
+           OCR (#4209). A shape counts as a rule only when its extent says so and
+           the backend's stroked-segment report agrees, since either signal alone
+           misreads stroked letterforms and rules fused with the glyphs they cross.
         3. Deduplicate the remaining cluster bboxes.
         """
         if page.predictions.layout is None:
@@ -411,7 +416,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             for shape in shape_boxes:
                 if not self._boxes_touch(shape, cluster_bbox):
                     continue
-                if self._is_stroked_segment(shape, line_boxes):
+                if self._is_rule(shape, line_boxes):
                     continue
                 if use_backend_queries:
                     backed_by_text = (

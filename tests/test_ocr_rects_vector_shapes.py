@@ -51,6 +51,17 @@ TEXT_BACKED_SHAPE = BoundingBox(
     l=30, t=225, r=180, b=260, coord_origin=CoordOrigin.TOPLEFT
 )
 
+# Two constructions a backend's stroked-segment report alone would misread, each
+# sharing its cluster with native text (page height 300).
+EDGE_FIXTURE = Path("./tests/data/pdf/vector_glyph_edge_cases.pdf")
+
+# Letterforms drawn as stroked axis-aligned segments, reported exactly as a rule is.
+STROKED_GLYPHS = BoundingBox(l=30, t=70, r=220, b=105, coord_origin=CoordOrigin.TOPLEFT)
+# A rule crossing filled letterforms, merged with them into one connected shape.
+RULE_THROUGH_GLYPHS = BoundingBox(
+    l=30, t=170, r=220, b=205, coord_origin=CoordOrigin.TOPLEFT
+)
+
 
 class _OcrRectsOnlyModel(BaseOcrModel):
     """Minimal concrete `BaseOcrModel`: only the rect selection is under test."""
@@ -183,5 +194,46 @@ def test_vector_outlined_glyphs_still_force_ocr(
             _make_page(page_backend, TEXT_BACKED_SHAPE)
         )
         assert backed_rects == []
+    finally:
+        doc_backend.unload()
+
+
+@pytest.mark.parametrize(
+    ("backend_cls", "native_queries"),
+    [
+        (ThreadedDoclingParseDocumentBackend, True),
+        (PyPdfiumDocumentBackend, True),
+        (ThreadedDoclingParseDocumentBackend, False),
+    ],
+    ids=["threaded", "pypdfium2", "threaded-spatial-index"],
+)
+@pytest.mark.parametrize(
+    "region",
+    [STROKED_GLYPHS, RULE_THROUGH_GLYPHS],
+    ids=["stroked-letterforms", "rule-through-glyphs"],
+)
+def test_shape_extent_outranks_the_stroked_segment_report(
+    region, backend_cls, native_queries, monkeypatch
+):
+    """A stroked-segment report alone must not clear a cluster of outlined glyphs.
+
+    Letterforms drawn as stroked axis-aligned segments are reported just as a rule
+    is, and a rule crossing a glyph merges with it into a single connected shape
+    that overlaps a reported segment. Both still need OCR, so the shape's extent
+    has to agree before it counts as a rule.
+    """
+    doc_backend, page_backend = _load_first_page(backend_cls, EDGE_FIXTURE)
+    model = _make_model()
+    if not native_queries:
+        # No backend lacks `has_content_in` any more; force the fallback path.
+        monkeypatch.setattr(page_backend, "has_content_in", lambda **kwargs: None)
+
+    try:
+        # Sanity: the cluster really does carry programmatic text as well.
+        assert "Native" in page_backend.get_text_in_rect(region)
+
+        rects = model._find_pdf_aware_layout_ocr_rects(_make_page(page_backend, region))
+        assert len(rects) == 1
+        assert rects[0].intersection_over_self(region) > 0
     finally:
         doc_backend.unload()
