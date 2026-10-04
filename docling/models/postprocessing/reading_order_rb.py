@@ -22,7 +22,7 @@ class PageElement(BoundingBox):
     eps: float = 1.0e-3
 
     cid: int
-    ref: RefItem = RefItem(cref="#")  # type: ignore
+    ref: RefItem = RefItem(cref="#")
 
     text: str = ""
 
@@ -442,7 +442,11 @@ class ReadingOrderPredictor:
 
         # print("headers ....")
         for page_no, elems in page_to_headers.items():
-            page_to_headers[page_no] = self._predict_page(elems)
+            page_to_headers[page_no] = [
+                node
+                for node in self._predict_page(list[ReadingOrderNode](elems))
+                if isinstance(node, PageElement)
+            ]
 
         # print("elems ....")
         for page_no, elems in page_to_elems.items():
@@ -467,7 +471,11 @@ class ReadingOrderPredictor:
 
         # print("footers ....")
         for page_no, elems in page_to_footers.items():
-            page_to_footers[page_no] = self._predict_page(elems)
+            page_to_footers[page_no] = [
+                node
+                for node in self._predict_page(list[ReadingOrderNode](elems))
+                if isinstance(node, PageElement)
+            ]
 
         sorted_elements = []
         for page_no in sorted(page_nos):

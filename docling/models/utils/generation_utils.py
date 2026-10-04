@@ -224,7 +224,7 @@ class DocTagsRepetitionStopper(GenerationStopper):
         prev_tag = prev_text = None
         run = []  # list of (x,y,w,h)
 
-        def run_repetitive(boxes: List[tuple]) -> bool:
+        def run_repetitive(boxes: List[tuple[int, int, int, int]]) -> bool:
             if len(boxes) < 3:
                 return False
             # duplicates?

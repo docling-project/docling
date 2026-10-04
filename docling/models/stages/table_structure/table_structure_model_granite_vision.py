@@ -10,7 +10,12 @@ from typing import Any, ClassVar, Literal, cast
 
 import torch
 from docling_core.types.doc import DocItemLabel
-from transformers import AutoModelForImageTextToText, AutoProcessor
+
+# Transformers exposes the model lazily when its torch dependency is installed.
+from transformers import (
+    AutoModelForImageTextToText,  # ty: ignore[possibly-missing-import]
+    AutoProcessor,
+)
 from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions

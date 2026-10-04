@@ -176,7 +176,7 @@ class TesseractOcrCliModel(BaseOcrModel):
 
     def _get_name_and_version(self) -> Tuple[str, str]:
         if self._name is not None and self._version is not None:
-            return self._name, self._version  # type: ignore
+            return self._name, self._version
 
         cmd = [self._safe_tesseract_cmd, "--version"]
 

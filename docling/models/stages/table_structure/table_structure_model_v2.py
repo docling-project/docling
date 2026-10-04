@@ -15,7 +15,9 @@ from docling_core.types.doc.page import (
     TextCell,
 )
 from PIL import Image, ImageDraw
-from transformers import AutoTokenizer
+
+# Transformers selects tokenizer exports from its optional dependency availability.
+from transformers import AutoTokenizer  # ty: ignore[possibly-missing-import]
 from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -173,7 +175,7 @@ class TableStructureModelV2(BaseTableStructureModel):
             element["text"] = text
 
         # Build TableCell objects, assigning text from text_cells by overlap
-        table_cells = []
+        table_cells: list[TableCell] = []
         for element in cell_data:
             tc = TableCell.model_validate(element)
             table_cells.append(tc)
@@ -238,6 +240,7 @@ class TableStructureModelV2(BaseTableStructureModel):
         """
         tags = []
         skip_tokens = {"<pad>", "[UNK]", "<start>", "<end>"}
+        assert self.tokenizer is not None
 
         for tid in token_ids.tolist():
             decoded_token = self.tokenizer.decode([tid])
@@ -256,7 +259,7 @@ class TableStructureModelV2(BaseTableStructureModel):
         otsl_seq: list[str],
         bboxes: "torch.Tensor",
         table_bbox: list[float],
-    ) -> tuple[list[dict], int, int]:
+    ) -> tuple[list[dict[str, object]], int, int]:
         """
         Build table cell structures from OTSL sequence and bboxes.
 
@@ -291,7 +294,7 @@ class TableStructureModelV2(BaseTableStructureModel):
             grid.append(row + [""] * (num_cols - len(row)))
 
         # Build cells
-        table_cells = []
+        table_cells: list[dict[str, object]] = []
         bbox_idx = 0
         t_x1, t_y1, t_x2, t_y2 = table_bbox
         t_w = t_x2 - t_x1

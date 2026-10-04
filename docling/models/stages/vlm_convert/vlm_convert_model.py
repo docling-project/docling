@@ -132,7 +132,7 @@ class VlmConvertModel(BasePageModel):
         _log.info("VlmConvertModel initialized successfully")
 
     def _resolve_runtime_engine_type(self) -> VlmEngineType:
-        selected_engine_type = getattr(self.engine, "selected_engine_type", None)
+        selected_engine_type = self.engine.selected_engine_type
         if selected_engine_type is not None:
             return selected_engine_type
         return self.options.engine_options.engine_type

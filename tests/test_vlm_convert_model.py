@@ -21,6 +21,8 @@ from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 
 
 class _CapturingEngine:
+    selected_engine_type = None
+
     def __init__(self) -> None:
         self.batches = []
 
