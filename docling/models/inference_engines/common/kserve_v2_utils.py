@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 def encode_bytes_element(value: Any) -> bytes:
@@ -21,7 +22,7 @@ def encode_bytes_element(value: Any) -> bytes:
     return str(value).encode("utf-8")
 
 
-def encode_bytes_tensor(tensor: np.ndarray) -> bytes:
+def encode_bytes_tensor(tensor: NDArray[np.generic]) -> bytes:
     """Encode a BYTES tensor as a length-prefixed byte stream."""
     chunks: list[bytes] = []
     for value in tensor.reshape(-1):
@@ -31,7 +32,9 @@ def encode_bytes_tensor(tensor: np.ndarray) -> bytes:
     return b"".join(chunks)
 
 
-def decode_bytes_tensor(raw_output: bytes, shape: tuple[int, ...]) -> np.ndarray:
+def decode_bytes_tensor(
+    raw_output: bytes, shape: tuple[int, ...]
+) -> NDArray[np.generic]:
     """Decode a length-prefixed BYTES payload to a numpy object array."""
     strings, offset = [], 0
     for _ in range(int(np.prod(shape))):

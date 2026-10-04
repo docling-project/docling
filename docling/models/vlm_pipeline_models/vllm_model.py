@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL.Image import Image
 from typing_extensions import override
 
@@ -274,7 +275,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
     @override
     def process_images(
         self,
-        image_batch: Iterable[Union[Image, np.ndarray]],
+        image_batch: Iterable[Union[Image, NDArray[np.generic]]],
         prompt: Union[str, list[str]],
     ) -> Iterable[VlmPrediction]:
         """Process images in a single batched vLLM inference call."""
@@ -324,7 +325,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         # Generate
         assert self.llm is not None and self.sampling_params is not None
         start_time = time.time()
-        outputs = self.llm.generate(llm_inputs, sampling_params=self.sampling_params)  # type: ignore
+        outputs = self.llm.generate(llm_inputs, sampling_params=self.sampling_params)
         generation_time = time.time() - start_time
 
         # Optional debug

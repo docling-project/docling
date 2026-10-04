@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from packaging import version
 from PIL.Image import Image
 from transformers import StoppingCriteria, StoppingCriteriaList, StopStringCriteria
@@ -71,12 +72,14 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         if self.enabled:
             import torch
             from transformers import (
-                AutoModel,
-                AutoModelForCausalLM,
-                AutoModelForImageTextToText,
                 AutoProcessor,
                 BitsAndBytesConfig,
                 GenerationConfig,
+            )
+            from transformers.models.auto.modeling_auto import (
+                AutoModel,
+                AutoModelForCausalLM,
+                AutoModelForImageTextToText,
             )
 
             transformers_version = importlib.metadata.version("transformers")
@@ -173,7 +176,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             if is_dots_model:
                 attn_implementation = "sdpa"
 
-            self.vlm_model = model_cls.from_pretrained(
+            model = model_cls.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
                 dtype=self.vlm_options.torch_dtype,
@@ -181,8 +184,15 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
             )
+            if not isinstance(model, torch.nn.Module):
+                raise TypeError("HuggingFace VLM must be a PyTorch module")
+            self.vlm_model = model
             if sys.version_info < (3, 14):
-                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+                compiled_model = torch.compile(self.vlm_model)
+                # torch.compile preserves Module attributes on its optimized wrapper.
+                if not isinstance(compiled_model, torch.nn.Module):
+                    raise TypeError("Compiled VLM must remain a PyTorch module")
+                self.vlm_model = compiled_model
             else:
                 self.vlm_model.eval()
 
@@ -251,7 +261,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
     @override
     def process_images(
         self,
-        image_batch: Iterable[Union[Image, np.ndarray]],
+        image_batch: Iterable[Union[Image, NDArray[np.generic]]],
         prompt: Union[str, list[str]],
     ) -> Iterable[VlmPrediction]:
         """
@@ -293,6 +303,8 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 )
             user_prompts = prompt
 
+        prompts: list[str] = []
+
         # Use your prompt formatter verbatim
         if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.NONE:
             inputs = self.processor(
@@ -302,7 +314,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 **self.vlm_options.extra_processor_kwargs,
             )
         else:
-            prompts: list[str] = [self.formulate_prompt(p) for p in user_prompts]
+            prompts = [self.formulate_prompt(p) for p in user_prompts]
 
             # -- Processor performs BOTH text+image preprocessing + batch padding (recommended)
             inputs = self.processor(
@@ -341,7 +353,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                         stopping_criteria_list.append(wrapped_criteria)
                     elif issubclass(criteria, StoppingCriteria):
                         # It's a StoppingCriteria class, instantiate with tokenizer
-                        criteria_instance = criteria(self.processor.tokenizer)
+                        # Custom HF stopper subclasses can accept a tokenizer;
+                        # the base StoppingCriteria constructor declares no arguments.
+                        criteria_instance = criteria(self.processor.tokenizer)  # ty: ignore[too-many-positional-arguments]
                         stopping_criteria_list.append(criteria_instance)
                 elif isinstance(criteria, GenerationStopper):
                     # Wrap GenerationStopper instances in HFStoppingCriteriaWrapper
@@ -396,8 +410,13 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             gen_kwargs["stopping_criteria"] = stopping_criteria
 
         start_time = time.time()
+        generate = self.vlm_model.generate
+        if not callable(generate):
+            raise TypeError("VLM model must provide a generate method")
         with torch.inference_mode():
-            generated_ids = self.vlm_model.generate(**gen_kwargs)
+            generated_ids = generate(**gen_kwargs)
+        if not isinstance(generated_ids, torch.Tensor):
+            raise TypeError("VLM generation must produce a token tensor")
         generation_time = time.time() - start_time
 
         input_len = inputs["input_ids"].shape[1]  # common right-aligned prompt length
@@ -412,10 +431,11 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 "Neither processor.batch_decode nor tokenizer.batch_decode is available."
             )
 
-        decoded_texts: list[str] = decode_fn(
-            trimmed_sequences,
-            **decoder_config,
-        )
+        decoded_texts: list[str] = []
+        for text in decode_fn(trimmed_sequences, **decoder_config):
+            if not isinstance(text, str):
+                raise TypeError("VLM decoder must produce strings")
+            decoded_texts.append(text)
 
         # -- Clip off pad tokens from decoded texts
         pad_token = self.processor.tokenizer.pad_token

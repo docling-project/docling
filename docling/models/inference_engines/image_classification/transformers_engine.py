@@ -16,7 +16,7 @@ from typing_extensions import override
 
 if TYPE_CHECKING:
     import torch
-    from transformers import AutoModelForImageClassification
+    from transformers.modeling_utils import PreTrainedModel
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.image_classification_engine_options import (
@@ -56,7 +56,7 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
             artifacts_path=artifacts_path,
         )
         self.options: TransformersImageClassificationEngineOptions = options
-        self._model: Optional[AutoModelForImageClassification] = None
+        self._model: Optional[PreTrainedModel] = None
         self._device: Optional[torch.device] = None
 
     def _resolve_device(self) -> torch.device:
@@ -105,7 +105,9 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
     def initialize(self) -> None:
         """Initialize PyTorch model and preprocessor."""
         import torch
-        from transformers import AutoModelForImageClassification
+        from transformers.models.auto.modeling_auto import (
+            AutoModelForImageClassification,
+        )
 
         _log.info("Initializing Transformers image-classification engine")
 

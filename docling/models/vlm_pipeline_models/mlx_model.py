@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL.Image import Image
 from transformers import StoppingCriteria
 from typing_extensions import override
@@ -55,9 +56,9 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
         if self.enabled:
             try:
-                from mlx_vlm import generate, load, stream_generate  # type: ignore
-                from mlx_vlm.prompt_utils import apply_chat_template  # type: ignore
-                from mlx_vlm.utils import load_config  # type: ignore
+                from mlx_vlm import generate, load, stream_generate
+                from mlx_vlm.prompt_utils import apply_chat_template
+                from mlx_vlm.utils import load_config
             except ImportError:
                 raise ImportError(
                     "mlx-vlm is not installed. Please install it via `pip install mlx-vlm` to use MLX VLM models."
@@ -96,7 +97,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 )
 
             ## Load the model
-            self.vlm_model, self.processor = load(artifacts_path)
+            self.vlm_model, self.processor = load(str(artifacts_path))
             self.config = load_config(artifacts_path)
 
             # Validate custom stopping criteria - MLX doesn't support HF StoppingCriteria
@@ -175,7 +176,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
     @override
     def process_images(
         self,
-        image_batch: Iterable[Union[Image, np.ndarray]],
+        image_batch: Iterable[Union[Image, NDArray[np.generic]]],
         prompt: Union[str, list[str]],
     ) -> Iterable[VlmPrediction]:
         """Process raw images without page metadata.
@@ -239,6 +240,9 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     self.processor, self.config, user_prompt, num_images=1
                 )
 
+                if not isinstance(formatted_prompt, str):
+                    raise TypeError("MLX chat template must produce text")
+
                 # Stream generate with stop strings and custom stopping criteria support
                 start_time = time.time()
                 _log.debug("start generating ...")
@@ -251,34 +255,46 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     self.vlm_model,
                     self.processor,
                     formatted_prompt,
-                    [image],  # MLX stream_generate expects list of images
+                    # mlx-vlm prepare_inputs supports PIL images, but the stream
+                    # signature currently lists only image path strings.
+                    [image],  # ty: ignore[invalid-argument-type]
                     max_tokens=self.max_tokens,
                     verbose=False,
                     temp=self.temperature,
                 ):
-                    # Collect token information
-                    if len(token.logprobs.shape) == 1:
-                        tokens.append(
-                            VlmPredictionToken(
-                                text=token.text,
-                                token=token.token,
-                                logprob=float(token.logprobs[token.token]),
+                    # Newer mlx-vlm can omit token log probabilities and returns
+                    # Python lists; older versions return MLX arrays.
+                    if token.token is not None and token.logprobs is not None:
+                        raw_logprobs: object = token.logprobs
+                        # mlx-vlm annotates lists; supported older releases return
+                        # MLX arrays, including bfloat16 (covered by the stream test).
+                        if isinstance(raw_logprobs, (list, np.ndarray)):  # ty: ignore[redundant-condition-strict]
+                            logprobs = np.asarray(raw_logprobs)
+                        else:
+                            import mlx.core as mx
+
+                            if not isinstance(raw_logprobs, mx.array):
+                                raise TypeError(
+                                    "Expected a list or array of token log probabilities"
+                                )
+                            # Keep MLX scalars in MLX until float() converts them;
+                            # NumPy cannot read the bfloat16 buffer format.
+                            logprobs = raw_logprobs
+                        if logprobs.ndim == 1:
+                            logprob = float(logprobs[token.token])
+                        elif logprobs.ndim == 2 and logprobs.shape[0] == 1:
+                            logprob = float(logprobs[0, token.token])
+                        else:
+                            _log.warning(
+                                "incompatible shape for logprobs: %s", logprobs.shape
                             )
-                        )
-                    elif (
-                        len(token.logprobs.shape) == 2 and token.logprobs.shape[0] == 1
-                    ):
-                        tokens.append(
-                            VlmPredictionToken(
-                                text=token.text,
-                                token=token.token,
-                                logprob=float(token.logprobs[0, token.token]),
+                            logprob = None
+                        if logprob is not None:
+                            tokens.append(
+                                VlmPredictionToken(
+                                    text=token.text, token=token.token, logprob=logprob
+                                )
                             )
-                        )
-                    else:
-                        _log.warning(
-                            f"incompatible shape for logprobs: {token.logprobs.shape}"
-                        )
 
                     output += token.text
 
@@ -301,6 +317,9 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                                 criteria, GenerationStopper
                             ):
                                 stopper = criteria()
+
+                            else:
+                                continue
 
                             # Determine the text window to check based on lookback_tokens
                             lookback_tokens = stopper.lookback_tokens()

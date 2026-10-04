@@ -195,6 +195,8 @@ class BaseVlmEngine(ABC):
     These model specs are provided at construction time for eager initialization.
     """
 
+    selected_engine_type: VlmEngineType | None = None
+
     def __init__(
         self,
         options: BaseVlmEngineOptions,
