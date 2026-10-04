@@ -47,7 +47,8 @@ def _get_vision_languages(recognition: str) -> list[str]:
         import Vision
 
         # pyobjc exposes the ObjC classes dynamically, so ty cannot see them.
-        request = Vision.VNRecognizeTextRequest.alloc().init()  # ty: ignore[unresolved-attribute]
+        # pyobjc publishes this class dynamically at runtime.
+        request = Vision.VNRecognizeTextRequest.alloc().init()
         # Same mapping as ocrmac: 1 is fast, 0 (the default) is accurate.
         request.setRecognitionLevel_(1 if recognition == "fast" else 0)
         languages, error = request.supportedRecognitionLanguagesAndReturnError_(None)
