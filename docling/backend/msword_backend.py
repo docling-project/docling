@@ -902,6 +902,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             The parsed document.
         """
 
+        assert self.input_format is not None
+
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype=FormatToMimeType[self.input_format][0],
