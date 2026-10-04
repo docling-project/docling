@@ -67,6 +67,7 @@ from pydantic import NonNegativeInt
 from typing_extensions import Self, TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -132,22 +133,27 @@ class PatentHeading(Enum):
     CLAIMS = "CLAIMS", 2
 
     @override
-    def __new__(cls, value: str, _) -> Self:
+    def __new__(cls, value: object, _: object = None) -> Self:
         obj = object.__new__(cls)
         obj._value_ = value
         return obj
 
     @override
-    def __init__(self, _, level: LevelNumber) -> None:
+    def __init__(self, _: object = None, level: LevelNumber = 2) -> None:
         self.level: LevelNumber = level
 
 
 class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: BackendOptions | None = None,
+    ) -> None:
         if not _BS4_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, options)
 
         self.patent_content: str = ""
         self.parser: PatentUspto | None = None
@@ -336,13 +342,13 @@ class PatentUsptoIce(PatentUspto):
             MATHS = "maths", False  # to avoid keeping formulas
 
             @override
-            def __new__(cls, value: str, _) -> Self:
+            def __new__(cls, value: object, _: object = None) -> Self:
                 obj = object.__new__(cls)
                 obj._value_ = value
                 return obj
 
             @override
-            def __init__(self, _, is_text: bool) -> None:
+            def __init__(self, _: object = None, is_text: bool = False) -> None:
                 self.is_text: bool = is_text
 
         @override
@@ -365,13 +371,15 @@ class PatentUsptoIce(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):
+        def startElement(self, name: str, attrs: AttributesImpl) -> None:
             """Signal the start of an element.
 
             Args:
                 tag: The element tag.
                 attributes: The element attributes.
             """
+            tag = name
+            attributes = attrs
             if tag in (
                 self.APP_DOC_ELEMENT,
                 self.GRANT_DOC_ELEMENT,
@@ -415,12 +423,13 @@ class PatentUsptoIce(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):
+        def endElement(self, name: str) -> None:
             """Signal the end of an element.
 
             Args:
                 tag: The element tag.
             """
+            tag = name
             if tag in (
                 self.APP_DOC_ELEMENT,
                 self.GRANT_DOC_ELEMENT,
@@ -687,13 +696,13 @@ class PatentUsptoGrantV2(PatentUspto):
             TABLE = ("table", False)  # to keep track of table positions
 
             @override
-            def __new__(cls, value: str, _) -> Self:
+            def __new__(cls, value: object, _: object = None) -> Self:
                 obj = object.__new__(cls)
                 obj._value_ = value
                 return obj
 
             @override
-            def __init__(self, _, is_text: bool) -> None:
+            def __init__(self, _: object = None, is_text: bool = False) -> None:
                 self.is_text: bool = is_text
 
         @override
@@ -716,13 +725,15 @@ class PatentUsptoGrantV2(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):
+        def startElement(self, name: str, attrs: AttributesImpl) -> None:
             """Signal the start of an element.
 
             Args:
                 tag: The element tag.
                 attributes: The element attributes.
             """
+            tag = name
+            attributes = attrs
             if tag == self.GRANT_DOC_ELEMENT:
                 self.doc = DoclingDocument(name="file")
                 self.text = ""
@@ -763,12 +774,13 @@ class PatentUsptoGrantV2(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):
+        def endElement(self, name: str) -> None:
             """Signal the end of an element.
 
             Args:
                 tag: The element tag.
             """
+            tag = name
             if tag == self.GRANT_DOC_ELEMENT:
                 self._clean_data()
             self._end_registered_element(tag)
@@ -1019,9 +1031,7 @@ class PatentUsptoGrantAps(PatentUspto):
         else:
             return None
         text_list: list[TextItem] = [
-            item
-            for item in self.doc.texts
-            if isinstance(item, TextItem) and item.get_ref() in children
+            item for item in self.doc.texts if item.get_ref() in children
         ]
 
         if text_list:
@@ -1153,21 +1163,21 @@ class PatentUsptoGrantAps(PatentUspto):
         value: str = ""
         line_num = 0
         for line in patent_content.splitlines():
-            cols = re.split("\\s{2,}", line, maxsplit=1)
+            cols = re.split(r"\s{2,}", line, maxsplit=1)
             if key and value and (len(cols) == 1 or (len(cols) == 2 and cols[0])):
                 self.store_content(section, key, value)
                 key = ""
                 value = ""
             if len(cols) == 1:  # section title
-                section = cols[0]
+                section = str(cols[0])
                 self.store_section(section)
                 _log.debug(f"Parsing section {section}")
             elif len(cols) == 2:  # key value
                 if cols[0]:  # key present
-                    key = cols[0]
-                    value = cols[1]
+                    key = str(cols[0])
+                    value = str(cols[1])
                 elif not re.match(r"^##STR\d+##$", cols[1]):  # line continues
-                    value += " " + cols[1]
+                    value += " " + str(cols[1])
             line_num += 1
         if key and value:
             self.store_content(section, key, value)
@@ -1262,13 +1272,13 @@ class PatentUsptoAppV1(PatentUspto):
             MATH = "math-cwu", False
 
             @override
-            def __new__(cls, value: str, _) -> Self:
+            def __new__(cls, value: object, _: object = None) -> Self:
                 obj = object.__new__(cls)
                 obj._value_ = value
                 return obj
 
             @override
-            def __init__(self, _, is_text: bool) -> None:
+            def __init__(self, _: object = None, is_text: bool = False) -> None:
                 self.is_text: bool = is_text
 
         @override
@@ -1291,13 +1301,15 @@ class PatentUsptoAppV1(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):
+        def startElement(self, name: str, attrs: AttributesImpl) -> None:
             """Signal the start of an element.
 
             Args:
                 tag: The element tag.
                 attributes: The element attributes.
             """
+            tag = name
+            attributes = attrs
             if tag == self.APP_DOC_ELEMENT:
                 self.doc = DoclingDocument(name="file")
                 self.text = ""
@@ -1338,12 +1350,13 @@ class PatentUsptoAppV1(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):
+        def endElement(self, name: str) -> None:
             """Signal the end of an element.
 
             Args:
                 tag: The element tag.
             """
+            tag = name
             if tag == self.APP_DOC_ELEMENT:
                 self._clean_data()
             self._end_registered_element(tag)
@@ -1535,11 +1548,11 @@ class XmlTable:
 
     class ColInfo(TypedDict):
         ncols: int
-        colinfo: list[dict]
+        colinfo: list[dict[str, str | list[str] | None]]
 
     class MinColInfoType(TypedDict):
-        offset: list[int]
-        colwidth: list[int]
+        offset: list[float]
+        colwidth: list[float]
 
     class ColInfoType(MinColInfoType):
         cell_range: list[int]
@@ -1583,9 +1596,12 @@ class XmlTable:
                 "cell_range": [],
                 "cell_offst": [0],
             }
-            offst = 0
+            offst: float = 0
             for info in tg["colinfo"]:
-                cw = info["colwidth"]
+                width = info["colwidth"]
+                if not isinstance(width, str):
+                    raise ValueError("Column width must be text.")
+                cw = width
                 cw = re.sub("pt", "", cw, flags=re.I)
                 cw = re.sub("mm", "", cw, flags=re.I)
                 try:
@@ -1671,8 +1687,6 @@ class XmlTable:
         tg_secs = table("tgroup")
         if tg_secs:
             for tg_sec in tg_secs:
-                if not isinstance(tg_sec, Tag):
-                    continue
                 col_val = tg_sec.get("cols")
                 ncols = (
                     int(col_val)
@@ -1683,8 +1697,6 @@ class XmlTable:
                 cs_secs = tg_sec("colspec")
                 if cs_secs:
                     for cs_sec in cs_secs:
-                        if not isinstance(cs_sec, Tag):
-                            continue
                         colname = cs_sec.get("colname")
                         colwidth = cs_sec.get("colwidth")
                         tg_align["colinfo"].append(
@@ -1710,15 +1722,11 @@ class XmlTable:
         tg_secs = table("tgroup")
         if tg_secs:
             for itg, tg_sec in enumerate(tg_secs):
-                if not isinstance(tg_sec, Tag):
-                    continue
                 tg_range = tgs_range[itg]
                 row_secs = tg_sec(["row", "tr"])
 
                 if row_secs:
                     for row_sec in row_secs:
-                        if not isinstance(row_sec, Tag):
-                            continue
                         entry_secs = row_sec(["entry", "td"])
                         is_header: bool = (
                             row_sec.parent is not None
@@ -1731,8 +1739,6 @@ class XmlTable:
                         if entry_secs:
                             wrong_nbr_cols = False
                             for ientry, entry_sec in enumerate(entry_secs):
-                                if not isinstance(entry_sec, Tag):
-                                    continue
                                 text = entry_sec.get_text().strip()
 
                                 # start-end

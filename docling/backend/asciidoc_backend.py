@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Optional, Union
+from typing import Final, Optional, TypedDict, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -43,6 +43,15 @@ _log = logging.getLogger(__name__)
 # own. Requiring at least one of the two keeps a bare "+" from matching.
 _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|\w+\.)\s+(.*)"
+
+
+class _ParsedBlock(TypedDict, total=False):
+    type: str
+    text: str
+    level: int
+    indent: int
+    marker: str
+    numbered: bool
 
 
 @dataclass(frozen=True)
@@ -121,7 +130,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    def _parse(self, doc: DoclingDocument):
+    def _parse(self, doc: DoclingDocument) -> DoclingDocument:
         """Orchestrate parsing and populate `doc` from the source lines.
 
         Handles titles, section headers, text paragraphs, lists, tables,
@@ -151,9 +160,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         list_continuation = False
 
         # parents: dict[int, Union[DocItem, GroupItem, None]] = {}
-        parents: dict[int, Union[GroupItem, None]] = {}
+        parents: dict[int, NodeItem | None] = {}
         # indents: dict[int, Union[DocItem, GroupItem, None]] = {}
-        indents: dict[int, Union[GroupItem, None]] = {}
+        indents: dict[int, int | None] = {}
 
         for i in range(10):
             parents[i] = None
@@ -177,10 +186,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 )
                 caption: Optional[TextItem] = None
                 if caption_data:
-                    caption = doc.add_text(
+                    caption_item = doc.add_text(
                         text=" ".join(caption_data),
                         label=DocItemLabel.CAPTION,
                     )
+                    assert isinstance(caption_item, TextItem)
+                    caption = caption_item
                     caption_data = []
                 code_language = (
                     detect_code_language(block.text, hint=block.language)
@@ -250,6 +261,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 level = self._get_current_level(parents)
 
+                current_indent = indents[level]
                 if not in_list:
                     in_list = True
                     # GroupItem has no caption slot; emit the pending block
@@ -268,14 +280,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     )
                     indents[level + 1] = item["indent"]
 
-                elif in_list and item["indent"] > indents[level]:
+                elif current_indent is not None and item["indent"] > current_indent:
                     parents[level + 1] = doc.add_group(
                         parent=parents[level], name="list", label=GroupLabel.LIST
                     )
                     indents[level + 1] = item["indent"]
 
-                elif in_list and item["indent"] < indents[level]:
-                    while level > 0 and item["indent"] < indents[level]:
+                elif current_indent is not None and item["indent"] < current_indent:
+                    while (
+                        level > 0
+                        and current_indent is not None
+                        and item["indent"] < current_indent
+                    ):
                         # Only pop the current level if there is an outer group
                         # to fall back to; otherwise keep it as the list root.
                         if indents[level - 1] is None:
@@ -283,13 +299,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         parents[level] = None
                         indents[level] = None
                         level -= 1
+                        current_indent = indents[level]
 
-                last_list_item = doc.add_list_item(
+                list_item = doc.add_list_item(
                     item["text"],
                     enumerated=item["numbered"],
                     marker=(item["marker"] if item["marker"][:-1].isdigit() else None),
                     parent=self._get_current_parent(parents),
                 )
+                assert isinstance(list_item, ListItem)
+                last_list_item = list_item
                 list_continuation = False
 
             elif in_list and stripped_line == "+":
@@ -383,7 +402,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return doc
 
     @staticmethod
-    def _get_current_level(parents):
+    def _get_current_level(parents: dict[int, NodeItem | None]) -> int:
         for k, v in parents.items():
             if v is None and k > 0:
                 return k - 1
@@ -391,14 +410,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return 0
 
     @staticmethod
-    def _get_current_parent(parents):
+    def _get_current_parent(parents: dict[int, NodeItem | None]) -> NodeItem | None:
         for k, v in parents.items():
             if v is None and k > 0:
                 return parents[k - 1]
 
         return None
 
-    _SOURCE_ATTR_RE = re.compile(r"^\[source(?:,\s*([\w+#.-]+))?[^\]]*\]$")
+    _SOURCE_ATTR_RE: re.Pattern[str] = re.compile(
+        r"^\[source(?:,\s*([\w+#.-]+))?[^\]]*\]$"
+    )
     _CONTENT_BLOCK_DELIMITERS = ("====", "****", "____", "--", "+++")
 
     @staticmethod
@@ -464,7 +485,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             if source_attr is not None and i + 1 < n and lines[i + 1].strip() == "----":
                 block_data = []
                 block_delimiter = "----"
-                block_language = source_attr.group(1)
+                language = source_attr.group(1)
+                assert language is None or isinstance(language, str)
+                block_language = language
                 i += 2
                 continue
 
@@ -480,7 +503,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         *,
         line: str,
         in_list: bool,
-        parents: dict[int, GroupItem | None],
+        parents: dict[int, NodeItem | None],
         last_list_item: ListItem | None,
         list_continuation: bool,
         is_continuation_block: bool,
@@ -502,7 +525,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         *,
         doc: DoclingDocument,
         text_data: list[str],
-        parent: GroupItem | None,
+        parent: NodeItem | None,
     ) -> list[str]:
         if len(text_data) > 0:
             doc.add_text(
@@ -514,22 +537,24 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     #   =========   Title
     @staticmethod
-    def _is_title(line):
+    def _is_title(line: str) -> re.Match[str] | None:
         return re.match(r"^= ", line)
 
     @staticmethod
-    def _parse_title(line):
+    def _parse_title(line: str) -> _ParsedBlock:
         return {"type": "title", "text": line[2:].strip(), "level": 0}
 
     #   =========   Section headers
     @staticmethod
-    def _is_section_header(line):
+    def _is_section_header(line: str) -> re.Match[str] | None:
         return re.match(r"^==+\s+", line)
 
     @staticmethod
-    def _parse_section_header(line):
+    def _parse_section_header(line: str) -> _ParsedBlock:
         match = re.match(r"^(=+)\s+(.*)", line)
 
+        if match is None:
+            raise ValueError(f"Invalid AsciiDoc section header: {line!r}")
         marker = match.group(1)  # The list marker (e.g., "*", "-", "1.")
         text = match.group(2)  # The actual text of the list item
 
@@ -542,11 +567,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     #   =========   Lists
     @staticmethod
-    def _is_list_item(line):
+    def _is_list_item(line: str) -> re.Match[str] | None:
         return re.match(_LIST_ITEM_PATTERN, line)
 
     @staticmethod
-    def _parse_list_item(line):
+    def _parse_list_item(line: str) -> _ParsedBlock:
         """Extract the item marker (number or bullet symbol) and the text of the item."""
 
         match = re.match(_LIST_ITEM_PATTERN, line)
@@ -586,11 +611,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     #   =========   Tables
     @staticmethod
-    def _is_table_line(line):
+    def _is_table_line(line: str) -> re.Match[str] | None:
         return re.match(rf"^{_CELL_SPEC}\|.*\|", line)
 
     @staticmethod
-    def _parse_table_line(line):
+    def _parse_table_line(line: str) -> list[str]:
         # Drop cell specifiers glued to a "|" (e.g. "^.^h"); anchored to
         # whitespace so content ending in a style letter (e.g. "Eth") survives.
         line = re.sub(rf"(^|\s){_CELL_SPEC}(?=\|)", r"\1", line)
@@ -619,7 +644,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         doc.add_table(data=data, parent=parent, caption=caption)
 
     @staticmethod
-    def _populate_table_as_grid(table_data):
+    def _populate_table_as_grid(table_data: list[list[str]]) -> TableData:
         num_rows = len(table_data)
 
         # Adjust the table data into a grid format
@@ -651,19 +676,22 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     #   =========   Pictures
     @staticmethod
-    def _is_picture(line):
+    def _is_picture(line: str) -> re.Match[str] | None:
         return re.match(r"^image::", line)
 
     @staticmethod
-    def _parse_picture(line):
+    def _parse_picture(line: str) -> dict[str, str]:
         """
         Parse an image macro, extracting its path and attributes.
         Syntax: image::path/to/image.png[Alt Text, width=200, height=150, align=center]
         """
         mtch = re.match(r"^image::(.+)\[(.*)\]$", line)
         if mtch:
-            picture_path = mtch.group(1).strip()
-            attributes = mtch.group(2).split(",")
+            path = mtch.group(1)
+            attrs = mtch.group(2)
+            assert isinstance(path, str) and isinstance(attrs, str)
+            picture_path = path.strip()
+            attributes = attrs.split(",")
             picture_info = {"type": "picture", "uri": picture_path}
 
             # Extract optional attributes (alt text, width, height, alignment)
@@ -683,11 +711,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     #   =========   Captions
     @staticmethod
-    def _is_caption(line):
+    def _is_caption(line: str) -> re.Match[str] | None:
         return re.match(r"^\.(\S.*)", line)
 
     @staticmethod
-    def _parse_caption(line):
+    def _parse_caption(line: str) -> _ParsedBlock:
         mtch = re.match(r"^\.(.+)", line)
         if mtch:
             text = mtch.group(1)
@@ -697,5 +725,5 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     #   =========   Plain text
     @staticmethod
-    def _parse_text(line):
+    def _parse_text(line: str) -> _ParsedBlock:
         return {"type": "text", "text": line.strip()}

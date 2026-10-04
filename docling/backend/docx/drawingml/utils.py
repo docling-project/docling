@@ -142,7 +142,7 @@ def _build_soffice_command(
     ]
 
 
-def _kill_soffice_process_group(proc: subprocess.Popen) -> None:
+def _kill_soffice_process_group(proc: subprocess.Popen[bytes]) -> None:
     """Best-effort SIGKILL of the whole ``soffice`` process group.
 
     ``soffice`` is a thin wrapper that forks ``soffice.bin``; killing only
@@ -328,7 +328,7 @@ def convert_to_modern_format(
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-def get_docx_to_pdf_converter() -> Optional[Callable]:
+def get_docx_to_pdf_converter() -> Optional[Callable[[Path, Path], None]]:
     """
     Detects the best available DOCX to PDF tool and returns a conversion function.
     The returned function accepts (input_path, output_path).
@@ -411,7 +411,7 @@ def crop_whitespace(image: Image.Image, bg_color=None, padding=0) -> Image.Image
 
 
 def get_pil_from_dml_docx(
-    docx: Document, converter: Optional[Callable]
+    docx: Document, converter: Optional[Callable[[Path, Path], None]]
 ) -> Optional[Image.Image]:
     if converter is None:
         return None

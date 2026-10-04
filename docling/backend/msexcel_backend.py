@@ -52,7 +52,7 @@ from docling.backend.docx.drawingml.utils import (
     crop_whitespace,
     get_docx_to_pdf_converter,
 )
-from docling.datamodel.backend_options import MsExcelBackendOptions
+from docling.datamodel.backend_options import BaseBackendOptions, MsExcelBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -225,14 +225,14 @@ class _MergedCellIndex:
                 ),
             )
             min_row = (
-                merged_range.min_row
+                int(merged_range.min_row)
                 if min_row is None
-                else min(min_row, merged_range.min_row)
+                else min(min_row, int(merged_range.min_row))
             )
             min_col = (
-                merged_range.min_col
+                int(merged_range.min_col)
                 if min_col is None
-                else min(min_col, merged_range.min_col)
+                else min(min_col, int(merged_range.min_col))
             )
             max_row = max(max_row, merged_range.max_row)
             max_col = max(max_col, merged_range.max_col)
@@ -337,7 +337,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: MsExcelBackendOptions | None = None,
+        options: BaseBackendOptions | None = None,
     ) -> None:
         """Initialize the MsExcelDocumentBackend object.
 
@@ -355,6 +355,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             path_or_stream = convert_to_modern_format(path_or_stream, "xls", "xlsx")
         if options is None:
             options = MsExcelBackendOptions()
+        if not isinstance(options, MsExcelBackendOptions):
+            raise TypeError("Expected MsExcelBackendOptions.")
         super().__init__(in_doc, path_or_stream, options)
 
         self.page_range = in_doc.limits.page_range
@@ -363,7 +365,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         self.parent: GroupItem | None = None
 
         # Lazy-initialized LibreOffice converter for EMF/WMF images
-        self.xlsx_to_pdf_converter: Callable | None = None
+        self.xlsx_to_pdf_converter: Callable[[Path, Path], None] | None = None
         self.xlsx_to_pdf_converter_init: bool = False
 
         self.workbook = None
@@ -448,6 +450,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 except Exception as e:
                     _log.debug(f"Could not parse person.xml: {e}")
 
+                if self.workbook is None:
+                    return {}
                 sheet_num = next(
                     (
                         i
@@ -659,8 +663,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             doc = self._find_tables_in_sheet(doc, sheet, page_no)
             doc = self._find_images_in_sheet(doc, sheet, page_no)
         # Charts can be on both Worksheet and Chartsheet objects
-        if isinstance(sheet, (Worksheet, Chartsheet)):
-            doc = self._find_chart_in_sheet(doc, sheet, page_no)
+        doc = self._find_chart_in_sheet(doc, sheet, page_no)
         self._sort_sheet_children_by_position(doc, page_no)
 
         return doc
@@ -691,7 +694,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 return float("inf")
             for prov in getattr(item, "prov", []):
                 if prov.page_no == page_no:
-                    return prov.bbox.t
+                    return float(prov.bbox.t)
             return float("inf")
 
         sheet_group.children.sort(key=_top_row)
@@ -811,7 +814,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             # Extract comments and link them to cells
             for (row, col), thread in comment_map.items():
                 cell_item = self._find_cell_item(doc, page_no, row, col)
-                targets = [cell_item] if cell_item else None
+                targets: list[DocItem | tuple[DocItem, tuple[int, int]]] | None = (
+                    [cell_item] if cell_item else None
+                )
 
                 comment_group = doc.add_group(
                     label=GroupLabel.COMMENT_SECTION,
@@ -1209,7 +1214,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             )
         return (0, 0, 0, 0)
 
-    def _get_libreoffice_converter(self) -> Callable | None:
+    def _get_libreoffice_converter(self) -> Callable[[Path, Path], None] | None:
         """Lazily initialize and return a LibreOffice converter callable.
 
         The converter accepts ``(input_path: Path, output_path: Path)`` and
@@ -1289,10 +1294,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             The updated DoclingDocument.
         """
-        # drawing rels are stored on the worksheet object by openpyxl
+        # openpyxl initializes these real private fields; its stubs omit them.
+        # Drawing relationships are stored on the worksheet object.
         drawing_paths: list[str] = [
             rel.target
-            for rel in sheet._rels.find(SpreadsheetDrawing._rel_type)  # type: ignore[attr-defined]
+            for rel in sheet._rels.find(SpreadsheetDrawing._rel_type)  # ty: ignore[unresolved-attribute]
         ]
         if not drawing_paths:
             return doc
@@ -1302,8 +1308,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.seek(0)
 
+        path_or_stream = self.path_or_stream
+        if path_or_stream is None:
+            return doc
         try:
-            with ZipFile(self.path_or_stream, "r") as zf:
+            with ZipFile(path_or_stream, "r") as zf:
                 if _has_unsafe_zip_paths(zf.namelist()):
                     _log.warning(
                         "Skipping EMF/WMF scan: XLSX archive contains unsafe ZIP paths"
@@ -1353,7 +1362,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             return doc
         deps = get_dependents(zf, rels_path)
 
-        for rel in drawing._blip_rels:
+        if drawing is None:
+            return doc
+        # openpyxl exposes this property; its stubs omit it.
+        for rel in drawing._blip_rels:  # ty: ignore[unresolved-attribute]
             dep = deps.get(rel.embed)
             if dep.Type != IMAGE_NS or dep.target not in zf.namelist():
                 continue
@@ -1410,13 +1422,15 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         if self.workbook is not None:
             content_layer = self._get_sheet_content_layer(sheet)
-            # Images that PIL can read are already loaded by openpyxl into sheet._images
-            for item in sheet._images:  # type: ignore[attr-defined]
+            # openpyxl initializes _images; its stubs omit this real field.
+            # These images can already be read by PIL.
+            for item in sheet._images:  # ty: ignore[unresolved-attribute]
                 try:
                     image: Image = cast(Image, item)
                     ref = image.ref
+                    # Pillow also accepts read-only streams, which its IO stubs omit.
                     pil_image = (
-                        ref if isinstance(ref, PILImage.Image) else PILImage.open(ref)
+                        ref if isinstance(ref, PILImage.Image) else PILImage.open(ref)  # ty: ignore[invalid-argument-type]
                     )
                     doc.add_picture(
                         parent=self.parent,
@@ -1467,7 +1481,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             return doc
         content_layer = self._get_sheet_content_layer(sheet)
 
-        charts = sheet._charts  # type: ignore[attr-defined]
+        # openpyxl initializes _charts on both sheet types; its stubs omit it.
+        charts = sheet._charts  # ty: ignore[unresolved-attribute]
         if not charts:
             return doc
 
@@ -1863,10 +1878,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             return None
         num_ref = getattr(data_source, "numRef", None)
         if num_ref is not None and num_ref.f:
-            return num_ref.f
+            return str(num_ref.f)
         str_ref = getattr(data_source, "strRef", None)
         if str_ref is not None and str_ref.f:
-            return str_ref.f
+            return str(str_ref.f)
         return None
 
     def _resolve_reference(self, ref: str) -> list[str]:
@@ -1897,7 +1912,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 sheet_part = sheet_part[1:-1].replace("''", "'")
             sheet_name = sheet_part
         else:
-            sheet_name, cell_range = self.workbook.active.title, ref
+            active_sheet = self.workbook.active
+            if active_sheet is None:
+                return []
+            sheet_name, cell_range = active_sheet.title, ref
         if sheet_name not in self.workbook.sheetnames:
             _log.debug("Chart references unknown sheet %r", sheet_name)
             return []
@@ -1910,6 +1928,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             _log.debug("Could not parse chart range %r", cell_range)
             return []
 
+        if min_row is None or max_row is None or min_col is None or max_col is None:
+            return []
         values: list[str] = []
         for row in range(min_row, max_row + 1):
             for col in range(min_col, max_col + 1):
@@ -1977,7 +1997,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return None
 
     @staticmethod
-    def _get_sheet_content_layer(sheet: Worksheet) -> ContentLayer | None:
+    def _get_sheet_content_layer(sheet: Worksheet | Chartsheet) -> ContentLayer | None:
         return (
             None
             if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE

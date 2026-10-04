@@ -36,6 +36,7 @@ from docling.backend.abstract_backend import (
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import (
+    BaseBackendOptions,
     HTMLBackendOptions,
     MarkdownBackendOptions,
 )
@@ -102,7 +103,7 @@ _CreationPayload = Annotated[
 ]
 
 
-def _only_plain_line_breaks(children: list) -> bool:
+def _only_plain_line_breaks(children: list[marko.element.Element]) -> bool:
     """Return True when children consist solely of RawText/Literal runs separated
     by LineBreak nodes (soft or hard), with at least one break present.
 
@@ -280,7 +281,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: Optional[MarkdownBackendOptions] = None,
+        options: Optional[BaseBackendOptions] = None,
     ):
         # Raised first so a missing optional dependency gives an actionable
         # message rather than a NameError when marko is dereferenced below.
@@ -288,6 +289,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _MARKO_IMPORT_ERROR
         if options is None:
             options = MarkdownBackendOptions()
+        if not isinstance(options, MarkdownBackendOptions):
+            raise TypeError("Expected MarkdownBackendOptions.")
         super().__init__(in_doc, path_or_stream, options)
 
         _log.debug("Starting MarkdownDocumentBackend...")
@@ -416,7 +419,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         marker: str = "",
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
-    ):
+    ) -> ListItem:
         item = doc.add_list_item(
             text=text,
             enumerated=enumerated,
@@ -425,6 +428,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             formatting=formatting,
             hyperlink=hyperlink,
         )
+        assert isinstance(item, ListItem)
         return item
 
     def _create_heading_item(
@@ -435,7 +439,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         level: int,
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
-    ):
+    ) -> TextItem:
         if level == 1:
             item = doc.add_title(
                 text=text,
@@ -451,6 +455,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 formatting=formatting,
                 hyperlink=hyperlink,
             )
+        assert isinstance(item, TextItem)
         return item
 
     def _flush_creation_stack(
@@ -487,12 +492,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                 )
                 if parent_ref:
-                    list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
+                    list_last_item_by_ref[parent_ref] = parent_item
                     list_item_counter_by_ref[parent_ref] = (
                         list_item_counter_by_ref.get(parent_ref, 0) + 1
                     )
 
-            elif isinstance(to_create, _HeadingCreationPayload):
+            else:
                 # Not keeping as parent_item as logic for correctly tracking
                 # that not implemented yet (section components not captured
                 # as heading children in marko)
@@ -621,7 +626,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                 )
                 if parent_ref:
-                    list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
+                    list_last_item_by_ref[parent_ref] = parent_item
                     list_item_counter_by_ref[parent_ref] = (
                         list_item_counter_by_ref.get(parent_ref, 0) + 1
                     )
@@ -637,12 +642,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             fig_caption: Optional[TextItem] = None
             if element.title is not None and element.title != "":
                 title = unescape(element.title)
-                fig_caption = doc.add_text(
+                caption_item = doc.add_text(
                     label=DocItemLabel.CAPTION,
                     text=title,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+
+                assert isinstance(caption_item, TextItem)
+                fig_caption = caption_item
 
             image_ref = self._load_image_ref(element.dest)
             doc.add_picture(parent=parent_item, image=image_ref, caption=fig_caption)
@@ -659,9 +667,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.Link):
             _log.debug(" - Link: %s", element.children)
-            hyperlink = TypeAdapter(Optional[Union[AnyUrl, Path]]).validate_python(
-                element.dest
-            )
+            hyperlink = TypeAdapter[AnyUrl | Path | None](
+                AnyUrl | Path | None
+            ).validate_python(element.dest)
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             _log.debug(" - RawText/Literal: %s", element.children)
@@ -865,10 +873,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         )
 
         # Iterate through the element's children (if any)
-        if hasattr(element, "children") and not isinstance(
+        if isinstance(element_children, list) and not isinstance(
             element, processed_block_types
         ):
-            for child in element.children:
+            for child in element_children:
                 if (
                     isinstance(element, marko.block.ListItem)
                     and isinstance(child, marko.block.List)

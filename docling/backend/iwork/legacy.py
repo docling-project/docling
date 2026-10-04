@@ -653,7 +653,7 @@ def legacy_formatting(style: Element) -> Formatting | None:
         label = SF_PROPERTY_LABELS.get(element.tag)
         if label is not None:
             active.add(label)
-        elif element.tag == SF_SUPERSCRIPT and number is not None:
+        elif element.tag == SF_SUPERSCRIPT:
             script = SCRIPTS.get(as_int(number))
 
     return build_formatting(active, script)

@@ -27,6 +27,7 @@ from urllib.parse import urljoin, urlparse, urlsplit
 import certifi
 import requests
 import urllib3
+import urllib3.exceptions
 from docling_core.types.doc.document import ImageRef
 from PIL import Image, UnidentifiedImageError
 from pydantic import ValidationError
@@ -206,6 +207,7 @@ def _open_direct(url: str, headers: dict[str, str]) -> Iterator[urllib3.HTTPResp
             ) as e:
                 errors.append(e)
                 continue
+            assert isinstance(response, urllib3.HTTPResponse)
             with response:
                 yield response
             return
@@ -224,7 +226,9 @@ def _open_with_proxy(
         timeout=(5, 30),
         allow_redirects=False,
     ) as response:
-        yield response.raw
+        raw = response.raw
+        assert isinstance(raw, urllib3.HTTPResponse)
+        yield raw
 
 
 def url_origin(url: str) -> Optional[tuple[str, str, Optional[int]]]:

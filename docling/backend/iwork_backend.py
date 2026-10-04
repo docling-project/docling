@@ -86,7 +86,7 @@ from docling.backend.iwork.content import (
 )
 from docling.backend.iwork.iwa import is_encrypted
 from docling.backend.iwork.keynote_content import Presentation, Slide
-from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.backend_options import BaseBackendOptions, IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -292,10 +292,12 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: IWorkBackendOptions | None = None,
+        options: BaseBackendOptions | None = None,
     ):
         if options is None:
             options = IWorkBackendOptions()
+        if not isinstance(options, IWorkBackendOptions):
+            raise TypeError("Expected IWorkBackendOptions.")
         super().__init__(in_doc, path_or_stream, options)
         self.options: IWorkBackendOptions = options
 
@@ -422,10 +424,12 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: IWorkBackendOptions | None = None,
+        options: BaseBackendOptions | None = None,
     ):
         if options is None:
             options = IWorkBackendOptions()
+        if not isinstance(options, IWorkBackendOptions):
+            raise TypeError("Expected IWorkBackendOptions.")
         super().__init__(in_doc, path_or_stream, options)
         self.options: IWorkBackendOptions = options
 
@@ -924,14 +928,18 @@ def _add_paragraph(
         return _add_list_item(doc, paragraph, paragraph.list_label, lists, prov)
 
     if paragraph.label == DocItemLabel.TITLE:
-        return doc.add_title(text=paragraph.text, parent=parent, prov=prov)
+        item = doc.add_title(text=paragraph.text, parent=parent, prov=prov)
+        assert isinstance(item, TextItem)
+        return item
     if paragraph.label == DocItemLabel.SECTION_HEADER:
-        return doc.add_heading(
+        item = doc.add_heading(
             text=paragraph.text,
             level=paragraph.level or 1,
             parent=parent,
             prov=prov,
         )
+        assert isinstance(item, TextItem)
+        return item
 
     return _add_runs(doc, paragraph, paragraph.label, parent=parent, prov=prov)
 
@@ -966,7 +974,7 @@ def _add_runs(
     runs = [run for run in paragraph.runs if run.text]
     if _uniform(runs):
         first = runs[0] if runs else Run("", None)
-        return doc.add_text(
+        item = doc.add_text(
             label=label,
             text=paragraph.text,
             formatting=first.formatting,
@@ -975,6 +983,8 @@ def _add_runs(
             parent=parent,
             prov=prov,
         )
+        assert isinstance(item, TextItem)
+        return item
 
     group = doc.add_inline_group(content_layer=content_layer, parent=parent)
     items = [
@@ -989,7 +999,9 @@ def _add_runs(
         )
         for run in runs
     ]
-    return items[0]
+    first_item = items[0]
+    assert isinstance(first_item, TextItem)
+    return first_item
 
 
 def _add_list_item(
@@ -1003,7 +1015,7 @@ def _add_list_item(
     group = lists.group_for(label.depth)
     runs = [run for run in paragraph.runs if run.text]
     uniform = runs[0] if runs and _uniform(runs) else Run("", None)
-    return doc.add_list_item(
+    item = doc.add_list_item(
         text=paragraph.text,
         enumerated=label.enumerated,
         marker=label.marker,
@@ -1012,6 +1024,8 @@ def _add_list_item(
         hyperlink=_hyperlink(uniform.hyperlink),
         prov=prov,
     )
+    assert isinstance(item, TextItem)
+    return item
 
 
 def _uniform(runs: list[Run]) -> bool:
@@ -1087,10 +1101,12 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: IWorkBackendOptions | None = None,
+        options: BaseBackendOptions | None = None,
     ):
         if options is None:
             options = IWorkBackendOptions()
+        if not isinstance(options, IWorkBackendOptions):
+            raise TypeError("Expected IWorkBackendOptions.")
         super().__init__(in_doc, path_or_stream, options)
         self.options: IWorkBackendOptions = options
         self.page_range = in_doc.limits.page_range
@@ -1203,7 +1219,7 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             for drawable in sorted(drawn, key=numbers_content.sheet_order):
                 if isinstance(drawable, numbers_content.Table):
                     _add_sheet_table(doc, drawable, parent=group, page_no=index)
-                elif isinstance(drawable, numbers_content.PlacedChart):
+                else:
                     _add_chart(
                         doc,
                         drawable.chart,

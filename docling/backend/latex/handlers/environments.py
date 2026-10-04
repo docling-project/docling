@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     )
 
 try:  # pragma: no cover - import-time guard
-    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode, LatexNode
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
@@ -250,7 +250,7 @@ class EnvironmentHandlerMixin:
         )
 
     def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> str | None:
-        raw = node.latex_verbatim()
+        raw = str(node.latex_verbatim())
         if _TIKZ_END_PATTERN.search(raw) is None:
             return None
         if not self._validate_tikz_nodelist(node.nodelist, 0):
@@ -265,7 +265,7 @@ class EnvironmentHandlerMixin:
 
         for node in nodes:
             if isinstance(node, LatexEnvironmentNode) and node.envname == "tikzpicture":
-                nested_raw = node.latex_verbatim()
+                nested_raw = str(node.latex_verbatim())
                 if _TIKZ_END_PATTERN.search(nested_raw) is None:
                     return False
 
@@ -309,7 +309,7 @@ class EnvironmentHandlerMixin:
         list_group = doc.add_group(parent=parent, name="list", label=GroupLabel.LIST)
 
         items = []
-        current_item: list = []
+        current_item: list[LatexNode] = []
 
         if node.nodelist is not None:
             for n in node.nodelist:
@@ -347,7 +347,7 @@ class EnvironmentHandlerMixin:
         )
 
         items = []
-        current_item: list = []
+        current_item: list[LatexNode] = []
         current_key = ""
 
         if node.nodelist is not None:

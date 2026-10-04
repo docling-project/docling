@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Final
+from typing import Any, Callable, Final, TypedDict
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
@@ -50,7 +50,7 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
-from docling.datamodel.backend_options import MsWordBackendOptions
+from docling.datamodel.backend_options import BaseBackendOptions, MsWordBackendOptions
 from docling.datamodel.base_models import FormatToMimeType
 from docling.datamodel.document import InputDocument, InputFormat
 from docling.exceptions import DocumentLoadError, SecurityError
@@ -566,7 +566,11 @@ def _remove_fragment_only_rels(content: bytes) -> bytes:
         parent = rel.getparent()
         if parent is not None:
             parent.remove(rel)
-    return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
+    serialized = etree.tostring(
+        root, xml_declaration=True, encoding="UTF-8", standalone=True
+    )
+    assert isinstance(serialized, bytes)
+    return serialized
 
 
 def _sanitize_docx(archive: zipfile.ZipFile) -> BytesIO:
@@ -644,6 +648,13 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
             target.writestr(info, content)
     normalized.seek(0)
     return normalized
+
+
+class _ListHistory(TypedDict):
+    names: list[str | None]
+    levels: list[int | None]
+    numids: list[int | None]
+    indents: list[int | None]
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
@@ -771,12 +782,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: MsWordBackendOptions | None = None,
+        options: BaseBackendOptions | None = None,
     ) -> None:
         if not _DOCX_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _DOCX_IMPORT_ERROR
         if options is None:
             options = MsWordBackendOptions()
+        if not isinstance(options, MsWordBackendOptions):
+            raise TypeError("Expected MsWordBackendOptions.")
         if in_doc.format in {InputFormat.DOC, InputFormat.RTF}:
             path_or_stream = convert_to_modern_format(
                 path_or_stream, in_doc.format.value, "docx"
@@ -789,7 +802,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         # self.initialise(path_or_stream)
         # Word file:
-        self.path_or_stream: BytesIO | Path = path_or_stream
+        self.path_or_stream: BytesIO | Path | None = path_or_stream
         self.valid: bool = False
         # Initialise the parents for the hierarchy
         self.max_levels: int = 10
@@ -800,7 +813,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
         self.processed_textbox_elements: set[etree._Element] = set()
-        self.docx_to_pdf_converter: Callable | None = None
+        self.docx_to_pdf_converter: Callable[[Path, Path], None] | None = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
         self._empty_docx_template: DocxDocument | None = None
@@ -824,7 +837,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Set starting content layer
         self.content_layer = ContentLayer.BODY
 
-        self.history: dict[str, Any] = {
+        self.history: _ListHistory = {
             "names": [None],
             "levels": [None],
             "numids": [None],
@@ -849,7 +862,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._default_paragraph_style: BaseStyle | None = None
 
         self.docx_obj = self.load_msword_file(
-            path_or_stream=self.path_or_stream, document_hash=self.document_hash
+            path_or_stream=path_or_stream, document_hash=self.document_hash
         )
         if self.docx_obj:
             self.valid = True
@@ -931,7 +944,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if has_fragment_rels:
                         return Document(_sanitize_docx(archive))
                 return Document(str(path_or_stream))
-            elif isinstance(path_or_stream, BytesIO):
+            else:
                 with zipfile.ZipFile(path_or_stream) as archive:
                     is_strict = _is_strict_ooxml(archive)
                     has_fragment_rels = not is_strict and _has_fragment_only_rels(
@@ -943,8 +956,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         return Document(_sanitize_docx(archive))
                 path_or_stream.seek(0)
                 return Document(path_or_stream)
-            else:
-                return None
         except SecurityError:
             raise
         except Exception as e:
@@ -1014,21 +1025,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             The list group to use (either reused or newly created).
         """
-        if self._can_reuse_list_group(numid, parent):
+        cached_group = self.last_list_group
+        if cached_group is not None and self._can_reuse_list_group(numid, parent):
             # Reuse only if nothing but empty paragraphs (added when the list was
             # closed) follows the cached group in its parent. Otherwise the new
             # items would be placed before the intervening content, e.g. a table.
             container = parent if parent is not None else doc.body
-            trailing_empty: list[TextItem] = []
+            trailing_empty: list[NodeItem] = []
             for ref in reversed(container.children):
                 item = ref.resolve(doc)
                 if isinstance(item, TextItem) and not item.text.strip():
                     trailing_empty.append(item)
                     continue
-                if item.self_ref == self.last_list_group.self_ref:
+                if item.self_ref == cached_group.self_ref:
                     if trailing_empty:
                         doc.delete_items(node_items=trailing_empty)
-                    return self.last_list_group
+                    return cached_group
                 break
 
         list_gr = doc.add_list_group(
@@ -1036,7 +1048,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parent=parent,
             content_layer=self.content_layer,
         )
-        elem_ref.append(list_gr.get_ref())
+        elem_ref.append(RefItem(cref=list_gr.self_ref))
 
         # Update cache for potential future reuse
         self.last_list_group = list_gr
@@ -1071,7 +1083,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         This ensures that lists in different table cells are treated independently,
         even when they share the same numId.
         """
-        saved_history = {
+        saved_history: _ListHistory = {
             "names": self.history["names"].copy(),
             "levels": self.history["levels"].copy(),
             "numids": self.history["numids"].copy(),
@@ -1166,7 +1178,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                     name="shape-text",
                                     content_layer=self.content_layer,
                                 )
-                                added_elements.append(shape_group.get_ref())
+                                added_elements.append(
+                                    RefItem(cref=shape_group.self_ref)
+                                )
                                 doc.add_text(
                                     label=DocItemLabel.TEXT,
                                     parent=shape_group,
@@ -1291,15 +1305,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             extrema = pil_image.getextrema()
-            if extrema is not None:
-                if pil_image.mode in ("RGBA", "LA"):
+            if pil_image.mode in ("RGBA", "LA"):
+                alpha = extrema[-1]
+                if isinstance(alpha, tuple):
                     # extrema[-1] is the Alpha channel. If max alpha is 0, it is 100% invisible.
-                    if extrema[-1][1] == 0:
+                    if alpha[1] == 0:
                         return True
-                elif pil_image.mode == "RGB":
-                    # If all channels are exactly 255, it is a pure white spacing box.
-                    if extrema == ((255, 255), (255, 255), (255, 255)):
-                        return True
+            elif pil_image.mode == "RGB":
+                # If all channels are exactly 255, it is a pure white spacing box.
+                if extrema == ((255, 255), (255, 255), (255, 255)):
+                    return True
         except Exception:
             pass  # pragma: no cover
 
@@ -1376,16 +1391,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if numId is None:
                         numId_elem = style_numPr.find(f"{_W_NS_CLARK}numId")
                         if numId_elem is not None:
-                            numId = numId_elem.get(self.XML_KEY)
+                            value = numId_elem.get(self.XML_KEY)
+                            numId = str(value) if value is not None else None
                     if ilvl is None:
                         ilvl_elem = style_numPr.find(f"{_W_NS_CLARK}ilvl")
                         if ilvl_elem is not None:
-                            ilvl = ilvl_elem.get(self.XML_KEY)
+                            value = ilvl_elem.get(self.XML_KEY)
+                            ilvl = str(value) if value is not None else None
             if numId is not None and ilvl is not None:
                 break
             # A malformed basedOn chain can hop to a style type that lacks
             # base_style; getattr keeps the walk safe.
-            style = getattr(style, "base_style", None)
+            base_style = getattr(style, "base_style", None)
+            style = base_style if isinstance(base_style, ParagraphStyle) else None
             depth += 1
 
         # If numId is found but ilvl is not specified, default to level 0
@@ -1393,7 +1411,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             ilvl = "0"
         return numId, ilvl
 
-    def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
+    def _get_level_element(self, numid: int, ilvl: int) -> etree._Element | None:
         """Find the level element from the numbering XML for a given numId and ilvl."""
         try:
             numbering_part = None
@@ -1431,9 +1449,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if abstract_num_element is None:
                 return None
 
-            return abstract_num_element.find(
+            level = abstract_num_element.find(
                 f".//w:lvl[@w:ilvl='{ilvl}']", namespaces=namespaces
             )
+            assert level is None or isinstance(level, etree._Element)
+            return level
         except Exception as e:
             _log.debug(f"Error finding level element: {e}")
             return None
@@ -1447,7 +1467,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
         if num_fmt_element is None:
             return None
-        return num_fmt_element.get(self.XML_KEY)
+        value = num_fmt_element.get(self.XML_KEY)
+        return str(value) if value is not None else None
 
     def _get_start_value(self, numid: int, ilvl: int) -> int:
         """Read the start value from the abstractNum definition."""
@@ -1633,7 +1654,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         container = parent if parent is not None else doc.body
         if not container.children:
             return None
-        return container.children[-1].resolve(doc)
+        child = container.children[-1].resolve(doc)
+        assert isinstance(child, NodeItem)
+        return child
 
     def _is_code_style(self, style: ParagraphStyle | None) -> bool:
         """Return True if a style marks its paragraphs as code.
@@ -1657,7 +1680,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # A malformed basedOn chain can hop to a style type (e.g. a
             # numbering style) that lacks this attribute; getattr keeps
             # the walk safe.
-            style = getattr(style, "base_style", None)
+            base_style = getattr(style, "base_style", None)
+            style = base_style if isinstance(base_style, ParagraphStyle) else None
             depth += 1
         return False
 
@@ -1687,11 +1711,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return ""
             font_name = style.font.name
             if font_name:
-                return font_name.strip().lower()
+                return str(font_name).strip().lower()
             # A malformed basedOn chain can hop to a style type (e.g. a
             # numbering style) that lacks base_style; getattr keeps the
             # walk safe.
-            style = getattr(style, "base_style", None)
+            base_style = getattr(style, "base_style", None)
+            style = base_style if isinstance(base_style, ParagraphStyle) else None
             depth += 1
         return ""
 
@@ -1812,13 +1837,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if style is None:
             return "Normal", None
 
-        label: str = style.style_id
-        name: str = style.name or ""
+        label = str(style.style_id)
+        name = str(style.name or "")
         base_style_label: str | None = None
         base_style_name: str | None = None
         if isinstance(base_style := getattr(style, "base_style", None), ParagraphStyle):
-            base_style_label = base_style.style_id
-            base_style_name = base_style.name
+            base_style_label = str(base_style.style_id)
+            base_style_name = (
+                str(base_style.name) if base_style.name is not None else None
+            )
 
         if not label:
             return "Normal", None
@@ -1928,16 +1955,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         if not is_bold:
             try:
-                if run._element is not None:
-                    b_tags = run._element.xpath(".//w:b")
-                    for b in b_tags:
-                        val = b.get(f"{_W_NS_CLARK}val")
-                        if val not in ["0", "false"]:
-                            is_bold = True
-                            break
+                b_tags = run._element.xpath(".//w:b")
+                for b in b_tags:
+                    val = b.get(f"{_W_NS_CLARK}val")
+                    if val not in ["0", "false"]:
+                        is_bold = True
+                        break
 
-                if not is_bold and run._parent._element is not None:
-                    pPr_b = run._parent._element.xpath("./w:pPr/w:rPr/w:b")
+                if not is_bold and isinstance(run._parent, Paragraph):
+                    pPr_b = run._parent._p.xpath("./w:pPr/w:rPr/w:b")
                     for b in pPr_b:
                         val = b.get(f"{_W_NS_CLARK}val")
                         if val not in ["0", "false"]:
@@ -2067,7 +2093,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         self._get_hyperlink_target(item),
                     )
                 )
-            elif isinstance(item, Run):
+            else:
                 content.append(
                     (item.text, self._get_format_from_run(item, paragraph), None)
                 )
@@ -2157,7 +2183,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         if checked_elem is not None:
             val = checked_elem.get(f"{{{w14_ns}}}val")
-            return val == "1"
+            return str(val) == "1"
 
         return False
 
@@ -2335,7 +2361,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _handle_textbox_content(
         self,
-        textbox_elements: list,
+        textbox_elements: list[etree._Element],
         doc: DoclingDocument,
     ) -> list[RefItem]:
         """Process textbox content and add it to the document structure."""
@@ -2348,7 +2374,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             name="textbox",
             content_layer=self.content_layer,
         )
-        elem_ref.append(textbox_group.get_ref())
+        elem_ref.append(RefItem(cref=textbox_group.self_ref))
         # Set this as the current parent to ensure textbox content
         # is properly nested in document structure
         original_parent = self.parents[level]
@@ -2508,7 +2534,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         *,
         doc: DoclingDocument,
         prev_parent: NodeItem | None,
-        paragraph_elements: list,
+        paragraph_elements: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
     ) -> NodeItem | None:
         return (
             doc.add_inline_group(parent=prev_parent, content_layer=self.content_layer)
@@ -2629,7 +2655,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
             )
             self.parents[0] = te
-            elem_ref.append(te.get_ref())
+            elem_ref.append(RefItem(cref=te.self_ref))
         elif "Heading" in p_style_id:
             # _add_heading clears the parents tail; reset list context so the
             # next list item opens fresh under this heading.
@@ -2639,9 +2665,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
-            if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
-                text
-            ) > 0:
+            if len(paragraph.text.strip()) == 0 and len(text) > 0:
                 # Standalone equation(s) — emit each as a separate formula
                 level = self._get_level()
                 parent = self.parents[level - 1]
@@ -2655,7 +2679,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                 text=eq_text,
                                 content_layer=self.content_layer,
                             )
-                            elem_ref.append(t1.get_ref())
+                            elem_ref.append(RefItem(cref=t1.self_ref))
                 else:
                     t1 = doc.add_text(
                         label=DocItemLabel.FORMULA,
@@ -2663,14 +2687,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         text=text.replace("<eq>", "").replace("</eq>", ""),
                         content_layer=self.content_layer,
                     )
-                    elem_ref.append(t1.get_ref())
+                    elem_ref.append(RefItem(cref=t1.self_ref))
             else:
                 # Inline equation
                 level = self._get_level()
                 inline_equation = doc.add_inline_group(
                     parent=self.parents[level - 1], content_layer=self.content_layer
                 )
-                elem_ref.append(inline_equation.get_ref())
+                elem_ref.append(RefItem(cref=inline_equation.self_ref))
 
                 self._add_inline_equations_to_parent(
                     doc=doc,
@@ -2713,7 +2737,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Buffered: written only if more code follows, so a
                     # block never ends in blank lines.
                     self._pending_code_blank_lines += 1
-                elem_ref.append(merge_target.get_ref())
+                elem_ref.append(RefItem(cref=merge_target.self_ref))
                 self._force_new_code_block = False
             elif text:
                 # Start a new block, but never on a leading blank paragraph.
@@ -2725,7 +2749,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     content_layer=self.content_layer,
                     code_language=detect_code_language(code_text),
                 )
-                elem_ref.append(code_item.get_ref())
+                elem_ref.append(RefItem(cref=code_item.self_ref))
                 self._force_new_code_block = False
             # A blank that neither starts nor extends a block leaves the
             # barrier armed.
@@ -2756,7 +2780,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                     content_layer=self.content_layer,
                 )
-                elem_ref.append(text_item.get_ref())
+                elem_ref.append(RefItem(cref=text_item.self_ref))
 
         self._update_history(p_style_id, p_level, numid, ilevel)
 
@@ -2786,7 +2810,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         label=GroupLabel.SECTION,
                         name=f"header-{i}",
                     )
-                    elem_ref.append(gr1.get_ref())
+                    elem_ref.append(RefItem(cref=gr1.self_ref))
                     self.parents[i] = gr1
 
             elif curr_level < level:
@@ -2836,13 +2860,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             level=add_level,
         )
         self.parents[current_level] = hd
-        elem_ref.append(hd.get_ref())
+        elem_ref.append(RefItem(cref=hd.self_ref))
         return elem_ref
 
     def _add_formatted_list_item(
         self,
         doc: DoclingDocument,
-        elements: list,
+        elements: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
         marker: str,
         enumerated: bool,
         level: int,
@@ -2891,7 +2915,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _add_list_item_with_marker(
         self,
         doc: DoclingDocument,
-        elements: list,
+        elements: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
         numid: int,
         ilevel: int,
         is_numbered: bool,
@@ -2946,7 +2970,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     content_layer=self.content_layer,
                 )
                 if elem_ref is not None:
-                    elem_ref.append(e1.get_ref())
+                    elem_ref.append(RefItem(cref=e1.self_ref))
 
             e2 = doc.add_text(
                 label=DocItemLabel.FORMULA,
@@ -2955,7 +2979,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
             )
             if elem_ref is not None:
-                elem_ref.append(e2.get_ref())
+                elem_ref.append(RefItem(cref=e2.self_ref))
 
         if len(text_tmp) > 0:
             e3 = doc.add_text(
@@ -2965,7 +2989,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
             )
             if elem_ref is not None:
-                elem_ref.append(e3.get_ref())
+                elem_ref.append(RefItem(cref=e3.self_ref))
 
     def _slot_for(self, word_ilevel: int) -> int:
         """Map a Word ``w:ilvl`` value to the internal parents-slot index.
@@ -2980,6 +3004,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         sits at level 1 and later returns to level 0) are clamped to the list
         base so they stay inside the current list instead of mapping below it.
         """
+        assert self.level_at_new_list is not None
+        assert self.level_start_ilevel is not None
         return self.level_at_new_list + max(0, word_ilevel - self.level_start_ilevel)
 
     def _manage_list_structure(
@@ -3057,7 +3083,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     content_layer=self.content_layer,
                 )
                 self.parents[i] = list_gr1
-                elem_ref.append(list_gr1.get_ref())
+                elem_ref.append(RefItem(cref=list_gr1.self_ref))
             use_level = self._slot_for(ilevel)
 
         elif (
@@ -3118,7 +3144,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         numid: int,
         ilevel: int,
-        elements: list,
+        elements: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
         is_numbered: bool = False,
     ) -> list[RefItem]:
         """Add a regular list item without inline equations.
@@ -3234,10 +3260,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             group_element.children.append(prov)
             pr_item = prov.resolve(doc)
             item_parent = pr_item.parent.resolve(doc)
-            if pr_item.get_ref() in item_parent.children:
-                item_parent.children.remove(pr_item.get_ref())
-            pr_item.parent = group_element.get_ref()
-        ref_for_rich_cell = group_element.get_ref()
+            if RefItem(cref=pr_item.self_ref) in item_parent.children:
+                item_parent.children.remove(RefItem(cref=pr_item.self_ref))
+            pr_item.parent = RefItem(cref=group_element.self_ref)
+        ref_for_rich_cell = RefItem(cref=group_element.self_ref)
         return ref_for_rich_cell
 
     @staticmethod
@@ -3317,7 +3343,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         docling_table = doc.add_table(
             data=data, parent=self.parents[level - 1], content_layer=self.content_layer
         )
-        elem_ref.append(docling_table.get_ref())
+        elem_ref.append(RefItem(cref=docling_table.self_ref))
 
         open_cells: dict[int, TableCell] = {}
         for row_idx, row in enumerate(table.rows):
@@ -3460,10 +3486,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             runs = list(para.iterchildren(f"{_W_NS_CLARK}r"))
             for rn in runs:
                 item: Run = Run(rn, self.docx_obj)
-                if item is not None:
-                    fm = MsWordDocumentBackend._get_format_from_run(item)
-                    if fm != Formatting():
-                        return True
+                fm = MsWordDocumentBackend._get_format_from_run(item)
+                if fm != Formatting():
+                    return True
 
         # Walk a non-empty code-styled cell as rich content so it can emit a
         # CodeItem; the font fallback never fires inside cells.
@@ -3502,7 +3527,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return None
             # Access the image part using the relationship ID
             image_part = rel.target_part
-            image_data = image_part.blob  # Get the binary image data
+            blob = image_part.blob  # Get the binary image data
+            assert isinstance(blob, bytes)
+            image_data = blob
         return image_data
 
     def _add_picture_to_doc(
@@ -3537,7 +3564,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 caption=None,
                 content_layer=target_layer,
             )
-        return p.get_ref()
+        return RefItem(cref=p.self_ref)
 
     def _convert_elements_via_docx(
         self, elements: Any | list[Any], element_tag: str | list[str] | None = None
@@ -3570,6 +3597,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         try:
             # Loaded once per backend instance; del body[:] clears cheaply on every call.
             if self._empty_docx_template is None:
+                assert self.path_or_stream is not None
                 self._empty_docx_template = self.load_msword_file(
                     self.path_or_stream, self.document_hash
                 )
@@ -3727,7 +3755,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                         pil_image = None
 
-                    if pil_image is None and image_data is not None:
+                    if pil_image is None:
                         pil_image = self._convert_elements_via_docx(
                             imagedata, ["object", "pict"]
                         )
@@ -3914,7 +3942,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if not text:
             cached = self._read_chart_cache(title)
             text = cached[0].strip() if cached else ""
-        return text or None
+        return str(text) if text else None
 
     def _chart_to_table_data(self, chart_root: Any) -> TableData | None:
         """Reconstruct a chart's underlying data grid as a TableData.
@@ -4088,7 +4116,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     else None
                 ),
             )
-        return picture.get_ref()
+        return RefItem(cref=picture.self_ref)
 
     def _add_header_footer(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
         """Add section headers and footers.

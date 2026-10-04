@@ -11,6 +11,7 @@ from docling_core.types.doc import DoclingDocument, DocumentOrigin
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -20,9 +21,12 @@ _DCLX_MIMETYPE = "application/zip"
 class DocLangArchiveBackend(DeclarativeDocumentBackend):
     @override
     def __init__(
-        self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]
+        self,
+        in_doc: InputDocument,
+        path_or_stream: Union[BytesIO, Path],
+        options: BackendOptions | None = None,
     ) -> None:
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, options)
         self._temp_dir: Path | None = None
         self._doc_or_err = self._get_doc_or_err()
 

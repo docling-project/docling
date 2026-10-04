@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 from docling_core.types.doc.document import TableCell, TableData
+from pydantic import PrivateAttr
 
 from docling.backend.latex.constants import (
     MACROS_ESCAPED,
@@ -22,11 +23,18 @@ try:  # pragma: no cover - import-time guard
         LatexCharsNode,
         LatexEnvironmentNode,
         LatexMacroNode,
+        LatexNode,
         LatexWalker,
         LatexWalkerParseError,
     )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
+
+
+class _ParsedTableCell(TableCell):
+    _col_span: int = PrivateAttr(1)
+    _row_span: int = PrivateAttr(1)
+    _is_placeholder: bool = PrivateAttr(False)
 
 
 class TableHelperMixin:
@@ -118,11 +126,11 @@ class TableHelperMixin:
     def _parse_table(self, node: LatexEnvironmentNode) -> TableData | None:
         rows = []
         current_row = []
-        current_cell_nodes: list = []
+        current_cell_nodes: list[LatexNode] = []
 
         source_latex = node.latex_verbatim()
 
-        def parse_brace_args(text: str) -> list:
+        def parse_brace_args(text: str) -> list[str]:
             args = []
             i = 0
             while i < len(text):
@@ -143,27 +151,27 @@ class TableHelperMixin:
 
         def finish_cell(col_span: int = 1, row_span: int = 1):
             text = self._nodes_to_text(current_cell_nodes).strip()
-            cell = TableCell(
+            cell = _ParsedTableCell(
                 text=text,
                 start_row_offset_idx=0,
                 end_row_offset_idx=0,
                 start_col_offset_idx=0,
                 end_col_offset_idx=0,
             )
-            cell._col_span = col_span  # type: ignore[attr-defined]
-            cell._row_span = row_span  # type: ignore[attr-defined]
+            cell._col_span = col_span
+            cell._row_span = row_span
             current_row.append(cell)
             current_cell_nodes.clear()
 
             for _ in range(col_span - 1):
-                placeholder = TableCell(
+                placeholder = _ParsedTableCell(
                     text="",
                     start_row_offset_idx=0,
                     end_row_offset_idx=0,
                     start_col_offset_idx=0,
                     end_col_offset_idx=0,
                 )
-                placeholder._is_placeholder = True  # type: ignore[attr-defined]
+                placeholder._is_placeholder = True
                 current_row.append(placeholder)
 
         def finish_row():
@@ -216,10 +224,10 @@ class TableHelperMixin:
             for j in range(num_cols):
                 if j < len(row):
                     cell = row[j]
-                    if getattr(cell, "_is_placeholder", False):
+                    if cell._is_placeholder:
                         continue
                 else:
-                    cell = TableCell(
+                    cell = _ParsedTableCell(
                         text="",
                         start_row_offset_idx=0,
                         end_row_offset_idx=0,
@@ -230,8 +238,8 @@ class TableHelperMixin:
                 cell.start_row_offset_idx = i
                 cell.start_col_offset_idx = j
 
-                col_span = getattr(cell, "_col_span", 1)
-                row_span = getattr(cell, "_row_span", 1)
+                col_span = cell._col_span
+                row_span = cell._row_span
                 cell.end_row_offset_idx = i + row_span
                 cell.end_col_offset_idx = j + col_span
 

@@ -142,7 +142,7 @@ class _ImagePageBackend(PdfPageBackend):
     @override
     def get_text_cells(self) -> Iterable[TextCell]:
         # No text cells on raw images
-        return []
+        return list[TextCell]()
 
     @override
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
@@ -248,7 +248,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
         self._frames: list[Image.Image] = []
         self._frame_dpi: list[tuple[float, float]] = []
         try:
-            with Image.open(self.path_or_stream) as img:  # type: ignore[arg-type]
+            with Image.open(path_or_stream) as img:
                 # Handle multi-frame and single-frame images
                 # - multiframe formats: TIFF, GIF, ICO
                 # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC

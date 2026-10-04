@@ -1040,6 +1040,38 @@ def test_odt_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
     assert pictures[0].image is not None
 
 
+@pytest.mark.parametrize("in_cell", [False, True])
+def test_ods_embedded_image_is_emitted_once(tmp_path: Path, in_cell: bool):
+    image_path = tmp_path / "picture.png"
+    Image.new("RGB", (2, 3), "red").save(image_path)
+    path = tmp_path / "image.ods"
+    source = OdfDocument("spreadsheet")
+    source.body.clear()
+    table = Table("Images", width=1, height=1)
+    href = source.add_file(str(image_path))
+    frame = Frame.image_frame(href, size=("1cm", "1cm"))
+    if in_cell:
+        cell = table.get_cell("A1")
+        cell.set_value("Image cell")
+        cell.append(frame)
+        table.set_cell("A1", cell)
+    else:
+        table.append(frame)
+    source.body.append(table)
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+    pictures = result.document.pictures
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
+    pixels = pictures[0].image.pil_image
+    assert pixels is not None
+    assert pixels.size == (2, 3)
+    assert pixels.getpixel((0, 0)) == (255, 0, 0)
+    html = result.document.export_to_html(image_mode=ImageRefMode.EMBEDDED)
+    assert html.count("data:image/png;base64,") == 1
+
+
 def _rich_cell_descendants(doc: DoclingDocument, cell: RichTableCell):
     group = cell.ref.resolve(doc)
     return [

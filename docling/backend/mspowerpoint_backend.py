@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Any, Callable, Final, Iterable, Iterator, Optional, Union
+from typing import Any, Callable, Final, Iterable, Iterator, Optional, TypedDict, Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -22,6 +22,7 @@ from docling_core.types.doc import (
     ImageRef,
     ListGroup,
     ListItem,
+    NodeItem,
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
@@ -46,10 +47,21 @@ from docling.backend.docx.drawingml.utils import (
     crop_whitespace,
     get_docx_to_pdf_converter,
 )
-from docling.datamodel.backend_options import MsPowerpointBackendOptions
+from docling.datamodel.backend_options import (
+    BaseBackendOptions,
+    MsPowerpointBackendOptions,
+)
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+
+
+class _ListMarker(TypedDict):
+    is_list: bool | None
+    kind: str | None
+    detail: str | None
+    level: int
+
 
 _log = logging.getLogger(__name__)
 
@@ -201,7 +213,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: Optional[MsPowerpointBackendOptions] = None,
+        options: BaseBackendOptions | None = None,
     ) -> None:
         if not _PPTX_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _PPTX_IMPORT_ERROR
@@ -209,11 +221,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             path_or_stream = convert_to_modern_format(path_or_stream, "ppt", "pptx")
         if options is None:
             options = MsPowerpointBackendOptions()
+        if not isinstance(options, MsPowerpointBackendOptions):
+            raise TypeError("MsPowerpointBackendOptions are required.")
         super().__init__(in_doc, path_or_stream, options)
-        self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.path_or_stream: BytesIO | Path | None = path_or_stream
         self.page_range = in_doc.limits.page_range
 
-        self.pptx_to_pdf_converter: Optional[Callable] = None
+        self.pptx_to_pdf_converter: Callable[[Path, Path], None] | None = None
         self.pptx_to_pdf_converter_init: bool = False
         self._render_charts: bool = False
         self._metafile_hint_emitted: bool = False
@@ -221,10 +235,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.pptx_obj: Optional[presentation.Presentation] = None
         self.valid: bool = False
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.pptx_obj = Presentation(self.path_or_stream)
-            elif isinstance(self.path_or_stream, Path):
-                self.pptx_obj = Presentation(str(self.path_or_stream))
+            if isinstance(path_or_stream, BytesIO):
+                self.pptx_obj = Presentation(path_or_stream)
+            else:
+                self.pptx_obj = Presentation(str(path_or_stream))
 
             self.valid = True
         except Exception as e:
@@ -301,7 +315,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             top = 0
             width = slide_size.width
             height = slide_size.height
-        shape_bbox = [left, top, left + width, top + height]
+        shape_bbox = (float(left), float(top), float(left + width), float(top + height))
         # python-pptx reports left and top as EMU from the slide's top-left, with
         # y growing downward, so the tuple above is in TOPLEFT order. Tagging it
         # BOTTOMLEFT does not convert it: BoundingBox.from_tuple unpacks
@@ -388,12 +402,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Bullet character
         buChar = pPr.find("a:buChar", namespaces=self.NAMESPACES)
         if buChar is not None:
-            return (True, "buChar", buChar.get("char"))
+            detail = buChar.get("char")
+            return (True, "buChar", str(detail) if detail is not None else None)
 
         # Auto numbering
         buAuto = pPr.find("a:buAutoNum", namespaces=self.NAMESPACES)
         if buAuto is not None:
-            return (True, "buAutoNum", buAuto.get("type"))
+            detail = buAuto.get("type")
+            return (True, "buAutoNum", str(detail) if detail is not None else None)
 
         # Picture bullet
         buBlip = pPr.find("a:buBlip", namespaces=self.NAMESPACES)
@@ -573,7 +589,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         else:
             return (False, "None")
 
-    def _get_effective_list_marker(self, shape, paragraph) -> dict:
+    def _get_effective_list_marker(self, shape, paragraph) -> _ListMarker:
         """Return a dictionary describing the effective list marker for a paragraph.
 
         List marker information can come from several sources: direct paragraph
@@ -621,7 +637,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             }
 
         # 3) Layout placeholder lstStyle (if this is a placeholder)
-        layout_result = None
+        layout_result: _ListMarker | None = None
         if shape.is_placeholder:
             idx = shape.placeholder_format.idx
             layout = shape.part.slide.slide_layout
@@ -1068,7 +1084,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """
         if not chart.has_title:
             return None
-        text = chart.chart_title.text_frame.text.strip()
+        text = str(chart.chart_title.text_frame.text).strip()
         return text or None
 
     @staticmethod
@@ -1255,7 +1271,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         )
         return
 
-    def _get_libreoffice_converter(self) -> Optional[Callable]:
+    def _get_libreoffice_converter(self) -> Callable[[Path, Path], None] | None:
         """Lazily initialize and return a LibreOffice converter callable.
 
         The converter accepts ``(input_path, output_path)`` and converts the
@@ -1455,6 +1471,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Units of size in PPTX by default are EMU units (English Metric Units)
         slide_width = pptx_obj.slide_width
         slide_height = pptx_obj.slide_height
+        assert slide_width is not None and slide_height is not None
 
         self._render_charts = (
             isinstance(self.options, MsPowerpointBackendOptions)
@@ -1465,7 +1482,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             self._render_charts = False
 
         max_levels = 10
-        parents = {}  # type: ignore
+        parents: dict[int, NodeItem | None] = {}
         for i in range(max_levels):
             parents[i] = None
 

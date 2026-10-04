@@ -17,6 +17,7 @@ values it last plotted in a property list of its own rather than inline.
 import logging
 import plistlib
 import zipfile
+from typing import cast
 from xml.etree.ElementTree import Element
 
 from docling.backend.iwork.content import Chart, ChartKind, ChartSeries
@@ -177,7 +178,9 @@ def read_content(
     return sheets
 
 
-def read_chart_shares(archive: zipfile.ZipFile, max_file_bytes: int) -> dict[str, dict]:
+def read_chart_shares(
+    archive: zipfile.ZipFile, max_file_bytes: int
+) -> dict[str, dict[str, object]]:
     """Read the cached data of every chart in the container.
 
     Args:
@@ -189,7 +192,7 @@ def read_chart_shares(archive: zipfile.ZipFile, max_file_bytes: int) -> dict[str
         is missing or unreadable is left out rather than failing the document,
         since the chart still has its names without it.
     """
-    shares: dict[str, dict] = {}
+    shares: dict[str, dict[str, object]] = {}
     for info in archive.infolist():
         if not info.filename.endswith(CHART_SHARE_SUFFIX):
             continue
@@ -206,7 +209,9 @@ def read_chart_shares(archive: zipfile.ZipFile, max_file_bytes: int) -> dict[str
             _log.debug("Could not read chart data '%s'.", info.filename)
             continue
         if isinstance(share, dict):
-            shares[info.filename[: -len(CHART_SHARE_SUFFIX)]] = share
+            shares[info.filename[: -len(CHART_SHARE_SUFFIX)]] = cast(
+                dict[str, object], share
+            )
     return shares
 
 
@@ -426,7 +431,9 @@ def formula_text(cell: Element) -> str | None:
     return None
 
 
-def read_chart(info: Element, shares: dict[str, dict]) -> PlacedChart | None:
+def read_chart(
+    info: Element, shares: dict[str, dict[str, object]]
+) -> PlacedChart | None:
     """Build one chart from an ``sf:chart-info``, and say where it sits.
 
     A chart bound to a table leaves ``sf:chart-data`` empty and keeps the values
@@ -456,10 +463,18 @@ def read_chart(info: Element, shares: dict[str, dict]) -> PlacedChart | None:
     if share is not None:
         # The share is what the chart last drew, so where the two disagree — a
         # stale name left behind in the element, say — the share wins.
-        shared_names = [str(name) for name in share.get(SHARE_COLUMNS_KEY, [])]
+        columns = share.get(SHARE_COLUMNS_KEY, [])
+        shared_names = (
+            [str(name) for name in columns] if isinstance(columns, list) else []
+        )
         if shared_names:
             names = shared_names
-        rows = share.get(SHARE_ROWS_KEY) or []
+        raw_rows = share.get(SHARE_ROWS_KEY) or []
+        rows = (
+            [cast(dict[str, object], row) for row in raw_rows if isinstance(row, dict)]
+            if isinstance(raw_rows, list)
+            else []
+        )
         if rows:
             categories = [str(row.get(SHARE_ROW_NAME_KEY, "")) for row in rows]
             by_category = [points(row) for row in rows]
@@ -508,13 +523,16 @@ def _point_of(
     return row[series] if series < len(row) else None
 
 
-def points(row: dict) -> list[float | None]:
+def points(row: dict[str, object]) -> list[float | None]:
     """Read one category's plotted values, leaving the gaps empty."""
+    values = row.get(SHARE_ROW_VALUES_KEY, [])
+    if not isinstance(values, list):
+        return []
     return [
         float(value)
         if isinstance(value, (int, float)) and not isinstance(value, bool)
         else None
-        for value in row.get(SHARE_ROW_VALUES_KEY, [])
+        for value in values
     ]
 
 

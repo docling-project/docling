@@ -24,6 +24,7 @@ from urllib.request import url2pathname
 
 import requests
 import urllib3
+import urllib3.exceptions
 from docling_core.types.doc import (
     BoundingBox,
     CodeLanguageLabel,
@@ -39,6 +40,8 @@ from docling_core.types.doc import (
     GraphLinkLabel,
     GroupItem,
     GroupLabel,
+    ListItem,
+    NodeItem,
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
@@ -56,7 +59,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
-from typing_extensions import Self, override
+from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
@@ -68,7 +71,7 @@ from docling.backend.utils.table_spans import (
     clamp_span,
     table_width,
 )
-from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.backend_options import BaseBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, OperationNotAllowed
@@ -325,7 +328,7 @@ class AnnotatedText(BaseModel):
     source_tag_id: Optional[str] = None
 
 
-class AnnotatedTextList(list):
+class AnnotatedTextList(list[AnnotatedText]):
     def to_single_text_element(self) -> AnnotatedText:
         current_h = None
         current_text = ""
@@ -423,7 +426,7 @@ class AnnotatedTextList(list):
             )
         return simplified
 
-    def split_by_newline(self) -> list[Self]:
+    def split_by_newline(self) -> list[AnnotatedTextList]:
         """Split text elements on multiple consecutive line breaks (from <br> tags).
 
         Single <br> tags are converted to newline characters (\n) within the same paragraph.
@@ -431,7 +434,7 @@ class AnnotatedTextList(list):
         Regular newlines from HTML source formatting have already been
         normalized to spaces during text extraction.
         """
-        super_list: list[Self] = []
+        super_list: list[AnnotatedTextList] = []
         active_annotated_text_list = AnnotatedTextList()
         double_sentinel = _BR_SENTINEL + _BR_SENTINEL
 
@@ -467,16 +470,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: Optional[HTMLBackendOptions] = None,
+        options: Optional[BaseBackendOptions] = None,
     ):
         if not _BS4_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         if options is None:
             options = HTMLBackendOptions()
+        if not isinstance(options, HTMLBackendOptions):
+            raise TypeError("Expected HTMLBackendOptions.")
         super().__init__(in_doc, path_or_stream, options)
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
-        self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.path_or_stream: Union[BytesIO, Path, None] = path_or_stream
         configured_base_path: Optional[str] = (
             str(options.source_uri) if options.source_uri is not None else None
         )
@@ -495,7 +500,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # Initialize the parents for the hierarchy
         self.max_levels = 10
         self.level = 0
-        self.parents: dict[int, Optional[Union[DocItem, GroupItem]]] = {}
+        self.parents: dict[int, NodeItem | None] = {}
         self.ctx = _Context()
         self._disable_inline_group_depth: int = 0
         for i in range(self.max_levels):
@@ -878,13 +883,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
-        if cast(HTMLBackendOptions, self.options).render_page:
+        if self.options.render_page:
             self._render_with_browser()
             if self._rendered_html:
                 self.soup = BeautifulSoup(self._rendered_html, "html.parser")
 
         if self._rendered_page_images and self._rendered_page_size:
-            render_dpi = cast(HTMLBackendOptions, self.options).render_dpi
+            render_dpi = self.options.render_dpi
             for page_no, page_image in enumerate(self._rendered_page_images, start=1):
                 doc.add_page(
                     page_no=page_no,
@@ -947,6 +952,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         options: HTMLBackendOptions, source_uri: Optional[str]
     ) -> list[str]:
         """Return the origins that receive ``options.headers``."""
+        origins: list[str]
         if options.headers_allowed_origins is not None:
             origins = list(options.headers_allowed_origins)
         elif source_uri is not None and ImageResourceLoader.is_remote_url(source_uri):
@@ -958,7 +964,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return origins
 
     def _get_render_page_size(self) -> tuple[int, int]:
-        options = cast(HTMLBackendOptions, self.options)
+        options = self.options
         width = options.render_page_width
         height = options.render_page_height
         if options.render_page_orientation == "landscape":
@@ -1079,12 +1085,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return canvas
 
     def _render_with_browser(self) -> None:
-        options = cast(HTMLBackendOptions, self.options)
+        options = self.options
         if not options.render_page:
             return
 
         try:
-            from playwright.sync_api import sync_playwright  # type: ignore
+            from playwright.sync_api import sync_playwright
         except ImportError as exc:
             raise RuntimeError(
                 "Playwright is required for HTML rendering. "
@@ -1313,7 +1319,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _capture_page_images(
         self,
         page,
-        render_data: dict,
+        render_data: dict[str, Any],
         page_width: int,
         page_height: int,
         full_page: bool,
@@ -1349,7 +1355,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return page_images
 
     def _build_bbox_mapping(
-        self, render_data: dict, page_height: int, full_page: bool
+        self, render_data: dict[str, Any], page_height: int, full_page: bool
     ) -> dict[str, _RenderedBBox]:
         boxes = render_data.get("boxes", {}) or {}
         scroll_height = float(render_data.get("scrollHeight", page_height))
@@ -1462,8 +1468,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         has_visible_descendant = False
         for descendant in tag.find_all(True):
-            if not isinstance(descendant, Tag):
-                continue
             if (
                 self._get_rendered_text_bbox_for_tag(descendant) is not None
                 or self._get_rendered_bbox_for_tag(descendant) is not None
@@ -1530,8 +1534,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if render_box is None and isinstance(tag, Tag):
             descendant_boxes: list[_RenderedBBox] = []
             for descendant in [tag, *tag.find_all(True)]:
-                if not isinstance(descendant, Tag):
-                    continue
                 descendant_box = self._get_rendered_text_bbox_for_tag(descendant)
                 if descendant_box is not None:
                     descendant_boxes.append(descendant_box)
@@ -1623,7 +1625,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         horizontal_gap = right_box.l - left_box.r
         max_gap = max(8.0, 1.5 * max_height)
-        min_gap = -0.5 * min(left_box.width, right_box.width)
+        min_gap = -0.5 * float(min(left_box.width, right_box.width))
         return min_gap <= horizontal_gap <= max_gap
 
     def _compact_adjacent_single_char_parts(
@@ -1737,8 +1739,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             nonlocal current_p
             if current_p is None:
                 current_p = soup.new_tag("p")
-                if p.get(_DATA_DOCLING_ID_ATTR):
-                    current_p[_DATA_DOCLING_ID_ATTR] = p.get(_DATA_DOCLING_ID_ATTR)
+                source_id = HTMLDocumentBackend._get_attr_as_string(
+                    p, _DATA_DOCLING_ID_ATTR
+                )
+                if source_id:
+                    current_p[_DATA_DOCLING_ID_ATTR] = source_id
                 new_nodes.append(current_p)
 
         def _flush_para_if_empty():
@@ -1828,10 +1833,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             group_element.children.append(prov)
             pr_item = prov.resolve(doc)
             item_parent = pr_item.parent.resolve(doc)
-            if pr_item.get_ref() in item_parent.children:
-                item_parent.children.remove(pr_item.get_ref())
-            pr_item.parent = group_element.get_ref()
-        ref_for_rich_cell = group_element.get_ref()
+            if RefItem(cref=pr_item.self_ref) in item_parent.children:
+                item_parent.children.remove(RefItem(cref=pr_item.self_ref))
+            pr_item.parent = RefItem(cref=group_element.self_ref)
+        ref_for_rich_cell = RefItem(cref=group_element.self_ref)
         return ref_for_rich_cell
 
     @staticmethod
@@ -1877,12 +1882,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         direct_block_text_children = [
             child
             for child in table_cell.find_all(recursive=False)
-            if isinstance(child, Tag) and child.name in {"p", "div", "li"}
+            if child.name in {"p", "div", "li"}
         ]
         has_nested_form_semantic_id = any(
-            self._is_form_semantic_tag(child)
-            for child in children
-            if isinstance(child, Tag)
+            self._is_form_semantic_tag(child) for child in children
         )
         if has_nested_form_semantic_id:
             return True
@@ -1927,7 +1930,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             t.unwrap()
 
         _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
-        grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
+        grid: list[list[str | None]] = [
+            [None for _ in range(num_cols)] for _ in range(num_rows)
+        ]
         data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
 
         # Iterate over the rows in the table
@@ -1936,8 +1941,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         # We don't want this recursive to support nested tables
         for row in element("tr", recursive=False):
-            if not isinstance(row, Tag):
-                continue
             row_classes = {
                 class_name.lower() for class_name in self._get_tag_classes(row)
             }
@@ -1949,13 +1952,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             col_header = True
             row_header = True
             for html_cell in cells:
-                if isinstance(html_cell, Tag):
-                    _, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
-                    if html_cell.name == "td":
-                        col_header = False
-                        row_header = False
-                    elif row_span == 1:
-                        row_header = False
+                _, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
+                if html_cell.name == "td":
+                    col_header = False
+                    row_header = False
+                elif row_span == 1:
+                    row_header = False
             if not row_header:
                 row_idx += 1
                 start_row_span = 0
@@ -1965,8 +1967,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             # Extract the text content of each cell
             col_idx = 0
             for html_cell in cells:
-                if not isinstance(html_cell, Tag):
-                    continue
                 cell_classes = {
                     class_name.lower()
                     for class_name in self._get_tag_classes(html_cell)
@@ -1981,6 +1981,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         formula.replace_with(NavigableString(math_formula))
 
                 provs_in_cell: list[RefItem] = []
+                ref_for_rich_cell: RefItem | None = None
                 rich_table_cell = self._is_rich_table_cell(html_cell)
                 if rich_table_cell:
                     # Parse table cell sub-tree for Rich Cells content:
@@ -2021,6 +2022,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             grid[row_idx + r][col_idx + c] = text
 
                 if rich_table_cell:
+                    assert ref_for_rich_cell is not None
                     rich_cell = RichTableCell(
                         text=text,
                         bbox=cell_bbox,
@@ -2109,7 +2111,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     prov=prov,
                                 )
                                 if inline_ref is None:
-                                    added_refs.append(docling_code2.get_ref())
+                                    added_refs.append(
+                                        RefItem(cref=docling_code2.self_ref)
+                                    )
                             else:
                                 prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
@@ -2127,7 +2131,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     prov=prov,
                                 )
                                 if inline_ref is None:
-                                    added_refs.append(docling_text2.get_ref())
+                                    added_refs.append(
+                                        RefItem(cref=docling_text2.self_ref)
+                                    )
                     if inline_ref is not None:
                         added_refs.append(inline_ref)
 
@@ -2439,7 +2445,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return tag_name or None
         if self.soup is None:
             return None
-        tag = self.soup.find(attrs={_DATA_DOCLING_ID_ATTR: source_tag_id})
+        tag = self.soup.find(True, attrs={_DATA_DOCLING_ID_ATTR: source_tag_id})
         tag_name = tag.name if isinstance(tag, Tag) else ""
         self._tag_name_by_docling_id_cache[source_tag_id] = tag_name
         return tag_name or None
@@ -2508,7 +2514,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.parents[self.level + 1] = inline_fmt
         self.level += 1
         try:
-            yield inline_fmt.get_ref()
+            yield RefItem(cref=inline_fmt.self_ref)
         finally:
             self.parents[self.level] = None
             self.level -= 1
@@ -2591,7 +2597,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents = original_parents
 
     @contextmanager
-    def _use_list_item_context(self, parent_item: RefItem | None) -> Iterator[None]:
+    def _use_list_item_context(self, parent_item: NodeItem | None) -> Iterator[None]:
         """Set up context for processing nested content within a list item.
 
         Args:
@@ -2613,7 +2619,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             yield
 
     def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
-        added_ref = []
+        added_ref: list[RefItem] = []
         tag_name = tag.name.lower()
         # set default content layer to BODY as soon as we encounter a heading
         self.content_layer = ContentLayer.BODY
@@ -2642,7 +2648,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             p1 = self.parents[self.level + 1]
             if p1 is not None:
-                added_ref = [p1.get_ref()]
+                added_ref = [RefItem(cref=p1.self_ref)]
         # the other levels need to be lowered by 1 if a title was set
         else:
             level -= 1
@@ -2676,13 +2682,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             p2 = self.parents[self.level + 1]
             if p2 is not None:
-                added_ref = [p2.get_ref()]
+                added_ref = [RefItem(cref=p2.self_ref)]
         self.level += 1
         for img_tag in tag("img"):
-            if isinstance(img_tag, Tag):
-                im_ref = self._emit_image(img_tag, doc)
-                if im_ref:
-                    added_ref.append(im_ref)
+            im_ref = self._emit_image(img_tag, doc)
+            if im_ref:
+                added_ref.append(im_ref)
         return added_ref
 
     def _has_list_ancestor(self, elem: Tag, boundary: Tag) -> bool:
@@ -2697,7 +2702,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         """
         parent = elem.parent
         while parent and parent != boundary:
-            if isinstance(parent, Tag) and parent.name in {"ul", "ol", "dl"}:
+            if parent.name in {"ul", "ol", "dl"}:
                 return True
             parent = parent.parent
         return False
@@ -2707,7 +2712,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elem,
         li: Tag,
         doc: DoclingDocument,
-        processed_elements: set,
+        processed_elements: set[int],
     ) -> None:
         """Process a single nested element within a list item.
 
@@ -2746,7 +2751,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self,
         li: Tag,
         doc: DoclingDocument,
-        processed_elements: set,
+        processed_elements: set[int],
     ) -> None:
         """Process nested content (images, lists, etc.) within a list item in DOM order.
 
@@ -2762,11 +2767,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self,
         tag: Tag,
         doc: DoclingDocument,
-        parent: RefItem,
+        parent: NodeItem,
         enumerated: bool = False,
         marker: str = "",
         extra_formatting: Optional[Formatting] = None,
-    ) -> Optional[RefItem]:
+    ) -> Optional[ListItem]:
         """Helper method to add a list item with its content.
 
         Handles both simple and complex content with inline groups.
@@ -2842,6 +2847,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             self.parents[self.level] = None
             self.level -= 1
+            assert isinstance(list_item, ListItem)
             return list_item
         else:
             # Simple content - single text element
@@ -2873,6 +2879,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 hyperlink=annotated_text.hyperlink,
                 prov=prov,
             )
+            assert isinstance(list_item, ListItem)
             return list_item
 
     def _emit_task_list_inputs(
@@ -2880,8 +2887,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         """Emit the checkbox items of a task-list <li> under the list group."""
         for input_tag in inputs_in_li:
-            if isinstance(input_tag, Tag):
-                self._emit_input(input_tag, doc)
+            self._emit_input(input_tag, doc)
 
     def _is_task_list_item(
         self, li: Tag, inputs_in_li: list[Tag], custom_checkboxes_in_li: list[Tag]
@@ -2900,7 +2906,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         (HTML allows wrapping each group of <dt> and <dd> elements in a <div>)."""
         children: list[PageElement] = []
         for child in dl.find_all(["dt", "dd", "div"], recursive=False):
-            if isinstance(child, Tag) and child.name == "div":
+            if child.name == "div":
                 children.extend(child.find_all(["dt", "dd"], recursive=False))
             else:
                 children.append(child)
@@ -3007,13 +3013,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             self.parents[self.level + 1] = None
             self.level -= 1
-            return list_group.get_ref()
+            return RefItem(cref=list_group.self_ref)
 
         # For each top-level <li> in this list (ul/ol)
         for li in tag.find_all({"li", "ul", "ol"}, recursive=False):
-            if not isinstance(li, Tag):
-                continue
-
             # sub-list items should be indented under main list items, but temporarily
             # addressing invalid HTML (docling-core/issues/357)
             if li.name in {"ul", "ol"}:
@@ -3076,11 +3079,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         # Handle inputs and checkboxes
                         if inputs_in_li or custom_checkboxes_in_li:
                             for input_tag in inputs_in_li:
-                                if isinstance(input_tag, Tag):
-                                    self._emit_input(input_tag, doc)
+                                self._emit_input(input_tag, doc)
                             for checkbox_tag in custom_checkboxes_in_li:
-                                if isinstance(checkbox_tag, Tag):
-                                    self._emit_custom_checkbox(checkbox_tag, doc)
+                                self._emit_custom_checkbox(checkbox_tag, doc)
 
                         # 4) Process nested content (images, lists, etc.) in DOM order
                         processed_elements = set()
@@ -3090,16 +3091,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     # No content, but check for nested lists (including those wrapped in divs)
                     for sublist in li({"ul", "ol", "dl"}):
-                        if isinstance(sublist, Tag):
-                            # Check if this list has a ul/ol/dl ancestor within the current li
-                            has_list_ancestor = self._has_list_ancestor(sublist, li)
+                        has_list_ancestor = self._has_list_ancestor(sublist, li)
 
-                            if not has_list_ancestor:
-                                self._handle_block(sublist, doc)
+                        if not has_list_ancestor:
+                            self._handle_block(sublist, doc)
 
         self.parents[self.level + 1] = None
         self.level -= 1
-        return list_group.get_ref()
+        return RefItem(cref=list_group.self_ref)
 
     @staticmethod
     def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
@@ -3111,12 +3110,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for row in tag("tr", recursive=False):
             cell_spans: list[tuple[int, int]] = []
             is_row_header = True
-            if not isinstance(row, Tag):
-                continue
             for cell in row(["td", "th"], recursive=False):
-                if not isinstance(row, Tag):
-                    continue
-                cell_tag = cast(Tag, cell)
+                cell_tag = cell
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
                 cell_spans.append((col_span, row_span))
                 if cell_tag.name == "td" or row_span == 1:
@@ -3167,7 +3162,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if cap_item is not None and added_refs:
                         first_item = added_refs[0].resolve(doc)
                         if isinstance(first_item, TableItem):
-                            first_item.captions.append(cap_item.get_ref())
+                            first_item.captions.append(RefItem(cref=cap_item.self_ref))
 
         elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             heading_refs = self._handle_heading(tag, doc)
@@ -3204,7 +3199,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     prov=prov,
                                 )
                                 if inline_ref is None:
-                                    added_refs.append(docling_code.get_ref())
+                                    added_refs.append(
+                                        RefItem(cref=docling_code.self_ref)
+                                    )
                             else:
                                 prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
@@ -3222,27 +3219,26 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     prov=prov,
                                 )
                                 if inline_ref is None:
-                                    added_refs.append(docling_text.get_ref())
+                                    added_refs.append(
+                                        RefItem(cref=docling_text.self_ref)
+                                    )
                     if inline_ref is not None:
                         added_refs.append(inline_ref)
 
             for img_tag in tag("img"):
-                if isinstance(img_tag, Tag):
-                    self._emit_image(img_tag, doc)
+                self._emit_image(img_tag, doc)
             for input_tag in tag("input"):
-                if isinstance(input_tag, Tag):
-                    input_ref = self._emit_input(input_tag, doc)
-                    if input_ref is not None:
-                        added_refs.append(input_ref)
+                input_ref = self._emit_input(input_tag, doc)
+                if input_ref is not None:
+                    added_refs.append(input_ref)
             for checkbox_tag in tag.find_all(
                 lambda item: (
                     isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
                 )
             ):
-                if isinstance(checkbox_tag, Tag):
-                    checkbox_ref = self._emit_custom_checkbox(checkbox_tag, doc)
-                    if checkbox_ref is not None:
-                        added_refs.append(checkbox_ref)
+                checkbox_ref = self._emit_custom_checkbox(checkbox_tag, doc)
+                if checkbox_ref is not None:
+                    added_refs.append(checkbox_ref)
 
         elif tag_name == "table":
             num_rows, num_cols = self.get_html_table_row_col(tag)
@@ -3261,17 +3257,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
                 caption=cap_item,
             )
-            added_refs.append(docling_table.get_ref())
+            added_refs.append(RefItem(cref=docling_table.self_ref))
             self.parse_table_data(tag, doc, docling_table, num_rows, num_cols)
 
         elif tag_name in {"stamp", "signature"}:
             _class_name = PictureClassificationLabel.STAMP.value
             if tag_name == "signature":
                 _class_name = PictureClassificationLabel.SIGNATURE.value
-            placeholder: PictureItem = doc.add_picture(
+            placeholder = doc.add_picture(
                 parent=self.parents[self.level],
                 content_layer=self.content_layer,
             )
+            assert isinstance(placeholder, PictureItem)
             placeholder.meta = PictureMeta(
                 classification=PictureClassificationMetaField(
                     predictions=[
@@ -3318,7 +3315,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         prov=prov,
                     )
                     if inline_ref is None:
-                        added_refs.append(docling_code2.get_ref())
+                        added_refs.append(RefItem(cref=docling_code2.self_ref))
             if inline_ref is not None:
                 added_refs.append(inline_ref)
 
@@ -3341,7 +3338,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def _nearest_form_container_ancestor(self, tag: Tag) -> Optional[Tag]:
         for parent in tag.parents:
-            if isinstance(parent, Tag) and self._is_form_container(parent):
+            if self._is_form_container(parent):
                 return parent
         return None
 
@@ -3384,7 +3381,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             content_layer=self.content_layer,
             prov=prov,
         )
-        return text_item.get_ref()
+        return RefItem(cref=text_item.self_ref)
 
     def _ensure_tag_html_id(self, tag: Tag) -> str:
         existing = self._get_html_id(tag)
@@ -3413,13 +3410,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return 0
 
         left_chain: list[Tag] = [left_tag]
-        left_chain.extend(
-            parent for parent in left_tag.parents if isinstance(parent, Tag)
-        )
+        left_chain.extend(parent for parent in left_tag.parents)
         right_chain: list[Tag] = [right_tag]
-        right_chain.extend(
-            parent for parent in right_tag.parents if isinstance(parent, Tag)
-        )
+        right_chain.extend(parent for parent in right_tag.parents)
 
         left_positions = {id(tag): idx for idx, tag in enumerate(left_chain)}
         best_distance: Optional[int] = None
@@ -3464,14 +3457,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             ranked_entries = sorted(
                 entries,
                 key=lambda entry: (
-                    (
-                        0
-                        if (
-                            key_tag is not None
-                            and self._is_value_in_key_scope(key_tag, entry[2])
-                        )
-                        else 1
-                    )
+                    (0 if (self._is_value_in_key_scope(key_tag, entry[2])) else 1)
                     if key_tag is not None
                     else 0,
                     (
@@ -3631,7 +3617,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return set()
         if isinstance(classes, str):
             return {classes}
-        return {str(value) for value in classes if isinstance(value, str)}
+        return set(classes)
 
     @staticmethod
     def _code_language_hint(tag: Tag) -> str | None:
@@ -3659,7 +3645,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         display_match = re.search(r"display\s*:\s*([^;]+)", style_attr, flags=re.I)
         if display_match is None:
             return False
-        display_value = display_match.group(1).strip().lower()
+        display_value = str(display_match.group(1)).strip().lower()
         return display_value.startswith("inline") or display_value == "contents"
 
     def _should_buffer_tag_text_inline(self, tag: Tag) -> bool:
@@ -3738,9 +3724,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _has_direct_checkbox_like_child(tag: Tag) -> bool:
         for child in tag.find_all(recursive=False):
-            if isinstance(child, Tag) and HTMLDocumentBackend._is_checkbox_like_tag(
-                child
-            ):
+            if HTMLDocumentBackend._is_checkbox_like_tag(child):
                 return True
         return False
 
@@ -3836,8 +3820,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     for label_tag in self.soup.find_all(
                         "label", attrs={"for": input_id}
                     ):
-                        if isinstance(label_tag, Tag):
-                            _add_label_tag(label_tag)
+                        _add_label_tag(label_tag)
                 # Backward-compatible local search (same parent container).
                 if parent is not None:
                     for sibling in parent.find_all("label", recursive=False):
@@ -3872,7 +3855,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if "checkbox-container" in parent_classes:
                 label_texts: list[str] = []
                 for sibling in parent.find_all(recursive=False):
-                    if not isinstance(sibling, Tag) or sibling is checkbox_tag:
+                    if sibling is checkbox_tag:
                         continue
                     if "checkbox-label" not in self._get_tag_classes(sibling):
                         continue
@@ -3895,7 +3878,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     for child in parent.contents
                 )
                 for sibling in parent.find_all(recursive=False):
-                    if not isinstance(sibling, Tag) or sibling is checkbox_tag:
+                    if sibling is checkbox_tag:
                         continue
                     if self._is_checkbox_like_tag(sibling):
                         continue
@@ -4091,7 +4074,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             hyperlink=self.hyperlink,
             prov=prov,
         )
-        return checkbox_item.get_ref()
+        return RefItem(cref=checkbox_item.self_ref)
 
     @contextmanager
     def _suppress_tag_ids(self, tag_ids: set[str]):
@@ -4277,9 +4260,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         ):
             return False
 
-        direct_tag_children = [
-            child for child in tag.find_all(recursive=False) if isinstance(child, Tag)
-        ]
+        direct_tag_children = list(tag.find_all(recursive=False))
         has_direct_text = any(
             isinstance(child, NavigableString) and bool(str(child).strip())
             for child in tag.contents
@@ -4299,7 +4280,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self,
         field: _ExtractedFormField,
         doc: DoclingDocument,
-        parent: Optional[Union[DocItem, GroupItem]],
+        parent: NodeItem | None,
     ) -> list[RefItem]:
         refs: list[RefItem] = []
         doc_with_fields = cast(Any, doc)
@@ -4307,7 +4288,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             parent=parent,
             content_layer=self.content_layer,
         )
-        refs.append(field_item.get_ref())
+        refs.append(RefItem(cref=field_item.self_ref))
 
         parts: list[tuple[int, Literal["key", "marker", "value", "text"], Any]] = []
         if field.key_tag is not None and field.key_text:
@@ -4328,7 +4309,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     parent=field_item,
                     content_layer=self.content_layer,
                 )
-                refs.append(field_key.get_ref())
+                refs.append(RefItem(cref=field_key.self_ref))
             elif part_type == "marker":
                 marker = cast(_ExtractedFormMarker, payload)
                 marker_item = doc.add_text(
@@ -4339,7 +4320,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     parent=field_item,
                     content_layer=self.content_layer,
                 )
-                refs.append(marker_item.get_ref())
+                refs.append(RefItem(cref=marker_item.self_ref))
             elif part_type == "text":
                 extra_text = cast(_ExtractedFormText, payload)
                 text_item = doc.add_text(
@@ -4350,7 +4331,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     parent=field_item,
                     content_layer=self.content_layer,
                 )
-                refs.append(text_item.get_ref())
+                refs.append(RefItem(cref=text_item.self_ref))
             else:
                 value = cast(_ExtractedFormValue, payload)
                 if value.checkbox_label is not None:
@@ -4362,7 +4343,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         parent=field_item,
                         content_layer=self.content_layer,
                     )
-                    refs.append(checkbox_item.get_ref())
+                    refs.append(RefItem(cref=checkbox_item.self_ref))
                 else:
                     field_value = doc_with_fields.add_field_value(
                         text=value.text,
@@ -4372,7 +4353,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         content_layer=self.content_layer,
                         kind=value.kind,
                     )
-                    refs.append(field_value.get_ref())
+                    refs.append(RefItem(cref=field_value.self_ref))
 
         return refs
 
@@ -4430,10 +4411,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         table_bboxes: list[BoundingBox] = []
         if self._rendered_bbox_by_id:
             for table_tag in form_tag.find_all("table"):
-                if isinstance(table_tag, Tag):
-                    rendered = self._get_rendered_bbox_for_tag(table_tag)
-                    if rendered is not None:
-                        table_bboxes.append(rendered.bbox)
+                rendered = self._get_rendered_bbox_for_tag(table_tag)
+                if rendered is not None:
+                    table_bboxes.append(rendered.bbox)
 
         key_ids_in_order = sorted(
             first_order_by_key.keys(), key=lambda key_id: first_order_by_key[key_id]
@@ -4637,11 +4617,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             for parent_tag in unique_parent_tags_to_scan:
                 component_direct_child_indices: list[int] = []
-                direct_children = [
-                    child
-                    for child in parent_tag.find_all(recursive=False)
-                    if isinstance(child, Tag)
-                ]
+                direct_children = list(parent_tag.find_all(recursive=False))
                 for idx, child in enumerate(direct_children):
                     child_obj_id = id(child)
                     if child_obj_id in component_tag_obj_ids:
@@ -4917,7 +4893,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
             )
             field_region.content_layer = self.content_layer
-            added_refs.append(field_region.get_ref())
+            added_refs.append(RefItem(cref=field_region.self_ref))
 
             with self._use_form_container(field_region):
                 with self._use_form_fields_by_key_id(fields_by_key_id):
@@ -4939,7 +4915,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             parent=self.parents[self.level],
         )
         form_item.content_layer = self.content_layer
-        added_refs.append(form_item.get_ref())
+        added_refs.append(RefItem(cref=form_item.self_ref))
 
         if form_graph is not None:
             kv_item = doc.add_key_values(
@@ -4948,7 +4924,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=form_item,
             )
             kv_item.content_layer = self.content_layer
-            added_refs.append(kv_item.get_ref())
+            added_refs.append(RefItem(cref=kv_item.self_ref))
 
         with self._use_form_container(form_item):
             if tag.name.lower() == "table":
@@ -4974,7 +4950,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             tag=caption_tag,
             source_tag_id=cap_anno.source_tag_id,
         )
-        return doc.add_text(
+        caption = doc.add_text(
             label=DocItemLabel.CAPTION,
             text=cap_text,
             orig=cap_anno.text,
@@ -4984,6 +4960,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             prov=cap_prov,
             parent=self.parents[self.level],
         )
+
+        assert isinstance(caption, TextItem)
+        return caption
 
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
         figure = img_tag.find_parent("figure")
@@ -5002,7 +4981,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         if img_hyperlink := get_img_hyperlink(img_tag):
-            img_text = img_tag.get("alt") or ""
+            img_text = self._get_attr_as_string(img_tag, "alt")
             caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
             caption_prov_tag = img_tag
 
@@ -5014,7 +4993,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 )
                 caption_prov_tag = caption_tag
         if not caption and img_tag.get("alt"):
-            caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
+            caption = AnnotatedTextList(
+                [AnnotatedText(text=self._get_attr_as_string(img_tag, "alt"))]
+            )
             caption_prov_tag = img_tag
 
         caption_anno_text = caption.to_single_text_element()
@@ -5029,7 +5010,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 tag=caption_prov_tag or img_tag,
                 source_tag_id=caption_anno_text.source_tag_id,
             )
-            caption_item = doc.add_text(
+            emitted_caption = doc.add_text(
                 label=DocItemLabel.CAPTION,
                 text=text_clean,
                 orig=caption_anno_text.text,
@@ -5039,17 +5020,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 prov=prov,
             )
 
+            assert isinstance(emitted_caption, TextItem)
+            caption_item = emitted_caption
+
         src_loc: str = self._get_attr_as_string(img_tag, "src")
         pic_prov = self._make_prov(text="", tag=img_tag)
-        if not cast(HTMLBackendOptions, self.options).fetch_images or not src_loc:
+        if not self.options.fetch_images or not src_loc:
             # Do not fetch the image, just add a placeholder
-            placeholder: PictureItem = doc.add_picture(
+            placeholder = doc.add_picture(
                 caption=caption_item,
                 parent=parent,
                 content_layer=self.content_layer,
                 prov=pic_prov,
             )
-            return placeholder.get_ref()
+            assert isinstance(placeholder, PictureItem)
+            return RefItem(cref=placeholder.self_ref)
 
         src_loc = self._resolve_relative_path(src_loc)
         img_ref = self._create_image_ref(src_loc)
@@ -5061,7 +5046,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             content_layer=self.content_layer,
             prov=pic_prov,
         )
-        return docling_pic.get_ref()
+        return RefItem(cref=docling_pic.self_ref)
 
     def _emit_input(self, input_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
         if self._is_suppressed_tag(input_tag):
@@ -5071,6 +5056,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         label = DocItemLabel.TEXT
+        checkbox_label_tags: list[Tag] = []
         checkbox_label = self._get_checkbox_label_for_tag(input_tag)
         if checkbox_label is not None:
             label = checkbox_label
@@ -5120,7 +5106,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             hyperlink=self.hyperlink,
             prov=prov,
         )
-        return input_item.get_ref()
+        return RefItem(cref=input_item.self_ref)
 
     def _create_image_ref(self, src_url: str) -> Optional[ImageRef]:
         if self._mhtml_resources is not None:

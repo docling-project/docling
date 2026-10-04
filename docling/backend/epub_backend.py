@@ -28,6 +28,8 @@ _log = logging.getLogger(__name__)
 
 
 class EpubDocumentBackend(DeclarativeDocumentBackend):
+    options: EpubBackendOptions
+
     """Backend for converting EPUB files to DoclingDocument format.
 
     EPUB files are essentially ZIP archives containing XHTML content files.
@@ -458,7 +460,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         if self.temp_dir:
             dummy_file = self.temp_dir / "combined.html"
-            html_options.source_uri = str(dummy_file)
+            html_options.source_uri = dummy_file
             _log.debug(f"Set HTML backend source_uri to: {html_options.source_uri}")
 
         in_doc = InputDocument(
