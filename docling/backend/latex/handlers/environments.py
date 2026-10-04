@@ -17,7 +17,6 @@ from docling_core.types.doc.document import (
     GroupLabel,
     NodeItem,
     PictureMeta,
-    TextItem,
 )
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
@@ -57,6 +56,7 @@ class EnvironmentHandlerMixin:
             parent: Any = ...,
             formatting: Any = ...,
             text_label: Any = ...,
+            leading_text_item: Any = ...,
         ) -> None: ...
         def _clean_math(self, latex_str: str, env_name: str) -> str: ...
         def _parse_table(self, node: Any) -> Any: ...
@@ -356,15 +356,9 @@ class EnvironmentHandlerMixin:
             # so the term stays first even when the definition starts with a
             # formula or a nested list. Leading text becomes the item text.
             list_item = doc.add_list_item(text="", marker=marker, parent=list_group)
-            self._process_nodes(item_nodes, doc, list_item, formatting)
-            if list_item.children:
-                first = list_item.children[0].resolve(doc)
-                if isinstance(first, TextItem) and first.label == DocItemLabel.TEXT:
-                    list_item.text = first.text
-                    list_item.orig = first.orig
-                    list_item.formatting = first.formatting
-                    list_item.hyperlink = first.hyperlink
-                    doc.delete_items(node_items=[first])
+            self._process_nodes(
+                item_nodes, doc, list_item, formatting, leading_text_item=list_item
+            )
 
     def _process_bibliography(
         self,

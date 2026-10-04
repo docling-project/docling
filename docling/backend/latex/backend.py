@@ -8,7 +8,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union, cast
 
-from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
+from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem, TextItem
 from docling_core.types.doc.document import Formatting
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -198,6 +198,7 @@ class LatexDocumentBackend(
         parent: NodeItem | None = None,
         formatting: Formatting | None = None,
         text_label: DocItemLabel | None = None,
+        leading_text_item: TextItem | None = None,
     ):
         if nodes is None:
             return
@@ -207,7 +208,17 @@ class LatexDocumentBackend(
         def flush_text_buffer():
             if text_buffer:
                 combined_text = "".join(text_buffer).strip()
-                if combined_text:
+                # text that comes before any other content fills leading_text_item
+                if (
+                    combined_text
+                    and leading_text_item is not None
+                    and not leading_text_item.text
+                    and not leading_text_item.children
+                ):
+                    leading_text_item.text = combined_text
+                    leading_text_item.orig = combined_text
+                    leading_text_item.formatting = formatting
+                elif combined_text:
                     doc.add_text(
                         parent=parent,
                         label=text_label or DocItemLabel.TEXT,
