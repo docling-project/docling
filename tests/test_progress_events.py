@@ -240,14 +240,24 @@ def test_printer_writes_final_lines_when_not_on_a_terminal():
     ]
 
 
-def test_printer_draws_progress_bars_on_a_terminal():
+@pytest.mark.parametrize(
+    ("color", "no_color_env", "colored"),
+    [(True, False, True), (False, False, False), (True, True, False)],
+)
+def test_printer_draws_progress_bars_on_a_terminal(
+    monkeypatch, color, no_color_env, colored
+):
     class _Terminal(StringIO):
         def isatty(self) -> bool:
             return True
 
+    if no_color_env:
+        monkeypatch.setenv("NO_COLOR", "1")
+    else:
+        monkeypatch.delenv("NO_COLOR", raising=False)
     stream = _Terminal()
     converter = _converter_with(
-        _EnrichedMarkdownPipeline, ProgressPrinter(stream=stream)
+        _EnrichedMarkdownPipeline, ProgressPrinter(stream=stream, color=color)
     )
 
     converter.convert(_md("a.md", "\n\n".join(["one", "two", "three"])))
@@ -261,6 +271,8 @@ def test_printer_draws_progress_bars_on_a_terminal():
     assert screen[2].startswith("  _ParagraphModel: 100%|")
     assert " 3/3 " in screen[2]
     assert screen[3:] == ["Finished a.md: success"]
+    orange = "\x1b[38;2;255;73;2m"  # DOCLING_ORANGE as a 24-bit terminal colour
+    assert all((orange in line) is colored for line in screen[1:3])
 
 
 def test_show_progress_prints_without_a_callback(capsys):

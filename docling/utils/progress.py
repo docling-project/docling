@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import os
 import sys
 import threading
 from typing import Optional, TextIO
@@ -15,20 +16,35 @@ from docling.datamodel.progress import (
     PageCompletedProgress,
 )
 
+# The orange of the documentation theme (docs/stylesheets/extra.css).
+DOCLING_ORANGE = "#ff4902"
+
 
 class ProgressPrinter:
     """Ready-made progress callback that prints to stderr.
 
     One line per document, then a progress bar for its pages and one for each
-    enrichment step. On a terminal the bars fill up in place; elsewhere (a log
-    file, a pipe) each bar is written once, as a plain `done/total` count.
+    enrichment step. On a terminal the bars fill up in place, in docling
+    orange; elsewhere (a log file, a pipe) each bar is written once, as a plain
+    `done/total` count.
+
+    Args:
+        total_documents: Number of documents in the batch, to print `[3/12]`
+            instead of `[3]`.
+        stream: Where to print. Defaults to `sys.stderr`.
+        color: Color the bars. Pass `False`, or set the `NO_COLOR` environment
+            variable, for plain bars.
     """
 
     def __init__(
-        self, total_documents: Optional[int] = None, stream: Optional[TextIO] = None
+        self,
+        total_documents: Optional[int] = None,
+        stream: Optional[TextIO] = None,
+        color: bool = True,
     ) -> None:
         self.total_documents = total_documents
         self._stream = stream
+        self.color = color and not os.environ.get("NO_COLOR")
         self._bar_key: Optional[str] = None
         self._bar: Optional[tqdm] = None
         self._count = ""
@@ -81,6 +97,7 @@ class ProgressPrinter:
                     file=stream,
                     disable=False,
                     dynamic_ncols=True,
+                    colour=DOCLING_ORANGE if self.color else None,
                 )
         self._count = f"{done}/{total}"
         if self._bar is not None:

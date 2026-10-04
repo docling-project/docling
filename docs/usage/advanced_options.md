@@ -490,8 +490,10 @@ extraction, code and formulas):
 Finished report.pdf: success
 ```
 
-On a terminal the bars fill up while the document converts. In a log file or
-a pipe each bar is written once as a count, such as `pages 9/9`. For a batch,
+On a terminal the bars fill up in docling orange while the document converts.
+For plain bars, pass `ProgressPrinter(color=False)` as the callback or set the
+`NO_COLOR` environment variable, which also works for the CLI. In a log file
+or a pipe each bar is written once as a count, such as `pages 9/9`. For a batch,
 give the printer the number of documents to get `[3/12]` instead of `[3]`:
 
 ```python
