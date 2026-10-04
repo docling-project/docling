@@ -15,6 +15,7 @@ from docling_core.types.doc.document import (
     DoclingDocument,
     Formatting,
     GroupLabel,
+    ListItem,
     NodeItem,
     PictureMeta,
 )
@@ -32,11 +33,7 @@ if TYPE_CHECKING:
     )
 
 try:  # pragma: no cover - import-time guard
-    from pylatexenc.latexwalker import (
-        LatexCharsNode,
-        LatexEnvironmentNode,
-        LatexMacroNode,
-    )
+    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
@@ -313,36 +310,35 @@ class EnvironmentHandlerMixin:
     ):
         list_group = doc.add_group(parent=parent, name="list", label=GroupLabel.LIST)
 
-        items = []
-        current_item: list = []
+        # (marker, nodes) per item; \item[label] holds the term of a description,
+        # or a custom marker in the other lists
+        items: list[tuple[str, list[Any]]] = []
+        current_marker = ""
+        current_item: list[Any] = []
 
         if node.nodelist is not None:
             for n in node.nodelist:
                 if isinstance(n, LatexMacroNode) and n.macroname == "item":
-                    if current_item:
-                        items.append(current_item)
+                    if current_item or current_marker:
+                        items.append((current_marker, current_item))
                     current_item = []
 
-                    # \item[label] holds the term of a description, or a custom
-                    # marker in the other lists. Keep it at the start of the item;
-                    # the whitespace after "]" separates it from the text.
                     args = n.nodeargd.argnlist if n.nodeargd else []
-                    label = (
+                    current_marker = (
                         self._nodes_to_text(args[0].nodelist)
                         if args and args[0] is not None
                         else ""
                     )
-                    if label:
-                        if node.envname == "description":
-                            label += ":"
-                        current_item.append(LatexCharsNode(chars=label))
+                    if current_marker and node.envname == "description":
+                        current_marker += ":"
                 else:
                     current_item.append(n)
 
-        if current_item:
-            items.append(current_item)
+        if current_item or current_marker:
+            items.append((current_marker, current_item))
 
-        for item_nodes in items:
+        for marker, item_nodes in items:
+            first_child = len(list_group.children)
             self._process_nodes(
                 item_nodes,
                 doc,
@@ -350,6 +346,21 @@ class EnvironmentHandlerMixin:
                 formatting,
                 text_label=DocItemLabel.LIST_ITEM,
             )
+            if not marker:
+                continue
+            # the marker belongs to the first list item the \item produced
+            list_item = next(
+                (
+                    child
+                    for ref in list_group.children[first_child:]
+                    if isinstance(child := ref.resolve(doc), ListItem)
+                ),
+                None,
+            )
+            if list_item is None:
+                doc.add_list_item(text="", marker=marker, parent=list_group)
+            else:
+                list_item.marker = marker
 
     def _process_bibliography(
         self,

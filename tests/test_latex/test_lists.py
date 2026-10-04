@@ -94,15 +94,18 @@ def test_latex_description_list():
     doc = backend.convert()
 
     list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
-    assert [item.text for item in list_items] == [
-        "Term1: Definition one",
-        "Term2: Definition two",
-        "Definition without a term",
+    assert [(item.marker, item.text) for item in list_items] == [
+        ("Term1:", "Definition one"),
+        ("Term2:", "Definition two"),
+        ("", "Definition without a term"),
     ]
+    assert doc.export_to_markdown() == (
+        "- Term1: Definition one\n- Term2: Definition two\n- Definition without a term"
+    )
 
 
 def test_latex_list_custom_item_label():
-    """Test the custom label of an itemize item is kept, an empty one adds nothing"""
+    """Test the custom label of an itemize item is its marker, an empty one is ignored"""
     latex_content = rb"""
     \documentclass{article}
     \begin{document}
@@ -123,7 +126,11 @@ def test_latex_list_custom_item_label():
     doc = backend.convert()
 
     list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
-    assert [item.text for item in list_items] == ["(a) First", "Second", "Third"]
+    assert [(item.marker, item.text) for item in list_items] == [
+        ("(a)", "First"),
+        ("", "Second"),
+        ("", "Third"),
+    ]
 
 
 def test_latex_list_nested():
