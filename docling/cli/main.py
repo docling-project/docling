@@ -215,6 +215,15 @@ def _is_html_source(source: str, from_formats: list[InputFormat]) -> bool:
     return _name_matches_format(source_name, InputFormat.HTML)
 
 
+def _is_latex_source(path: Path, from_formats: list[InputFormat]) -> bool:
+    if InputFormat.LATEX not in from_formats:
+        return False
+    if len(from_formats) == 1:
+        return True
+
+    return _name_matches_format(path.name, InputFormat.LATEX)
+
+
 # Office writes a ~$ lock file next to an open document. Word, Excel, and
 # PowerPoint all use the same prefix; the suffixes are those of the Office
 # formats, taken from FormatToExtensions so a new extension there is covered.
@@ -1374,7 +1383,11 @@ def convert(  # noqa: C901
                         )
                     elif _is_office_lock_file(local_path):
                         _log.info(f"Ignoring temporary Office file: {local_path}")
-                    elif _is_html_source(src, from_formats):
+                    elif _is_html_source(src, from_formats) or _is_latex_source(
+                        local_path, from_formats
+                    ):
+                        # Keep the file in place: these backends resolve images
+                        # and included files relative to the document.
                         input_doc_paths.append(local_path)
                     else:
                         resolved_source = resolve_source_to_path(
