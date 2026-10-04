@@ -620,11 +620,8 @@ def export_documents(
             if export_txt:
                 fname = output_file or output_dir / f"{doc_filename}.txt"
                 _log.info(f"writing TXT output to {fname}")
-                conv_res.document.save_as_markdown(
-                    filename=fname,
-                    strict_text=True,
-                    image_mode=ImageRefMode.PLACEHOLDER,
-                )
+                with fname.open("w", encoding="utf-8") as fp:
+                    fp.write(conv_res.document.export_to_text())
 
             # Export Markdown format:
             if export_md:
