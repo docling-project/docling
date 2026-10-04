@@ -98,6 +98,11 @@ from docling.datamodel.pipeline_options import (
     NativePdfPipelineOptions,
     PipelineOptions,
 )
+from docling.datamodel.progress import (
+    ConversionPhase,
+    ProgressCallback,
+    ProgressReporter,
+)
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
@@ -455,6 +460,7 @@ class DocumentConverter:
         self,
         allowed_formats: Optional[list[InputFormat]] = None,
         format_options: Optional[dict[InputFormat, FormatOption]] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> None:
         """Initialize the converter based on format preferences.
 
@@ -462,6 +468,13 @@ class DocumentConverter:
             allowed_formats: List of allowed input formats. By default, any
                 format supported by Docling is allowed.
             format_options: Dictionary of format-specific options.
+            progress_callback: Optional callable that receives progress events
+                (see `docling.datamodel.progress`) while documents convert:
+                document start and end for every input, pipeline phases, and
+                page and enrichment-item counts where they apply. Exceptions it
+                raises are logged and ignored. With
+                `settings.perf.doc_batch_concurrency > 1` it is called from
+                several threads at once and must be thread-safe.
 
         Examples:
             Create a converter with default settings (all formats allowed):
@@ -489,6 +502,7 @@ class DocumentConverter:
         self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
+        self.progress_callback: Optional[ProgressCallback] = progress_callback
 
         # Normalize format options: ensure IMAGE format uses ImageDocumentBackend
         # for backward compatibility (old code might use PdfFormatOption or other backends for images)
@@ -785,12 +799,12 @@ class DocumentConverter:
         start_time = time.monotonic()
 
         for input_batch in chunkify(
-            conv_input.docs(self.format_to_options),
+            enumerate(conv_input.docs(self.format_to_options), start=1),
             settings.perf.doc_batch_size,  # pass format_options
         ):
             _log.info("Going to convert document batch...")
             process_func = partial(
-                self._process_document, raises_on_error=raises_on_error
+                self._process_indexed_document, raises_on_error=raises_on_error
             )
 
             if (
@@ -846,14 +860,36 @@ class DocumentConverter:
 
             return self.initialized_pipelines[cache_key]
 
+    def _process_indexed_document(
+        self, indexed_doc: tuple[int, InputDocument], raises_on_error: bool
+    ) -> ConversionResult:
+        document_index, in_doc = indexed_doc
+        callbacks = [] if self.progress_callback is None else [self.progress_callback]
+        progress = ProgressReporter(callbacks, in_doc.file.name, document_index)
+        progress.document_started()
+        status = ConversionStatus.FAILURE
+        try:
+            conv_res = self._process_document(
+                in_doc, raises_on_error=raises_on_error, progress=progress
+            )
+            status = conv_res.status
+        finally:
+            progress.document_completed(status)
+        return conv_res
+
     def _process_document(
-        self, in_doc: InputDocument, raises_on_error: bool
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        progress: Optional[ProgressReporter] = None,
     ) -> ConversionResult:
         valid = (
             self.allowed_formats is not None and in_doc.format in self.allowed_formats
         )
         if valid:
-            conv_res = self._execute_pipeline(in_doc, raises_on_error=raises_on_error)
+            conv_res = self._execute_pipeline(
+                in_doc, raises_on_error=raises_on_error, progress=progress
+            )
         else:
             error_message = f"File format not allowed: {in_doc.file}"
             error_item = ErrorItem(
@@ -874,15 +910,22 @@ class DocumentConverter:
             backend.unload()
 
     def _execute_pipeline(
-        self, in_doc: InputDocument, raises_on_error: bool
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        progress: Optional[ProgressReporter] = None,
     ) -> ConversionResult:
         if in_doc.valid:
             pipeline_started = False
             try:
+                if progress is not None:
+                    progress.phase_started(ConversionPhase.INITIALIZE)
                 pipeline = self._get_pipeline(in_doc.format)
                 if pipeline is not None:
                     pipeline_started = True
-                    conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
+                    conv_res = pipeline.execute(
+                        in_doc, raises_on_error=raises_on_error, progress=progress
+                    )
                 else:
                     if raises_on_error:
                         raise ConversionError(
