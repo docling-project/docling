@@ -393,7 +393,7 @@ class _MlxWhisperModel:
 
         if self.enabled:
             try:
-                import mlx_whisper
+                import mlx_whisper  # ty: ignore[unresolved-import]
             except ImportError:
                 raise ImportError(
                     "mlx-whisper is not installed. Please install it via "
