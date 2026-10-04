@@ -329,7 +329,11 @@ class EnvironmentHandlerMixin:
                         if args and args[0] is not None
                         else ""
                     )
-                    if current_marker and node.envname == "description":
+                    if (
+                        current_marker
+                        and node.envname == "description"
+                        and not current_marker.endswith(":")
+                    ):
                         current_marker += ":"
                 else:
                     current_item.append(n)
