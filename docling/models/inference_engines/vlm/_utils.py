@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 from packaging import version
 from PIL import Image
 
@@ -103,7 +104,9 @@ def engine_version_satisfied(
     return False
 
 
-def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image:
+def normalize_image_to_pil(
+    image: Union[Image.Image, NDArray[np.generic]],
+) -> Image.Image:
     """Convert any image format to RGB PIL Image.
 
     Args:
@@ -134,7 +137,7 @@ def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image
 
 
 def preprocess_image_batch(
-    images: List[Union[Image.Image, np.ndarray]],
+    images: List[Union[Image.Image, NDArray[np.generic]]],
 ) -> List[Image.Image]:
     """Preprocess a batch of images to RGB PIL Images.
 
@@ -273,7 +276,12 @@ def format_prompt_for_vlm(
                 ],
             }
         ]
-        return processor.apply_chat_template(messages, add_generation_prompt=True)
+        formatted_prompt = processor.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=False
+        )
+        if not isinstance(formatted_prompt, str):
+            raise TypeError("Chat template must produce text when tokenize=False")
+        return formatted_prompt
     else:
         raise ValueError(
             f"Unknown prompt style: {prompt_style}. "

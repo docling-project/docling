@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Mapping, Sequence, Tuple
 from urllib.parse import SplitResult, urlsplit
 
 import numpy as np
+from numpy.typing import NDArray
 
 try:
     import grpc  # type: ignore[import-untyped]
@@ -111,7 +112,7 @@ def _set_request_parameter(
     )
 
 
-def _encode_contents(tensor: np.ndarray, contents: Any) -> None:
+def _encode_contents(tensor: NDArray[np.generic], contents: Any) -> None:
     """Populate an InferTensorContents message from a numpy array (non-binary path)."""
     flat = tensor.flatten()
     if tensor.dtype == np.float32:
@@ -140,7 +141,7 @@ def _encode_contents(tensor: np.ndarray, contents: Any) -> None:
 
 def _decode_contents(
     contents: Any, np_dtype: np.dtype[Any], shape: tuple[int, ...]
-) -> np.ndarray:
+) -> NDArray[np.generic]:
     """Decode an InferTensorContents message to a numpy array (non-binary path)."""
     canonical_dtype = np.dtype(np_dtype)
 
@@ -198,6 +199,9 @@ class KserveV2GrpcClient:
                 "Install with: pip install 'docling[remote-serving]'"
             )
 
+        self._grpc = grpc
+        self._service_pb2 = service_pb2
+
         endpoint = _resolve_grpc_endpoint(
             base_url=self.base_url,
         )
@@ -238,7 +242,8 @@ class KserveV2GrpcClient:
         self._channel.close()
 
     def get_model_metadata(self) -> KserveV2ModelMetadataResponse:
-        request = service_pb2.ModelMetadataRequest(name=self.model_name)
+        # Protobuf builds these message classes at import time from its descriptor.
+        request = self._service_pb2.ModelMetadataRequest(name=self.model_name)  # ty: ignore[unresolved-attribute]
         if self.model_version:
             request.version = self.model_version
 
@@ -248,7 +253,7 @@ class KserveV2GrpcClient:
                 timeout=self.timeout,
                 metadata=self._grpc_metadata,
             )
-        except grpc.RpcError as exc:
+        except self._grpc.RpcError as exc:
             raise RuntimeError(
                 f"gRPC metadata call failed for model {self.model_name}: {exc}"
             ) from exc
@@ -281,17 +286,23 @@ class KserveV2GrpcClient:
     def infer(
         self,
         *,
-        inputs: Mapping[str, np.ndarray],
+        inputs: Mapping[str, NDArray[np.generic]],
         output_names: list[str],
         request_parameters: Mapping[str, Any] | None = None,
-    ) -> Dict[str, np.ndarray]:
-        _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
+    ) -> Dict[str, NDArray[np.generic]]:
+        _first_tensor = next(iter(inputs.values()), None)
+        _batch_size = (
+            _first_tensor.shape[0]
+            if _first_tensor is not None and _first_tensor.ndim > 0
+            else 0
+        )
 
-        if _log.isEnabledFor(logging.DEBUG):
-            _t_ser_start = time.time()
-            _t_ser_mono = time.monotonic()
+        debug_logging = _log.isEnabledFor(logging.DEBUG)
+        _t_ser_start = time.time() if debug_logging else None
+        _t_ser_mono = time.monotonic() if debug_logging else None
 
-        request = service_pb2.ModelInferRequest(model_name=self.model_name)
+        # Protobuf builds these message classes at import time from its descriptor.
+        request = self._service_pb2.ModelInferRequest(model_name=self.model_name)  # ty: ignore[unresolved-attribute]
         if self.model_version:
             request.model_version = self.model_version
 
@@ -329,7 +340,7 @@ class KserveV2GrpcClient:
             if self.use_binary_data:
                 output_tensor.parameters["binary_data"].bool_param = True
 
-        if _log.isEnabledFor(logging.DEBUG):
+        if _t_ser_start is not None and _t_ser_mono is not None:
             _log.debug(
                 "PIPELINE_PROFILING KServe gRPC infer serialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
                 _batch_size,
@@ -337,8 +348,8 @@ class KserveV2GrpcClient:
                 time.time(),
                 time.monotonic() - _t_ser_mono,
             )
-            _t_grpc_start = time.time()
-            _t_grpc_mono = time.monotonic()
+        _t_grpc_start = time.time() if debug_logging else None
+        _t_grpc_mono = time.monotonic() if debug_logging else None
 
         try:
             response = self._stub.ModelInfer(
@@ -346,12 +357,12 @@ class KserveV2GrpcClient:
                 timeout=self.timeout,
                 metadata=self._grpc_metadata,
             )
-        except grpc.RpcError as exc:
+        except self._grpc.RpcError as exc:
             raise RuntimeError(
                 f"gRPC infer call failed for model {self.model_name}: {exc}"
             ) from exc
 
-        if _log.isEnabledFor(logging.DEBUG):
+        if _t_grpc_start is not None and _t_grpc_mono is not None:
             _log.debug(
                 "PIPELINE_PROFILING KServe gRPC infer round-trip: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
                 _batch_size,
@@ -359,10 +370,10 @@ class KserveV2GrpcClient:
                 time.time(),
                 time.monotonic() - _t_grpc_mono,
             )
-            _t_deser_start = time.time()
-            _t_deser_mono = time.monotonic()
+        _t_deser_start = time.time() if debug_logging else None
+        _t_deser_mono = time.monotonic() if debug_logging else None
 
-        decoded_outputs: Dict[str, np.ndarray] = {}
+        decoded_outputs: Dict[str, NDArray[np.generic]] = {}
 
         if self.use_binary_data:
             if len(response.raw_output_contents) != len(response.outputs):
@@ -403,7 +414,7 @@ class KserveV2GrpcClient:
                     output_tensor.contents, np_dtype, shape
                 )
 
-        if _log.isEnabledFor(logging.DEBUG):
+        if _t_deser_start is not None and _t_deser_mono is not None:
             _log.debug(
                 "PIPELINE_PROFILING KServe gRPC infer deserialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
                 _batch_size,

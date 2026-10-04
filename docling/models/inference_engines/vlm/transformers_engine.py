@@ -15,15 +15,17 @@ import torch
 from packaging import version
 from PIL.Image import Image
 from transformers import (
-    AutoModel,
-    AutoModelForCausalLM,
-    AutoModelForImageTextToText,
     AutoProcessor,
     BitsAndBytesConfig,
     GenerationConfig,
     PreTrainedModel,
     StoppingCriteriaList,
     StopStringCriteria,
+)
+from transformers.models.auto.modeling_auto import (
+    AutoModel,
+    AutoModelForCausalLM,
+    AutoModelForImageTextToText,
 )
 from typing_extensions import override
 
@@ -264,6 +266,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 self.model_config.torch_dtype
                 or self.model_config.extra_config.get("torch_dtype")
             )
+
+        assert self.device is not None
 
         # Load model
         attn_implementation: Optional[str] = (
@@ -510,8 +514,13 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             first_input.max_new_tokens,
         )
         start_time = time.time()
+        generate = self.vlm_model.generate
+        if not callable(generate):
+            raise TypeError("VLM model must provide a generate method")
         with torch.inference_mode():
-            generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
+            generated_ids = generate(**gen_kwargs)
+        if not isinstance(generated_ids, torch.Tensor):
+            raise TypeError("VLM generation must produce a token tensor")
         generation_time = time.time() - start_time
 
         # Decode

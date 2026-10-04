@@ -90,19 +90,29 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
         input_nodes = session.get_inputs()
         if not input_nodes:
             raise RuntimeError("ONNX model exposes no inputs")
-        return input_nodes[0].name
+        name = input_nodes[0].name
+        if not isinstance(name, str):
+            raise TypeError("ONNX input name must be a string")
+        return name
 
     def _resolve_output_name(self, session: ort.InferenceSession) -> str:
         """Resolve ONNX output name from the loaded model graph."""
         output_nodes = session.get_outputs()
         if not output_nodes:
             raise RuntimeError("ONNX model exposes no outputs")
-        return output_nodes[0].name
+        name = output_nodes[0].name
+        if not isinstance(name, str):
+            raise TypeError("ONNX output name must be a string")
+        return name
 
     @override
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
         import onnxruntime as ort
+        from onnxruntime.capi._pybind_state import (
+            GraphOptimizationLevel,
+            SessionOptions,
+        )
 
         _log.info("Initializing ONNX Runtime image-classification engine")
 
@@ -112,9 +122,9 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
         self._processor = self._load_preprocessor(model_folder)
         self._id_to_label = self._load_label_mapping(model_folder)
 
-        sess_options = ort.SessionOptions()
+        sess_options = SessionOptions()
         sess_options.intra_op_num_threads = self._accelerator_options.num_threads
-        sess_options.graph_optimization_level = ort.GraphOptimizationLevel(
+        sess_options.graph_optimization_level = GraphOptimizationLevel(
             self.options.graph_optimization_level
         )
         providers = self._resolve_providers()

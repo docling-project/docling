@@ -191,7 +191,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Load the model
         start_time = time.monotonic()
         self.vlm_model, self.processor = load(
-            artifacts_path, strict=not tied_word_embeddings
+            str(artifacts_path), strict=not tied_word_embeddings
         )
         if tied_word_embeddings:
             language_model = self.vlm_model.language_model

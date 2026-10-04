@@ -74,13 +74,13 @@ class ApiVlmEngine(BaseVlmEngine):
         # correct priority order can be applied in predict_batch:
         #   model_spec defaults < request-level generation settings < user params
         if model_config and "api_params" in model_config.extra_config:
-            self.model_api_params: dict = model_config.extra_config["api_params"].copy()
+            self.model_api_params = model_config.extra_config["api_params"].copy()
         else:
             self.model_api_params = {}
 
         # User-supplied params always win; if provided, model-spec defaults are
         # not mixed in (prevents conflicts for vendor-specific keys like model_id).
-        self.user_params: dict = self.options.params.copy()
+        self.user_params = self.options.params.copy()
 
     @override
     def initialize(self) -> None:
@@ -157,6 +157,14 @@ class ApiVlmEngine(BaseVlmEngine):
             custom_stoppers = extract_generation_stoppers(
                 input_data.extra_generation_config
             )
+            usage_response_key = api_params.pop("usage_response_key", "usage")
+            token_extract_key = api_params.pop("token_extract_key", None)
+            if usage_response_key is not None and not isinstance(
+                usage_response_key, str
+            ):
+                raise ValueError("usage_response_key must be a string or None")
+            if token_extract_key is not None and not isinstance(token_extract_key, str):
+                raise ValueError("token_extract_key must be a string or None")
             request_start_time = time.time()
             stop_reason = "unspecified"
             error = None
@@ -170,6 +178,8 @@ class ApiVlmEngine(BaseVlmEngine):
                     headers=self.options.headers,
                     generation_stoppers=custom_stoppers,
                     timeout=self.options.timeout,
+                    usage_response_key=usage_response_key,
+                    token_extract_key=token_extract_key,
                     **api_params,
                 )
                 generated_text = api_response.text
@@ -188,6 +198,8 @@ class ApiVlmEngine(BaseVlmEngine):
                     prompt=input_data.prompt,
                     headers=self.options.headers,
                     timeout=self.options.timeout,
+                    usage_response_key=usage_response_key,
+                    token_extract_key=token_extract_key,
                     **api_params,
                 )
                 generated_text = api_response.text

@@ -52,7 +52,7 @@ def create_vlm_engine(
 
     # Generate model_config from model_spec if provided
     model_config: Optional[EngineModelConfig] = None
-    if model_spec is not None and engine_type != VlmEngineType.AUTO_INLINE:
+    if engine_type != VlmEngineType.AUTO_INLINE:
         # AUTO_INLINE handles model_spec internally
         model_config = model_spec.get_engine_config(engine_type)
 

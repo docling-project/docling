@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Mapping, Optional
 
 import numpy as np
 import requests
+from numpy.typing import NDArray
 from pydantic import BaseModel
 
 from docling.models.inference_engines.common.kserve_v2_types import (
@@ -34,7 +35,7 @@ _log = logging.getLogger(__name__)
 _INFERENCE_HEADER_CONTENT_LENGTH = "Inference-Header-Content-Length"
 
 
-def _tensor_kserve_dtype(tensor: np.ndarray) -> str:
+def _tensor_kserve_dtype(tensor: NDArray[np.generic]) -> str:
     kserve_dtype = NUMPY_KSERVE_V2_DATATYPES.get(tensor.dtype)
     if kserve_dtype is None:
         raise ValueError(
@@ -44,7 +45,7 @@ def _tensor_kserve_dtype(tensor: np.ndarray) -> str:
     return kserve_dtype
 
 
-def _encode_input_tensor(name: str, tensor: np.ndarray) -> Dict[str, Any]:
+def _encode_input_tensor(name: str, tensor: NDArray[np.generic]) -> Dict[str, Any]:
     kserve_dtype = _tensor_kserve_dtype(tensor)
 
     return {
@@ -56,7 +57,7 @@ def _encode_input_tensor(name: str, tensor: np.ndarray) -> Dict[str, Any]:
 
 
 def _encode_binary_input_tensor(
-    name: str, tensor: np.ndarray
+    name: str, tensor: NDArray[np.generic]
 ) -> tuple[Dict[str, Any], bytes]:
     kserve_dtype = _tensor_kserve_dtype(tensor)
     if kserve_dtype == "BYTES":
@@ -91,7 +92,7 @@ class KserveV2InferResponse(BaseModel):
     outputs: List[KserveV2OutputTensor]
 
 
-def _decode_output_tensor(raw_output: KserveV2OutputTensor) -> np.ndarray:
+def _decode_output_tensor(raw_output: KserveV2OutputTensor) -> NDArray[np.generic]:
     shape = tuple(int(dim) for dim in raw_output.shape)
     np_dtype = KSERVE_V2_NUMPY_DATATYPES.get(raw_output.datatype)
     if np_dtype is None:
@@ -111,7 +112,7 @@ def _decode_output_tensor(raw_output: KserveV2OutputTensor) -> np.ndarray:
 
 def _decode_binary_output_tensor(
     raw_output: KserveV2OutputTensor, raw_payload: bytes
-) -> np.ndarray:
+) -> NDArray[np.generic]:
     np_dtype = KSERVE_V2_NUMPY_DATATYPES.get(raw_output.datatype)
     if np_dtype is None:
         raise RuntimeError(
@@ -142,7 +143,7 @@ def _parse_binary_data_size(parameters: Mapping[str, Any] | None) -> int | None:
 
 def _build_binary_request(
     *,
-    inputs: Mapping[str, np.ndarray],
+    inputs: Mapping[str, NDArray[np.generic]],
     output_names: list[str],
     request_parameters: Optional[Mapping[str, Any]],
 ) -> tuple[Dict[str, str], bytes]:
@@ -253,8 +254,6 @@ class KserveV2HttpClient:
                 response = requests.post(
                     url, headers=request_headers, timeout=self.timeout, **kwargs
                 )
-            response.raise_for_status()
-            return response
         except requests.exceptions.Timeout as exc:
             raise requests.exceptions.Timeout(
                 f"Timeout during {method} request to {url}"
@@ -263,10 +262,13 @@ class KserveV2HttpClient:
             raise requests.exceptions.ConnectionError(
                 f"Failed to connect to {url}"
             ) from exc
+        try:
+            response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
             raise requests.exceptions.HTTPError(
                 f"HTTP error {response.status_code} from {url}: {response.text}"
             ) from exc
+        return response
 
     @property
     def model_metadata_url(self) -> str:
@@ -318,10 +320,10 @@ class KserveV2HttpClient:
     def infer(
         self,
         *,
-        inputs: Mapping[str, np.ndarray],
+        inputs: Mapping[str, NDArray[np.generic]],
         output_names: list[str],
         request_parameters: Optional[Mapping[str, Any]] = None,
-    ) -> Dict[str, np.ndarray]:
+    ) -> Dict[str, NDArray[np.generic]]:
         """Execute inference request against KServe v2 endpoint.
 
         Args:
@@ -338,10 +340,15 @@ class KserveV2HttpClient:
             requests.exceptions.HTTPError: If server returns error status
             RuntimeError: If response format is invalid
         """
-        if _log.isEnabledFor(logging.DEBUG):
-            _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
-            _t_ser_start = time.time()
-            _t_ser_mono = time.monotonic()
+        debug_logging = _log.isEnabledFor(logging.DEBUG)
+        _first_tensor = next(iter(inputs.values()), None)
+        _batch_size = (
+            _first_tensor.shape[0]
+            if _first_tensor is not None and _first_tensor.ndim > 0
+            else 0
+        )
+        _t_ser_start = time.time() if debug_logging else None
+        _t_ser_mono = time.monotonic() if debug_logging else None
         request_kwargs: Dict[str, Any]
         if self.use_binary_data:
             binary_headers, request_body = _build_binary_request(
@@ -371,7 +378,7 @@ class KserveV2HttpClient:
 
             request_kwargs = {"json": payload}
 
-        if _log.isEnabledFor(logging.DEBUG):
+        if _t_ser_start is not None and _t_ser_mono is not None:
             _log.debug(
                 "PIPELINE_PROFILING KServe infer serialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
                 _batch_size,
@@ -379,12 +386,12 @@ class KserveV2HttpClient:
                 time.time(),
                 time.monotonic() - _t_ser_mono,
             )
-            _t_http_start = time.time()
-            _t_http_mono = time.monotonic()
+        _t_http_start = time.time() if debug_logging else None
+        _t_http_mono = time.monotonic() if debug_logging else None
         response = self._execute_http_request(
             self.infer_url, method="POST", **request_kwargs
         )
-        if _log.isEnabledFor(logging.DEBUG):
+        if _t_http_start is not None and _t_http_mono is not None:
             _log.debug(
                 "PIPELINE_PROFILING KServe infer http round-trip: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
                 _batch_size,
@@ -392,8 +399,8 @@ class KserveV2HttpClient:
                 time.time(),
                 time.monotonic() - _t_http_mono,
             )
-            _t_deser_start = time.time()
-            _t_deser_mono = time.monotonic()
+        _t_deser_start = time.time() if debug_logging else None
+        _t_deser_mono = time.monotonic() if debug_logging else None
 
         try:
             body = (
@@ -406,7 +413,7 @@ class KserveV2HttpClient:
                 f"Invalid inference response from {self.infer_url}: {exc}"
             ) from exc
 
-        decoded_outputs: Dict[str, np.ndarray] = {}
+        decoded_outputs: Dict[str, NDArray[np.generic]] = {}
         header_len_text = response.headers.get(_INFERENCE_HEADER_CONTENT_LENGTH)
         raw_body = b""
         if self.use_binary_data and header_len_text is not None:
@@ -436,7 +443,7 @@ class KserveV2HttpClient:
                 f"not consumed: {len(raw_body) - raw_offset} bytes"
             )
 
-        if _log.isEnabledFor(logging.DEBUG):
+        if _t_deser_start is not None and _t_deser_mono is not None:
             _log.debug(
                 "PIPELINE_PROFILING KServe infer deserialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
                 _batch_size,

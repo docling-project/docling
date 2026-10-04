@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any, Dict, Mapping, Optional, Protocol
 
 import numpy as np
+from numpy.typing import NDArray
 
 from docling.models.inference_engines.common.kserve_v2_types import (
     KserveV2ModelMetadataResponse,
@@ -23,10 +24,10 @@ class KserveV2Client(Protocol):
     def infer(
         self,
         *,
-        inputs: Mapping[str, np.ndarray],
+        inputs: Mapping[str, NDArray[np.generic]],
         output_names: list[str],
         request_parameters: Optional[Mapping[str, Any]] = None,
-    ) -> Dict[str, np.ndarray]:
+    ) -> Dict[str, NDArray[np.generic]]:
         """Execute model inference and return outputs keyed by tensor name."""
 
     def close(self) -> None:

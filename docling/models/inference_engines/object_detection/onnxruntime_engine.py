@@ -103,6 +103,10 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
         import onnxruntime as ort
+        from onnxruntime.capi._pybind_state import (
+            GraphOptimizationLevel,
+            SessionOptions,
+        )
 
         _log.info("Initializing ONNX Runtime object-detection engine")
 
@@ -113,16 +117,16 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Load preprocessor (source of truth for preprocessing)
         self._processor = self._load_preprocessor(model_folder)
-        _log.debug(f"Loaded preprocessor with size: {self._processor.size}")  # type: ignore[attr-defined]
+        _log.debug("Loaded preprocessor: %s", type(self._processor).__name__)
 
         # Load label mapping from config
         self._id_to_label = self._load_label_mapping(model_folder)
         _log.debug(f"Loaded label mapping with {len(self._id_to_label)} labels")
 
         # Create ONNX session
-        sess_options = ort.SessionOptions()
+        sess_options = SessionOptions()
         sess_options.intra_op_num_threads = self._accelerator_options.num_threads
-        sess_options.graph_optimization_level = ort.GraphOptimizationLevel(
+        sess_options.graph_optimization_level = GraphOptimizationLevel(
             self.options.graph_optimization_level
         )
         providers = self._resolve_providers()
@@ -200,7 +204,9 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
                 "[labels, boxes, scores]"
             )
 
-        labels_batch, boxes_batch, scores_batch = output_tensors[:3]
+        labels_batch, boxes_batch, scores_batch = (
+            np.asarray(tensor) for tensor in output_tensors[:3]
+        )
 
         batch_outputs: List[ObjectDetectionEngineOutput] = []
         for idx, input_item in enumerate(input_batch):
