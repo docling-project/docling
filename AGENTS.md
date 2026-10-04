@@ -32,6 +32,9 @@ scripts/                 # project maintenance scripts
 - **Development skills** (for contributors working *on* Docling) live in
   [`.agents/skills/`](.agents/skills/) at the repo root, e.g. `dignified-python`
   and `building-pydantic-ai-agents`.
+  Select the applicable skills from the
+  [task routes](.agents/skills/skill-router.json). For PR reviews and re-reviews,
+  use [review](.agents/skills/review/SKILL.md) before you assess the changes.
 - **Usage skills** (for agents *using* Docling to convert documents) are shipped
   inside the package at
   [`docling/.agents/skills/docling/`](docling/.agents/skills/docling/SKILL.md).
