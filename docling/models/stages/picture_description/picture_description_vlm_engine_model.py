@@ -117,7 +117,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             if self.engine is not None
             else None
         )
-        if selected_engine_type is not None:
+        if isinstance(selected_engine_type, VlmEngineType):
             return selected_engine_type
         return self.options.engine_options.engine_type
 
