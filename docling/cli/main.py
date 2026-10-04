@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
+import json as _json
 import logging
 import re
 import sys
@@ -21,6 +22,7 @@ from docling.utils.ocr_language import OcrLanguageResolver
 try:
     import rich.table
     import typer
+    from typer.core import TyperGroup
 except ImportError as e:
     missing_package = str(e).split("'")[1] if "'" in str(e) else "typer or rich"
     print(
@@ -47,6 +49,7 @@ from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import SecretStr, TypeAdapter, ValidationError
 from rich.console import Console
+from typing_extensions import override
 
 from docling.cli.export_utils import (
     _export_flags_from_formats,
@@ -128,6 +131,8 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
     PdfBackend,
     PdfPipelineOptions,
+    PictureDescriptionVlmEngineOptions,
+    PictureDescriptionVlmOptions,
     PipelineOptions,
     ProcessingPipeline,
     TableFormerMode,
@@ -145,17 +150,10 @@ from docling.utils.profiling import ProfilingItem
 # The local model stack (scipy, torch, …) is absent on lightweight installs
 # (docling-slim[service-client] / docling-client).  Guard these imports so the
 # CLI module — and `convert-remote` — remain importable without them.
-_local_model_stack_available: bool
 try:
-    from docling.models.factories import (
-        get_layout_factory,
-        get_ocr_factory,
-        get_table_structure_factory,
-    )
-
-    _local_model_stack_available = True
+    from docling.models import factories as _model_factories
 except ImportError:
-    _local_model_stack_available = False
+    _model_factories = None
 
 if TYPE_CHECKING:
     from docling.models.factories.base_factory import BaseFactory
@@ -283,14 +281,18 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
     return list(dict.fromkeys(expanded_formats))
 
 
-if _local_model_stack_available:
-    ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
+if _model_factories is not None:
+    ocr_factory_internal = _model_factories.get_ocr_factory(
+        allow_external_plugins=False
+    )
     ocr_engines_enum_internal = ocr_factory_internal.get_enum()
 
-    layout_factory_internal = get_layout_factory(allow_external_plugins=False)
+    layout_factory_internal = _model_factories.get_layout_factory(
+        allow_external_plugins=False
+    )
     layout_engines_enum_internal = layout_factory_internal.get_enum()
 
-    table_structure_factory_internal = get_table_structure_factory(
+    table_structure_factory_internal = _model_factories.get_table_structure_factory(
         allow_external_plugins=False
     )
     table_structure_engines_enum_internal = table_structure_factory_internal.get_enum()
@@ -340,7 +342,7 @@ DOCLING_ASCII_ART = r"""
 """
 
 
-class _DefaultCommandGroup(typer.core.TyperGroup):
+class _DefaultCommandGroup(TyperGroup):
     """Route a bare ``docling <source>`` invocation to the ``convert`` command.
 
     Historically the CLI exposed a single command, so Typer let users run
@@ -353,6 +355,7 @@ class _DefaultCommandGroup(typer.core.TyperGroup):
 
     default_command = "convert"
 
+    @override
     def parse_args(self, ctx, args):
         if args and args[0] not in self.commands and args[0] not in ("--help", "-h"):
             args = [self.default_command, *args]
@@ -459,11 +462,19 @@ def version_callback(value: bool):
 
 def show_external_plugins_callback(value: bool):
     if value:
-        ocr_factory_all = get_ocr_factory(allow_external_plugins=True)
-        layout_factory_all = get_layout_factory(allow_external_plugins=True)
-        table_factory_all = get_table_structure_factory(allow_external_plugins=True)
+        if _model_factories is None:
+            raise typer.BadParameter(
+                "External plugins require the local model dependencies"
+            )
+        ocr_factory_all = _model_factories.get_ocr_factory(allow_external_plugins=True)
+        layout_factory_all = _model_factories.get_layout_factory(
+            allow_external_plugins=True
+        )
+        table_factory_all = _model_factories.get_table_structure_factory(
+            allow_external_plugins=True
+        )
 
-        def print_external_plugins(factory: BaseFactory, factory_name: str):
+        def print_external_plugins(factory: BaseFactory[Any], factory_name: str):
             table = rich.table.Table(title=f"Available {factory_name} engines")
             table.add_column("Name", justify="right")
             table.add_column("Plugin")
@@ -534,10 +545,7 @@ def export_documents(
     # Initialize chunker once for all documents
     chunker_obj = None
     if export_chunks:
-        import json as _json
-
         from docling_core.transforms.chunker.hierarchical_chunker import (
-            DocChunk,
             HierarchicalChunker,
         )
         from docling_core.transforms.chunker.hybrid_chunker import (
@@ -681,13 +689,19 @@ def export_documents(
 
             # Export Chunks format:
             if export_chunks and chunker_obj is not None:
+                from docling_core.transforms.chunker.hierarchical_chunker import (
+                    DocChunk,
+                )
+                from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
+
                 fname = output_file or output_dir / f"{doc_filename}.chunks.jsonl"
                 _log.info(f"writing Chunks output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     for i, chunk in enumerate(
                         chunker_obj.chunk(dl_doc=conv_res.document)
                     ):
-                        doc_chunk = cast(DocChunk, chunk)
+                        assert isinstance(chunk, DocChunk)
+                        doc_chunk = chunk
                         page_numbers = sorted(
                             {
                                 prov.page_no
@@ -799,12 +813,12 @@ def convert(  # noqa: C901
             help="PDF files to convert. Can be local file / directory paths or URL.",
         ),
     ],
-    from_formats: list[str] = typer.Option(
+    from_formats: list[str] | None = typer.Option(
         None,
         "--from",
         help="Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all.",
     ),
-    to_formats: list[OutputFormat] = typer.Option(
+    to_formats: list[OutputFormat] | None = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
     ),
     chunker_type: ChunkerType = typer.Option(
@@ -829,12 +843,12 @@ def convert(  # noqa: C901
             help="If enabled, the page images will show the bounding-boxes of the items.",
         ),
     ] = False,
-    headers: str = typer.Option(
+    headers: str | None = typer.Option(
         None,
         "--headers",
         help="Specify http request headers used when fetching url input sources in the form of a JSON string",
     ),
-    html_image_headers: str = typer.Option(
+    html_image_headers: str | None = typer.Option(
         None,
         "--html-image-headers",
         help="Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string. They are only sent to the source document's origin, or to the origins given with --html-image-headers-origin.",
@@ -1259,6 +1273,11 @@ def convert(  # noqa: C901
         PowerpointFormatOption,
         WordFormatOption,
     )
+    from docling.models.factories import (
+        get_layout_factory,
+        get_ocr_factory,
+        get_table_structure_factory,
+    )
     from docling.pipeline.asr_pipeline import AsrPipeline
     from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
     from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
@@ -1317,14 +1336,14 @@ def convert(  # noqa: C901
     settings.perf.page_batch_size = page_batch_size
 
     requested_from_formats = from_formats
-    from_formats = _expand_from_formats(from_formats)
+    allowed_formats = _expand_from_formats(from_formats)
 
     if pipeline == ProcessingPipeline.NATIVE:
         # The native pipeline reads the native content of a PDF; it has nothing to
         # offer for the other input formats, so it never silently handles them.
         if requested_from_formats is None:
-            from_formats = [InputFormat.PDF]
-        elif set(from_formats) != {InputFormat.PDF}:
+            allowed_formats = [InputFormat.PDF]
+        elif set(allowed_formats) != {InputFormat.PDF}:
             err_console.print(
                 "[red]Error: --pipeline native is only available for --from pdf.[/red]"
             )
@@ -1369,7 +1388,7 @@ def convert(  # noqa: C901
         input_doc_paths: list[Path | str] = []
         for src in source:
             try:
-                if _is_http_url(src) and _is_html_source(src, from_formats):
+                if _is_http_url(src) and _is_html_source(src, allowed_formats):
                     input_doc_paths.append(src)
                     continue
 
@@ -1377,12 +1396,14 @@ def convert(  # noqa: C901
                 if local_path.exists():
                     if local_path.is_dir():
                         input_doc_paths.extend(
-                            _iter_input_paths_from_directory(local_path, from_formats)
+                            _iter_input_paths_from_directory(
+                                local_path, allowed_formats
+                            )
                         )
                     elif _is_office_lock_file(local_path):
                         _log.info(f"Ignoring temporary Office file: {local_path}")
-                    elif _is_html_source(src, from_formats) or _is_latex_source(
-                        local_path, from_formats
+                    elif _is_html_source(src, allowed_formats) or _is_latex_source(
+                        local_path, allowed_formats
                     ):
                         # Keep the file in place: these backends resolve images
                         # and included files relative to the document.
@@ -1410,7 +1431,9 @@ def convert(  # noqa: C901
                     local_path = TypeAdapter(Path).validate_python(src)
                     if local_path.exists() and local_path.is_dir():
                         input_doc_paths.extend(
-                            _iter_input_paths_from_directory(local_path, from_formats)
+                            _iter_input_paths_from_directory(
+                                local_path, allowed_formats
+                            )
                         )
                     elif local_path.exists():
                         if _is_office_lock_file(local_path):
@@ -1476,7 +1499,7 @@ def convert(  # noqa: C901
         ):
             ocr_options.psm = psm
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-        pipeline_options: PipelineOptions
+        pipeline_options: PipelineOptions | None = None
         format_options: dict[InputFormat, FormatOption] = {}
         backend, pdf_backend_options = _resolve_pdf_backend()
 
@@ -1523,9 +1546,14 @@ def convert(  # noqa: C901
                 pipeline_options.table_structure_options.do_cell_matching = True
                 pipeline_options.table_structure_options.mode = table_mode
             if picture_description_max_new_tokens is not None:
-                pipeline_options.picture_description_options.generation_config[
-                    "max_new_tokens"
-                ] = picture_description_max_new_tokens
+                picture_options = pipeline_options.picture_description_options
+                assert isinstance(
+                    picture_options,
+                    (PictureDescriptionVlmOptions, PictureDescriptionVlmEngineOptions),
+                )
+                picture_options.generation_config["max_new_tokens"] = (
+                    picture_description_max_new_tokens
+                )
 
             if _should_generate_export_images(
                 image_export_mode,
@@ -1556,9 +1584,14 @@ def convert(  # noqa: C901
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
             if picture_description_max_new_tokens is not None:
-                simple_format_option.picture_description_options.generation_config[
-                    "max_new_tokens"
-                ] = picture_description_max_new_tokens
+                picture_options = simple_format_option.picture_description_options
+                assert isinstance(
+                    picture_options,
+                    (PictureDescriptionVlmOptions, PictureDescriptionVlmEngineOptions),
+                )
+                picture_options.generation_config["max_new_tokens"] = (
+                    picture_description_max_new_tokens
+                )
 
             html_backend_options: HTMLBackendOptions | None = None
             if (
@@ -1754,7 +1787,7 @@ def convert(  # noqa: C901
         # scipy, so we avoid paying that cost unless video input is used.
         # Check the expanded inputs, not the raw sources, so that videos found
         # in a directory or downloaded from a URL get these options too.
-        has_video_source = InputFormat.VIDEO in from_formats and any(
+        has_video_source = InputFormat.VIDEO in allowed_formats and any(
             _name_matches_format(str(path), InputFormat.VIDEO)
             for path in input_doc_paths
         )
@@ -1795,11 +1828,12 @@ def convert(  # noqa: C901
 
         # Common options for all pipelines
         if artifacts_path is not None:
-            pipeline_options.artifacts_path = artifacts_path
+            if pipeline_options is not None:
+                pipeline_options.artifacts_path = artifacts_path
             asr_pipeline_options.artifacts_path = artifacts_path
 
         doc_converter = DocumentConverter(
-            allowed_formats=from_formats,
+            allowed_formats=allowed_formats,
             format_options=format_options,
         )
 

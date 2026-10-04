@@ -77,7 +77,7 @@ def download_models(
     with_easyocr: bool = False,
     easyocr_languages: Optional[list[str]] = None,  # BCP-47 tags
     with_nemotron_ocr: bool = False,
-):
+) -> Path:
     if easyocr_languages is not None and not with_easyocr:
         raise ValueError("easyocr_languages requires with_easyocr=True")
     if rapidocr_models is not None and not with_rapidocr:

@@ -41,7 +41,7 @@ def _detect_hardware_and_libraries():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore
+        import mlx_whisper
 
         has_mlx_whisper = True
     except ImportError:

@@ -433,13 +433,15 @@ class _ChandraDocumentBuilder:
                 label = DocItemLabel.TEXT
         if len(merged) > 1:
             if label != DocItemLabel.TEXT:
-                parent = self.doc.add_text(
+                text_parent = self.doc.add_text(
                     label=label,
                     text="",
                     parent=parent,
                     prov=self._text_prov(prov, ""),
                     content_layer=layer,
                 )
+                assert isinstance(text_parent, NodeItem)
+                parent = text_parent
             parent = self.doc.add_inline_group(parent=parent, content_layer=layer)
         for run in merged:
             run_label = (

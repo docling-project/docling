@@ -27,7 +27,9 @@ def parse_otsl_output(text: str) -> tuple[list[str], list[TableCell], int, int]:
 
     otsl_match = re.search(r"<otsl>(.*)</otsl>", text, re.DOTALL)
     if otsl_match:
-        text = otsl_match.group(1)
+        content = otsl_match.group(1)
+        assert isinstance(content, str)
+        text = content
 
     token_pairs: list[tuple[str, str]] = []
     for match in _TAG_PATTERN.finditer(text):

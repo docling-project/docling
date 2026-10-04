@@ -40,6 +40,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VideoPipelineOptions
 from docling.pipeline.asr_transcriber import (
     _AsrModelFactory,
+    _ConversationItem,
     _merge_into_sentences,
 )
 from docling.pipeline.base_pipeline import BasePipeline
@@ -297,7 +298,7 @@ class VideoPipeline(BasePipeline):
             )
 
             # 6. Merge transcript + frames by timestamp
-            events: list[tuple[float, int, object]] = []
+            events: list[tuple[float, int, _ConversationItem | VideoFrame]] = []
             for item in transcript_items:
                 if (
                     item.start_time is not None
@@ -310,9 +311,9 @@ class VideoPipeline(BasePipeline):
 
             events.sort(key=lambda e: (e[0], e[1]))
 
-            for _, event_type, payload in events:
-                if event_type == 0:
-                    frame = payload  # type: ignore[assignment]
+            for _, _, payload in events:
+                if isinstance(payload, VideoFrame):
+                    frame = payload
                     try:
                         conv_res.document.add_picture(
                             image=ImageRef.from_pil(frame.image, dpi=72),
@@ -334,7 +335,8 @@ class VideoPipeline(BasePipeline):
                             exc,
                         )
                 else:
-                    item = payload  # type: ignore[assignment]
+                    item = payload
+                    assert item.start_time is not None and item.end_time is not None
                     try:
                         conv_res.document.add_text(
                             label=DocItemLabel.TEXT,

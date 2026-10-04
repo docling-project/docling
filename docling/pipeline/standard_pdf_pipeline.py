@@ -53,6 +53,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     KserveV2OcrOptions,
     LayoutPostprocessorOptions,
+    PdfPipelineOptions,
     ThreadedPdfPipelineOptions,
 )
 from docling.datamodel.settings import settings
@@ -181,7 +182,8 @@ class ThreadedQueue:
             if self._closed:
                 return False
             start = time.monotonic()
-            while len(self._items) >= self._max and not self._closed:
+            # Condition.wait() releases the lock; another thread can close the queue.
+            while len(self._items) >= self._max and not self._closed:  # ty: ignore[redundant-condition-strict]
                 if timeout is not None:
                     remaining = timeout - (time.monotonic() - start)
                     if remaining <= 0:
@@ -189,7 +191,8 @@ class ThreadedQueue:
                     self._not_full.wait(remaining)
                 else:
                     self._not_full.wait()
-            if self._closed:
+            # Recheck after wait(), which permits another thread to close the queue.
+            if self._closed:  # ty: ignore[redundant-condition-strict]
                 return False
             self._items.append(item)
             self._not_empty.notify()
@@ -356,19 +359,21 @@ class ThreadedPipelineStage:
                     continue
 
                 pages: list[Page] = [payload for _, payload in pages_with_payloads]
-                if _log.isEnabledFor(logging.DEBUG):
-                    _t_start = time.time()
-                    _t_mono = time.monotonic()
+                timing = (
+                    (time.time(), time.monotonic())
+                    if _log.isEnabledFor(logging.DEBUG)
+                    else None
+                )
                 processed_pages = list(self.model(good[0].conv_res, pages))  # type: ignore[arg-type]
-                if _log.isEnabledFor(logging.DEBUG):
+                if timing is not None:
                     _log.debug(
                         "PIPELINE_PROFILING Stage %s: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
                         self.name,
                         rid,
                         [it.page_no for it in good],
-                        _t_start,
+                        timing[0],
                         time.time(),
-                        time.monotonic() - _t_mono,
+                        time.monotonic() - timing[1],
                     )
                 if len(processed_pages) != len(pages):  # strict mismatch guard
                     raise RuntimeError(
@@ -519,21 +524,23 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 continue
 
             try:
-                if _log.isEnabledFor(logging.DEBUG):
-                    _t_start = time.time()
-                    _t_mono = time.monotonic()
+                timing = (
+                    (time.time(), time.monotonic())
+                    if _log.isEnabledFor(logging.DEBUG)
+                    else None
+                )
                 pages = [page for _, page in valid]
                 processed_pages = list(
                     self.model(valid[0][0].conv_res, pages)  # type: ignore[arg-type]
                 )
-                if _log.isEnabledFor(logging.DEBUG):
+                if timing is not None:
                     _log.debug(
                         "PIPELINE_PROFILING Stage preprocess: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
                         rid,
                         [it.page_no for it, _ in valid],
-                        _t_start,
+                        timing[0],
                         time.time(),
-                        time.monotonic() - _t_mono,
+                        time.monotonic() - timing[1],
                     )
                 if len(processed_pages) != len(pages):
                     raise RuntimeError(
@@ -588,9 +595,9 @@ class RunContext:
 class StandardPdfPipeline(ConvertPipeline):
     """High-performance PDF pipeline with multi-threaded stages."""
 
-    def __init__(self, pipeline_options: ThreadedPdfPipelineOptions) -> None:
+    def __init__(self, pipeline_options: PdfPipelineOptions) -> None:
         super().__init__(pipeline_options)
-        self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
+        self.pipeline_options: PdfPipelineOptions = pipeline_options
         self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
         self._page_sizes_by_no: dict[int, Size] = {}
 
@@ -714,8 +721,7 @@ class StandardPdfPipeline(ConvertPipeline):
             **extra,
         )
 
-    @override
-    def _release_page_resources(self, item: ThreadedItem) -> None:
+    def _release_threaded_item_resources(self, item: ThreadedItem) -> None:
         page = item.payload
         if page is None:
             return
@@ -784,7 +790,7 @@ class StandardPdfPipeline(ConvertPipeline):
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
-            postprocess=self._release_page_resources,
+            postprocess=self._release_threaded_item_resources,
             timed_out_run_ids=timed_out_run_ids,
         )
 
@@ -899,10 +905,7 @@ class StandardPdfPipeline(ConvertPipeline):
         try:
             while proc.success_count + proc.failure_count < total_pages:
                 # Check timeout
-                if (
-                    self.pipeline_options.document_timeout is not None
-                    and not timeout_exceeded
-                ):
+                if self.pipeline_options.document_timeout is not None:
                     elapsed_time = time.monotonic() - start_time
                     if elapsed_time > self.pipeline_options.document_timeout:
                         _log.warning(
@@ -1094,7 +1097,7 @@ class StandardPdfPipeline(ConvertPipeline):
                             page_ix = element.prov[0].page_no
                             page = next(
                                 (p for p in conv_res.pages if p.page_no == page_ix),
-                                cast("Page", None),
+                                None,
                             )
                             assert page is not None
                             assert page.size is not None
@@ -1163,9 +1166,6 @@ class StandardPdfPipeline(ConvertPipeline):
         The failed pages are added with their size information (if available from
         the backend) but without any content.
         """
-        if conv_res.document is None:
-            return
-
         # Find pages that are missing from the document
         existing_page_nos = set(conv_res.document.pages.keys())
         missing_page_nos = set(expected_page_nos) - existing_page_nos

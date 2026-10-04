@@ -1807,3 +1807,12 @@ def test_cli_native_pipeline_parser_threads(
     assert captured["pipeline_options"].parser_threads == 3
     assert captured["backend_options"].parser_threads == 3
     assert captured["pipeline_options"].accelerator_options.num_threads == 7
+
+
+def test_cli_asr_artifacts_path_reaches_audio_options(tmp_path, monkeypatch):
+    result, options = _capture_cli_asr_pipeline_options(
+        monkeypatch, ["--pipeline", "asr", "--artifacts-path", str(tmp_path)], tmp_path
+    )
+    assert result.exit_code == 0, result.output
+    assert options is not None
+    assert options.artifacts_path == tmp_path

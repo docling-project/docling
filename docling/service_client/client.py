@@ -24,7 +24,7 @@ from email.utils import parsedate_to_datetime
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
-from typing import IO, TYPE_CHECKING, Any, TypeAlias, TypeVar
+from typing import IO, TYPE_CHECKING, Any, TypeAlias, TypeVar, overload
 from urllib.parse import urlencode, urlparse
 
 import httpx
@@ -32,7 +32,14 @@ from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
 from docling_core.types.doc.common.constants import CURRENT_VERSION
 from docling_core.types.io import DocumentStream
 from PIL import Image as PILImage
-from pydantic import AnyHttpUrl, SecretBytes, SecretStr, TypeAdapter, ValidationError
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    SecretBytes,
+    SecretStr,
+    TypeAdapter,
+    ValidationError,
+)
 
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
@@ -118,6 +125,7 @@ SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget | Storag
 BatchSubmitTarget: TypeAlias = BatchTargetRequestInput
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
+_ResultModelT = TypeVar("_ResultModelT", bound=BaseModel)
 
 
 SUCCESS_CONVERSION_STATUSES: set[ConversionStatus] = {
@@ -276,8 +284,8 @@ class _BaseDoclingServiceClient:
     def _parse_result_model_response(
         self,
         response: httpx.Response,
-        model_cls: type[_T],
-    ) -> _T:
+        model_cls: type[_ResultModelT],
+    ) -> _ResultModelT:
         try:
             return model_cls.model_validate_json(response.text)
         except (ValidationError, ValueError) as exc:
@@ -381,7 +389,7 @@ class _BaseDoclingServiceClient:
         self,
         options: ConvertDocumentsRequestOptions,
         output_formats: list[OutputFormat] | None,
-        target: SubmitTarget | GenericTargetRequest,
+        target: SubmitTarget | GenericTargetRequest | None,
     ) -> ConvertDocumentsRequestOptions:
         effective = options
         if output_formats is not None:
@@ -485,7 +493,9 @@ class _BaseDoclingServiceClient:
         match = re.search(r'filename="?(?P<name>[^";]+)"?', disposition)
         if match is None:
             return None
-        return match.group("name")
+        filename = match.group("name")
+        assert isinstance(filename, str)
+        return filename
 
     def _describe_source(self, source: SourceType) -> _SourceDescriptor:
         source = self._normalize_source(source)
@@ -619,7 +629,7 @@ class _BaseDoclingServiceClient:
         )
 
     def _exponential_backoff_delay(self, attempt: int) -> float:
-        return HTTP_RETRY_BACKOFF_BASE_SECONDS * (2**attempt)
+        return HTTP_RETRY_BACKOFF_BASE_SECONDS * (2.0**attempt)
 
     def _transport_retry_delay(
         self,
@@ -1187,6 +1197,49 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         if not isinstance(result, ConversionResult):
             raise TypeError("Conversion submission returned an unexpected result type.")
         return result
+
+    @overload
+    def _submit_conversion_job(
+        self,
+        source: SourceType,
+        options: ConvertDocumentsRequestOptions,
+        limits: DocumentLimits,
+        target: InBodyTarget,
+        descriptor: _SourceDescriptor | None = None,
+        request_headers: dict[str, str] | None = None,
+        materialize_presigned: bool = False,
+    ) -> ConversionJob[ConversionResult]: ...
+
+    @overload
+    def _submit_conversion_job(
+        self,
+        source: SourceType,
+        options: ConvertDocumentsRequestOptions,
+        limits: DocumentLimits,
+        target: PresignedUrlTarget,
+        descriptor: _SourceDescriptor | None = None,
+        request_headers: dict[str, str] | None = None,
+        materialize_presigned: bool = False,
+    ) -> (
+        ConversionJob[ConversionResult] | ConversionJob[PresignedUrlConvertResponse]
+    ): ...
+
+    @overload
+    def _submit_conversion_job(
+        self,
+        source: SourceType,
+        options: ConvertDocumentsRequestOptions,
+        limits: DocumentLimits,
+        target: SubmitTarget,
+        descriptor: _SourceDescriptor | None = None,
+        request_headers: dict[str, str] | None = None,
+        materialize_presigned: bool = False,
+    ) -> (
+        ConversionJob[ConversionResult]
+        | ConversionJob[RawServiceResult]
+        | ConversionJob[PresignedUrlConvertDocumentResponse]
+        | ConversionJob[PresignedUrlConvertResponse]
+    ): ...
 
     def _submit_conversion_job(
         self,
@@ -2241,6 +2294,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
                             limits=resolved.limits,
                         )
                     else:
+                        assert isinstance(outcome, ConvertDocumentResponse)
                         result = self._build_conversion_result(
                             payload=outcome,
                             descriptor=metadata.descriptor,

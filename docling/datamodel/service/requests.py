@@ -4,7 +4,7 @@
 import enum
 from collections.abc import Mapping
 from functools import cache
-from typing import Annotated, Any, Generic, Literal, TypeAlias, get_args
+from typing import Annotated, Any, Generic, Literal, TypeAlias, cast, get_args
 
 from pydantic import (
     AnyHttpUrl,
@@ -261,9 +261,12 @@ def make_request_model(
     Dynamically create (and cache) a subclass of GenericChunkDocumentsRequest[opt_type]
     with chunking_options having a default factory.
     """
-    return type(
+    parent = GenericChunkDocumentsRequest.__class_getitem__(opt_type)
+    assert isinstance(parent, type)
+    model = type(
         f"{opt_type.__name__}DocumentsRequest",
-        (GenericChunkDocumentsRequest[opt_type],),  # type: ignore[valid-type]
+        # ty cannot resolve a runtime-parametrized Pydantic base class.
+        (parent,),  # ty: ignore[unsupported-dynamic-base]
         {
             "__annotations__": {"chunking_options": opt_type},
             "chunking_options": Field(
@@ -271,3 +274,5 @@ def make_request_model(
             ),
         },
     )
+    assert issubclass(model, GenericChunkDocumentsRequest)
+    return cast(type[GenericChunkDocumentsRequest[ChunkingOptT]], model)

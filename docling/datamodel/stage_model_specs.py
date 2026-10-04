@@ -16,6 +16,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Set
 
 from pydantic import BaseModel, Field
+from typing_extensions import NotRequired, TypedDict
 
 from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
@@ -693,7 +694,7 @@ class StagePresetMixin:
         # a single validated instance so that model_validators (e.g. "at least one
         # output") run against the final merged state rather than the pre-override
         # state.
-        preset_data: dict = dict(
+        preset_data: dict[str, Any] = dict(
             model_spec=preset.model_spec,
             engine_options=engine_options,
             scale=preset.scale,
@@ -806,7 +807,9 @@ class ObjectDetectionStagePresetMixin:
                     f"Unsupported engine type {preset.default_engine_type} for presets"
                 )
 
-        instance = cls(  # type: ignore[call-arg]
+        if not issubclass(cls, BaseModel):
+            raise TypeError("Preset options must be Pydantic models")
+        instance = cls(
             model_spec=preset.model_spec,
             engine_options=engine_options,
             **preset.stage_options,
@@ -921,7 +924,9 @@ class ImageClassificationStagePresetMixin:
                     f"Unsupported engine type {preset.default_engine_type} for presets"
                 )
 
-        instance = cls(  # type: ignore[call-arg]
+        if not issubclass(cls, BaseModel):
+            raise TypeError("Preset options must be Pydantic models")
+        instance = cls(
             model_spec=preset.model_spec,
             engine_options=engine_options,
             **preset.stage_options,
@@ -941,9 +946,20 @@ class ImageClassificationStagePresetMixin:
 # SHARED MODEL SPECS (for reuse across multiple stages)
 # -----------------------------------------------------------------------------
 
+
+class _SharedVlmModelSpec(TypedDict):
+    name: str
+    default_repo_id: str
+    stop_strings: NotRequired[list[str]]
+    max_new_tokens: NotRequired[int]
+    engine_overrides: NotRequired[dict[VlmEngineType, EngineModelConfig]]
+    api_overrides: NotRequired[dict[VlmEngineType, ApiModelConfig]]
+    supported_engines: NotRequired[set[VlmEngineType]]
+
+
 # Shared Granite Docling model spec used across VLM_CONVERT and CODE_FORMULA stages
 # Note: prompt and response_format are intentionally excluded here as they vary per stage
-GRANITE_DOCLING_MODEL_SPEC_BASE = {
+GRANITE_DOCLING_MODEL_SPEC_BASE: _SharedVlmModelSpec = {
     "name": "Granite-Docling-258M",
     "default_repo_id": "ibm-granite/granite-docling-258M",
     "stop_strings": ["</doctag>", "<|end_of_text|>"],
@@ -967,7 +983,7 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 }
 
 # Shared Pixtral model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
-PIXTRAL_MODEL_SPEC_BASE = {
+PIXTRAL_MODEL_SPEC_BASE: _SharedVlmModelSpec = {
     "name": "Pixtral-12B",
     "default_repo_id": "mistral-community/pixtral-12b",
     "engine_overrides": {
@@ -981,7 +997,7 @@ PIXTRAL_MODEL_SPEC_BASE = {
 }
 
 # Shared Granite Vision model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
-GRANITE_VISION_MODEL_SPEC_BASE = {
+GRANITE_VISION_MODEL_SPEC_BASE: _SharedVlmModelSpec = {
     "name": "Granite-Vision-3.3-2B",
     "default_repo_id": "ibm-granite/granite-vision-3.3-2b",
     "supported_engines": {
