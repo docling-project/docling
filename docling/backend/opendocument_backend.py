@@ -165,6 +165,7 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _ODFDO_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream, options)
         self.path_or_stream: BytesIO | Path = path_or_stream
+        self.page_range = in_doc.limits.page_range
         self.valid: bool = False
         self.odf_obj: OdfDocument = _load_odf_document(
             path_or_stream, self.document_hash
@@ -1137,9 +1138,18 @@ def _odf_chart_classification(chart_content: Any) -> PictureClassificationLabel:
     return PictureClassificationLabel.OTHER_CHART
 
 
+def _odf_chart_title(chart_content: Any) -> str | None:
+    """Read the chart object's own title, the way the PowerPoint backend emits one."""
+    for title in chart_content.get_elements("descendant::chart:title"):
+        text = title.text_content.strip()
+        if text:
+            return text
+    return None
+
+
 def _chart_data_from_frame(
     frame: Frame, odf_obj: OdfDocument | None
-) -> tuple[TableData, PictureClassificationLabel] | None:
+) -> tuple[TableData, PictureClassificationLabel, str | None] | None:
     if odf_obj is None:
         return None
 
@@ -1157,6 +1167,7 @@ def _chart_data_from_frame(
         # from the package only fails once the part is actually read.
         chart_classification = _odf_chart_classification(chart_content)
         chart_tables = chart_content.get_elements("descendant::table:table")
+        chart_title = _odf_chart_title(chart_content)
     except Exception as e:
         _log.warning(
             "Could not read embedded OpenDocument object %s: %s", object_href, e
@@ -1166,7 +1177,7 @@ def _chart_data_from_frame(
         if isinstance(table, OdfTable) and table.name == "local-table":
             table_data = _table_data_from_odf(table)
             if table_data is not None:
-                return table_data, chart_classification
+                return table_data, chart_classification, chart_title
     return None
 
 
@@ -1192,8 +1203,23 @@ def _add_odf_charts(
         chart_result = _chart_data_from_frame(frame, odf_obj)
         if chart_result is None:
             continue
-        chart_data, chart_classification = chart_result
-        chart = doc.add_picture(parent=parent, content_layer=content_layer)
+        chart_data, chart_classification, chart_title = chart_result
+        # A chart's title is the caption of its picture, next to the data in the
+        # meta, the shape the PowerPoint/Word/Excel/iWork backends give a chart.
+        # A chart showing no title gets no caption; nothing is invented.
+        caption = (
+            doc.add_text(
+                label=DocItemLabel.CAPTION,
+                text=chart_title,
+                parent=parent,
+                content_layer=content_layer,
+            )
+            if chart_title
+            else None
+        )
+        chart = doc.add_picture(
+            parent=parent, content_layer=content_layer, caption=caption
+        )
         chart.label = DocItemLabel.PICTURE
         chart.meta = PictureMeta(
             classification=PictureClassificationMetaField(
@@ -1201,7 +1227,9 @@ def _add_odf_charts(
                     PictureClassificationPrediction(class_name=chart_classification)
                 ]
             ),
-            tabular_chart=TabularChartMetaField(chart_data=chart_data),
+            tabular_chart=TabularChartMetaField(
+                chart_data=chart_data, title=chart_title
+            ),
         )
         chart_count += 1
     return chart_count
@@ -1647,7 +1675,10 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
+        start_page, end_page = self.page_range
         for slide_idx, page in enumerate(self.odf_obj.body.get_draw_pages()):
+            if not start_page <= slide_idx + 1 <= end_page:
+                continue
             slide_name = page.name or f"slide-{slide_idx + 1}"
             slide_group = doc.add_group(
                 name=f"slide-{slide_idx}",
@@ -1862,13 +1893,17 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             else None
         )
 
+        start_page, end_page = self.page_range
         page_no = 0
         for sheet_idx, table in enumerate(self.odf_obj.body.tables):
             if sheet_names_filter is not None and table.name not in sheet_names_filter:
                 _log.debug(f"Skipping sheet {sheet_idx}: {table.name} (filtered out)")
                 continue
 
+            # Page numbers are positions within the filtered sheets, as in XLSX.
             page_no += 1
+            if not start_page <= page_no <= end_page:
+                continue
             _log.info(f"Processing sheet {sheet_idx}: {table.name} as page {page_no}")
 
             # Add page for this sheet

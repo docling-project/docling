@@ -119,7 +119,11 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                     " 'options.enable_remote_fetch=True'. Either one or the other"
                     " needs to be enabled to load taxonomies."
                 )
-            with TemporaryDirectory() as tmpdir:
+            # Arelle keeps the taxonomy package zip files open for the lifetime
+            # of the model, which outlives this directory. On Windows, open
+            # files cannot be deleted, so the cleanup of this directory may
+            # leave stale files behind instead of raising.
+            with TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
                 tmp_path: Path = Path(tmpdir)
                 zip_paths: list[str] = []
                 if self.options.taxonomy:

@@ -21,7 +21,10 @@ from docling.datamodel.pipeline_options import (
     RapidOcrOptions,
 )
 from docling.datamodel.settings import settings
-from docling.exceptions import OcrLanguageNotSupportedError
+from docling.exceptions import (
+    OcrLanguageNotSupportedError,
+    RapidOcrModelSizeNotSupportedError,
+)
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.ocr_language import (
@@ -334,11 +337,15 @@ def _rapidocr_artifacts(
     version: "OCRVersion",
     rec_code: str,
     *,
+    model_size: str = _RAPIDOCR_MODEL_TYPE,
     need_det: bool = True,
     need_cls: bool = True,
     need_rec: bool = True,
 ) -> dict[str, _RapidOcrArtifact]:
     """Resolve the det/cls/rec checkpoints for RapidOCR keyed by their task.
+
+    `model_size` only applies to PP-OCRv6 det/rec; cls and non-v6 versions
+    always use `_RAPIDOCR_V4V5_MODEL_TYPE` ("mobile").
 
     This is a pure registry lookup: no network and no filesystem I/O
     """
@@ -346,9 +353,7 @@ def _rapidocr_artifacts(
     from rapidocr.utils.typings import EngineType, ModelType, OCRVersion, TaskType
 
     size = ModelType(
-        _RAPIDOCR_MODEL_TYPE
-        if version == OCRVersion.PPOCRV6
-        else _RAPIDOCR_V4V5_MODEL_TYPE
+        model_size if version == OCRVersion.PPOCRV6 else _RAPIDOCR_V4V5_MODEL_TYPE
     )
     cls_size = ModelType(_RAPIDOCR_V4V5_MODEL_TYPE)
 
@@ -398,6 +403,58 @@ def _rapidocr_artifacts(
             model_path=model_path, files=files, dict_path=dict_path
         )
     return artifacts
+
+
+def _validate_rapidocr_model_size(
+    *,
+    backend: str,
+    language: str,
+    ppocr_version: "OCRVersion",
+    rec_code: str,
+    model_size: str,
+) -> None:
+    """Confirm `model_size` has a PP-OCRv6 det/rec checkpoint for this language.
+
+    Non-PP-OCRv6 versions ignore `model_size`; a non-default value just logs a
+    warning. Uses rapidocr's own registry lookup rather than a hardcoded table.
+
+    Raises:
+        RapidOcrModelSizeNotSupportedError: no PP-OCRv6 det or rec checkpoint
+            for this language at `model_size`.
+    """
+    from rapidocr.inference_engine.base import FileInfo, InferSession
+    from rapidocr.utils.typings import ModelType, OCRVersion, TaskType
+
+    if ppocr_version != OCRVersion.PPOCRV6:
+        if model_size != "small":
+            _log.warning(
+                "RapidOCR model_size=%r only applies to PP-OCRv6; language %r "
+                "resolves to %s, so the normal %s model assets will be used instead.",
+                model_size,
+                language,
+                ppocr_version.value,
+                ppocr_version.value,
+            )
+        return
+
+    engine = _backend_to_engine_type(backend)
+    size = ModelType(model_size)
+    for task, code in (
+        (TaskType.DET, _RAPIDOCR_DET_MODEL_LANG),
+        (TaskType.REC, rec_code),
+    ):
+        try:
+            InferSession.get_model_url(
+                FileInfo(engine, ppocr_version, task, code, size)
+            )
+        except ValueError as err:
+            raise RapidOcrModelSizeNotSupportedError(
+                backend=backend,
+                language=language,
+                ppocr_version=ppocr_version.value,
+                model_size=model_size,
+                detail=str(err),
+            ) from err
 
 
 class RapidOcrModel(BaseOcrModel):
@@ -452,6 +509,13 @@ class RapidOcrModel(BaseOcrModel):
                 else _RAPIDOCR_DEFAULT_LANGUAGE
             )
             ppocr_version = _ppocr_version_for_code(rec_code, self.options.backend)
+            _validate_rapidocr_model_size(
+                backend=self.options.backend,
+                language=lang,
+                ppocr_version=ppocr_version,
+                rec_code=rec_code,
+                model_size=self.options.model_size,
+            )
 
             det_model_path = self.options.det_model_path
             cls_model_path = self.options.cls_model_path
@@ -488,6 +552,7 @@ class RapidOcrModel(BaseOcrModel):
                     backend_enum,
                     ppocr_version,
                     rec_code,
+                    model_size=self.options.model_size,
                     need_det=det_model_path is None,
                     need_cls=cls_model_path is None,
                     need_rec=rec_model_path is None,
@@ -501,15 +566,22 @@ class RapidOcrModel(BaseOcrModel):
                 if missing:
                     listed = "\n".join(f"  - {path}" for path in missing)
                     # `lang` is the canonical tag, which is what the prefetcher takes.
+                    model_size_flag = (
+                        f" --rapidocr-model-size {self.options.model_size}"
+                        if self.options.model_size != "small"
+                        else ""
+                    )
                     raise FileNotFoundError(
                         "RapidOCR artifacts not found or incomplete in artifacts_path.\n"
                         f"Expected under: {target_dir}\n"
                         f"Resolved: backend={self.options.backend} "
-                        f"ppocr_version={ppocr_version.value} rec_code={rec_code}\n"
+                        f"ppocr_version={ppocr_version.value} rec_code={rec_code} "
+                        f"model_size={self.options.model_size}\n"
                         f"Missing files:\n{listed}\n"
                         "Prefetch them with:\n"
                         f"  docling-tools models download rapidocr "
-                        f"--rapidocr-backend-lang {self.options.backend}:{lang} "
+                        f"--rapidocr-backend-lang {self.options.backend}:{lang}"
+                        f"{model_size_flag} "
                         f"-o {artifacts_path}\n"
                         "Or unset artifacts_path to let RapidOCR resolve and download "
                         "the checkpoints itself."
@@ -526,7 +598,7 @@ class RapidOcrModel(BaseOcrModel):
             else:
                 # Let RapidOCR resolve and cache the checkpoints itself
                 size = ModelType(
-                    _RAPIDOCR_MODEL_TYPE
+                    self.options.model_size
                     if ppocr_version == OCRVersion.PPOCRV6
                     else _RAPIDOCR_V4V5_MODEL_TYPE
                 )
@@ -633,6 +705,7 @@ class RapidOcrModel(BaseOcrModel):
         force: bool = False,
         progress: bool = False,
         lang: str = _RAPIDOCR_DEFAULT_LANGUAGE,
+        model_size: str = _RAPIDOCR_MODEL_TYPE,
     ) -> Path:
         if local_dir is None:
             local_dir = settings.cache_dir / "models" / cls._model_repo_folder
@@ -642,6 +715,13 @@ class RapidOcrModel(BaseOcrModel):
         resolved = _resolve_rapidocr(lang, backend)
         assert resolved.ppocr_version is not None
         assert resolved.rapidocr_code is not None
+        _validate_rapidocr_model_size(
+            backend=backend,
+            language=lang,
+            ppocr_version=resolved.ppocr_version,
+            rec_code=resolved.rapidocr_code,
+            model_size=model_size,
+        )
 
         engine = _backend_to_engine_type(backend)
         for artifact in _rapidocr_artifacts(
@@ -649,6 +729,7 @@ class RapidOcrModel(BaseOcrModel):
             engine,
             resolved.ppocr_version,
             resolved.rapidocr_code,
+            model_size=model_size,
         ).values():
             for dest, url in artifact.files.items():
                 if dest.exists() and not force:

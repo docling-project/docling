@@ -35,6 +35,7 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.iwork_backend import (
     IWorkKeynoteDocumentBackend,
+    IWorkNumbersDocumentBackend,
     IWorkPagesDocumentBackend,
 )
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
@@ -290,6 +291,14 @@ class IWorkKeynoteFormatOption(FormatOption):
     backend_options: IWorkBackendOptions | None = None
 
 
+class IWorkNumbersFormatOption(FormatOption):
+    """Format option for Apple Numbers input."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = IWorkNumbersDocumentBackend
+    backend_options: IWorkBackendOptions | None = None
+
+
 class NativePdfFormatOption(PdfFormatOption):
     """PDF format option for the model-free `NativePdfPipeline`.
 
@@ -412,6 +421,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.EPUB: EpubFormatOption(),
         InputFormat.IWORK_PAGES: IWorkPagesFormatOption(),
         InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(),
+        InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
         InputFormat.AFP: AfpFormatOption(),
     }
