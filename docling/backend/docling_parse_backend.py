@@ -180,7 +180,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
     def get_text_cells(self) -> Iterable[TextCell]:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:
-            return []
+            return list[TextCell]()
         return segmented_page.textline_cells
 
     @override
@@ -194,7 +194,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         segmented_page = self.get_segmented_page()
         if segmented_page is None:
-            return []
+            return list[BoundingBox]()
 
         page_height = self.get_size().height
         cropboxes: list[BoundingBox] = []
@@ -343,7 +343,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             if isinstance(self.path_or_stream, BytesIO):
                 self.path_or_stream.seek(0)
             self.doc_key = self.parser.load(
-                self.path_or_stream,
+                path_or_stream,
                 password=password,
                 page_range=in_doc.limits.page_range,
             )

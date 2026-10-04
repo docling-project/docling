@@ -42,7 +42,11 @@ from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
-from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOptions
+from docling.datamodel.backend_options import (
+    BaseBackendOptions,
+    HTMLBackendOptions,
+    XBRLBackendOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, OperationNotAllowed
@@ -50,10 +54,10 @@ from docling.exceptions import DocumentLoadError, OperationNotAllowed
 _XBRL_AVAILABLE: bool = False
 _XBRL_IMPORT_ERROR: ImportError | None = None
 try:
-    from arelle import Cntlr  # type: ignore
-    from arelle.ModelDocument import Type  # type: ignore
-    from arelle.ModelDtsObject import ModelConcept  # type: ignore
-    from arelle.ModelXbrl import ModelXbrl  # type: ignore
+    from arelle import Cntlr
+    from arelle.ModelDocument import Type
+    from arelle.ModelDtsObject import ModelConcept
+    from arelle.ModelXbrl import ModelXbrl
 
     _XBRL_AVAILABLE = True
 except ImportError as e:
@@ -87,10 +91,12 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: XBRLBackendOptions | None = None,
+        options: BaseBackendOptions | None = None,
     ) -> None:
         if options is None:
             options = XBRLBackendOptions()
+        if not isinstance(options, XBRLBackendOptions):
+            raise TypeError("Expected XBRLBackendOptions.")
         # Check if arelle is available before proceeding
         if not _XBRL_AVAILABLE:
             raise ImportError(
@@ -210,14 +216,16 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         concept: ModelConcept,
     ) -> int:
         """Get existing or create new cell for a concept node."""
-        qname_str = str(concept.qname)
+        qname = concept.qname
+        assert qname is not None
+        qname_str = str(qname)
         if qname_str not in self._hierarchy_cell_ids:
             cell_id = self._kv_idx
             self._cells.append(
                 GraphCell(
                     label=GraphCellLabel.KEY,
                     cell_id=cell_id,
-                    text=concept.qname.localName,
+                    text=qname.localName,
                     orig=qname_str,
                 )
             )
@@ -274,7 +282,10 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             if fact.qname.localName == "DocumentPeriodEndDate" and fact.value:
                 doc_period = fact.value
         title = f"{doc_type} {doc_org} {doc_period}".strip()
-        title = title if title else self.model_xbrl.modelDocument.basename
+        model_document = self.model_xbrl.modelDocument
+        title = title or (
+            model_document.basename if model_document is not None else self.file.name
+        )
         doc.add_title(text=title)
 
         # Text blocks (as HTML)
@@ -318,18 +329,21 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                 # period
                 period_text = ""
                 if fact.context is not None:
-                    if fact.context.isInstantPeriod:
-                        period_text = str(fact.context.instantDatetime.date())
-                    elif fact.context.isStartEndPeriod:
-                        period_text = f"{fact.context.startDatetime.date()} - {fact.context.endDatetime.date()}"
+                    instant = fact.context.instantDatetime
+                    start = fact.context.startDatetime
+                    end = fact.context.endDatetime
+                    if fact.context.isInstantPeriod and instant is not None:
+                        period_text = str(instant.date())
+                    elif (
+                        fact.context.isStartEndPeriod
+                        and start is not None
+                        and end is not None
+                    ):
+                        period_text = f"{start.date()} - {end.date()}"
 
                 # unit
                 unit_text = ""
-                if (
-                    fact.unit is not None
-                    and fact.unit.measures
-                    and fact.unit.measures[0]
-                ):
+                if fact.unit is not None and fact.unit.measures[0]:
                     unit_text = fact.unit.measures[0][0].localName
 
                 # decimals

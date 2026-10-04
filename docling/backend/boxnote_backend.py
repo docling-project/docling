@@ -29,6 +29,7 @@ from docling.backend.utils.table_spans import (
     clamp_span,
     table_width,
 )
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -61,8 +62,13 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
     """
 
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: BackendOptions | None = None,
+    ):
+        super().__init__(in_doc, path_or_stream, options)
 
         self.data: dict[str, Any] = {}
         # utf-8-sig drops a leading BOM. Kept, it reaches json.loads, which
@@ -122,7 +128,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     def _add_blocks(
-        self, nodes: list[dict], doc: DoclingDocument, parent: NodeItem | None
+        self, nodes: list[dict[str, Any]], doc: DoclingDocument, parent: NodeItem | None
     ) -> None:
         for node in nodes:
             self._add_block(node, doc, parent)
@@ -170,7 +176,10 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
             self._add_blocks(content, doc, parent)
 
     def _add_paragraph(
-        self, content: list[dict], doc: DoclingDocument, parent: NodeItem | None
+        self,
+        content: list[dict[str, Any]],
+        doc: DoclingDocument,
+        parent: NodeItem | None,
     ) -> None:
         runs = self._runs(content)
         if not runs:
@@ -198,7 +207,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
     def _add_list(
         self,
         list_type: str,
-        items: list[dict],
+        items: list[dict[str, Any]],
         doc: DoclingDocument,
         parent: NodeItem | None,
     ) -> None:
@@ -253,14 +262,14 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
 
     def _split_item(
         self, item: dict[str, Any]
-    ) -> tuple[str, Formatting | None, AnyUrl | None, list[dict]]:
+    ) -> tuple[str, Formatting | None, AnyUrl | None, list[dict[str, Any]]]:
         """Split a list item into its own text and any nested blocks.
 
         The leading paragraph becomes the item text; everything else (nested
         lists, extra paragraphs) is returned to be added as children.
         """
         text, formatting, hyperlink = "", None, None
-        nested: list[dict] = []
+        nested: list[dict[str, Any]] = []
         for child in item.get("content", []):
             if not text and child.get("type") == "paragraph":
                 text, formatting, hyperlink = self._collapse(child.get("content", []))
@@ -269,7 +278,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         return text, formatting, hyperlink, nested
 
     def _add_table(
-        self, rows: list[dict], doc: DoclingDocument, parent: NodeItem | None
+        self, rows: list[dict[str, Any]], doc: DoclingDocument, parent: NodeItem | None
     ) -> None:
         rows = [row for row in rows if row.get("type") == "table_row"]
         if not rows:
@@ -359,7 +368,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
 
         table.data.num_cols = num_cols
 
-    def _cell_is_rich(self, blocks: list[dict]) -> bool:
+    def _cell_is_rich(self, blocks: list[dict[str, Any]]) -> bool:
         """A cell is rich when it cannot be one plain-text TableCell.
 
         That covers images, multiple blocks, any non-paragraph block (lists,
@@ -391,7 +400,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
             caption = doc.add_text(label=DocItemLabel.CAPTION, text=label)
         doc.add_picture(caption=caption, parent=parent)
 
-    def _collapse(self, content: list[dict]) -> _Run:
+    def _collapse(self, content: list[dict[str, Any]]) -> _Run:
         """Reduce inline content to a single run.
 
         Headings and list items take one formatting and one hyperlink, so a
@@ -403,7 +412,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
             return runs[0]
         return "".join(text for text, _, _ in runs), None, None
 
-    def _runs(self, content: list[dict]) -> list[_Run]:
+    def _runs(self, content: list[dict[str, Any]]) -> list[_Run]:
         runs: list[_Run] = []
         for node in content or []:
             node_type = node.get("type")
@@ -416,7 +425,9 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
                 runs.append((" ", None, None))
         return runs
 
-    def _marks(self, marks: list[dict]) -> tuple[Formatting | None, AnyUrl | None]:
+    def _marks(
+        self, marks: list[dict[str, Any]]
+    ) -> tuple[Formatting | None, AnyUrl | None]:
         formatting: Formatting | None = None
         hyperlink: AnyUrl | None = None
         for mark in marks or []:
@@ -439,7 +450,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink = self._as_url(href)
         return formatting, hyperlink
 
-    def _plain_text(self, nodes: list[dict]) -> str:
+    def _plain_text(self, nodes: list[dict[str, Any]]) -> str:
         parts: list[str] = []
         for node in nodes or []:
             node_type = node.get("type")
@@ -451,7 +462,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
                 parts.append(self._plain_text(node["content"]))
         return "".join(parts)
 
-    def _cell_text(self, blocks: list[dict]) -> str:
+    def _cell_text(self, blocks: list[dict[str, Any]]) -> str:
         texts = (self._plain_text(block.get("content", [])).strip() for block in blocks)
         return " ".join(text for text in texts if text)
 

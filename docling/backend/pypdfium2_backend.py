@@ -454,7 +454,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         Returns:
             The cached ``(bbox, invisible_text)`` list for ``obj_type``.
         """
-        bucket = self._object_index.get(obj_type)
+        bucket: list[tuple[BoundingBox, bool]] | None = self._object_index.get(obj_type)
         if bucket is not None:
             return bucket
 
@@ -484,6 +484,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                 bbox = BoundingBox.from_tuple(
                     pos, origin=CoordOrigin.BOTTOMLEFT
                 ).to_top_left_origin(page_height=page_size.height)
+                assert isinstance(bbox, BoundingBox)
                 bucket.append((bbox, invisible))
 
             self._object_index[obj_type] = bucket
@@ -592,6 +593,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         with pypdfium2_lock:
             text_piece = self.text_page.get_text_bounded(*pdf_rect)
 
+        assert isinstance(text_piece, str)
         return text_piece
 
     @override
@@ -613,7 +615,6 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                 textline_cells=text_cells,
                 char_cells=[],
                 word_cells=[],
-                has_textlines=len(text_cells) > 0,
                 has_words=False,
                 has_chars=False,
             )
@@ -658,6 +659,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             size=(round(cropbox.width * scale), round(cropbox.height * scale))
         )
 
+        assert isinstance(image, Image.Image)
         return image
 
     @override
@@ -705,11 +707,15 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
     @override
     def page_count(self) -> int:
         with pypdfium2_lock:
+            if self._pdoc is None:
+                raise RuntimeError("PDF document is unloaded.")
             return len(self._pdoc)
 
     @override
     def load_page(self, page_no: int) -> PyPdfiumPageBackend:
         with pypdfium2_lock:
+            if self._pdoc is None:
+                raise RuntimeError("PDF document is unloaded.")
             return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
 
     @override

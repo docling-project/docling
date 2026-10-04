@@ -79,7 +79,7 @@ class LatexDocumentBackend(
         self._input_stack: set[str] = set()
         self._tectonic_engine: TectonicEngine | None = None
         self._tikz_executor: concurrent.futures.ThreadPoolExecutor | None = None
-        self._tikz_futures: list[concurrent.futures.Future] = []
+        self._tikz_futures: list[concurrent.futures.Future[None]] = []
         self.latex_text = decode_latex_content(self.path_or_stream)
 
     @override
@@ -131,7 +131,7 @@ class LatexDocumentBackend(
 
         workers = max(1, (os.cpu_count() or 2) - 1)
         self._tikz_executor = concurrent.futures.ThreadPoolExecutor(max_workers=workers)
-        self._tikz_futures = []  # type: ignore
+        self._tikz_futures = []
 
         try:
             self._extract_custom_macros(nodes)

@@ -33,6 +33,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -216,8 +217,9 @@ class AfpDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
+        options: BackendOptions | None = None,
     ) -> None:
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, options)
         self.page_range = in_doc.limits.page_range
         try:
             self.content = (

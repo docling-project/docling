@@ -26,7 +26,7 @@ def decode_latex_content(path_or_stream: Union[BytesIO, Path]) -> str:
         if not latex_text:
             _log.warning("Failed to decode LaTeX content, using replacement mode")
             latex_text = raw_bytes.decode("utf-8", errors="replace")
-    elif isinstance(path_or_stream, Path):
+    else:
         for encoding in _ENCODINGS:
             try:
                 with open(path_or_stream, encoding=encoding) as f:

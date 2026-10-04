@@ -50,7 +50,7 @@ class MathHandlerMixin:
             pattern = rf"\\begin\{{{re.escape(env_name)}\}}(.*?)\\end\{{{re.escape(env_name)}\}}"
             match = re.search(pattern, latex_str, re.DOTALL)
             if match:
-                latex_str = match.group(1)
+                latex_str = str(match.group(1))
 
         latex_str = latex_str.strip()
 

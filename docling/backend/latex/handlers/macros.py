@@ -47,6 +47,8 @@ try:  # pragma: no cover - import-time guard
         LatexEnvironmentNode,
         LatexGroupNode,
         LatexMacroNode,
+        LatexMathNode,
+        LatexNode,
         LatexWalker,
         LatexWalkerParseError,
     )
@@ -544,7 +546,7 @@ class MacroHandlerMixin:
             if arg:
                 if hasattr(arg, "nodelist"):
                     return self._nodes_to_text(arg.nodelist)
-                return arg.latex_verbatim().strip("{} ")
+                return str(arg.latex_verbatim()).strip("{} ")
         return ""
 
     def _extract_macro_arg_by_index(self, node: LatexMacroNode, index: int) -> str:
@@ -554,15 +556,27 @@ class MacroHandlerMixin:
                 if arg:
                     if hasattr(arg, "nodelist"):
                         return self._nodes_to_text(arg.nodelist)
-                    return arg.latex_verbatim().strip("{} ")
+                    return str(arg.latex_verbatim()).strip("{} ")
         return ""
 
-    def _extract_macro_arg_nodes(self, node: LatexMacroNode, index: int) -> list:
+    def _extract_macro_arg_nodes(
+        self, node: LatexMacroNode, index: int
+    ) -> list[LatexNode]:
         if node.nodeargd and node.nodeargd.argnlist:
             if 0 <= index < len(node.nodeargd.argnlist):
                 arg = node.nodeargd.argnlist[index]
-                if arg and hasattr(arg, "nodelist"):
-                    return arg.nodelist
+                if isinstance(
+                    arg, (LatexGroupNode, LatexEnvironmentNode, LatexMathNode)
+                ):
+                    nodes = arg.nodelist
+                    if nodes is None:
+                        return []
+                    assert isinstance(nodes, list)
+                    typed_nodes: list[LatexNode] = []
+                    for child in nodes:
+                        assert isinstance(child, LatexNode)
+                        typed_nodes.append(child)
+                    return typed_nodes
         return []
 
     def _extract_all_macro_args_inline(self, node: LatexMacroNode) -> str:

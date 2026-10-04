@@ -263,7 +263,7 @@ def iwa_current_cell(storage: bytes, start: int, values: CellValues) -> Cell | N
             decoded = decoded._replace(
                 text=values.strings.get(read_uint32(storage, offset))
             )
-        elif flag == CELL_FLAG_RICH_TEXT:
+        else:
             decoded = decoded._replace(
                 text=values.rich_text.get(read_uint32(storage, offset))
             )

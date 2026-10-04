@@ -27,6 +27,7 @@ from docling_core.types.doc.webvtt import (
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -40,7 +41,7 @@ class AnnotatedText:
     voice: str | None = None
     formatting: Formatting | None = None
 
-    def copy_meta(self, text):
+    def copy_meta(self, text: str) -> "AnnotatedText":
         return AnnotatedText(
             text=text,
             voice=self.voice,
@@ -64,8 +65,13 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
     """
 
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: BackendOptions | None = None,
+    ):
+        super().__init__(in_doc, path_or_stream, options)
 
         self.content: str = ""
         # utf-8-sig drops a leading BOM. The WebVTT file body grammar allows an

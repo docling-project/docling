@@ -110,7 +110,7 @@ def escape_latex(strs: str) -> str:
     return BLANK.join(new_chr)
 
 
-def get_val(key: str | None, default: str, store: dict | None = CHR) -> str:
+def get_val(key: str | None, default: str, store: dict[str, str] | None = CHR) -> str:
     """Get a value from a dictionary store or return the key/default.
 
     When default is provided, this function always returns a non-None string.
@@ -146,7 +146,9 @@ class Tag2Method:
         """
         getmethod = self.tag2meth.get
         if stag is None:
-            stag = elm.tag.replace(OMML_NS, "")
+            tag = elm.tag
+            assert isinstance(tag, str)
+            stag = str(tag).replace(OMML_NS, "")
         method = getmethod(stag)
         if method:
             return method(self, elm)
@@ -232,7 +234,7 @@ class Pr(Tag2Method):
 
     text: str
     __val_tags: tuple[str, ...]
-    __innerdict: dict[str, Any]
+    __innerdict: dict[str, str | None]
 
     def __init__(self, elm: _Element):
         """Initialize properties processor.
@@ -253,7 +255,7 @@ class Pr(Tag2Method):
         """Return unicode representation."""
         return self.__str__()
 
-    def __getattr__(self, name: str) -> Any | None:
+    def __getattr__(self, name: str) -> str | None:
         """Get attribute from internal dictionary.
 
         Args:
@@ -387,6 +389,7 @@ class oMath2Latex(Tag2Method):
         """
         c_dict = self.process_children_dict(elm)
         pr = c_dict["barPr"]
+        assert isinstance(pr, Pr)
         latex_s = get_val(pr.pos, default=POS_DEFAULT["BAR_VAL"], store=POS)
         # If latex_s contains %s, format it; otherwise return as-is (unmapped character)
         if "%s" in latex_s:
@@ -405,6 +408,7 @@ class oMath2Latex(Tag2Method):
         """
         c_dict = self.process_children_dict(elm)
         pr = c_dict["dPr"]
+        assert isinstance(pr, Pr)
         null = D_DEFAULT["null"]
 
         s_val = get_val(pr.begChr, default=D_DEFAULT["left"], store=T)
@@ -470,10 +474,11 @@ class oMath2Latex(Tag2Method):
         """
         c_dict = self.process_children_dict(elm, include=("e", "sub", "sSubPr"))
         base = c_dict.get("e", "").rstrip()
+        assert isinstance(base, str)
         sub = self._unwrap_script(c_dict.get("sub", ""), "_")
         if self._needs_grouping(base):
             base = "{" + base + "}"
-        return base + (SUB % sub)
+        return f"{base}_{{{sub}}}"
 
     def do_ssup(self, elm: _Element) -> str:
         """Process superscript element.
@@ -486,10 +491,11 @@ class oMath2Latex(Tag2Method):
         """
         c_dict = self.process_children_dict(elm, include=("e", "sup", "sSupPr"))
         base = c_dict.get("e", "").rstrip()
+        assert isinstance(base, str)
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
             base = "{" + base + "}"
-        return base + (SUP % sup)
+        return f"{base}^{{{sup}}}"
 
     def do_ssubsup(self, elm: _Element) -> str:
         """Process combined sub-superscript element.
@@ -504,11 +510,12 @@ class oMath2Latex(Tag2Method):
             elm, include=("e", "sub", "sup", "sSubSupPr")
         )
         base = c_dict.get("e", "").rstrip()
+        assert isinstance(base, str)
         sub = self._unwrap_script(c_dict.get("sub", ""), "_")
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
             base = "{" + base + "}"
-        return base + (SUB % sub) + (SUP % sup)
+        return f"{base}_{{{sub}}}^{{{sup}}}"
 
     def do_sub(self, elm: _Element) -> str:
         """Process standalone subscript content.
@@ -551,6 +558,7 @@ class oMath2Latex(Tag2Method):
                 "num": c_dict.get("num"),
                 "den": c_dict.get("den"),
             }
+        assert isinstance(pr, Pr)
         latex_s = get_val(pr.type, default=F_DEFAULT, store=F)
         return pr.text + (
             latex_s % {"num": c_dict.get("num"), "den": c_dict.get("den")}
@@ -567,6 +575,7 @@ class oMath2Latex(Tag2Method):
         """
         c_dict = self.process_children_dict(elm)
         func_name = c_dict.get("fName", "")
+        assert isinstance(func_name, str)
         return func_name.replace(FUNC_PLACE, c_dict.get("e", ""))
 
     def do_fname(self, elm: _Element) -> str:
@@ -606,6 +615,7 @@ class oMath2Latex(Tag2Method):
         """
         c_dict = self.process_children_dict(elm)
         pr = c_dict["groupChrPr"]
+        assert isinstance(pr, Pr)
         latex_s = get_val(pr.chr, default=CHR_DEFAULT["GROUPCHR_VAL"], store=CHR)
         # If latex_s contains %s, format it; otherwise return as-is (unmapped character)
         if "%s" in latex_s:
@@ -784,7 +794,7 @@ class oMath2Latex(Tag2Method):
         if s in self._MATH_CHAR_MAP:
             return self._MATH_CHAR_MAP[s]
 
-        out_latex_str = self.u.unicode_to_latex(s)
+        out_latex_str = str(self.u.unicode_to_latex(s))
 
         if (
             s.startswith("{") is False

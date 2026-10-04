@@ -25,7 +25,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -61,7 +61,11 @@ from docling.backend.abstract_backend import (
     PaginatedDocumentBackend,
 )
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
-from docling.datamodel.backend_options import OdsBackendOptions
+from docling.datamodel.backend_options import (
+    BackendOptions,
+    BaseBackendOptions,
+    OdsBackendOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -77,7 +81,9 @@ try:  # pragma: no cover - import-time guard
         ListItem,
         Paragraph,
         Section,
+        Style,
         Table as OdfTable,
+        XmlPart,
     )
 
     _ODFDO_AVAILABLE = True
@@ -149,6 +155,23 @@ def _load_odf_document(
         ) from e
 
 
+class _OdsTableRegion(TypedDict):
+    bounds: tuple[int, int, int, int]
+    data: TableData
+
+
+class _OdfCellData(TypedDict):
+    text: str
+    row_span: int
+    col_span: int
+    start_row_offset_idx: int
+    end_row_offset_idx: int
+    start_col_offset_idx: int
+    end_col_offset_idx: int
+    column_header: bool
+    row_header: bool
+
+
 class _OdfBaseBackend(DeclarativeDocumentBackend):
     """Shared loading / validation logic for ODT, ODS and ODP backends."""
 
@@ -159,12 +182,12 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: OdsBackendOptions | None = None,
+        options: BackendOptions | None = None,
     ) -> None:
         if not _ODFDO_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _ODFDO_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream, options)
-        self.path_or_stream: BytesIO | Path = path_or_stream
+        self.path_or_stream: BytesIO | Path | None = path_or_stream
         self.page_range = in_doc.limits.page_range
         self.valid: bool = False
         self.odf_obj: OdfDocument = _load_odf_document(
@@ -315,7 +338,7 @@ def _formatting_from_odf_text_style(
         return _formatting_or_none(formatting)
 
     style = odf_obj.get_style("text", style_name)
-    if style is None:
+    if not isinstance(style, Style):
         return _formatting_or_none(formatting)
 
     props = style.get_properties() or {}
@@ -331,7 +354,7 @@ def _formatting_from_odf_text_style(
         ),
         None,
     )
-    if font_weight is not None:
+    if isinstance(font_weight, str):
         formatting.bold = _is_bold_weight(font_weight)
 
     font_style = next(
@@ -360,7 +383,7 @@ def _formatting_from_odf_text_style(
         formatting.strikethrough = line_through != "none"
 
     text_position = props.get("style:text-position")
-    if text_position is not None:
+    if isinstance(text_position, str):
         if text_position.startswith("super"):
             formatting.script = Script.SUPER
         elif text_position.startswith("sub"):
@@ -480,7 +503,7 @@ def _add_odf_text_runs(
     if not runs:
         return None
     if len(runs) == 1:
-        return doc.add_text(
+        item = doc.add_text(
             label=label,
             parent=parent,
             text=runs[0].text,
@@ -488,6 +511,9 @@ def _add_odf_text_runs(
             formatting=runs[0].formatting,
             hyperlink=runs[0].hyperlink,
         )
+
+        assert isinstance(item, NodeItem)
+        return item
 
     inline_group = doc.add_inline_group(parent=parent, content_layer=content_layer)
     for run in runs:
@@ -770,7 +796,7 @@ def _odf_list_level_style(
         return None
 
     style = odf_obj.get_style("list", style_name)
-    if style is None:
+    if not isinstance(style, Style):
         return None
 
     return style.get_level_style(level)
@@ -785,7 +811,7 @@ def _odf_list_level_is_enumerated(
     level_style = _odf_list_level_style(odf_obj, odf_list, level)
     if level_style is None:
         return fallback
-    return level_style.tag == "text:list-level-style-number"
+    return bool(level_style.tag == "text:list-level-style-number")
 
 
 def _odf_list_start_value(
@@ -901,11 +927,15 @@ def _image_ref_from_odf_image(
     image_data: bytes | None = None
     get_data = getattr(image, "get_data", None)
     if callable(get_data):
-        image_data = get_data()
+        data = get_data()
+        if isinstance(data, bytes):
+            image_data = data
 
     if image_data is None and odf_obj is not None and image_url:
         try:
-            image_data = odf_obj.get_part(image_url)
+            part = odf_obj.get_part(image_url)
+            if isinstance(part, bytes):
+                image_data = part
         except Exception:
             image_data = None
 
@@ -923,15 +953,16 @@ def _image_ref_from_odf_image(
 
 
 def _odf_image_href(image: Any) -> str | None:
-    return getattr(image, "url", None) or getattr(image, "attributes", {}).get(
+    href = getattr(image, "url", None) or getattr(image, "attributes", {}).get(
         "xlink:href"
     )
+    return str(href) if href is not None else None
 
 
 def _odf_image_can_be_bitmap(image: Any, image_url: str | None) -> bool:
     mime_type = getattr(image, "attributes", {}).get("draw:mime-type")
     if mime_type is not None:
-        return mime_type.startswith("image/") and mime_type != "image/svg+xml"
+        return bool(mime_type.startswith("image/") and mime_type != "image/svg+xml")
 
     if image_url is None:
         return True
@@ -974,7 +1005,7 @@ def _strip_odf_image_reference_text(text: str, images: list[Any]) -> str:
 def _add_odf_images(
     doc: DoclingDocument,
     images: list[Any],
-    parent: NodeItem,
+    parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
     *,
@@ -1143,7 +1174,7 @@ def _odf_chart_title(chart_content: Any) -> str | None:
     for title in chart_content.get_elements("descendant::chart:title"):
         text = title.text_content.strip()
         if text:
-            return text
+            return str(text)
     return None
 
 
@@ -1163,6 +1194,8 @@ def _chart_data_from_frame(
 
     try:
         chart_content = odf_obj.get_part(_embedded_odf_content_path(object_href))
+        if not isinstance(chart_content, XmlPart):
+            return None
         # odfdo resolves XML parts lazily, so a reference to a part that is missing
         # from the package only fails once the part is actually read.
         chart_classification = _odf_chart_classification(chart_content)
@@ -1238,7 +1271,7 @@ def _add_odf_charts(
 def _add_odf_list(
     doc: DoclingDocument,
     odf_list: OdfList,
-    parent: NodeItem,
+    parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
     enumerated: bool = False,
@@ -1283,7 +1316,7 @@ def _add_odf_list(
                 )
         return None
 
-    if should_continue and continued_state is not None:
+    if should_continue:
         list_group = continued_state.group
         current_enumerated = continued_state.enumerated
         counter = continued_state.counter
@@ -1392,7 +1425,7 @@ def _add_odf_list(
 def _add_rich_cell_children(
     doc: DoclingDocument,
     cell: Any,
-    parent: NodeItem,
+    parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
     image_loader: ImageResourceLoader | None = None,
@@ -1460,7 +1493,7 @@ def _add_table_from_odf(
             adjusted_row = row_idx - min_row
             adjusted_col = col_idx - min_col
             text = _odf_cell_text(cell)
-            cell_kwargs = {
+            cell_kwargs: _OdfCellData = {
                 "text": text,
                 "row_span": row_span,
                 "col_span": col_span,
@@ -1493,6 +1526,7 @@ def _add_table_from_odf(
 
             doc.add_table_cell(table_item=table_item, cell=table_cell)
 
+    assert isinstance(table_item, TableItem)
     return table_item
 
 
@@ -1741,8 +1775,8 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         attrs = getattr(element, "attributes", {})
         if attrs.get("presentation:class") == "title":
             return True
-        return is_first_text_content and getattr(element, "tag", None) == (
-            "draw:custom-shape"
+        return is_first_text_content and bool(
+            getattr(element, "tag", None) == "draw:custom-shape"
         )
 
     def _walk_slide_frame(
@@ -1762,6 +1796,8 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         )
 
         for tbl in frame.get_elements("descendant::table:table"):
+            if not isinstance(tbl, OdfTable):
+                continue
             _add_table_from_odf(
                 doc,
                 tbl,
@@ -1843,10 +1879,12 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: OdsBackendOptions | None = None,
+        options: BaseBackendOptions | None = None,
     ) -> None:
         if options is None:
             options = OdsBackendOptions()
+        if not isinstance(options, OdsBackendOptions):
+            raise TypeError("Expected OdsBackendOptions.")
         super().__init__(in_doc, path_or_stream, options)
 
     @classmethod
@@ -2004,9 +2042,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     odf_obj=self.odf_obj,
                 )
 
-    def _find_data_tables_in_sheet(
-        self, table: OdfTable
-    ) -> list[dict[str, tuple[int, int, int, int] | TableData]]:
+    def _find_data_tables_in_sheet(self, table: OdfTable) -> list[_OdsTableRegion]:
         """Find all disconnected data tables in an ODS sheet using flood-fill.
 
         Returns a list of dictionaries, each containing:
@@ -2032,7 +2068,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 return []
 
         GAP_TOLERANCE = cast(OdsBackendOptions, self.options).gap_tolerance
-        tables: list[dict[str, tuple[int, int, int, int] | TableData]] = []
+        tables: list[_OdsTableRegion] = []
         visited: set[tuple[int, int]] = set()
 
         # Build a map of cell contents for quick lookup
@@ -2126,15 +2162,15 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             # Get all images in the table
             images = table.get_images()
             for img in images:
+                # Rich cells own their images; this pass handles sheet drawings.
+                if img.get_elements("ancestor::table:table-cell"):
+                    continue
                 try:
                     # Get the image data
-                    image_data = img.get_data()
-                    if image_data:
-                        # Convert to PIL Image
-                        from io import BytesIO
-
-                        pil_image = PILImage.open(BytesIO(image_data))
-
+                    image_ref = _image_ref_from_odf_image(
+                        self.odf_obj, img, image_loader=self._image_loader
+                    )
+                    if image_ref is not None:
                         # Try to get position information
                         # ODF images are typically anchored to cells
                         # For now, use a default position
@@ -2142,7 +2178,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 
                         doc.add_picture(
                             parent=parent,
-                            image=ImageRef.from_pil(image=pil_image, dpi=72),
+                            image=image_ref,
                             caption=None,
                             prov=ProvenanceItem(
                                 page_no=page_no,
@@ -2170,8 +2206,6 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:
-                if provenance.bbox is None:
-                    continue
                 bbox = provenance.bbox
                 left = min(left, bbox.l) if left != -1 else bbox.l
                 right = max(right, bbox.r) if right != -1 else bbox.r

@@ -117,7 +117,9 @@ class TextHelperMixin:
             return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
         return latex_str
 
-    def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
+    def _macro_node_to_text(
+        self, node: LatexMacroNode, following_nodes
+    ) -> tuple[str, int]:
         """Return ``(text, consumed_following)`` for a single macro node."""
         consumed = 0
         if node.macroname in (MACROS_TEXT_FORMATTING | MACROS_TEXT_STYLE):
@@ -130,7 +132,7 @@ class TextHelperMixin:
                     return (self._nodes_to_text(text_arg.nodelist), consumed)
             return ("", consumed)
         if node.macroname in MACROS_CITATION:
-            return (node.latex_verbatim(), consumed)
+            return (str(node.latex_verbatim()), consumed)
         if node.macroname == "\\":
             return ("\n", consumed)
         if node.macroname in ["~"]:
@@ -143,7 +145,7 @@ class TextHelperMixin:
                     return (f"{opt_text}: ", consumed)
             return ("", consumed)
         if node.macroname in MACROS_ESCAPED:
-            return (node.macroname, consumed)
+            return (str(node.macroname), consumed)
         if node.macroname in self._custom_macros:
             expansion, consumed = self._expand_custom_macro_invocation(
                 node, following_nodes

@@ -32,6 +32,7 @@ from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.backend_options import (
+    BaseBackendOptions,
     EbcdicBackendOptions,
     EbcdicField,
     EbcdicFieldType,
@@ -221,10 +222,12 @@ class EbcdicDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: Union[EbcdicBackendOptions, None] = None,
+        options: Union[BaseBackendOptions, None] = None,
     ) -> None:
         if options is None:
             options = EbcdicBackendOptions()
+        if not isinstance(options, EbcdicBackendOptions):
+            raise TypeError("Expected EbcdicBackendOptions.")
         super().__init__(in_doc, path_or_stream, options)
 
         self.layout = self._resolve_layout()
