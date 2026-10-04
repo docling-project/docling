@@ -473,25 +473,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         if options is None:
             options = HTMLBackendOptions()
-        if not isinstance(options, HTMLBackendOptions):
-            raise TypeError("Expected HTMLBackendOptions.")
-        super().__init__(in_doc, path_or_stream, options)
+        super().__init__(in_doc, path_or_stream, typed_options)
+        typed_options = cast(HTMLBackendOptions, options)
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
         self.path_or_stream: Union[BytesIO, Path, None] = path_or_stream
         configured_base_path: Optional[str] = (
-            str(options.source_uri) if options.source_uri is not None else None
+            str(typed_options.source_uri)
+            if typed_options.source_uri is not None
+            else None
         )
         self.base_path = configured_base_path
         self._mhtml_resources: dict[str, bytes] | None = None
         self._image_loader = ImageResourceLoader(
-            enable_local_fetch=options.enable_local_fetch,
-            enable_remote_fetch=options.enable_remote_fetch,
-            max_image_data_base64_bytes=options.max_image_data_base64_bytes,
-            max_remote_image_bytes=options.max_remote_image_bytes,
-            max_redirects=options.max_redirects,
-            headers=options.headers,
-            header_origins=self._get_header_origins(options, configured_base_path),
+            enable_local_fetch=typed_options.enable_local_fetch,
+            enable_remote_fetch=typed_options.enable_remote_fetch,
+            max_image_data_base64_bytes=typed_options.max_image_data_base64_bytes,
+            max_remote_image_bytes=typed_options.max_remote_image_bytes,
+            max_redirects=typed_options.max_redirects,
+            headers=typed_options.headers,
+            header_origins=self._get_header_origins(
+                typed_options, configured_base_path
+            ),
         )
 
         # Initialize the parents for the hierarchy
@@ -524,7 +527,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 else Path(path_or_stream).read_bytes()
             )
             if self.input_format == InputFormat.MHTML:
-                if options.render_page:
+                if typed_options.render_page:
                     raise DocumentLoadError(
                         "Browser rendering is not supported for MHTML input."
                     )
