@@ -63,6 +63,15 @@ def _failed_request(reason: str) -> ApiImageRequestResult:
     )
 
 
+def _failed_streaming_request(reason: str) -> ApiImageStreamingRequestResult:
+    """Streaming counterpart of ``_failed_request``.
+
+    Text streamed before the failure is dropped: the output is incomplete, and
+    the pipelines treat a failed request as producing no output.
+    """
+    return ApiImageStreamingRequestResult(text="", num_tokens=0, error=reason)
+
+
 def _extract_text_from_tool_arguments(arguments: str | None) -> str:
     if arguments is None:
         return ""
@@ -304,137 +313,161 @@ def api_image_request_streaming(
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
     Accumulates text and calls stopper.should_stop(window) as chunks arrive.
     If stopper triggers, the HTTP connection is closed to abort server-side generation.
+
+    A failed request (HTTP error, timeout, dropped connection) does not raise:
+    like ``api_image_request``, it returns an empty result with ``error`` set,
+    so one failing page does not abort the document.
     """
     img_io = BytesIO()
-    image.save(img_io, "PNG")
-    image_b64 = base64.b64encode(img_io.getvalue()).decode("utf-8")
+    good_image = True
+    try:
+        image.save(img_io, "PNG")
+    except Exception as e:
+        good_image = False
+        _log.error(f"Error, corrupted PNG of size: {image.size}: {e}")
 
-    messages = [
-        {
-            "role": "user",
-            "content": [
+    if good_image:
+        try:
+            image_b64 = base64.b64encode(img_io.getvalue()).decode("utf-8")
+
+            messages = [
                 {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/png;base64,{image_b64}"},
-                },
-                {"type": "text", "text": prompt},
-            ],
-        }
-    ]
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                        },
+                        {"type": "text", "text": prompt},
+                    ],
+                }
+            ]
 
-    payload = {
-        "messages": messages,
-        "stream": True,  # <-- critical for SSE streaming
-        **params,
-    }
+            payload = {
+                "messages": messages,
+                "stream": True,  # <-- critical for SSE streaming
+                **params,
+            }
 
-    # Debug: Log the payload to verify temperature is included
-    _log.debug(f"API streaming request payload: {json.dumps(payload, indent=2)}")
-
-    # Some servers require Accept: text/event-stream for SSE.
-    # It's safe to set it; OpenAI-compatible servers tolerate it.
-    hdrs = {"Accept": "text/event-stream", **(headers or {})}
-
-    # Try to force temperature via header if server ignores payload parameter
-    if "temperature" in params:
-        hdrs["X-Temperature"] = str(params["temperature"])
-
-    # Stream the HTTP response
-    with _make_retry_session() as session:
-        with session.post(
-            str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
-        ) as r:
-            if not r.ok:
-                _log.error(
-                    f"Error calling the API {url} in streaming mode. "
-                    f"Response was {r.text}"
-                )
-            r.raise_for_status()
-
-            full_text = []
-            usage_payload = None
-            num_tokens = None
-            # Servers send logprobs per chunk; collect them so the streamed
-            # result exposes the same OpenAiResponseLogprobs as a non-streamed one.
-            logprob_content: list[OpenAiTokenLogprob] = []
-            logprob_refusal: list[OpenAiTokenLogprob] = []
-            usage_key = _resolve_usage_response_key(
-                usage_response_key=usage_response_key,
-                token_extract_key=token_extract_key,
+            # Debug: Log the payload to verify temperature is included
+            _log.debug(
+                f"API streaming request payload: {json.dumps(payload, indent=2)}"
             )
 
-            def _result() -> ApiImageStreamingRequestResult:
-                logprobs = None
-                if logprob_content or logprob_refusal:
-                    logprobs = OpenAiResponseLogprobs(
-                        content=logprob_content or None,
-                        refusal=logprob_refusal or None,
-                    )
-                return ApiImageStreamingRequestResult(
-                    text="".join(full_text),
-                    num_tokens=num_tokens,
-                    usage=usage_payload,
-                    logprobs=logprobs,
-                )
+            # Some servers require Accept: text/event-stream for SSE.
+            # It's safe to set it; OpenAI-compatible servers tolerate it.
+            hdrs = {"Accept": "text/event-stream", **(headers or {})}
 
-            for raw_line in r.iter_lines(decode_unicode=True):
-                if not raw_line:  # keep-alives / blank lines
-                    continue
-                if not raw_line.startswith("data:"):
-                    # Some proxies inject comments; ignore anything not starting with 'data:'
-                    continue
+            # Try to force temperature via header if server ignores payload parameter
+            if "temperature" in params:
+                hdrs["X-Temperature"] = str(params["temperature"])
 
-                data = raw_line[len("data:") :].strip()
-                if data == "[DONE]":
-                    break
-
-                try:
-                    obj = json.loads(data)
-                except json.JSONDecodeError:
-                    _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
-                    continue
-
-                # OpenAI-compatible delta format
-                # obj["choices"][0]["delta"]["content"] may be None or missing
-                # (e.g., tool calls)
-                try:
-                    choice = obj["choices"][0]
-                    delta = choice.get("delta") or {}
-                    piece = delta.get("content") or ""
-                    raw_logprobs = choice.get("logprobs")
-                except (KeyError, IndexError) as e:
-                    _log.debug("Unexpected SSE chunk shape: %s", e)
-                    piece = ""
-                    raw_logprobs = None
-
-                usage = _extract_response_usage(obj, usage_key)
-                if usage is not None:
-                    usage_payload = usage
-                    num_tokens = _extract_total_tokens(usage)
-
-                if raw_logprobs:
-                    try:
-                        chunk_logprobs = OpenAiResponseLogprobs.model_validate(
-                            raw_logprobs
+            # Stream the HTTP response
+            with _make_retry_session() as session:
+                with session.post(
+                    str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
+                ) as r:
+                    if not r.ok:
+                        _log.error(
+                            "Error calling the API in streaming mode. "
+                            "status=%s content_type=%s response=%r",
+                            r.status_code,
+                            r.headers.get("content-type"),
+                            _response_preview(r.text),
                         )
-                    except ValidationError as e:
-                        _log.debug("Skipping malformed SSE logprobs: %s", e)
-                    else:
-                        logprob_content.extend(chunk_logprobs.content or [])
-                        logprob_refusal.extend(chunk_logprobs.refusal or [])
+                        return _failed_streaming_request(
+                            f"HTTP {r.status_code}: {_response_preview(r.text)}"
+                        )
 
-                if piece:
-                    full_text.append(piece)
-                    for stopper in generation_stoppers:
-                        # Respect stopper's lookback window. We use a simple string window
-                        # which works with the GenerationStopper interface.
-                        lookback = max(1, stopper.lookback_tokens())
-                        window = "".join(full_text)[-lookback:]
-                        if stopper.should_stop(window):
-                            # Break out of the loop cleanly. The context manager will handle
-                            # closing the connection when we exit the 'with' block.
-                            # vLLM/OpenAI-compatible servers will detect the client
-                            # disconnect and abort the request server-side.
-                            return _result()
+                    full_text = []
+                    usage_payload = None
+                    num_tokens = None
+                    # Servers send logprobs per chunk; collect them so the streamed
+                    # result exposes the same OpenAiResponseLogprobs as a non-streamed one.
+                    logprob_content: list[OpenAiTokenLogprob] = []
+                    logprob_refusal: list[OpenAiTokenLogprob] = []
+                    usage_key = _resolve_usage_response_key(
+                        usage_response_key=usage_response_key,
+                        token_extract_key=token_extract_key,
+                    )
 
-            return _result()
+                    def _result() -> ApiImageStreamingRequestResult:
+                        logprobs = None
+                        if logprob_content or logprob_refusal:
+                            logprobs = OpenAiResponseLogprobs(
+                                content=logprob_content or None,
+                                refusal=logprob_refusal or None,
+                            )
+                        return ApiImageStreamingRequestResult(
+                            text="".join(full_text),
+                            num_tokens=num_tokens,
+                            usage=usage_payload,
+                            logprobs=logprobs,
+                        )
+
+                    for raw_line in r.iter_lines(decode_unicode=True):
+                        if not raw_line:  # keep-alives / blank lines
+                            continue
+                        if not raw_line.startswith("data:"):
+                            # Some proxies inject comments; ignore anything not starting with 'data:'
+                            continue
+
+                        data = raw_line[len("data:") :].strip()
+                        if data == "[DONE]":
+                            break
+
+                        try:
+                            obj = json.loads(data)
+                        except json.JSONDecodeError:
+                            _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
+                            continue
+
+                        # OpenAI-compatible delta format
+                        # obj["choices"][0]["delta"]["content"] may be None or missing
+                        # (e.g., tool calls)
+                        try:
+                            choice = obj["choices"][0]
+                            delta = choice.get("delta") or {}
+                            piece = delta.get("content") or ""
+                            raw_logprobs = choice.get("logprobs")
+                        except (KeyError, IndexError) as e:
+                            _log.debug("Unexpected SSE chunk shape: %s", e)
+                            piece = ""
+                            raw_logprobs = None
+
+                        usage = _extract_response_usage(obj, usage_key)
+                        if usage is not None:
+                            usage_payload = usage
+                            num_tokens = _extract_total_tokens(usage)
+
+                        if raw_logprobs:
+                            try:
+                                chunk_logprobs = OpenAiResponseLogprobs.model_validate(
+                                    raw_logprobs
+                                )
+                            except ValidationError as e:
+                                _log.debug("Skipping malformed SSE logprobs: %s", e)
+                            else:
+                                logprob_content.extend(chunk_logprobs.content or [])
+                                logprob_refusal.extend(chunk_logprobs.refusal or [])
+
+                        if piece:
+                            full_text.append(piece)
+                            for stopper in generation_stoppers:
+                                # Respect stopper's lookback window. We use a simple string window
+                                # which works with the GenerationStopper interface.
+                                lookback = max(1, stopper.lookback_tokens())
+                                window = "".join(full_text)[-lookback:]
+                                if stopper.should_stop(window):
+                                    # Break out of the loop cleanly. The context manager will handle
+                                    # closing the connection when we exit the 'with' block.
+                                    # vLLM/OpenAI-compatible servers will detect the client
+                                    # disconnect and abort the request server-side.
+                                    return _result()
+
+                    return _result()
+        except Exception as e:
+            _log.error(f"Error, could not process request: {e}")
+            return _failed_streaming_request(f"{type(e).__name__}: {e}")
+    else:
+        return _failed_streaming_request("Could not encode the page image as PNG")

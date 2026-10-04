@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from PIL.Image import Image
 
+from docling.datamodel.base_models import VlmStopReason
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.inference_engines.vlm._utils import (
@@ -171,12 +172,16 @@ class ApiVlmEngine(BaseVlmEngine):
                 )
                 generated_text = api_response.text
                 num_tokens = api_response.num_tokens
+                error = api_response.error
 
-                # Check if stopped by custom criteria
-                for stopper in custom_stoppers:
-                    if stopper.should_stop(generated_text):
-                        stop_reason = "custom_criteria"
-                        break
+                if error is not None:
+                    stop_reason = VlmStopReason.INFERENCE_ERROR
+                else:
+                    # Check if stopped by custom criteria
+                    for stopper in custom_stoppers:
+                        if stopper.should_stop(generated_text):
+                            stop_reason = "custom_criteria"
+                            break
             else:
                 # Non-streaming path
                 api_response = api_image_request(

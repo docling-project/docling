@@ -162,6 +162,9 @@ class ApiVlmModel(BaseVlmPageModel):
                 )
                 page_tags = api_response.text
                 num_tokens = api_response.num_tokens
+                error_message = api_response.error
+                if error_message is not None:
+                    stop_reason = VlmStopReason.INFERENCE_ERROR
             else:
                 # Non-streaming fallback (existing behavior)
                 api_response = api_image_request(

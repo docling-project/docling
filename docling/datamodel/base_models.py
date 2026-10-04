@@ -425,6 +425,7 @@ class ApiImageStreamingRequestResult:
     num_tokens: int | None
     usage: Any | None = None
     logprobs: Any | None = None
+    error: str | None = None  # set when the request failed and produced no output
 
 
 class ContainerElement(

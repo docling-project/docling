@@ -48,12 +48,16 @@ class FakeOpenAiApi:
     completion_tokens: int = 7
     #: Set to omit the usage block, as some gateways do.
     report_usage: bool = True
-    #: Held open before responding, to drive client read timeouts.
+    #: Held open before responding (or mid-stream, with ``stream_stall_after``),
+    #: to drive client read timeouts.
     delay_seconds: float = 0.0
     #: Non-2xx status to answer with instead of a completion.
     fail_status: int | None = None
     #: Emitted verbatim before the data chunks; proxies inject comments here.
     stream_preamble: list[str] = field(default_factory=list)
+    #: Go silent for ``delay_seconds`` after this many stream chunks, to drive a
+    #: client read timeout in the middle of a stream.
+    stream_stall_after: int | None = None
     router: APIRouter = field(init=False)
     #: Set by the fixture once the server is bound, so tests can reach it.
     service: Any = field(init=False, default=None)
@@ -98,6 +102,8 @@ class FakeOpenAiApi:
         for line in self.stream_preamble:
             yield f"{line}\n\n".encode()
         for i, piece in enumerate(self._chunks()):
+            if i == self.stream_stall_after:
+                await asyncio.sleep(self.delay_seconds)
             choice: dict[str, Any] = {"index": 0, "delta": {"content": piece}}
             if i < len(self.stream_logprobs):
                 choice["logprobs"] = {
@@ -138,7 +144,7 @@ class FakeOpenAiApi:
         async def chat_completions(request: Request) -> Any:
             payload = json.loads(await request.body())
             model = payload.get("model")
-            if self.delay_seconds:
+            if self.delay_seconds and self.stream_stall_after is None:
                 await asyncio.sleep(self.delay_seconds)
             if self.fail_status is not None:
                 return JSONResponse(
