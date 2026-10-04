@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from statistics import median
 
@@ -68,7 +68,9 @@ class ReadingOrderModel:
         page_no_to_pages = {p.page_no: p for p in conv_res.pages}
 
         for element in conv_res.assembled.elements:
-            page_height = page_no_to_pages[element.page_no].size.height  # type: ignore
+            page_size = page_no_to_pages[element.page_no].size
+            assert page_size is not None
+            page_height = page_size.height
             bbox = element.cluster.bbox.to_bottom_left_origin(page_height)
             text = element.text or ""
 
@@ -78,7 +80,7 @@ class ReadingOrderModel:
                     ref=RefItem(cref=self._element_ref(element)),
                     text=text,
                     page_no=element.page_no,
-                    page_size=page_no_to_pages[element.page_no].size,
+                    page_size=page_size,
                     label=element.label,
                     l=bbox.l,
                     r=bbox.r,
@@ -151,6 +153,7 @@ class ReadingOrderModel:
             parent=parent,
         )
 
+        assert isinstance(table_item, TableItem)
         return table_item
 
     def _add_table_children(
@@ -195,7 +198,9 @@ class ReadingOrderModel:
             charspan=(0, 0),
             bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
         )
-        return out_doc.add_picture(prov=prov, parent=parent)
+        picture_item = out_doc.add_picture(prov=prov, parent=parent)
+        assert isinstance(picture_item, PictureItem)
+        return picture_item
 
     def _add_code_element(
         self,
@@ -209,7 +214,9 @@ class ReadingOrderModel:
             charspan=(0, len(element.text)),
             bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
         )
-        return out_doc.add_code(text=element.text, prov=prov, parent=parent)
+        code_item = out_doc.add_code(text=element.text, prov=prov, parent=parent)
+        assert isinstance(code_item, CodeItem)
+        return code_item
 
     def _add_related_text_items(
         self,
@@ -279,7 +286,7 @@ class ReadingOrderModel:
     @classmethod
     def _match_table_pictures(
         cls,
-        elements: list[BasePageElement],
+        elements: Sequence[BasePageElement],
         excluded_picture_refs: set[str],
     ) -> dict[str, dict[int, list[FigureElement]]]:
         tables = [element for element in elements if isinstance(element, Table)]
@@ -558,7 +565,7 @@ class ReadingOrderModel:
                     )
                     self._add_child_elements(element, picture_item, out_doc)
 
-                elif isinstance(element, ContainerElement):
+                else:
                     group_label = (
                         GroupLabel.FORM_AREA
                         if element.label == DocItemLabel.FORM
@@ -655,6 +662,7 @@ class ReadingOrderModel:
                 content_layer=content_layer,
                 hyperlink=element.hyperlink,
             )
+        assert isinstance(new_item, TextItem)
         return new_item, current_list
 
     def _merge_elements(self, element, merged_elem, new_item, page_height):

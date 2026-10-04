@@ -114,7 +114,8 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         # Create layout-aware VLM options internally
         base_vlm_options = self.pipeline_options.vlm_options
 
-        class LayoutAwareVlmOptions(type(base_vlm_options)):  # type: ignore[misc]
+        # Preserve the selected options subclass, including its Pydantic fields.
+        class LayoutAwareVlmOptions(type(base_vlm_options)):  # ty: ignore[unsupported-base]
             def build_prompt(
                 self,
                 page: Optional[SegmentedPage],
@@ -122,7 +123,8 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 _internal_page: Optional[Page] = None,
             ) -> str:
                 base_prompt = self.prompt
-                augmented_prompt = base_prompt
+                assert isinstance(base_prompt, str)
+                augmented_prompt: str = base_prompt
 
                 # Only augment convert to docling base prompts
                 if base_prompt != DOCLING_BASE_PAGE_PROMPT:

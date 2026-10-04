@@ -43,6 +43,7 @@ _log = logging.getLogger(__name__)
 def _empty_segmented_page(page: Page) -> SegmentedPdfPage:
     """A minimal SegmentedPdfPage for pages whose native parse was skipped
     (PagePreprocessingOptions.skip_cell_extraction), sized from the page."""
+    assert page.size is not None
     width, height = page.size.width, page.size.height
     # CoordOrigin.BOTTOMLEFT by convention: a real backend produces the
     # segmented page in bottom-left coordinates.
@@ -184,6 +185,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 supported=self.supported_ocr_languages(),
                 detail="This engine needs a BCP-47 tag behind the `iso:` prefix.",
             )
+        assert language.bcp47_language is not None
         return language.bcp47_language
 
     def resolve_ocr_languages(self) -> list[str]:
@@ -230,7 +232,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             ocr_rects = self._find_pdf_aware_layout_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_REGIONS:
             ocr_rects = self._find_layout_ocr_rects(page)
-        elif self.options.mode == OcrMode.FULL_PAGE:
+        else:
             # A big bbox covering the entire page
             ocr_rects = [
                 BoundingBox(
@@ -250,6 +252,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         """
         if page.predictions.layout is None:
             return []
+        assert page.size is not None
 
         # Use every layout detection bbox as an initial ocr_rect
         ocr_rects = [c.bbox for c in page.predictions.layout.clusters]
@@ -402,7 +405,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ]
 
         # Compute area fraction on page covered by bitmaps
-        area_frac = np.sum(np_image > 0) / (size.width * size.height)
+        area_frac = float(np.sum(np_image > 0) / (size.width * size.height))
         return (area_frac, bounding_boxes)  # fraction covered  # boxes
 
     def post_process_cells(
@@ -491,7 +494,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         if segregate_pdf_cells:
             visible_cells, invisible_cells = _segregate_by_visibility(pdf_cells)
         else:
-            visible_cells, invisible_cells = list(pdf_cells), []
+            visible_cells = list(pdf_cells)
+            invisible_cells = []
 
         # The prioritized cells are always kept
         # the secondary cells are added only where they don't overlap a prioritized cell.

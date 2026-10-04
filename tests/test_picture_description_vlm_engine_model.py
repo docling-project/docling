@@ -20,6 +20,8 @@ from docling.models.stages.picture_description.picture_description_vlm_engine_mo
 
 
 class _DummyEngine:
+    selected_engine_type = None
+
     def __init__(self):
         self.received_inputs: list[VlmEngineInput] = []
 

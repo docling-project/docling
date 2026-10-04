@@ -12,8 +12,15 @@ from typing import Any, Optional, Union, cast
 
 import numpy as np
 import torch
+from numpy.typing import NDArray
 from PIL.Image import Image
-from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationConfig
+
+# Transformers exposes the model lazily when its torch dependency is installed.
+from transformers import (
+    AutoModelForImageTextToText,  # ty: ignore[possibly-missing-import]
+    AutoProcessor,
+    GenerationConfig,
+)
 from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -123,7 +130,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 3,
                 14,
             ):
-                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+                self.vlm_model = torch.compile(self.vlm_model)
             else:
                 self.vlm_model.eval()
 
@@ -137,7 +144,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
     @override
     def process_images(
         self,
-        image_batch: Iterable[Union[Image, np.ndarray]],
+        image_batch: Iterable[Union[Image, NDArray[np.generic]]],
         prompt: Union[str, list[str]],
     ) -> Iterable[VlmPrediction]:
         from PIL import Image as PILImage
@@ -213,7 +220,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         input_len = processor_inputs["input_ids"].shape[1]
         trimmed_sequences = generated_ids[:, input_len:]
 
-        decoded_texts: list[str] = self.processor.batch_decode(
+        decoded_texts = self.processor.batch_decode(
             trimmed_sequences,
             skip_special_tokens=True,
             clean_up_tokenization_spaces=False,
@@ -228,6 +235,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             )
 
         for text in decoded_texts:
+            assert isinstance(text, str)
             decoded_text = self.vlm_options.decode_response(text)
             yield VlmPrediction(
                 text=decoded_text,

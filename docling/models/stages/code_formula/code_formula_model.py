@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.labels import CodeLanguageLabel
+from numpy.typing import NDArray
 from PIL import Image
 from pydantic import BaseModel
 from typing_extensions import override
@@ -112,7 +113,11 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             else:
                 artifacts_path = artifacts_path / self._model_repo_folder
 
-            from transformers import AutoModelForImageTextToText, AutoProcessor
+            # Transformers exposes this model lazily when torch is installed.
+            from transformers import (
+                AutoModelForImageTextToText,  # ty: ignore[possibly-missing-import]
+                AutoProcessor,
+            )
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
@@ -251,7 +256,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         prompt = self._processor.apply_chat_template(
             messages, add_generation_prompt=True
         )
-
+        assert isinstance(prompt, str)
         return prompt
 
     def _post_process(self, texts: list[str]) -> list[str]:
@@ -311,11 +316,12 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             return
 
         labels: List[str] = []
-        images: List[Union[Image.Image, np.ndarray]] = []
+        images: List[Union[Image.Image, NDArray[np.generic]]] = []
         elements: List[TextItem] = []
         for el in element_batch:
-            elements.append(el.item)  # type: ignore[arg-type]
-            labels.append(el.item.label)  # type: ignore[attr-defined]
+            assert isinstance(el.item, TextItem)
+            elements.append(el.item)
+            labels.append(el.item.label)
             images.append(el.image)
 
         prompts = [self._get_prompt(label) for label in labels]

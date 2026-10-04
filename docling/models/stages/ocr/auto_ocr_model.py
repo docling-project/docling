@@ -123,7 +123,7 @@ class OcrAutoModel(BaseOcrModel):
             if self._engine is None:
                 try:
                     import onnxruntime
-                    from rapidocr import EngineType, RapidOCR  # type: ignore
+                    from rapidocr import EngineType, RapidOCR
 
                     self._engine = RapidOcrModel(
                         enabled=self.enabled,
@@ -177,7 +177,7 @@ class OcrAutoModel(BaseOcrModel):
             if self._engine is None:
                 try:
                     import torch
-                    from rapidocr import EngineType, RapidOCR  # type: ignore
+                    from rapidocr import EngineType, RapidOCR
 
                     self._engine = RapidOcrModel(
                         enabled=self.enabled,

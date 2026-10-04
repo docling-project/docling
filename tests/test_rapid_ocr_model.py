@@ -4,10 +4,15 @@
 from io import BytesIO
 from pathlib import Path
 
+import numpy as np
 import pytest
+from PIL import Image
 
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.pipeline_options import RapidOcrOptions
+from docling.datamodel.base_models import InputFormat, Page
+from docling.datamodel.document import ConversionResult, InputDocument
+from docling.datamodel.pipeline_options import OcrMode, RapidOcrOptions
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 
 pytestmark = pytest.mark.ml_ocr
@@ -106,3 +111,52 @@ def test_rapidocr_pins_explicit_model_paths(
     assert params["Rec.model_path"] is not None
     assert "Det.lang_type" not in params
     assert "Rec.lang_type" not in params
+
+
+@pytest.mark.parametrize(
+    "result_kind", ["complete", "detection", "no_text", "no_scores"]
+)
+def test_rapidocr_uses_only_complete_text_results(result_kind: str):
+    from rapidocr.ch_ppocr_det.utils import TextDetOutput
+    from rapidocr.utils.output import RapidOCROutput
+
+    boxes = np.array([[[0, 0], [12, 0], [12, 6], [0, 6]]])
+    if result_kind == "detection":
+        result = TextDetOutput(boxes=boxes, scores=[0.9])
+    else:
+        result = RapidOCROutput(
+            boxes=boxes,
+            txts=None if result_kind == "no_text" else ("word",),
+            scores=None if result_kind == "no_scores" else (0.9,),
+        )
+
+    source = BytesIO()
+    Image.new("RGB", (20, 20), "white").save(source, format="PNG")
+    source.seek(0)
+    in_doc = InputDocument(
+        path_or_stream=source,
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+        filename="ocr.png",
+    )
+    conv_res = ConversionResult(input=in_doc)
+    page = Page(page_no=1)
+    page._backend = in_doc._backend.load_page(0)
+    page.size = page._backend.get_size()
+
+    model = RapidOcrModel(
+        enabled=False,
+        artifacts_path=None,
+        options=RapidOcrOptions(mode=OcrMode.FULL_PAGE, scale=2),
+        accelerator_options=AcceleratorOptions(),
+    )
+    model.enabled = True
+    model.reader = lambda *args, **kwargs: result
+
+    assert list(model(conv_res, [page])) == [page]
+    if result_kind == "complete":
+        assert [cell.text for cell in page.cells] == ["word"]
+        assert page.cells[0].confidence == 0.9
+        assert page.cells[0].rect.to_bounding_box().as_tuple() == (0, 0, 6, 3)
+    else:
+        assert page.cells == []

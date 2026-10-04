@@ -14,6 +14,7 @@ from typing import Any, Optional, Type, TypedDict, cast
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from numpy.typing import NDArray
 from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -119,7 +120,7 @@ class _BufferedRect:
 
     state: _PageOcrState
     ocr_rect: BoundingBox
-    image: numpy.ndarray
+    image: NDArray[numpy.generic]
     image_size: tuple[int, int]
 
 

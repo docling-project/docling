@@ -128,7 +128,7 @@ class ListItemMarkerProcessor:
         return item
 
     def _find_match(
-        self, text: str, patterns: list[re.Pattern]
+        self, text: str, patterns: list[re.Pattern[str]]
     ) -> Optional[re.Match[str]]:
         for pattern in patterns:
             mtch = pattern.match(text)
@@ -256,9 +256,7 @@ class ListItemMarkerProcessor:
                     item.enumerated = is_enumerated
 
                 return item
-            elif isinstance(item, TextItem) and (
-                item.label not in [DocItemLabel.SECTION_HEADER, DocItemLabel.FOOTNOTE]
-            ):
+            elif item.label not in [DocItemLabel.SECTION_HEADER, DocItemLabel.FOOTNOTE]:
                 # Create new ListItem
                 return self._create_list_item(
                     self_ref=item.get_ref().cref,
@@ -303,6 +301,7 @@ class ListItemMarkerProcessor:
         for ind, (self_ref, is_marker, is_enumerated) in self._matched_items.items():
             if is_marker:
                 marker_item = self_ref.resolve(doc=doc)
+                assert isinstance(marker_item, TextItem)
 
                 if ind + 1 in self._other:
                     next_item = self._other[ind + 1].resolve(doc=doc)

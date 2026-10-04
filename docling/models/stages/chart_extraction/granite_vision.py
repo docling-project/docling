@@ -117,17 +117,17 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
             return False
         if not isinstance(element, PictureItem):
             return False
-        if element.meta is None or not isinstance(element.meta, PictureMeta):
+        if element.meta is None:
             return False
-        if element.meta.classification is None or not isinstance(
-            element.meta.classification, PictureClassificationMetaField
-        ):
+        if element.meta.classification is None:
             return False
         main_pred = element.meta.classification.get_main_prediction()
         return main_pred.class_name in SUPPORTED_CHART_TYPES
 
     def _resolve_runtime_engine_type(self) -> VlmEngineType:
-        selected_engine_type = getattr(self.engine, "selected_engine_type", None)
+        selected_engine_type = (
+            self.engine.selected_engine_type if self.engine is not None else None
+        )
         if selected_engine_type is not None:
             return selected_engine_type
         return self.options.engine_options.engine_type
@@ -143,10 +143,10 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
                 yield el.item
             return
 
-        elements: List[PictureItem] = []
+        elements: List[NodeItem] = []
         images = []
         for el in element_batch:
-            elements.append(el.item)  # type: ignore[arg-type]
+            elements.append(el.item)
             images.append(el.image)
 
         # The prompts that are active for each image (one pass per prompt per image).
@@ -196,7 +196,7 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
                 yield item
                 continue
 
-            if item.meta is None or not isinstance(item.meta, PictureMeta):
+            if item.meta is None:
                 item.meta = PictureMeta()
 
             handler = _OUTPUT_FORMAT_HANDLERS.get(self.options.output_format)
@@ -280,18 +280,18 @@ _OUTPUT_FORMAT_HANDLERS: Dict[ChartExtractionOutputFormat, _ChartOutputHandler] 
 # ---------------------------------------------------------------------------
 
 
-def _is_numeric(value: object) -> bool:
-    if pd.isna(value):  # type: ignore[arg-type]
+def _is_numeric(value: str | int | float | None) -> bool:
+    if pd.isna(value):
         return False
     try:
-        float(value)  # type: ignore[arg-type]
+        float(value)
         return True
     except (ValueError, TypeError):
         return False
 
 
-def _is_blank(value: object) -> bool:
-    return pd.isna(value) or not str(value).strip()  # type: ignore[arg-type]
+def _is_blank(value: str | int | float | None) -> bool:
+    return pd.isna(value) or not str(value).strip()
 
 
 def _is_monotone_integer_row(row: pd.Series) -> bool:
@@ -392,4 +392,6 @@ def _extract_python_code(decoded_text: str) -> Optional[str]:
     python_match = re.search(r"```python\s*\n(.*?)\n```", decoded_text, re.DOTALL)
     if not python_match:
         return None
-    return python_match.group(1).strip()
+    code = python_match.group(1)
+    assert isinstance(code, str)
+    return code.strip()

@@ -250,7 +250,6 @@ class PageAssembleModel(BasePageModel):
                                     label=cluster.label,
                                     id=cluster.id,
                                     text="",
-                                    data=None,
                                     cluster=cluster,
                                     page_no=page.page_no,
                                 )

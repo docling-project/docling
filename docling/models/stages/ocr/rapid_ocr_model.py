@@ -56,7 +56,7 @@ _RAPIDOCR_V4V5_MODEL_TYPE = "mobile"
 
 # Inference backends docling supports, derived from the RapidOcrOptions.backend
 # annotation so the two cannot drift.
-_RAPIDOCR_BACKENDS: frozenset[str] = frozenset(get_args(RapidOcrBackend))
+_RAPIDOCR_BACKENDS: frozenset[str] = frozenset[str](get_args(RapidOcrBackend))
 
 # Canonical BCP-47 to PP-OCR recognizer codes. The PP-OCRv6 set comes from the
 # installed `rapidocr`; the v4/v5 sets below have no upstream equivalent to read,
@@ -484,7 +484,7 @@ class RapidOcrModel(BaseOcrModel):
 
         if self.enabled:
             try:
-                from rapidocr import ModelType, OCRVersion, RapidOCR  # type: ignore
+                from rapidocr import ModelType, OCRVersion, RapidOCR
             except ImportError:
                 raise ImportError(
                     "RapidOCR is not installed. Please install it via `pip install rapidocr onnxruntime` to use this OCR engine. "
@@ -753,6 +753,8 @@ class RapidOcrModel(BaseOcrModel):
             yield from page_batch
             return
 
+        from rapidocr.utils.output import RapidOCROutput
+
         for page in page_batch:
             assert page._backend is not None
             if not page._backend.is_valid():
@@ -776,43 +778,43 @@ class RapidOcrModel(BaseOcrModel):
                             use_cls=self.options.use_cls,
                             use_rec=self.options.use_rec,
                         )
-                        if result is None or result.boxes is None:
+                        if (
+                            not isinstance(result, RapidOCROutput)
+                            or result.boxes is None
+                            or result.txts is None
+                            or result.scores is None
+                        ):
                             _log.warning("RapidOCR returned empty result!")
                             continue
-                        result = list(
+                        rows = list(
                             zip(result.boxes.tolist(), result.txts, result.scores)
                         )
 
                         del high_res_image
                         del im
 
-                        if result is not None:
-                            cells = [
-                                TextCell(
-                                    index=ix,
-                                    text=line[1],
-                                    orig=line[1],
-                                    confidence=line[2],
-                                    from_ocr=True,
-                                    rect=BoundingRectangle.from_bounding_box(
-                                        BoundingBox.from_tuple(
-                                            coord=(
-                                                (line[0][0][0] / self.scale)
-                                                + ocr_rect.l,
-                                                (line[0][0][1] / self.scale)
-                                                + ocr_rect.t,
-                                                (line[0][2][0] / self.scale)
-                                                + ocr_rect.l,
-                                                (line[0][2][1] / self.scale)
-                                                + ocr_rect.t,
-                                            ),
-                                            origin=CoordOrigin.TOPLEFT,
-                                        )
-                                    ),
-                                )
-                                for ix, line in enumerate(result)
-                            ]
-                            all_ocr_cells.extend(cells)
+                        cells = [
+                            TextCell(
+                                index=ix,
+                                text=line[1],
+                                orig=line[1],
+                                confidence=line[2],
+                                from_ocr=True,
+                                rect=BoundingRectangle.from_bounding_box(
+                                    BoundingBox.from_tuple(
+                                        coord=(
+                                            (line[0][0][0] / self.scale) + ocr_rect.l,
+                                            (line[0][0][1] / self.scale) + ocr_rect.t,
+                                            (line[0][2][0] / self.scale) + ocr_rect.l,
+                                            (line[0][2][1] / self.scale) + ocr_rect.t,
+                                        ),
+                                        origin=CoordOrigin.TOPLEFT,
+                                    )
+                                ),
+                            )
+                            for ix, line in enumerate(rows)
+                        ]
+                        all_ocr_cells.extend(cells)
 
                     # Post-process the cells
                     self.post_process_cells(all_ocr_cells, page, conv_res)
