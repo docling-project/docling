@@ -853,6 +853,8 @@ class _DocumentConversionInput(BaseModel):
                     if office_mime is not None:
                         mime = office_mime
 
+        mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
+
         if mime is not None and mime.lower() == "application/gzip":
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
                 mime = detected_mime
@@ -876,6 +878,25 @@ class _DocumentConversionInput(BaseModel):
                 )
         else:
             return None
+
+    @staticmethod
+    def _resolve_ole2_mime(mime: Optional[str], ext: Optional[str]) -> Optional[str]:
+        """Let the extension choose between the OLE2 based legacy Office formats.
+
+        ``filetype`` tells .doc, .ppt and .xls apart from a few bytes after the
+        OLE2 header, which is not conclusive: a file whose first sector is a FAT
+        sector is reported as Excel (or PowerPoint) whatever it really holds.
+        """
+        if mime is None or ext is None:
+            return mime
+        ole2_formats = (InputFormat.DOC, InputFormat.PPT, InputFormat.XLS)
+        ole2_mimes = {m for fmt in ole2_formats for m in FormatToMimeType[fmt]}
+        if mime.lower() not in ole2_mimes:
+            return mime
+        for fmt in ole2_formats:
+            if ext.lower() in FormatToExtensions[fmt]:
+                return FormatToMimeType[fmt][0]
+        return mime
 
     @staticmethod
     def _has_doclang_extension(name: str) -> bool:

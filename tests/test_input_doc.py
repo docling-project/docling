@@ -261,6 +261,32 @@ def test_guess_format_upper_case_extension_path(tmp_path, suffix, content, expec
     assert dci._guess_format(stream) is expected
 
 
+@pytest.mark.parametrize(
+    ("suffix", "expected"),
+    [
+        ("doc", InputFormat.DOC),
+        ("DOC", InputFormat.DOC),
+        ("ppt", InputFormat.PPT),
+        ("xls", InputFormat.XLS),
+    ],
+)
+def test_guess_format_ole2_with_fat_first_sector(tmp_path, suffix, expected):
+    # An OLE2 container whose first sector after the header is a FAT sector
+    # (FD FF FF FF) is reported as Excel by filetype whatever it really holds,
+    # e.g. a Word 6.0 .doc. The extension must then decide between the OLE2
+    # based formats.
+    content = bytearray(1024)
+    content[:8] = bytes.fromhex("D0CF11E0A1B11AE1")
+    content[512:516] = bytes.fromhex("FDFFFFFF")
+    doc_path = tmp_path / f"document.{suffix}"
+    doc_path.write_bytes(bytes(content))
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) == expected
+    stream = DocumentStream(name=doc_path.name, stream=BytesIO(bytes(content)))
+    assert dci._guess_format(stream) == expected
+
+
 def test_guess_format(tmp_path):
     """Test docling.datamodel.document._DocumentConversionInput.__guess_format"""
     dci = _DocumentConversionInput(path_or_stream_iterator=[])
