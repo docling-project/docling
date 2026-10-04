@@ -473,8 +473,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         if options is None:
             options = HTMLBackendOptions()
-        super().__init__(in_doc, path_or_stream, typed_options)
         typed_options = cast(HTMLBackendOptions, options)
+        super().__init__(in_doc, path_or_stream, typed_options)
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
         self.path_or_stream: Union[BytesIO, Path, None] = path_or_stream
