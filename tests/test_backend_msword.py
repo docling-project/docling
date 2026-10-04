@@ -1472,6 +1472,28 @@ def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     assert hyperlinks == []
 
 
+def test_non_element_nodes_do_not_abort_conversion(tmp_path):
+    doc = Document()
+    doc.add_paragraph("Before metadata.")
+    doc.element.body.insert(1, etree.Comment("synthetic comment"))
+    doc.element.body.insert(
+        2, etree.ProcessingInstruction("synthetic", 'value="metadata"')
+    )
+    doc.add_paragraph("After metadata.")
+
+    docx_path = tmp_path / "non_element_nodes.docx"
+    doc.save(docx_path)
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    result = in_doc._backend.convert()
+
+    assert result.export_to_markdown() == "Before metadata.\n\nAfter metadata."
+
+
 def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     """A whitespace-only trailing run must not overwrite the paragraph's formatting.
 
