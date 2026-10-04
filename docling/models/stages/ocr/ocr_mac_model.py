@@ -44,7 +44,7 @@ def _get_vision_languages(recognition: str) -> list[str]:
         "The OcrMac engine cannot be used on this system."
     )
     try:
-        import Vision
+        import Vision  # ty: ignore[unresolved-import]
 
         # pyobjc exposes the ObjC classes dynamically, so ty cannot see them.
         # pyobjc publishes this class dynamically at runtime.
@@ -183,7 +183,7 @@ class OcrMacModel(BaseOcrModel):
                             fname = image_file.name
                             high_res_image.save(fname)
 
-                            boxes = self.reader_RIL(
+                            boxes = self.reader_RIL(  # ty: ignore[unresolved-attribute]
                                 fname,
                                 recognition_level=self.options.recognition,
                                 framework=self.options.framework,

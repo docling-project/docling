@@ -257,7 +257,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     formatted_prompt,
                     # mlx-vlm prepare_inputs supports PIL images, but the stream
                     # signature currently lists only image path strings.
-                    [image],  # ty: ignore[invalid-argument-type]
+                    [image],
                     max_tokens=self.max_tokens,
                     verbose=False,
                     temp=self.temperature,
@@ -268,11 +268,11 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                         raw_logprobs: object = token.logprobs
                         # mlx-vlm annotates lists; supported older releases return
                         # MLX arrays, including bfloat16 (covered by the stream test).
-                        if isinstance(raw_logprobs, (list, np.ndarray)):  # ty: ignore[redundant-condition-strict]
+                        if isinstance(raw_logprobs, (list, np.ndarray)):
                             logprobs = np.asarray(raw_logprobs)
                         else:
                             # MLX is an optional Apple Silicon dependency.
-                            import mlx.core as mx
+                            import mlx.core as mx  # ty: ignore[unresolved-import]
 
                             if not isinstance(raw_logprobs, mx.array):
                                 raise TypeError(
