@@ -215,7 +215,10 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         headers: dict[str, str] | None = None,
         *,
         target: PresignedUrlTarget | None = None,
-    ) -> AsyncConversionJob[PresignedUrlConvertResponse | ConversionResult]: ...
+    ) -> (
+        AsyncConversionJob[PresignedUrlConvertResponse]
+        | AsyncConversionJob[ConversionResult]
+    ): ...
 
     async def submit(
         self,
@@ -317,7 +320,8 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         AsyncConversionJob[PresignedUrlConvertDocumentResponse]
         | AsyncConversionJob[PresignedUrlConvertResponse]
     ):
-        assert self._async_client is not None, "client not open — use async with"
+        async_client = self._async_client
+        assert async_client is not None, "client not open — use async with"
         if target is None and targets is None:
             raise ValueError("submit_batch() requires either 'target' or 'targets'.")
         if target is not None and targets is not None:
@@ -348,7 +352,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             options=submit_options,
             target=request.target,
             targets=request.targets,
-            async_client=self._async_client,
+            async_client=async_client,
             request_headers=headers,
         )
 
@@ -366,7 +370,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 return await self._fetch_presigned_document_result(
                     task_id=task_id,
                     last_status=last_status,
-                    async_client=self._async_client,
+                    async_client=async_client,
                 )
 
         else:
@@ -378,7 +382,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 return await self._fetch_presigned_result(
                     task_id=task_id,
                     last_status=last_status,
-                    async_client=self._async_client,
+                    async_client=async_client,
                 )
 
         handlers = _AsyncJobHandlers[Any](

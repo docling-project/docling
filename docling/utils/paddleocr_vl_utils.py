@@ -142,7 +142,11 @@ _CENTERED_DIV_PATTERN = re.compile(
 def _strip_formatted_centering(text: str) -> str:
     """Undo Paddle's optional centered ``div`` around textual captions."""
     match = _CENTERED_DIV_PATTERN.match(text)
-    return match.group(1) if match is not None else text
+    if match is None:
+        return text
+    content = match.group(1)
+    assert isinstance(content, str)
+    return content
 
 
 def _load_page_payload(

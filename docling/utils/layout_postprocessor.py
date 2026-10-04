@@ -46,7 +46,7 @@ class UnionFind:
 
     def get_groups(self) -> dict[int, list[int]]:
         """Returns groups as {root: [elements]}."""
-        groups = defaultdict(list)
+        groups = defaultdict[int, list[int]](list)
         for elem in self.parent:
             groups[self.find(elem)].append(elem)
         return groups
@@ -480,7 +480,7 @@ class LayoutPostprocessor:
         return [c for c in special_clusters if c.id not in clusters_to_remove]
 
     def _should_prefer_cluster(
-        self, candidate: Cluster, other: Cluster, params: dict
+        self, candidate: Cluster, other: Cluster, params: dict[str, float]
     ) -> bool:
         """Determine if candidate cluster should be preferred over other cluster based on rules.
         Returns True if candidate should be preferred, False if not."""
@@ -518,7 +518,7 @@ class LayoutPostprocessor:
     def _select_best_cluster_from_group(
         self,
         group_clusters: list[Cluster],
-        params: dict,
+        params: dict[str, float],
     ) -> Cluster:
         """Select best cluster from a group of overlapping clusters based on all rules."""
         current_best = None

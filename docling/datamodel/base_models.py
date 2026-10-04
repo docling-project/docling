@@ -544,7 +544,7 @@ class Page(BaseModel):
 
         if max_size:
             assert self.size is not None
-            scale = min(scale, max_size / max(self.size.as_tuple()))
+            scale = min(scale, max_size / max(self.size.width, self.size.height))
 
         if scale not in self._image_cache:
             if cropbox is None:
@@ -665,17 +665,17 @@ class PageConfidenceScores(BaseModel):
 
         return QualityGrade.UNSPECIFIED
 
-    @computed_field  # type: ignore
+    @computed_field
     @property
     def mean_grade(self) -> QualityGrade:
         return self._score_to_grade(self.mean_score)
 
-    @computed_field  # type: ignore
+    @computed_field
     @property
     def low_grade(self) -> QualityGrade:
         return self._score_to_grade(self.low_score)
 
-    @computed_field  # type: ignore
+    @computed_field
     @property
     def mean_score(self) -> ScoreValue:
         return ScoreValue(
@@ -689,7 +689,7 @@ class PageConfidenceScores(BaseModel):
             )
         )
 
-    @computed_field  # type: ignore
+    @computed_field
     @property
     def low_score(self) -> ScoreValue:
         return ScoreValue(
@@ -746,7 +746,7 @@ class ConfidenceReport(PageConfidenceScores):
             model._low_score_override = low_override
         return model
 
-    @computed_field  # type: ignore
+    @computed_field
     @property
     @override
     def mean_score(self) -> ScoreValue:
@@ -760,7 +760,7 @@ class ConfidenceReport(PageConfidenceScores):
             )
         )
 
-    @computed_field  # type: ignore
+    @computed_field
     @property
     @override
     def low_score(self) -> ScoreValue:

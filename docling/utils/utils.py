@@ -34,7 +34,7 @@ def create_file_hash(path_or_stream: Union[BytesIO, Path]) -> str:
     if isinstance(path_or_stream, Path):
         with path_or_stream.open("rb") as afile:
             _hash_buf(afile)
-    elif isinstance(path_or_stream, BytesIO):
+    else:
         _hash_buf(path_or_stream)
 
     return hasher.hexdigest()

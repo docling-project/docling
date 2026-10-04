@@ -48,6 +48,8 @@ from docling.datamodel.service.requests import (
     S3SourceRequest,
 )
 from docling.datamodel.service.responses import (
+    ConvertDocumentResponse,
+    ExportDocumentResponse,
     FailureCategory,
     FailurePhase,
     MessageKind,
@@ -110,14 +112,15 @@ def _status_response(task_id: str, status: str) -> TaskStatusResponse:
     )
 
 
-def _convert_payload(source_name: str) -> SimpleNamespace:
-    return SimpleNamespace(
+def _convert_payload(source_name: str) -> ConvertDocumentResponse:
+    return ConvertDocumentResponse(
+        processing_time=0.0,
         status=ConversionStatus.SUCCESS,
         errors=[],
         timings={},
         confidence=None,
-        document=SimpleNamespace(
-            filename=None,
+        document=ExportDocumentResponse(
+            filename="",
             json_content=DoclingDocument(name=PurePath(source_name).stem),
         ),
     )

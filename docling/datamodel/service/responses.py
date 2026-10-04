@@ -5,7 +5,7 @@ import enum
 import math
 import warnings
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 
 from docling_core.types.doc.document import DoclingDocument
 from pydantic import AliasChoices, AnyUrl, BaseModel, ConfigDict, Field
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from docling.datamodel.base_models import ConfidenceReport, PageConfidenceScores
 
 
-def _nan_to_none(value: float) -> Optional[float]:
+def _nan_to_none(value: float | None) -> Optional[float]:
     return None if value is None or math.isnan(value) else float(value)
 
 
@@ -191,7 +191,8 @@ class ChunkedDocumentResultItem(BaseModel):
         Field(description="Page numbers where this chunk content appears"),
     ] = None
     metadata: Annotated[
-        dict | None, Field(description="Additional metadata associated with this chunk")
+        dict[str, Any] | None,
+        Field(description="Additional metadata associated with this chunk"),
     ] = None
 
 
@@ -199,7 +200,7 @@ class ChunkedDocumentResult(BaseModel):
     kind: Literal["ChunkedDocumentResponse"] = "ChunkedDocumentResponse"
     chunks: list[ChunkedDocumentResultItem]
     documents: list[ExportResult]
-    chunking_info: Optional[dict] = None
+    chunking_info: Optional[dict[str, Any]] = None
 
 
 class PresignedArtifactResult(BaseModel):

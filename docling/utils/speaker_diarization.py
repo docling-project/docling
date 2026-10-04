@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 _log = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class DiarizationResult:
     speaker_ids: list[str] = field(default_factory=list)
 
 
-def _estimate_num_speakers(embeddings: np.ndarray) -> int:
+def _estimate_num_speakers(embeddings: NDArray[np.float32]) -> int:
     """Estimate optimal speaker count via silhouette score.
 
     Args:
@@ -137,7 +138,7 @@ def diarize(
     step_samples = int(_WINDOW_STEP * sr)
 
     timestamps: list[float] = []
-    wav_splits: list[np.ndarray] = []
+    wav_splits: list[NDArray[np.float32]] = []
 
     i = 0
     while i + window_samples <= len(wav):
