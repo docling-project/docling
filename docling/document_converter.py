@@ -16,7 +16,7 @@ from typing import Optional, Type, Union
 
 from docling_core.types.doc.page import TextCellUnit
 from pydantic import ConfigDict, Field, model_validator, validate_call
-from typing_extensions import Self
+from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -122,6 +122,7 @@ class FormatOption(BaseFormatOption):
     pipeline_cls: Type[BasePipeline]
     backend_options: Optional[BackendOptions] = None
 
+    @override
     def backend_options_for_input(
         self, source: Path | str | DocumentStream
     ) -> BackendOptions | None:
@@ -188,6 +189,7 @@ class AsciiDocFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = AsciiDocBackend
     backend_options: AsciiDocBackendOptions | None = None
 
+    @override
     def backend_options_for_input(
         self, source: Path | str | DocumentStream
     ) -> AsciiDocBackendOptions | None:
@@ -209,6 +211,7 @@ class HTMLFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
     backend_options: Optional[HTMLBackendOptions] = None
 
+    @override
     def backend_options_for_input(
         self, source: Path | str | DocumentStream
     ) -> HTMLBackendOptions | None:

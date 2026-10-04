@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional, Type, Union
 
 from PIL import Image
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
@@ -29,6 +30,7 @@ class PictureDescriptionVlmModel(
     PictureDescriptionBaseModel, HuggingFaceModelDownloadMixin
 ):
     @classmethod
+    @override
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         return PictureDescriptionVlmOptions
 
@@ -92,6 +94,7 @@ class PictureDescriptionVlmModel(
 
             self.provenance = f"{self.options.repo_id}"
 
+    @override
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         from transformers import GenerationConfig
 

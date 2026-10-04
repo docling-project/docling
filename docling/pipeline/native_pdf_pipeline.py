@@ -19,6 +19,7 @@ from docling_core.types.doc import (
     Size,
 )
 from docling_core.types.doc.page import SegmentedPdfPage
+from typing_extensions import override
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import (
@@ -93,6 +94,7 @@ class NativePdfPipeline(ConvertPipeline):
         self.pipeline_options: NativePdfPipelineOptions = pipeline_options
         self.keep_images = pipeline_options.generate_page_images
 
+    @override
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         backend = conv_res.input._backend
         if not isinstance(backend, PdfDocumentBackend):
@@ -280,6 +282,7 @@ class NativePdfPipeline(ConvertPipeline):
         )
         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
 
+    @override
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         timings = _NativeAssemblyTimings()
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
@@ -413,11 +416,13 @@ class NativePdfPipeline(ConvertPipeline):
             return bbox
         return bbox.to_bottom_left_origin(page_height=size.height)
 
+    @override
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         if conv_res.status in (ConversionStatus.PENDING, ConversionStatus.STARTED):
             return ConversionStatus.SUCCESS
         return conv_res.status
 
+    @override
     def _unload(self, conv_res: ConversionResult) -> None:
         for page in conv_res.pages:
             if page._backend is not None:
@@ -426,9 +431,11 @@ class NativePdfPipeline(ConvertPipeline):
             conv_res.input._backend.unload()
 
     @classmethod
+    @override
     def get_default_options(cls) -> NativePdfPipelineOptions:
         return NativePdfPipelineOptions()
 
     @classmethod
+    @override
     def is_backend_supported(cls, backend: AbstractDocumentBackend) -> bool:
         return isinstance(backend, PdfDocumentBackend)

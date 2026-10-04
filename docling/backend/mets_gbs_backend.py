@@ -23,6 +23,7 @@ from docling_core.types.doc.page import (
 from lxml import etree
 from PIL import Image
 from PIL.Image import Image as PILImage
+from typing_extensions import override
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import MetsGbsBackendOptions
@@ -68,9 +69,11 @@ class MetsGbsPageBackend(PdfPageBackend):
         self.valid = parsed_page is not None and page_im is not None
 
     @property
+    @override
     def page_no(self) -> int:
         return self._page_no + 1
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
@@ -102,6 +105,7 @@ class MetsGbsPageBackend(PdfPageBackend):
             )
         return self._im
 
+    @override
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         dpage = self._require_page()
         # Find intersecting cells on the page
@@ -128,12 +132,15 @@ class MetsGbsPageBackend(PdfPageBackend):
 
         return text_piece
 
+    @override
     def get_segmented_page(self) -> SegmentedPdfPage | None:
         return self._dpage
 
+    @override
     def get_text_cells(self) -> Iterable[TextCell]:
         return self._require_page().textline_cells
 
+    @override
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         dpage = self._require_page()
         AREA_THRESHOLD = 0  # 32 * 32
@@ -150,6 +157,7 @@ class MetsGbsPageBackend(PdfPageBackend):
 
                 yield cropbox
 
+    @override
     def get_page_image(
         self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
@@ -175,10 +183,12 @@ class MetsGbsPageBackend(PdfPageBackend):
         ).crop(cropbox.scaled(scale=scale).as_tuple())
         return image
 
+    @override
     def get_size(self) -> Size:
         dpage = self._require_page()
         return Size(width=dpage.dimension.width, height=dpage.dimension.height)
 
+    @override
     def unload(self) -> None:
         self._im = None
         self._dpage = None
@@ -527,25 +537,31 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         )
         return page, im
 
+    @override
     def page_count(self) -> int:
         return len(self.page_map)
 
+    @override
     def load_page(self, page_no: int) -> MetsGbsPageBackend:
         # TODO: is this thread-safe?
         page, im = self._parse_page(page_no)
         return MetsGbsPageBackend(parsed_page=page, page_im=im, page_no=page_no)
 
+    @override
     def is_valid(self) -> bool:
         return self.root_mets is not None and self.page_count() > 0
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.METS_GBS}
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return True
 
+    @override
     def unload(self) -> None:
         super().unload()
         self._tar.close()

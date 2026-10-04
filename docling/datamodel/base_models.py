@@ -38,6 +38,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
@@ -747,6 +748,7 @@ class ConfidenceReport(PageConfidenceScores):
 
     @computed_field  # type: ignore
     @property
+    @override
     def mean_score(self) -> ScoreValue:
         if not np.isnan(self._mean_score_override):
             return self._mean_score_override
@@ -760,6 +762,7 @@ class ConfidenceReport(PageConfidenceScores):
 
     @computed_field  # type: ignore
     @property
+    @override
     def low_score(self) -> ScoreValue:
         if not np.isnan(self._low_score_override):
             return self._low_score_override

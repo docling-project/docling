@@ -23,6 +23,7 @@ from docling_core.types.doc import (
     TableData,
     TextItem,
 )
+from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
@@ -84,20 +85,25 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             ) from e
         return
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return False
 
+    @override
     def unload(self):
         return
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.ASCIIDOC}
 
+    @override
     def convert(self) -> DoclingDocument:
         """
         Parses the ASCII into a structured document model.

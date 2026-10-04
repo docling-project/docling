@@ -23,6 +23,7 @@ from PIL import Image, ImageDraw
 from pypdfium2 import PdfTextPage
 from pypdfium2._helpers.misc import PdfiumError
 from rtree import index
+from typing_extensions import override
 
 from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumDocumentBackend,
@@ -277,10 +278,12 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         # the text or path objects.
         self._object_index: dict[int, List[tuple[BoundingBox, bool]]] = {}
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
     @property
+    @override
     def page_no(self) -> int:
         return self._page_no + 1
 
@@ -502,6 +505,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                 continue
             yield bbox
 
+    @override
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         AREA_THRESHOLD = 0  # 32 * 32
 
@@ -509,6 +513,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             if cropbox.area() > AREA_THRESHOLD:
                 yield cropbox.scaled(scale=scale)
 
+    @override
     def has_content_in(
         self,
         *,
@@ -551,6 +556,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
         return False
 
+    @override
     def get_connected_shape_bounding_boxes(
         self, *, tolerance: float = 0.0
     ) -> Optional[List[BoundingBox]]:
@@ -566,6 +572,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             list(self._object_rects(pdfium_c.FPDF_PAGEOBJ_PATH)), tolerance
         )
 
+    @override
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         with pypdfium2_lock:
             page = self._require_page()
@@ -587,6 +594,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
         return text_piece
 
+    @override
     def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
         if not self.valid:
             return None
@@ -611,9 +619,11 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             )
         return self._seg_page
 
+    @override
     def get_text_cells(self) -> Iterable[TextCell]:
         return self._compute_text_cells()
 
+    @override
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
@@ -650,11 +660,13 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
         return image
 
+    @override
     def get_size(self) -> Size:
         with pypdfium2_lock:
             page = self._require_page()
             return Size(width=page.get_width(), height=page.get_height())
 
+    @override
     def _close_native_page(self) -> None:
         with pypdfium2_lock:
             if self.text_page is not None:
@@ -690,23 +702,28 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
                 f"pypdfium could not load document with hash {self.document_hash}"
             ) from e
 
+    @override
     def page_count(self) -> int:
         with pypdfium2_lock:
             return len(self._pdoc)
 
+    @override
     def load_page(self, page_no: int) -> PyPdfiumPageBackend:
         with pypdfium2_lock:
             return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
 
+    @override
     def is_valid(self) -> bool:
         return self.page_count() > 0
 
+    @override
     def get_document_outline(self) -> list[_PdfOutlineItem]:
         """Extract the PDF outline from the pypdfium2 document (title, depth, page, position)."""
         if self._pdoc is None:
             return []
         return extract_outline_from_pdfium(self._pdoc)
 
+    @override
     def _close_native_document(self) -> None:
         with pypdfium2_lock:
             if self._pdoc is not None:

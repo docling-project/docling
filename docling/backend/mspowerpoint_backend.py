@@ -234,6 +234,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return
 
+    @override
     def page_count(self) -> int:
         if self.is_valid():
             assert self.pptx_obj is not None

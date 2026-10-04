@@ -25,6 +25,7 @@ from transformers import (
     StoppingCriteriaList,
     StopStringCriteria,
 )
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -128,6 +129,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.model_config is not None:
             self.initialize()
 
+    @override
     def initialize(self) -> None:
         """Initialize the Transformers model and processor."""
         if self._initialized:
@@ -335,6 +337,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return None
         return getattr(self.processor, "tokenizer", None) or self.processor
 
+    @override
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
 
@@ -576,6 +579,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         return outputs
 
+    @override
     def cleanup(self) -> None:
         """Clean up model resources."""
         if self.vlm_model is not None:

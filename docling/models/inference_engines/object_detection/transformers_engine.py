@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
 from packaging import version
+from typing_extensions import override
 
 if TYPE_CHECKING:
     import torch
@@ -116,6 +117,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             )
         return dtype
 
+    @override
     def initialize(self) -> None:
         """Initialize PyTorch model and preprocessor."""
         import torch
@@ -199,6 +201,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             f"Transformers engine ready (device={self._device}, dtype={self._model.dtype})"  # type: ignore[union-attr]
         )
 
+    @override
     def predict_batch(
         self, input_batch: List[ObjectDetectionEngineInput]
     ) -> List[ObjectDetectionEngineOutput]:

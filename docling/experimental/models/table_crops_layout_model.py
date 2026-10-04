@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from docling_core.types.doc import BoundingBox, DocItemLabel
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
@@ -44,9 +45,11 @@ class TableCropsLayoutModel(BaseLayoutModel):
         self.accelerator_options = accelerator_options
 
     @classmethod
+    @override
     def get_options_type(cls) -> type[TableCropsLayoutOptions]:
         return TableCropsLayoutOptions
 
+    @override
     def predict_layout(
         self,
         conv_res: ConversionResult,

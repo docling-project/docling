@@ -38,6 +38,7 @@ from docling_core.types.doc import (
 )
 from PIL import Image as PILImage
 from pydantic import AnyUrl, ValidationError
+from typing_extensions import override
 
 from docling.utils.code_language import detect_code_language
 
@@ -144,6 +145,7 @@ class _HTMLTreeParser(HTMLParser):
             )
         self.close()
 
+    @override
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         # Accept omitted closing tags for adjacent cells, rows, and list items.
         closes = {
@@ -166,17 +168,20 @@ class _HTMLTreeParser(HTMLParser):
         if tag not in _VOID_TAGS:
             self.stack.append(node)
 
+    @override
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.handle_starttag(tag, attrs)
         if tag not in _VOID_TAGS:
             self.handle_endtag(tag)
 
+    @override
     def handle_endtag(self, tag: str) -> None:
         for index in range(len(self.stack) - 1, 0, -1):
             if self.stack[index].tag == tag:
                 del self.stack[index:]
                 break
 
+    @override
     def handle_data(self, data: str) -> None:
         self.stack[-1].children.append(data)
 

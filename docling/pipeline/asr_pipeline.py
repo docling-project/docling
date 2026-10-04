@@ -4,6 +4,7 @@
 import logging
 
 from docling_core.types.doc import DoclingDocument
+from typing_extensions import override
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
@@ -50,6 +51,7 @@ class AsrPipeline(BasePipeline):
                 return True
         return False
 
+    @override
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         if conv_res.status == ConversionStatus.FAILURE or conv_res.errors:
             return ConversionStatus.FAILURE
@@ -62,9 +64,11 @@ class AsrPipeline(BasePipeline):
         return ConversionStatus.SUCCESS
 
     @classmethod
+    @override
     def get_default_options(cls) -> AsrPipelineOptions:
         return AsrPipelineOptions()
 
+    @override
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         _log.info("Transcribing audio document %s.", conv_res.input.file.name)
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
@@ -72,5 +76,6 @@ class AsrPipeline(BasePipeline):
         return conv_res
 
     @classmethod
+    @override
     def is_backend_supported(cls, backend: AbstractDocumentBackend):
         return isinstance(backend, NoOpBackend)

@@ -9,6 +9,8 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+from typing_extensions import override
+
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.datamodel.vlm_engine_options import VllmVlmEngineOptions
@@ -121,6 +123,7 @@ class VllmVlmEngine(BaseVlmEngine):
         if self.model_config is not None:
             self.initialize()
 
+    @override
     def initialize(self) -> None:
         """Initialize the vLLM engine."""
         if self._initialized:
@@ -261,6 +264,7 @@ class VllmVlmEngine(BaseVlmEngine):
         self._initialized = True
         _log.info("vLLM runtime initialized")
 
+    @override
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs using vLLM.
 
@@ -376,6 +380,7 @@ class VllmVlmEngine(BaseVlmEngine):
 
         return results
 
+    @override
     def cleanup(self) -> None:
         """Clean up vLLM resources."""
         if self.llm is not None:

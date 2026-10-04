@@ -264,6 +264,7 @@ class PatentUsptoIce(PatentUspto):
         """Build an instance of PatentUsptoIce class."""
         self.handler = PatentUsptoIce.PatentHandler()
 
+    @override
     def parse(self, patent_content: str) -> DoclingDocument | None:
         try:
             parser = make_parser()
@@ -1144,6 +1145,7 @@ class PatentUsptoGrantAps(PatentUspto):
                 parent=self.parents[self.level],
             )
 
+    @override
     def parse(self, patent_content: str) -> DoclingDocument | None:
         self.doc = self.doc = DoclingDocument(name="file")
         section: str = ""

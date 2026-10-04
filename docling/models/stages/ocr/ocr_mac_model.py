@@ -10,6 +10,7 @@ from typing import Optional, Type
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -99,6 +100,7 @@ class OcrMacModel(BaseOcrModel):
             self._vision_languages = _get_vision_languages(self.options.recognition)
             self._native_codes = self.resolve_ocr_languages()
 
+    @override
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         # Map the Vision language tags to the canonical tags.
         tags: set[str] = set()
@@ -128,6 +130,7 @@ class OcrMacModel(BaseOcrModel):
 
         return OcrLanguageSupport(bcp47=sorted(tags), native=sorted(native))
 
+    @override
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
         if language.is_passthrough():
             # One of Vision's own recognition languages
@@ -148,6 +151,7 @@ class OcrMacModel(BaseOcrModel):
             )
         return code
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -235,5 +239,6 @@ class OcrMacModel(BaseOcrModel):
                 yield page
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[OcrOptions]:
         return OcrMacOptions

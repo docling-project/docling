@@ -16,6 +16,7 @@ from docling_core.types.doc.page import (
 )
 from PIL import Image, ImageDraw
 from transformers import AutoTokenizer
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePrediction
@@ -98,6 +99,7 @@ class TableStructureModelV2(BaseTableStructureModel):
             self.scale = 2.0  # Scale up table input images to 144 dpi
 
     @classmethod
+    @override
     def get_options_type(cls) -> type[TableStructureV2Options]:
         return TableStructureV2Options
 
@@ -397,6 +399,7 @@ class TableStructureModelV2(BaseTableStructureModel):
             out_file = out_path / f"table_struct_v2_page_{page.page_no:05}.png"
             image.save(str(out_file), format="png")
 
+    @override
     def predict_tables(
         self,
         conv_res: ConversionResult,

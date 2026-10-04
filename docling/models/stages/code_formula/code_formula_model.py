@@ -17,6 +17,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
 from pydantic import BaseModel
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -136,6 +137,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             progress=progress,
         )
 
+    @override
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         """
         Determines if a given element in a document can be processed by the model.
@@ -282,6 +284,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
 
         return [clean_text(t) for t in texts]
 
+    @override
     def __call__(
         self,
         doc: DoclingDocument,

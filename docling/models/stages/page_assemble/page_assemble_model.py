@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 from docling_core.types.doc import BoundingBox
 from pydantic import AnyUrl, BaseModel, ValidationError
+from typing_extensions import override
 
 from docling.datamodel.base_models import (
     AssembledUnit,
@@ -177,6 +178,7 @@ class PageAssembleModel(BasePageModel):
 
         return sanitized_text.strip()  # Strip any leading or trailing whitespace
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:

@@ -14,6 +14,7 @@ import numpy as np
 import torch
 from PIL.Image import Image
 from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationConfig
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
@@ -133,6 +134,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                     artifacts_path
                 )
 
+    @override
     def process_images(
         self,
         image_batch: Iterable[Union[Image, np.ndarray]],

@@ -24,6 +24,7 @@ from typing import (
 from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_core import PydanticUndefined
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -64,6 +65,7 @@ class BaseImageClassificationEngineOptions(BaseModel):
     ] = {}
 
     @classmethod
+    @override
     def __pydantic_init_subclass__(cls, **kwargs):
         super().__pydantic_init_subclass__(**kwargs)
 

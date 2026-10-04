@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
@@ -104,6 +105,7 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
             output_scores_name,
         )
 
+    @override
     def initialize(self) -> None:
         """Initialize preprocessor/labels and prepare remote client."""
         _log.info("Initializing KServe v2 object-detection engine")
@@ -166,6 +168,7 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
             self._output_scores_name,
         )
 
+    @override
     def predict_batch(
         self, input_batch: List[ObjectDetectionEngineInput]
     ) -> List[ObjectDetectionEngineOutput]:

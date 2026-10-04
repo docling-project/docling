@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any, ClassVar, Dict, Iterator, Literal, Optional
 
 from pydantic import Field, model_validator
-from typing_extensions import Self
+from typing_extensions import Self, override
 
 from docling.datamodel.stage_model_specs import StagePresetMixin, VlmModelSpec
 from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
@@ -196,12 +196,15 @@ class ChartExtractionModelKind(metaclass=_ChartExtractionModelKindMeta):
             self.name = name
             self.value = value
 
+        @override
         def __repr__(self) -> str:
             return f"<ChartExtractionModelKind.{self.name}: {self.value!r}>"
 
+        @override
         def __str__(self) -> str:
             return self.value
 
+        @override
         def __eq__(self, other: object) -> bool:
             if isinstance(other, str):
                 return self.value == other
@@ -209,6 +212,7 @@ class ChartExtractionModelKind(metaclass=_ChartExtractionModelKindMeta):
                 return self.value == other.value
             return NotImplemented
 
+        @override
         def __hash__(self) -> int:
             return hash(self.value)
 

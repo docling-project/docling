@@ -9,6 +9,7 @@ from typing import Iterable, Optional, Type
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -141,9 +142,11 @@ class TesseractOcrModel(BaseOcrModel):
             )
             self._reader_RIL = tesserocr.RIL
 
+    @override
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         return installed_tesseract_languages(self._tesseract_vocabulary)
 
+    @override
     def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
         name = language_to_tesseract_code(language)
         if name not in self._tesseract_vocabulary:
@@ -162,6 +165,7 @@ class TesseractOcrModel(BaseOcrModel):
         for reader in self._script_readers.values():
             reader.End()
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -299,5 +303,6 @@ class TesseractOcrModel(BaseOcrModel):
                 yield page
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[OcrOptions]:
         return TesseractOcrOptions

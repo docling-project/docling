@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from typing_extensions import override
+
 from docling.datamodel.service.responses import PublicFailureInfo
 
 
@@ -22,6 +24,7 @@ class ServiceError(DoclingServiceClientError):
     status_code: int | None = None
     detail: str | None = None
 
+    @override
     def __str__(self) -> str:
         if self.status_code is None:
             return self.message
@@ -54,6 +57,7 @@ class UsageLimitExceededError(ServiceError):
         self.current_usage = current_usage
         self.limit = limit
 
+    @override
     def __str__(self) -> str:
         base = super().__str__()
         if self.current_usage is None or self.limit is None:
@@ -110,5 +114,6 @@ class BatchConversionError(DoclingServiceClientError):
     message: str
     failures: list[Exception]
 
+    @override
     def __str__(self) -> str:
         return f"{self.message} ({len(self.failures)} failure(s))"

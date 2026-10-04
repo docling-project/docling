@@ -21,6 +21,7 @@ from docling_core.types.doc.page import (
 )
 from PIL import Image, ImageDraw
 from scipy.ndimage import binary_dilation, find_objects, label
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -598,6 +599,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             image.save(str(out_file), format="png")
 
     @abstractmethod
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -605,5 +607,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     @classmethod
     @abstractmethod
+    @override
     def get_options_type(cls) -> type[OcrOptions]:
         pass

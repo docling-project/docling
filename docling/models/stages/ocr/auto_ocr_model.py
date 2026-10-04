@@ -7,6 +7,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import NamedTuple, Optional, Type
 
+from typing_extensions import override
+
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
@@ -216,6 +218,7 @@ class OcrAutoModel(BaseOcrModel):
                     )
                 _log.warning("No OCR engine found. Please review the install details.")
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -225,5 +228,6 @@ class OcrAutoModel(BaseOcrModel):
         yield from self._engine(conv_res, page_batch)
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[OcrOptions]:
         return OcrAutoOptions

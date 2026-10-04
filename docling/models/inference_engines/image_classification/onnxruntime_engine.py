@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
+from typing_extensions import override
 
 if TYPE_CHECKING:
     import onnxruntime as ort
@@ -98,6 +99,7 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
             raise RuntimeError("ONNX model exposes no outputs")
         return output_nodes[0].name
 
+    @override
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
         import onnxruntime as ort
@@ -154,6 +156,7 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
             )
         return ["CPUExecutionProvider"]
 
+    @override
     def predict_batch(
         self, input_batch: List[ImageClassificationEngineInput]
     ) -> List[ImageClassificationEngineOutput]:

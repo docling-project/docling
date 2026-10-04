@@ -3,6 +3,8 @@
 
 import logging
 
+from typing_extensions import override
+
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
     DeclarativeDocumentBackend,
@@ -26,6 +28,7 @@ class SimplePipeline(ConvertPipeline):
     def __init__(self, pipeline_options: ConvertPipelineOptions):
         super().__init__(pipeline_options)
 
+    @override
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         if not isinstance(conv_res.input._backend, DeclarativeDocumentBackend):
             raise RuntimeError(
@@ -43,6 +46,7 @@ class SimplePipeline(ConvertPipeline):
             conv_res.document = conv_res.input._backend.convert()
         return conv_res
 
+    @override
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         # This is called only if the previous steps didn't raise.
         # Since we don't have anything else to evaluate, we can
@@ -50,9 +54,11 @@ class SimplePipeline(ConvertPipeline):
         return ConversionStatus.SUCCESS
 
     @classmethod
+    @override
     def get_default_options(cls) -> ConvertPipelineOptions:
         return ConvertPipelineOptions()
 
     @classmethod
+    @override
     def is_backend_supported(cls, backend: AbstractDocumentBackend):
         return isinstance(backend, DeclarativeDocumentBackend)

@@ -16,6 +16,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import PictureDescriptionData
 from PIL import Image
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ApiImageRequestResult
@@ -57,6 +58,7 @@ class PictureDescriptionBaseModel(
         self.elements_batch_size = options.batch_size
         self.images_scale = options.scale
 
+    @override
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         return self.enabled and isinstance(element, PictureItem)
 
@@ -65,6 +67,7 @@ class PictureDescriptionBaseModel(
     ) -> Iterable[str | ApiImageRequestResult]:
         raise NotImplementedError
 
+    @override
     def __call__(
         self,
         doc: DoclingDocument,
@@ -131,6 +134,7 @@ class PictureDescriptionBaseModel(
 
     @classmethod
     @abstractmethod
+    @override
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         pass
 

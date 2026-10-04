@@ -12,6 +12,7 @@ from pathlib import Path
 
 from docling_core.types.doc.document import ImageRef
 from PIL import Image, ImageChops
+from typing_extensions import override
 
 from docling.backend.latex.engines.base import RenderEngine
 from docling.backend.latex.utils.encoding import decode_latex_content
@@ -88,6 +89,7 @@ class TectonicEngine(RenderEngine):
         self._is_available = False
         self.install()
 
+    @override
     def is_available(self) -> bool:
         return self._is_available
 
@@ -283,6 +285,7 @@ class TectonicEngine(RenderEngine):
         cmd.append(str(tex_file))
         return cmd
 
+    @override
     def render(
         self, tikz_code: str, preamble: str = "", source_root: Path | None = None
     ) -> ImageRef | None:

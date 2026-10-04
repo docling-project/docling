@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Callable, List, Optional
 
 from docling_core.types.doc import ContentLayer, DocItem, DoclingDocument, NodeItem
+from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -272,6 +273,7 @@ class ConvertPipeline(BasePipeline):
 
     @classmethod
     @abstractmethod
+    @override
     def get_default_options(cls) -> ConvertPipelineOptions:
         pass
 
@@ -289,6 +291,7 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
 
         yield from page_batch
 
+    @override
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         if not isinstance(conv_res.input._backend, PaginatedDocumentBackend):
             raise RuntimeError(
@@ -388,6 +391,7 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
 
         return conv_res
 
+    @override
     def _unload(self, conv_res: ConversionResult) -> ConversionResult:
         for page in conv_res.pages:
             if page._backend is not None:
@@ -398,6 +402,7 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
 
         return conv_res
 
+    @override
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         status = conv_res.status
         if status in [

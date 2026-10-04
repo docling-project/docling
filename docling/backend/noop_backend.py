@@ -6,6 +6,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Set, Union
 
+from typing_extensions import override
+
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -42,13 +44,16 @@ class NoOpBackend(AbstractDocumentBackend):
             _log.error(f"NoOpBackend validation failed: {e}")
             self.valid = False
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return False
 
     @classmethod
+    @override
     def supported_formats(cls) -> Set[InputFormat]:
         return set(InputFormat)

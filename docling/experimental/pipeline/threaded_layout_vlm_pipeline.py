@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
 from docling_core.types.doc.document import DocTagsDocument
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from docling_core.types.doc.page import SegmentedPage
@@ -275,6 +276,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             stages=stages, first_stage=layout_stage, output_queue=output_q
         )
 
+    @override
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Build document using threaded layout+VLM pipeline."""
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
@@ -484,20 +486,25 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         else:
             conv_res.status = ConversionStatus.SUCCESS
 
+    @override
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         return conv_res
 
     @classmethod
+    @override
     def get_default_options(cls) -> ThreadedLayoutVlmPipelineOptions:
         return ThreadedLayoutVlmPipelineOptions()
 
     @classmethod
+    @override
     def is_backend_supported(cls, backend: AbstractDocumentBackend) -> bool:
         return isinstance(backend, PdfDocumentBackend)
 
+    @override
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         return conv_res.status
 
+    @override
     def _unload(self, conv_res: ConversionResult) -> None:
         for p in conv_res.pages:
             if p._backend is not None:

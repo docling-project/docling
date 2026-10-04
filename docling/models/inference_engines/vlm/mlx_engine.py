@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Union
 
 from PIL.Image import Image
+from typing_extensions import override
 
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
@@ -50,6 +51,7 @@ _PROCESSOR_KWARGS_WARNING = "have to be in `processor_kwargs` dict"
 
 
 class _ProcessorKwargsWarningFilter(logging.Filter):
+    @override
     def filter(self, record: logging.LogRecord) -> bool:
         return _PROCESSOR_KWARGS_WARNING not in record.getMessage()
 
@@ -105,6 +107,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.model_config is not None:
             self.initialize()
 
+    @override
     def initialize(self) -> None:
         """Initialize the MLX model and processor."""
         if self._initialized:
@@ -201,6 +204,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             f"Loaded MLX model {repo_id} (revision: {revision}) in {load_time:.2f} sec."
         )
 
+    @override
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs.
 
@@ -350,6 +354,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         return outputs
 
+    @override
     def cleanup(self) -> None:
         """Clean up model resources."""
         if self.vlm_model is not None:

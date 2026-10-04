@@ -22,6 +22,7 @@ from typing import Literal, overload
 
 import langcodes
 from pydantic import BaseModel, ConfigDict
+from typing_extensions import override
 
 _log = logging.getLogger(__name__)
 
@@ -124,6 +125,7 @@ class OcrLanguage(BaseModel):
             default_script = None
         return self.bcp47_script == default_script
 
+    @override
     def __str__(self) -> str:
         return self.tag()
 

@@ -9,6 +9,8 @@ from abc import abstractmethod
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, List
 
+from typing_extensions import override
+
 if TYPE_CHECKING:
     from transformers import GenerationConfig
 
@@ -145,6 +147,7 @@ class TailRepetitionStopper(GenerationStopper):
         self.max_unit = max(1, int(max_unit))
         self._lookback_tokens = max(1, int(lookback_tokens))
 
+    @override
     def lookback_tokens(self) -> int:
         return self._lookback_tokens
 
@@ -157,6 +160,7 @@ class TailRepetitionStopper(GenerationStopper):
             max_unit=self.max_unit,
         )
 
+    @override
     def should_stop(self, s: str) -> bool:
         return self.repeated_unit(s) is not None
 
@@ -207,6 +211,7 @@ class DocTagsRepetitionStopper(GenerationStopper):
         tol = 0.2 * mean
         return all(abs(d - mean) <= tol for d in diffs)
 
+    @override
     def should_stop(self, s: str) -> bool:
         """
         Trip only on **consecutive** runs (no other matched blocks between) of ≥3 items

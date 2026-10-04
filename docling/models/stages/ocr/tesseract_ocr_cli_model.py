@@ -16,6 +16,7 @@ from typing import List, Optional, Tuple, Type
 import pandas as pd
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -111,9 +112,11 @@ class TesseractOcrCliModel(BaseOcrModel):
                 self._sanitize_lang(lang) for lang in self.resolve_ocr_languages()
             ]
 
+    @override
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         return installed_tesseract_languages(self._tesseract_vocabulary or [])
 
+    @override
     def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:
         assert self._tesseract_vocabulary is not None
         name = language_to_tesseract_code(language)
@@ -313,6 +316,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         df_list = pd.read_csv(io.StringIO(decoded_data), header=None)
         self._tesseract_vocabulary = tesseract_vocabulary(df_list[0].tolist()[1:])
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -427,6 +431,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                 yield page
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[OcrOptions]:
         return TesseractCliOcrOptions
 

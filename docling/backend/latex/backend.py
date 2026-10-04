@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
 from docling_core.types.doc.document import Formatting
+from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin
@@ -81,6 +82,7 @@ class LatexDocumentBackend(
         self._tikz_futures: list[concurrent.futures.Future] = []
         self.latex_text = decode_latex_content(self.path_or_stream)
 
+    @override
     def is_valid(self) -> bool:
         text = self.latex_text.strip()
         if not text:
@@ -88,10 +90,12 @@ class LatexDocumentBackend(
         return True
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return False
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.LATEX}
 
@@ -150,6 +154,7 @@ class LatexDocumentBackend(
 
         return doc
 
+    @override
     def convert(self) -> DoclingDocument:
         doc = DoclingDocument(name=self.file.stem)
         opts = cast(LatexBackendOptions, self.options)
@@ -191,6 +196,7 @@ class LatexDocumentBackend(
 
         return doc
 
+    @override
     def _process_nodes(
         self,
         nodes,

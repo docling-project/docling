@@ -26,6 +26,7 @@ from docling_core.types.doc import (
     ImageRef,
     TrackSource,
 )
+from typing_extensions import override
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
@@ -118,13 +119,16 @@ class VideoPipeline(BasePipeline):
         )
 
     @classmethod
+    @override
     def get_default_options(cls) -> VideoPipelineOptions:
         return VideoPipelineOptions()
 
     @classmethod
+    @override
     def is_backend_supported(cls, backend: AbstractDocumentBackend) -> bool:
         return isinstance(backend, NoOpBackend)
 
+    @override
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         if conv_res.status == ConversionStatus.FAILURE:
             return ConversionStatus.FAILURE
@@ -146,6 +150,7 @@ class VideoPipeline(BasePipeline):
             return ConversionStatus.PARTIAL_SUCCESS
         return ConversionStatus.SUCCESS
 
+    @override
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         _log.info("Processing video document %s.", conv_res.input.file.name)
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):

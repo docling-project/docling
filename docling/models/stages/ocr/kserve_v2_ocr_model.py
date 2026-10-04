@@ -12,6 +12,7 @@ import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 from PIL import Image
+from typing_extensions import override
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import (
@@ -213,6 +214,7 @@ class KserveV2OcrModel(BaseOcrModel):
 
         return cells
 
+    @override
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -307,6 +309,7 @@ class KserveV2OcrModel(BaseOcrModel):
             yield page
 
     @classmethod
+    @override
     def get_options_type(cls) -> Type[OcrOptions]:
         """Get the options type for this OCR model.
 

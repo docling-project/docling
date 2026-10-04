@@ -17,6 +17,7 @@ from docling_core.types.doc import (
     TrackSource,
 )
 from pydantic import BaseModel, Field
+from typing_extensions import override
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
@@ -162,6 +163,7 @@ class _ConversationItem(BaseModel):
             return NotImplemented
         return self.start_time < other.start_time
 
+    @override
     def __eq__(self, other):
         if not isinstance(other, _ConversationItem):
             return NotImplemented
