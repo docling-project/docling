@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
-from docling_core.types.doc.document import Formatting, ListItem
+from docling_core.types.doc.document import Formatting
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin
@@ -199,40 +199,21 @@ class LatexDocumentBackend(
         formatting: Formatting | None = None,
         text_label: DocItemLabel | None = None,
     ):
-        """Add ``nodes`` to ``doc`` under ``parent``.
-
-        If ``parent`` is a list item that has no text yet, and no children other
-        than footnotes, the first text flushed becomes its text instead of a new
-        child item. This also holds for text nested in a quote or a group.
-        """
         if nodes is None:
             return
 
         text_buffer: list[str] = []
 
-        def takes_text(item: ListItem) -> bool:
-            # A footnote is attached to the text, so it does not come before it.
-            return not item.text and all(
-                child.resolve(doc).label == DocItemLabel.FOOTNOTE
-                for child in item.children
-            )
-
         def flush_text_buffer():
             if text_buffer:
                 combined_text = "".join(text_buffer).strip()
-                if (
-                    combined_text
-                    and isinstance(parent, ListItem)
-                    and takes_text(parent)
-                ):
-                    parent.text = combined_text
-                    parent.orig = combined_text
-                elif combined_text:
-                    doc.add_text(
-                        parent=parent,
-                        label=text_label or DocItemLabel.TEXT,
-                        text=combined_text,
-                        formatting=formatting,
+                if combined_text:
+                    self._add_text(
+                        doc,
+                        parent,
+                        text_label or DocItemLabel.TEXT,
+                        combined_text,
+                        formatting,
                     )
                 text_buffer.clear()
 

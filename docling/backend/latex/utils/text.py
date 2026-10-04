@@ -10,6 +10,7 @@ from docling_core.types.doc.document import (
     DocItemLabel,
     DoclingDocument,
     Formatting,
+    ListItem,
     NodeItem,
 )
 
@@ -38,6 +39,9 @@ try:  # pragma: no cover - import-time guard
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
+# One or more blank lines; splitting stripped text at it gives no empty part.
+_BLANK_LINES_PATTERN = re.compile(r"\n\s*\n")
+
 
 class TextHelperMixin:
     if TYPE_CHECKING:
@@ -58,6 +62,42 @@ class TextHelperMixin:
             self, node: Any, following_nodes: Any
         ) -> tuple[str, int]: ...
         def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
+
+    def _add_text(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        label: DocItemLabel,
+        text: str,
+        formatting: Formatting | None,
+    ) -> None:
+        """Add ``text`` under ``parent``, or make it the text of an empty list item.
+
+        A list item is created without text and its content is added inside it.
+        The first paragraph added while it has no text, and no children other
+        than footnotes, becomes its text: from the text buffer, from a paragraph
+        between blank lines, or nested in a quote or a group. As a child, it
+        would leave an empty item, exported to Markdown as ``1. `` followed by
+        the text on its own line. Text added to a list item is split at blank
+        lines, which would otherwise end the list in a Markdown export.
+        """
+        if not isinstance(parent, ListItem):
+            doc.add_text(parent=parent, label=label, text=text, formatting=formatting)
+            return
+
+        for paragraph in _BLANK_LINES_PATTERN.split(text.strip()):
+            paragraph = paragraph.strip()
+            if not parent.text and all(
+                # A footnote is attached to the text, so it does not come before it.
+                child.resolve(doc).label == DocItemLabel.FOOTNOTE
+                for child in parent.children
+            ):
+                parent.text = paragraph
+                parent.orig = paragraph
+            else:
+                doc.add_text(
+                    parent=parent, label=label, text=paragraph, formatting=formatting
+                )
 
     def _process_chars_node(
         self,
@@ -81,11 +121,12 @@ class TextHelperMixin:
             for part in parts[1:-1]:
                 part_stripped = part.strip()
                 if part_stripped:
-                    doc.add_text(
-                        parent=parent,
-                        label=text_label or DocItemLabel.PARAGRAPH,
-                        text=part_stripped,
-                        formatting=formatting,
+                    self._add_text(
+                        doc,
+                        parent,
+                        text_label or DocItemLabel.PARAGRAPH,
+                        part_stripped,
+                        formatting,
                     )
 
             text_buffer.append(parts[-1])

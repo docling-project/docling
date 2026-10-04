@@ -274,6 +274,38 @@ def test_latex_enumerate_item_starting_with_nested_text(start: bytes):
     assert doc.export_to_markdown() == "1. First\n2. Second"
 
 
+@pytest.mark.parametrize(
+    "item",
+    [
+        b"\\item\n\nFirst\n\nContinuation",
+        b"\\item \\begin{quote}\n\nFirst\n\nContinuation\\end{quote}",
+        b"\\item {\n\nFirst\n\nContinuation}",
+    ],
+    ids=["paragraphs", "quote", "group"],
+)
+def test_latex_enumerate_item_starting_with_paragraph_break(item: bytes):
+    """The first paragraph after a leading blank line is the text of the item."""
+    latex_content = (
+        b"\\documentclass{article}\n\\begin{document}\n\\begin{enumerate}\n"
+        + item
+        + b"\n\\item Second\n\\end{enumerate}\n\\end{document}\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    first, second = (child.resolve(doc) for child in outer.children)
+    assert (first.text, second.text) == ("First", "Second")
+    assert [child.resolve(doc).text for child in first.children] == ["Continuation"]
+    assert doc.export_to_markdown() == "1. First\nContinuation\n2. Second"
+
+
 def test_latex_enumerate_empty_item_keeps_numbering():
     """An empty ``\\item`` still takes a number, as in the typeset document."""
     latex_content = rb"""
