@@ -214,6 +214,33 @@ def test_guess_format_markdown_extension(tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("name", "content", "expected"),
+    [
+        ("paper", b"\\documentclass{article}\n\\begin{document}\n", InputFormat.LATEX),
+        (
+            "paper.ltx",
+            b"% preamble\n\\documentclass[a4paper]{article}\n",
+            InputFormat.LATEX,
+        ),
+        ("paper", b"\xef\xbb\xbf\\documentclass{article}\n", InputFormat.LATEX),
+        ("paper", b"\\documentstyle[times]{ACMconf}\n", InputFormat.LATEX),
+        ("paper", b"% \\documentclass{article}\n", None),
+        ("chapter", b"\\section{Intro}\nText.\n", None),
+        ("notes.txt", b"\\documentclass{article}\n", InputFormat.MD),
+    ],
+)
+def test_guess_format_latex_without_tex_extension(tmp_path, name, content, expected):
+    """A LaTeX document without a .tex name is recognized by its preamble."""
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
+@pytest.mark.parametrize(
     ("suffix", "content", "expected"),
     [
         ("VTT", b"WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n", InputFormat.VTT),
