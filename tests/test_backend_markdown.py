@@ -238,6 +238,79 @@ def test_code_block_language_detection():
     ]
 
 
+def test_code_block_keeps_first_line_indentation():
+    """Indentation on a code block's first line is content, not padding.
+
+    Stripping the whole snippet removed it from the first line only, so the
+    lines no longer lined up: YAML changed structure and Python stopped parsing.
+    """
+    markdown = (
+        "```yaml\n"
+        "  key: 1\n"
+        "  sub:\n"
+        "    x: 2\n"
+        "```\n\n"
+        "Indented block:\n\n"
+        "      deeper\n"
+        "    base\n\n"
+        "```\n"
+        "\n"
+        "    after blank line\n"
+        "```\n"
+        "\n"
+        "```\n"
+        "   \n"
+        "    after spaces-only line\n"
+        "```\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    code_texts = [
+        item.text for item in conv_result.document.texts if isinstance(item, CodeItem)
+    ]
+    assert code_texts == [
+        "  key: 1\n  sub:\n    x: 2",
+        "  deeper\nbase",
+        "    after blank line",
+        "    after spaces-only line",
+    ]
+
+
+def test_convert_table_keeps_inline_code_spans():
+    """A code span inside a GFM table cell is part of that cell.
+
+    The span keeps the words around it, a pipe inside it is not a column
+    separator, and its text is literal, so an entity in it is not decoded.
+    """
+    markdown = """| Command | Description |
+| --- | --- |
+| run `build` now | builds it |
+| `a | b` | keeps the pipe |
+| `&amp;` | stays literal |
+| clean | removes it |
+"""
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    assert len(conv_result.document.tables) == 1
+    table_data = conv_result.document.tables[0].data
+    assert table_data.num_rows == 5
+    assert table_data.num_cols == 2
+    assert [cell.text for cell in table_data.table_cells] == [
+        "Command",
+        "Description",
+        "run build now",
+        "builds it",
+        "a | b",
+        "keeps the pipe",
+        "&amp;",
+        "stays literal",
+        "clean",
+        "removes it",
+    ]
+
+
 def test_convert_table_has_no_duplicate_cells():
     """
     Regression test:
@@ -670,6 +743,59 @@ def test_convert_line_breaks():
     assert list_items[1].text == "Item 2"
 
 
+def test_convert_line_break_next_to_code_span():
+    """Text after a line break is not merged into a preceding code span.
+
+    A code span is its own item, so the prose that follows it stays a separate
+    TextItem whether the break comes before or after the span (soft or hard),
+    also inside a list item.
+    """
+    opt = MarkdownBackendOptions()
+
+    def items(markdown: str):
+        doc = _convert_markdown(markdown, opt)
+        return [(str(t.label), t.text) for t in doc.texts]
+
+    expected = [("text", "Already in"), ("code", "Reference/"), ("text", ". Done.")]
+
+    # No break: the reference behaviour
+    assert items("Already in `Reference/`. Done.") == expected
+
+    # Soft break before the code span
+    assert items("Already in\n`Reference/`. Done.") == expected
+
+    # Hard break before the code span
+    assert items("Already in  \n`Reference/`. Done.") == expected
+
+    # Soft break after the code span
+    assert items("Already in `Reference/`\n. Done.") == expected
+
+    # Hard break after the code span: the break is kept as a leading '\\n' on
+    # the run that follows, as across a formatting boundary.
+    assert items("Already in `Reference/`  \n. Done.") == [
+        ("text", "Already in"),
+        ("code", "Reference/"),
+        ("text", "\n. Done."),
+    ]
+
+    # Two code spans after a soft break
+    assert items("Already in\n`Reference/` and `Other/`. Done.") == [
+        ("text", "Already in"),
+        ("code", "Reference/"),
+        ("text", "and"),
+        ("code", "Other/"),
+        ("text", ". Done."),
+    ]
+
+    # Inside a list item (its mixed content lives in an inline group)
+    assert items("- Already in\n  `Reference/`. Done.") == [
+        ("list_item", ""),
+        ("text", "Already in"),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
+
+
 def test_ordered_list_preserves_start_number():
     """Ordered lists that start at a number other than 1 must preserve that number.
 
@@ -731,3 +857,92 @@ def test_standard_ordered_list_still_starts_at_one():
 
     exported = conv_result.document.export_to_markdown()
     assert exported == "1. alpha\n2. beta\n3. gamma"
+
+
+def test_convert_table_cell_whitespace_around_inline_emphasis():
+    """Verify that whitespace around inline emphasis inside table cells is preserved.
+
+    Leading space after emphasis, trailing space before emphasis, and space
+    between adjacent inline formatting runs must all be preserved.
+    """
+    markdown = (
+        "| Letter | Word |\n"
+        "|---|---|\n"
+        "| **C** Cadre | x |\n"
+        "| foo **bar** | y |\n"
+        "| **A** **B** | z |\n"
+        "| *italic* and **bold** | w |\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    table = conv_result.document.tables[0].data
+    cell_texts = [cell.text for cell in table.table_cells]
+    assert cell_texts == [
+        "Letter",
+        "Word",
+        "C Cadre",
+        "x",
+        "foo bar",
+        "y",
+        "A B",
+        "z",
+        "italic and bold",
+        "w",
+    ]
+
+
+def test_line_break_does_not_cross_block_boundary():
+    """A line break only joins runs of its own paragraph.
+
+    When no text run follows a break inside its paragraph (the paragraph ends in
+    inline HTML such as ``<br>``, a code span or an image without alt text, or
+    the next lines are table rows), the next block starts with no break pending:
+    its text is not joined onto the paragraph, a code block or the marker item
+    of an HTML block.
+    """
+    opt = MarkdownBackendOptions()
+
+    def items(markdown: str):
+        doc = _convert_markdown(markdown, opt)
+        return [(str(t.label), t.text) for t in doc.texts]
+
+    # Paragraph ending in inline HTML, then another paragraph
+    assert items("Intro\n<br>\n\nAfter") == [("text", "Intro"), ("text", "After")]
+
+    # Same with a hard break
+    assert items("Intro  \n<br>\n\nAfter") == [("text", "Intro"), ("text", "After")]
+
+    # Followed by a block quote
+    assert items("Intro\n<br>\n\n> quoted") == [("text", "Intro"), ("text", "quoted")]
+
+    # The lines after the break are table rows
+    assert items("Intro\n| A | B |\n|---|---|\n| 1 | 2 |\n\nAfter") == [
+        ("text", "Intro"),
+        ("text", "After"),
+    ]
+
+    # The paragraph ends in an image without alt text
+    assert items("Intro\n![](x.png)\n\nAfter") == [("text", "Intro"), ("text", "After")]
+
+    # A fenced code block does not take in the paragraph after it
+    assert items("Intro\n<br>\n\n```\ncode\n```\n\nAfter") == [
+        ("text", "Intro"),
+        ("code", "code"),
+        ("text", "After"),
+    ]
+
+    # A code span at the end of a paragraph does not take in the next paragraph
+    assert items("Intro\n`code`\n\nAfter") == [
+        ("text", "Intro"),
+        ("code", "code"),
+        ("text", "After"),
+    ]
+
+    # An HTML block: the next paragraph used to be joined onto the block's
+    # marker item, so the HTML round trip in convert() raised a RuntimeError.
+    assert items("Intro\n<br>\n\n<div>block</div>\n\nAfter") == [
+        ("text", "Intro"),
+        ("text", "block"),
+        ("text", "After"),
+    ]

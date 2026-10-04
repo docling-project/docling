@@ -9,10 +9,13 @@ from itertools import groupby
 from docling_core.types.doc import TableCell
 
 _CONTENT_TOKENS = {"fcel", "ecel", "ched", "rhed", "srow"}
+_TOKENS = _CONTENT_TOKENS | {"lcel", "ucel", "xcel", "nl"}
+_TOKEN_PATTERN = "|".join(sorted(_TOKENS))
 _TAG_PATTERN = re.compile(
-    r"<(?P<tag>[a-z]+)>(?P<text>.*?)</(?P=tag)>"
-    r"|<(?P<stag>[a-z]+)\s*/>"
-    r"|<(?P<otag>[a-z]+)>(?P<otext>[^<]*)",
+    rf"<(?P<tag>{_TOKEN_PATTERN})>(?P<text>.*?)</(?P=tag)>"
+    rf"|<(?P<stag>{_TOKEN_PATTERN})\s*/>"
+    rf"|<(?P<otag>{_TOKEN_PATTERN})>"
+    rf"(?P<otext>.*?)(?=<(?:{_TOKEN_PATTERN})\s*/?>|$)",
     re.DOTALL,
 )
 

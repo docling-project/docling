@@ -386,6 +386,18 @@ class RapidOcrOptions(OcrOptions):
             )
         ),
     ] = "onnxruntime"
+    model_size: Annotated[
+        Literal["tiny", "small", "medium"],
+        Field(
+            description=(
+                "Detection/recognition model size for the PP-OCRv6 backbone. Only affects "
+                "languages that resolve to PP-OCRv6 (see `lang`); it has no effect on languages "
+                "served by PP-OCRv5/PP-OCRv4, and never affects the classification model. "
+                "An unsupported combination (e.g. `tiny` with Japanese) raises "
+                "`RapidOcrModelSizeNotSupportedError` rather than falling back silently."
+            )
+        ),
+    ] = "small"
     text_score: Annotated[
         float,
         Field(
@@ -1172,6 +1184,28 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         default=True, description="Extract mathematical formulas"
     )
 
+    expansion_factor: float = Field(
+        default=0.18,
+        ge=0.0,
+        description=(
+            "Margin added around each code or formula element when it is cropped "
+            "from the page, as a fraction of the element's width (left and right) "
+            "and height (top and bottom). A wide margin can take in an equation "
+            "number or a neighbouring line, which can make the model loop."
+        ),
+    )
+
+    stop_on_repetition: bool = Field(
+        default=True,
+        description=(
+            "Stop a generation that keeps repeating the same short unit (for "
+            "example `\\quad \\quad ...`) instead of running to max_new_tokens, and "
+            "remove the repeated tail from the output. Inline engines stop the "
+            "looping element early; for API and vLLM engines only the output is "
+            "cleaned up."
+        ),
+    )
+
 
 # =============================================================================
 # PRESET REGISTRATION
@@ -1453,7 +1487,7 @@ class ConvertPipelineOptions(PipelineOptions):
             description=(
                 "Configuration for picture description model. Uses new preset system (recommended). "
                 "Default: 'smolvlm' preset. Only applicable when `do_picture_description=True`. "
-                "Example: PictureDescriptionVlmOptions.from_preset('granite_vision')"
+                "Example: PictureDescriptionVlmEngineOptions.from_preset('granite_vision')"
             ),
         ),
     ] = _default_picture_description_options
@@ -1830,8 +1864,17 @@ class VideoPipelineOptions(PipelineOptions):
 
     max_sampled_frames: Annotated[
         int | None,
-        Field(default=None, gt=0, description="Optional cap on sampled frames."),
-    ] = None
+        Field(
+            default=200,
+            gt=0,
+            description=(
+                "Maximum number of frames sampled per video; sampling stops once it "
+                "is reached. The default of 200 bounds memory and output size "
+                "(about 33 minutes at the default 10 s interval). Set to None for "
+                "no limit."
+            ),
+        ),
+    ] = 200
 
     scene_change_smooth_window: Annotated[
         int,
@@ -2183,6 +2226,16 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+    use_reading_order_separators: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use visible horizontal and vertical PDF rules as structural signals "
+                "for rule-based reading order. This only affects PDF backends that "
+                "expose visible shape geometry."
+            )
+        ),
+    ] = True
     heading_hierarchy_options: Annotated[
         HeadingHierarchyOptions,
         Field(

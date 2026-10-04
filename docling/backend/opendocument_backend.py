@@ -165,6 +165,7 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _ODFDO_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream, options)
         self.path_or_stream: BytesIO | Path = path_or_stream
+        self.page_range = in_doc.limits.page_range
         self.valid: bool = False
         self.odf_obj: OdfDocument = _load_odf_document(
             path_or_stream, self.document_hash
@@ -190,6 +191,30 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
             self.path_or_stream.close()
         self.path_or_stream = None
 
+    def _add_footnotes(self, doc: DoclingDocument) -> None:
+        """Add footnote/endnote body text to the furniture layer.
+
+        ``_odf_text_runs`` skips ``text:note`` entirely wherever it's referenced
+        inline (see its own docstring), since splicing an arbitrary-length note
+        body into the middle of the citing sentence would corrupt the reading
+        order rather than just losing content. This recovers the body text
+        separately: each note becomes its own ``FOOTNOTE`` item in the furniture
+        layer, the same layer headers/footers use in the Word/iWork backends -
+        available to callers, out of the reading order by default.
+        """
+        for note in self.odf_obj.body.get_elements("descendant::text:note"):
+            bodies = note.get_elements("text:note-body")
+            if not bodies:
+                continue
+            text = bodies[0].text_content.strip()
+            if not text:
+                continue
+            doc.add_text(
+                label=DocItemLabel.FOOTNOTE,
+                text=text,
+                content_layer=ContentLayer.FURNITURE,
+            )
+
 
 def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
     """Find the true data boundaries (min/max rows and columns) in an ODS table.
@@ -206,10 +231,16 @@ def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
     """
     min_row, min_col = None, None
     max_row, max_col = 0, 0
+    # Extent of the rows and cells actually present in the table, used to keep
+    # merged ranges from reaching past the table.
+    last_row, last_col = 0, 0
+    span_max_row, span_max_col = 0, 0
 
     # Scan all rows and cells to find non-empty cells
     for row_idx, row in enumerate(table.traverse()):
+        last_row = row_idx
         for col_idx, cell in enumerate(row.traverse()):
+            last_col = max(last_col, col_idx)
             # Check if cell has content (value or is part of a span)
             if _odf_cell_has_content(cell) or cell.tag == "table:covered-table-cell":
                 if min_row is None:
@@ -222,21 +253,31 @@ def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
             # Also check for cells with spans (they define data regions)
             if cell.tag != "table:covered-table-cell":
                 attrs = cell.attributes
-                row_span = int(attrs.get("table:number-rows-spanned") or 1)
-                col_span = int(attrs.get("table:number-columns-spanned") or 1)
+                row_span = _odf_span(attrs, "table:number-rows-spanned")
+                col_span = _odf_span(attrs, "table:number-columns-spanned")
                 if row_span > 1 or col_span > 1:
                     if min_row is None:
                         min_row = row_idx
                     if min_col is None or col_idx < min_col:
                         min_col = col_idx
-                    max_row = max(max_row, row_idx + row_span - 1)
-                    max_col = max(max_col, col_idx + col_span - 1)
+                    span_max_row = max(span_max_row, row_idx + row_span - 1)
+                    span_max_col = max(span_max_col, col_idx + col_span - 1)
 
     # If no data found, return empty bounds
     if min_row is None or min_col is None:
         return (0, 0, 0, 0)
 
+    max_row = max(max_row, min(span_max_row, last_row))
+    max_col = max(max_col, min(span_max_col, last_col))
     return (min_row, max_row, min_col, max_col)
+
+
+def _odf_span(attrs: dict[str, str], key: str) -> int:
+    """Read a ``table:number-*-spanned`` attribute as a span of at least 1."""
+    try:
+        return max(int(attrs.get(key) or 1), 1)
+    except ValueError:
+        return 1
 
 
 def _clean_odf_text_lines(text: str) -> list[str]:
@@ -354,6 +395,13 @@ def _odf_text_runs(
         ]
     if tag == "text:tab":
         return [_OdfTextRun(text="\t", formatting=formatting, hyperlink=hyperlink)]
+    if tag == "text:note":
+        # A footnote/endnote's citation marker and body live inside this element,
+        # but neither belongs in the citing sentence's own text: the body can be
+        # arbitrarily long, and splicing it in here would corrupt the reading
+        # order instead of just losing content. The body is recovered separately
+        # as its own furniture item; see _OdfBaseBackend._add_footnotes.
+        return []
 
     runs: list[_OdfTextRun] = []
     children = element.children
@@ -1090,9 +1138,18 @@ def _odf_chart_classification(chart_content: Any) -> PictureClassificationLabel:
     return PictureClassificationLabel.OTHER_CHART
 
 
+def _odf_chart_title(chart_content: Any) -> str | None:
+    """Read the chart object's own title, the way the PowerPoint backend emits one."""
+    for title in chart_content.get_elements("descendant::chart:title"):
+        text = title.text_content.strip()
+        if text:
+            return text
+    return None
+
+
 def _chart_data_from_frame(
     frame: Frame, odf_obj: OdfDocument | None
-) -> tuple[TableData, PictureClassificationLabel] | None:
+) -> tuple[TableData, PictureClassificationLabel, str | None] | None:
     if odf_obj is None:
         return None
 
@@ -1110,6 +1167,7 @@ def _chart_data_from_frame(
         # from the package only fails once the part is actually read.
         chart_classification = _odf_chart_classification(chart_content)
         chart_tables = chart_content.get_elements("descendant::table:table")
+        chart_title = _odf_chart_title(chart_content)
     except Exception as e:
         _log.warning(
             "Could not read embedded OpenDocument object %s: %s", object_href, e
@@ -1119,7 +1177,7 @@ def _chart_data_from_frame(
         if isinstance(table, OdfTable) and table.name == "local-table":
             table_data = _table_data_from_odf(table)
             if table_data is not None:
-                return table_data, chart_classification
+                return table_data, chart_classification, chart_title
     return None
 
 
@@ -1145,8 +1203,23 @@ def _add_odf_charts(
         chart_result = _chart_data_from_frame(frame, odf_obj)
         if chart_result is None:
             continue
-        chart_data, chart_classification = chart_result
-        chart = doc.add_picture(parent=parent, content_layer=content_layer)
+        chart_data, chart_classification, chart_title = chart_result
+        # A chart's title is the caption of its picture, next to the data in the
+        # meta, the shape the PowerPoint/Word/Excel/iWork backends give a chart.
+        # A chart showing no title gets no caption; nothing is invented.
+        caption = (
+            doc.add_text(
+                label=DocItemLabel.CAPTION,
+                text=chart_title,
+                parent=parent,
+                content_layer=content_layer,
+            )
+            if chart_title
+            else None
+        )
+        chart = doc.add_picture(
+            parent=parent, content_layer=content_layer, caption=caption
+        )
         chart.label = DocItemLabel.PICTURE
         chart.meta = PictureMeta(
             classification=PictureClassificationMetaField(
@@ -1154,7 +1227,9 @@ def _add_odf_charts(
                     PictureClassificationPrediction(class_name=chart_classification)
                 ]
             ),
-            tabular_chart=TabularChartMetaField(chart_data=chart_data),
+            tabular_chart=TabularChartMetaField(
+                chart_data=chart_data, title=chart_title
+            ),
         )
         chart_count += 1
     return chart_count
@@ -1375,8 +1450,13 @@ def _add_table_from_odf(
                 continue
 
             attrs = cell.attributes
-            row_span = int(attrs.get("table:number-rows-spanned") or 1)
-            col_span = int(attrs.get("table:number-columns-spanned") or 1)
+            # Keep merged ranges within the table region.
+            row_span = min(
+                _odf_span(attrs, "table:number-rows-spanned"), max_row - row_idx + 1
+            )
+            col_span = min(
+                _odf_span(attrs, "table:number-columns-spanned"), max_col - col_idx + 1
+            )
             adjusted_row = row_idx - min_row
             adjusted_col = col_idx - min_col
             text = _odf_cell_text(cell)
@@ -1483,8 +1563,13 @@ def _table_data_from_odf(
                 continue
 
             attrs = cell.attributes
-            row_span = int(attrs.get("table:number-rows-spanned") or 1)
-            col_span = int(attrs.get("table:number-columns-spanned") or 1)
+            # Keep merged ranges within the table region.
+            row_span = min(
+                _odf_span(attrs, "table:number-rows-spanned"), max_row - row_idx + 1
+            )
+            col_span = min(
+                _odf_span(attrs, "table:number-columns-spanned"), max_col - col_idx + 1
+            )
             text = _odf_cell_text(cell)
 
             # Adjust cell coordinates to be relative to the data region
@@ -1537,6 +1622,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
             )
 
         self._walk(self.odf_obj.body.children, parent=None, doc=doc)
+        self._add_footnotes(doc)
         return doc
 
     def _walk(
@@ -1589,7 +1675,10 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
+        start_page, end_page = self.page_range
         for slide_idx, page in enumerate(self.odf_obj.body.get_draw_pages()):
+            if not start_page <= slide_idx + 1 <= end_page:
+                continue
             slide_name = page.name or f"slide-{slide_idx + 1}"
             slide_group = doc.add_group(
                 name=f"slide-{slide_idx}",
@@ -1804,13 +1893,17 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             else None
         )
 
+        start_page, end_page = self.page_range
         page_no = 0
         for sheet_idx, table in enumerate(self.odf_obj.body.tables):
             if sheet_names_filter is not None and table.name not in sheet_names_filter:
                 _log.debug(f"Skipping sheet {sheet_idx}: {table.name} (filtered out)")
                 continue
 
+            # Page numbers are positions within the filtered sheets, as in XLSX.
             page_no += 1
+            if not start_page <= page_no <= end_page:
+                continue
             _log.info(f"Processing sheet {sheet_idx}: {table.name} as page {page_no}")
 
             # Add page for this sheet

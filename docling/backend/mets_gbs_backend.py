@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import IO, TYPE_CHECKING, cast
 
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
@@ -249,6 +249,9 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             options = MetsGbsBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: MetsGbsBackendOptions
+        # Hashing the input document reads the stream to its end.
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
         self._tar: tarfile.TarFile = (
             tarfile.open(name=self.path_or_stream, mode="r:gz")
             if isinstance(self.path_or_stream, Path)
@@ -257,14 +260,15 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         self.root_mets: etree._Element | None = None
         self.page_map: dict[int, _PageFiles] = {}
         self._total_bytes_extracted = 0
-        member_count = 0
+        # Members are read lazily, one header at a time, so that the member count
+        # limit is enforced while iterating instead of after reading all members.
+        self._members: dict[str, tarfile.TarInfo] = {}
+        self._member_count = 0
 
-        for member in self._tar.getmembers():
-            member_count += 1
-            if member_count > self.options.max_member_count:
-                raise ValueError(
-                    f"Archive exceeds maximum member count limit of {self.options.max_member_count}"
-                )
+        while self.root_mets is None:
+            member = self._next_member()
+            if member is None:
+                break
 
             if member.name.endswith(".xml"):
                 file = self._tar.extractfile(member)
@@ -282,8 +286,6 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
                         )
 
                     self.root_mets = self._validate_mets_xml(content)
-                    if self.root_mets is not None:
-                        break
 
         if self.root_mets is None:
             raise DocumentLoadError(
@@ -367,6 +369,34 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         _log.warning(f"The root element is not <mets:mets> with PROFILE='gbs': {root}")
         return None
 
+    def _next_member(self) -> tarfile.TarInfo | None:
+        """Read the next archive member header, enforcing the member count limit."""
+        member = self._tar.next()
+        if member is None:
+            return None
+        self._member_count += 1
+        if self._member_count > self.options.max_member_count:
+            raise ValueError(
+                f"Archive exceeds maximum member count limit of {self.options.max_member_count}"
+            )
+        self._members.setdefault(member.name, member)
+        return member
+
+    def _extract_member(self, name: str) -> IO[bytes] | None:
+        """Open an archive member by name, reading further headers only as needed.
+
+        Unlike ``TarFile.extractfile(name)``, this does not load the whole member
+        list, so the member count limit keeps applying.
+        """
+        member = self._members.get(name)
+        while member is None:
+            candidate = self._next_member()
+            if candidate is None:
+                raise KeyError(f"filename {name!r} not found in archive")
+            if candidate.name == name:
+                member = candidate
+        return self._tar.extractfile(member)
+
     def _parse_page(
         self, page_no: int
     ) -> tuple[SegmentedPdfPage | None, PILImage | None]:
@@ -386,7 +416,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             return None, None
 
         # Security: limit extraction size to prevent decompression bombs
-        image_file = self._tar.extractfile(image_info.path)
+        image_file = self._extract_member(image_info.path)
         if image_file is None:
             raise RuntimeError(
                 f"Archive member '{image_info.path}' is not a regular file "
@@ -409,7 +439,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         buf = BytesIO(image_data)
         im: PILImage = Image.open(buf)
 
-        ocr_file = self._tar.extractfile(ocr_info.path)
+        ocr_file = self._extract_member(ocr_info.path)
         if ocr_file is None:
             raise RuntimeError(
                 f"Archive member '{ocr_info.path}' is not a regular file "

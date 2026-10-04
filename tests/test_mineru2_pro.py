@@ -166,7 +166,7 @@ def test_parse_mineru2_builds_structured_document_and_otsl_table() -> None:
             (
                 2,
                 "<ched>Name<ched>Value<nl><fcel>Merged<lcel><nl>"
-                "<fcel>Total<fcel>42<nl>",
+                "<fcel>Total<fcel><-10%<nl>",
             ),
             (4, "Reference"),
         ],
@@ -195,7 +195,7 @@ def test_parse_mineru2_builds_structured_document_and_otsl_table() -> None:
         "Value",
         "Merged",
         "Total",
-        "42",
+        "<-10%",
     ]
     assert table.table_cells[2].col_span == 2
 

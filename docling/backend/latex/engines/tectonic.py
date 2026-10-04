@@ -14,6 +14,7 @@ from docling_core.types.doc.document import ImageRef
 from PIL import Image, ImageChops
 
 from docling.backend.latex.engines.base import RenderEngine
+from docling.backend.latex.utils.encoding import decode_latex_content
 
 _log = logging.getLogger(__name__)
 _PYPDFIUM2_LOCK = threading.Lock()
@@ -54,11 +55,32 @@ class TectonicEngine(RenderEngine):
     )
     _LATEX_GRAPHICS_EXTENSIONS = (".pdf", ".png", ".jpg", ".jpeg", ".eps", ".svg")
 
+    # Best-effort pre-check for untrusted sources: skip rendering when the
+    # source names an absolute or parent-directory path for an input or
+    # graphics file, or uses the TeX primitives that open arbitrary files. It
+    # cannot see names built by macros or every way TeX can open files.
+    _PATH_ARGUMENT_PATTERN = re.compile(
+        r"\\(?P<command>input|include|includegraphics|InputIfFileExists|graphicspath)"
+        r"(?![A-Za-z])\*?(?:\s*\[[^\]]*\])?\s*\{*\s*(?P<path>[^{}\s]*)"
+    )
+    _FILE_PRIMITIVE_PATTERN = re.compile(
+        r"\\(?P<command>openin|openout|XeTeXpicfile|XeTeXpdffile)(?![A-Za-z])"
+    )
+
     def __init__(
         self,
         timeout: float = 60.0,
-        allow_shell_escape: bool = True,
+        allow_shell_escape: bool = False,
     ):
+        """Create a Tectonic-backed render engine.
+
+        Args:
+            timeout: Maximum time in seconds for one Tectonic run.
+            allow_shell_escape: Whether to pass ``-Z shell-escape``, which lets
+                ``\\write18`` run shell commands. Only enable for trusted input.
+                When ``False``, Tectonic runs with ``--untrusted`` and
+                ``--only-cached``.
+        """
         self.cache_dir = Path.home() / ".cache" / "docling" / "tectonic"
         self.binary_path = self.cache_dir / "tectonic"
         self.timeout = timeout
@@ -95,6 +117,41 @@ class TectonicEngine(RenderEngine):
         return cls._PDFTEX_ASSIGNMENT_PATTERN.sub(
             r"\1% docling: removed for Tectonic compatibility: \2", preamble
         )
+
+    @classmethod
+    def _find_unsafe_construct(cls, text: str) -> str | None:
+        """Return a description of the first outside file reference, if any."""
+        primitive = cls._FILE_PRIMITIVE_PATTERN.search(text)
+        if primitive is not None:
+            return f"\\{primitive.group('command')}"
+        for match in cls._PATH_ARGUMENT_PATTERN.finditer(text):
+            path = match.group("path")
+            if (
+                path.startswith(("/", "\\", "~"))
+                or re.match(r"[A-Za-z]:", path)
+                or ".." in re.split(r"[/\\]", path)
+            ):
+                return f"\\{match.group('command')} with path {path!r}"
+        return None
+
+    @classmethod
+    def _precheck_staged_files(cls, staging_dir: Path) -> bool:
+        """Return whether no staged file refers to files outside ``staging_dir``."""
+        for staged_file in staging_dir.rglob("*"):
+            if not staged_file.is_file():
+                continue
+            unsafe = cls._find_unsafe_construct(
+                staged_file.read_text(encoding="utf-8", errors="replace")
+            )
+            if unsafe is not None:
+                _log.warning(
+                    "Skipping TikZ rendering: %s contains %s, which refers to "
+                    "files outside the rendering directory.",
+                    staged_file.relative_to(staging_dir),
+                    unsafe,
+                )
+                return False
+        return True
 
     @staticmethod
     def _strip_comments(text: str) -> str:
@@ -170,7 +227,7 @@ class TectonicEngine(RenderEngine):
 
             seen_tex_files.add(source_path)
             try:
-                nested_text = source_path.read_text(encoding="utf-8")
+                nested_text = decode_latex_content(source_path)
             except Exception as exc:
                 _log.warning("Failed to read TikZ dependency %s: %s", source_path, exc)
                 continue
@@ -211,6 +268,21 @@ class TectonicEngine(RenderEngine):
             staged_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source_path, staged_path)
 
+    def _build_command(self, tex_file: Path) -> list[str]:
+        """Build the Tectonic command line for compiling ``tex_file``."""
+        cmd = [str(self.binary_path)]
+        if self.allow_shell_escape:
+            # --untrusted would disable shell escape, so it is not added here.
+            cmd.extend(["-Z", "shell-escape"])
+        else:
+            # --untrusted disables shell escape and extra search paths;
+            # --only-cached prevents network fetches of bundle files.
+            cmd.append("--untrusted")
+            cmd.append("--only-cached")
+        cmd.append("--print")
+        cmd.append(str(tex_file))
+        return cmd
+
     def render(
         self, tikz_code: str, preamble: str = "", source_root: Path | None = None
     ) -> ImageRef | None:
@@ -243,11 +315,12 @@ class TectonicEngine(RenderEngine):
             tex_file = temp_path / "diagram.tex"
             tex_file.write_text(latex_doc, encoding="utf-8")
 
-            cmd = [str(self.binary_path)]
-            if self.allow_shell_escape:
-                cmd.extend(["-Z", "shell-escape"])
-            cmd.append("--print")
-            cmd.append(str(tex_file))
+            if not self.allow_shell_escape and not self._precheck_staged_files(
+                temp_path
+            ):
+                return None
+
+            cmd = self._build_command(tex_file)
 
             try:
                 subprocess.run(

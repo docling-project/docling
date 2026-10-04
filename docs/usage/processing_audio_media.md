@@ -222,7 +222,13 @@ Recommended configs by use case:
 | Lecture recordings | `frame_sampling_mode=SCENE_CHANGE, cuts_per_minute=2.0` |
 | General video | `frame_sampling_mode=FIXED_INTERVAL, frame_interval_seconds=10.0` |
 
-`max_sampled_frames` caps the total number of frames sampled regardless of mode. Set `generate_frame_images=False` to skip frame sampling entirely and transcribe only.
+`max_sampled_frames` caps the total number of frames sampled regardless of mode (default `200`, about 33 minutes at the default 10 s interval; set `None` for no limit). Set `generate_frame_images=False` to skip frame sampling entirely and transcribe only.
+
+### Container handling and time limits
+
+The video pipeline reads each file with the FFmpeg demuxer that matches its extension (`.mp4`/`.mov` as MP4/QuickTime, `.mkv`/`.webm` as Matroska, `.avi` as AVI) and only from the local file itself. A file whose content does not match its extension fails to open instead of being interpreted as another format.
+
+FFmpeg calls share the document's `document_timeout` budget when it is set. Without it, each call is limited to 5 minutes or the video duration, whichever is longer. If a call runs out of time, the frames and transcript gathered so far are kept, the result status is `PARTIAL_SUCCESS`, and a `TIMEOUT` error is recorded in `ConversionResult.errors` (see `ConversionResult.has_timeout_errors()`).
 
 ### Speaker diarization
 
@@ -248,6 +254,7 @@ docling --to md --video-sampling-mode scene --video-diarization video.mp4
 | `--video-cuts-per-minute` | `0.0` (unset) | Target scene cuts per minute; overrides `--video-prominence` when set. |
 | `--video-prominence` | `0.0` (auto) | Scene-change sensitivity threshold. `0` auto-calibrates to the video's motion. |
 | `--video-diarization` | disabled | Enable speaker diarization. Requires `resemblyzer`. |
+| `--document-timeout` | unset | Time budget in seconds for each video, shared by all FFmpeg calls. |
 
 See the [CLI reference](../reference/cli.md) for the complete flag list.
 

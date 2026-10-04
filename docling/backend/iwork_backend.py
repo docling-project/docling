@@ -1,19 +1,21 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Backends for Apple Pages (``.pages``) and Keynote (``.key``) documents.
+"""Backends for Apple Pages (``.pages``), Numbers (``.numbers``) and Keynote
+(``.key``) documents.
 
-Either file is a ZIP container, but what is inside changed completely with the
-2013 releases:
+Any of the three is a ZIP container, but what is inside changed completely with
+the 2013 releases:
 
-* **Pages 5 / Keynote 6 and later (2013 onwards)** store the document as
-  ``Index/*.iwa`` — Snappy-framed protobuf whose schemas Apple has never
+* **Pages 5 / Numbers 3 / Keynote 6 and later (2013 onwards)** store the document
+  as ``Index/*.iwa`` — Snappy-framed protobuf whose schemas Apple has never
   published. This is what essentially every iWork document in circulation looks
   like. Keynote 2018 and later flatten the package into a subdirectory and zip
   that index a second time, into an ``Index.zip``.
 * **iWork '09 and earlier** stored it as plain XML — ``index.xml`` for Pages and
-  ``index.apxl`` for Keynote, either of them optionally gzipped — alongside a
-  ``QuickLook/Preview.pdf`` render that Apple stopped writing after that release.
+  Numbers, ``index.apxl`` for Keynote, any of them optionally gzipped —
+  alongside a ``QuickLook/Preview.pdf`` render that Apple stopped writing after
+  that release.
 
 Every generation is read into the same model, so the backends are declarative:
 they build a :class:`~docling_core.types.doc.DoclingDocument` directly rather
@@ -39,8 +41,15 @@ from docling_core.types.doc import (
     GroupLabel,
     ImageRef,
     NodeItem,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     ProvenanceItem,
     Size,
+    TableCell,
+    TableData,
+    TabularChartMetaField,
 )
 from docling_core.types.doc.items.group import ListGroup
 from docling_core.types.doc.items.text import TextItem
@@ -52,9 +61,21 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.backend.iwork import keynote_iwa, keynote_xml, pages_iwa, pages_xml
+from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
+from docling.backend.iwork import (
+    chart_image,
+    keynote_iwa,
+    keynote_xml,
+    numbers_content,
+    numbers_iwa,
+    numbers_xml,
+    pages_iwa,
+    pages_xml,
+)
 from docling.backend.iwork.content import (
     Block,
+    Chart,
+    ChartKind,
     Comment,
     Content,
     Geometry,
@@ -76,9 +97,13 @@ _T = TypeVar("_T")
 
 _PAGES_MIMETYPE = "application/vnd.apple.pages"
 
+_NUMBERS_MIMETYPE = "application/vnd.apple.numbers"
+
 _KEYNOTE_MIMETYPE = "application/vnd.apple.keynote"
 
 _PAGES_KIND = "Pages"
+
+_NUMBERS_KIND = "Numbers"
 
 _KEYNOTE_KIND = "Keynote"
 
@@ -95,6 +120,32 @@ halves of such a document are read out of two different archives.
 _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
 
 _KEYNOTE_LEGACY_INDEX_MEMBERS = ("index.apxl", "index.apxl.gz")
+
+_CHART_RENDER_HINT = (
+    "LibreOffice is required to render Keynote charts as images "
+    "(render_chart_images=True): each chart is rebuilt as an Office chart for "
+    "LibreOffice to draw. Install LibreOffice and make sure `soffice` is on PATH. "
+    "Charts still keep their classification and data."
+)
+
+_ChartRenderer = Callable[[Chart, Geometry | None], ImageRef | None]
+"""Draws a chart, given where it sits, or returns None when it cannot."""
+
+_CHART_LABELS = {
+    ChartKind.COLUMN: PictureClassificationLabel.BAR_CHART,
+    ChartKind.BAR: PictureClassificationLabel.BAR_CHART,
+    ChartKind.LINE: PictureClassificationLabel.LINE_CHART,
+    ChartKind.PIE: PictureClassificationLabel.PIE_CHART,
+    ChartKind.DONUT: PictureClassificationLabel.PIE_CHART,
+    ChartKind.SCATTER: PictureClassificationLabel.SCATTER_CHART,
+}
+"""How a chart is classified, by its kind; anything else is ``OTHER_CHART``.
+
+The same families the PowerPoint and Excel backends classify into, so a chart
+reads the same whichever of them it came from: column and bar charts, stacked
+or not, are bar charts, a donut is a pie, and area, bubble, radar and mixed
+charts are other charts.
+"""
 
 
 def _open_container(
@@ -338,8 +389,13 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
           result is left empty rather than guessed at.
         * A picture is placed where the slide anchors it, but its caption, its
           cropping and its accessibility description are not read.
-        * A chart is not read. Neither its picture nor the data behind it is
-          recovered, which is where this falls short of the PowerPoint backend.
+        * A chart becomes a picture classified by its kind, carrying the data it
+          plots as a table and captioned with its title, as the PowerPoint
+          backend gives one. Keynote keeps no picture of a chart, so the
+          picture is empty unless ``render_chart_images`` redraws one from that
+          data, without the original's colours and fonts. A value that is a
+          date or a duration rather than a number is left empty, and an iWork
+          '09 chart is not read.
         * What a master slide draws is left to the master: it belongs to every
           slide using it rather than to any one of them, so it is not repeated.
           A slide that shows nothing of its own therefore yields an empty group.
@@ -493,12 +549,33 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         size = Size(width=self._presentation.width, height=self._presentation.height)
 
+        render_chart = self._chart_renderer()
         for index, slide in enumerate(self._presentation.slides):
             doc.add_page(page_no=index + 1, size=size)
             group = doc.add_group(name=f"slide-{index}", label=GroupLabel.CHAPTER)
-            _add_slide(doc, slide, group, index + 1)
+            _add_slide(doc, slide, group, index + 1, render_chart)
 
         return doc
+
+    def _chart_renderer(self) -> _ChartRenderer | None:
+        """Return what draws the presentation's charts, if the caller asked for it.
+
+        Returns:
+            A renderer, or None when rendering is off or cannot run here, which
+            is reported once rather than once per chart.
+        """
+        if not self.options.render_chart_images:
+            return None
+        converter = get_docx_to_pdf_converter()
+        if converter is None:
+            _log.warning(_CHART_RENDER_HINT)
+            return None
+
+        def render(chart: Chart, geometry: Geometry | None) -> ImageRef | None:
+            image = chart_image.render_chart(chart, geometry, converter)
+            return ImageRef.from_pil(image=image, dpi=72) if image is not None else None
+
+        return render
 
 
 class _ListStack:
@@ -540,7 +617,11 @@ class _ListStack:
 
 
 def _add_slide(
-    doc: DoclingDocument, slide: Slide, group: NodeItem, page_no: int
+    doc: DoclingDocument,
+    slide: Slide,
+    group: NodeItem,
+    page_no: int,
+    render_chart: _ChartRenderer | None = None,
 ) -> None:
     """Add one slide's contents, its presenter notes and its comments.
 
@@ -549,15 +630,22 @@ def _add_slide(
         slide: The slide to add.
         group: The group standing for the slide.
         page_no: The page the slide is, counted from one.
+        render_chart: Draws the slide's charts, or None to leave them undrawn.
     """
     lists = _ListStack(doc, group)
     for placed in slide.blocks:
+        image = (
+            render_chart(placed.block, placed.geometry)
+            if render_chart is not None and isinstance(placed.block, Chart)
+            else None
+        )
         _add_block(
             doc,
             placed.block,
             lists,
             parent=group,
             prov=_slide_prov(placed.geometry, page_no, _block_text(placed.block)),
+            image=image,
         )
 
     for note in slide.notes:
@@ -651,6 +739,7 @@ def _add_block(
     lists: _ListStack,
     parent: NodeItem | None = None,
     prov: ProvenanceItem | None = None,
+    image: ImageRef | None = None,
 ) -> TextItem | None:
     """Add one block of content, in the order the document lays it out.
 
@@ -660,6 +749,7 @@ def _add_block(
         lists: The list groups currently open.
         parent: The node to add it under, or None for the document root.
         prov: Where the block came from, for the backends that know.
+        image: A picture drawn of a chart, which the document holds none of.
 
     Returns:
         The item a paragraph became, so a comment can be attached to it, or None
@@ -668,10 +758,12 @@ def _add_block(
     if isinstance(block, Paragraph):
         return _add_paragraph(doc, block, lists, parent, prov)
 
-    # A table or a picture ends any list it follows, the same as body text.
+    # A table, a picture or a chart ends any list it follows, like body text.
     lists.close()
     if isinstance(block, Picture):
         _add_picture(doc, block, parent, prov)
+    elif isinstance(block, Chart):
+        _add_chart(doc, block, parent, prov, image)
     else:
         doc.add_table(data=block, parent=parent, prov=prov)
     return None
@@ -702,6 +794,109 @@ def _add_picture(
             _log.debug("Could not decode iWork image %s: %s", picture.name, exc)
 
     doc.add_picture(image=image, parent=parent, prov=prov)
+
+
+def _add_chart(
+    doc: DoclingDocument,
+    chart: Chart,
+    parent: NodeItem | None = None,
+    prov: ProvenanceItem | None = None,
+    image: ImageRef | None = None,
+) -> None:
+    """Add one chart as a picture classified by its kind and carrying its data.
+
+    This is the shape the PowerPoint backend gives a chart: a picture whose meta
+    holds the chart's classification and its data as a table, captioned with
+    the chart's title when the chart shows one.
+
+    Args:
+        doc: The document being built.
+        chart: The chart to add.
+        parent: The node to add it under, or None for the document root.
+        prov: Where the chart came from, for the backends that know.
+        image: A picture drawn of the chart, or None to leave it undrawn.
+    """
+    caption = None
+    if chart.title:
+        caption = doc.add_text(
+            label=DocItemLabel.CAPTION,
+            text=chart.title,
+            parent=parent,
+            prov=(
+                prov.model_copy(update={"charspan": (0, len(chart.title))})
+                if prov is not None
+                else None
+            ),
+        )
+
+    picture = doc.add_picture(image=image, caption=caption, parent=parent, prov=prov)
+    label = _CHART_LABELS.get(chart.kind, PictureClassificationLabel.OTHER_CHART)
+    table = _chart_table(chart)
+    picture.meta = PictureMeta(
+        classification=PictureClassificationMetaField(
+            predictions=[PictureClassificationPrediction(class_name=label)]
+        ),
+        tabular_chart=(
+            TabularChartMetaField(chart_data=table) if table is not None else None
+        ),
+    )
+
+
+def _chart_table(chart: Chart) -> TableData | None:
+    """Lay a chart's data out as a table, categories down and series across.
+
+    It is the layout the PowerPoint and Excel backends give a chart's data, so a
+    consumer reads every chart's table the same way::
+
+        | <blank> | <series 0 name> | <series 1 name> | ...
+        | cat_0   | val_0,0         | val_1,0         | ...
+        | cat_1   | val_0,1         | val_1,1         | ...
+
+    Args:
+        chart: The chart whose data to lay out.
+
+    Returns:
+        The table, or None when the chart holds no data.
+    """
+    rows = max([len(chart.categories)] + [len(s.values) for s in chart.series])
+    if not chart.series or rows == 0:
+        return None
+
+    texts = [["", *(series.name for series in chart.series)]]
+    for row in range(rows):
+        category = chart.categories[row] if row < len(chart.categories) else ""
+        values = (s.values[row] if row < len(s.values) else None for s in chart.series)
+        texts.append([category, *map(_chart_value, values)])
+
+    cells = [
+        TableCell(
+            text=text,
+            start_row_offset_idx=row,
+            end_row_offset_idx=row + 1,
+            start_col_offset_idx=col,
+            end_col_offset_idx=col + 1,
+            column_header=row == 0,
+            row_header=row > 0 and col == 0,
+        )
+        for row, line in enumerate(texts)
+        for col, text in enumerate(line)
+    ]
+    return TableData(
+        num_rows=rows + 1, num_cols=len(chart.series) + 1, table_cells=cells
+    )
+
+
+def _chart_value(value: float | None) -> str:
+    """Write a chart value the way the chart's data editor shows it.
+
+    A whole number loses the ``.0`` a float would print with, which is what the
+    PowerPoint backend does too, so ``120`` reads as it was typed.
+    """
+    if value is None:
+        return ""
+    if float(value).is_integer() and abs(value) < 1e15:
+        return str(int(value))
+    return str(value)
 
 
 def _add_paragraph(
@@ -856,3 +1051,275 @@ def _hyperlink(address: str | None) -> AnyUrl | Path | None:
     except ValidationError:
         _log.debug("Skipping malformed Pages hyperlink address: %r", address)
         return None
+
+
+class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
+    """Extract sheets and tables from Apple Numbers documents of either generation.
+
+    Each sheet becomes a page and a sheet group. Tables and charts on it become
+    table and picture items in the order they are laid out down the page, and
+    each sticky note becomes a comment in the notes layer.
+
+    Known limitations:
+        * Cell values are read, but the number format beside them is not, so a
+          currency, percentage or scientific cell reads as the plain number it
+          holds. This matches the Excel and OpenDocument backends.
+        * In a 2013+ document, a cell driven by a pop-up menu yields the index
+          Numbers stores rather than the label it shows; the labels are not
+          reachable from the cell. An iWork '09 document stores the label, and
+          that is what is read there.
+        * A chart's kind is not read, so every chart is classified as a chart of
+          unspecified kind. The kind is an integer, and the two container
+          generations number them differently; what the chart plots is recovered
+          either way.
+        * Only sheet-level comments — the ones Numbers calls sticky notes — are
+          read. A comment attached to a cell is stored beside the table rather
+          than on the sheet and is not.
+        * Images and shapes are not extracted.
+        * Password-protected documents cannot be read.
+        * ``.numbers`` bundles saved as a *directory* package rather than a
+          single file are not recognised; the converter cannot address a
+          directory as an input document.
+    """
+
+    @override
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: IWorkBackendOptions | None = None,
+    ):
+        if options is None:
+            options = IWorkBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
+        self.options: IWorkBackendOptions = options
+        self.page_range = in_doc.limits.page_range
+
+        self._sheets: list[numbers_content.Sheet] = []
+        self._valid = False
+
+        self._sheets = _open_container(
+            path_or_stream, self._read_document, _NUMBERS_KIND, self.document_hash
+        )
+        self._valid = True
+
+    def _read_document(self, archive: zipfile.ZipFile) -> list[numbers_content.Sheet]:
+        """Dispatch to the reader for whichever generation wrote the container."""
+        infos = _readable_members(
+            archive, self.options, _NUMBERS_KIND, self.document_hash
+        )
+
+        names = {info.filename for info in infos}
+        if any(name.startswith(_MODERN_INDEX_PREFIX) for name in names):
+            return numbers_iwa.read_content(
+                archive, infos, self.options.max_file_bytes, self.document_hash
+            )
+
+        legacy = next((n for n in _LEGACY_INDEX_MEMBERS if n in names), None)
+        if legacy is not None:
+            return numbers_xml.read_content(
+                archive,
+                legacy,
+                self.options.max_total_bytes,
+                self.options.max_file_bytes,
+                self.document_hash,
+            )
+
+        raise DocumentLoadError(
+            f"Document with hash {self.document_hash} is a ZIP archive but does "
+            "not look like a Numbers document: it has neither an Index/ "
+            "directory nor an index.xml."
+        )
+
+    @override
+    def is_valid(self) -> bool:
+        return self._valid
+
+    @classmethod
+    @override
+    def supports_pagination(cls) -> bool:
+        return True
+
+    @override
+    def page_count(self) -> int:
+        return len(self._selected_sheets()) if self.is_valid() else 0
+
+    @classmethod
+    @override
+    def supported_formats(cls) -> set[InputFormat]:
+        return {InputFormat.IWORK_NUMBERS}
+
+    def _selected_sheets(self) -> list[numbers_content.Sheet]:
+        """Apply the ``sheet_names`` filter, keeping the document's order."""
+        wanted = self.options.sheet_names
+        if wanted is None:
+            return self._sheets
+
+        selected = [sheet for sheet in self._sheets if sheet.name in wanted]
+        unmatched = set(wanted) - {sheet.name for sheet in self._sheets}
+        if unmatched:
+            _log.warning(
+                "sheet_names filter contains names not found in the document: %s",
+                sorted(unmatched),
+            )
+        return selected
+
+    @override
+    def convert(self) -> DoclingDocument:
+        if not self.is_valid():
+            raise RuntimeError(
+                f"Cannot convert Numbers document with hash {self.document_hash} "
+                "because the backend failed to init."
+            )
+
+        origin = DocumentOrigin(
+            filename=self.file.name or "file",
+            mimetype=_NUMBERS_MIMETYPE,
+            binary_hash=self.document_hash,
+        )
+        doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+
+        start_page, end_page = self.page_range
+        for index, sheet in enumerate(self._selected_sheets(), start=1):
+            # Page numbers are 1-based positions within the selected sheets, so a
+            # selected sheet keeps its number when a page range narrows the
+            # document further.
+            if index < start_page or index > end_page:
+                continue
+
+            page = doc.add_page(page_no=index, size=Size(width=0, height=0))
+            group = doc.add_group(
+                parent=None,
+                label=GroupLabel.SHEET,
+                name=sheet.name or f"Sheet {index}",
+            )
+
+            # Tables and charts share the sheet canvas, so they are laid out in
+            # one pass down the page rather than one kind after the other.
+            drawn: list[numbers_content.Table | numbers_content.PlacedChart] = [
+                *sheet.tables,
+                *sheet.charts,
+            ]
+            for drawable in sorted(drawn, key=numbers_content.sheet_order):
+                if isinstance(drawable, numbers_content.Table):
+                    _add_sheet_table(doc, drawable, parent=group, page_no=index)
+                elif isinstance(drawable, numbers_content.PlacedChart):
+                    _add_chart(
+                        doc,
+                        drawable.chart,
+                        parent=group,
+                        prov=_sheet_prov(drawable.geometry, index),
+                    )
+
+            for position, comment in enumerate(sheet.comments, start=1):
+                _add_sheet_comment(doc, comment, sheet=sheet.name, position=position)
+
+            width, height = _sheet_extent(sheet)
+            page.size = Size(width=width, height=height)
+
+        return doc
+
+
+def _sheet_prov(geometry: Geometry | None, page_no: int) -> ProvenanceItem:
+    """Place an item on the sheet it was read from.
+
+    Args:
+        geometry: Where the drawable holding it sits, if Numbers positioned one.
+        page_no: The sheet's page number, counted from one.
+
+    Returns:
+        The provenance. A drawable Numbers did not position gets an empty box
+        rather than one covering the whole sheet: the page is what makes it
+        addressable, and a box that was never measured would not.
+    """
+    if geometry is None:
+        bbox = BoundingBox(l=0, t=0, r=0, b=0, coord_origin=CoordOrigin.TOPLEFT)
+    else:
+        bbox = BoundingBox(
+            l=geometry.left,
+            t=geometry.top,
+            r=geometry.left + geometry.width,
+            b=geometry.top + geometry.height,
+            coord_origin=CoordOrigin.TOPLEFT,
+        )
+    return ProvenanceItem(page_no=page_no, charspan=(0, 0), bbox=bbox)
+
+
+def _add_sheet_table(
+    doc: DoclingDocument,
+    table: numbers_content.Table,
+    *,
+    parent: NodeItem,
+    page_no: int,
+) -> None:
+    """Attach one Numbers table to the document under its sheet group."""
+    data = TableData(num_rows=table.num_rows, num_cols=table.num_cols, table_cells=[])
+    for cell in table.cells:
+        data.table_cells.append(
+            TableCell(
+                text=cell.text,
+                col_span=cell.col_span,
+                start_row_offset_idx=cell.row,
+                end_row_offset_idx=cell.row + 1,
+                start_col_offset_idx=cell.col,
+                end_col_offset_idx=cell.col + cell.col_span,
+                column_header=cell.row < table.header_rows,
+                row_header=cell.row >= table.header_rows
+                and cell.col < table.header_cols,
+            )
+        )
+
+    prov = _sheet_prov(table.geometry, page_no)
+    caption = (
+        doc.add_text(
+            label=DocItemLabel.CAPTION,
+            text=table.name,
+            parent=parent,
+            # The caption names the table, so it came from where the table sits,
+            # and its span is the name — the same way a chart's title is placed.
+            prov=prov.model_copy(update={"charspan": (0, len(table.name))}),
+        )
+        if table.name
+        else None
+    )
+    doc.add_table(data=data, caption=caption, parent=parent, prov=prov)
+
+
+def _add_sheet_comment(
+    doc: DoclingDocument,
+    comment: numbers_content.Comment,
+    *,
+    sheet: str,
+    position: int,
+) -> None:
+    """Attach one sticky note, with whoever left it and when.
+
+    Numbers sticky notes float on the sheet rather than hanging off a cell, so
+    the comment has no target to point at; it is filed under its own comment
+    section the way the Excel backend files a cell comment.
+    """
+    metadata = []
+    if comment.author:
+        metadata.append(f"author: {comment.author}")
+    if comment.timestamp is not None:
+        metadata.append(f"time: {comment.timestamp.isoformat(timespec='milliseconds')}")
+
+    text = f"[{', '.join(metadata)}]: {comment.text}" if metadata else comment.text
+    group = doc.add_group(
+        label=GroupLabel.COMMENT_SECTION,
+        name=f"comment-{sheet}-{position}",
+        content_layer=ContentLayer.NOTES,
+    )
+    doc.add_comment(text=text, parent=group)
+
+
+def _sheet_extent(sheet: numbers_content.Sheet) -> tuple[float, float]:
+    """Return how far a sheet's contents reach, in points from its top left."""
+    width = 0.0
+    height = 0.0
+    for drawable in (*sheet.tables, *sheet.charts, *sheet.comments):
+        if drawable.geometry is None:
+            continue
+        width = max(width, drawable.geometry.left + drawable.geometry.width)
+        height = max(height, drawable.geometry.top + drawable.geometry.height)
+    return (width, height)

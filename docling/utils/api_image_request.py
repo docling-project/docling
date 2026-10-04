@@ -9,7 +9,7 @@ from typing import Any
 
 import requests
 from PIL import Image
-from pydantic import AnyUrl
+from pydantic import AnyUrl, ValidationError
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -18,6 +18,8 @@ from docling.datamodel.base_models import (
     ApiImageStreamingRequestResult,
     OpenAiApiResponse,
     OpenAiChatMessage,
+    OpenAiResponseLogprobs,
+    OpenAiTokenLogprob,
     VlmStopReason,
 )
 from docling.models.utils.generation_utils import GenerationStopper
@@ -47,6 +49,18 @@ def _make_retry_session() -> requests.Session:
     session.mount("http://", adapter)
     session.mount("https://", adapter)
     return session
+
+
+def _failed_request(reason: str) -> ApiImageRequestResult:
+    """Result for a request that produced no model output.
+
+    The failure is reported through ``VlmStopReason.INFERENCE_ERROR`` and ``error``
+    instead of an exception, so one failing page does not abort the document;
+    the pipelines turn it into a PARTIAL_SUCCESS with a per-page ErrorItem.
+    """
+    return ApiImageRequestResult(
+        text="", num_tokens=0, stop_reason=VlmStopReason.INFERENCE_ERROR, error=reason
+    )
 
 
 def _extract_text_from_tool_arguments(arguments: str | None) -> str:
@@ -236,11 +250,15 @@ def api_image_request(
                     r.headers.get("content-type"),
                     _response_preview(r.text),
                 )
-                return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+                return _failed_request(
+                    f"HTTP {r.status_code}: {_response_preview(r.text)}"
+                )
 
             response_payload = _parse_response_json(r)
             if response_payload is None:
-                return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+                return _failed_request(
+                    f"HTTP {r.status_code}: response body was empty or not JSON"
+                )
 
             usage_key = _resolve_usage_response_key(
                 usage_response_key=usage_response_key,
@@ -264,9 +282,9 @@ def api_image_request(
             )
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
-            return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+            return _failed_request(f"{type(e).__name__}: {e}")
     else:
-        return ApiImageRequestResult("", 0, VlmStopReason.UNSPECIFIED)
+        return _failed_request("Could not encode the page image as PNG")
 
 
 def api_image_request_streaming(
@@ -336,10 +354,29 @@ def api_image_request_streaming(
             full_text = []
             usage_payload = None
             num_tokens = None
+            # Servers send logprobs per chunk; collect them so the streamed
+            # result exposes the same OpenAiResponseLogprobs as a non-streamed one.
+            logprob_content: list[OpenAiTokenLogprob] = []
+            logprob_refusal: list[OpenAiTokenLogprob] = []
             usage_key = _resolve_usage_response_key(
                 usage_response_key=usage_response_key,
                 token_extract_key=token_extract_key,
             )
+
+            def _result() -> ApiImageStreamingRequestResult:
+                logprobs = None
+                if logprob_content or logprob_refusal:
+                    logprobs = OpenAiResponseLogprobs(
+                        content=logprob_content or None,
+                        refusal=logprob_refusal or None,
+                    )
+                return ApiImageStreamingRequestResult(
+                    text="".join(full_text),
+                    num_tokens=num_tokens,
+                    usage=usage_payload,
+                    logprobs=logprobs,
+                )
+
             for raw_line in r.iter_lines(decode_unicode=True):
                 if not raw_line:  # keep-alives / blank lines
                     continue
@@ -361,16 +398,30 @@ def api_image_request_streaming(
                 # obj["choices"][0]["delta"]["content"] may be None or missing
                 # (e.g., tool calls)
                 try:
-                    delta = obj["choices"][0].get("delta") or {}
+                    choice = obj["choices"][0]
+                    delta = choice.get("delta") or {}
                     piece = delta.get("content") or ""
+                    raw_logprobs = choice.get("logprobs")
                 except (KeyError, IndexError) as e:
                     _log.debug("Unexpected SSE chunk shape: %s", e)
                     piece = ""
+                    raw_logprobs = None
 
                 usage = _extract_response_usage(obj, usage_key)
                 if usage is not None:
                     usage_payload = usage
                     num_tokens = _extract_total_tokens(usage)
+
+                if raw_logprobs:
+                    try:
+                        chunk_logprobs = OpenAiResponseLogprobs.model_validate(
+                            raw_logprobs
+                        )
+                    except ValidationError as e:
+                        _log.debug("Skipping malformed SSE logprobs: %s", e)
+                    else:
+                        logprob_content.extend(chunk_logprobs.content or [])
+                        logprob_refusal.extend(chunk_logprobs.refusal or [])
 
                 if piece:
                     full_text.append(piece)
@@ -384,14 +435,6 @@ def api_image_request_streaming(
                             # closing the connection when we exit the 'with' block.
                             # vLLM/OpenAI-compatible servers will detect the client
                             # disconnect and abort the request server-side.
-                            return ApiImageStreamingRequestResult(
-                                text="".join(full_text),
-                                num_tokens=num_tokens,
-                                usage=usage_payload,
-                            )
+                            return _result()
 
-            return ApiImageStreamingRequestResult(
-                text="".join(full_text),
-                num_tokens=num_tokens,
-                usage=usage_payload,
-            )
+            return _result()

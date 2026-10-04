@@ -213,6 +213,80 @@ def test_guess_format_markdown_extension(tmp_path):
     assert dci._guess_format(markdown_path) is InputFormat.MD
 
 
+@pytest.mark.parametrize(
+    ("name", "content", "expected"),
+    [
+        ("paper", b"\\documentclass{article}\n\\begin{document}\n", InputFormat.LATEX),
+        (
+            "paper.ltx",
+            b"% preamble\n\\documentclass[a4paper]{article}\n",
+            InputFormat.LATEX,
+        ),
+        ("paper", b"\xef\xbb\xbf\\documentclass{article}\n", InputFormat.LATEX),
+        ("paper", b"\\documentstyle[times]{ACMconf}\n", InputFormat.LATEX),
+        ("paper", b"% \\documentclass{article}\n", None),
+        ("chapter", b"\\section{Intro}\nText.\n", None),
+        ("notes.txt", b"\\documentclass{article}\n", InputFormat.MD),
+    ],
+)
+def test_guess_format_latex_without_tex_extension(tmp_path, name, content, expected):
+    """A LaTeX document without a .tex name is recognized by its preamble."""
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
+@pytest.mark.parametrize(
+    ("suffix", "content", "expected"),
+    [
+        ("VTT", b"WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n", InputFormat.VTT),
+        ("ADOC", b"= Title\n\nSome text\n", InputFormat.ASCIIDOC),
+        ("HTML", b"<p>no doctype and no html tag</p>\n", InputFormat.HTML),
+        ("EML", b"From: a@b.c\nTo: d@e.f\nSubject: hi\n\nbody\n", InputFormat.EMAIL),
+    ],
+)
+def test_guess_format_upper_case_extension_path(tmp_path, suffix, content, expected):
+    # The extension is what identifies these text formats; a path must resolve
+    # it case-insensitively, as a DocumentStream with the same name already does.
+    doc_path = tmp_path / f"document.{suffix}"
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=doc_path.name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
+@pytest.mark.parametrize(
+    ("suffix", "expected"),
+    [
+        ("doc", InputFormat.DOC),
+        ("DOC", InputFormat.DOC),
+        ("ppt", InputFormat.PPT),
+        ("xls", InputFormat.XLS),
+    ],
+)
+def test_guess_format_ole2_with_fat_first_sector(tmp_path, suffix, expected):
+    # An OLE2 container whose first sector after the header is a FAT sector
+    # (FD FF FF FF) is reported as Excel by filetype whatever it really holds,
+    # e.g. a Word 6.0 .doc. The extension must then decide between the OLE2
+    # based formats.
+    content = bytearray(1024)
+    content[:8] = bytes.fromhex("D0CF11E0A1B11AE1")
+    content[512:516] = bytes.fromhex("FDFFFFFF")
+    doc_path = tmp_path / f"document.{suffix}"
+    doc_path.write_bytes(bytes(content))
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) == expected
+    stream = DocumentStream(name=doc_path.name, stream=BytesIO(bytes(content)))
+    assert dci._guess_format(stream) == expected
+
+
 def test_guess_format(tmp_path):
     """Test docling.datamodel.document._DocumentConversionInput.__guess_format"""
     dci = _DocumentConversionInput(path_or_stream_iterator=[])
