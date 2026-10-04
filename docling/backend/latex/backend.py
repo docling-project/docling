@@ -198,25 +198,23 @@ class LatexDocumentBackend(
         parent: NodeItem | None = None,
         formatting: Formatting | None = None,
         text_label: DocItemLabel | None = None,
-        *,
-        text_target: ListItem | None = None,
     ):
         """Add ``nodes`` to ``doc`` under ``parent``.
 
-        If ``text_target`` is given, the first text flushed while it still has no
-        text, and no children other than footnotes, becomes its text instead of
-        a new child item.
+        If ``parent`` is a list item that has no text yet, and no children other
+        than footnotes, the first text flushed becomes its text instead of a new
+        child item. This also holds for text nested in a quote or a group.
         """
         if nodes is None:
             return
 
         text_buffer: list[str] = []
 
-        def takes_text(target: ListItem) -> bool:
+        def takes_text(item: ListItem) -> bool:
             # A footnote is attached to the text, so it does not come before it.
-            return not target.text and all(
+            return not item.text and all(
                 child.resolve(doc).label == DocItemLabel.FOOTNOTE
-                for child in target.children
+                for child in item.children
             )
 
         def flush_text_buffer():
@@ -224,11 +222,11 @@ class LatexDocumentBackend(
                 combined_text = "".join(text_buffer).strip()
                 if (
                     combined_text
-                    and text_target is not None
-                    and takes_text(text_target)
+                    and isinstance(parent, ListItem)
+                    and takes_text(parent)
                 ):
-                    text_target.text = combined_text
-                    text_target.orig = combined_text
+                    parent.text = combined_text
+                    parent.orig = combined_text
                 elif combined_text:
                     doc.add_text(
                         parent=parent,

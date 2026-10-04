@@ -233,6 +233,47 @@ def test_latex_enumerate_item_starting_with_footnote_or_newline(
     assert md.endswith("\n2. Second")
 
 
+@pytest.mark.parametrize(
+    "start",
+    [
+        rb"\begin{quote}First\end{quote}",
+        rb"{\begin{quote}First\end{quote}}",
+        rb"\begin{center}First\end{center}",
+    ],
+    ids=["quote", "quote_in_group", "center"],
+)
+def test_latex_enumerate_item_starting_with_nested_text(start: bytes):
+    """Text nested in an environment or group at the start of an item is its text.
+
+    Added as a child of an item without text, it would be exported as ``1. ``
+    followed by ``First`` on its own line, which a CommonMark parser reads as an
+    empty item and a paragraph that takes in ``2. Second``.
+    """
+    latex_content = (
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item """
+        + start
+        + rb"""
+    \item Second
+    \end{enumerate}
+    \end{document}
+    """
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert doc.export_to_markdown() == "1. First\n2. Second"
+
+
 def test_latex_enumerate_empty_item_keeps_numbering():
     """An empty ``\\item`` still takes a number, as in the typeset document."""
     latex_content = rb"""

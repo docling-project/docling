@@ -61,8 +61,6 @@ class EnvironmentHandlerMixin:
             parent: Any = ...,
             formatting: Any = ...,
             text_label: Any = ...,
-            *,
-            text_target: Any = ...,
         ) -> None: ...
         def _clean_math(self, latex_str: str, env_name: str) -> str: ...
         def _parse_table(self, node: Any) -> Any: ...
@@ -380,7 +378,7 @@ class EnvironmentHandlerMixin:
         list_item = doc.add_list_item(
             text="", enumerated=enumerated, parent=list_group, formatting=formatting
         )
-        self._process_nodes(nodes, doc, list_item, formatting, text_target=list_item)
+        self._process_nodes(nodes, doc, list_item, formatting)
 
     def _process_bibliography(
         self,
