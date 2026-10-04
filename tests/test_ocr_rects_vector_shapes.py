@@ -32,6 +32,25 @@ RULED_TEXT = BoundingBox(l=60, t=70, r=380, b=105, coord_origin=CoordOrigin.TOPL
 # A region with neither text nor shapes.
 EMPTY_REGION = BoundingBox(l=60, t=400, r=380, b=450, coord_origin=CoordOrigin.TOPLEFT)
 
+# A 300x300pt page with Helvetica 18 "Native" at (40,245) and a 24pt-high "HI" built from
+# filled rectangles at (150,245) -- drawing coordinates in the PDF bottom-left origin --
+# the same glyphs alone at y=145, and a filled highlight behind native text at y=45.
+# No bitmaps, no stroked lines.
+GLYPH_FIXTURE = Path("./tests/data/pdf/text_with_vector_glyphs.pdf")
+
+# One cluster holding both the native text and the vector-outlined glyphs (page height 300).
+MIXED_TEXT_AND_GLYPHS = BoundingBox(
+    l=30, t=25, r=220, b=75, coord_origin=CoordOrigin.TOPLEFT
+)
+# The same glyphs with no programmatic text beside them.
+VECTOR_GLYPHS_ONLY = BoundingBox(
+    l=140, t=125, r=200, b=175, coord_origin=CoordOrigin.TOPLEFT
+)
+# A filled highlight with native text sitting on it: a shape the text layer explains.
+TEXT_BACKED_SHAPE = BoundingBox(
+    l=30, t=225, r=180, b=260, coord_origin=CoordOrigin.TOPLEFT
+)
+
 
 class _OcrRectsOnlyModel(BaseOcrModel):
     """Minimal concrete `BaseOcrModel`: only the rect selection is under test."""
@@ -67,9 +86,9 @@ def _make_page(page_backend: PdfPageBackend, cluster_bbox: BoundingBox) -> Page:
     return page
 
 
-def _load_first_page(backend_cls):
+def _load_first_page(backend_cls, fixture: Path = FIXTURE):
     doc_backend = InputDocument(
-        path_or_stream=FIXTURE,
+        path_or_stream=fixture,
         format=InputFormat.PDF,
         backend=backend_cls,
     )._backend
@@ -115,5 +134,54 @@ def test_vector_rule_does_not_force_ocr_of_programmatic_text(
         )
         assert len(empty_rects) == 1
         assert empty_rects[0].intersection_over_self(EMPTY_REGION) > 0
+    finally:
+        doc_backend.unload()
+
+
+@pytest.mark.parametrize(
+    ("backend_cls", "native_queries"),
+    [
+        (ThreadedDoclingParseDocumentBackend, True),
+        (PyPdfiumDocumentBackend, True),
+        (ThreadedDoclingParseDocumentBackend, False),
+    ],
+    ids=["threaded", "pypdfium2", "threaded-spatial-index"],
+)
+def test_vector_outlined_glyphs_still_force_ocr(
+    backend_cls, native_queries, monkeypatch
+):
+    """Vector-outlined glyphs need OCR even when native text shares their cluster.
+
+    Regression for the content loss reported on #4209: gating on the mere *presence*
+    of programmatic text drops a cluster whose text layer only covers part of it, so
+    glyphs drawn as filled paths are never recognised.
+    """
+    doc_backend, page_backend = _load_first_page(backend_cls, GLYPH_FIXTURE)
+    model = _make_model()
+    if not native_queries:
+        # No backend lacks `has_content_in` any more; force the fallback path.
+        monkeypatch.setattr(page_backend, "has_content_in", lambda **kwargs: None)
+
+    try:
+        # Sanity: the text layer carries "Native" and nothing of the vector "HI".
+        assert "Native" in page_backend.get_text_in_rect(MIXED_TEXT_AND_GLYPHS)
+        assert page_backend.get_text_in_rect(VECTOR_GLYPHS_ONLY).strip() == ""
+
+        mixed_rects = model._find_pdf_aware_layout_ocr_rects(
+            _make_page(page_backend, MIXED_TEXT_AND_GLYPHS)
+        )
+        assert len(mixed_rects) == 1
+        assert mixed_rects[0].intersection_over_self(MIXED_TEXT_AND_GLYPHS) > 0
+
+        vector_only_rects = model._find_pdf_aware_layout_ocr_rects(
+            _make_page(page_backend, VECTOR_GLYPHS_ONLY)
+        )
+        assert len(vector_only_rects) == 1
+
+        # A shape the text layer does explain stays out of OCR, like a rule does.
+        backed_rects = model._find_pdf_aware_layout_ocr_rects(
+            _make_page(page_backend, TEXT_BACKED_SHAPE)
+        )
+        assert backed_rects == []
     finally:
         doc_backend.unload()
