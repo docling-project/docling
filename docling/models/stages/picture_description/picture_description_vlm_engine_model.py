@@ -113,7 +113,9 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
 
     def _resolve_runtime_engine_type(self) -> VlmEngineType:
         selected_engine_type = (
-            self.engine.selected_engine_type if self.engine is not None else None
+            getattr(self.engine, "selected_engine_type", None)
+            if self.engine is not None
+            else None
         )
         if selected_engine_type is not None:
             return selected_engine_type

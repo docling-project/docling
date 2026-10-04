@@ -162,7 +162,7 @@ def test_standard_pipeline_bounds_live_streaming_backends() -> None:
         generate_parsed_pages=False,
     )
     pipeline._create_run_ctx = MethodType(
-        lambda self: _make_run_context(self._release_page_resources), pipeline
+        lambda self: _make_run_context(self._release_threaded_item_resources), pipeline
     )
     conv_res = _make_conversion_result(backend, page_count)
 
