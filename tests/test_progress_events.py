@@ -243,7 +243,7 @@ def test_printer_writes_final_lines_when_not_on_a_terminal():
     ]
 
 
-def test_printer_updates_lines_in_place_on_a_terminal():
+def test_printer_draws_progress_bars_on_a_terminal():
     class _Terminal(StringIO):
         def isatty(self) -> bool:
             return True
@@ -255,12 +255,15 @@ def test_printer_updates_lines_in_place_on_a_terminal():
 
     converter.convert(_md("a.md", "\n\n".join(["one", "two", "three"])))
 
-    assert stream.getvalue() == (
-        "[1] Converting a.md\n"
-        "\r  _TagModel 0/3\r  _TagModel 2/3\r  _TagModel 3/3\n"
-        "\r  _ParagraphModel 0/3\r  _ParagraphModel 2/3\r  _ParagraphModel 3/3\n"
-        "Finished a.md: success\n"
-    )
+    # What stays on screen: each line as left by its last carriage return.
+    lines = stream.getvalue().split("\n")[:-1]
+    screen = [line.split("\r")[-1] for line in lines]
+    assert screen[0] == "[1] Converting a.md"
+    assert screen[1].startswith("  _TagModel: 100%|")
+    assert " 3/3 " in screen[1]
+    assert screen[2].startswith("  _ParagraphModel: 100%|")
+    assert " 3/3 " in screen[2]
+    assert screen[3:] == ["Finished a.md: success"]
 
 
 def test_show_progress_prints_without_a_callback(capsys):

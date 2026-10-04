@@ -339,8 +339,8 @@ for result in converter.convert_all(sources, raises_on_error=False):
 
 ### Progress events
 
-`DocumentConverter(show_progress=True)` prints page and enrichment progress to
-stderr with no extra code. For your own UI, `progress_callback=...` receives
+`DocumentConverter(show_progress=True)` prints progress bars for pages and
+enrichment to stderr with no extra code. For your own UI, `progress_callback=...` receives
 typed events from
 `docling.datamodel.progress` while documents convert: document start and end
 (with `document_index` in the batch and the final `status`), pipeline phases,

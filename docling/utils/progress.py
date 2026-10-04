@@ -5,6 +5,8 @@ import sys
 import threading
 from typing import Optional, TextIO
 
+from tqdm import tqdm
+
 from docling.datamodel.progress import (
     ConversionProgressEvent,
     DocumentCompletedProgress,
@@ -17,9 +19,9 @@ from docling.datamodel.progress import (
 class ProgressPrinter:
     """Ready-made progress callback that prints to stderr.
 
-    One line per document, with the page count and each enrichment step on a
-    line of its own. On a terminal those lines update in place; elsewhere (a
-    log file, a pipe) only their final value is printed.
+    One line per document, then a progress bar for its pages and one for each
+    enrichment step. On a terminal the bars fill up in place; elsewhere (a log
+    file, a pipe) each bar is written once, as a plain `done/total` count.
     """
 
     def __init__(
@@ -27,8 +29,9 @@ class ProgressPrinter:
     ) -> None:
         self.total_documents = total_documents
         self._stream = stream
-        self._line_key: Optional[str] = None
-        self._line_text = ""
+        self._bar_key: Optional[str] = None
+        self._bar: Optional[tqdm] = None
+        self._count = ""
         self._lock = threading.Lock()
 
     @property
@@ -42,42 +45,53 @@ class ProgressPrinter:
     def __call__(self, event: ConversionProgressEvent) -> None:
         with self._lock:
             if isinstance(event, DocumentStartedProgress):
-                self._end_line()
+                self._close_bar()
                 position = str(event.document_index)
                 if self.total_documents is not None:
                     position += f"/{self.total_documents}"
                 self._print(f"[{position}] Converting {event.document_name}")
             elif isinstance(event, PageCompletedProgress):
-                self._update(
-                    "pages", f"pages {event.completed_pages}/{event.total_pages}"
-                )
+                self._advance("pages", "page", event.completed_pages, event.total_pages)
             elif isinstance(event, EnrichmentProgress):
-                self._update(
-                    event.step,
-                    f"{event.step} {event.completed_items}/{event.total_items}",
+                self._advance(
+                    event.step, "item", event.completed_items, event.total_items
                 )
             elif isinstance(event, DocumentCompletedProgress):
-                self._end_line()
+                self._close_bar()
                 self._print(f"Finished {event.document_name}: {event.status.value}")
 
-    def _print(self, text: str, end: str = "\n") -> None:
+    def _print(self, text: str) -> None:
         stream = self.stream
         if stream is not None:
-            print(text, end=end, file=stream, flush=True)
+            print(text, file=stream, flush=True)
 
-    def _update(self, key: str, text: str) -> None:
-        if self._line_key not in (None, key):
-            self._end_line()
-        self._line_key = key
-        self._line_text = text
-        if self.is_terminal(self.stream):
-            self._print(f"\r  {text}", end="")
+    def _advance(self, key: str, unit: str, done: int, total: int) -> None:
+        if self._bar_key != key:
+            self._close_bar()
+            self._bar_key = key
+            stream = self.stream
+            if self.is_terminal(stream):
+                # Pages arrive in batches: start from the first batch, so the
+                # rate and time left come from the batches that follow.
+                self._bar = tqdm(
+                    total=total,
+                    initial=done,
+                    desc=f"  {key}",
+                    unit=unit,
+                    file=stream,
+                    disable=False,
+                    dynamic_ncols=True,
+                )
+        self._count = f"{done}/{total}"
+        if self._bar is not None:
+            self._bar.update(done - self._bar.n)
 
-    def _end_line(self) -> None:
-        if self._line_key is None:
+    def _close_bar(self) -> None:
+        if self._bar_key is None:
             return
-        if self.is_terminal(self.stream):
-            self._print("")
+        if self._bar is not None:
+            self._bar.close()
         else:
-            self._print(f"  {self._line_text}")
-        self._line_key = None
+            self._print(f"  {self._bar_key} {self._count}")
+        self._bar_key = None
+        self._bar = None

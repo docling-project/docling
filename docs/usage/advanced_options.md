@@ -479,21 +479,20 @@ converter = DocumentConverter(show_progress=True)
 result = converter.convert("report.pdf")
 ```
 
-It prints one line per document to stderr, with the pages done:
+It prints to stderr one line per document, a progress bar for its pages and
+one for each enrichment step (picture classification or description, chart
+extraction, code and formulas):
 
 ```text
 [1] Converting report.pdf
-  pages 9/9
+  pages: 100%|██████████| 9/9 [00:49<00:00,  6.23s/page]
+  DocumentPictureClassifier: 100%|██████████| 6/6 [00:00<00:00, 12.90item/s]
 Finished report.pdf: success
 ```
 
-When enrichment is enabled (picture classification or description, chart
-extraction, code and formulas), each step adds a line such as
-`DocumentPictureClassifier 3/3`.
-
-On a terminal the `pages` and enrichment lines update in place; in a log file
-only their final value is written. For a batch, give the printer the number
-of documents to get `[3/12]` instead of `[3]`:
+On a terminal the bars fill up while the document converts. In a log file or
+a pipe each bar is written once as a count, such as `pages 9/9`. For a batch,
+give the printer the number of documents to get `[3/12]` instead of `[3]`:
 
 ```python
 from docling.utils.progress import ProgressPrinter
@@ -522,41 +521,28 @@ a time (see `docling.datamodel.progress`):
 | `DocumentCompletedProgress` | The document finished, with its `ConversionStatus`. Always the last event of a document, also when it failed. |
 
 Every event carries `document_index`, the position of the document in the
-`convert_all` call, and `document_name`.
+`convert_all` call, and `document_name`. The events are Pydantic models, so
+they are easy to forward, for example as JSON to a web client:
 
 ```python
-from tqdm import tqdm
-
-from docling.datamodel.progress import (
-    ConversionProgressEvent,
-    DocumentCompletedProgress,
-    EnrichmentProgress,
-    PageCompletedProgress,
-)
+from docling.datamodel.progress import ConversionProgressEvent
 from docling.document_converter import DocumentConverter
 
-bars: dict[str, tqdm] = {}
+
+def forward(event: ConversionProgressEvent) -> None:
+    print(event.model_dump_json())  # or push it to a queue or websocket
 
 
-def show_progress(event: ConversionProgressEvent) -> None:
-    if isinstance(event, PageCompletedProgress):
-        key, done, total = "pages", event.completed_pages, event.total_pages
-    elif isinstance(event, EnrichmentProgress):
-        key, done, total = event.step, event.completed_items, event.total_items
-    elif isinstance(event, DocumentCompletedProgress):
-        for bar in bars.values():
-            bar.close()
-        bars.clear()
-        return
-    else:
-        return
-    if key not in bars:
-        bars[key] = tqdm(total=total, desc=key)
-    bars[key].update(done - bars[key].n)
+converter = DocumentConverter(progress_callback=forward)
+result = converter.convert("report.pdf")
+```
 
-
-converter = DocumentConverter(progress_callback=show_progress)
-result = converter.convert("https://arxiv.org/pdf/2408.09869")
+```text
+{"kind":"document_started","document_index":1,"document_name":"report.pdf"}
+{"kind":"phase_started","document_index":1,"document_name":"report.pdf","phase":"initialize"}
+...
+{"kind":"page_completed","document_index":1,"document_name":"report.pdf","page_no":2,"success":true,"completed_pages":1,"total_pages":9}
+...
 ```
 
 Things to know:

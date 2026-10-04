@@ -1233,8 +1233,8 @@ def convert(  # noqa: C901
         bool | None,
         typer.Option(
             "--progress/--no-progress",
-            help="Show page and enrichment progress on stderr. On by default "
-            "when stderr is a terminal and --quiet is not given.",
+            help="Show progress bars for pages and enrichment on stderr. On by "
+            "default when stderr is a terminal and --quiet is not given.",
         ),
     ] = None,
 ):
