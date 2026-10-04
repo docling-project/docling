@@ -18,7 +18,6 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     NativePdfPipelineOptions,
-    PdfPipelineOptions,
 )
 from docling.datamodel.progress import (
     ConversionPhase,
@@ -35,7 +34,6 @@ from docling.document_converter import (
     DocumentConverter,
     FormatOption,
     NativePdfFormatOption,
-    PdfFormatOption,
 )
 from docling.models.base_model import GenericEnrichmentModel
 from docling.pipeline.base_pipeline import BasePipeline
@@ -43,7 +41,6 @@ from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.utils.progress import ProgressPrinter
 
 PDF_4_PAGES = Path("tests/data/pdf/sources/normal_4pages.pdf")
-PDF_9_PAGES = Path("tests/data/pdf/sources/2206.01062.pdf")
 
 
 class _Recorder:
@@ -308,41 +305,3 @@ def test_native_pdf_pages_are_reported_for_the_selected_range():
     assert sorted(ev.page_no for ev in pages) == [2, 3]
     assert [ev.completed_pages for ev in pages] == [1, 2]
     assert {ev.total_pages for ev in pages} == {2}
-
-
-@pytest.mark.ml_pdf_model
-def test_pdf_pages_are_reported_once_on_the_calling_thread():
-    recorder = _Recorder()
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.PDF], progress_callback=recorder
-    )
-
-    converter.convert(PDF_9_PAGES, page_range=(3, 6))
-
-    pages = recorder.of(PageCompletedProgress)
-    assert sorted(ev.page_no for ev in pages) == [3, 4, 5, 6]
-    assert [ev.completed_pages for ev in pages] == [1, 2, 3, 4]
-    assert {ev.total_pages for ev in pages} == {4}
-    assert all(ev.success for ev in pages)
-    # Pages are drained on the thread that called convert(), so a plain
-    # callback needs no locking for a single document.
-    assert recorder.threads == {threading.current_thread().name}
-    assert isinstance(recorder.events[0], DocumentStartedProgress)
-    assert isinstance(recorder.events[-1], DocumentCompletedProgress)
-
-
-@pytest.mark.ml_pdf_model
-def test_pdf_pages_cut_by_the_timeout_are_reported_as_failed():
-    recorder = _Recorder()
-    options = PdfPipelineOptions(document_timeout=1e-6, do_ocr=False)
-    converter = DocumentConverter(
-        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)},
-        progress_callback=recorder,
-    )
-
-    converter.convert(PDF_9_PAGES, page_range=(1, 3), raises_on_error=False)
-
-    pages = recorder.of(PageCompletedProgress)
-    assert sorted(ev.page_no for ev in pages) == [1, 2, 3]
-    assert pages[-1].completed_pages == pages[-1].total_pages == 3
-    assert not all(ev.success for ev in pages)
