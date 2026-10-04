@@ -564,6 +564,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             The DoclingDocument object representing the Excel workbook.
         """
+        assert self.input_format is not None
+
         origin = DocumentOrigin(
             filename=self.file.name or "file.xlsx",
             mimetype=FormatToMimeType[self.input_format][0],
