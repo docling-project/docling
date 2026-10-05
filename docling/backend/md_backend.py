@@ -54,9 +54,38 @@ _MARKO_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     import marko
     import marko.element
+    import marko.ext.gfm as _gfm
     import marko.inline
     from marko import Markdown
     from marko.ext.gfm import elements as _gfm_el
+    from marko.helpers import MarkoExtension
+
+    class _GfmParagraph(_gfm_el.Paragraph):
+        @classmethod
+        def break_paragraph(
+            cls, source: marko.source.Source, lazy: bool = False
+        ) -> bool:
+            if super().break_paragraph(source, lazy):
+                return True
+            if "Table" in source.parser.block_elements:
+                matched = source.parser.block_elements["Table"].match(source)
+                if matched:
+                    source.reset()
+                    return True
+            return False
+
+    _GFM_EXTENSION = MarkoExtension(
+        elements=[
+            _GfmParagraph,
+            _gfm_el.Strikethrough,
+            _gfm_el.Url,
+            _gfm_el.Table,
+            _gfm_el.TableRow,
+            _gfm_el.TableCell,
+            _gfm_el.Alert,
+        ],
+        renderer_mixins=_gfm.GFM.renderer_mixins,
+    )
 
     _MARKO_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -905,6 +934,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 formatting=formatting,
                 hyperlink=hyperlink,
             )
+            # The code span consumed the break that preceded it, like a
+            # text run does.
+            self._pending_hard_line_break = False
+            self._pending_soft_line_break = False
 
         elif (
             isinstance(element, marko.block.CodeBlock | marko.block.FencedCode)
@@ -1074,7 +1107,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if self.is_valid():
             # The GFM extension gives tables a structured AST with inline
             # children per cell, enabling RichTableCell for formatted content.
-            marko_parser = Markdown(extensions=["gfm"])
+            marko_parser = Markdown(extensions=[_GFM_EXTENSION])
             parsed_ast = marko_parser.parse(self.markdown)
             self._iterate_elements(
                 element=parsed_ast,
