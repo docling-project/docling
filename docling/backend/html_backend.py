@@ -918,12 +918,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for br in content("br"):
             br.replace_with(NavigableString(_BR_SENTINEL))
 
-        # Furniture before the first heading rule, except for headers in tables
+        # Furniture before the first heading rule, except for headers in tables and lists
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        # Keep only those that do NOT have a <table> in a parent chain
-        clean_headers = [h for h in all_headers if not h.find_parent("table")]
+        # Keep only those that do NOT have a <table> or a list in a parent chain: those
+        # become cell or list item text, so they never switch the layer back to body
+        clean_headers = [
+            h for h in all_headers if not h.find_parent(["table", "ul", "ol", "dl"])
+        ]
         # Pick the first header from the remaining
         if len(clean_headers):
             header = clean_headers[0]
@@ -2894,11 +2897,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _description_list_children(dl: Tag) -> list[PageElement]:
         """The <dt>/<dd> elements of a <dl>, including those wrapped in a <div>
-        (HTML allows wrapping each group of <dt> and <dd> elements in a <div>)."""
+        (HTML allows wrapping each group of <dt> and <dd> elements in a <div>;
+        accordion markup sometimes nests several)."""
         children: list[PageElement] = []
         for child in dl.find_all(["dt", "dd", "div"], recursive=False):
             if isinstance(child, Tag) and child.name == "div":
-                children.extend(child.find_all(["dt", "dd"], recursive=False))
+                children.extend(HTMLDocumentBackend._description_list_children(child))
             else:
                 children.append(child)
         return children
