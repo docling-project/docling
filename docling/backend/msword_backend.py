@@ -1868,8 +1868,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return "Code", None
 
         use_outline_level_for_headings = (
-            isinstance(self.options, MsWordBackendOptions)
-            and self.options.use_outline_level_for_headings
+            not isinstance(self.options, MsWordBackendOptions)
+            or self.options.use_outline_level_for_headings
         )
         if (
             use_outline_level_for_headings

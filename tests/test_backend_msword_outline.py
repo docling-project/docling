@@ -202,6 +202,31 @@ def test_use_outline_level_for_headings_enabled_promotes_outline_paragraphs(
     assert '### "Work" means' in md
 
 
+def test_use_outline_level_for_headings_disabled_suppresses_localized_headings(
+    tmp_path,
+):
+    """`use_outline_level_for_headings=False` turns localized headings into plain text.
+
+    Localized heading styles (e.g. Czech `Nadpis1` from LibreOffice) have no
+    'heading' substring in their name and rely entirely on `w:outlineLvl` for
+    detection. Disabling the option suppresses that promotion, so the paragraphs
+    are emitted as plain text rather than headings.
+    """
+    doc = Document()
+    nadpis1 = _add_style_with_outline_level(doc, "Nadpis1", "Nadpis [1]", 0)
+    doc.add_paragraph("Uvod do problematiky").style = nadpis1
+    doc.add_paragraph("Body text under the heading.")
+
+    docx_path = tmp_path / "localized_off.docx"
+    doc.save(str(docx_path))
+
+    md = _convert_with_option(docx_path, use_outline_level=False)
+
+    assert "#" not in md
+    assert "Uvod do problematiky" in md
+    assert "Body text under the heading." in md
+
+
 def test_use_outline_level_for_headings_disabled_keeps_body_prose_as_text(
     mixed_heading_docx,
 ):

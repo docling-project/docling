@@ -503,12 +503,12 @@ class MsWordBackendOptions(BaseBackendOptions):
         bool,
         Field(
             description=(
-                "Whether to treat a paragraph's outline level as a heading signal "
-                "when no name-based signal exists. Required for localized heading "
-                "styles that carry an outline level but lack 'heading' in their "
-                "name. Known limitation: styles that use the outline level only "
-                "for TOC participation will also be promoted to headings. Set to "
-                "`False` to disable this behavior."
+                "Use `w:outlineLvl` as a heading signal when no name-based signal "
+                "exists (e.g. localized styles such as `Nadpis1`). Known limitation: "
+                "styles that carry an outline level only for TOC participation are "
+                "also promoted to headings. Set to `False` to disable. Note: for "
+                "styles already identified as headings by name, the level is still "
+                "read from `w:outlineLvl` regardless of this option."
             )
         ),
     ] = True
