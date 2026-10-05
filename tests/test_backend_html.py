@@ -517,6 +517,35 @@ def test_table_and_image_inside_figure_are_parsed():
     assert len(doc.tables[0].captions) == 0
 
 
+@pytest.mark.parametrize(
+    ("figure", "expected"),
+    [
+        ("<figure>Quote text<figcaption>cap</figcaption></figure>", ["Quote text"]),
+        ("<figure>one <code>two</code> three</figure>", ["one", "two", "three"]),
+        ("<figure><em>one</em> two</figure>", ["one", "two"]),
+        ('<figure><img src="x.png"/>after</figure>', ["after"]),
+    ],
+)
+def test_text_directly_inside_figure_is_kept(figure: str, expected: list[str]):
+    html = f"<html><body><h1>Title</h1>{figure}</body></html>".encode()
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    body_texts = [t.text for t in doc.texts if t.label != DocItemLabel.CAPTION]
+    assert body_texts == ["Title", *expected]
+    # The <figcaption> is still emitted once, as a caption
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == (
+        ["cap"] if "figcaption" in figure else []
+    )
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
