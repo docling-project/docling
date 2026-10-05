@@ -2020,7 +2020,16 @@ def _docx_with_fragment_only_rel():
     from io import BytesIO
 
     doc = Document()
-    doc.add_paragraph("Hello, world!")
+    paragraph = doc.add_paragraph("Before ")
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), "rId999")
+    run = OxmlElement("w:r")
+    text = OxmlElement("w:t")
+    text.text = "internal link"
+    run.append(text)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+    paragraph.add_run(" after")
 
     buf = BytesIO()
     doc.save(buf)
@@ -2066,7 +2075,8 @@ def test_fragment_only_rel_does_not_crash_backend():
         for item, _ in result.document.iterate_items()
         if isinstance(item, TextItem)
     ]
-    assert any("Hello, world!" in t for t in texts)
+    assert "Before internal link after" in "".join(texts)
+    assert all(item.hyperlink is None for item in result.document.texts)
 
 
 def _docx_with_notes():
