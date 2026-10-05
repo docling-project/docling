@@ -499,6 +499,20 @@ class MsWordBackendOptions(BaseBackendOptions):
         ),
     )
 
+    use_outline_level_for_headings: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use `w:outlineLvl` as a heading signal when no name-based signal "
+                "exists (e.g. localized styles such as `Nadpis1`). Known limitation: "
+                "styles that carry an outline level only for TOC participation are "
+                "also promoted to headings. Set to `False` to disable. Note: for "
+                "styles already identified as headings by name, the level is still "
+                "read from `w:outlineLvl` regardless of this option."
+            )
+        ),
+    ] = True
+
 
 class OdsBackendOptions(BaseBackendOptions):
     """Options specific to the ODS (OpenDocument Spreadsheet) backend."""

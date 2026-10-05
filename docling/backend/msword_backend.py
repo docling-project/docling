@@ -1805,6 +1805,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         recognizable by name. ``Title`` styles are left out of the latter so
         they keep reaching their own branch; in practice they never carry
         ``w:outlineLvl`` anyway.
+
+        Known limitation: OOXML does not reserve ``w:outlineLvl`` exclusively
+        for structural headings. Some paragraph styles carry it solely for
+        outline/TOC participation (e.g. numbered clause bodies in legal
+        templates). When such a style is encountered, every paragraph that uses
+        it will be classified as a heading. Set
+        ``MsWordBackendOptions.use_outline_level_for_headings`` to ``False`` to
+        disable this behavior for documents where it causes false positives.
         """
         # Resolve the style once: python-docx's ``paragraph.style`` scans all
         # styles on every access, so re-reading it per predicate is costly.
@@ -1859,8 +1867,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._is_code_style(style) or self._is_code_by_font(paragraph, style):
             return "Code", None
 
-        if outline_level is not None and not self._is_title_style(
-            label, name, base_style_label, base_style_name
+        use_outline_level_for_headings = (
+            not isinstance(self.options, MsWordBackendOptions)
+            or self.options.use_outline_level_for_headings
+        )
+        if (
+            use_outline_level_for_headings
+            and outline_level is not None
+            and not self._is_title_style(label, name, base_style_label, base_style_name)
         ):
             return "Heading", outline_level
 
