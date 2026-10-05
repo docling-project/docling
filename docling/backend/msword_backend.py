@@ -569,6 +569,32 @@ def _remove_fragment_only_rels(content: bytes) -> bytes:
     return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
+def _remove_xml_comments(docx_obj: DocxDocument) -> None:
+    """Remove XML comments and processing instructions from every XML part.
+
+    Some producers write them into the document body (docx4j adds
+    ``<!-- Created by docx4j ... -->``). The backend walks element children and
+    reads their tag, which a comment does not have, so a single one fails the
+    conversion or drops the content of the table it sits in. Text following a
+    removed node is kept.
+    """
+    for part in docx_obj.part.package.iter_parts():
+        element = getattr(part, "_element", None)
+        if element is None:
+            continue
+        for node in list(element.iter(etree.Comment, etree.ProcessingInstruction)):
+            parent = node.getparent()
+            if parent is None:
+                continue
+            if node.tail:
+                previous = node.getprevious()
+                if previous is not None:
+                    previous.tail = (previous.tail or "") + node.tail
+                else:
+                    parent.text = (parent.text or "") + node.tail
+            parent.remove(node)
+
+
 def _sanitize_docx(archive: zipfile.ZipFile) -> BytesIO:
     """Rewrite a DOCX archive in memory, removing fragment-only relationship targets.
 
@@ -852,6 +878,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             path_or_stream=self.path_or_stream, document_hash=self.document_hash
         )
         if self.docx_obj:
+            _remove_xml_comments(self.docx_obj)
             self.valid = True
             self.current_part = self.docx_obj.part
             self._default_paragraph_style = self.docx_obj.styles.default(
