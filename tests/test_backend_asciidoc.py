@@ -165,6 +165,36 @@ def test_stray_dashes_are_not_swallowed() -> None:
     assert len(texts) == 1 and "before" in texts[0] and "after" in texts[0]
 
 
+def test_comments_are_not_emitted_as_text() -> None:
+    # Line comments (//) and comment blocks (////) are not document content,
+    # but inside a listing "//" is code and has to stay.
+    src = b"""// A line comment.
+Visible.
+
+////
+A block comment
+over two lines.
+////
+
+----
+// Inside a listing this is code.
+x = 1
+----
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="comments.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [item.text for item in doc.texts] == [
+        "Visible.",
+        "// Inside a listing this is code.\nx = 1",
+    ]
+
+
 def test_unclosed_table_at_end_keeps_caption() -> None:
     src = b".End table\n|===\n|A |B"
     in_doc = InputDocument(
