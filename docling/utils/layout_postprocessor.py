@@ -151,6 +151,17 @@ class LayoutPostprocessor:
         DocItemLabel.TITLE: DocItemLabel.SECTION_HEADER,
     }
 
+    # A PICTURE is treated as a mislabelled text panel when it spans at least
+    # this share of the page, its nested non-caption text clusters cover at
+    # least this share of its own area, and there are at least this many of
+    # them. Genuine figures with in-picture labels stay well clear of all three
+    # at once: across the regression corpus the text-densest figures sit below
+    # 0.26 of the page, and the only pictures above 0.3 of the page have text
+    # coverage below 0.15 (issue #4565).
+    TEXT_PANEL_MIN_PAGE_FRACTION = 0.3
+    TEXT_PANEL_MIN_TEXT_COVERAGE = 0.3
+    TEXT_PANEL_MIN_CHILDREN = 3
+
     def __init__(
         self,
         page: Page,
@@ -339,6 +350,17 @@ class LayoutPostprocessor:
             ]
             self._set_cluster_children(cluster, children)
 
+        # A PICTURE that nests most of the page's body text is a mislabelled
+        # text panel, not a figure. Dropping it hands its children back to the
+        # regular clusters (they are only removed from the regular list for
+        # pictures that survive this method).
+        picture_clusters = [
+            cluster
+            for cluster in picture_clusters
+            if not self._is_text_panel(cluster, page_area)
+        ]
+        nested_clusters = table_clusters + picture_clusters
+
         parent_by_child_id = {}
         for child in nested_clusters:
             parents = [
@@ -394,6 +416,44 @@ class LayoutPostprocessor:
             self._set_cluster_children(container, direct_children + nested_children)
 
         return picture_clusters + table_clusters + container_clusters
+
+    def _is_text_panel(self, picture: Cluster, page_area: float) -> bool:
+        """Return True when a PICTURE cluster is really a panel of body text.
+
+        The layout model occasionally emits a low-confidence picture over a
+        bordered or shaded text column. Such a cluster swallows every text
+        cluster it contains as a child, and the text is then invisible to
+        every exporter that does not descend into pictures. The decision uses
+        only the already-nested children, so a figure with a handful of labels
+        or a caption is never affected.
+        """
+        picture_area = picture.bbox.area()
+        if page_area <= 0 or picture_area <= 0:
+            return False
+        if picture_area / page_area < self.TEXT_PANEL_MIN_PAGE_FRACTION:
+            return False
+
+        text_children = [
+            child for child in picture.children if child.label != DocItemLabel.CAPTION
+        ]
+        if len(text_children) < self.TEXT_PANEL_MIN_CHILDREN:
+            return False
+
+        text_coverage = sum(child.bbox.area() for child in text_children) / picture_area
+        if text_coverage < self.TEXT_PANEL_MIN_TEXT_COVERAGE:
+            return False
+
+        _log.info(
+            "Dropping PICTURE cluster %d (conf %.2f): it spans %.0f%% of the page "
+            "and %d text clusters cover %.0f%% of it, so it is treated as a "
+            "text panel and its text is kept.",
+            picture.id,
+            picture.confidence,
+            100 * picture_area / page_area,
+            len(text_children),
+            100 * text_coverage,
+        )
+        return True
 
     def _set_cluster_children(self, cluster: Cluster, children: list[Cluster]) -> None:
         if not children:
