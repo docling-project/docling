@@ -1105,6 +1105,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     ) -> tuple[DoclingDocument, list[RefItem]]:
         added_elements = []
         for element in body:
+            if not isinstance(element.tag, str):
+                continue
             tag_name = etree.QName(element).localname
             # Check for Inline Images (blip elements)
             _raw_drawing_blip = self.blip_xpath_expr(element)
