@@ -51,7 +51,11 @@ def test_nested_single_wrapper_emphasis_stays_one_paragraph():
     assert group.name == "group"
 
     exported = doc.export_to_markdown()
-    assert exported.count("\n\n") == 0
+    # The exporter normalizes nested emphasis into sibling formatting spans,
+    # so the round-trip is not byte-identical to the source. Pin the exact
+    # output: it guards both the single-paragraph grouping (no paragraph
+    # break) and the text with its formatting.
+    assert exported == "**bold** ***italic*** **end**"
 
 
 def test_convert_valid():
