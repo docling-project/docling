@@ -486,7 +486,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 lines, i, stripped
             ):
                 # Example (====), sidebar (****), quote (____), open (--) and
-                # passthrough (+++) blocks carry regular content: consume the
+                # passthrough (++++) blocks carry regular content: consume the
                 # delimiter lines themselves so they do not leak into the
                 # text, and re-emit the inner lines unchanged. The closer look-
                 # ahead keeps stray separator lines (e.g. "--" in a changelog)
