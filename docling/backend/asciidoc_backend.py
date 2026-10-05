@@ -394,6 +394,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     _SOURCE_ATTR_RE = re.compile(r"^\[source(?:,\s*([\w+#.-]+))?[^\]]*\]$")
     _CONTENT_BLOCK_DELIMITERS = ("====", "****", "____", "--", "+++")
+    # A comment block is delimited by four or more slashes; a line comment
+    # starts with exactly two.
+    _COMMENT_BLOCK_RE = re.compile(r"/{4,}")
+    _LINE_COMMENT_RE = re.compile(r"//(?!/)")
 
     @staticmethod
     def _has_matching_closer(lines: list[str], open_idx: int, delimiter: str) -> bool:
@@ -425,6 +429,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     block_language = None
                 else:
                     block_data.append(line.rstrip("\r\n"))
+                i += 1
+                continue
+
+            if cls._COMMENT_BLOCK_RE.fullmatch(stripped) and cls._has_matching_closer(
+                lines, i, stripped
+            ):
+                # Comments are not part of the document: drop the block up to
+                # and including its identical closing line.
+                i += 1
+                while i < n and lines[i].strip() != stripped:
+                    i += 1
+                i += 1
+                continue
+
+            if cls._LINE_COMMENT_RE.match(line):
                 i += 1
                 continue
 
