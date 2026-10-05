@@ -482,30 +482,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
-            if stripped in cls._CONTENT_BLOCK_DELIMITERS and cls._has_matching_closer(
-                lines, i, stripped
-            ):
-                # Example (====), sidebar (****), quote (____), open (--) and
-                # passthrough (++++) blocks carry regular content: consume the
-                # delimiter lines themselves so they do not leak into the
-                # text, and re-emit the inner lines unchanged. The closer look-
-                # ahead keeps stray separator lines (e.g. "--" in a changelog)
-                # from swallowing the rest of the document. The empty line
-                # after the block ends the paragraph, so text following the
-                # block does not merge with the block's last line.
-                i += 1
-                while i < n and lines[i].strip() != stripped:
-                    yield lines[i]
+            if stripped in cls._CONTENT_BLOCK_DELIMITERS:
+                has_closer = cls._has_matching_closer(lines, i, stripped)
+                if has_closer:
+                    # Consume both delimiters; yield inner lines and a trailing
+                    # blank so the following text starts a fresh paragraph.
                     i += 1
-                i += 1
-                yield ""
-                continue
-
-            if stripped == "--" and not cls._has_matching_closer(lines, i, stripped):
-                # A stray "--" with no closer (e.g. a changelog separator)
-                # breaks the paragraph instead of rendering as text.
-                yield ""
-                i += 1
+                    while i < n and lines[i].strip() != stripped:
+                        yield lines[i]
+                        i += 1
+                    i += 1
+                    yield ""
+                elif stripped == "--":
+                    # Stray "--" (no closer): break the paragraph, do not render as text.
+                    yield ""
+                    i += 1
                 continue
 
             source_attr = cls._SOURCE_ATTR_RE.match(stripped)
