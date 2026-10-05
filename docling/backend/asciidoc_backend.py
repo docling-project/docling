@@ -192,9 +192,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         last_list_item: ListItem | None = None
         list_continuation = False
 
-        # parents: dict[int, Union[DocItem, GroupItem, None]] = {}
         parents: dict[int, Union[GroupItem, None]] = {}
-        # indents: dict[int, Union[DocItem, GroupItem, None]] = {}
         indents: dict[int, Union[GroupItem, None]] = {}
 
         for i in range(10):
@@ -202,7 +200,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             indents[i] = None
 
         for block in self._iter_blocks(self.lines):
-            # line = line.strip()
             if isinstance(block, _LiteralBlock):
                 text_data, caption_data, in_list, last_list_item, list_continuation = (
                     self._add_literal_block(
