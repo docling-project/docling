@@ -508,7 +508,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         title_names: list[str] = ["article-title", "subtitle", "title", "label"]
         titles: list[str] = [
             " ".join(
-                JatsDocumentBackend._normalize_whitespace(elem.text)
+                JatsDocumentBackend._normalize_whitespace(
+                    JatsDocumentBackend._get_text(elem)
+                )
                 for elem in list(title_node)
                 if elem.tag in title_names
             ).strip()
@@ -670,7 +672,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             item_node = node.xpath(item)
             if len(item_node) > 0:
                 citation[item.replace("-", "_")] = (  # type: ignore[literal-required]
-                    JatsDocumentBackend._normalize_whitespace(item_node[0].text)
+                    JatsDocumentBackend._normalize_whitespace(
+                        JatsDocumentBackend._get_text(item_node[0])
+                    )
                 )
 
         # Publication identifier

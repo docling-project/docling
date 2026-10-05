@@ -1128,3 +1128,30 @@ def test_jats_empty_article_title_does_not_crash():
     exported = doc.export_to_markdown()
     # Empty title is serialized as an H1 with no text.
     assert exported == "# "
+
+
+def test_jats_title_with_inline_markup_is_complete():
+    doc = convert_jats_article_meta(
+        "<title-group><article-title>Effects of <italic>Escherichia coli</italic> on health</article-title></title-group>"
+    )
+    titles = [t for t in doc.texts if t.label == DocItemLabel.TITLE]
+    assert len(titles) == 1
+    assert titles[0].text == "Effects of Escherichia coli on health"
+
+
+def test_jats_citation_source_with_inline_markup_is_kept():
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname><given-names>Jane</given-names></name>"
+        "<article-title>Some article</article-title>"
+        "<source><italic>Nature</italic></source>"
+        "<year>2020</year>"
+        "</element-citation></ref></ref-list>"
+    )
+    citations = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
+    ]
+    assert len(citations) == 1
+    assert "Nature" in citations[0].text
