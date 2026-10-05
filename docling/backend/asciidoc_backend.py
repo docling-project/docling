@@ -249,11 +249,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     # GroupItem has no caption slot; emit the pending block
                     # title as a bold paragraph immediately before the list.
                     if caption_data:
-                        doc.add_text(
-                            text=" ".join(caption_data),
-                            label=DocItemLabel.PARAGRAPH,
-                            parent=parents[level],
-                            formatting=Formatting(bold=True),
+                        self._add_block_title_paragraph(
+                            doc, caption_data, parents[level]
                         )
                         caption_data = []
 
@@ -342,11 +339,20 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_caption(line)
                 caption_data.append(item["text"])
 
-            elif (
-                len(line.strip()) > 0 and len(caption_data) > 0
-            ):  # allow multiline captions
+            elif len(line.strip()) > 0 and len(caption_data) > 0:
+                # A block title is a single line, so this line starts the
+                # paragraph it titles. A paragraph has no caption slot.
+                text_data = self._flush_text_data(
+                    doc=doc,
+                    text_data=text_data,
+                    parent=self._get_current_parent(parents),
+                )
+                self._add_block_title_paragraph(
+                    doc, caption_data, self._get_current_parent(parents)
+                )
+                caption_data = []
                 item = self._parse_text(line)
-                caption_data.append(item["text"])
+                text_data.append(item["text"])
 
             # Plain text
             elif len(line.strip()) == 0 and len(text_data) > 0:
@@ -373,8 +379,24 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             self._add_table_if_nonempty(
                 doc, table_data, caption_data, self._get_current_parent(parents)
             )
+        elif caption_data:
+            self._add_block_title_paragraph(
+                doc, caption_data, self._get_current_parent(parents)
+            )
 
         return doc
+
+    @staticmethod
+    def _add_block_title_paragraph(
+        doc: DoclingDocument, caption_data: list[str], parent: GroupItem | None
+    ) -> None:
+        """Emit a block title as a bold paragraph, for a target with no caption."""
+        doc.add_text(
+            text=" ".join(caption_data),
+            label=DocItemLabel.PARAGRAPH,
+            parent=parent,
+            formatting=Formatting(bold=True),
+        )
 
     @staticmethod
     def _get_current_level(parents):

@@ -336,6 +336,46 @@ def test_block_title_before_list_renders_as_bold_paragraph() -> None:
     assert md.index("**Steps**") < md.index("First step")
 
 
+def test_block_title_before_paragraph_keeps_the_paragraph_and_following_text() -> None:
+    # A block title is a single line; the paragraph after it is not part of it.
+    source = b"""Intro paragraph.
+
+.Block title
+Titled paragraph.
+
+After paragraph.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="block-title-paragraph.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    from docling_core.types.doc import Formatting
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.PARAGRAPH, "Intro paragraph."),
+        (DocItemLabel.PARAGRAPH, "Block title"),
+        (DocItemLabel.PARAGRAPH, "Titled paragraph."),
+        (DocItemLabel.PARAGRAPH, "After paragraph."),
+    ]
+    assert doc.texts[1].formatting == Formatting(bold=True)
+
+
+def test_block_title_at_end_of_document_is_kept() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"Some text.\n\n.Trailing title\n"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="block-title-end.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert [item.text for item in doc.texts] == ["Some text.", "Trailing title"]
+
+
 def test_parse_picture() -> None:
     line = (
         "image::images/example1.png[Example Image, width=200, height=150, align=center]"
