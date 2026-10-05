@@ -1,0 +1,2991 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.10.0",
+  "name": "epub_purvis_poetry",
+  "origin": {
+    "mimetype": "application/epub+zip",
+    "binary_hash": 1922125154971968754,
+    "filename": "epub_purvis_poetry.epub"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/5"
+      },
+      {
+        "$ref": "#/texts/123"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/texts/4"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/texts/4"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
+        },
+        {
+          "$ref": "#/texts/11"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
+        "$ref": "#/texts/4"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/12"
+        },
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        },
+        {
+          "$ref": "#/texts/15"
+        },
+        {
+          "$ref": "#/texts/16"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/4",
+      "parent": {
+        "$ref": "#/texts/4"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/17"
+        },
+        {
+          "$ref": "#/texts/18"
+        },
+        {
+          "$ref": "#/texts/19"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/texts/25"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/29"
+        },
+        {
+          "$ref": "#/texts/30"
+        },
+        {
+          "$ref": "#/texts/31"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/40"
+        },
+        {
+          "$ref": "#/texts/41"
+        },
+        {
+          "$ref": "#/texts/42"
+        },
+        {
+          "$ref": "#/texts/43"
+        },
+        {
+          "$ref": "#/texts/44"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/7",
+      "parent": {
+        "$ref": "#/texts/50"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/51"
+        },
+        {
+          "$ref": "#/texts/52"
+        },
+        {
+          "$ref": "#/texts/53"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/8",
+      "parent": {
+        "$ref": "#/texts/60"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/63"
+        },
+        {
+          "$ref": "#/texts/64"
+        },
+        {
+          "$ref": "#/texts/65"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/9",
+      "parent": {
+        "$ref": "#/texts/89"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/90"
+        },
+        {
+          "$ref": "#/texts/91"
+        },
+        {
+          "$ref": "#/texts/92"
+        },
+        {
+          "$ref": "#/texts/93"
+        },
+        {
+          "$ref": "#/texts/94"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/10",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/110"
+        },
+        {
+          "$ref": "#/texts/111"
+        },
+        {
+          "$ref": "#/texts/112"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/texts/122"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/124"
+        },
+        {
+          "$ref": "#/texts/125"
+        },
+        {
+          "$ref": "#/texts/126"
+        },
+        {
+          "$ref": "#/texts/127"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/12",
+      "parent": {
+        "$ref": "#/texts/122"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/128"
+        },
+        {
+          "$ref": "#/texts/129"
+        },
+        {
+          "$ref": "#/texts/130"
+        },
+        {
+          "$ref": "#/texts/131"
+        },
+        {
+          "$ref": "#/texts/132"
+        },
+        {
+          "$ref": "#/texts/133"
+        },
+        {
+          "$ref": "#/texts/134"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/13",
+      "parent": {
+        "$ref": "#/texts/122"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/135"
+        },
+        {
+          "$ref": "#/texts/136"
+        },
+        {
+          "$ref": "#/texts/137"
+        },
+        {
+          "$ref": "#/texts/138"
+        },
+        {
+          "$ref": "#/texts/139"
+        },
+        {
+          "$ref": "#/texts/140"
+        },
+        {
+          "$ref": "#/texts/141"
+        },
+        {
+          "$ref": "#/texts/142"
+        },
+        {
+          "$ref": "#/texts/143"
+        },
+        {
+          "$ref": "#/texts/144"
+        },
+        {
+          "$ref": "#/texts/145"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/14",
+      "parent": {
+        "$ref": "#/texts/122"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/146"
+        },
+        {
+          "$ref": "#/texts/147"
+        },
+        {
+          "$ref": "#/texts/148"
+        },
+        {
+          "$ref": "#/texts/149"
+        },
+        {
+          "$ref": "#/texts/150"
+        },
+        {
+          "$ref": "#/texts/151"
+        },
+        {
+          "$ref": "#/texts/152"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/15",
+      "parent": {
+        "$ref": "#/texts/122"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/153"
+        },
+        {
+          "$ref": "#/texts/154"
+        },
+        {
+          "$ref": "#/texts/155"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/16",
+      "parent": {
+        "$ref": "#/texts/156"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/158"
+        },
+        {
+          "$ref": "#/texts/159"
+        },
+        {
+          "$ref": "#/texts/160"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/17",
+      "parent": {
+        "$ref": "#/texts/156"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/162"
+        },
+        {
+          "$ref": "#/texts/163"
+        },
+        {
+          "$ref": "#/texts/164"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/0"
+        },
+        {
+          "$ref": "#/pictures/0"
+        },
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/20"
+        },
+        {
+          "$ref": "#/texts/25"
+        },
+        {
+          "$ref": "#/texts/33"
+        },
+        {
+          "$ref": "#/texts/45"
+        },
+        {
+          "$ref": "#/texts/50"
+        },
+        {
+          "$ref": "#/texts/54"
+        },
+        {
+          "$ref": "#/texts/60"
+        },
+        {
+          "$ref": "#/texts/69"
+        },
+        {
+          "$ref": "#/texts/75"
+        },
+        {
+          "$ref": "#/texts/82"
+        },
+        {
+          "$ref": "#/texts/89"
+        },
+        {
+          "$ref": "#/texts/95"
+        },
+        {
+          "$ref": "#/texts/100"
+        },
+        {
+          "$ref": "#/texts/104"
+        },
+        {
+          "$ref": "#/texts/116"
+        },
+        {
+          "$ref": "#/texts/122"
+        },
+        {
+          "$ref": "#/texts/156"
+        }
+      ],
+      "content_layer": "body",
+      "label": "title",
+      "prov": [],
+      "orig": "Poetry",
+      "text": "Poetry"
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "By",
+      "text": "By"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Sarah Louisa Forten Purvis",
+      "text": "Sarah Louisa Forten Purvis",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/1"
+        },
+        {
+          "$ref": "#/groups/1"
+        },
+        {
+          "$ref": "#/groups/2"
+        },
+        {
+          "$ref": "#/groups/3"
+        },
+        {
+          "$ref": "#/groups/4"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Imprint",
+      "text": "Imprint",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "The Standard Ebooks logo.",
+      "text": "The Standard Ebooks logo."
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This ebook is the product of many hours of hard work by volunteers for",
+      "text": "This ebook is the product of many hours of hard work by volunteers for"
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Standard Ebooks",
+      "text": "Standard Ebooks",
+      "hyperlink": "https://standardebooks.org/"
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ", and builds on the hard work of other literature lovers made possible by the public domain.",
+      "text": ", and builds on the hard work of other literature lovers made possible by the public domain."
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This particular ebook is based on digital scans from the",
+      "text": "This particular ebook is based on digital scans from the"
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Internet Archive",
+      "text": "Internet Archive",
+      "hyperlink": "https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry#page-scans"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the",
+      "text": "The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the"
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "CC0 1.0 Universal Public Domain Dedication",
+      "text": "CC0 1.0 Universal Public Domain Dedication",
+      "hyperlink": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ". For full license information, see the",
+      "text": ". For full license information, see the"
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Uncopyright",
+      "text": "Uncopyright",
+      "hyperlink": "uncopyright.xhtml"
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "at the end of this ebook.",
+      "text": "at the end of this ebook."
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Standard Ebooks is a volunteer-driven project that produces ebook editions of public domain literature using modern typography, technology, and editorial standards, and distributes them free of cost. You can download this and other ebooks carefully produced for true book lovers at",
+      "text": "Standard Ebooks is a volunteer-driven project that produces ebook editions of public domain literature using modern typography, technology, and editorial standards, and distributes them free of cost. You can download this and other ebooks carefully produced for true book lovers at"
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "standardebooks.org",
+      "text": "standardebooks.org",
+      "hyperlink": "https://standardebooks.org/"
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/21"
+        },
+        {
+          "$ref": "#/texts/22"
+        },
+        {
+          "$ref": "#/texts/23"
+        },
+        {
+          "$ref": "#/texts/24"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "The Grave of the Slave",
+      "text": "The Grave of the Slave",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/texts/20"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The cold storms of winter shall chill him no more,\nHis woes and his sorrows, his pains are all o'er;\nThe sod of the valley now covers his form,\nHe is safe in his last home, he feels not the storm.",
+      "text": "The cold storms of winter shall chill him no more,\nHis woes and his sorrows, his pains are all o'er;\nThe sod of the valley now covers his form,\nHe is safe in his last home, he feels not the storm."
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/texts/20"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The poor slave is laid all unheeded and lone,\nWhere the rich and the poor find a permanent home;\nNot his master can rouse him with voice of command;\nHe knows not, he hears not, his cruel demand.",
+      "text": "The poor slave is laid all unheeded and lone,\nWhere the rich and the poor find a permanent home;\nNot his master can rouse him with voice of command;\nHe knows not, he hears not, his cruel demand."
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/texts/20"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Not a tear, not a sigh to embalm his cold tomb,\nNo friend to lament him, no child to bemoan;\nNot a stone marks the place, where he peacefully lies,\nThe earth for his pillow, his curtain the skies.",
+      "text": "Not a tear, not a sigh to embalm his cold tomb,\nNo friend to lament him, no child to bemoan;\nNot a stone marks the place, where he peacefully lies,\nThe earth for his pillow, his curtain the skies."
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/texts/20"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Poor slave! shall we sorrow that death was thy friend,\nThe last, and the kindest, that heaven could send?\nThe grave to the weary is welcomed and blest;\nAnd death, to the captive, is freedom and rest.",
+      "text": "Poor slave! shall we sorrow that death was thy friend,\nThe last, and the kindest, that heaven could send?\nThe grave to the weary is welcomed and blest;\nAnd death, to the captive, is freedom and rest."
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/26"
+        },
+        {
+          "$ref": "#/texts/27"
+        },
+        {
+          "$ref": "#/texts/28"
+        },
+        {
+          "$ref": "#/groups/5"
+        },
+        {
+          "$ref": "#/texts/32"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "The Slave Girl’s Address to Her Mother",
+      "text": "The Slave Girl's Address to Her Mother",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/texts/25"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Oh! mother, weep not, though our lot be hard,\nAnd we are helpless-God will be our guard:\nFor He our heavenly guardian doth not sleep;\nHe watches o'er us-mother, do not weep.",
+      "text": "Oh! mother, weep not, though our lot be hard,\nAnd we are helpless-God will be our guard:\nFor He our heavenly guardian doth not sleep;\nHe watches o'er us-mother, do not weep."
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/texts/25"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And grieve not for that dear loved home no more;\nOur sufferings and our wrongs, ah! why deplore?\nFor though we feel the stern oppressor's rod,\nYet he must yield, as well as we, to God.",
+      "text": "And grieve not for that dear loved home no more;\nOur sufferings and our wrongs, ah! why deplore?\nFor though we feel the stern oppressor's rod,\nYet he must yield, as well as we, to God."
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/texts/25"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Torn from our home, our kindred and our friends,\nAnd in a stranger's land our days to end,\nNo heart feels for the poor, the bleeding slave;\nNo arm is stretched to rescue, and to save.",
+      "text": "Torn from our home, our kindred and our friends,\nAnd in a stranger's land our days to end,\nNo heart feels for the poor, the bleeding slave;\nNo arm is stretched to rescue, and to save."
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Oh! ye who boast of Freedom's sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word-\"that all are free\"-\nWhen thousands groan in hopeless",
+      "text": "Oh! ye who boast of Freedom's sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word-\"that all are free\"-\nWhen thousands groan in hopeless"
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "slavery",
+      "text": "slavery",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "?",
+      "text": "?"
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/texts/25"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Upon your land it is a cruel stain-\nFreedom, what art thou?-nothing but a name.\nNo more, no more! Oh God, this cannot be;\nThou to thy children's aid wilt surely flee:\nIn thine own time deliverance thou wilt give,\nAnd bid us rise from slavery, and live.",
+      "text": "Upon your land it is a cruel stain-\nFreedom, what art thou?-nothing but a name.\nNo more, no more! Oh God, this cannot be;\nThou to thy children's aid wilt surely flee:\nIn thine own time deliverance thou wilt give,\nAnd bid us rise from slavery, and live."
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/34"
+        },
+        {
+          "$ref": "#/texts/35"
+        },
+        {
+          "$ref": "#/texts/36"
+        },
+        {
+          "$ref": "#/texts/37"
+        },
+        {
+          "$ref": "#/texts/38"
+        },
+        {
+          "$ref": "#/texts/39"
+        },
+        {
+          "$ref": "#/groups/6"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Past Joys",
+      "text": "Past Joys",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The friends we've loved, the home we've left,\nWill ofttimes claim a tear;\nAnd though of these we are bereft,\nStill memory makes them dear.",
+      "text": "The friends we've loved, the home we've left,\nWill ofttimes claim a tear;\nAnd though of these we are bereft,\nStill memory makes them dear."
+    },
+    {
+      "self_ref": "#/texts/35",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And deep we feel each trifling ill,\nEach sorrow of the soul:\nBut care we for the painful thrill,\nThat o'er some breasts doth roll?",
+      "text": "And deep we feel each trifling ill,\nEach sorrow of the soul:\nBut care we for the painful thrill,\nThat o'er some breasts doth roll?"
+    },
+    {
+      "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Poor Afric's son-ah! he must feel\nHow hard it is to part\nFrom all he lov'd-from all that life\nHad twined around his heart.",
+      "text": "Poor Afric's son-ah! he must feel\nHow hard it is to part\nFrom all he lov'd-from all that life\nHad twined around his heart."
+    },
+    {
+      "self_ref": "#/texts/37",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "His is a sorrow deeper far,\nThan all that we can show;\nHis is a lasting grief, o'er which\nNo healing balm can flow.",
+      "text": "His is a sorrow deeper far,\nThan all that we can show;\nHis is a lasting grief, o'er which\nNo healing balm can flow."
+    },
+    {
+      "self_ref": "#/texts/38",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The mother, wife, or child he loved,\nHe ne'er shall see again;\nTo him they're lost-ay, dead indeed:\nWhat for him doth remain?",
+      "text": "The mother, wife, or child he loved,\nHe ne'er shall see again;\nTo him they're lost-ay, dead indeed:\nWhat for him doth remain?"
+    },
+    {
+      "self_ref": "#/texts/39",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "A feeling of deep wretchedness\nComes o'er his troubled soul;\nThe thoughts of home-of other days,\nIn painful visions roll.",
+      "text": "A feeling of deep wretchedness\nComes o'er his troubled soul;\nThe thoughts of home-of other days,\nIn painful visions roll."
+    },
+    {
+      "self_ref": "#/texts/40",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "His home-ah! that lov'd name recalls\nAll that was dear to him;\nBut",
+      "text": "His home-ah! that lov'd name recalls\nAll that was dear to him;\nBut"
+    },
+    {
+      "self_ref": "#/texts/41",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "these",
+      "text": "these",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "were scenes he'll know no more-\nHe only",
+      "text": "were scenes he'll know no more-\nHe only"
+    },
+    {
+      "self_ref": "#/texts/43",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "feels",
+      "text": "feels",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/44",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "they've been.",
+      "text": "they've been."
+    },
+    {
+      "self_ref": "#/texts/45",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/46"
+        },
+        {
+          "$ref": "#/texts/47"
+        },
+        {
+          "$ref": "#/texts/48"
+        },
+        {
+          "$ref": "#/texts/49"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Prayer",
+      "text": "Prayer",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/46",
+      "parent": {
+        "$ref": "#/texts/45"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This sacred right none are denied,\nWhich makes the soul to Christ allied;\nMan bends the heart and bows the knee,\nAnd knows in prayer that he is free.",
+      "text": "This sacred right none are denied,\nWhich makes the soul to Christ allied;\nMan bends the heart and bows the knee,\nAnd knows in prayer that he is free."
+    },
+    {
+      "self_ref": "#/texts/47",
+      "parent": {
+        "$ref": "#/texts/45"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Yes, free to ask of Him, whate'er\nThe fainting heart alone can cheer;\nTo worship at that holy shrine,\nWhere beams thy Spirit, Lord, divine.",
+      "text": "Yes, free to ask of Him, whate'er\nThe fainting heart alone can cheer;\nTo worship at that holy shrine,\nWhere beams thy Spirit, Lord, divine."
+    },
+    {
+      "self_ref": "#/texts/48",
+      "parent": {
+        "$ref": "#/texts/45"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And Afric's children they are free,\nTo breathe their vows, their prayers to Thee;\nWith thought of future joy and gain,\nThe slave forgets his grief and pain;",
+      "text": "And Afric's children they are free,\nTo breathe their vows, their prayers to Thee;\nWith thought of future joy and gain,\nThe slave forgets his grief and pain;"
+    },
+    {
+      "self_ref": "#/texts/49",
+      "parent": {
+        "$ref": "#/texts/45"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Forgets awhile his slavish fear;\nForgets-that fetters bind him here;\nAnd in that sweet communion rest\nHis hopes, his fears-for he is blest.",
+      "text": "Forgets awhile his slavish fear;\nForgets-that fetters bind him here;\nAnd in that sweet communion rest\nHis hopes, his fears-for he is blest."
+    },
+    {
+      "self_ref": "#/texts/50",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/7"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "The Slave",
+      "text": "The Slave",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/51",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Our sires who once in freedom's cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died-\nOr while the captive is oppressed,\nThink of the wrongs they once redress'd?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive's woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom's side,\nNor dare he own a freeman's pride,\nHis soul is dark, ay dark as night,\nO'er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO'er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne'er be free;\nTo feel that",
+      "text": "Our sires who once in freedom's cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died-\nOr while the captive is oppressed,\nThink of the wrongs they once redress'd?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive's woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom's side,\nNor dare he own a freeman's pride,\nHis soul is dark, ay dark as night,\nO'er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO'er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne'er be free;\nTo feel that"
+    },
+    {
+      "self_ref": "#/texts/52",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "his",
+      "text": "his",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/53",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "is doomed to be\nA life, and death, of slavery.\nBut will not justice soon arise,\nAnd plead the cause of the despised?\nFor oh! my country, must it be,\nThat they still find a foe in thee?",
+      "text": "is doomed to be\nA life, and death, of slavery.\nBut will not justice soon arise,\nAnd plead the cause of the despised?\nFor oh! my country, must it be,\nThat they still find a foe in thee?"
+    },
+    {
+      "self_ref": "#/texts/54",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/55"
+        },
+        {
+          "$ref": "#/texts/56"
+        },
+        {
+          "$ref": "#/texts/57"
+        },
+        {
+          "$ref": "#/texts/58"
+        },
+        {
+          "$ref": "#/texts/59"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "The Farewell",
+      "text": "The Farewell",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/55",
+      "parent": {
+        "$ref": "#/texts/54"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Farewell!-but thou wilt soon forget\nThe stranger thou hast seen,\nAnd in the gay and busy world,\nForget that I have been.",
+      "text": "Farewell!-but thou wilt soon forget\nThe stranger thou hast seen,\nAnd in the gay and busy world,\nForget that I have been."
+    },
+    {
+      "self_ref": "#/texts/56",
+      "parent": {
+        "$ref": "#/texts/54"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And thought of me will scarce intrude,\nWhen other forms are nigh;\nWho, decked in beauty's bright array,\nShall pass before thine eye.",
+      "text": "And thought of me will scarce intrude,\nWhen other forms are nigh;\nWho, decked in beauty's bright array,\nShall pass before thine eye."
+    },
+    {
+      "self_ref": "#/texts/57",
+      "parent": {
+        "$ref": "#/texts/54"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Another's lips will charm thee then,\nAnother's voice will praise;\nThou wilt forget we e'er have met\nIn past and happy days.",
+      "text": "Another's lips will charm thee then,\nAnother's voice will praise;\nThou wilt forget we e'er have met\nIn past and happy days."
+    },
+    {
+      "self_ref": "#/texts/58",
+      "parent": {
+        "$ref": "#/texts/54"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And thou wilt scarcely deign to think\nOf friendship's early dream,\nOr cast one glance, in after years,\nOn this poor offering.",
+      "text": "And thou wilt scarcely deign to think\nOf friendship's early dream,\nOr cast one glance, in after years,\nOn this poor offering."
+    },
+    {
+      "self_ref": "#/texts/59",
+      "parent": {
+        "$ref": "#/texts/54"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Farewell-farewell!-'twere better far\nThat we had never met,\nThan meeting one brief moment here,\nTo part-and then forget.",
+      "text": "Farewell-farewell!-'twere better far\nThat we had never met,\nThan meeting one brief moment here,\nTo part-and then forget."
+    },
+    {
+      "self_ref": "#/texts/60",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/61"
+        },
+        {
+          "$ref": "#/texts/62"
+        },
+        {
+          "$ref": "#/groups/8"
+        },
+        {
+          "$ref": "#/texts/66"
+        },
+        {
+          "$ref": "#/texts/67"
+        },
+        {
+          "$ref": "#/texts/68"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "A Mother’s Grief",
+      "text": "A Mother's Grief",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/61",
+      "parent": {
+        "$ref": "#/texts/60"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "There lies the sole remaining hope\nOf all my coming years;\nThe treasure of my widow'd heart,\nThe tie that bound me here.",
+      "text": "There lies the sole remaining hope\nOf all my coming years;\nThe treasure of my widow'd heart,\nThe tie that bound me here."
+    },
+    {
+      "self_ref": "#/texts/62",
+      "parent": {
+        "$ref": "#/texts/60"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "He was the last-the loveliest,\nAnd can you blame my grief,\nOr chide the falling tears which give\nThis bursting heart relief?",
+      "text": "He was the last-the loveliest,\nAnd can you blame my grief,\nOr chide the falling tears which give\nThis bursting heart relief?"
+    },
+    {
+      "self_ref": "#/texts/63",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "There's nothing left for me to love\nThis earth holds nothing dear,\nSince",
+      "text": "There's nothing left for me to love\nThis earth holds nothing dear,\nSince"
+    },
+    {
+      "self_ref": "#/texts/64",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "he",
+      "text": "he",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/65",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ", my sweet-my gentle one,\nIs now no longer here.",
+      "text": ", my sweet-my gentle one,\nIs now no longer here."
+    },
+    {
+      "self_ref": "#/texts/66",
+      "parent": {
+        "$ref": "#/texts/60"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "My poor fond heart had counted on\nSuch bliss, in future hours!\nAnd I had dreamed his coming days\nHere strewed with fairy flowers!",
+      "text": "My poor fond heart had counted on\nSuch bliss, in future hours!\nAnd I had dreamed his coming days\nHere strewed with fairy flowers!"
+    },
+    {
+      "self_ref": "#/texts/67",
+      "parent": {
+        "$ref": "#/texts/60"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Perchance 'twas wrong to love him thus,\nAnd I have been chastised-\nFor He who gave him to my trust,\nHath called him to the skies.",
+      "text": "Perchance 'twas wrong to love him thus,\nAnd I have been chastised-\nFor He who gave him to my trust,\nHath called him to the skies."
+    },
+    {
+      "self_ref": "#/texts/68",
+      "parent": {
+        "$ref": "#/texts/60"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "He was too dear-oh! far too dear,\nThe idol of my soul-\nThen blame me not-this burst of grief\nI cannot now control.",
+      "text": "He was too dear-oh! far too dear,\nThe idol of my soul-\nThen blame me not-this burst of grief\nI cannot now control."
+    },
+    {
+      "self_ref": "#/texts/69",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/70"
+        },
+        {
+          "$ref": "#/texts/71"
+        },
+        {
+          "$ref": "#/texts/72"
+        },
+        {
+          "$ref": "#/texts/73"
+        },
+        {
+          "$ref": "#/texts/74"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "To the Hibernia",
+      "text": "To the Hibernia",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/70",
+      "parent": {
+        "$ref": "#/texts/69"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "O, speed thee! speed thee! gallant bark,\nAcross the bounding wave;\nThou bearest to old Britain's shores,\nThe Champion of the slave.",
+      "text": "O, speed thee! speed thee! gallant bark,\nAcross the bounding wave;\nThou bearest to old Britain's shores,\nThe Champion of the slave."
+    },
+    {
+      "self_ref": "#/texts/71",
+      "parent": {
+        "$ref": "#/texts/69"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Propitious breezes waft thee on,\nSafe o'er Atlantic's sea;\nFor many a heart with fervor sends\nA benizon to thee.",
+      "text": "Propitious breezes waft thee on,\nSafe o'er Atlantic's sea;\nFor many a heart with fervor sends\nA benizon to thee."
+    },
+    {
+      "self_ref": "#/texts/72",
+      "parent": {
+        "$ref": "#/texts/69"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And he who fears not to commit\nHis body to thy care,\nFears not to brave the winds and waves,\nKnowing that God is there.",
+      "text": "And he who fears not to commit\nHis body to thy care,\nFears not to brave the winds and waves,\nKnowing that God is there."
+    },
+    {
+      "self_ref": "#/texts/73",
+      "parent": {
+        "$ref": "#/texts/69"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "He goes to raise the standard high,\nAnd freedom's flag unfurl,\nAnd to proclaim the rallying cry\nOf freedom to the world.",
+      "text": "He goes to raise the standard high,\nAnd freedom's flag unfurl,\nAnd to proclaim the rallying cry\nOf freedom to the world."
+    },
+    {
+      "self_ref": "#/texts/74",
+      "parent": {
+        "$ref": "#/texts/69"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Then swift and steady be thy flight,\nAcross the briny wave;\nAnd safely bear, O noble bark,\nThe Champion of the slave.",
+      "text": "Then swift and steady be thy flight,\nAcross the briny wave;\nAnd safely bear, O noble bark,\nThe Champion of the slave."
+    },
+    {
+      "self_ref": "#/texts/75",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/76"
+        },
+        {
+          "$ref": "#/texts/77"
+        },
+        {
+          "$ref": "#/texts/78"
+        },
+        {
+          "$ref": "#/texts/79"
+        },
+        {
+          "$ref": "#/texts/80"
+        },
+        {
+          "$ref": "#/texts/81"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Life",
+      "text": "Life",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/76",
+      "parent": {
+        "$ref": "#/texts/75"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "To see our pathway strewn with flowers,\nWhile 'neath their sunny hue,\nWe fear that many a rankling care\nLies hidden from our view;",
+      "text": "To see our pathway strewn with flowers,\nWhile 'neath their sunny hue,\nWe fear that many a rankling care\nLies hidden from our view;"
+    },
+    {
+      "self_ref": "#/texts/77",
+      "parent": {
+        "$ref": "#/texts/75"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "To cull the flowers, to love their bloom,\nA season to enjoy;\nTo mark the blast that rudely comes\nTheir beauties to destroy:-",
+      "text": "To cull the flowers, to love their bloom,\nA season to enjoy;\nTo mark the blast that rudely comes\nTheir beauties to destroy:-"
+    },
+    {
+      "self_ref": "#/texts/78",
+      "parent": {
+        "$ref": "#/texts/75"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Such is our life. How full of change!\nHow much of hope or fears!\nScarce on the cheek is seen the smile,\nEre it is lost in tears.",
+      "text": "Such is our life. How full of change!\nHow much of hope or fears!\nScarce on the cheek is seen the smile,\nEre it is lost in tears."
+    },
+    {
+      "self_ref": "#/texts/79",
+      "parent": {
+        "$ref": "#/texts/75"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "To see the cherished things of earth,\nOn which we placed the heart,\nFade, one by one, before our eyes,\nAnd silently depart;-",
+      "text": "To see the cherished things of earth,\nOn which we placed the heart,\nFade, one by one, before our eyes,\nAnd silently depart;-"
+    },
+    {
+      "self_ref": "#/texts/80",
+      "parent": {
+        "$ref": "#/texts/75"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This is our life-and who can tell\nWhat future hours may bring?\nWhat hopes will cheer the panting heart,\nWhile close to earth we cling?",
+      "text": "This is our life-and who can tell\nWhat future hours may bring?\nWhat hopes will cheer the panting heart,\nWhile close to earth we cling?"
+    },
+    {
+      "self_ref": "#/texts/81",
+      "parent": {
+        "$ref": "#/texts/75"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The morning of our days are bright,\nAnd could the vision last-\nBut 'tis forbid-oh! changeful life,\nHow soon the dream is past!",
+      "text": "The morning of our days are bright,\nAnd could the vision last-\nBut 'tis forbid-oh! changeful life,\nHow soon the dream is past!"
+    },
+    {
+      "self_ref": "#/texts/82",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/83"
+        },
+        {
+          "$ref": "#/texts/84"
+        },
+        {
+          "$ref": "#/texts/85"
+        },
+        {
+          "$ref": "#/texts/86"
+        },
+        {
+          "$ref": "#/texts/87"
+        },
+        {
+          "$ref": "#/texts/88"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "The Separation",
+      "text": "The Separation",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/83",
+      "parent": {
+        "$ref": "#/texts/82"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "\"Friend after friend departs.\"",
+      "text": "\"Friend after friend departs.\""
+    },
+    {
+      "self_ref": "#/texts/84",
+      "parent": {
+        "$ref": "#/texts/82"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And they are gone-that little band\nOf friends-the firm and true!\nWe feel the void which absence makes,\nWith joy, and sorrow too.",
+      "text": "And they are gone-that little band\nOf friends-the firm and true!\nWe feel the void which absence makes,\nWith joy, and sorrow too."
+    },
+    {
+      "self_ref": "#/texts/85",
+      "parent": {
+        "$ref": "#/texts/82"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "We joy that duties call them forth,\nClad in an armor bright;\nWith shield of faith, their surest guard,\nAnd sword of truth and light.",
+      "text": "We joy that duties call them forth,\nClad in an armor bright;\nWith shield of faith, their surest guard,\nAnd sword of truth and light."
+    },
+    {
+      "self_ref": "#/texts/86",
+      "parent": {
+        "$ref": "#/texts/82"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "We bid God speed their parting steps,\nAnd bless the righteous cause:-\nWhere'er the path of duty points,\nMay duty never pause.",
+      "text": "We bid God speed their parting steps,\nAnd bless the righteous cause:-\nWhere'er the path of duty points,\nMay duty never pause."
+    },
+    {
+      "self_ref": "#/texts/87",
+      "parent": {
+        "$ref": "#/texts/82"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And yet, we sorrow most of all,\nAnd from the heart deplore,\nThat we perchance on earth again\nMay see these friends no more.",
+      "text": "And yet, we sorrow most of all,\nAnd from the heart deplore,\nThat we perchance on earth again\nMay see these friends no more."
+    },
+    {
+      "self_ref": "#/texts/88",
+      "parent": {
+        "$ref": "#/texts/82"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Their works shall live when other deeds,\nWhich ask a nation's fame,\nHave sank beneath Time's whelming wave,\nUnhonored and unnamed.",
+      "text": "Their works shall live when other deeds,\nWhich ask a nation's fame,\nHave sank beneath Time's whelming wave,\nUnhonored and unnamed."
+    },
+    {
+      "self_ref": "#/texts/89",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/9"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "My Country",
+      "text": "My Country",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/90",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Oh! speak not of heathenish darkness again,\nNor tell me of lands held in error's dread chain!\nWhere-where is the nation so erring as we,\nWho claim the proud name of the \"",
+      "text": "Oh! speak not of heathenish darkness again,\nNor tell me of lands held in error's dread chain!\nWhere-where is the nation so erring as we,\nWho claim the proud name of the \""
+    },
+    {
+      "self_ref": "#/texts/91",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "home of the free",
+      "text": "home of the free",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/92",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "\"!\nWhat a throb do the lov'd ties of country awake\nIn the heart of the exile!-for time cannot break\nThe sweet vision of home, and all he loved well,\nWhich has thrown o'er his pathway a magical spell.\nCan the name of \"",
+      "text": "\"!\nWhat a throb do the lov'd ties of country awake\nIn the heart of the exile!-for time cannot break\nThe sweet vision of home, and all he loved well,\nWhich has thrown o'er his pathway a magical spell.\nCan the name of \""
+    },
+    {
+      "self_ref": "#/texts/93",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "my country",
+      "text": "my country",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/94",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "\"-the deeds which we sing-\nBe honored-revered-'midst pollution and sin?\nCan the names of our fathers who perished in fight,\nBe hallowed in story, midst slavery's blight?\nWhen America's standard is floating so fair,\nI blush that the impress of falsehood is there;\nThat oppression and mockery dim the high fame,\nThat seeks from all nations a patriot's name.\nSpeak not of \"my country,\" unless she shall be,\nIn truth, the bright home of the \"brave and the free!\"\nTill the dark stain of slavery is washed from her hand,\nA tribute of homage she cannot command.",
+      "text": "\"-the deeds which we sing-\nBe honored-revered-'midst pollution and sin?\nCan the names of our fathers who perished in fight,\nBe hallowed in story, midst slavery's blight?\nWhen America's standard is floating so fair,\nI blush that the impress of falsehood is there;\nThat oppression and mockery dim the high fame,\nThat seeks from all nations a patriot's name.\nSpeak not of \"my country,\" unless she shall be,\nIn truth, the bright home of the \"brave and the free!\"\nTill the dark stain of slavery is washed from her hand,\nA tribute of homage she cannot command."
+    },
+    {
+      "self_ref": "#/texts/95",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/96"
+        },
+        {
+          "$ref": "#/texts/97"
+        },
+        {
+          "$ref": "#/texts/98"
+        },
+        {
+          "$ref": "#/texts/99"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Hours of Childhood",
+      "text": "Hours of Childhood",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/96",
+      "parent": {
+        "$ref": "#/texts/95"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "\"Blest hours of childhood! then, and then alone,\nDance we the revels gay round pleasure's throne.\"",
+      "text": "\"Blest hours of childhood! then, and then alone,\nDance we the revels gay round pleasure's throne.\""
+    },
+    {
+      "self_ref": "#/texts/97",
+      "parent": {
+        "$ref": "#/texts/95"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Dear cherished hours, how much ye tell\nOf all we've known, and loved so well!\nOn memory's page there is a leaf,\nBearing a trace of pleasures brief;\nOf schoolday mirth, of pastime gay,\nWith which we whiled those hours away.",
+      "text": "Dear cherished hours, how much ye tell\nOf all we've known, and loved so well!\nOn memory's page there is a leaf,\nBearing a trace of pleasures brief;\nOf schoolday mirth, of pastime gay,\nWith which we whiled those hours away."
+    },
+    {
+      "self_ref": "#/texts/98",
+      "parent": {
+        "$ref": "#/texts/95"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "And those we loved in early youth,\nWith all the fervency of truth-\nThey seem to live, and pass us by,\nWith laughing lip and beaming eye.\nEach favorite spot, each winding stream,\nWhere we have watched the bright sunbeam,\nAppears at memory's magic spell-\nAnd joys, to which we bid farewell.",
+      "text": "And those we loved in early youth,\nWith all the fervency of truth-\nThey seem to live, and pass us by,\nWith laughing lip and beaming eye.\nEach favorite spot, each winding stream,\nWhere we have watched the bright sunbeam,\nAppears at memory's magic spell-\nAnd joys, to which we bid farewell."
+    },
+    {
+      "self_ref": "#/texts/99",
+      "parent": {
+        "$ref": "#/texts/95"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "When grief and bliss are in the train\nOf hours we ne'er shall live again;\nWhen sorrow clouds our after years,\nAnd fills our cup with bitter tears;\n'Tis then we wait a sigh to ye\nO by-gone days of memory.",
+      "text": "When grief and bliss are in the train\nOf hours we ne'er shall live again;\nWhen sorrow clouds our after years,\nAnd fills our cup with bitter tears;\n'Tis then we wait a sigh to ye\nO by-gone days of memory."
+    },
+    {
+      "self_ref": "#/texts/100",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/101"
+        },
+        {
+          "$ref": "#/texts/102"
+        },
+        {
+          "$ref": "#/texts/103"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "An Appeal to Woman",
+      "text": "An Appeal to Woman",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/101",
+      "parent": {
+        "$ref": "#/texts/100"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Oh, woman, woman, in thy brightest hour\nOf conscious worth, of pride, of conscious power,\nOh, nobly dare to act a Christian's part,\nThat well befits a lovely woman's heart!\nDare to be good, as thou canst dare be great;\nDespise the taunts of envy, scorn and hate;\nOur \"skins may differ,\" but from thee we claim\nA sister's privilege, in a sister's name.",
+      "text": "Oh, woman, woman, in thy brightest hour\nOf conscious worth, of pride, of conscious power,\nOh, nobly dare to act a Christian's part,\nThat well befits a lovely woman's heart!\nDare to be good, as thou canst dare be great;\nDespise the taunts of envy, scorn and hate;\nOur \"skins may differ,\" but from thee we claim\nA sister's privilege, in a sister's name."
+    },
+    {
+      "self_ref": "#/texts/102",
+      "parent": {
+        "$ref": "#/texts/100"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "We are thy sisters-God has truly said,\nThat of one blood, the nations he has made.\nOh, Christian woman, in a Christian land,\nCanst thou unblushing read this great command?\nSuffer the wrongs which wring our inmost heart\nTo draw one throb of pity on thy part;\nOur \"skins may differ,\" but from thee we claim\nA sister's privilege, in a sister's name.",
+      "text": "We are thy sisters-God has truly said,\nThat of one blood, the nations he has made.\nOh, Christian woman, in a Christian land,\nCanst thou unblushing read this great command?\nSuffer the wrongs which wring our inmost heart\nTo draw one throb of pity on thy part;\nOur \"skins may differ,\" but from thee we claim\nA sister's privilege, in a sister's name."
+    },
+    {
+      "self_ref": "#/texts/103",
+      "parent": {
+        "$ref": "#/texts/100"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Oh, woman!-though upon thy fairer brow\nThe hues of roses and of lilies glow-\nThese soon must wither in their kindred earth,\nFrom whence the fair and dark have equal birth.\nLet a bright halo o'er thy virtues shed\nA lustre, that shall live when thou art dead;\nLet coming ages learn to bless thy name\nUpon the altar of immortal fame.",
+      "text": "Oh, woman!-though upon thy fairer brow\nThe hues of roses and of lilies glow-\nThese soon must wither in their kindred earth,\nFrom whence the fair and dark have equal birth.\nLet a bright halo o'er thy virtues shed\nA lustre, that shall live when thou art dead;\nLet coming ages learn to bless thy name\nUpon the altar of immortal fame."
+    },
+    {
+      "self_ref": "#/texts/104",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/105"
+        },
+        {
+          "$ref": "#/texts/106"
+        },
+        {
+          "$ref": "#/texts/107"
+        },
+        {
+          "$ref": "#/texts/108"
+        },
+        {
+          "$ref": "#/texts/109"
+        },
+        {
+          "$ref": "#/groups/10"
+        },
+        {
+          "$ref": "#/texts/113"
+        },
+        {
+          "$ref": "#/texts/114"
+        },
+        {
+          "$ref": "#/texts/115"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "The Slave Girl’s Farewell",
+      "text": "The Slave Girl's Farewell",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/105",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The incident which suggested the following lines is this:-A young girl was living with her mother in one of the West Indian Islands, quite unconscious of her being a slave. Her master, on leaving the Island for a permanent residence in Louisiana, cruelly separated the girl from her parent forever.",
+      "text": "The incident which suggested the following lines is this:-A young girl was living with her mother in one of the West Indian Islands, quite unconscious of her being a slave. Her master, on leaving the Island for a permanent residence in Louisiana, cruelly separated the girl from her parent forever."
+    },
+    {
+      "self_ref": "#/texts/106",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Mother, I leave thee-thou hast been,\nThrough long, long years of pain,\nThe only hope my fond heart knew;\nOr e'er shall know again.",
+      "text": "Mother, I leave thee-thou hast been,\nThrough long, long years of pain,\nThe only hope my fond heart knew;\nOr e'er shall know again."
+    },
+    {
+      "self_ref": "#/texts/107",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The sails are set-my master waits\nTo bear me far from thee;\nI linger-can I give thee up,\nAnd cross the fearful sea?",
+      "text": "The sails are set-my master waits\nTo bear me far from thee;\nI linger-can I give thee up,\nAnd cross the fearful sea?"
+    },
+    {
+      "self_ref": "#/texts/108",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Oh, let me gaze! how bright it seems,\nAs busy memory flies,\nTo view those scenes of other days,\nBeneath those bright blue skies.",
+      "text": "Oh, let me gaze! how bright it seems,\nAs busy memory flies,\nTo view those scenes of other days,\nBeneath those bright blue skies."
+    },
+    {
+      "self_ref": "#/texts/109",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The little hut where I have played\nIn childhood's fearless hours-\nThe murmuring stream-the mossy bank,\nWhere I have gathered flowers.",
+      "text": "The little hut where I have played\nIn childhood's fearless hours-\nThe murmuring stream-the mossy bank,\nWhere I have gathered flowers."
+    },
+    {
+      "self_ref": "#/texts/110",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "I knew not",
+      "text": "I knew not"
+    },
+    {
+      "self_ref": "#/texts/111",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "then",
+      "text": "then",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/112",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "I was a slave,\nOr that another's will,\nSave thine, could bend my spirit's pride;\nOr bid my lips be still.",
+      "text": "I was a slave,\nOr that another's will,\nSave thine, could bend my spirit's pride;\nOr bid my lips be still."
+    },
+    {
+      "self_ref": "#/texts/113",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Who now will soothe me at my toil,\nOr bathe my weary brow?\nOr shield me when the heavy lash\nIs raised to give the blow?",
+      "text": "Who now will soothe me at my toil,\nOr bathe my weary brow?\nOr shield me when the heavy lash\nIs raised to give the blow?"
+    },
+    {
+      "self_ref": "#/texts/114",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Thy fond arms press me-and I feel\nThy tears upon my cheek;\nTears are the only language now,\nA mother's love can speak.",
+      "text": "Thy fond arms press me-and I feel\nThy tears upon my cheek;\nTears are the only language now,\nA mother's love can speak."
+    },
+    {
+      "self_ref": "#/texts/115",
+      "parent": {
+        "$ref": "#/texts/104"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Think of me, mother, as I bend\nMy way across the sea;\nAnd midst thy tears, a blessing waft,\nTo her who prays for thee.",
+      "text": "Think of me, mother, as I bend\nMy way across the sea;\nAnd midst thy tears, a blessing waft,\nTo her who prays for thee."
+    },
+    {
+      "self_ref": "#/texts/116",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/117"
+        },
+        {
+          "$ref": "#/texts/118"
+        },
+        {
+          "$ref": "#/texts/119"
+        },
+        {
+          "$ref": "#/texts/120"
+        },
+        {
+          "$ref": "#/texts/121"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "A Prayer",
+      "text": "A Prayer",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/117",
+      "parent": {
+        "$ref": "#/texts/116"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Father, we lift the suppliant eye,\nTo where thou reigns't above;\nWe feel that thou canst not deny\nThe children of thy love.",
+      "text": "Father, we lift the suppliant eye,\nTo where thou reigns't above;\nWe feel that thou canst not deny\nThe children of thy love."
+    },
+    {
+      "self_ref": "#/texts/118",
+      "parent": {
+        "$ref": "#/texts/116"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Unshaken faith, unwavering trust,\nAre all that we can bring;\nWe are thy children, though in dust,\nTo thee we dare to cling.",
+      "text": "Unshaken faith, unwavering trust,\nAre all that we can bring;\nWe are thy children, though in dust,\nTo thee we dare to cling."
+    },
+    {
+      "self_ref": "#/texts/119",
+      "parent": {
+        "$ref": "#/texts/116"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "We know that thou wilt not forsake\nThe poor and trembling slave;\nFor him the blessed Saviour spake;\nAnd him he came to save.",
+      "text": "We know that thou wilt not forsake\nThe poor and trembling slave;\nFor him the blessed Saviour spake;\nAnd him he came to save."
+    },
+    {
+      "self_ref": "#/texts/120",
+      "parent": {
+        "$ref": "#/texts/116"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "We feel the chains that bind us all,\nAnd bend us to man's will;\nBut can they hold our souls enthrall'd,\nOr bid our voice be still?",
+      "text": "We feel the chains that bind us all,\nAnd bend us to man's will;\nBut can they hold our souls enthrall'd,\nOr bid our voice be still?"
+    },
+    {
+      "self_ref": "#/texts/121",
+      "parent": {
+        "$ref": "#/texts/116"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "No:-for thy power is all supreme,\nThy word shall yet stand firm;\nAnd master and the slave shall e'en\nTo thee for mercy turn.",
+      "text": "No:-for thy power is all supreme,\nThy word shall yet stand firm;\nAnd master and the slave shall e'en\nTo thee for mercy turn."
+    },
+    {
+      "self_ref": "#/texts/122",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/2"
+        },
+        {
+          "$ref": "#/groups/11"
+        },
+        {
+          "$ref": "#/groups/12"
+        },
+        {
+          "$ref": "#/groups/13"
+        },
+        {
+          "$ref": "#/groups/14"
+        },
+        {
+          "$ref": "#/groups/15"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Colophon",
+      "text": "Colophon",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/123",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "The Standard Ebooks logo.",
+      "text": "The Standard Ebooks logo."
+    },
+    {
+      "self_ref": "#/texts/124",
+      "parent": {
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Poetry",
+      "text": "Poetry",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/125",
+      "parent": {
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "was compiled from poems published between 1831 and 1836 by",
+      "text": "was compiled from poems published between 1831 and 1836 by"
+    },
+    {
+      "self_ref": "#/texts/126",
+      "parent": {
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Sarah Louisa Forten Purvis",
+      "text": "Sarah Louisa Forten Purvis",
+      "hyperlink": "https://en.wikipedia.org/wiki/Sarah_Louisa_Forten_Purvis"
+    },
+    {
+      "self_ref": "#/texts/127",
+      "parent": {
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/128",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This ebook was transcribed and produced for",
+      "text": "This ebook was transcribed and produced for"
+    },
+    {
+      "self_ref": "#/texts/129",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Standard Ebooks",
+      "text": "Standard Ebooks",
+      "hyperlink": "https://standardebooks.org/"
+    },
+    {
+      "self_ref": "#/texts/130",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "by",
+      "text": "by"
+    },
+    {
+      "self_ref": "#/texts/131",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Weijia Cheng",
+      "text": "Weijia Cheng",
+      "hyperlink": "https://weijiarhymeswith.asia/"
+    },
+    {
+      "self_ref": "#/texts/132",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ",\nand is based on digital scans from the",
+      "text": ",\nand is based on digital scans from the"
+    },
+    {
+      "self_ref": "#/texts/133",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Internet Archive",
+      "text": "Internet Archive",
+      "hyperlink": "https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry#page-scans"
+    },
+    {
+      "self_ref": "#/texts/134",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/135",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The cover page is adapted from",
+      "text": "The cover page is adapted from"
+    },
+    {
+      "self_ref": "#/texts/136",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Sunday Morning",
+      "text": "Sunday Morning",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/137",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ",\na painting completed in 1877 by",
+      "text": ",\na painting completed in 1877 by"
+    },
+    {
+      "self_ref": "#/texts/138",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Thomas Waterman Wood",
+      "text": "Thomas Waterman Wood",
+      "hyperlink": "https://en.wikipedia.org/wiki/Thomas_Waterman_Wood"
+    },
+    {
+      "self_ref": "#/texts/139",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".\nThe cover and title pages feature the",
+      "text": ".\nThe cover and title pages feature the"
+    },
+    {
+      "self_ref": "#/texts/140",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "League Spartan",
+      "text": "League Spartan",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/141",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "and",
+      "text": "and"
+    },
+    {
+      "self_ref": "#/texts/142",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Sorts Mill Goudy",
+      "text": "Sorts Mill Goudy",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/143",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "typefaces created in 2014 and 2009 by",
+      "text": "typefaces created in 2014 and 2009 by"
+    },
+    {
+      "self_ref": "#/texts/144",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The League of Moveable Type",
+      "text": "The League of Moveable Type",
+      "hyperlink": "https://www.theleagueofmoveabletype.com/"
+    },
+    {
+      "self_ref": "#/texts/145",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/146",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This edition was released on",
+      "text": "This edition was released on"
+    },
+    {
+      "self_ref": "#/texts/147",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "May 21, 2026, 6:29 p.m.",
+      "text": "May 21, 2026, 6:29 p.m.",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/148",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "and is based on",
+      "text": "and is based on"
+    },
+    {
+      "self_ref": "#/texts/149",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "revision 936122b",
+      "text": "revision 936122b",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/150",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".\nThe first edition of this ebook was released on\nDecember 6, 2023, 8:52 p.m.\nYou can check for updates to this ebook, view its revision history, or download it for different ereading systems at",
+      "text": ".\nThe first edition of this ebook was released on\nDecember 6, 2023, 8:52 p.m.\nYou can check for updates to this ebook, view its revision history, or download it for different ereading systems at"
+    },
+    {
+      "self_ref": "#/texts/151",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry",
+      "text": "standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry",
+      "hyperlink": "https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry"
+    },
+    {
+      "self_ref": "#/texts/152",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/153",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The volunteer-driven Standard Ebooks project relies on readers like you to submit typos, corrections, and other improvements. Anyone can contribute at",
+      "text": "The volunteer-driven Standard Ebooks project relies on readers like you to submit typos, corrections, and other improvements. Anyone can contribute at"
+    },
+    {
+      "self_ref": "#/texts/154",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "standardebooks.org",
+      "text": "standardebooks.org",
+      "hyperlink": "https://standardebooks.org/"
+    },
+    {
+      "self_ref": "#/texts/155",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/156",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/157"
+        },
+        {
+          "$ref": "#/groups/16"
+        },
+        {
+          "$ref": "#/texts/161"
+        },
+        {
+          "$ref": "#/groups/17"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Uncopyright",
+      "text": "Uncopyright",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/157",
+      "parent": {
+        "$ref": "#/texts/156"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "May you do good and not evil.\nMay you find forgiveness for yourself and forgive others.\nMay you share freely, never taking more than you give.",
+      "text": "May you do good and not evil.\nMay you find forgiveness for yourself and forgive others.\nMay you share freely, never taking more than you give."
+    },
+    {
+      "self_ref": "#/texts/158",
+      "parent": {
+        "$ref": "#/groups/16"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Copyright pages exist to tell you that you",
+      "text": "Copyright pages exist to tell you that you"
+    },
+    {
+      "self_ref": "#/texts/159",
+      "parent": {
+        "$ref": "#/groups/16"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "can't",
+      "text": "can't",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/160",
+      "parent": {
+        "$ref": "#/groups/16"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "do something. Unlike them, this Uncopyright page exists to tell you that the writing and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. The United States public domain represents our collective cultural heritage, and items in it are free for anyone in the United States to do almost anything at all with, without having to get permission.",
+      "text": "do something. Unlike them, this Uncopyright page exists to tell you that the writing and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. The United States public domain represents our collective cultural heritage, and items in it are free for anyone in the United States to do almost anything at all with, without having to get permission."
+    },
+    {
+      "self_ref": "#/texts/161",
+      "parent": {
+        "$ref": "#/texts/156"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Copyright laws are different all over the world, and the source text or artwork in this ebook may still be copyrighted in other countries. If you're not located in the United States, you must check your local laws before using this ebook. Standard Ebooks makes no representations regarding the copyright status of the source text or artwork in this ebook in any country other than the United States.",
+      "text": "Copyright laws are different all over the world, and the source text or artwork in this ebook may still be copyrighted in other countries. If you're not located in the United States, you must check your local laws before using this ebook. Standard Ebooks makes no representations regarding the copyright status of the source text or artwork in this ebook in any country other than the United States."
+    },
+    {
+      "self_ref": "#/texts/162",
+      "parent": {
+        "$ref": "#/groups/17"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Non-authorship activities performed on items that are in the public domain-so-called \"sweat of the brow\" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the",
+      "text": "Non-authorship activities performed on items that are in the public domain-so-called \"sweat of the brow\" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the"
+    },
+    {
+      "self_ref": "#/texts/163",
+      "parent": {
+        "$ref": "#/groups/17"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "CC0 1.0 Universal Public Domain Dedication",
+      "text": "CC0 1.0 Universal Public Domain Dedication",
+      "hyperlink": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "self_ref": "#/texts/164",
+      "parent": {
+        "$ref": "#/groups/17"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ", thus dedicating to the worldwide public domain all of the work they've done on this ebook, including but not limited to metadata, the titlepage, imprint, colophon, this Uncopyright, and any changes or enhancements to, or markup on, the original text and artwork. This dedication doesn't change the copyright status of the source text or artwork. We make this dedication in the interest of enriching our global cultural heritage, to promote free and libre culture around the world, and to give back to the unrestricted culture that has given all of us so much.",
+      "text": ", thus dedicating to the worldwide public domain all of the work they've done on this ebook, including but not limited to metadata, the titlepage, imprint, colophon, this Uncopyright, and any changes or enhancements to, or markup on, the original text and artwork. This dedication doesn't change the copyright status of the source text or artwork. We make this dedication in the interest of enriching our global cultural heritage, to promote free and libre culture around the world, and to give back to the unrestricted culture that has given all of us so much."
+    }
+  ],
+  "pictures": [
+    {
+      "self_ref": "#/pictures/0",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/1",
+      "parent": {
+        "$ref": "#/texts/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/5"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/2",
+      "parent": {
+        "$ref": "#/texts/122"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/123"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    }
+  ],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}

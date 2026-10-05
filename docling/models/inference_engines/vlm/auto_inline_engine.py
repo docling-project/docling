@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Auto-inline VLM inference engine that selects the best local engine."""
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
 )
+from docling.models.inference_engines.vlm._utils import engine_version_satisfied
 from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
@@ -104,10 +108,11 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                 try:
                     import mlx_vlm
 
-                    _log.info(
-                        "Selected MLX engine (Apple Silicon with explicit MLX export)"
-                    )
-                    return VlmEngineType.MLX
+                    if self._engine_version_is_sufficient(VlmEngineType.MLX):
+                        _log.info(
+                            "Selected MLX engine (Apple Silicon with explicit MLX export)"
+                        )
+                        return VlmEngineType.MLX
                 except ImportError:
                     _log.warning(
                         "MLX not available on Apple Silicon, falling back to Transformers"
@@ -136,8 +141,9 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                 try:
                     import vllm
 
-                    _log.info("Selected vLLM engine (CUDA + prefer_vllm=True)")
-                    return VlmEngineType.VLLM
+                    if self._engine_version_is_sufficient(VlmEngineType.VLLM):
+                        _log.info("Selected vLLM engine (CUDA + prefer_vllm=True)")
+                        return VlmEngineType.VLLM
                 except ImportError:
                     _log.warning("vLLM not available, falling back to Transformers")
             else:
@@ -149,6 +155,22 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         # Default to Transformers (should always be supported)
         _log.info("Selected Transformers engine (default)")
         return VlmEngineType.TRANSFORMERS
+
+    def _engine_version_is_sufficient(self, engine_type: VlmEngineType) -> bool:
+        """Check an engine's backing library against the model's declared minimum.
+
+        Why: some models need a newer backing library than Docling can depend on,
+        and an older release fails deep inside the vendor code rather than at load
+        time. Falling back keeps auto-inline working instead of crashing.
+        """
+        if self.model_spec is None:
+            return True
+
+        engine_config = self.model_spec.engine_overrides.get(engine_type)
+        required = (
+            engine_config.min_engine_version if engine_config is not None else None
+        )
+        return engine_version_satisfied(engine_type, required)
 
     def initialize(self) -> None:
         """Initialize by selecting and creating the actual engine."""

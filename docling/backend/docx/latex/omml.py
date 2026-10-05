@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Office Math Markup Language (OMML) to LaTeX converter.
 
 This module provides functionality to convert Office Math Markup Language (OMML)
@@ -8,12 +11,18 @@ special characters.
 Adapted from https://github.com/xiilei/dwml/blob/master/dwml/omml.py on 23/01/2025.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Iterator
 
 import lxml.etree as ET
 from lxml.etree import _Element
-from pylatexenc.latexencode import UnicodeToLatexEncoder
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexencode import UnicodeToLatexEncoder
+except ImportError:
+    pass  # guarded by MsWordDocumentBackend.__init__
 
 from docling.backend.docx.latex.latex_dict import (
     ALN,
@@ -295,11 +304,6 @@ class oMath2Latex(Tag2Method):
 
     _t_dict: dict[str, str] = T
     __direct_tags: tuple[str, ...] = ("box", "num", "den", "deg", "e")
-    u: UnicodeToLatexEncoder = UnicodeToLatexEncoder(
-        replacement_latex_protection="braces-all",
-        unknown_char_policy="keep",
-        unknown_char_warning=False,
-    )
 
     def __init__(self, element: _Element):
         """Initialize OMML to LaTeX converter.
@@ -307,6 +311,11 @@ class oMath2Latex(Tag2Method):
         Args:
             element: Root oMath XML element to convert.
         """
+        self.u: UnicodeToLatexEncoder = UnicodeToLatexEncoder(
+            replacement_latex_protection="braces-all",
+            unknown_char_policy="keep",
+            unknown_char_warning=False,
+        )
         self._latex = self.process_children(element)
 
     def __str__(self) -> str:
@@ -456,7 +465,7 @@ class oMath2Latex(Tag2Method):
             LaTeX string with subscript applied.
         """
         c_dict = self.process_children_dict(elm, include=("e", "sub", "sSubPr"))
-        base = c_dict.get("e", "")
+        base = c_dict.get("e", "").rstrip()
         sub = self._unwrap_script(c_dict.get("sub", ""), "_")
         if self._needs_grouping(base):
             base = "{" + base + "}"
@@ -472,7 +481,7 @@ class oMath2Latex(Tag2Method):
             LaTeX string with superscript applied.
         """
         c_dict = self.process_children_dict(elm, include=("e", "sup", "sSupPr"))
-        base = c_dict.get("e", "")
+        base = c_dict.get("e", "").rstrip()
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
             base = "{" + base + "}"
@@ -490,7 +499,7 @@ class oMath2Latex(Tag2Method):
         c_dict = self.process_children_dict(
             elm, include=("e", "sub", "sup", "sSubSupPr")
         )
-        base = c_dict.get("e", "")
+        base = c_dict.get("e", "").rstrip()
         sub = self._unwrap_script(c_dict.get("sub", ""), "_")
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
@@ -754,6 +763,7 @@ class oMath2Latex(Tag2Method):
         "\u2014": "-",  # EM DASH → minus
         "\u2212": "-",  # MINUS SIGN → minus
         "\u005e": "^",  # CIRCUMFLEX → superscript operator
+        "\u00d7": "\\times ",  # MULTIPLICATION SIGN → natively output \times
     }
 
     def process_unicode(self, s: str) -> str:

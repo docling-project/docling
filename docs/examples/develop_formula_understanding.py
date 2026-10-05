@@ -18,6 +18,7 @@
 # %%
 
 import logging
+import os
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -28,6 +29,9 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+
+# Check if running in CI
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
 
 
 class ExampleFormulaUnderstandingPipelineOptions(PdfPipelineOptions):
@@ -57,9 +61,10 @@ class ExampleFormulaUnderstandingEnrichmentModel(BaseItemAndImageEnrichmentModel
             return
 
         for enrich_element in element_batch:
-            # Opens a window for each cropped formula image; comment this out when
-            # running headless or processing many items to avoid blocking spam.
-            enrich_element.image.show()
+            if not IS_CI:
+                # Opens a window for each cropped formula image; comment this out when
+                # running headless or processing many items to avoid blocking spam.
+                enrich_element.image.show()
 
             yield enrich_element.item
 
@@ -89,7 +94,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2203.01017v2.pdf"
+    input_doc_path = data_folder / "pdf/sources/code_and_formula.pdf"
 
     pipeline_options = ExampleFormulaUnderstandingPipelineOptions()
     pipeline_options.do_formula_understanding = True

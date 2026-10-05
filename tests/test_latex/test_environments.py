@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from io import BytesIO
 from pathlib import Path
 
@@ -14,7 +17,7 @@ from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
-LATEX_DATA_DIR = Path("./tests/data/latex/")
+LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
 
 
 def test_latex_abstract_environment():
@@ -89,6 +92,38 @@ def test_latex_lstlisting_environment():
 
     code_items = [t for t in doc.texts if t.label == DocItemLabel.CODE]
     assert len(code_items) >= 1
+
+
+@pytest.mark.parametrize("lead", ["", "   ", "\n   "])
+@pytest.mark.parametrize("env_name", ["verbatim", "lstlisting"])
+def test_latex_code_environment_keeps_first_line_indentation(env_name, lead):
+    """Indentation on the first code line is content, not padding.
+
+    Stripping the whole body removed it from the first line only, so the
+    lines no longer lined up and the code's structure changed. Leading lines
+    holding only whitespace are still dropped.
+    """
+    latex_content = (
+        "\\documentclass{article}\n"
+        "\\begin{document}\n"
+        f"\\begin{{{env_name}}}{lead}\n"
+        "  key: 1\n"
+        "  sub:\n"
+        "    x: 2\n"
+        f"\\end{{{env_name}}}\n"
+        "\\end{document}\n"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    code_texts = [t.text for t in doc.texts if t.label == DocItemLabel.CODE]
+    assert code_texts == ["  key: 1\n  sub:\n    x: 2"]
 
 
 def test_latex_subequations_environment():

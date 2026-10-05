@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the progress event callback system.
 
 Validates progress callback lifecycle, event types, and pipeline integration.
@@ -73,8 +76,10 @@ def test_page_progress_event():
 # Integration tests with actual document conversion
 # ---------------------------------------------------------------------------
 
-_PDF_PATH = Path(__file__).parent / "data" / "pdf" / "2305.03393v1-pg9.pdf"
-_MULTI_PAGE_PDF = Path(__file__).parent / "data" / "pdf" / "normal_4pages.pdf"
+_PDF_PATH = Path(__file__).parent / "data" / "pdf" / "sources" / "2305.03393v1-pg9.pdf"
+_MULTI_PAGE_PDF = (
+    Path(__file__).parent / "data" / "pdf" / "sources" / "normal_4pages.pdf"
+)
 
 
 @pytest.mark.skipif(not _PDF_PATH.exists(), reason="Test PDF not available")
@@ -217,3 +222,45 @@ def test_threaded_pipeline_build_document_accepts_progress_callback():
 
     sig = inspect.signature(ThreadedLayoutVlmPipeline._build_document)
     assert "progress_callback" in sig.parameters
+
+
+def test_legacy_build_document_signature_still_works():
+    """Pipelines overriding ``_build_document(self, conv_res)`` keep working."""
+    from io import BytesIO
+
+    from docling.backend.noop_backend import NoOpBackend
+    from docling.datamodel.base_models import ConversionStatus, InputFormat
+    from docling.datamodel.document import ConversionResult, InputDocument
+    from docling.datamodel.pipeline_options import PipelineOptions
+    from docling.pipeline.base_pipeline import BasePipeline
+
+    class _LegacyPipeline(BasePipeline):
+        def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+            return conv_res
+
+        def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
+            return ConversionStatus.SUCCESS
+
+        @classmethod
+        def get_default_options(cls) -> PipelineOptions:
+            return PipelineOptions()
+
+        @classmethod
+        def is_backend_supported(cls, backend) -> bool:
+            return True
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"test"),
+        filename="legacy.pdf",
+        format=InputFormat.PDF,
+        backend=NoOpBackend,
+    )
+    events: list[ProgressEvent] = []
+
+    conv_res = _LegacyPipeline(PipelineOptions()).execute(
+        in_doc, raises_on_error=True, progress_callback=events.append
+    )
+
+    assert conv_res.status == ConversionStatus.SUCCESS
+    phases = [e.phase for e in events if isinstance(e, PhaseProgressEvent)]
+    assert phases.count(ConversionPhase.BUILD) == 2

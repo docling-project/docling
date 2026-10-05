@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import re
 from collections.abc import Iterable
@@ -18,8 +21,14 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.models.base_layout_model import (
+    CONTAINER_LABELS,
+    FIGURE_LABEL,
+    PAGE_HEADER_LABELS,
+    TABLE_LABELS,
+    TEXT_ELEM_LABELS,
+)
 from docling.models.base_model import BasePageModel
-from docling.models.stages.layout.layout_model import LayoutModel
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -103,7 +112,20 @@ class PageAssembleModel(BasePageModel):
         except ValidationError:
             return Path(best_uri)
 
-    def sanitize_text(self, lines):
+    def sanitize_text(self, lines: List[str]) -> str:
+        """Join the text lines of a cluster into a single normalized string.
+
+        Lines are joined with a space, except across a hyphen that splits a
+        word over the line break ("algo-" / "rithms"), which is dropped so
+        that the two halves close up. A hyphen only splits a word when it is
+        attached to the word it splits; one that follows whitespace is a
+        literal character -- a separator dash, a bullet marker, or a wrapped
+        hyphen-prefixed token -- so it is kept and its lines are joined like
+        any other line break.
+
+        The joined text is then normalized: a few typographic characters are
+        replaced by ASCII equivalents and ligatures are expanded.
+        """
         if len(lines) == 0:
             return ""
 
@@ -114,13 +136,18 @@ class PageAssembleModel(BasePageModel):
                 prev_words = re.findall(r"\b[\w]+\b", prev_line)
                 line_words = re.findall(r"\b[\w]+\b", line)
 
+                hyphen_attached_to_word = len(prev_line) > 1 and prev_line[-2].isalnum()
+
                 if (
-                    len(prev_words)
+                    hyphen_attached_to_word
+                    and len(prev_words)
                     and len(line_words)
                     and prev_words[-1].isalnum()
                     and line_words[0].isalnum()
                 ):
                     lines[ix] = prev_line[:-1]
+                elif not hyphen_attached_to_word:
+                    lines[ix] += " "
             else:
                 lines[ix] += " "
 
@@ -141,8 +168,10 @@ class PageAssembleModel(BasePageModel):
         # captured trailing space is re-emitted so that real word boundaries are
         # preserved (e.g. "Ĳ is" → "IJ is", "hello\uf0a0 world" → "hello world").
         sanitized_text = _LIGATURE_RE.sub(
-            lambda m: _LIGATURE_MAP[m.group(1)]
-            + ("" if "\ufb00" <= m.group(1) <= "\ufb06" else (m.group(2) or "")),
+            lambda m: (
+                _LIGATURE_MAP[m.group(1)]
+                + ("" if "\ufb00" <= m.group(1) <= "\ufb06" else (m.group(2) or ""))
+            ),
             sanitized_text,
         )
 
@@ -167,7 +196,7 @@ class PageAssembleModel(BasePageModel):
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
-                        if cluster.label in LayoutModel.TEXT_ELEM_LABELS:
+                        if cluster.label in TEXT_ELEM_LABELS:
                             textlines = [
                                 cell.text.replace("\x02", "-").strip()
                                 for cell in cluster.cells
@@ -185,11 +214,11 @@ class PageAssembleModel(BasePageModel):
                             )
                             elements.append(text_el)
 
-                            if cluster.label in LayoutModel.PAGE_HEADER_LABELS:
+                            if cluster.label in PAGE_HEADER_LABELS:
                                 headers.append(text_el)
                             else:
                                 body.append(text_el)
-                        elif cluster.label in LayoutModel.TABLE_LABELS:
+                        elif cluster.label in TABLE_LABELS:
                             tbl = None
                             if page.predictions.tablestructure:
                                 tbl = page.predictions.tablestructure.table_map.get(
@@ -208,7 +237,7 @@ class PageAssembleModel(BasePageModel):
 
                             elements.append(tbl)
                             body.append(tbl)
-                        elif cluster.label == LayoutModel.FIGURE_LABEL:
+                        elif cluster.label == FIGURE_LABEL:
                             fig = None
                             if page.predictions.figures_classification:
                                 fig = page.predictions.figures_classification.figure_map.get(
@@ -225,7 +254,7 @@ class PageAssembleModel(BasePageModel):
                                 )
                             elements.append(fig)
                             body.append(fig)
-                        elif cluster.label in LayoutModel.CONTAINER_LABELS:
+                        elif cluster.label in CONTAINER_LABELS:
                             container_el = ContainerElement(
                                 label=cluster.label,
                                 id=cluster.id,

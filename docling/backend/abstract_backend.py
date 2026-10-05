@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
@@ -52,10 +55,10 @@ class AbstractDocumentBackend(ABC):
 
 
 class PaginatedDocumentBackend(AbstractDocumentBackend):
-    """DeclarativeDocumentBackend.
+    """PaginatedDocumentBackend.
 
-    A declarative document backend is a backend that can transform to DoclingDocument
-    straight without a recognition pipeline.
+    A backend designed for handling multi-page documents (like PDFs or TIFFs)
+    that require page-count awareness and page-by-page processing.
     """
 
     @abstractmethod

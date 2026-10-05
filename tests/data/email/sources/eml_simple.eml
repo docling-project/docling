@@ -1,0 +1,9 @@
+From: Alice Example <alice@example.com>
+To: Bob Example <bob@example.com>
+Subject: Simple Email
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Hello Bob,
+
+This is a simple email body.

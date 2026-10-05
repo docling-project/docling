@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """KServe v2 remote implementation for object-detection models."""
 
 from __future__ import annotations
@@ -143,6 +146,7 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
                 use_tls=self.options.grpc_use_tls,
                 max_message_bytes=self.options.grpc_max_message_bytes,
                 use_binary_data=self.options.use_binary_data,
+                grpc_channel_args=list(self.options.grpc_channel_args),
             )
         (
             self._input_images_name,

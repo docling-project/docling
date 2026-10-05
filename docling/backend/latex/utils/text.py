@@ -1,21 +1,16 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+from __future__ import annotations
+
 import re
 from typing import TYPE_CHECKING, Callable, List, Optional
-
-if TYPE_CHECKING:
-    from typing import Any
 
 from docling_core.types.doc.document import (
     DocItemLabel,
     DoclingDocument,
     Formatting,
     NodeItem,
-)
-from pylatexenc.latexwalker import (
-    LatexCharsNode,
-    LatexEnvironmentNode,
-    LatexGroupNode,
-    LatexMacroNode,
-    LatexMathNode,
 )
 
 from docling.backend.latex.constants import (
@@ -29,6 +24,20 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_STYLE,
 )
 
+if TYPE_CHECKING:
+    from typing import Any
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexGroupNode,
+        LatexMacroNode,
+        LatexMathNode,
+    )
+except ImportError:
+    pass  # guarded by LatexDocumentBackend.__init__
+
 
 class TextHelperMixin:
     if TYPE_CHECKING:
@@ -37,16 +46,16 @@ class TextHelperMixin:
 
         def _process_nodes(
             self,
-            nodes: "Any",
-            doc: "Any",
-            parent: "Any" = ...,
-            formatting: "Any" = ...,
-            text_label: "Any" = ...,
+            nodes: Any,
+            doc: Any,
+            parent: Any = ...,
+            formatting: Any = ...,
+            text_label: Any = ...,
         ) -> None: ...
-        def _extract_macro_arg(self, node: "Any") -> str: ...
+        def _extract_macro_arg(self, node: Any) -> str: ...
         def _expand_macros(self, latex_str: str) -> str: ...
         def _expand_custom_macro_invocation(
-            self, node: "Any", following_nodes: "Any"
+            self, node: Any, following_nodes: Any
         ) -> tuple[str, int]: ...
         def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
 
@@ -65,13 +74,11 @@ class TextHelperMixin:
         if "\n\n" in text:
             parts = text.split("\n\n")
 
-            first_part = parts[0].strip()
-            if first_part:
-                text_buffer.append(first_part)
+            text_buffer.append(parts[0])
 
             flush_fn()
 
-            for part in parts[1:]:
+            for part in parts[1:-1]:
                 part_stripped = part.strip()
                 if part_stripped:
                     doc.add_text(
@@ -80,6 +87,8 @@ class TextHelperMixin:
                         text=part_stripped,
                         formatting=formatting,
                     )
+
+            text_buffer.append(parts[-1])
         else:
             text_buffer.append(text)
 
@@ -105,7 +114,7 @@ class TextHelperMixin:
         pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"
         match = re.search(pattern, latex_str, re.DOTALL)
         if match:
-            return match.group(1).strip()
+            return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
         return latex_str
 
     def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:

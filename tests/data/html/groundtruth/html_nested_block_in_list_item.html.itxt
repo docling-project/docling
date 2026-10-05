@@ -1,0 +1,33 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-1
+    item-2 at level 2: section_header: Ordered list with inline elements
+      item-3 at level 3: list: group ordered list
+        item-4 at level 4: list_item: Step 1 text
+          item-5 at level 5: picture
+          item-6 at level 5: list: group description list
+            item-7 at level 6: list_item: Note text
+        item-8 at level 4: list_item: Step 2 text
+          item-9 at level 5: picture
+          item-10 at level 5: list: group description list
+            item-11 at level 6: list_item: Note text
+        item-12 at level 4: list_item: Step 3 text
+        item-13 at level 4: list_item: Step 4 text
+    item-14 at level 2: section_header: Ordered list with paragraph blocks
+      item-15 at level 3: list: group ordered list
+        item-16 at level 4: list_item: 
+          item-17 at level 5: inline: group group
+            item-18 at level 6: text: Item with
+            item-19 at level 6: text: bold
+            item-20 at level 6: text: text First paragraph block Second paragraph block
+        item-21 at level 4: list_item: 
+          item-22 at level 5: inline: group group
+            item-23 at level 6: text: Another item in
+            item-24 at level 6: code: python
+            item-25 at level 6: text: language
+        item-26 at level 4: list_item: Final item
+    item-27 at level 2: section_header: Nested list in divs
+      item-28 at level 3: list: group list
+        item-29 at level 4: list_item: Step instruction text
+          item-30 at level 5: list: group list
+            item-31 at level 6: list_item: Nested detail 1
+            item-32 at level 6: list_item: Nested detail 2

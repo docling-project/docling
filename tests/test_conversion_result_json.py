@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from io import BytesIO
 from pathlib import Path
 
@@ -13,8 +16,8 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
-def test_conversion_result_json_roundtrip_string():
-    pdf_doc = Path("./tests/data/pdf/redp5110_sampled.pdf")
+def test_conversion_result_json_roundtrip_string(tmp_path: Path):
+    pdf_doc = Path("./tests/data/pdf/sources/redp5110_sampled.pdf")
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False
@@ -33,7 +36,7 @@ def test_conversion_result_json_roundtrip_string():
     )
     conv_res = doc_converter.convert(pdf_doc)
 
-    fpath: Path = Path("./test-conversion.zip")
+    fpath: Path = tmp_path / "test-conversion.zip"
 
     conv_res.save(filename=fpath)  # returns string when no filename is given
     # assert isinstance(json_str, str) and len(json_str) > 0

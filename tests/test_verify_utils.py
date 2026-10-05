@@ -1,10 +1,15 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+from pathlib import Path
+
 import pytest
 from docling_core.types.doc import DoclingDocument, ImageRef, ProvenanceItem
 from docling_core.types.doc.base import BoundingBox, Size
 from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 
-from tests.verify_utils import verify_docitems
+from tests.verify_utils import verify_docitems, verify_export
 
 
 def _make_doc_with_bbox(
@@ -65,7 +70,7 @@ def test_verify_docitems_rejects_gross_bbox_variance_for_fuzzy_docs():
     with pytest.raises(AssertionError, match="BBox left mismatch"):
         verify_docitems(
             doc_pred=_make_doc_with_bbox(
-                left=25.0, page_width=2000.0, page_height=2829.0
+                left=500.0, page_width=2000.0, page_height=2829.0
             ),
             doc_true=_make_doc_with_bbox(
                 left=10.0, page_width=2000.0, page_height=2829.0
@@ -102,14 +107,91 @@ def test_verify_docitems_rejects_picture_count_mismatch():
         )
 
 
-def test_verify_docitems_uses_predicted_picture_image():
+def test_verify_docitems_uses_predicted_picture_image() -> None:
     doc_true = _make_doc_with_picture(image_size=(2, 2))
     doc_pred = _make_doc_with_picture(image_size=(3, 2))
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError, match="Image width mismatch"):
         verify_docitems(
             doc_pred=doc_pred,
             doc_true=doc_true,
             fuzzy=False,
             pdf_filename="fixture.json",
         )
+
+
+@pytest.mark.parametrize(
+    "true_size,pred_size,should_pass,expected_error",
+    [
+        # Tolerance is 1.5% of image dimension.
+        # For 254x267 image: 3px = 1.18% width, 4px = 1.50% height
+        ((254, 267), (251, 267), True, None),  # 3px = 1.18% width: passes
+        ((254, 267), (250, 267), False, "Image width mismatch"),  # 4px = 1.57%: fails
+        (
+            (254, 267),
+            (254, 263),
+            True,
+            None,
+        ),  # 4px = 1.50% height: passes (at boundary)
+        ((254, 267), (254, 262), False, "Image height mismatch"),  # 5px = 1.87%: fails
+        # Small images: percentage-based tolerance is precise
+        ((10, 10), (9, 9), False, "Image width mismatch"),  # 1px = 10%: fails (>> 1.5%)
+        ((100, 100), (99, 99), True, None),  # 1px = 1%: passes (< 1.5%)
+    ],
+)
+def test_verify_docitems_image_size_strict(
+    true_size: tuple[int, int],
+    pred_size: tuple[int, int],
+    should_pass: bool,
+    expected_error: str | None,
+) -> None:
+    """Test image size verification with percentage-based tolerance in strict (non-fuzzy) mode."""
+    doc_true = _make_doc_with_picture(image_size=true_size)
+    doc_pred = _make_doc_with_picture(image_size=pred_size)
+
+    if should_pass:
+        verify_docitems(
+            doc_pred=doc_pred,
+            doc_true=doc_true,
+            fuzzy=False,
+            pdf_filename="fixture.pdf",
+        )
+    else:
+        with pytest.raises(AssertionError, match=expected_error):
+            verify_docitems(
+                doc_pred=doc_pred,
+                doc_true=doc_true,
+                fuzzy=False,
+                pdf_filename="fixture.pdf",
+            )
+
+
+def test_verify_docitems_fuzzy_skips_image_size_check() -> None:
+    """In fuzzy mode image sizes are not compared — any size is accepted as long as
+    the predicted image exists.  This covers LibreOffice-based backends
+    (MsWordDocumentBackend, MsExcelDocumentBackend, MsPowerPointDocumentBackend)
+    whose rendered pixel dimensions vary across platforms and LibreOffice versions.
+    """
+    # Wildly different sizes: would fail in strict mode but must pass in fuzzy mode.
+    doc_true = _make_doc_with_picture(image_size=(254, 267))
+    doc_pred = _make_doc_with_picture(image_size=(100, 50))
+
+    verify_docitems(
+        doc_pred=doc_pred,
+        doc_true=doc_true,
+        fuzzy=True,
+        pdf_filename="fixture.pdf",
+    )
+
+
+def test_verify_export_ignores_embedded_image_data(tmp_path: Path) -> None:
+    fixture = tmp_path / "fixture.html"
+    groundtruth = '<img src="data:image/png;base64,AAAA">'
+    prediction = '<img src="data:image/png;base64,BBBB">'
+
+    assert verify_export(groundtruth, str(fixture), generate=True)
+    assert fixture.read_text(encoding="utf-8") == groundtruth
+    assert verify_export(prediction, str(fixture))
+    assert not verify_export(
+        prediction.replace("image/png", "image/jpeg"), str(fixture)
+    )

@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Run a filtered set of example scripts from docs/examples."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import time
@@ -105,8 +109,23 @@ def write_summary(summary_path: Path, lines: list[str]) -> None:
     summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def build_example_command(path: Path, *, under_coverage: bool) -> list[str]:
+    """Build the subprocess command used to run a single example script.
+
+    When ``EXAMPLES_COVERAGE`` is set, each example runs under ``coverage run``
+    in parallel mode so this lane contributes to the coverage report. Parallel
+    mode writes one data file per example, which the workflow combines
+    afterwards; without it each example would overwrite the previous one.
+    """
+    runner = ["uv", "run", "--no-sync", "python"]
+    if under_coverage:
+        runner += ["-m", "coverage", "run", "-p", "--branch", "--source=docling"]
+    return [*runner, str(path)]
+
+
 def run_examples(selected: list[Path], scratch_dir: Path, summary_path: Path) -> int:
     scratch_dir.mkdir(parents=True, exist_ok=True)
+    under_coverage = bool(os.environ.get("EXAMPLES_COVERAGE"))
     summary_lines = ["--- Example Runtimes ---"]
 
     if not selected:
@@ -120,7 +139,7 @@ def run_examples(selected: list[Path], scratch_dir: Path, summary_path: Path) ->
         print(f"--- Running example {path.name} ---")
         start_time = time.perf_counter()
         completed = subprocess.run(
-            ["uv", "run", "--no-sync", "python", str(path)],
+            build_example_command(path, under_coverage=under_coverage),
             check=False,
         )
         duration = int(time.perf_counter() - start_time)

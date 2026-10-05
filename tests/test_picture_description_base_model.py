@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from collections.abc import Iterable
 from types import SimpleNamespace
 from typing import ClassVar, List, Type
@@ -13,7 +16,7 @@ from docling_core.types.doc.base import BoundingBox, Size
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.base_models import ItemAndImageEnrichmentElement, VlmStopReason
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmEngineOptions,
@@ -21,6 +24,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.pipeline.base_pipeline import BasePipeline
+from docling.utils.api_image_request import ApiImageRequestResult
 
 pytestmark = pytest.mark.ml_vlm
 
@@ -46,6 +50,23 @@ class _ConfiguredPictureDescriptionModel(PictureDescriptionBaseModel):
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         for _image in images:
             yield "test description"
+
+
+class _UsagePictureDescriptionModel(_ConfiguredPictureDescriptionModel):
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageRequestResult]:
+        for _image in images:
+            yield ApiImageRequestResult(
+                text="test description",
+                num_tokens=42,
+                stop_reason=VlmStopReason.END_OF_SEQUENCE,
+                usage={
+                    "prompt_tokens": 10,
+                    "completion_tokens": 32,
+                    "total_tokens": 42,
+                },
+            )
 
 
 class _BatchRecordingPictureDescriptionModel(_ConfiguredPictureDescriptionModel):
@@ -115,6 +136,32 @@ def test_picture_description_batch_size_controls_pipeline_chunking() -> None:
     assert model.batch_sizes == [2, 2, 1]
 
 
+def test_picture_description_stores_usage_payload_on_description_meta() -> None:
+    model = _UsagePictureDescriptionModel(_TestOptions())
+    doc = _make_picture_doc(count=1)
+    image = Image.new("RGB", (20, 20), "red")
+
+    results = list(
+        model(
+            doc=doc,
+            element_batch=[
+                ItemAndImageEnrichmentElement(item=doc.pictures[0], image=image)
+            ],
+        )
+    )
+
+    assert len(results) == 1
+    picture = results[0]
+    assert picture.meta is not None
+    assert picture.meta.description is not None
+    assert picture.meta.description.text == "test description"
+    assert picture.meta.description.get_custom_part()["docling__usage"] == {
+        "prompt_tokens": 10,
+        "completion_tokens": 32,
+        "total_tokens": 42,
+    }
+
+
 def test_picture_description_scale_is_used_for_cropping() -> None:
     model = _ConfiguredPictureDescriptionModel(_TestOptions(scale=1.5))
     doc = DoclingDocument(name="test")
@@ -168,14 +215,10 @@ def test_picture_description_scale_must_be_positive() -> None:
 
 
 def test_picture_description_preset_batch_size_must_be_positive() -> None:
-    options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm", batch_size=0)
-
     with pytest.raises(ValueError, match="batch_size"):
-        _ConfiguredPictureDescriptionModel(options)
+        PictureDescriptionVlmEngineOptions.from_preset("smolvlm", batch_size=0)
 
 
 def test_picture_description_preset_scale_must_be_positive() -> None:
-    options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm", scale=0)
-
     with pytest.raises(ValueError, match="scale"):
-        _ConfiguredPictureDescriptionModel(options)
+        PictureDescriptionVlmEngineOptions.from_preset("smolvlm", scale=0)

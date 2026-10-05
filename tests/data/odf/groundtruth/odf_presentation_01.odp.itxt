@@ -1,0 +1,140 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: chapter: group slide-0
+    item-2 at level 2: title: Test Table Slide
+    item-3 at level 2: text: With footnote
+    item-4 at level 2: table with [9x7]
+      item-5 at level 3: unspecified: group rich_cell_group_0_1_0
+        item-6 at level 4: list: group list
+          item-7 at level 5: list_item: Class1
+      item-8 at level 3: unspecified: group rich_cell_group_0_4_0
+        item-9 at level 4: list: group list
+          item-10 at level 5: list_item: Class2
+      item-11 at level 3: unspecified: group rich_cell_group_0_1_1
+        item-12 at level 4: list: group list
+          item-13 at level 5: list_item: A merged with B
+      item-14 at level 3: unspecified: group rich_cell_group_0_3_1
+        item-15 at level 4: list: group list
+          item-16 at level 5: list_item: C
+      item-17 at level 3: unspecified: group rich_cell_group_0_4_1
+        item-18 at level 4: list: group list
+          item-19 at level 5: list_item: A
+      item-20 at level 3: unspecified: group rich_cell_group_0_5_1
+        item-21 at level 4: list: group list
+          item-22 at level 5: list_item: B
+      item-23 at level 3: unspecified: group rich_cell_group_0_6_1
+        item-24 at level 4: list: group list
+          item-25 at level 5: list_item: C
+      item-26 at level 3: unspecified: group rich_cell_group_0_0_2
+        item-27 at level 4: list: group list
+          item-28 at level 5: list_item: R1
+      item-29 at level 3: unspecified: group rich_cell_group_0_1_2
+        item-30 at level 4: list: group list
+          item-31 at level 5: list_item: True
+      item-32 at level 3: unspecified: group rich_cell_group_0_2_2
+        item-33 at level 4: list: group list
+          item-34 at level 5: list_item: False
+      item-35 at level 3: unspecified: group rich_cell_group_0_4_2
+        item-36 at level 4: list: group list
+          item-37 at level 5: list_item: False
+      item-38 at level 3: unspecified: group rich_cell_group_0_5_2
+        item-39 at level 4: list: group list
+          item-40 at level 5: list_item: True
+      item-41 at level 3: unspecified: group rich_cell_group_0_6_2
+        item-42 at level 4: list: group list
+          item-43 at level 5: list_item: True
+      item-44 at level 3: unspecified: group rich_cell_group_0_0_3
+        item-45 at level 4: list: group list
+          item-46 at level 5: list_item: R2
+      item-47 at level 3: unspecified: group rich_cell_group_0_3_3
+        item-48 at level 4: list: group list
+          item-49 at level 5: list_item: True
+      item-50 at level 3: unspecified: group rich_cell_group_0_4_3
+        item-51 at level 4: list: group list
+          item-52 at level 5: list_item: False
+      item-53 at level 3: unspecified: group rich_cell_group_0_0_4
+        item-54 at level 4: list: group list
+          item-55 at level 5: list_item: R3
+      item-56 at level 3: unspecified: group rich_cell_group_0_1_4
+        item-57 at level 4: list: group list
+          item-58 at level 5: list_item: False
+      item-59 at level 3: unspecified: group rich_cell_group_0_5_4
+        item-60 at level 4: list: group list
+          item-61 at level 5: list_item: False
+      item-62 at level 3: unspecified: group rich_cell_group_0_2_5
+        item-63 at level 4: list: group list
+          item-64 at level 5: list_item: True
+      item-65 at level 3: unspecified: group rich_cell_group_0_4_5
+        item-66 at level 4: list: group list
+          item-67 at level 5: list_item: True
+      item-68 at level 3: unspecified: group rich_cell_group_0_0_6
+        item-69 at level 4: list: group list
+          item-70 at level 5: list_item: R4
+      item-71 at level 3: unspecified: group rich_cell_group_0_3_6
+        item-72 at level 4: list: group list
+          item-73 at level 5: list_item: False
+      item-74 at level 3: unspecified: group rich_cell_group_0_5_6
+        item-75 at level 4: list: group list
+          item-76 at level 5: list_item: False
+      item-77 at level 3: unspecified: group rich_cell_group_0_2_7
+        item-78 at level 4: list: group list
+          item-79 at level 5: list_item: True
+      item-80 at level 3: unspecified: group rich_cell_group_0_4_7
+        item-81 at level 4: list: group list
+          item-82 at level 5: list_item: True
+      item-83 at level 3: unspecified: group rich_cell_group_0_5_7
+        item-84 at level 4: list: group list
+          item-85 at level 5: list_item: False
+      item-86 at level 3: unspecified: group rich_cell_group_0_6_7
+        item-87 at level 4: list: group list
+          item-88 at level 5: list_item: False
+      item-89 at level 3: unspecified: group rich_cell_group_0_1_8
+        item-90 at level 4: list: group list
+          item-91 at level 5: list_item: True
+      item-92 at level 3: unspecified: group rich_cell_group_0_2_8
+        item-93 at level 4: list: group list
+          item-94 at level 5: list_item: False
+      item-95 at level 3: unspecified: group rich_cell_group_0_3_8
+        item-96 at level 4: list: group list
+          item-97 at level 5: list_item: True
+      item-98 at level 3: unspecified: group rich_cell_group_0_4_8
+        item-99 at level 4: list: group list
+          item-100 at level 5: list_item: False
+      item-101 at level 3: unspecified: group rich_cell_group_0_5_8
+        item-102 at level 4: list: group list
+          item-103 at level 5: list_item: True
+      item-104 at level 3: unspecified: group rich_cell_group_0_6_8
+        item-105 at level 4: list: group list
+          item-106 at level 5: list_item: False
+  item-107 at level 1: chapter: group slide-1
+    item-108 at level 2: title: Second slide title
+    item-109 at level 2: list: group list
+      item-110 at level 3: list_item: Let’s introduce a list
+    item-111 at level 2: list: group list
+      item-112 at level 3: list_item: With foo
+      item-113 at level 3: list_item: Bar
+      item-114 at level 3: list_item: And baz things
+    item-115 at level 2: text: A rectangle shape with this text inside.
+  item-116 at level 1: chapter: group slide-2
+    item-117 at level 2: title: Slide3
+    item-118 at level 2: list: group list
+      item-119 at level 3: list_item: List item4
+      item-120 at level 3: list_item: List item5
+      item-121 at level 3: list_item: List item6
+    item-122 at level 2: list: group list
+      item-123 at level 3: list_item: I1
+      item-124 at level 3: list_item: I2
+      item-125 at level 3: list_item: I3
+      item-126 at level 3: list_item: I4
+    item-127 at level 2: text: Some info:
+    item-128 at level 2: list: group list
+      item-129 at level 3: list_item: Item A
+      item-130 at level 3: list_item: Item B
+    item-131 at level 2: text: Maybe a list?
+    item-132 at level 2: list: group list
+      item-133 at level 3: list_item: List1
+      item-134 at level 3: list_item: List2
+      item-135 at level 3: list_item: List3
+    item-136 at level 2: list: group list
+      item-137 at level 3: list_item: l1
+      item-138 at level 3: list_item: l2
+      item-139 at level 3: list_item: l3

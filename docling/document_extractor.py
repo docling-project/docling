@@ -1,4 +1,6 @@
-import hashlib
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import sys
 import threading
@@ -13,19 +15,21 @@ from pydantic import ConfigDict, model_validator, validate_call
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import (
     BaseFormatOption,
     ConversionStatus,
     DoclingComponentType,
     DocumentStream,
     ErrorItem,
+    FailureCategory,
     InputFormat,
 )
 from docling.datamodel.document import (
     InputDocument,
     _DocumentConversionInput,  # intentionally reused builder
+    build_invalid_input_errors,
 )
 from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
 from docling.datamodel.pipeline_options import PipelineOptions
@@ -38,6 +42,7 @@ from docling.datamodel.settings import (
 from docling.exceptions import ConversionError
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
+from docling.utils.pipeline_cache import create_pipeline_options_hash
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -73,7 +78,7 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
     """
     format_to_default_backend: dict[InputFormat, Type[AbstractDocumentBackend]] = {
         InputFormat.IMAGE: ImageDocumentBackend,
-        InputFormat.PDF: PyPdfiumDocumentBackend,
+        InputFormat.PDF: ThreadedDoclingParseDocumentBackend,
     }
 
     backend = format_to_default_backend.get(fmt)
@@ -174,8 +179,12 @@ class DocumentExtractor:
                 ConversionStatus.SUCCESS,
                 ConversionStatus.PARTIAL_SUCCESS,
             }:
+                error_details = ""
+                if ext_res.errors:
+                    error_messages = [err.error_message for err in ext_res.errors]
+                    error_details = f" Errors: {'; '.join(error_messages)}"
                 raise ConversionError(
-                    f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status}"
+                    f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status.value}.{error_details}"
                 )
             else:
                 yield ext_res
@@ -245,17 +254,15 @@ class DocumentExtractor:
             )
         else:
             error_message = f"File format not allowed: {in_doc.file}"
-            if raises_on_error:
-                raise ConversionError(error_message)
-            else:
-                error_item = ErrorItem(
-                    component_type=DoclingComponentType.USER_INPUT,
-                    module_name="",
-                    error_message=error_message,
-                )
-                return ExtractionResult(
-                    input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
-                )
+            error_item = ErrorItem(
+                component_type=DoclingComponentType.USER_INPUT,
+                module_name="",
+                error_message=error_message,
+                category=FailureCategory.POLICY,
+            )
+            return ExtractionResult(
+                input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
+            )
 
     def _execute_extraction_pipeline(
         self,
@@ -264,10 +271,11 @@ class DocumentExtractor:
         template: ExtractionTemplateType,
     ) -> ExtractionResult:
         if not in_doc.valid:
-            if raises_on_error:
-                raise ConversionError(f"Input document {in_doc.file} is not valid.")
-            else:
-                return ExtractionResult(input=in_doc, status=ConversionStatus.FAILURE)
+            return ExtractionResult(
+                input=in_doc,
+                status=ConversionStatus.FAILURE,
+                errors=build_invalid_input_errors(in_doc),
+            )
 
         pipeline = self._get_pipeline(in_doc.format)
         if pipeline is None:
@@ -292,7 +300,7 @@ class DocumentExtractor:
 
         pipeline_class = fopt.pipeline_cls
         pipeline_options = fopt.pipeline_options
-        options_hash = self._get_pipeline_options_hash(pipeline_options)
+        options_hash = create_pipeline_options_hash(pipeline_options)
 
         cache_key = (pipeline_class, options_hash)
         with _PIPELINE_CACHE_LOCK:
@@ -309,11 +317,3 @@ class DocumentExtractor:
                 )
 
             return self._initialized_pipelines[cache_key]
-
-    @staticmethod
-    def _get_pipeline_options_hash(pipeline_options: PipelineOptions) -> str:
-        """Generate a stable hash of pipeline options to use as part of the cache key."""
-        options_str = str(pipeline_options.model_dump())
-        return hashlib.md5(
-            options_str.encode("utf-8"), usedforsecurity=False
-        ).hexdigest()

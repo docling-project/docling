@@ -1,10 +1,13 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 import pytest
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pypdfium2_backend import (
     PyPdfiumDocumentBackend,
 )
@@ -16,7 +19,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 @pytest.fixture
 def test_doc_path():
-    return Path("./tests/data/pdf_password/2206.01062_pg3.pdf")
+    return Path("./tests/data/pdf_password/sources/2206.01062_pg3.pdf")
 
 
 @dataclass
@@ -45,7 +48,7 @@ def converter_opts_gen() -> Iterable[TestOption]:
     yield TestOption(
         options=PdfFormatOption(
             pipeline_options=pipeline_options,
-            backend=DoclingParseDocumentBackend,
+            backend=ThreadedDoclingParseDocumentBackend,
             backend_options=backend_options,
         ),
         name="DoclingParse",

@@ -14,7 +14,7 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UV_FROZEN: "1"
-  EXAMPLES_HEAVY: '^(batch_convert|chart_extraction|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
+  EXAMPLES_HEAVY: '^(asr_pipeline_performance_comparison|batch_convert|chart_extraction|code_formula_granite_docling|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
 
 jobs:
   run-heavy-examples:

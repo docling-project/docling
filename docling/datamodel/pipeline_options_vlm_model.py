@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 
@@ -103,9 +106,14 @@ class ResponseFormat(str, Enum):
     DOCLANG = "doclang"
     MARKDOWN = "markdown"
     DEEPSEEKOCR_MARKDOWN = "deepseekocr_markdown"
+    UNLIMITED_OCR_MARKDOWN = "unlimited_ocr_markdown"
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"
+    CHANDRA_HTML = "chandra_html"
+    DOTS_JSON = "dots_json"
+    NEMOTRON_PARSE_V2 = "nemotron_parse_v2"
+    MINERU2 = "mineru2"
 
 
 class InferenceFramework(str, Enum):

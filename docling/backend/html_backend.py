@@ -1,24 +1,32 @@
-import base64
-import ipaddress
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+from __future__ import annotations
+
 import logging
 import math
-import os
+import ntpath
+import posixpath
 import re
-import socket
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field as dataclass_field
+from email import policy
+from email.message import Message
+from email.parser import BytesParser
+from functools import cache
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
+from urllib.request import url2pathname
 
 import requests
-from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
-from bs4.element import PreformattedString
+import urllib3
 from docling_core.types.doc import (
     BoundingBox,
+    CodeLanguageLabel,
     CoordOrigin,
     DocItem,
     DocItemLabel,
@@ -48,25 +56,85 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
-from typing_extensions import override
+from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.table_spans import (
+    MAX_COLSPAN,
+    MAX_ROWSPAN,
+    clamp_span,
+    table_width,
+)
 from docling.datamodel.backend_options import HTMLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import OperationNotAllowed
+from docling.exceptions import DocumentLoadError, OperationNotAllowed
+from docling.utils.code_language import (
+    _HINT_PREFIXES,
+    detect_code_language,
+    normalize_code_language,
+)
+
+_BS4_AVAILABLE: bool = False
+_BS4_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+    from bs4.element import PreformattedString
+
+    _BS4_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _BS4_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'beautifulsoup4' package is required to process HTML files. "
+    "Install it with `pip install 'docling-slim[format-html]'`."
+)
 
 _log = logging.getLogger(__name__)
 
+# Response headers not forwarded when serving a fetched resource to the browser:
+# the body is already decoded and complete, so encoding/length/range framing
+# from the origin server no longer applies.
+_BROWSER_DROPPED_RESPONSE_HEADERS: Final = {
+    "connection",
+    "content-encoding",
+    "content-length",
+    "content-range",
+    "keep-alive",
+    "transfer-encoding",
+}
+
+
+@cache
+def _warn_headers_without_origin() -> None:
+    _log.warning(
+        "HTMLBackendOptions.headers are configured but no origin is allowed to "
+        "receive them, so they are not sent. Headers go to the source document's "
+        "origin by default; set HTMLBackendOptions.headers_allowed_origins to "
+        "send them to other origins."
+    )
+
+
+# Sentinel character for explicit line breaks from <br> tags
+# Using Unicode Private Use Area to avoid conflicts with actual content
+_BR_SENTINEL = "\ue000"
+
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
+_MHTML_SYNTHETIC_BASE = "thismessage:/"
+
+# Text-bearing block tags whose text is separated from surrounding inline text
+_TEXT_BLOCK_TAGS: Final = {"p", "li", "th", "td"}
+
 
 # Tags that initiate distinct Docling items
 _BLOCK_TAGS: Final = {
     "address",
     "details",
+    "dl",
     "figure",
     "footer",
     "img",
@@ -144,41 +212,12 @@ _FORMAT_TAG_MAP: Final = {
 
 _DATA_DOCLING_ID_ATTR: Final = "data-docling-id"
 _FORM_CONTAINER_CLASS: Final = "form_region"
+_ROW_SECTION_CLASS: Final = "row_section"
 _FORM_KEY_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)$")
 _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
     r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
 )
-
-
-def _validate_url_safety(url: str) -> None:
-    parsed = urlparse(url)
-    hostname = parsed.hostname
-
-    if not hostname:
-        raise ValueError("URL must contain a valid hostname")
-
-    try:
-        ip = ipaddress.ip_address(hostname)
-    except ValueError:
-        try:
-            ip_str = socket.gethostbyname(hostname)
-            ip = ipaddress.ip_address(ip_str)
-        except (socket.gaierror, socket.herror) as e:
-            raise ValueError(f"Cannot resolve hostname: {hostname}") from e
-
-    if not (
-        ip.is_global
-        and not (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_reserved
-            or ip.is_multicast
-            or ip.is_unspecified
-        )
-    ):
-        raise ValueError(f"Access to restricted IP address not allowed: {ip}")
 
 
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
@@ -334,7 +373,7 @@ class AnnotatedTextList(list):
             source_tag_id=current_source_tag_id,
         )
 
-    def simplify_text_elements(self) -> "AnnotatedTextList":
+    def simplify_text_elements(self) -> AnnotatedTextList:
         simplified = AnnotatedTextList()
         if not self:
             return self
@@ -384,18 +423,37 @@ class AnnotatedTextList(list):
             )
         return simplified
 
-    def split_by_newline(self):
-        super_list = []
+    def split_by_newline(self) -> list[Self]:
+        """Split text elements on multiple consecutive line breaks (from <br> tags).
+
+        Single <br> tags are converted to newline characters (\n) within the same paragraph.
+        Multiple consecutive <br> tags (2+) create new paragraphs.
+        Regular newlines from HTML source formatting have already been
+        normalized to spaces during text extraction.
+        """
+        super_list: list[Self] = []
         active_annotated_text_list = AnnotatedTextList()
+        double_sentinel = _BR_SENTINEL + _BR_SENTINEL
+
         for el in self:
-            sub_texts = el.text.split("\n")
-            if len(sub_texts) == 1:
+            if _BR_SENTINEL not in el.text:
                 active_annotated_text_list.append(el)
-            else:
-                for text in sub_texts:
-                    sub_el = deepcopy(el)
-                    sub_el.text = text
-                    active_annotated_text_list.append(sub_el)
+                continue
+
+            # Split on 2+ consecutive sentinels (paragraph breaks)
+            sub_texts = el.text.split(double_sentinel)
+
+            for i, text in enumerate(sub_texts):
+                # Replace single sentinels with \n and strip spaces around newlines
+                text = text.replace(_BR_SENTINEL, "\n")
+                text = re.sub(r" *\n *", "\n", text)
+
+                sub_el = deepcopy(el)
+                sub_el.text = text
+                active_annotated_text_list.append(sub_el)
+
+                # Create new paragraph after each segment except the last
+                if i < len(sub_texts) - 1:
                     super_list.append(active_annotated_text_list)
                     active_annotated_text_list = AnnotatedTextList()
         if active_annotated_text_list:
@@ -411,14 +469,27 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: Union[BytesIO, Path],
         options: Optional[HTMLBackendOptions] = None,
     ):
+        if not _BS4_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         if options is None:
             options = HTMLBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
-        self.base_path: Optional[str] = (
+        configured_base_path: Optional[str] = (
             str(options.source_uri) if options.source_uri is not None else None
+        )
+        self.base_path = configured_base_path
+        self._mhtml_resources: dict[str, bytes] | None = None
+        self._image_loader = ImageResourceLoader(
+            enable_local_fetch=options.enable_local_fetch,
+            enable_remote_fetch=options.enable_remote_fetch,
+            max_image_data_base64_bytes=options.max_image_data_base64_bytes,
+            max_remote_image_bytes=options.max_remote_image_bytes,
+            max_redirects=options.max_redirects,
+            headers=options.headers,
+            header_origins=self._get_header_origins(options, configured_base_path),
         )
 
         # Initialize the parents for the hierarchy
@@ -450,10 +521,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if isinstance(path_or_stream, BytesIO)
                 else Path(path_or_stream).read_bytes()
             )
+            if self.input_format == InputFormat.MHTML:
+                if options.render_page:
+                    raise DocumentLoadError(
+                        "Browser rendering is not supported for MHTML input."
+                    )
+                raw, resources, root_location = self._parse_mhtml(
+                    raw, configured_base_path
+                )
+                self._mhtml_resources = resources
+                self.base_path = root_location or configured_base_path
             self._raw_html_bytes = raw
             self.soup = BeautifulSoup(raw, "html.parser")
+        except DocumentLoadError:
+            raise
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 "Could not initialize HTML backend for file with "
                 f"hash {self.document_hash}."
             ) from e
@@ -476,7 +559,311 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.HTML}
+        return {InputFormat.HTML, InputFormat.MHTML}
+
+    @staticmethod
+    def _normalize_content_id(value: str) -> str:
+        """Normalize a Content-ID value to a canonical ``cid:<id>`` string."""
+        content_id = value.strip()
+        if content_id.lower().startswith("cid:"):
+            content_id = content_id[4:]
+        return f"cid:{content_id.strip('<>').casefold()}"
+
+    @staticmethod
+    def _mime_children(message: Message) -> list[Message]:
+        """Return the direct child parts of a multipart MIME message."""
+        payload = message.get_payload()
+        if not isinstance(payload, list):
+            return []
+        return [part for part in payload if isinstance(part, Message)]
+
+    @classmethod
+    def _find_html_root(cls, root_entity: Message) -> Message | None:
+        """Return the HTML part from a root entity, descending into multipart/alternative."""
+        if root_entity.get_content_type().lower() == "text/html":
+            return root_entity
+        if root_entity.get_content_type().lower() != "multipart/alternative":
+            return None
+
+        for part in reversed(cls._mime_children(root_entity)):
+            if html_part := cls._find_html_root(part):
+                return html_part
+        return None
+
+    @classmethod
+    def _find_mhtml_root(cls, message: Message) -> tuple[Message, Message]:
+        """Locate the multipart/related scope and its HTML root part.
+
+        Returns:
+            A tuple of ``(related_scope, html_root_part)``. For bare HTML
+            input (no multipart/related wrapper) both elements are the same
+            message object.
+
+        Raises:
+            ValueError: If no valid HTML root can be identified.
+        """
+        related_scope = next(
+            (
+                part
+                for part in message.walk()
+                if part.get_content_type().lower() == "multipart/related"
+            ),
+            None,
+        )
+        if related_scope is None:
+            if message.get_content_type().lower() == "text/html":
+                return message, message
+            raise ValueError("MHTML input has no multipart/related root.")
+
+        children = cls._mime_children(related_scope)
+        if not children:
+            raise ValueError("The MHTML multipart/related root is empty.")
+
+        start = related_scope.get_param("start", header="content-type")
+        if start:
+            target_id = cls._normalize_content_id(str(start))
+            root_entity = next(
+                (
+                    part
+                    for part in children
+                    if part.get("Content-ID") is not None
+                    and cls._normalize_content_id(str(part.get("Content-ID")))
+                    == target_id
+                ),
+                None,
+            )
+            if root_entity is None:
+                raise ValueError("The MHTML start part was not found.")
+        else:
+            root_entity = children[0]
+
+        root_part = cls._find_html_root(root_entity)
+        if root_part is None:
+            raise ValueError("The MHTML root entity has no HTML representation.")
+        return related_scope, root_part
+
+    @staticmethod
+    def _decode_mime_payload(part: Message) -> bytes:
+        """Decode the transfer encoding of a MIME part and return raw bytes."""
+        payload = part.get_payload(decode=True)
+        return payload if isinstance(payload, bytes) else b""
+
+    @classmethod
+    def _decode_mhtml_html(cls, part: Message) -> bytes:
+        """Decode the transfer encoding and re-encode the HTML payload as UTF-8.
+
+        Note:
+            Re-encoding to UTF-8 does not strip or update any ``<meta charset>``
+            or ``Content-Type`` meta tags inside the HTML. If the document declares
+            a non-UTF-8 charset internally, BeautifulSoup may attempt to re-decode
+            the already-UTF-8 bytes using that charset, which can produce corrupted
+            text. Stripping the meta charset declaration before passing the bytes to
+            the parser would fix this but is left as a future improvement.
+        """
+        payload = cls._decode_mime_payload(part)
+        charset = part.get_content_charset()
+        if not charset:
+            return payload
+        try:
+            return payload.decode(charset, errors="replace").encode("utf-8")
+        except LookupError:
+            return payload
+
+    @staticmethod
+    def _mhtml_local_path(value: str) -> str | None:
+        """Return a filesystem spelling for local paths and file URIs."""
+        value = value.strip()
+        parsed = urlparse(value)
+        if parsed.scheme.lower() == "file":
+            path = unquote(parsed.path)
+            if parsed.netloc and parsed.netloc.lower() != "localhost":
+                path = f"//{parsed.netloc}{path}"
+            if re.match(r"^/[A-Za-z]:[/\\]", path):
+                path = path[1:]
+            return path
+        if ImageResourceLoader.is_local_path(value):
+            return value
+        return None
+
+    @staticmethod
+    def _is_windows_absolute_path(value: str) -> bool:
+        """Return True if the path string is a Windows absolute path."""
+        return PureWindowsPath(value).is_absolute()
+
+    @classmethod
+    def _resolve_confined_local_root(
+        cls, root_location: str, configured_base: str
+    ) -> str | None:
+        """Resolve a MIME root without leaving the source document directory."""
+        source = cls._mhtml_local_path(configured_base)
+        root = cls._mhtml_local_path(root_location)
+        if source is None or root is None:
+            return None
+
+        if cls._is_windows_absolute_path(source):
+            if Path(root).is_absolute() and not cls._is_windows_absolute_path(root):
+                return None
+            source_dir = ntpath.dirname(ntpath.normpath(source))
+            candidate = ntpath.normpath(
+                root
+                if cls._is_windows_absolute_path(root)
+                else ntpath.join(source_dir, root)
+            )
+            try:
+                common = ntpath.commonpath([source_dir, candidate])
+            except ValueError:
+                return None
+            if ntpath.normcase(common) != ntpath.normcase(source_dir):
+                return None
+            return candidate
+
+        if cls._is_windows_absolute_path(root):
+            return None
+        source_path = Path(source).resolve()
+        source_dir_path = source_path.parent
+        root_path = Path(root)
+        candidate_path = (
+            root_path.resolve()
+            if root_path.is_absolute()
+            else (source_dir_path / root_path).resolve()
+        )
+        if not candidate_path.is_relative_to(source_dir_path):
+            return None
+        return str(candidate_path)
+
+    @staticmethod
+    def _join_mhtml_location(base: str, location: str) -> str:
+        """Resolve a location relative to base, handling all MHTML URI schemes."""
+        location = location.strip()
+        location_is_local = HTMLDocumentBackend._mhtml_local_path(location) is not None
+        if (not location_is_local and urlparse(location).scheme) or location.startswith(
+            "//"
+        ):
+            return location
+        if base.startswith(_MHTML_SYNTHETIC_BASE):
+            base_path = urlparse(base).path
+            safe_location = location.replace("\\", "/")
+            joined_path = posixpath.normpath(
+                posixpath.join(posixpath.dirname(base_path), safe_location)
+            )
+            joined_path = f"/{joined_path.lstrip('/')}"
+            return f"thismessage:{joined_path}"
+
+        base_local = HTMLDocumentBackend._mhtml_local_path(base)
+        location_local = HTMLDocumentBackend._mhtml_local_path(location)
+        if base_local is not None and location_local is not None:
+            if HTMLDocumentBackend._is_windows_absolute_path(base_local):
+                return ntpath.normpath(
+                    ntpath.join(ntpath.dirname(base_local), location_local)
+                )
+            return posixpath.normpath(
+                posixpath.join(posixpath.dirname(base_local), location_local)
+            )
+        return urljoin(base, location)
+
+    @classmethod
+    def _resolve_mhtml_base(
+        cls, root_location: str | None, configured_base: str | None
+    ) -> str:
+        """Derive the effective base URL for resolving MHTML resource references.
+
+        Prefers the root part's Content-Location, falling back to the caller-supplied
+        base or the synthetic ``thismessage:/`` origin for archives with no real URL.
+        Local roots that would escape the source document's directory are remapped to
+        the synthetic base to prevent filesystem traversal.
+        """
+        if not root_location:
+            return configured_base or _MHTML_SYNTHETIC_BASE
+
+        root_location = root_location.strip()
+        if root_location.startswith("//"):
+            return f"https:{root_location}"
+        if ImageResourceLoader.is_remote_url(root_location):
+            return root_location
+
+        local_root = cls._mhtml_local_path(root_location)
+        if local_root is not None and configured_base:
+            if ImageResourceLoader.is_remote_url(configured_base):
+                if not ImageResourceLoader.is_absolute_path(local_root):
+                    return urljoin(configured_base, local_root)
+            elif confined_root := cls._resolve_confined_local_root(
+                local_root, configured_base
+            ):
+                return confined_root
+
+        if local_root is not None:
+            return cls._join_mhtml_location(_MHTML_SYNTHETIC_BASE, local_root)
+        if urlparse(root_location).scheme:
+            return root_location
+
+        return cls._join_mhtml_location(_MHTML_SYNTHETIC_BASE, root_location)
+
+    @classmethod
+    def _collect_mhtml_resources(
+        cls, related_scope: Message, effective_base: str
+    ) -> dict[str, bytes]:
+        """Build a lookup map of embedded image resources keyed by location and cid.
+
+        Only image parts are collected; non-image resources (CSS, fonts, scripts)
+        are intentionally ignored since the HTML backend strips those tags.
+        """
+        resources: dict[str, bytes] = {}
+        for part in related_scope.walk():
+            if part.is_multipart() or part.get_content_maintype().lower() != "image":
+                continue
+            payload = cls._decode_mime_payload(part)
+            if not payload:
+                continue
+
+            content_location = part.get("Content-Location")
+            if content_location is not None:
+                location = str(content_location).strip()
+                resources.setdefault(location, payload)
+                resources.setdefault(
+                    cls._join_mhtml_location(effective_base, location), payload
+                )
+
+            content_id = part.get("Content-ID")
+            if content_id is not None:
+                resources.setdefault(
+                    cls._normalize_content_id(str(content_id)), payload
+                )
+        return resources
+
+    @classmethod
+    def _parse_mhtml(
+        cls, raw: bytes, configured_base: str | None
+    ) -> tuple[bytes, dict[str, bytes], str]:
+        """Parse an MHTML archive and extract the HTML root, image resources, and base URL.
+
+        Args:
+            raw: Raw bytes of the MHTML archive.
+            configured_base: Caller-supplied base path or URL (e.g. from
+                ``HTMLBackendOptions.source_uri``), used to resolve local roots.
+
+        Returns:
+            A tuple of ``(html_bytes, resources, effective_base)`` where
+            ``resources`` maps location keys to raw image bytes and
+            ``effective_base`` is the resolved base URL for further reference
+            resolution.
+
+        Raises:
+            ValueError: If the input cannot be parsed as a valid MHTML document.
+        """
+        message = BytesParser(policy=policy.default).parsebytes(raw)
+        if message.get("Content-Type") is None:
+            raise ValueError("MHTML input has no MIME Content-Type header.")
+
+        related_scope, root_part = cls._find_mhtml_root(message)
+        html_bytes = cls._decode_mhtml_html(root_part)
+        if not html_bytes.strip():
+            raise ValueError("The MHTML HTML root part is empty.")
+
+        root_header = root_part.get("Content-Location")
+        root_location = str(root_header).strip() if root_header else None
+        effective_base = cls._resolve_mhtml_base(root_location, configured_base)
+        resources = cls._collect_mhtml_resources(related_scope, effective_base)
+        return html_bytes, resources, effective_base
 
     @override
     def convert(self) -> DoclingDocument:
@@ -486,7 +873,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         origin = DocumentOrigin(
             filename=self.file.name or "file",
-            mimetype="text/html",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
@@ -526,10 +913,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         HTMLDocumentBackend._fix_invalid_paragraph_structure(self.soup)
 
         content = self.soup.body or self.soup
-        # normalize <br> tags
+
+        # normalize <br> tags - use sentinel to distinguish from source newlines
+        for text_node in content.find_all(string=True):
+            if _BR_SENTINEL in text_node:
+                text_node.replace_with(text_node.replace(_BR_SENTINEL, ""))
         for br in content("br"):
-            br.replace_with(NavigableString("\n"))
-        # set default content layer
+            br.replace_with(NavigableString(_BR_SENTINEL))
 
         # Furniture before the first heading rule, except for headers in tables
         header = None
@@ -552,6 +942,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._walk(content, doc)
         return doc
 
+    @staticmethod
+    def _get_header_origins(
+        options: HTMLBackendOptions, source_uri: Optional[str]
+    ) -> list[str]:
+        """Return the origins that receive ``options.headers``."""
+        if options.headers_allowed_origins is not None:
+            origins = list(options.headers_allowed_origins)
+        elif source_uri is not None and ImageResourceLoader.is_remote_url(source_uri):
+            origins = [source_uri]
+        else:
+            origins = []
+        if options.headers and not origins:
+            _warn_headers_without_origin()
+        return origins
+
     def _get_render_page_size(self) -> tuple[int, int]:
         options = cast(HTMLBackendOptions, self.options)
         width = options.render_page_width
@@ -561,17 +966,50 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return width, height
 
     def _coerce_base_url(self, value: str) -> str:
-        if HTMLDocumentBackend._is_remote_url(value) or value.startswith("file://"):
+        if ImageResourceLoader.is_remote_url(value) or value.startswith("file://"):
             return value
         return Path(value).resolve().as_uri()
+
+    def _get_browser_local_base_path(self) -> Optional[Path]:
+        if isinstance(self.path_or_stream, Path):
+            return self.path_or_stream.resolve()
+
+        if self.base_path and ImageResourceLoader.is_local_path(self.base_path):
+            return Path(self.base_path).resolve()
+
+        return None
+
+    def _is_allowed_browser_file_request(self, request_url: str) -> bool:
+        local_base_path = self._get_browser_local_base_path()
+        if local_base_path is not None and request_url == local_base_path.as_uri():
+            return True
+
+        if not self.options.enable_local_fetch or local_base_path is None:
+            return False
+
+        requested_path = Path(url2pathname(urlparse(request_url).path)).resolve()
+        return requested_path.is_relative_to(local_base_path.parent)
 
     def _get_browser_request_block_reason(self, request_url: str) -> Optional[str]:
         parsed = urlparse(request_url)
         scheme = (parsed.scheme or "").lower()
-        if scheme in {"file", "data", "about", "blob"}:
+        if scheme == "file":
+            if self._is_allowed_browser_file_request(request_url):
+                return None
+            if not self.options.enable_local_fetch:
+                return (
+                    "local fetch is disabled "
+                    "(set options.enable_local_fetch=True to allow)"
+                )
+            return (
+                "local file access is limited to the source document directory "
+                "during HTML rendering"
+            )
+
+        if scheme in {"data", "about", "blob"}:
             return None
 
-        if HTMLDocumentBackend._is_remote_url(request_url):
+        if ImageResourceLoader.is_remote_url(request_url):
             if self.options.enable_remote_fetch:
                 return None
             return (
@@ -580,6 +1018,38 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
 
         return f"URL scheme '{scheme or '<empty>'}' is not allowed"
+
+    def _fulfill_remote_browser_request(
+        self, route: Any, request: Any
+    ) -> Optional[str]:
+        """Serve a remote browser request with the image loader.
+
+        The resource is downloaded in Python, so address validation, redirect
+        handling, header scoping and the size limit are the same as for image
+        fetches. Returns None once the request is fulfilled, or the reason it
+        must be aborted.
+        """
+        if request.method != "GET":
+            return f"method {request.method} is not allowed for remote requests"
+        try:
+            resource = self._image_loader.fetch_remote(request.url)
+        except (
+            OperationNotAllowed,
+            ValueError,
+            requests.RequestException,
+            urllib3.exceptions.HTTPError,
+        ) as exc:
+            return str(exc)
+        route.fulfill(
+            status=resource.status_code,
+            headers={
+                name: value
+                for name, value in resource.headers.items()
+                if name.lower() not in _BROWSER_DROPPED_RESPONSE_HEADERS
+            },
+            body=resource.content,
+        )
+        return None
 
     def _is_browser_request_allowed(self, request_url: str) -> bool:
         return self._get_browser_request_block_reason(request_url) is None
@@ -635,24 +1105,51 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 render_html, self._coerce_base_url(self.base_path)
             )
 
+        # Main-frame navigations may only target the source document or the
+        # blank/srcdoc placeholders used with set_content.
+        allowed_navigation_urls = {"about:blank", "about:srcdoc"}
+        if render_url:
+            allowed_navigation_urls.add(render_url)
+
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
-            # If remote fetch is disabled, keep Chromium offline.
-            offline_mode = not options.enable_remote_fetch
             context = browser.new_context(
                 viewport={"width": width, "height": height},
                 device_scale_factor=options.render_device_scale,
                 # Disable page JavaScript execution for deterministic static rendering.
                 java_script_enabled=False,
-                offline=offline_mode,
+                # Chromium never uses the network itself: remote resources are
+                # downloaded by the image loader and served from the route below.
+                offline=True,
                 service_workers="block",
             )
 
             def _route_request(route, request) -> None:
+                # Abort main-frame navigations that leave the source document.
+                if (
+                    request.is_navigation_request()
+                    and request.frame.parent_frame is None
+                    and request.url not in allowed_navigation_urls
+                ):
+                    warnings.warn(
+                        "Blocked main-frame navigation during HTML rendering: "
+                        f"{request.method} {request.url} "
+                        "(navigation away from the source document)"
+                    )
+                    route.abort("blockedbyclient")
+                    return
+
                 block_reason = self._get_browser_request_block_reason(request.url)
                 if block_reason is None:
-                    route.continue_()
-                else:
+                    if ImageResourceLoader.is_remote_url(request.url):
+                        # Remote resources are downloaded in Python and served
+                        # to the browser, which stays offline.
+                        block_reason = self._fulfill_remote_browser_request(
+                            route, request
+                        )
+                    else:
+                        route.continue_()
+                if block_reason is not None:
                     warnings.warn(
                         "Blocked browser request during HTML rendering: "
                         f"{request.method} {request.url} ({block_reason})"
@@ -1299,27 +1796,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for n in reversed(new_nodes):
                 parent.insert(idx, n)
 
-    @staticmethod
-    def _is_remote_url(value: str) -> bool:
-        parsed = urlparse(value)
-        return parsed.scheme in {"http", "https", "ftp", "s3", "gs"}
-
     def _resolve_relative_path(self, loc: str) -> str:
-        abs_loc = loc
+        if self._mhtml_resources is not None:
+            archive_location = loc.strip()
+            if archive_location.lower().startswith("cid:"):
+                archive_location = self._normalize_content_id(archive_location)
+            elif self.base_path:
+                archive_location = self._join_mhtml_location(
+                    self.base_path, archive_location
+                )
 
-        if self.base_path:
-            if loc.startswith("//"):
-                # Protocol-relative URL - default to https
-                abs_loc = "https:" + loc
-            elif not loc.startswith(("http://", "https://", "data:", "file://", "#")):
-                if HTMLDocumentBackend._is_remote_url(self.base_path):  # remote fetch
-                    abs_loc = urljoin(self.base_path, loc)
-                elif self.base_path:  # local fetch
-                    # For local files, resolve relative to the HTML file location
-                    abs_loc = str(Path(self.base_path).parent / loc)
-
-        _log.debug(f"Resolved location {loc} to {abs_loc}")
-        return abs_loc
+            if archive_location in self._mhtml_resources:
+                return archive_location
+            if self.base_path and self.base_path.startswith(_MHTML_SYNTHETIC_BASE):
+                return archive_location
+        return self._image_loader.resolve_relative_path(loc, self.base_path)
 
     @staticmethod
     def group_cell_elements(
@@ -1447,6 +1938,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for row in element("tr", recursive=False):
             if not isinstance(row, Tag):
                 continue
+            row_classes = {
+                class_name.lower() for class_name in self._get_tag_classes(row)
+            }
+            row_is_row_section = _ROW_SECTION_CLASS in row_classes
             # For each row, find all the column cells (both <td> and <th>)
             # We don't want this recursive to support nested tables
             cells = row(["td", "th"], recursive=False)
@@ -1472,6 +1967,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for html_cell in cells:
                 if not isinstance(html_cell, Tag):
                     continue
+                cell_classes = {
+                    class_name.lower()
+                    for class_name in self._get_tag_classes(html_cell)
+                }
+                row_section = row_is_row_section or (_ROW_SECTION_CLASS in cell_classes)
 
                 # extract inline formulas
                 for formula in html_cell("inline-formula"):
@@ -1507,9 +2007,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     row_span -= 1
                 while (
                     col_idx < num_cols
+                    and row_idx + start_row_span < num_rows
                     and grid[row_idx + start_row_span][col_idx] is not None
                 ):
                     col_idx += 1
+                # Keep the cell within the table so the fill below stays
+                # proportional to the table size, not to the declared spans.
+                row_span = min(row_span, max(num_rows - (row_idx + start_row_span), 1))
+                col_span = min(col_span, max(num_cols - col_idx, 1))
                 for r in range(start_row_span, start_row_span + row_span):
                     for c in range(col_span):
                         if row_idx + r < num_rows and col_idx + c < num_cols:
@@ -1525,8 +2030,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header,
-                        row_header=((not col_header) and html_cell.name == "th"),
+                        column_header=col_header and not row_header,
+                        row_header=row_header
+                        or ((not col_header) and html_cell.name == "th"),
+                        row_section=row_section,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
                     doc.add_table_cell(table_item=docling_table, cell=rich_cell)
@@ -1540,13 +2047,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_row_offset_idx=start_row_span + row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        column_header=col_header,
-                        row_header=((not col_header) and html_cell.name == "th"),
+                        column_header=col_header and not row_header,
+                        row_header=row_header
+                        or ((not col_header) and html_cell.name == "th"),
+                        row_section=row_section,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
         return data
 
-    def _walk(self, element: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
+    def _walk(  # noqa: C901
+        self,
+        element: Tag,
+        doc: DoclingDocument,
+        skip_tags: frozenset[str] = frozenset(),
+    ) -> list[RefItem]:
         """Parse an XML tag by recursively walking its content.
 
         While walking, the method buffers inline text across tags like <b> or <span>,
@@ -1555,6 +2069,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         Args:
             element: The XML tag to parse.
             doc: The Docling document to be updated with the parsed content.
+            skip_tags: Names of direct children to leave out of the walk.
         """
         added_refs: list[RefItem] = []
         buffer: AnnotatedTextList = AnnotatedTextList()
@@ -1582,10 +2097,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     annotated_text_list, doc, force=force_inline_group
                 ) as inline_ref:
                     for annotated_text, source_tag_ids in compacted_parts:
-                        if annotated_text.text.strip():
-                            seg_clean = HTMLDocumentBackend._clean_unicode(
-                                annotated_text.text.strip()
-                            )
+                        if seg := annotated_text.text.strip():
+                            seg_clean = HTMLDocumentBackend._clean_unicode(seg)
                             if annotated_text.code:
                                 prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
@@ -1595,6 +2108,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 docling_code2 = doc.add_code(
                                     parent=self.parents[self.level],
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -1612,6 +2126,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[self.level],
                                     label=DocItemLabel.TEXT,
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -1625,6 +2140,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for node in element.contents:
             if isinstance(node, Tag):
                 name = node.name.lower()
+                if name in skip_tags:
+                    _flush_buffer()
+                    continue
                 if form_field := self._consume_form_field_for_tag(node):
                     _flush_buffer()
                     added_refs.extend(
@@ -1645,8 +2163,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     node.find(_BLOCK_TAGS)
                     or node.find("input")
                     or node.find(
-                        lambda item: isinstance(item, Tag)
-                        and self._is_custom_checkbox_tag(item)
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
                     )
                 )
                 has_pending_form_fields = self._has_pending_form_field_in_subtree(node)
@@ -1818,7 +2337,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return AnnotatedTextList()
                 if self._is_checkbox_label_container(item.parent):
                     return AnnotatedTextList()
-            text = item.strip()
+
+            if keep_newlines:
+                text: str = item.strip()
+            else:
+                # For normal content, collapse newlines to spaces (HTML spec behavior)
+                # but preserve the sentinel character for explicit <br> tags
+                text = item.replace("\n", " ").replace("\r", " ")
+                text = " ".join(text.split())
+
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             source_tag_id = (
                 self._get_tag_id(item.parent) if isinstance(item.parent, Tag) else None
@@ -1856,7 +2383,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
-        if not ignore_list or (tag.name not in ["ul", "ol"]):
+        if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
                     with self._use_format([child.name]):
@@ -2072,6 +2599,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level = original_level
             self.parents = original_parents
 
+    @contextmanager
+    def _use_list_item_context(self, parent_item: RefItem | None) -> Iterator[None]:
+        """Set up context for processing nested content within a list item.
+
+        Args:
+            parent_item: The list item to use as parent for nested content.
+                If None, the context manager does nothing.
+
+        While the context manager is active, the hierarchy level is increased
+        and the parent is set. When exiting, the level and parent are restored.
+        """
+        if parent_item:
+            self.parents[self.level + 1] = parent_item
+            self.level += 1
+            try:
+                yield
+            finally:
+                self.parents[self.level + 1] = None
+                self.level -= 1
+        else:
+            yield
+
     def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_ref = []
         tag_name = tag.name.lower()
@@ -2145,18 +2694,244 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     added_ref.append(im_ref)
         return added_ref
 
-    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:  # noqa: C901
+    def _has_list_ancestor(self, elem: Tag, boundary: Tag) -> bool:
+        """Check if element has a list ancestor between itself and boundary.
+
+        Args:
+            elem: The element to check
+            boundary: The boundary element (typically the list item)
+
+        Returns:
+            True if a list ancestor exists, False otherwise
+        """
+        parent = elem.parent
+        while parent and parent != boundary:
+            if isinstance(parent, Tag) and parent.name in {"ul", "ol", "dl"}:
+                return True
+            parent = parent.parent
+        return False
+
+    def _process_nested_element(
+        self,
+        elem,
+        li: Tag,
+        doc: DoclingDocument,
+        processed_elements: set,
+    ) -> None:
+        """Process a single nested element within a list item.
+
+        Args:
+            elem: The element to process
+            li: The parent list item tag
+            doc: The DoclingDocument being built
+            processed_elements: Set of element IDs already processed
+        """
+        if id(elem) in processed_elements:
+            return
+        processed_elements.add(id(elem))
+
+        if isinstance(elem, Tag):
+            if elem.name == "img":
+                self._emit_image(elem, doc)
+            elif elem.name in {"ul", "ol", "dl"}:
+                # Only process top-level lists (not nested within other lists)
+                if not self._has_list_ancestor(elem, li):
+                    self._handle_block(elem, doc)
+                    self.parents[self.level + 1] = None
+            elif elem.name == "table":
+                # Dispatch nested tables to the block handler so they are parsed
+                # as tables instead of being flattened into the list item text.
+                # No _has_list_ancestor-style guard is needed here (unlike the
+                # list branch): _handle_block consumes the whole table, so its
+                # descendants are never re-walked by _process_nested_element.
+                self._handle_block(elem, doc)
+                self.parents[self.level + 1] = None
+            else:
+                # Recursively process children for other elements (like divs)
+                for child in elem.children:
+                    self._process_nested_element(child, li, doc, processed_elements)
+
+    def _process_list_item_nested_content(
+        self,
+        li: Tag,
+        doc: DoclingDocument,
+        processed_elements: set,
+    ) -> None:
+        """Process nested content (images, lists, etc.) within a list item in DOM order.
+
+        Args:
+            li: The list item tag
+            doc: The DoclingDocument being built
+            processed_elements: Set of element IDs already processed to avoid duplicates
+        """
+        for child in li.children:
+            self._process_nested_element(child, li, doc, processed_elements)
+
+    def _add_list_item_with_content(
+        self,
+        tag: Tag,
+        doc: DoclingDocument,
+        parent: RefItem,
+        enumerated: bool = False,
+        marker: str = "",
+        extra_formatting: Optional[Formatting] = None,
+    ) -> Optional[RefItem]:
+        """Helper method to add a list item with its content.
+
+        Handles both simple and complex content with inline groups.
+        Returns the created list item or None if no content.
+        """
+        # Extract text and hyperlinks
+        parts = self._extract_text_and_hyperlink_recursively(
+            tag, ignore_list=True, find_parent_annotation=True
+        )
+        min_parts = parts.simplify_text_elements()
+        item_text = re.sub(
+            r"\s+|\n+", " ", "".join([el.text for el in min_parts])
+        ).strip()
+
+        if not item_text:
+            return None
+
+        if len(min_parts) > 1:
+            # Complex content - create list item with inline group
+            item_prov = self._make_text_prov(text=item_text, tag=tag)
+            list_item = doc.add_list_item(
+                text="",
+                enumerated=enumerated,
+                marker=marker,
+                parent=parent,
+                content_layer=self.content_layer,
+                prov=item_prov,
+            )
+            self.parents[self.level + 1] = list_item
+            self.level += 1
+
+            with self._use_inline_group(min_parts, doc):
+                compacted_parts = self._compact_adjacent_single_char_parts(min_parts)
+                for annotated_text, source_tag_ids in compacted_parts:
+                    text_part = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+                    clean_text = HTMLDocumentBackend._clean_unicode(text_part)
+
+                    # Apply extra formatting if provided
+                    formatting = annotated_text.formatting
+                    if extra_formatting:
+                        if extra_formatting.bold:
+                            if formatting is None:
+                                formatting = Formatting()
+                            formatting.bold = True
+
+                    prov = self._make_text_prov_for_source_tag_ids(
+                        text=clean_text,
+                        tag=tag,
+                        source_tag_ids=source_tag_ids,
+                    )
+
+                    if annotated_text.code:
+                        doc.add_code(
+                            parent=self.parents[self.level],
+                            text=clean_text,
+                            orig=text_part,
+                            content_layer=self.content_layer,
+                            formatting=formatting,
+                            hyperlink=annotated_text.hyperlink,
+                            prov=prov,
+                        )
+                    else:
+                        doc.add_text(
+                            parent=self.parents[self.level],
+                            label=DocItemLabel.TEXT,
+                            text=clean_text,
+                            orig=text_part,
+                            content_layer=self.content_layer,
+                            formatting=formatting,
+                            hyperlink=annotated_text.hyperlink,
+                            prov=prov,
+                        )
+
+            self.parents[self.level] = None
+            self.level -= 1
+            return list_item
+        else:
+            # Simple content - single text element
+            annotated_text = min_parts[0]
+            text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+            clean_text = HTMLDocumentBackend._clean_unicode(text)
+            prov = self._make_text_prov(
+                text=clean_text,
+                tag=tag,
+                source_tag_id=annotated_text.source_tag_id,
+            )
+
+            # Apply extra formatting if provided
+            formatting = annotated_text.formatting
+            if extra_formatting:
+                if extra_formatting.bold:
+                    if formatting is None:
+                        formatting = Formatting()
+                    formatting.bold = True
+
+            list_item = doc.add_list_item(
+                text=clean_text,
+                enumerated=enumerated,
+                marker=marker,
+                orig=text,
+                parent=parent,
+                content_layer=self.content_layer,
+                formatting=formatting,
+                hyperlink=annotated_text.hyperlink,
+                prov=prov,
+            )
+            return list_item
+
+    def _emit_task_list_inputs(
+        self, inputs_in_li: list[Tag], doc: DoclingDocument
+    ) -> None:
+        """Emit the checkbox items of a task-list <li> under the list group."""
+        for input_tag in inputs_in_li:
+            if isinstance(input_tag, Tag):
+                self._emit_input(input_tag, doc)
+
+    def _is_task_list_item(
+        self, li: Tag, inputs_in_li: list[Tag], custom_checkboxes_in_li: list[Tag]
+    ) -> bool:
+        """Whether the <li> is the pure GFM task-list form: bare checkbox
+        input(s) plus inline text, with no block content."""
+        if not inputs_in_li or custom_checkboxes_in_li:
+            return False
+        if not all(self._is_input_checkbox_or_radio_tag(t) for t in inputs_in_li):
+            return False
+        return li.find(_BLOCK_TAGS) is None
+
+    @staticmethod
+    def _description_list_children(dl: Tag) -> list[PageElement]:
+        """The <dt>/<dd> elements of a <dl>, including those wrapped in a <div>
+        (HTML allows wrapping each group of <dt> and <dd> elements in a <div>)."""
+        children: list[PageElement] = []
+        for child in dl.find_all(["dt", "dd", "div"], recursive=False):
+            if isinstance(child, Tag) and child.name == "div":
+                children.extend(child.find_all(["dt", "dd"], recursive=False))
+            else:
+                children.append(child)
+        return children
+
+    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
         is_ordered = tag_name == "ol"
-        if is_ordered:
+        is_description = tag_name == "dl"
+
+        if is_description:
+            name = "description list"
+        elif is_ordered:
             start_attr = tag.get("start")
             if isinstance(start_attr, str) and start_attr.isnumeric():
                 start = int(start_attr)
             name = "ordered list" + (f" start {start}" if start is not None else "")
         else:
             name = "list"
+
         # Create the list container
         list_group = doc.add_list_group(
             name=name,
@@ -2169,7 +2944,81 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.ctx.list_start_by_ref[list_group.self_ref] = start
         self.level += 1
 
-        # For each top-level <li> in this list
+        # Track the number of list items added (not all children)
+        list_item_counter: int = 0
+
+        # Handle description lists (<dl> with <dt> and <dd>)
+        if is_description:
+            current_dt_item = None
+            dd_group = None  # Group for multiple <dd> under same <dt>
+
+            children = self._description_list_children(tag)
+
+            for i, child in enumerate(children):
+                if not isinstance(child, Tag):
+                    continue
+
+                child_name = child.name.lower()
+
+                if child_name == "dt":
+                    dd_group = None
+
+                    # Add term with bold formatting
+                    bold_formatting = Formatting()
+                    bold_formatting.bold = True
+                    current_dt_item = self._add_list_item_with_content(
+                        tag=child,
+                        doc=doc,
+                        parent=list_group,
+                        extra_formatting=bold_formatting,
+                    )
+                    if current_dt_item:
+                        self.parents[self.level + 1] = current_dt_item
+
+                elif child_name == "dd":
+                    has_nested_dl = child.find("dl", recursive=False) is not None
+                    if has_nested_dl:
+                        # Close current descriptions group before processing nested <dl>
+                        dd_group = None
+                        # If <dd> contains a nested <dl>, process it directly under the term item
+                        # Don't create a list item for the <dd> itself to avoid double indentation
+                        if current_dt_item:
+                            with self._use_list_item_context(current_dt_item):
+                                processed_elements = set()
+                                self._process_list_item_nested_content(
+                                    child, doc, processed_elements
+                                )
+                    else:
+                        # For regular <dd> without nested <dl>, create/use descriptions group
+                        if dd_group is None and current_dt_item:
+                            dd_group = doc.add_list_group(
+                                name="descriptions",
+                                parent=current_dt_item,
+                                content_layer=self.content_layer,
+                            )
+
+                        # dd_group should exist at this point (or fall back to list_group)
+                        dd_parent = dd_group or list_group
+
+                        dd_item = self._add_list_item_with_content(
+                            tag=child,
+                            doc=doc,
+                            parent=dd_parent,
+                        )
+
+                        # Process nested content (images, lists, etc.) in the description
+                        content_parent = dd_item or dd_parent
+                        with self._use_list_item_context(content_parent):
+                            processed_elements = set()
+                            self._process_list_item_nested_content(
+                                child, doc, processed_elements
+                            )
+
+            self.parents[self.level + 1] = None
+            self.level -= 1
+            return list_group.get_ref()
+
+        # For each top-level <li> in this list (ul/ol)
         for li in tag.find_all({"li", "ul", "ol"}, recursive=False):
             if not isinstance(li, Tag):
                 continue
@@ -2180,20 +3029,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._handle_block(li, doc)
 
             else:
-                # 1) determine the marker
-                if is_ordered and start is not None:
-                    marker = f"{start + len(list_group.children)}."
-                else:
-                    marker = ""
-
-                # 2) extract only the "direct" text from this <li>
-                parts = self._extract_text_and_hyperlink_recursively(
-                    li, ignore_list=True, find_parent_annotation=True
+                # 1) determine the marker using the counter
+                marker: str = (
+                    f"{start + list_item_counter}."
+                    if is_ordered and start is not None
+                    else ""
                 )
-                min_parts = parts.simplify_text_elements()
-                li_text = re.sub(
-                    r"\s+|\n+", " ", "".join([el.text for el in min_parts])
-                ).strip()
+
+                # 2) Find inputs and checkboxes in this <li>
                 inputs_in_li = [
                     input_tag
                     for input_tag in li.find_all("input")
@@ -2202,149 +3045,66 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 custom_checkboxes_in_li = [
                     checkbox_tag
                     for checkbox_tag in li.find_all(
-                        lambda item: isinstance(item, Tag)
-                        and self._is_custom_checkbox_tag(item)
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
                     )
                     if checkbox_tag.find_parent("li") is li
                 ]
 
-                # 3) add the list item
-                if li_text or inputs_in_li or custom_checkboxes_in_li:
-                    if len(min_parts) > 1:
-                        li_prov = self._make_text_prov(text=li_text, tag=li)
-                        # create an empty list element in order to hook the inline group onto that one
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text="",
-                            enumerated=is_ordered,
-                            marker=marker,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            prov=li_prov,
-                        )
-                        self.level += 1
-                        with self._use_inline_group(min_parts, doc):
-                            compacted_parts = self._compact_adjacent_single_char_parts(
-                                min_parts
-                            )
-                            for annotated_text, source_tag_ids in compacted_parts:
-                                li_text = re.sub(
-                                    r"\s+|\n+", " ", annotated_text.text
-                                ).strip()
-                                li_clean = HTMLDocumentBackend._clean_unicode(li_text)
-                                if annotated_text.code:
-                                    prov = self._make_text_prov_for_source_tag_ids(
-                                        text=li_clean,
-                                        tag=li,
-                                        source_tag_ids=source_tag_ids,
-                                    )
-                                    doc.add_code(
-                                        parent=self.parents[self.level],
-                                        text=li_clean,
-                                        content_layer=self.content_layer,
-                                        formatting=annotated_text.formatting,
-                                        hyperlink=annotated_text.hyperlink,
-                                        prov=prov,
-                                    )
-                                else:
-                                    prov = self._make_text_prov_for_source_tag_ids(
-                                        text=li_clean,
-                                        tag=li,
-                                        source_tag_ids=source_tag_ids,
-                                    )
-                                    doc.add_text(
-                                        parent=self.parents[self.level],
-                                        label=DocItemLabel.TEXT,
-                                        text=li_clean,
-                                        content_layer=self.content_layer,
-                                        formatting=annotated_text.formatting,
-                                        hyperlink=annotated_text.hyperlink,
-                                        prov=prov,
-                                    )
+                # GFM task-list form: the whole <li> is a bare checkbox input
+                # plus inline text (e.g. <li><input checked>done</li>). The text
+                # belongs to the checkbox item, so no separate list item is
+                # created for it - that used to render the checkbox on its own
+                # bullet *after* the text.
+                task_list_inputs = self._is_task_list_item(
+                    li, inputs_in_li, custom_checkboxes_in_li
+                )
 
-                        for input_tag in inputs_in_li:
-                            if isinstance(input_tag, Tag):
-                                self._emit_input(input_tag, doc)
-                        for checkbox_tag in custom_checkboxes_in_li:
-                            if isinstance(checkbox_tag, Tag):
-                                self._emit_custom_checkbox(checkbox_tag, doc)
+                # 3) Add the list item using the helper function
+                list_item = None
+                if not task_list_inputs:
+                    list_item = self._add_list_item_with_content(
+                        tag=li,
+                        doc=doc,
+                        parent=list_group,
+                        enumerated=is_ordered,
+                        marker=marker,
+                    )
 
-                        # 4) recurse into any nested lists, attaching them to this <li> item
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self._handle_block(sublist, doc)
+                # Increment counter only when a list item is actually added
+                if list_item:
+                    list_item_counter += 1
 
-                        # now the list element with inline group is not a parent anymore
-                        self.parents[self.level] = None
-                        self.level -= 1
-                    elif li_text:
-                        annotated_text = min_parts[0]
-                        li_text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
-                        li_clean = HTMLDocumentBackend._clean_unicode(li_text)
-                        prov = self._make_text_prov(
-                            text=li_clean,
-                            tag=li,
-                            source_tag_id=annotated_text.source_tag_id,
-                        )
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text=li_clean,
-                            enumerated=is_ordered,
-                            marker=marker,
-                            orig=li_text,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            formatting=annotated_text.formatting,
-                            hyperlink=annotated_text.hyperlink,
-                            prov=prov,
-                        )
+                if list_item or inputs_in_li or custom_checkboxes_in_li:
+                    if task_list_inputs:
+                        self._emit_task_list_inputs(inputs_in_li, doc)
+                        continue
 
+                    with self._use_list_item_context(list_item):
+                        # Handle inputs and checkboxes
                         if inputs_in_li or custom_checkboxes_in_li:
-                            self.level += 1
                             for input_tag in inputs_in_li:
                                 if isinstance(input_tag, Tag):
                                     self._emit_input(input_tag, doc)
                             for checkbox_tag in custom_checkboxes_in_li:
                                 if isinstance(checkbox_tag, Tag):
                                     self._emit_custom_checkbox(checkbox_tag, doc)
-                            self.level -= 1
 
-                        # 4) recurse into any nested lists, attaching them to this <li> item
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self.level += 1
-                                self._handle_block(sublist, doc)
-                                self.parents[self.level + 1] = None
-                                self.level -= 1
-                    else:
-                        li_prov = self._make_text_prov(text="", tag=li)
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text="",
-                            enumerated=is_ordered,
-                            marker=marker,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            prov=li_prov,
+                        # 4) Process nested content (images, lists, etc.) in DOM order
+                        processed_elements = set()
+                        self._process_list_item_nested_content(
+                            li, doc, processed_elements
                         )
-                        self.level += 1
-                        for input_tag in inputs_in_li:
-                            if isinstance(input_tag, Tag):
-                                self._emit_input(input_tag, doc)
-                        for checkbox_tag in custom_checkboxes_in_li:
-                            if isinstance(checkbox_tag, Tag):
-                                self._emit_custom_checkbox(checkbox_tag, doc)
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self._handle_block(sublist, doc)
-                        self.parents[self.level] = None
-                        self.level -= 1
                 else:
-                    for sublist in li({"ul", "ol"}, recursive=False):
+                    # No content, but check for nested lists (including those wrapped in divs)
+                    for sublist in li({"ul", "ol", "dl"}):
                         if isinstance(sublist, Tag):
-                            self._handle_block(sublist, doc)
+                            # Check if this list has a ul/ol/dl ancestor within the current li
+                            has_list_ancestor = self._has_list_ancestor(sublist, li)
 
-                # 5) extract any images under this <li>
-                for img_tag in li("img"):
-                    if isinstance(img_tag, Tag):
-                        self._emit_image(img_tag, doc)
+                            if not has_list_ancestor:
+                                self._handle_block(sublist, doc)
 
         self.parents[self.level + 1] = None
         self.level -= 1
@@ -2356,9 +3116,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             t.unwrap()
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
-        num_cols: int = 0
+        row_cell_spans: list[list[tuple[int, int]]] = []
         for row in tag("tr", recursive=False):
-            col_count = 0
+            cell_spans: list[tuple[int, int]] = []
             is_row_header = True
             if not isinstance(row, Tag):
                 continue
@@ -2367,30 +3127,48 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     continue
                 cell_tag = cast(Tag, cell)
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
-                col_count += col_span
+                cell_spans.append((col_span, row_span))
                 if cell_tag.name == "td" or row_span == 1:
                     is_row_header = False
-            num_cols = max(num_cols, col_count)
+            row_cell_spans.append(cell_spans)
             if not is_row_header:
                 num_rows += 1
-        return num_rows, num_cols
+        return num_rows, table_width(row_cell_spans)
 
     def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
         added_refs = []
         tag_name = tag.name.lower()
 
         if tag_name == "figure":
-            img_tag = tag.find("img")
-            if isinstance(img_tag, Tag):
-                im_ref = self._emit_image(img_tag, doc)
-                if im_ref is not None:
-                    added_refs.append(im_ref)
+            # 1. Walk all direct children except <figcaption>, including text
+            # placed directly in the figure. This leaves <figcaption> in the tree
+            # so _emit_image can find it and link it to the PictureItem.
+            added_refs.extend(self._walk(tag, doc, skip_tags=frozenset({"figcaption"})))
+
+            # 2. Check if an image was produced. If so, _emit_image handled the caption.
+            any_image_produced = any(
+                isinstance(ref.resolve(doc), PictureItem) for ref in added_refs
+            )
+
+            # 3. If no image was produced, manually handle the <figcaption>
+            # and link it to the first item (e.g., a table).
+            if not any_image_produced:
+                caption_tag = tag.find("figcaption", recursive=False)
+                if isinstance(caption_tag, Tag):
+                    # Emit the caption as a standalone item under the current parent
+                    cap_item = self._emit_caption(caption_tag, doc)
+
+                    # Populate the captions list on the TableItem if present
+                    if cap_item is not None and added_refs:
+                        first_item = added_refs[0].resolve(doc)
+                        if isinstance(first_item, TableItem):
+                            first_item.captions.append(cap_item.get_ref())
 
         elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             heading_refs = self._handle_heading(tag, doc)
             added_refs.extend(heading_refs)
 
-        elif tag_name in {"ul", "ol"}:
+        elif tag_name in {"ul", "ol", "dl"}:
             list_ref = self._handle_list(tag, doc)
             added_refs.append(list_ref)
 
@@ -2414,6 +3192,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 docling_code = doc.add_code(
                                     parent=self.parents[self.level],
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -2431,6 +3210,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[self.level],
                                     label=DocItemLabel.TEXT,
                                     text=seg_clean,
+                                    orig=seg,
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
@@ -2450,8 +3230,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if input_ref is not None:
                         added_refs.append(input_ref)
             for checkbox_tag in tag.find_all(
-                lambda item: isinstance(item, Tag)
-                and self._is_custom_checkbox_tag(item)
+                lambda item: (
+                    isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                )
             ):
                 if isinstance(checkbox_tag, Tag):
                     checkbox_ref = self._emit_custom_checkbox(checkbox_tag, doc)
@@ -2462,11 +3243,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             num_rows, num_cols = self.get_html_table_row_col(tag)
             data_e = TableData(num_rows=num_rows, num_cols=num_cols)
             table_prov = self._make_prov(text="", tag=tag)
+            # A <table> may carry its own <caption>; keep it non-recursive so that
+            # a nested table does not steal the caption of its ancestor.
+            cap_tag = tag.find("caption", recursive=False)
+            cap_item = (
+                self._emit_caption(cap_tag, doc) if isinstance(cap_tag, Tag) else None
+            )
             docling_table = doc.add_table(
                 data=data_e,
                 parent=self.parents[self.level],
                 prov=table_prov,
                 content_layer=self.content_layer,
+                caption=cap_item,
             )
             added_refs.append(docling_table.get_ref())
             self.parse_table_data(tag, doc, docling_table, num_rows, num_cols)
@@ -2488,8 +3276,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     ],
                 ),
             )
-            text = HTMLDocumentBackend._clean_unicode(self.get_text(tag).strip())
-            doc.add_text(label=DocItemLabel.TEXT, text=text, parent=placeholder)
+            text = self.get_text(tag).strip()
+            doc.add_text(
+                label=DocItemLabel.TEXT,
+                text=HTMLDocumentBackend._clean_unicode(text),
+                orig=text,
+                parent=placeholder,
+            )
 
         elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).
@@ -2497,11 +3290,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 tag, find_parent_annotation=True, keep_newlines=True
             )
             annotated_texts = text_list.simplify_text_elements()
+            language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
-                    text_clean = HTMLDocumentBackend._clean_unicode(
-                        annotated_text.text.strip()
-                    )
+                    text_orig = annotated_text.text.strip()
+                    text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
                     prov = self._make_prov(
                         text=text_clean,
                         tag=tag,
@@ -2510,6 +3303,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     docling_code2 = doc.add_code(
                         parent=self.parents[self.level],
                         text=text_clean,
+                        orig=text_orig,
+                        code_language=detect_code_language(
+                            text_clean, hint=language_hint
+                        ),
                         content_layer=self.content_layer,
                         formatting=annotated_text.formatting,
                         hyperlink=annotated_text.hyperlink,
@@ -2788,8 +3585,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return "fillable"
         if (
             value_tag.find(
-                lambda item: isinstance(item, Tag)
-                and HTMLDocumentBackend._is_checkbox_like_tag(item)
+                lambda item: (
+                    isinstance(item, Tag)
+                    and HTMLDocumentBackend._is_checkbox_like_tag(item)
+                )
             )
             is not None
         ):
@@ -2828,6 +3627,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(classes, str):
             return {classes}
         return {str(value) for value in classes if isinstance(value, str)}
+
+    @staticmethod
+    def _code_language_hint(tag: Tag) -> str | None:
+        """Pick the language class a highlighter set on the ``<pre>`` or ``<code>``.
+
+        A ``language-``/``lang-`` prefixed class is preferred so an unrelated
+        utility class on the same element cannot outrank a real hint.
+        """
+        tokens: set[str] = set()
+        for element in (tag, *tag.find_all("code")):
+            tokens |= HTMLDocumentBackend._get_tag_classes(element)
+
+        prefixed = sorted(t for t in tokens if t.lower().startswith(_HINT_PREFIXES))
+        bare = sorted(tokens - set(prefixed))
+        for token in (*prefixed, *bare):
+            if normalize_code_language(token) is not CodeLanguageLabel.UNKNOWN:
+                return token
+        return None
 
     @staticmethod
     def _has_inline_display_style(tag: Tag) -> bool:
@@ -3445,9 +4262,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return True
         if (
             tag.find(
-                lambda item: isinstance(item, Tag)
-                and item is not tag
-                and self._is_form_semantic_id(self._get_html_id(item))
+                lambda item: (
+                    isinstance(item, Tag)
+                    and item is not tag
+                    and self._is_form_semantic_id(self._get_html_id(item))
+                )
             )
             is not None
         ):
@@ -4133,6 +4952,34 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 added_refs.extend(self._walk(tag, doc))
         return added_refs
 
+    def _emit_caption(
+        self, caption_tag: Tag, doc: DoclingDocument
+    ) -> Optional[TextItem]:
+        """Emit a caption element (<caption> or <figcaption>) as a text item."""
+        cap_list = self._extract_text_and_hyperlink_recursively(
+            caption_tag, find_parent_annotation=True
+        )
+        cap_anno = cap_list.to_single_text_element()
+        if not cap_anno.text or not cap_anno.text.strip():
+            return None
+
+        cap_text = HTMLDocumentBackend._clean_unicode(cap_anno.text.strip())
+        cap_prov = self._make_prov(
+            text=cap_text,
+            tag=caption_tag,
+            source_tag_id=cap_anno.source_tag_id,
+        )
+        return doc.add_text(
+            label=DocItemLabel.CAPTION,
+            text=cap_text,
+            orig=cap_anno.text,
+            content_layer=self.content_layer,
+            formatting=cap_anno.formatting,
+            hyperlink=cap_anno.hyperlink,
+            prov=cap_prov,
+            parent=self.parents[self.level],
+        )
+
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
         figure = img_tag.find_parent("figure")
         caption: AnnotatedTextList = AnnotatedTextList()
@@ -4227,6 +5074,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 _,
                 checkbox_label_tags,
             ) = self._extract_checkbox_text_and_consumed_label_obj_ids(input_tag)
+            if not text_clean:
+                # GFM task-list form: a bare <input type="checkbox"> followed by
+                # sibling text inside its list item, e.g. <li><input checked>done</li>.
+                # That text is the checkbox's label. Only plain-list parents are
+                # considered, so nested blocks cannot leak into the label.
+                input_parent = input_tag.parent
+                if (
+                    isinstance(input_parent, Tag)
+                    and input_parent.name == "li"
+                    and input_parent.find(_BLOCK_TAGS) is None
+                ):
+                    text_clean = self._normalize_checkbox_text(
+                        self._extract_text_excluding_tag_obj_ids(
+                            input_parent, {id(input_tag)}
+                        )
+                    )
         else:
             text = self._get_attr_as_string(input_tag, "value").strip()
             if not text:
@@ -4255,83 +5118,41 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return input_item.get_ref()
 
     def _create_image_ref(self, src_url: str) -> Optional[ImageRef]:
-        try:
-            img_data = self._load_image_data(src_url)
-            if img_data:
-                img = Image.open(BytesIO(img_data))
-                return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
-        except (
-            requests.HTTPError,
-            ValidationError,
-            UnidentifiedImageError,
-            OperationNotAllowed,
-            TypeError,
-            ValueError,
-        ) as e:
-            warnings.warn(f"Could not process an image from {src_url}: {e}")
-
-        return None
+        if self._mhtml_resources is not None:
+            resource_key = (
+                self._normalize_content_id(src_url)
+                if src_url.lower().startswith("cid:")
+                else src_url
+            )
+            image_data = self._mhtml_resources.get(resource_key)
+            if image_data is not None:
+                max_bytes = self.options.max_image_data_base64_bytes
+                if len(image_data) > max_bytes:
+                    warnings.warn(
+                        "Could not process an embedded MHTML image: "
+                        f"resource exceeds size limit of {max_bytes} bytes."
+                    )
+                    return None
+                try:
+                    image = Image.open(BytesIO(image_data))
+                    image.load()
+                    return ImageRef.from_pil(
+                        image, dpi=int(image.info.get("dpi", (72,))[0])
+                    )
+                except (UnidentifiedImageError, OSError, TypeError, ValueError) as exc:
+                    warnings.warn(
+                        f"Could not process an embedded MHTML image from {src_url}: "
+                        f"{exc}"
+                    )
+                    return None
+            if src_url.lower().startswith("cid:"):
+                return None
+            if src_url.startswith(_MHTML_SYNTHETIC_BASE):
+                return None
+        return self._image_loader.create_image_ref(src_url, self.base_path)
 
     def _load_image_data(self, src_loc: str) -> Optional[bytes]:
-        if src_loc.lower().endswith(".svg"):
-            _log.debug(f"Skipping SVG file: {src_loc}")
-            return None
-
-        if HTMLDocumentBackend._is_remote_url(src_loc):
-            if not self.options.enable_remote_fetch:
-                raise OperationNotAllowed(
-                    "Fetching remote resources is only allowed when set explicitly. "
-                    "Set options.enable_remote_fetch=True."
-                )
-
-            _validate_url_safety(src_loc)
-
-            max_size = self.options.max_remote_image_bytes
-            headers = {"Range": f"bytes=0-{max_size - 1}"}
-
-            response = requests.get(
-                src_loc, stream=True, headers=headers, timeout=(5, 30)
-            )
-            response.raise_for_status()
-
-            content_length = response.headers.get("content-length")
-            if content_length and int(content_length) > max_size:
-                raise ValueError(f"Resource size exceeds limit: {content_length} bytes")
-
-            chunks = []
-            total_size = 0
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    total_size += len(chunk)
-                    if total_size > max_size:
-                        raise ValueError("Downloaded data exceeds size limit")
-                    chunks.append(chunk)
-
-            return b"".join(chunks)
-        elif src_loc.startswith("data:"):
-            encoded_data = re.sub(r"^data:image/.+;base64,", "", src_loc)
-            decoded_data = base64.b64decode(encoded_data)
-
-            if len(decoded_data) > self.options.max_image_data_base64_bytes:
-                raise ValueError(
-                    f"Decoded image exceeds size limit of {self.options.max_image_data_base64_bytes} bytes."
-                )
-
-            return decoded_data
-
-        if src_loc.startswith("file://"):
-            src_loc = src_loc[7:]
-
-        if not self.options.enable_local_fetch:
-            raise OperationNotAllowed(
-                "Fetching local resources is only allowed when set explicitly. "
-                "Set options.enable_local_fetch=True."
-            )
-        if os.path.isfile(src_loc) and os.access(src_loc, os.R_OK):
-            with open(src_loc, "rb") as f:
-                return f.read()
-        else:
-            raise ValueError("File does not exist or it is not readable.")
+        return self._image_loader.load_image_data(src_loc, self.base_path)
 
     @staticmethod
     def get_text(item: PageElement) -> str:
@@ -4340,6 +5161,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         This method is equivalent to `PageElement.get_text()` but also considers
         certain tags. When called on a <p> or <li> tags, it returns the text with a
         trailing space, otherwise the text is concatenated without separators.
+        Inline text preceding a block tag gets a separating space, unless it
+        already ends with whitespace.
         """
 
         def _extract_text_recursively(item: PageElement) -> list[str]:
@@ -4347,15 +5170,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             result: list[str] = []
 
             if isinstance(item, NavigableString):
-                result = [item]
+                text = str(item).replace(_BR_SENTINEL, "\n")
+                result = [text]
             elif isinstance(item, Tag):
                 tag = cast(Tag, item)
                 parts: list[str] = []
                 for child in tag:
-                    parts.extend(_extract_text_recursively(child))
+                    child_parts = _extract_text_recursively(child)
+                    if (
+                        isinstance(child, Tag)
+                        and child.name in _TEXT_BLOCK_TAGS
+                        and parts
+                        and parts[-1]
+                        and not parts[-1][-1].isspace()
+                    ):
+                        parts.append(" ")
+                    parts.extend(child_parts)
                 result.append(
                     "".join(parts) + " "
-                    if tag.name in {"p", "li", "th", "td"}
+                    if tag.name in _TEXT_BLOCK_TAGS
                     else "".join(parts)
                 )
 
@@ -4411,7 +5244,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         This function retrieves the 'colspan' and 'rowspan' attributes from a given
         table cell tag.
-        If the attribute does not exist or it is not numeric, it defaults to 1.
+        If the attribute does not exist, is not numeric, or is zero, it defaults to 1.
+        Values above the HTML limits (1000 columns, 65534 rows) are clamped to them.
         """
         raw_spans: tuple[str, str] = (
             str(cell.get("colspan", "1")),
@@ -4422,12 +5256,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if s and s[0].isnumeric():
                 match = re.search(r"\d+", s)
                 if match:
-                    return int(match.group())
+                    # A span of 0 covers no grid position, so the cell drops out
+                    # of the table and the cells after it shift. HTML5 reads
+                    # rowspan="0" as "span to the end of the row group"; falling
+                    # back to 1 keeps the cell without implementing that rule.
+                    digits = match.group().lstrip("0")
+                    # Any value this long is above both span limits; skip
+                    # converting very long digit strings to int.
+                    if len(digits) > len(str(MAX_ROWSPAN)):
+                        return MAX_ROWSPAN
+                    return max(int(digits or "0"), 1)
             return 1
 
         int_spans: tuple[int, int] = (
-            _extract_num(raw_spans[0]),
-            _extract_num(raw_spans[1]),
+            clamp_span(_extract_num(raw_spans[0]), MAX_COLSPAN),
+            clamp_span(_extract_num(raw_spans[1]), MAX_ROWSPAN),
         )
 
         return int_spans

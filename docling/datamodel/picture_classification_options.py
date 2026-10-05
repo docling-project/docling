@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Options for picture classification stages."""
 
 from __future__ import annotations
@@ -31,8 +34,10 @@ class DocumentPictureClassifierOptions(
     _keep_deprecated_annotations: bool = True
 
     model_spec: ImageClassificationModelSpec = Field(
-        default_factory=lambda: stage_model_specs.IMAGE_CLASSIFICATION_DOCUMENT_FIGURE.model_spec.model_copy(
-            deep=True
+        default_factory=lambda: (
+            stage_model_specs.IMAGE_CLASSIFICATION_DOCUMENT_FIGURE.model_spec.model_copy(
+                deep=True
+            )
         ),
         description="Image-classification model specification for picture classification.",
     )

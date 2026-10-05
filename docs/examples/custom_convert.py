@@ -24,11 +24,12 @@
 #   - `from docling.datamodel.pipeline_options import TesseractOcrOptions, TesseractCliOcrOptions, OcrMacOptions`
 #
 # Input document
-# - Defaults to a single PDF from `tests/data/pdf/` in the repo.
+# - Defaults to a single PDF from `tests/data/pdf/sources/` in the repo.
 # - If you don't have the test data, update `input_doc_path` to a local PDF.
 #
 # Notes
-# - EasyOCR language: adjust `pipeline_options.ocr_options.lang` (e.g., ["en"], ["es"], ["en", "de"]).
+# - EasyOCR language: adjust `pipeline_options.ocr_options.lang` with BCP-47 tags
+#   (e.g., ["en"], ["es"], ["en", "de"], ["zh-Hant"]).
 # - Accelerators: tune `AcceleratorOptions` to select CPU/GPU or threads.
 # - Exports: JSON, plain text, Markdown, and doctags are saved in `scratch/`.
 
@@ -54,7 +55,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
 
     ###########################################################################
 

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 from io import BytesIO
 from pathlib import Path
@@ -5,13 +8,16 @@ from typing import Union
 
 _log = logging.getLogger(__name__)
 
+# Latin-1 decodes any byte sequence, so it has to be the last resort.
+_ENCODINGS = ("utf-8", "cp1252", "latin-1")
+
 
 def decode_latex_content(path_or_stream: Union[BytesIO, Path]) -> str:
     latex_text = ""
     if isinstance(path_or_stream, BytesIO):
         raw_bytes = path_or_stream.getvalue()
 
-        for encoding in ["utf-8", "latin-1", "cp1252"]:
+        for encoding in _ENCODINGS:
             try:
                 latex_text = raw_bytes.decode(encoding)
                 break
@@ -21,7 +27,7 @@ def decode_latex_content(path_or_stream: Union[BytesIO, Path]) -> str:
             _log.warning("Failed to decode LaTeX content, using replacement mode")
             latex_text = raw_bytes.decode("utf-8", errors="replace")
     elif isinstance(path_or_stream, Path):
-        for encoding in ["utf-8", "latin-1", "cp1252"]:
+        for encoding in _ENCODINGS:
             try:
                 with open(path_or_stream, encoding=encoding) as f:
                     latex_text = f.read()

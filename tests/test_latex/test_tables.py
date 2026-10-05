@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from io import BytesIO
 from pathlib import Path
 
@@ -14,7 +17,7 @@ from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
-LATEX_DATA_DIR = Path("./tests/data/latex/")
+LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
 
 
 def test_latex_table_parsing():
@@ -122,6 +125,54 @@ def test_latex_starred_table_and_figure():
 
     assert len(doc.tables) >= 1
     assert len(doc.pictures) >= 1
+
+
+def test_latex_table_wrappers_are_tables():
+    """tabular*, tabularx and longtable are parsed as tables, columns intact."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tabular*}{\textwidth}{lr}
+    Key & Value \\
+    Left & Right \\
+    \end{tabular*}
+    \begin{tabularx}{\textwidth}{lX}
+    Name & Description \\
+    Alpha & First row \\
+    \end{tabularx}
+    \begin{longtable}[c]{cc}
+    Item & Qty \\
+    \endhead
+    Widgets & 3 \\
+    \end{longtable}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert len(doc.tables) == 3
+    # The table parser still appends an empty row for the whitespace after the
+    # final row separator, for every environment; only the rows with content
+    # are compared here.
+    rows = [
+        [
+            [cell.text.strip() for cell in row]
+            for row in table.data.grid
+            if any(cell.text.strip() for cell in row)
+        ]
+        for table in doc.tables
+    ]
+    assert rows == [
+        [["Key", "Value"], ["Left", "Right"]],
+        [["Name", "Description"], ["Alpha", "First row"]],
+        [["Item", "Qty"], ["Widgets", "3"]],
+    ]
 
 
 def test_latex_multicolumn_table():

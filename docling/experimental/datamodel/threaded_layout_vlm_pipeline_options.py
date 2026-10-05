@@ -1,11 +1,17 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Options for the threaded layout+VLM pipeline."""
 
 from typing import Union
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
-from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_HERON
-from docling.datamodel.pipeline_options import LayoutOptions, PaginatedPipelineOptions
+from docling.datamodel.pipeline_options import (
+    BaseLayoutOptions,
+    LayoutObjectDetectionOptions,
+    PaginatedPipelineOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InlineVlmOptions,
@@ -25,8 +31,8 @@ class ThreadedLayoutVlmPipelineOptions(PaginatedPipelineOptions):
     )
 
     # Layout model configuration
-    layout_options: LayoutOptions = LayoutOptions(
-        model_spec=DOCLING_LAYOUT_HERON, skip_cell_assignment=True
+    layout_options: BaseLayoutOptions = Field(
+        default_factory=lambda: LayoutObjectDetectionOptions(skip_cell_assignment=True),
     )
 
     # Threading and batching controls

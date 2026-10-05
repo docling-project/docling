@@ -1,6 +1,10 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import sys
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Annotated, Optional, Tuple
+from typing import Annotated, Iterator, Optional, Tuple
 
 from pydantic import AfterValidator, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -51,7 +55,7 @@ class DebugSettings(BaseModel):
 
 
 class InferenceSettings(BaseModel):
-    compile_torch_models: bool = True
+    compile_torch_models: bool = False
 
 
 class AppSettings(BaseSettings):
@@ -68,6 +72,39 @@ class AppSettings(BaseSettings):
 
 
 settings = AppSettings()
+
+
+def defaults() -> AppSettings:
+    """Return a fresh settings instance populated from the current environment."""
+    return AppSettings()
+
+
+@contextmanager
+def scoped(
+    *,
+    perf: BatchConcurrencySettings | None = None,
+    debug: DebugSettings | None = None,
+    inference: InferenceSettings | None = None,
+) -> Iterator[AppSettings]:
+    """Temporarily override selected settings and restore them on exit."""
+    saved = {
+        "perf": settings.perf.model_copy(deep=True),
+        "debug": settings.debug.model_copy(deep=True),
+        "inference": settings.inference.model_copy(deep=True),
+    }
+
+    try:
+        if perf is not None:
+            settings.perf = perf
+        if debug is not None:
+            settings.debug = debug
+        if inference is not None:
+            settings.inference = inference
+        yield settings
+    finally:
+        settings.perf = saved["perf"].model_copy(deep=True)
+        settings.debug = saved["debug"].model_copy(deep=True)
+        settings.inference = saved["inference"].model_copy(deep=True)
 
 
 def default_compile_model() -> bool:

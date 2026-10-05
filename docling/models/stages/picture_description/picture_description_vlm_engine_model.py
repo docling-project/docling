@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Picture description stage using the VLM engine system.
 
 This module provides an engine-agnostic picture description stage that can use
@@ -12,14 +15,15 @@ from typing import Optional, Type, Union
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import ApiImageRequestResult, VlmStopReason
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmEngineOptions,
 )
-from docling.datamodel.stage_model_specs import EngineModelConfig
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
     VlmEngineInput,
+    VlmEngineType,
     create_vlm_engine,
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
@@ -105,22 +109,67 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             # Set provenance from model spec
             self.provenance = f"{self.repo_id} ({engine_type.value})"
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+    def _resolve_runtime_engine_type(self) -> VlmEngineType:
+        selected_engine_type = getattr(self.engine, "selected_engine_type", None)
+        if selected_engine_type is not None:
+            return selected_engine_type
+        return self.options.engine_options.engine_type
+
+    def _build_engine_inputs(
+        self, image_list: list[Image.Image]
+    ) -> list[VlmEngineInput]:
+        """Build a batch of ``VlmEngineInput`` sharing one generation-config template.
+
+        Generation config is derived from the model spec, but can be overridden by the stage options.
+
+        Args:
+            image_list: list of Images to build Engine Inputs for.
+
+        Returns:
+            List of VlmEngineInput objects for batch prediction.
+        """
+        prompt = self.options.prompt
+        model_spec = self.options.model_spec
+        runtime_engine_type = self._resolve_runtime_engine_type()
+
+        stop_strings = list(model_spec.stop_strings)
+        extra_generation_config = model_spec.get_runtime_input_extra_config(
+            runtime_engine_type
+        )
+
+        # if present generation_config overrides model_spec defaults
+        gen_cfg = self.options.generation_config or {}
+        temperature = gen_cfg.get("temperature", model_spec.temperature)
+        max_new_tokens = gen_cfg.get("max_new_tokens", model_spec.max_new_tokens)
+
+        return [
+            VlmEngineInput(
+                image=image,
+                prompt=prompt,
+                temperature=float(temperature),
+                max_new_tokens=int(max_new_tokens),
+                stop_strings=stop_strings,
+                extra_generation_config=extra_generation_config,
+            )
+            for image in image_list
+        ]
+
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageRequestResult]:
         """Generate descriptions for a batch of images.
 
         Args:
             images: Iterable of PIL images to describe
 
         Yields:
-            Description text for each image
+            ApiImageRequestResult for each image
         """
         if self.engine is None:
             raise RuntimeError("Engine not initialized")
 
-        # Get prompt from options
-        prompt = self.options.prompt
-
         # Convert to list for batch processing
+        # TODO: Consider using chunking here
         image_list = list(images)
 
         if not image_list:
@@ -128,15 +177,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
 
         try:
             # Prepare batch of engine inputs
-            engine_inputs = [
-                VlmEngineInput(
-                    image=image,
-                    prompt=prompt,
-                    temperature=0.0,
-                    max_new_tokens=200,  # Use from options if available
-                )
-                for image in image_list
-            ]
+            engine_inputs = self._build_engine_inputs(image_list)
 
             # Generate descriptions using batch prediction
             outputs = self.engine.predict_batch(engine_inputs)
@@ -145,13 +186,25 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             for output in outputs:
                 description = output.text.strip()
                 _log.debug(f"Generated description: {description[:100]}...")
-                yield description
+                yield ApiImageRequestResult(
+                    text=description,
+                    num_tokens=output.metadata.get("num_tokens"),
+                    stop_reason=_map_stop_reason(output.stop_reason),
+                    usage=output.metadata.get("usage"),
+                    logprobs=output.metadata.get("logprobs"),
+                    error=output.metadata.get("error"),
+                )
 
         except Exception as e:
             _log.error(f"Error generating picture descriptions: {e}")
-            # Yield empty strings on error to maintain batch alignment
+            # Yield one failed result per image to keep the batch aligned
             for _ in image_list:
-                yield ""
+                yield ApiImageRequestResult(
+                    text="",
+                    num_tokens=0,
+                    stop_reason=VlmStopReason.INFERENCE_ERROR,
+                    error=f"{type(e).__name__}: {e}",
+                )
 
     def __del__(self):
         """Cleanup engine resources."""
@@ -160,3 +213,23 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
                 self.engine.cleanup()
             except Exception as e:
                 _log.warning(f"Error cleaning up engine: {e}")
+
+
+def _map_stop_reason(stop_reason: str | VlmStopReason | None) -> VlmStopReason:
+    if isinstance(stop_reason, VlmStopReason):
+        return stop_reason
+    if not stop_reason:
+        return VlmStopReason.UNSPECIFIED
+    try:
+        return VlmStopReason(stop_reason)
+    except ValueError:
+        pass
+    if stop_reason == "content_filter":
+        return VlmStopReason.CONTENT_FILTERED
+    if stop_reason == "length":
+        return VlmStopReason.LENGTH
+    if stop_reason in ("stop", "end_of_sequence"):
+        return VlmStopReason.END_OF_SEQUENCE
+    if stop_reason == "stop_sequence":
+        return VlmStopReason.STOP_SEQUENCE
+    return VlmStopReason.UNSPECIFIED

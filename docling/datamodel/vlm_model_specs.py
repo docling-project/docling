@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 from enum import Enum
 
@@ -14,6 +17,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
+from docling.datamodel.vlm_prompts import DOCLING_BASE_PAGE_PROMPT
 
 _log = logging.getLogger(__name__)
 
@@ -21,7 +25,7 @@ _log = logging.getLogger(__name__)
 # Granite-Docling
 GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
     repo_id="ibm-granite/granite-docling-258M",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS,
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
@@ -43,7 +47,7 @@ GRANITEDOCLING_VLLM.inference_framework = InferenceFramework.VLLM
 
 GRANITEDOCLING_MLX = InlineVlmOptions(
     repo_id="ibm-granite/granite-docling-258M-mlx",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.MLX,
     supported_devices=[AcceleratorDevice.MPS],
@@ -77,7 +81,7 @@ GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
 # Granite-Docling 2 stage
 GRANITEDOCLING_2STAGE_TRANSFORMERS = InlineVlmOptions(
     repo_id="docling-project/granite-docling-2stage-258m",
-    prompt="Convert this page to docling.",  # gets augmented with layout objects
+    prompt=DOCLING_BASE_PAGE_PROMPT,  # gets augmented with layout objects
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS,
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
@@ -97,7 +101,7 @@ GRANITEDOCLING_2STAGE_TRANSFORMERS = InlineVlmOptions(
 # SmolDocling
 SMOLDOCLING_MLX = InlineVlmOptions(
     repo_id="docling-project/SmolDocling-256M-preview-mlx-bf16",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.MLX,
     supported_devices=[AcceleratorDevice.MPS],
@@ -108,7 +112,7 @@ SMOLDOCLING_MLX = InlineVlmOptions(
 
 SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
     repo_id="docling-project/SmolDocling-256M-preview",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS,
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
@@ -125,7 +129,7 @@ SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
 
 SMOLDOCLING_VLLM = InlineVlmOptions(
     repo_id="docling-project/SmolDocling-256M-preview",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.VLLM,
     supported_devices=[
@@ -429,6 +433,7 @@ GLMOCR_TRANSFORMERS = InlineVlmOptions(
     torch_dtype="bfloat16",
     scale=2.0,
     temperature=0.0,
+    stop_strings=["<|user|>", "<|endoftext|>"],
 )
 
 # Requires mlx-vlm >=0.3.11.
@@ -542,6 +547,26 @@ NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
     ],
     scale=2.0,
     temperature=0.0,
+)
+
+# Granite Vision 4.1
+GRANITE_VISION_4_1_TRANSFORMERS = InlineVlmOptions(
+    repo_id="ibm-granite/granite-vision-4.1-4b",
+    revision="dd48e97503de471803850df70843cf9eb5da8712",
+    prompt="",  # Template is passed separately via extract()
+    torch_dtype="bfloat16",
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    response_format=ResponseFormat.PLAINTEXT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    scale=2.0,
+    temperature=0.0,
+    trust_remote_code=True,
 )
 
 

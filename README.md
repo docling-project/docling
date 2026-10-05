@@ -7,7 +7,7 @@
 # Docling
 
 <p align="center">
-  <a href="https://trendshift.io/repositories/12132" target="_blank"><img src="https://trendshift.io/api/badge/repositories/12132" alt="DS4SD%2Fdocling | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+  <a href="https://trendshift.io/repositories/17240" target="_blank"><img src="https://trendshift.io/api/badge/repositories/17240" alt="DS4SD%2Fdocling | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </p>
 
 [![arXiv](https://img.shields.io/badge/arXiv-2408.09869-b31b1b.svg)](https://arxiv.org/abs/2408.09869)
@@ -17,7 +17,7 @@
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Pydantic v2](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json)](https://pydantic.dev)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![prek](https://img.shields.io/badge/prek-enabled-brightgreen)](https://pypi.org/project/prek/)
 [![License MIT](https://img.shields.io/github/license/docling-project/docling)](https://opensource.org/licenses/MIT)
 [![PyPI Downloads](https://static.pepy.tech/badge/docling/month)](https://pepy.tech/projects/docling)
 [![Docling Actor](https://apify.com/actor-badge?actor=vancura/docling&fpr=docling)](https://apify.com/vancura/docling)
@@ -28,33 +28,34 @@
 
 ## What is Docling ?
 
-Docling simplifies document processing, parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the gen AI ecosystem.
+Docling simplifies document processing by parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the generative AI ecosystem.
 
 ## Features
 
-- 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, plain text, and more
+- 🗂️ Parsing of [multiple document formats][supported_formats] including PDF, DOCX, PPTX, XLSX, HTML, EPUB, Apple Pages, Numbers & Keynote, WAV, MP3, WebVTT, Box Notes, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, DocLang, plain text, and more
 - 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
-- 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
-- ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
-- 📜 Support of several application-specifc XML schemas incl. [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
+- 🧬 A unified, expressive [DoclingDocument][docling_document] representation format
+- ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, DocLang, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
+- 📜 Support for several application-specific XML schemas including [DocLang](https://doclang.ai), [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
 - 🔒 Local execution capabilities for sensitive data and air-gapped environments
 - 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
 - 🔍 Extensive OCR support for scanned PDFs and images
-- 👓 Support of several Visual Language Models ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
+- 👓 Support for several Visual Language Models, such as ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
 - 🎙️ Audio support with Automatic Speech Recognition (ASR) models
 - 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
+- 🌐 Run Docling as a service with the [API server](https://docling-project.github.io/docling/usage/api_server/) (docling-serve)
 - 💻 Simple and convenient CLI
 
 ### What's new
 
-- 📤 Structured [information extraction][extraction] \[🧪 beta\]
-- 📑 New layout model (**Heron**) by default, for faster PDF parsing
-- 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
+- 🎬 Parsing of video files (MP4, AVI, MOV, MKV, and WebM) with an ASR transcript and representative keyframes
+- 📄 Parsing of ODF (OpenDocument Format) files for text documents (`.odt`), spreadsheets (`.ods`), and presentations (`.odp`)
 - 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
-- 💬 Parsing of WebVTT (Web Video Text Tracks) files and export to WebVTT format
-- 💬 Parsing of LaTeX files
+- 📧 Parsing of email files (`.eml`, `.msg`)
+- 📚 Parsing of EPUB (Electronic Publication) files for e-books
+- 🍎 Parsing of Apple Pages (`.pages`) documents, Numbers (`.numbers`) spreadsheets and Keynote (`.key`) presentations
 - 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
-- 📝 Chart understanding (Barchart, Piechart, LinePlot): converting them into tables, code or adding detailed descriptions
+- 📊 Chart understanding (Barchart, Piechart, LinePlot): convert them into tables or code and add detailed descriptions
 
 ### Coming soon
 
@@ -71,9 +72,9 @@ pip install docling
 
 > **Note:** Python 3.9 support was dropped in docling version 2.70.0. Please use Python 3.10 or higher.
 
-Works on macOS, Linux and Windows environments. Both x86_64 and arm64 architectures.
+Works on macOS, Linux and Windows environments for both x86_64 and arm64 architectures.
 
-More [detailed installation instructions](https://docling-project.github.io/docling/installation/) are available in the docs.
+More [detailed installation instructions](https://docling-project.github.io/docling/getting_started/installation/) are available in the docs.
 
 ## 2. Convert a document (CLI)
 
@@ -94,17 +95,17 @@ docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01
 ```python
 from docling.document_converter import DocumentConverter
 
-source = "https://arxiv.org/pdf/2408.09869"  # document per local path or URL
+source = "https://arxiv.org/pdf/2408.09869"  # a document via a local path or URL
 converter = DocumentConverter()
 result = converter.convert(source)
 print(result.document.export_to_markdown())  # output: "## Docling Technical Report[...]"
 ```
 
-More advanced [usage](https://docling-project.github.io/docling/usage/) and [configuration](https://docling-project.github.io/docling/installation/) options.
+More advanced [usage](https://docling-project.github.io/docling/usage/) and [configuration](https://docling-project.github.io/docling/getting_started/installation/) options.
 
 ## Documentation
 
-Check out Docling's [documentation](https://docling-project.github.io/docling/), for details on
+Check out Docling's [documentation](https://docling-project.github.io/docling/) for details on
 installation, usage, concepts, recipes, extensions, and more.
 
 ## Examples
@@ -163,4 +164,4 @@ The project was started by the AI for knowledge team at IBM Research Zurich.
 [supported_formats]: https://docling-project.github.io/docling/usage/supported_formats/
 [docling_document]: https://docling-project.github.io/docling/concepts/docling_document/
 [integrations]: https://docling-project.github.io/docling/integrations/
-[extraction]: https://docling-project.github.io/docling/examples/extraction/
+[extraction]: https://docling-project.github.io/docling/_generated/examples/extraction/

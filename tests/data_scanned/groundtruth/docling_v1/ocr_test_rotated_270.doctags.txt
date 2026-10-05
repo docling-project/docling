@@ -1,3 +1,0 @@
-<document>
-<paragraph><location><page_1><loc_82><loc_74><loc_84><loc_88></location>package</paragraph>
-</document>

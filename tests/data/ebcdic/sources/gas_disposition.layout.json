@@ -1,0 +1,114 @@
+{
+  "description": "Casinghead gas disposition, single schema of character fields",
+  "records": [
+    {
+      "name": "main",
+      "fields": [
+        {
+          "name": "GD-PR-DISTRICT",
+          "size": 2
+        },
+        {
+          "name": "GD-PR-LEASE-NO",
+          "size": 5
+        },
+        {
+          "name": "GD-PR-REPORT-CENT",
+          "size": 2
+        },
+        {
+          "name": "GD-PR-REPORT-YEAR",
+          "size": 2
+        },
+        {
+          "name": "GD-PR-REPORT-MONTH",
+          "size": 2
+        },
+        {
+          "name": "GD-PR-CASINGHEADBALANCING-CODE",
+          "size": 1
+        },
+        {
+          "name": "GD-PR-DISCREPANCY-PRINTED-CODE",
+          "size": 1
+        },
+        {
+          "name": "GD-PR-DISPOSITION-CODE-FLAG",
+          "size": 1
+        },
+        {
+          "name": "GD-PR-FIELD-NUMBER",
+          "size": 8
+        },
+        {
+          "name": "GD-PR-CODING-MAST-OP-NUMBER",
+          "size": 6
+        },
+        {
+          "name": "GD-PR-COMPANY-TAPE-OP-NUMBER",
+          "size": 6
+        },
+        {
+          "name": "GD-PR-LEASE-NAME",
+          "size": 32
+        },
+        {
+          "name": "GD-PR-FIELD-NAME",
+          "size": 32
+        },
+        {
+          "name": "GD-PR-BATCH-CODE",
+          "size": 1
+        },
+        {
+          "name": "GD-PR-CERT-DATE",
+          "size": 2
+        },
+        {
+          "name": "GD-PR-LEASE-FLD-FUEL-SYSTEMS",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-TRANSMISSION-LINE",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-PROCESSING-PLANT",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-VENTED-OR-FLARED",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-CASINGHEAD-LIFT",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-PRESSURE-MAINTENANCE",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-CARBON-BLACK",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-UNDERGROUND-STORAGE",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-CASINGHEAD-PRODUCTION",
+          "size": 9
+        },
+        {
+          "name": "GD-PR-CASINGHEAD-LIFT-GAS-INJECTED",
+          "size": 9
+        },
+        {
+          "name": "FILLER-1",
+          "size": 7
+        }
+      ]
+    }
+  ]
+}

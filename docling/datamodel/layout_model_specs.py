@@ -1,17 +1,36 @@
-import logging
-from enum import Enum
-from pathlib import Path
-from typing import Annotated, Optional
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+"""Deprecated layout model specs, kept alive only by `LayoutOptions`.
+
+This whole module is removable once the deprecated `LayoutOptions` is dropped.
+`LayoutModelConfig` is structurally `ObjectDetectionModelSpec` minus
+`engine_overrides`, and every constant below has an equivalent preset
+registered on `LayoutObjectDetectionOptions` (see `stage_model_specs.py`):
+
+    DOCLING_LAYOUT_HERON        -> "layout_heron_default"
+    DOCLING_LAYOUT_HERON_101    -> "layout_heron_101"
+    DOCLING_LAYOUT_EGRET_MEDIUM -> "layout_egret_medium"
+    DOCLING_LAYOUT_EGRET_LARGE  -> "layout_egret_large"
+    DOCLING_LAYOUT_EGRET_XLARGE -> "layout_egret_xlarge"
+    DOCLING_LAYOUT_V2           -> none; unsupported, falls back to Heron
+
+They are retained purely so `LayoutOptions(model_spec=DOCLING_LAYOUT_*)` keeps
+working. Deleting them is a public interface break, so it waits for the same
+release that removes `LayoutOptions`; `_translate` in
+`models/stages/layout/layout_model.py` goes at the same time.
+"""
+
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from docling.datamodel.accelerator_options import AcceleratorDevice
-
-_log = logging.getLogger(__name__)
-
 
 class LayoutModelConfig(BaseModel):
-    """Configuration for document layout analysis models from HuggingFace."""
+    """Configuration for document layout analysis models from HuggingFace.
+
+    Deprecated together with `LayoutOptions`; use `ObjectDetectionModelSpec`.
+    """
 
     name: Annotated[
         str,
@@ -48,95 +67,47 @@ class LayoutModelConfig(BaseModel):
             examples=["main", "v1.0.0"],
         ),
     ]
-    model_path: Annotated[
-        str,
-        Field(
-            description=(
-                "Relative path within the repository to model artifacts. Empty "
-                "string indicates artifacts are in the repository root. Used "
-                "for repositories with multiple models or nested structures."
-            ),
-        ),
-    ]
-    supported_devices: Annotated[
-        list[AcceleratorDevice],
-        Field(
-            description=(
-                "List of hardware accelerators supported by this model. The "
-                "model can only run on devices in this list."
-            )
-        ),
-    ] = [
-        AcceleratorDevice.CPU,
-        AcceleratorDevice.CUDA,
-        AcceleratorDevice.MPS,
-        AcceleratorDevice.XPU,
-    ]
-
-    @property
-    def model_repo_folder(self) -> str:
-        return self.repo_id.replace("/", "--")
 
 
-# HuggingFace Layout Models
+# HuggingFace Layout Models. Removable with `LayoutOptions` — see module
+# docstring for the preset each one maps to.
 
-# Default Docling Layout Model
+# Unsupported: `_translate` warns and substitutes Heron.
 DOCLING_LAYOUT_V2 = LayoutModelConfig(
     name="docling_layout_v2",
     repo_id="docling-project/docling-layout-old",
     revision="main",
-    model_path="",
 )
 
 DOCLING_LAYOUT_HERON = LayoutModelConfig(
     name="docling_layout_heron",
     repo_id="docling-project/docling-layout-heron",
     revision="main",
-    model_path="",
 )
 
 DOCLING_LAYOUT_HERON_101 = LayoutModelConfig(
     name="docling_layout_heron_101",
     repo_id="docling-project/docling-layout-heron-101",
     revision="main",
-    model_path="",
 )
 
 DOCLING_LAYOUT_EGRET_MEDIUM = LayoutModelConfig(
     name="docling_layout_egret_medium",
     repo_id="docling-project/docling-layout-egret-medium",
     revision="main",
-    model_path="",
 )
 
 DOCLING_LAYOUT_EGRET_LARGE = LayoutModelConfig(
     name="docling_layout_egret_large",
     repo_id="docling-project/docling-layout-egret-large",
     revision="main",
-    model_path="",
 )
 
 DOCLING_LAYOUT_EGRET_XLARGE = LayoutModelConfig(
     name="docling_layout_egret_xlarge",
     repo_id="docling-project/docling-layout-egret-xlarge",
     revision="main",
-    model_path="",
 )
 
-# Example for a hypothetical alternative model
-# ALTERNATIVE_LAYOUT = LayoutModelConfig(
-#     name="alternative_layout",
-#     repo_id="someorg/alternative-layout",
-#     revision="main",
-#     model_path="model_artifacts/layout_alt",
-# )
-
-
-class LayoutModelType(str, Enum):
-    DOCLING_LAYOUT_V2 = "docling_layout_v2"
-    DOCLING_LAYOUT_HERON = "docling_layout_heron"
-    DOCLING_LAYOUT_HERON_101 = "docling_layout_heron_101"
-    DOCLING_LAYOUT_EGRET_MEDIUM = "docling_layout_egret_medium"
-    DOCLING_LAYOUT_EGRET_LARGE = "docling_layout_egret_large"
-    DOCLING_LAYOUT_EGRET_XLARGE = "docling_layout_egret_xlarge"
-    # ALTERNATIVE_LAYOUT = "alternative_layout"
+# Custom models should be defined as an ObjectDetectionModelSpec and passed to
+# LayoutObjectDetectionOptions, not added here.

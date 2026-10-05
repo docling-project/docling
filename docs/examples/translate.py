@@ -19,15 +19,22 @@
 # %%
 
 import logging
+import os
 from pathlib import Path
 
 from docling_core.types.doc import ImageRefMode, TableItem, TextItem
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 _log = logging.getLogger(__name__)
+
+# Under CI we limit the conversion to a representative page range to keep the
+# example fast; locally the full document is processed.
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
+CI_PAGE_RANGE = (3, 4)
 
 IMAGE_RESOLUTION_SCALE = 2.0
 
@@ -51,7 +58,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
     output_dir = Path("scratch")  # ensure this directory exists before saving
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -72,7 +79,8 @@ def main():
         }
     )
 
-    conv_res = doc_converter.convert(input_doc_path)
+    page_range = CI_PAGE_RANGE if IS_CI else DEFAULT_PAGE_RANGE
+    conv_res = doc_converter.convert(input_doc_path, page_range=page_range)
     conv_doc = conv_res.document
     doc_filename = conv_res.input.file.name
 

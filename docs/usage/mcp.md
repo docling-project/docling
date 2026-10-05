@@ -28,4 +28,16 @@ In **[LM Studio](https://lmstudio.ai/)**, edit the `mcp.json` file with the appr
 [![Add MCP Server docling to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=docling&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyItLWZyb209ZG9jbGluZy1tY3AiLCJkb2NsaW5nLW1jcC1zZXJ2ZXIiXX0%3D)
 
 
+## Using a remote Docling Serve API
+
+By default the MCP server converts documents locally. It can instead delegate conversion to a running [API server](api_server/index.md) — a self-hosted docling-serve instance or a [managed service](api_server/managed.md) — by setting these environment variables:
+
+```sh
+export DOCLING_SERVICE_URL=https://your-docling-service.example.com
+export DOCLING_SERVICE_API_KEY=your-api-key   # if the service requires one
+export DOCLING_CONVERSION_MODE=remote
+```
+
+To fall back to local processing when the remote service is unavailable, also set `DOCLING_FALLBACK_TO_LOCAL=true` (requires `pip install "docling-mcp[local]"`). See the [docling-mcp installation options](https://github.com/docling-project/docling-mcp#installation-options).
+
 Docling MCP also provides tools specific for some applications and frameworks. See the [Docling MCP](https://github.com/docling-project/docling-mcp) Server repository for more details. You will find examples of building agents powered by Docling capabilities and leveraging frameworks like [LlamaIndex](https://www.llamaindex.ai/), [Llama Stack](https://github.com/llamastack/llama-stack), [Pydantic AI](https://ai.pydantic.dev/), or [smolagents](https://github.com/huggingface/smolagents).

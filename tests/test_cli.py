@@ -1,18 +1,129 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+import base64
+import json
+import re
+import shutil
+import zipfile
+from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 import pytest
+import typer
+from click.utils import strip_ansi
 from docling_core.types.doc import ImageRefMode
+from docling_core.utils import file as file_utils
+from PIL import Image
+from typer.main import get_command
 from typer.testing import CliRunner
 
-from docling.cli.main import _should_generate_export_images, app
-from docling.datamodel.base_models import OutputFormat
+from docling.cli.export_utils import (
+    _parse_page_range,
+    _should_generate_export_images,
+    _split_list,
+)
+from docling.cli.main import app
+from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
+from docling.datamodel.base_models import InputFormat, OutputFormat
+from docling.datamodel.pipeline_options import OcrMode, PdfBackend, VlmPipelineOptions
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, PageRange
+from docling.document_converter import PdfFormatOption
+from tests.fakes.image_server import SERVER_IP, local_server, use_test_network
 
 runner = CliRunner()
 
+PNG_BYTES = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+)
+
+
+def test_convert_help_only_advertises_supported_pdf_backends() -> None:
+    result = runner.invoke(app, ["convert", "--help"], terminal_width=200)
+
+    assert result.exit_code == 0
+    convert_command = get_command(app).commands["convert"]
+    pdf_backend_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "pdf_backend"
+    )
+    assert pdf_backend_option.metavar == "[pypdfium2|docling_parse]"
+    assert "threaded_docling_parse" not in result.stdout
+    assert "dlparse_v1" not in result.stdout
+
+
+def _png_bytes(color: tuple[int, int, int]) -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (1, 1), color=color).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _write_html_image_case(
+    root: Path, filename: str, text: str, image_bytes: bytes = PNG_BYTES
+) -> Path:
+    root.mkdir()
+    (root / "pixel.png").write_bytes(image_bytes)
+    html_path = root / filename
+    html_path.write_text(
+        f"<html><body><p>{text}</p><img src='pixel.png'></body></html>"
+    )
+    return html_path
+
+
+def _assert_markdown_embeds_png(path: Path, image_bytes: bytes | None = None) -> None:
+    content = path.read_text()
+    assert "data:image/png;base64" in content
+    assert "Image not available" not in content
+    if image_bytes is not None:
+        # Compare decoded pixel content rather than exact base64: docling
+        # re-encodes the PNG, so the byte stream (and its base64) differs even
+        # though the image is identical.
+        match = re.search(r"data:image/png;base64,([A-Za-z0-9+/=]+)", content)
+        assert match is not None
+        embedded = Image.open(BytesIO(base64.b64decode(match.group(1))))
+        expected = Image.open(BytesIO(image_bytes))
+        assert embedded.convert("RGBA").tobytes() == expected.convert("RGBA").tobytes()
+
 
 def test_cli_help():
+    # Top-level help lists the available commands and points agents at the
+    # remote command (the `convert` options live under `docling convert --help`).
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
+    assert "convert-remote" in result.output
+    assert "DOCLING_SERVICE_URL" in result.output
+
+
+def test_cli_convert_help():
+    result = runner.invoke(app, ["convert", "--help"], terminal_width=200)
+    assert result.exit_code == 0
+    convert_command = get_command(app).commands["convert"]
+    from_formats_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "from_formats"
+    )
+    layout_debug_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "debug_visualize_layout"
+    )
+    assert "Input formats to" in result.output
+    assert "Defaults to all." in from_formats_option.help
+    assert "layout clusters" in layout_debug_option.help
+    assert "layour" not in result.output
+    assert "input_sources" not in result.output
+    assert "--output-file" in strip_ansi(result.output)
+    separator_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "reading_order_separators"
+    )
+    assert separator_option.opts == ["--reading-order-separators"]
+    assert separator_option.secondary_opts == ["--no-reading-order-separators"]
 
 
 def test_cli_version():
@@ -21,7 +132,7 @@ def test_cli_version():
 
 
 def test_cli_convert(tmp_path):
-    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
     output.mkdir()
     result = runner.invoke(app, [source, "--output", str(output)])
@@ -30,12 +141,795 @@ def test_cli_convert(tmp_path):
     assert converted.exists()
 
 
+def test_cli_exports_doclang(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# DocLang CLI\n\nHello from Markdown.", encoding="utf-8")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "doclang",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    converted = output / "input.dclg.xml"
+    assert converted.exists()
+    content = converted.read_text(encoding="utf-8")
+    assert re.search(r'<doclang version="\d+\.\d+">', content) is not None
+    assert "DocLang CLI" in content
+
+
+def test_cli_exports_plain_text_without_markdown_markers(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text(
+        "# Title\n\nSome **bold** text and a [link](https://example.com).\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [str(source), "--from", "md", "--to", "text", "--output", str(output)],
+    )
+
+    assert result.exit_code == 0
+    content = (output / "input.txt").read_text(encoding="utf-8")
+    assert content.startswith("Title")
+    assert "Some bold text and a link" in content
+    for marker in ("#", "**", "](", "https://example.com"):
+        assert marker not in content
+
+
+def test_cli_exports_dclx(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# DCLX CLI\n\nHello from Markdown.", encoding="utf-8")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "dclx",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    converted = output / "input.dclx"
+    assert converted.exists()
+
+    # Verify the output is a valid zip file
+    with zipfile.ZipFile(converted) as archive:
+        payload = b"".join(archive.read(name) for name in archive.namelist())
+    assert b"DCLX CLI" in payload
+
+
+def test_cli_exports_to_exact_output_file(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# Named DCLX CLI\n\nHello.", encoding="utf-8")
+    output_file = tmp_path / "nested" / "custom-name.dclx"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "dclx",
+            "--output-file",
+            str(output_file),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert output_file.exists()
+    assert not (output_file.parent / "input.dclx").exists()
+    with zipfile.ZipFile(output_file) as archive:
+        payload = b"".join(archive.read(name) for name in archive.namelist())
+    assert b"Named DCLX CLI" in payload
+
+
+def test_cli_output_file_rejects_multiple_formats(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# Multiple formats", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "md",
+            "--to",
+            "json",
+            "--output-file",
+            str(tmp_path / "ambiguous-output"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--output-file requires exactly one output format" in result.output
+
+
+def test_cli_output_file_rejects_multiple_inputs(tmp_path):
+    first = tmp_path / "first.md"
+    second = tmp_path / "second.md"
+    first.write_text("# First", encoding="utf-8")
+    second.write_text("# Second", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            str(first),
+            str(second),
+            "--from",
+            "md",
+            "--to",
+            "md",
+            "--output-file",
+            str(tmp_path / "ambiguous.md"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--output-file requires exactly one input document" in result.output
+
+
+def test_cli_exports_latex(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text(
+        "# LaTeX CLI\n\nHello from Markdown with 100% special chars.",
+        encoding="utf-8",
+    )
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "latex",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    converted = output / "input.tex"
+    assert converted.exists()
+    content = converted.read_text(encoding="utf-8")
+    assert content.startswith("\\documentclass")
+    assert "\\begin{document}" in content
+    assert "\\end{document}" in content
+    assert "LaTeX CLI" in content
+    # LaTeX special characters must be escaped
+    assert "100\\% special chars" in content
+
+
+def test_cli_from_odf_expands_to_open_document_formats(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_allowed_formats: list[InputFormat] | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_allowed_formats
+            captured_allowed_formats = allowed_formats
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            assert input_doc_paths
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "tests/data/odf/sources",
+            "--from",
+            "odf",
+            "--to",
+            "html",
+            "--output",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_allowed_formats == [
+        InputFormat.ODT,
+        InputFormat.ODS,
+        InputFormat.ODP,
+    ]
+
+
+def test_cli_picture_description_max_new_tokens(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_pdf_option: PdfFormatOption | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pdf_option
+            captured_pdf_option = format_options[InputFormat.PDF]
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            assert input_doc_paths
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--enrich-picture-description",
+            "--picture-description-max-new-tokens",
+            "321",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_pdf_option is not None
+    assert (
+        captured_pdf_option.pipeline_options.picture_description_options.generation_config[
+            "max_new_tokens"
+        ]
+        == 321
+    )
+
+
+def test_cli_vlm_max_new_tokens(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_pdf_option: PdfFormatOption | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pdf_option
+            captured_pdf_option = format_options[InputFormat.PDF]
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            assert input_doc_paths
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--pipeline",
+            "vlm",
+            "--output",
+            str(output),
+            "--vlm-max-new-tokens",
+            "321",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_pdf_option is not None
+    assert (
+        captured_pdf_option.pipeline_options.vlm_options.model_spec.max_new_tokens
+        == 321
+    )
+
+
+def test_cli_html_fetches_local_images_per_input(tmp_path):
+    first_png = _png_bytes((255, 0, 0))
+    second_png = _png_bytes((0, 0, 255))
+    first = _write_html_image_case(tmp_path / "first", "first.html", "First", first_png)
+    second = _write_html_image_case(
+        tmp_path / "second", "second.html", "Second", second_png
+    )
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(first),
+            str(second),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "embedded",
+            "--html-image-fetch",
+            "local",
+        ],
+    )
+
+    assert result.exit_code == 0
+    _assert_markdown_embeds_png(output / "first.md", first_png)
+    _assert_markdown_embeds_png(output / "second.md", second_png)
+
+
+def test_cli_latex_reads_included_files_next_to_the_source(tmp_path):
+    """Files pulled in with \\input are read from the source's own directory."""
+    source = tmp_path / "paper"
+    source.mkdir()
+    (source / "main.tex").write_text(
+        "\\documentclass{article}\n\\begin{document}\n\\input{body}\n\\end{document}\n"
+    )
+    (source / "body.tex").write_text("Text from the included file.\n")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app, [str(source / "main.tex"), "--to", "md", "--output", str(output)]
+    )
+
+    assert result.exit_code == 0
+    assert "Text from the included file." in (output / "main.md").read_text()
+
+
+def test_cli_from_latex_keeps_any_source_in_place(tmp_path, monkeypatch):
+    """With --from latex alone, a file is handed over in place whatever its name."""
+    captured: dict[str, list[Path]] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["paths"] = [Path(path) for path in input_doc_paths]
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "paper" / "paper.ltx"
+    source.parent.mkdir()
+    source.write_text("\\documentclass{article}\n")
+
+    result = runner.invoke(
+        app,
+        [str(source), "--from", "latex", "--output", str(tmp_path / "out")],
+    )
+
+    assert result.exit_code == 0
+    assert captured["paths"] == [source]
+
+
+def test_cli_directory_skips_office_lock_files(tmp_path):
+    """~$ lock files are excluded regardless of the Office extension.
+
+    With --abort-on-error an unreadable lock stub would fail the whole run.
+    """
+    fixtures = {
+        "notes.docx": "tests/data/docx/sources/Strict.docx",
+        "report.xlsx": "tests/data/xlsx/sources/xlsx_09_section_label_header.xlsx",
+        "slides.pptx": "tests/data/pptx/sources/powerpoint_sample.pptx",
+    }
+    source = tmp_path / "office"
+    source.mkdir()
+    for name, fixture in fixtures.items():
+        shutil.copy(fixture, source / name)
+        (source / f"~${name}").write_bytes(b"lock")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "docx",
+            "--from",
+            "xlsx",
+            "--from",
+            "pptx",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--abort-on-error",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert sorted(path.name for path in output.iterdir()) == [
+        "notes.md",
+        "report.md",
+        "slides.md",
+    ]
+
+
+def test_cli_html_directory_matches_mixed_case_extensions(tmp_path):
+    source_dir = tmp_path / "source"
+    _write_html_image_case(source_dir, "Case.HtMl", "Mixed case")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source_dir),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "embedded",
+            "--html-image-fetch",
+            "local",
+        ],
+    )
+
+    assert result.exit_code == 0
+    _assert_markdown_embeds_png(output / "Case.md")
+
+
+@pytest.mark.parametrize("image_origin_flag", [None, "https://cdn.example.com"])
+def test_cli_html_fetches_remote_images_with_separate_headers(
+    tmp_path, monkeypatch, image_origin_flag
+):
+    use_test_network(monkeypatch, {"docs.test": [SERVER_IP]})
+    # The source document itself is downloaded by docling-core, which has its
+    # own allowlist for non-public addresses.
+    monkeypatch.setattr(file_utils.settings, "allowed_private_ips", [SERVER_IP])
+    output = tmp_path / "out"
+    extra_args = (
+        ["--html-image-headers-origin", image_origin_flag] if image_origin_flag else []
+    )
+
+    with local_server() as server:
+        server.files = {
+            "/docs/page.html": b"<html><body><p>Remote</p>"
+            b"<img src='pixel.png'></body></html>",
+            "/docs/pixel.png": PNG_BYTES,
+        }
+        result = runner.invoke(
+            app,
+            [
+                server.url("docs.test", "/docs/page.html"),
+                "--from",
+                "html",
+                "--to",
+                "md",
+                "--output",
+                str(output),
+                "--image-export-mode",
+                "embedded",
+                "--headers",
+                '{"Authorization": "Bearer source-token"}',
+                "--html-image-headers",
+                '{"X-Image-Token": "image-token"}',
+                "--html-image-fetch",
+                "remote",
+                *extra_args,
+            ],
+        )
+
+    assert result.exit_code == 0
+    source_request, image_request = server.requests
+    assert source_request.path == "/docs/page.html"
+    assert source_request.headers["Authorization"] == "Bearer source-token"
+    assert image_request.path == "/docs/pixel.png"
+    assert "Authorization" not in image_request.headers
+    if image_origin_flag is None:
+        # By default the image headers go to the source document's origin.
+        _assert_markdown_embeds_png(output / "page.md")
+        assert image_request.headers["X-Image-Token"] == "image-token"
+    else:
+        assert "X-Image-Token" not in image_request.headers
+
+
+def test_cli_html_image_headers_origin_requires_headers(tmp_path):
+    source = _write_html_image_case(tmp_path / "source", "index.html", "Local")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "html",
+            "--html-image-fetch",
+            "remote",
+            "--html-image-headers-origin",
+            "https://cdn.example.com",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--html-image-headers-origin requires --html-image-headers" in result.output
+
+
+def test_cli_html_image_headers_require_remote_fetch(tmp_path):
+    source = _write_html_image_case(tmp_path / "source", "index.html", "Local")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--html-image-headers",
+            '{"Authorization": "Bearer token"}',
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert (
+        "--html-image-headers requires --html-image-fetch remote or all"
+        in result.output
+    )
+
+
+def test_cli_default_verbosity_logs_per_file_progress(tmp_path):
+    """At default verbosity (-v not given), the CLI must still surface
+    which input file is currently being converted. Regression for #3467
+    where multi-file batches (e.g. directories of audio) gave no per-file
+    feedback at default verbosity.
+    """
+    import logging
+
+    progress_logger = logging.getLogger("docling.pipeline.base_pipeline")
+    converter_logger = logging.getLogger("docling.document_converter")
+    saved_progress_level = progress_logger.level
+    saved_converter_level = converter_logger.level
+    progress_logger.setLevel(logging.WARNING)
+    converter_logger.setLevel(logging.WARNING)
+    try:
+        first = tmp_path / "first.md"
+        first.write_text("# First\n\nHello.", encoding="utf-8")
+        second = tmp_path / "second.md"
+        second.write_text("# Second\n\nWorld.", encoding="utf-8")
+        output = tmp_path / "out"
+        output.mkdir()
+
+        result = runner.invoke(
+            app, [str(first), str(second), "--from", "md", "--output", str(output)]
+        )
+        assert result.exit_code == 0
+
+        # After default-verbosity invocation, per-file progress loggers must
+        # be enabled at INFO so the "Processing document <name>" line fires.
+        assert progress_logger.isEnabledFor(logging.INFO)
+        assert converter_logger.isEnabledFor(logging.INFO)
+    finally:
+        progress_logger.setLevel(saved_progress_level)
+        converter_logger.setLevel(saved_converter_level)
+
+
+def test_cli_quiet_suppresses_per_file_progress(tmp_path):
+    """`--quiet` reinstates fully silent default output: the per-file progress
+    loggers stay at WARNING so callers (e.g. AI agents) that shell out to
+    docling don't get unexpected INFO lines bloating their context.
+    """
+    import logging
+
+    progress_logger = logging.getLogger("docling.pipeline.base_pipeline")
+    converter_logger = logging.getLogger("docling.document_converter")
+    saved_progress_level = progress_logger.level
+    saved_converter_level = converter_logger.level
+    progress_logger.setLevel(logging.WARNING)
+    converter_logger.setLevel(logging.WARNING)
+    try:
+        first = tmp_path / "first.md"
+        first.write_text("# First\n\nHello.", encoding="utf-8")
+        second = tmp_path / "second.md"
+        second.write_text("# Second\n\nWorld.", encoding="utf-8")
+        output = tmp_path / "out"
+        output.mkdir()
+
+        result = runner.invoke(
+            app,
+            [
+                str(first),
+                str(second),
+                "--from",
+                "md",
+                "--quiet",
+                "--output",
+                str(output),
+            ],
+        )
+        assert result.exit_code == 0
+
+        # With --quiet the progress loggers are left at WARNING, so INFO-level
+        # per-file lines are suppressed.
+        assert not progress_logger.isEnabledFor(logging.INFO)
+        assert not converter_logger.isEnabledFor(logging.INFO)
+    finally:
+        progress_logger.setLevel(saved_progress_level)
+        converter_logger.setLevel(saved_converter_level)
+
+
+def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
+    from docling.cli.main import export_documents
+    from docling.datamodel.base_models import ConversionStatus, InputFormat
+    from docling.datamodel.document import (
+        ConversionResult,
+        InputDocument,
+        _DummyBackend,
+    )
+
+    input_path = tmp_path / "input.pdf"
+    input_path.write_bytes(b"%PDF-1.4")
+
+    input_doc = InputDocument(
+        path_or_stream=input_path,
+        format=InputFormat.PDF,
+        backend=_DummyBackend,
+    )
+
+    conv_res = ConversionResult(input=input_doc)
+    conv_res.status = ConversionStatus.SUCCESS
+
+    class DummyDocument:
+        def save_as_markdown(self, *, filename, image_mode):
+            Path(filename).write_text("")
+
+    conv_res.document = DummyDocument()
+
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    export_documents(
+        [conv_res],
+        output_dir=output_dir,
+        export_json=False,
+        export_yaml=False,
+        export_html=False,
+        export_html_split_page=False,
+        show_layout=False,
+        export_md=True,
+        export_txt=False,
+        export_doctags=False,
+        export_vtt=False,
+        export_doclang=False,
+        print_timings=False,
+        export_timings=False,
+        image_export_mode=ImageRefMode.PLACEHOLDER,
+    )
+
+    assert conv_res.status == ConversionStatus.FAILURE
+    assert conv_res.errors
+
+
+def test_export_documents_marks_stat_errors_as_failure(tmp_path, monkeypatch):
+    from docling.cli.main import export_documents
+    from docling.datamodel.base_models import ConversionStatus, InputFormat
+    from docling.datamodel.document import (
+        ConversionResult,
+        InputDocument,
+        _DummyBackend,
+    )
+
+    input_path = tmp_path / "input.pdf"
+    input_path.write_bytes(b"%PDF-1.4")
+
+    input_doc = InputDocument(
+        path_or_stream=input_path,
+        format=InputFormat.PDF,
+        backend=_DummyBackend,
+    )
+
+    conv_res = ConversionResult(input=input_doc)
+    conv_res.status = ConversionStatus.SUCCESS
+
+    class DummyDocument:
+        def save_as_markdown(self, *, filename, image_mode):
+            Path(filename).write_text("ok")
+
+    conv_res.document = DummyDocument()
+
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    original_stat = Path.stat
+
+    def _raise_for_markdown(self, *, follow_symlinks=True):
+        if self.name == "input.md":
+            raise OSError("stat failed")
+        return original_stat(self, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(Path, "stat", _raise_for_markdown)
+
+    export_documents(
+        [conv_res],
+        output_dir=output_dir,
+        export_json=False,
+        export_yaml=False,
+        export_html=False,
+        export_html_split_page=False,
+        show_layout=False,
+        export_md=True,
+        export_txt=False,
+        export_doctags=False,
+        export_vtt=False,
+        export_doclang=False,
+        print_timings=False,
+        export_timings=False,
+        image_export_mode=ImageRefMode.PLACEHOLDER,
+    )
+
+    assert conv_res.status == ConversionStatus.FAILURE
+    assert conv_res.errors
+
+
 @pytest.mark.parametrize(
     ("image_export_mode", "to_formats", "expected"),
     [
         (ImageRefMode.PLACEHOLDER, [OutputFormat.JSON], False),
         (ImageRefMode.EMBEDDED, [OutputFormat.TEXT, OutputFormat.DOCTAGS], False),
+        (ImageRefMode.EMBEDDED, [OutputFormat.DOCLANG], False),
         (ImageRefMode.EMBEDDED, [OutputFormat.MARKDOWN], True),
+        (ImageRefMode.EMBEDDED, [OutputFormat.DCLX], True),
         (
             ImageRefMode.EMBEDDED,
             [OutputFormat.TEXT, OutputFormat.MARKDOWN],
@@ -52,11 +946,19 @@ def test_image_export_policy_covers_all_output_formats():
         OutputFormat.TEXT,
         OutputFormat.DOCTAGS,
         OutputFormat.VTT,
+        OutputFormat.DOCLANG,
     }
     image_export_formats = set(OutputFormat) - non_image_export_formats
 
     assert image_export_formats.isdisjoint(non_image_export_formats)
     assert image_export_formats | non_image_export_formats == set(OutputFormat)
+
+
+def test_split_list_handles_none_and_delimiters():
+    assert _split_list(None) is None
+    assert _split_list("a,b;c") == ["a", "b", "c"]
+    # Values are stripped and blanks dropped, so `--ocr-lang "en, de"` works.
+    assert _split_list("a, b ;c,") == ["a", "b", "c"]
 
 
 def test_cli_audio_auto_detection(tmp_path):
@@ -102,7 +1004,7 @@ def test_cli_explicit_pipeline_not_overridden(tmp_path):
 
 def test_cli_convert_with_progress(tmp_path):
     """Test that --progress flag prints conversion progress for a PDF."""
-    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
     output.mkdir()
     result = runner.invoke(app, [source, "--output", str(output), "--progress"])
@@ -113,7 +1015,7 @@ def test_cli_convert_with_progress(tmp_path):
 
 def test_cli_convert_with_progress_html(tmp_path):
     """Test that --progress flag prints conversion progress for a non-paginated format."""
-    source = "./tests/data/html/example_01.html"
+    source = "./tests/data/html/sources/example_01.html"
     output = tmp_path / "out"
     output.mkdir()
     result = runner.invoke(app, [source, "--output", str(output), "--progress"])
@@ -121,25 +1023,808 @@ def test_cli_convert_with_progress_html(tmp_path):
     assert "Converting" in result.output
 
 
+def test_cli_directory_includes_gif_images(tmp_path, monkeypatch):
+    """GIF files in a directory are picked up and converted like other image formats."""
+    captured: dict[str, list[Path]] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["paths"] = [Path(path) for path in input_doc_paths]
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "images"
+    source.mkdir()
+    Image.new("RGB", (1, 1), color=(0, 0, 0)).save(source / "photo.gif", format="GIF")
+    (source / "photo.png").write_bytes(_png_bytes((0, 0, 0)))
+
+    result = runner.invoke(
+        app, [str(source), "--from", "image", "--output", str(tmp_path / "out")]
+    )
+
+    assert result.exit_code == 0
+    assert sorted(path.name for path in captured["paths"]) == ["photo.gif", "photo.png"]
+
+
+def test_cli_applies_video_options_to_videos_in_a_directory(tmp_path, monkeypatch):
+    """Video options apply when the video is found by expanding a directory."""
+    captured: dict[InputFormat, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            captured.update(format_options)
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "videos"
+    source.mkdir()
+    (source / "talk.mp4").write_bytes(b"not a real video")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--video-frame-interval",
+            "2",
+            "--output",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert InputFormat.VIDEO in captured
+    assert captured[InputFormat.VIDEO].pipeline_options.frame_interval_seconds == 2.0
+
+
 def test_cli_audio_extensions_coverage():
-    """Test that all audio extensions from FormatToExtensions are covered."""
+    """Test that audio/video extensions are correctly split across InputFormat."""
     from docling.datamodel.base_models import FormatToExtensions, InputFormat
 
-    # Verify that the centralized audio extensions include all expected formats
     audio_extensions = FormatToExtensions[InputFormat.AUDIO]
-    expected_extensions = [
-        "wav",
-        "mp3",
-        "m4a",
-        "aac",
-        "ogg",
-        "flac",
-        "mp4",
-        "avi",
-        "mov",
-    ]
-
-    for ext in expected_extensions:
+    expected_audio = ["wav", "mp3", "m4a", "aac", "ogg", "flac"]
+    for ext in expected_audio:
         assert ext in audio_extensions, (
             f"Audio extension {ext} not found in FormatToExtensions[InputFormat.AUDIO]"
         )
+
+    video_extensions = FormatToExtensions[InputFormat.VIDEO]
+    expected_video = ["mp4", "avi", "mov", "mkv", "webm"]
+    for ext in expected_video:
+        assert ext in video_extensions, (
+            f"Video extension {ext} not found in FormatToExtensions[InputFormat.VIDEO]"
+        )
+
+    for ext in expected_video:
+        assert ext not in audio_extensions, (
+            f"Video extension {ext} should not be in FormatToExtensions[InputFormat.AUDIO]"
+        )
+
+
+def test_cli_accepts_threaded_docling_parse_backend(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_backend: type[Any] | None = None
+    captured_backend_options: ThreadedDoclingParseBackendOptions | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_backend
+            nonlocal captured_backend_options
+            pdf_option = format_options[InputFormat.PDF]
+            assert isinstance(pdf_option, PdfFormatOption)
+            captured_backend = pdf_option.backend
+            assert isinstance(
+                pdf_option.backend_options, ThreadedDoclingParseBackendOptions
+            )
+            captured_backend_options = pdf_option.backend_options
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            assert len(input_doc_paths) == 1
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--pdf-backend",
+            PdfBackend.THREADED_DOCLING_PARSE.value,
+            "--num-threads",
+            "7",
+            "--release-native-memory-every-n-pages",
+            "64",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_backend is not None
+    assert captured_backend.__name__ == "ThreadedDoclingParseDocumentBackend"
+    assert captured_backend_options is not None
+    assert captured_backend_options.parser_threads == 7
+    assert captured_backend_options.release_native_memory_every_n_pages == 64
+
+
+# Pipeline and backend selection are independent in the CLI routing, so pair
+# them (zip) rather than take the cartesian product: every pipeline and every
+# backend is still exercised at least once.
+@pytest.mark.parametrize(
+    ("pipeline_name", "expected_pipeline", "pdf_backend", "expected_backend"),
+    [
+        (
+            "legacy",
+            "LegacyStandardPdfPipeline",
+            PdfBackend.THREADED_DOCLING_PARSE,
+            "ThreadedDoclingParseDocumentBackend",
+        ),
+        (
+            "vlm",
+            "VlmPipeline",
+            PdfBackend.THREADED_DOCLING_PARSE,
+            "ThreadedDoclingParseDocumentBackend",
+        ),
+        (
+            "legacy",
+            "LegacyStandardPdfPipeline",
+            PdfBackend.PYPDFIUM2,
+            "PyPdfiumDocumentBackend",
+        ),
+    ],
+)
+def test_cli_routes_pdf_backend_for_legacy_and_vlm(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pipeline_name: str,
+    expected_pipeline: str,
+    pdf_backend: PdfBackend,
+    expected_backend: str,
+) -> None:
+    captured: dict[str, str] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            pdf_option = format_options[InputFormat.PDF]
+            image_option = format_options[InputFormat.IMAGE]
+            captured["pipeline"] = pdf_option.pipeline_cls.__name__
+            captured["pdf_backend"] = pdf_option.backend.__name__
+            captured["image_backend"] = image_option.backend.__name__
+            if pdf_backend is PdfBackend.THREADED_DOCLING_PARSE:
+                assert isinstance(
+                    pdf_option.backend_options, ThreadedDoclingParseBackendOptions
+                )
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--pipeline",
+            pipeline_name,
+            "--pdf-backend",
+            pdf_backend.value,
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured == {
+        "pipeline": expected_pipeline,
+        "pdf_backend": expected_backend,
+        "image_backend": "ImageDocumentBackend",
+    }
+
+
+def _capture_cli_ocr_options(monkeypatch, extra_args, tmp_path):
+    """Invoke `docling convert` with a fake converter and return the built OcrOptions."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pdf_option = format_options[InputFormat.PDF]
+            captured["ocr_options"] = pdf_option.pipeline_options.ocr_options
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("ocr_options")
+
+
+@pytest.mark.parametrize("mode", list(OcrMode))
+def test_cli_ocr_mode_sets_options_mode(tmp_path, monkeypatch, mode):
+    result, ocr_options = _capture_cli_ocr_options(
+        monkeypatch, ["--ocr-mode", mode.value], tmp_path
+    )
+    assert result.exit_code == 0
+    assert ocr_options is not None
+    assert ocr_options.mode is mode
+
+
+def test_cli_ocr_mode_defaults_to_default(tmp_path, monkeypatch):
+    result, ocr_options = _capture_cli_ocr_options(monkeypatch, [], tmp_path)
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.DEFAULT
+
+
+def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch):
+    with pytest.warns(DeprecationWarning, match="--force-ocr"):
+        result, ocr_options = _capture_cli_ocr_options(
+            monkeypatch, ["--force-ocr"], tmp_path
+        )
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.FULL_PAGE
+
+
+def test_cli_force_ocr_wins_over_ocr_mode(tmp_path, monkeypatch):
+    with pytest.warns(DeprecationWarning, match="--force-ocr"):
+        result, ocr_options = _capture_cli_ocr_options(
+            monkeypatch, ["--force-ocr", "--ocr-mode", "layout_regions"], tmp_path
+        )
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.FULL_PAGE
+
+
+def test_cli_invalid_ocr_mode_is_rejected(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--ocr-mode",
+            "not_a_mode",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def _capture_cli_page_range(monkeypatch, extra_args, tmp_path):
+    """Invoke `docling convert` with a fake converter and return the page_range it got."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["page_range"] = page_range
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("page_range")
+
+
+def test_cli_page_range_reaches_convert_all(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", "2-4"], tmp_path
+    )
+    assert result.exit_code == 0
+    assert page_range == (2, 4)
+
+
+def test_cli_page_range_accepts_single_page(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", "3"], tmp_path
+    )
+    assert result.exit_code == 0
+    assert page_range == (3, 3)
+
+
+def test_cli_page_range_defaults_to_all_pages(tmp_path, monkeypatch):
+    result, page_range = _capture_cli_page_range(monkeypatch, [], tmp_path)
+    assert result.exit_code == 0
+    assert page_range == DEFAULT_PAGE_RANGE
+
+
+@pytest.mark.parametrize("raw", ["4-2", "0-3", "abc", "1-", "-3"])
+def test_cli_invalid_page_range_is_rejected(tmp_path, monkeypatch, raw):
+    result, page_range = _capture_cli_page_range(
+        monkeypatch, ["--page-range", raw], tmp_path
+    )
+    assert result.exit_code != 0
+    assert page_range is None
+
+
+def test_cli_page_range_limits_converted_pages(tmp_path):
+    """`--page-range 2-3` must convert only those slides of a 3-slide deck.
+
+    Uses PPTX because its backend honors ``page_range`` without needing the
+    layout model, keeping the end-to-end assertion cheap.
+    """
+    output = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pptx/sources/powerpoint_sample.pptx",
+            "--output",
+            str(output),
+            "--to",
+            "json",
+            "--page-range",
+            "2-3",
+        ],
+    )
+    assert result.exit_code == 0
+
+    doc = json.loads((output / "powerpoint_sample.json").read_text(encoding="utf-8"))
+    assert sorted(int(page_no) for page_no in doc["pages"]) == [2, 3]
+
+
+def test_parse_page_range_is_shared_with_convert_remote():
+    """`convert` and `convert-remote` must parse --page-range identically."""
+    assert _parse_page_range(None) is None
+    assert _parse_page_range("1-4") == (1, 4)
+    assert _parse_page_range(" 7 ") == (7, 7)
+    with pytest.raises(typer.BadParameter):
+        _parse_page_range("4-2")
+
+
+def test_cli_passes_accelerator_options_to_vlm_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_pipeline_options: VlmPipelineOptions | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pipeline_options
+            pdf_option = format_options[InputFormat.PDF]
+            assert format_options[InputFormat.IMAGE].pipeline_options is (
+                pdf_option.pipeline_options
+            )
+            assert isinstance(pdf_option.pipeline_options, VlmPipelineOptions)
+            captured_pipeline_options = pdf_option.pipeline_options
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            assert len(input_doc_paths) == 1
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--pipeline",
+            "vlm",
+            "--device",
+            "cpu",
+            "--num-threads",
+            "7",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_pipeline_options is not None
+    assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice.CPU
+    assert captured_pipeline_options.accelerator_options.num_threads == 7
+    assert captured_pipeline_options.generate_page_images is True
+    assert captured_pipeline_options.generate_picture_images is True
+
+
+def _capture_cli_engine_options(monkeypatch, extra_args, tmp_path, option_name):
+    """Helper to capture layout/table/ocr engine options from CLI."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pdf_option = format_options[InputFormat.PDF]
+            captured["option"] = getattr(pdf_option.pipeline_options, option_name)
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("option")
+
+
+def test_cli_layout_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --layout-engine sets layout options correctly."""
+    result, layout_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--layout-engine", "docling_layout_default"],
+        tmp_path,
+        "layout_options",
+    )
+    assert result.exit_code == 0
+    assert layout_options is not None
+    assert layout_options.kind == "docling_layout_default"
+
+
+def test_cli_table_structure_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --table-structure-engine sets table structure options correctly."""
+    result, table_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--table-structure-engine", "docling_tableformer_v2"],
+        tmp_path,
+        "table_structure_options",
+    )
+    assert result.exit_code == 0
+    assert table_options is not None
+    assert table_options.kind == "docling_tableformer_v2"
+
+
+def test_cli_ocr_engine_can_be_set(tmp_path, monkeypatch):
+    """Test that --ocr-engine sets OCR options correctly."""
+    result, ocr_options = _capture_cli_engine_options(
+        monkeypatch, ["--ocr-engine", "easyocr"], tmp_path, "ocr_options"
+    )
+    assert result.exit_code == 0
+    assert ocr_options is not None
+    assert ocr_options.kind == "easyocr"
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected"),
+    [
+        ([], True),
+        (["--reading-order-separators"], True),
+        (["--no-reading-order-separators"], False),
+    ],
+)
+def test_cli_reading_order_separator_switch(
+    tmp_path, monkeypatch, extra_args, expected
+):
+    result, enabled = _capture_cli_engine_options(
+        monkeypatch,
+        extra_args,
+        tmp_path,
+        "use_reading_order_separators",
+    )
+
+    assert result.exit_code == 0
+    assert enabled is expected
+
+
+def test_cli_invalid_layout_engine_is_rejected(tmp_path):
+    """Test that invalid --layout-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--layout-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def test_cli_invalid_table_structure_engine_is_rejected(tmp_path):
+    """Test that invalid --table-structure-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--table-structure-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def test_cli_main_importable_without_local_model_stack(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Importing docling.cli.main must not require pypdfium2 or scipy.
+
+    Ensure that CLI does not crash in `docling convert-remote`
+    on lightweight `docling-client` / `docling-slim[service-client]` installs.
+    """
+    import importlib
+    import sys
+
+    monkeypatch.setitem(sys.modules, "pypdfium2", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "scipy", None)  # type: ignore[arg-type]
+    monkeypatch.setitem(sys.modules, "scipy.ndimage", None)  # type: ignore[arg-type]
+
+    for mod in list(sys.modules):
+        if mod.startswith(
+            (
+                "docling.cli.main",
+                "docling.document_converter",
+                "docling.models.factories",
+            )
+        ):
+            monkeypatch.delitem(sys.modules, mod)
+
+    importlib.import_module("docling.cli.main")
+
+
+def test_cli_invalid_ocr_engine_is_rejected(tmp_path):
+    """Test that invalid --ocr-engine is rejected."""
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--ocr-engine",
+            "invalid_engine",
+        ],
+    )
+    assert result.exit_code != 0
+
+
+def _capture_cli_asr_pipeline_options(monkeypatch, extra_args, tmp_path):
+    """Invoke `docling convert` with a fake converter and return the
+    AsrPipelineOptions built alongside the requested (non-audio) pipeline.
+
+    The CLI always constructs `AsrPipelineOptions` regardless of the input
+    format, so this can be observed without converting an audio file.
+    """
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            audio_option = format_options[InputFormat.AUDIO]
+            captured["asr_pipeline_options"] = audio_option.pipeline_options
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("asr_pipeline_options")
+
+
+def test_cli_allow_external_plugins_reaches_asr_pipeline_options(tmp_path, monkeypatch):
+    """Regression test for #3284: `--allow-external-plugins` and
+    `--enable-remote-services` were parsed correctly but never passed into
+    the (always-constructed) `AsrPipelineOptions`, which silently kept
+    reporting `allow_external_plugins=False` / `enable_remote_services=False`
+    regardless of the flags actually passed on the command line.
+    """
+    result, asr_pipeline_options = _capture_cli_asr_pipeline_options(
+        monkeypatch,
+        ["--allow-external-plugins", "--enable-remote-services"],
+        tmp_path,
+    )
+    assert result.exit_code == 0, result.output
+    assert asr_pipeline_options is not None
+    assert asr_pipeline_options.allow_external_plugins is True
+    assert asr_pipeline_options.enable_remote_services is True
+
+
+def test_cli_asr_pipeline_options_default_to_false(tmp_path, monkeypatch):
+    """Companion to the regression test above: without the flags, the
+    ASR pipeline options should still default to False."""
+    result, asr_pipeline_options = _capture_cli_asr_pipeline_options(
+        monkeypatch, [], tmp_path
+    )
+    assert result.exit_code == 0, result.output
+    assert asr_pipeline_options is not None
+    assert asr_pipeline_options.allow_external_plugins is False
+    assert asr_pipeline_options.enable_remote_services is False
+
+
+def test_cli_native_pipeline_converts_pdf(tmp_path: Path) -> None:
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [source, "--output", str(output), "--pipeline", "native", "--from", "pdf"],
+    )
+
+    assert result.exit_code == 0
+    assert (
+        "Optimized Table Tokenization" in (output / "2305.03393v1-pg9.md").read_text()
+    )
+
+
+def test_cli_native_pipeline_defaults_to_pdf_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_formats: list[InputFormat] = []
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            captured_formats.extend(allowed_formats)
+
+        def convert_all(
+            self, input_doc_paths, headers=None, raises_on_error=False, page_range=None
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--pipeline",
+            "native",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_formats == [InputFormat.PDF]
+
+
+def test_cli_native_pipeline_rejects_invalid_input_or_backend(tmp_path: Path) -> None:
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    for extra_args in (
+        ["--from", "docx"],
+        ["--pdf-backend", PdfBackend.PYPDFIUM2.value],
+    ):
+        result = runner.invoke(
+            app,
+            [
+                source,
+                "--output",
+                str(tmp_path / "out"),
+                "--pipeline",
+                "native",
+                *extra_args,
+            ],
+        )
+        assert result.exit_code != 0
+
+
+def test_cli_native_pipeline_parser_threads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pdf_option = format_options[InputFormat.PDF]
+            captured["pipeline_options"] = pdf_option.pipeline_options
+            captured["backend_options"] = pdf_option.backend_options
+
+        def convert_all(
+            self, input_doc_paths, headers=None, raises_on_error=False, page_range=None
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--pipeline",
+            "native",
+            "--parser-threads",
+            "3",
+            "--num-threads",
+            "7",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["pipeline_options"].parser_threads == 3
+    assert captured["backend_options"].parser_threads == 3
+    assert captured["pipeline_options"].accelerator_options.num_threads == 7

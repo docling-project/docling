@@ -1,0 +1,12 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section_header: Überschriften in nicht-englischer Sprache
+    item-2 at level 2: text: 
+    item-3 at level 2: section: group header-1
+      item-4 at level 3: section_header: Problem mit lokalisierten Dokumenten
+        item-5 at level 4: text: Jedes Dokument, dessen Überschri ... ce den lokalisierten Stil-ID schreibt.
+        item-6 at level 4: text: 
+      item-7 at level 3: section_header: Vorgeschlagene Änderung
+        item-8 at level 4: text: Verwenden Sie ein Standardniveau ... -Prüfungen den Absatz abgelehnt haben.
+        item-9 at level 4: text: 
+      item-10 at level 3: section_header: Verifizierung
+        item-11 at level 4: text: Lokaler Lauf gegen den eingesetzten DOCX-Korpus.

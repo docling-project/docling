@@ -19,6 +19,7 @@
 # %%
 
 import logging
+import os
 import sys
 
 from docling_core.types.doc.base import ImageRefMode
@@ -40,6 +41,7 @@ from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     PdfPipelineOptions,
 )
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.document_converter import (
     DocumentConverter,
     ImageFormatOption,
@@ -47,6 +49,9 @@ from docling.document_converter import (
 )
 
 _log = logging.getLogger(__name__)
+
+# Check if running in CI
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
 
 
 def is_onnxruntime_available() -> bool:
@@ -122,7 +127,8 @@ def run_with_engine(engine_kind: str, input_doc_path: str):
     )
 
     # Convert the document
-    result = converter.convert(input_doc_path)
+    page_range = (3, 4) if IS_CI else DEFAULT_PAGE_RANGE
+    result = converter.convert(input_doc_path, page_range=page_range)
 
     # Save output with engine-specific filename
     output_filename = f"model_family_engines_{engine_kind}.html"
@@ -146,7 +152,7 @@ def main():
     logging.getLogger("docling").setLevel(logging.INFO)
 
     # Use a sample PDF from the test data (path relative to repo root)
-    input_doc_path = "tests/data/pdf/2206.01062.pdf"
+    input_doc_path = "tests/data/pdf/sources/2206.01062.pdf"
 
     # Run 1: ONNX Runtime Engine (if available in the current environment)
     if is_onnxruntime_available():

@@ -1,28 +1,38 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-if TYPE_CHECKING:
-    from typing import Any
-
 from docling_core.types.doc.document import TableCell, TableData
-from pylatexenc.latexwalker import (
-    LatexCharsNode,
-    LatexEnvironmentNode,
-    LatexMacroNode,
-    LatexWalker,
-    LatexWalkerParseError,
-)
 
 from docling.backend.latex.constants import (
     MACROS_ESCAPED,
     TABLE_MACROS_IGNORE,
     TABLE_MACROS_RULE,
 )
+from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
+
+if TYPE_CHECKING:
+    from typing import Any
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexMacroNode,
+        LatexWalker,
+        LatexWalkerParseError,
+    )
+except ImportError:
+    pass  # guarded by LatexDocumentBackend.__init__
 
 
 class TableHelperMixin:
     if TYPE_CHECKING:
 
-        def _nodes_to_text(self, nodes: "Any") -> str: ...
+        def _nodes_to_text(self, nodes: Any) -> str: ...
 
     def _process_table_macro_node(
         self,
@@ -48,7 +58,11 @@ class TableHelperMixin:
                     content_text = args[2]
                     if content_text:
                         try:
-                            w = LatexWalker(content_text, tolerant_parsing=True)
+                            w = LatexWalker(
+                                content_text,
+                                tolerant_parsing=True,
+                                latex_context=LATEX_CONTEXT_DB,
+                            )
                             parsed, _, _ = w.get_latex_nodes()
                             current_cell_nodes.extend(parsed)
                         except LatexWalkerParseError:
@@ -73,7 +87,11 @@ class TableHelperMixin:
                     content_text = args[2]
                     if content_text:
                         try:
-                            w = LatexWalker(content_text, tolerant_parsing=True)
+                            w = LatexWalker(
+                                content_text,
+                                tolerant_parsing=True,
+                                latex_context=LATEX_CONTEXT_DB,
+                            )
                             parsed, _, _ = w.get_latex_nodes()
                             current_cell_nodes.extend(parsed)
                         except LatexWalkerParseError:

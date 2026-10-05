@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test LightOnOCR-2-1B VLM integration."""
 
 import os
@@ -149,7 +152,7 @@ def test_e2e_lightonocr_conversion():
         }
     )
 
-    pdf_path = Path("./tests/data/pdf/2206.01062.pdf")
+    pdf_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
     conv_result = converter.convert(pdf_path)
     doc = conv_result.document
 

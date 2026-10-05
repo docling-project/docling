@@ -1,14 +1,14 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+from __future__ import annotations
+
 import logging
 import re
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
-if TYPE_CHECKING:
-    from io import BytesIO
-    from pathlib import Path
-    from typing import Any
-
-import pypdfium2
 from docling_core.types.doc.document import (
     DocItemLabel,
     DoclingDocument,
@@ -17,14 +17,6 @@ from docling_core.types.doc.document import (
     NodeItem,
 )
 from PIL import Image
-from pylatexenc.latexwalker import (
-    LatexCharsNode,
-    LatexEnvironmentNode,
-    LatexGroupNode,
-    LatexMacroNode,
-    LatexWalker,
-    LatexWalkerParseError,
-)
 
 from docling.backend.latex.constants import (
     MACROS_ACCENTS,
@@ -43,13 +35,48 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.utils.encoding import decode_latex_content
+from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
+
+if TYPE_CHECKING:
+    from typing import Any
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexGroupNode,
+        LatexMacroNode,
+        LatexWalker,
+        LatexWalkerParseError,
+    )
+except ImportError:
+    pass  # guarded by LatexDocumentBackend.__init__
 
 _log = logging.getLogger(__name__)
+
+# pypdfium2 ships with the PDF extras, not with format-latex. Only \includegraphics
+# of a .pdf file needs it, so guard the import and report it on that path instead
+# of breaking every LaTeX conversion at import time.
+# See https://github.com/docling-project/docling/issues/3613.
+_PYPDFIUM2_AVAILABLE: bool = False
+_PYPDFIUM2_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+
+    _PYPDFIUM2_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _PYPDFIUM2_IMPORT_ERROR = e
+
+_PYPDFIUM2_INSTALL_HINT = (
+    "The 'pypdfium2' package is required to embed PDF images from LaTeX "
+    "sources. Install it with `pip install 'docling-slim[format-pdf-pypdfium2]'`."
+)
 
 
 class MacroHandlerMixin:
     if TYPE_CHECKING:
-        path_or_stream: "BytesIO | Path"
+        path_or_stream: BytesIO | Path
         _input_stack: set[str]
         _custom_macros: dict[str, str]
         _custom_macro_num_args: dict[str, int]
@@ -57,13 +84,13 @@ class MacroHandlerMixin:
 
         def _process_nodes(
             self,
-            nodes: "Any",
-            doc: "Any",
-            parent: "Any" = ...,
-            formatting: "Any" = ...,
-            text_label: "Any" = ...,
+            nodes: Any,
+            doc: Any,
+            parent: Any = ...,
+            formatting: Any = ...,
+            text_label: Any = ...,
         ) -> None: ...
-        def _nodes_to_text(self, nodes: "Any") -> str: ...
+        def _nodes_to_text(self, nodes: Any) -> str: ...
 
     def _preprocess_custom_macros(self, latex_text: str) -> str:
         latex_text = re.sub(r"\\be\b", r"\\begin{equation}", latex_text)
@@ -323,6 +350,10 @@ class MacroHandlerMixin:
                         if img_full_path.exists():
                             suffix = img_full_path.suffix.lower()
                             if suffix == ".pdf":
+                                if not _PYPDFIUM2_AVAILABLE:
+                                    raise ImportError(
+                                        _PYPDFIUM2_INSTALL_HINT
+                                    ) from _PYPDFIUM2_IMPORT_ERROR
                                 pdf = pypdfium2.PdfDocument(img_full_path)
                                 page = pdf[0]
                                 pil_image = page.render(scale=2).to_pil()
@@ -392,8 +423,12 @@ class MacroHandlerMixin:
                 elif input_path.exists():
                     self._input_stack.add(resolved)
                     try:
-                        content = input_path.read_text(encoding="utf-8")
-                        sub_walker = LatexWalker(content, tolerant_parsing=True)
+                        content = decode_latex_content(input_path)
+                        sub_walker = LatexWalker(
+                            content,
+                            tolerant_parsing=True,
+                            latex_context=LATEX_CONTEXT_DB,
+                        )
                         sub_nodes, _, _ = sub_walker.get_latex_nodes()
                         self._process_nodes(
                             sub_nodes, doc, parent, formatting, text_label
@@ -605,7 +640,9 @@ class MacroHandlerMixin:
 
     def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str:
         try:
-            walker = LatexWalker(latex_fragment, tolerant_parsing=True)
+            walker = LatexWalker(
+                latex_fragment, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
+            )
             parsed_nodes, _, _ = walker.get_latex_nodes()
         except LatexWalkerParseError:
             return latex_fragment

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import re
 import warnings
 from collections.abc import Iterable
@@ -5,14 +8,32 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import numpy as np
+from docling_core.types.doc import BoundingBox
+from docling_core.types.doc.page import TextCell
 from PIL import ImageDraw
+from PIL.Image import Image
 from pydantic import BaseModel
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import OcrMode, PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+
+
+def resolve_skip_cell_extraction(pipeline_options: PdfPipelineOptions) -> bool:
+    """Whether the native segmented-page (text-cell) decode can be skipped.
+
+    In full-page OCR mode the native PDF text cells are discarded wholesale
+    during OCR post-processing, so extracting them is pure waste — and on
+    vector-dense pages (CAD/wiring schematics drawn as 100k+ path segments)
+    that decode costs multiple GiB regardless of cell content levels.
+    See https://github.com/docling-project/docling/issues/4058.
+    """
+    return bool(pipeline_options.do_ocr) and (
+        pipeline_options.ocr_options.mode == OcrMode.FULL_PAGE
+    )
 
 
 class PagePreprocessingOptions(BaseModel):
@@ -20,6 +41,7 @@ class PagePreprocessingOptions(BaseModel):
     skip_cell_extraction: bool = (
         False  # Skip text cell extraction for VLM-only processing
     )
+    capture_reading_order_separators: bool = False
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -44,6 +66,8 @@ class PagePreprocessingModel(BasePageModel):
             else:
                 with TimeRecorder(conv_res, "page_parse"):
                     page = self._populate_page_images(page)
+                    if self.options.capture_reading_order_separators:
+                        page = self._capture_shape_geometry(page)
                     if not self.options.skip_cell_extraction:
                         page = self._parse_page_cells(conv_res, page)
                 yield page
@@ -63,6 +87,14 @@ class PagePreprocessingModel(BasePageModel):
                 scale=images_scale
             )  # this will trigger storing the image in the internal cache
 
+        return page
+
+    def _capture_shape_geometry(self, page: Page) -> Page:
+        """Retain visible vector geometry needed after the backend is released."""
+        assert page._backend is not None
+
+        page._shape_lines = page._backend.get_shape_lines()
+        page._shape_bounding_boxes = page._backend.get_connected_shape_bounding_boxes()
         return page
 
     # Extract and populate the page cells and store it in the page object
@@ -88,18 +120,33 @@ class PagePreprocessingModel(BasePageModel):
                 )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
             )
 
-        # DEBUG code:
-        def draw_text_boxes(image, cells, show: bool = False):
-            draw = ImageDraw.Draw(image.copy())
-            for c in cells:
-                x0, y0, x1, y1 = (
-                    c.to_bounding_box().l,
-                    c.to_bounding_box().t,
-                    c.to_bounding_box().r,
-                    c.to_bounding_box().b,
-                )
+        def draw_cell_boxes(
+            image: Image,
+            text_cells: Iterable[TextCell],
+            shape_cells: Iterable[BoundingBox],
+            bitmap_cells: Iterable[BoundingBox],
+            show: bool = False,
+        ) -> None:
+            r"""Draw the PDF cells: text in red, shapes in blue, bitmaps in green"""
+
+            image = image.copy()
+            draw = ImageDraw.Draw(image)
+            # Text cells in red
+            for c in text_cells:
+                bbox = c.to_bounding_box()
+                x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
 
                 draw.rectangle([(x0, y0), (x1, y1)], outline="red")
+            # Connected shape regions in blue
+            for bbox in shape_cells:
+                x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
+
+                draw.rectangle([(x0, y0), (x1, y1)], outline="blue")
+            # Bitmap rects in green
+            for bbox in bitmap_cells:
+                x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
+
+                draw.rectangle([(x0, y0), (x1, y1)], outline="green")
             if show:
                 image.show()
             else:
@@ -113,7 +160,19 @@ class PagePreprocessingModel(BasePageModel):
                 image.save(str(out_file), format="png")
 
         if settings.debug.visualize_cells:
-            draw_text_boxes(page.get_image(scale=1.0), page.cells)
+            page_image = page.get_image(scale=1.0)
+            if page_image is not None:
+                # Not all backends support the shape boxes
+                shape_boxes = page._backend.get_connected_shape_bounding_boxes()
+                if shape_boxes is None:
+                    shape_boxes = []
+
+                draw_cell_boxes(
+                    page_image,
+                    page.cells,
+                    shape_boxes,
+                    page._backend.get_bitmap_rects(),
+                )
 
         return page
 

@@ -20,7 +20,7 @@ The Actor stores results in:
 * Processing logs (`DOCLING_LOG`)
 * Dataset record with result URL and status
 
-Read more about the [Docling Actor](.actor/README.md), including how to use it via the Apify API and CLI.
+Read more about the [Docling Actor][docs], including how to use it via the Apify API and CLI.
 
 - 💻 [GitHub][github]
 - 📖 [Docs][docs]

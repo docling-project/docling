@@ -1,9 +1,13 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import enum
 from typing import Annotated, Literal
 
 from pydantic import AnyUrl, BaseModel, Field
 
-from docling.datamodel.base_models import ConversionStatus
+from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.service.responses import PublicFailureInfo
 
 
 class CallbackSpec(BaseModel):
@@ -16,6 +20,7 @@ class ProgressKind(str, enum.Enum):
     SET_NUM_DOCS = "set_num_docs"
     UPDATE_PROCESSED = "update_processed"
     DOCUMENT_COMPLETED = "document_completed"
+    TASK_COMPLETED = "task_completed"
 
 
 class BaseProgress(BaseModel):
@@ -28,13 +33,10 @@ class ProgressSetNumDocs(BaseProgress):
     num_docs: int
 
 
-class SucceededDocsItem(BaseModel):
+class ProcessedDocsItem(BaseModel):
     source: str
-
-
-class FailedDocsItem(BaseModel):
-    source: str
-    error: str
+    status: ConversionStatus
+    error: str | None = None
 
 
 class ProgressUpdateProcessed(BaseProgress):
@@ -42,10 +44,10 @@ class ProgressUpdateProcessed(BaseProgress):
 
     num_processed: int
     num_succeeded: int
+    num_partially_succeeded: int
     num_failed: int
 
-    docs_succeeded: list[SucceededDocsItem]
-    docs_failed: list[FailedDocsItem]
+    docs: list[ProcessedDocsItem]
 
 
 class DocumentCompletedItem(BaseModel):
@@ -53,7 +55,11 @@ class DocumentCompletedItem(BaseModel):
 
     source: str
     status: ConversionStatus
+    document_type: InputFormat | None = None
     num_pages: int | None = None
+    num_characters: int | None = None
+    num_tables: int | None = None
+    num_pictures: int | None = None
     processing_time: float | None = None  # in seconds
     doc_hash: str | None = None
     error: str | None = None
@@ -70,10 +76,21 @@ class ProgressDocumentCompleted(BaseProgress):
     total_docs: int | None = None  # Total docs in task (if known)
 
 
+class ProgressTaskCompleted(BaseProgress):
+    """Terminal task outcome, independent of document outcomes."""
+
+    kind: Literal[ProgressKind.TASK_COMPLETED] = ProgressKind.TASK_COMPLETED
+    task_status: Literal["success", "failure"]
+    failure: PublicFailureInfo | None = None
+
+
 class ProgressCallbackRequest(BaseModel):
     task_id: str
     progress: Annotated[
-        ProgressSetNumDocs | ProgressUpdateProcessed | ProgressDocumentCompleted,
+        ProgressSetNumDocs
+        | ProgressUpdateProcessed
+        | ProgressDocumentCompleted
+        | ProgressTaskCompleted,
         Field(discriminator="kind"),
     ]
 

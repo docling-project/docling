@@ -1,0 +1,51 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: chapter: group slide-0
+    item-2 at level 2: title: Text
+    item-3 at level 2: text: Lorem ipsum dolor sit amet, cons ... llus sit amet mauris tempus fringilla.
+    item-4 at level 2: text: Maecenas mauris lectus, lobortis ... uismod, sit amet ornare est vulputate.
+  item-5 at level 1: chapter: group slide-1
+    item-6 at level 2: title: Chart
+    item-7 at level 2: picture
+  item-8 at level 1: chapter: group slide-2
+    item-9 at level 2: title: Table
+    item-10 at level 2: table with [4x5]
+      item-11 at level 3: unspecified: group rich_cell_group_0_0_0
+        item-12 at level 4: text: Column 1
+      item-13 at level 3: unspecified: group rich_cell_group_0_1_0
+        item-14 at level 4: text: Column 2
+      item-15 at level 3: unspecified: group rich_cell_group_0_2_0
+        item-16 at level 4: text: Column 3
+      item-17 at level 3: unspecified: group rich_cell_group_0_3_0
+        item-18 at level 4: text: Column 4
+      item-19 at level 3: unspecified: group rich_cell_group_0_4_0
+        item-20 at level 4: text: Column 5
+      item-21 at level 3: unspecified: group rich_cell_group_0_0_1
+        item-22 at level 4: text: Row 1
+      item-23 at level 3: unspecified: group rich_cell_group_0_1_1
+        item-24 at level 4: text: Merged cells row 1-3, col 2-3
+      item-25 at level 3: unspecified: group rich_cell_group_0_0_2
+        item-26 at level 4: text: Row 2
+      item-27 at level 3: unspecified: group rich_cell_group_0_0_3
+        item-28 at level 4: text: Row 3
+  item-29 at level 1: chapter: group slide-3
+    item-30 at level 2: title: Photo
+    item-31 at level 2: picture
+  item-32 at level 1: chapter: group slide-4
+    item-33 at level 2: title: Complex list
+    item-34 at level 2: text: Hello
+    item-35 at level 2: list: group list
+      item-36 at level 3: list_item: List item 1
+      item-37 at level 3: list_item: List item 2
+        item-38 at level 4: list: group list
+          item-39 at level 5: list_item: Nested list item a
+            item-40 at level 6: list: group list
+              item-41 at level 7: list_item: Triple nested
+        item-42 at level 4: list: group list
+          item-43 at level 5: list_item: Nested list item b
+    item-44 at level 2: list: group list
+      item-45 at level 3: list_item: closing
+    item-46 at level 2: text: Next paragraph text
+  item-47 at level 1: chapter: group slide-5
+    item-48 at level 2: title: Table with pictures
+    item-49 at level 2: table with [1x1]
+    item-50 at level 2: picture

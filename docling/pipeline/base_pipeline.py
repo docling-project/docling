@@ -1,4 +1,8 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import functools
+import inspect
 import logging
 import time
 import traceback
@@ -7,7 +11,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-from docling_core.types.doc import NodeItem
+from docling_core.types.doc import ContentLayer, DocItem, DoclingDocument, NodeItem
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -17,12 +21,10 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     Page,
 )
-from docling.datamodel.chart_extraction_options import (
-    ChartExtractionModelKind,
-    ChartExtractionModelOptions,
-)
+from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
@@ -40,10 +42,6 @@ from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
-from docling.models.stages.chart_extraction.granite_vision import (
-    ChartExtractionModelGraniteVision,
-    ChartExtractionModelGraniteVisionV4,
-)
 from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
 )
@@ -51,6 +49,17 @@ from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
+
+
+def get_expected_page_nos(conv_res: ConversionResult) -> list[int]:
+    """The 1-based page numbers to convert, clipped to the requested page range."""
+    start_page, end_page = conv_res.input.limits.page_range
+    return list(
+        range(
+            max(1, start_page),
+            min(conv_res.input.page_count, end_page) + 1,
+        )
+    )
 
 
 class BasePipeline(ABC):
@@ -85,6 +94,17 @@ class BasePipeline(ABC):
         except Exception:
             _log.debug("Progress callback raised an exception", exc_info=True)
 
+    def _build_accepts_progress_callback(self) -> bool:
+        """Whether this pipeline's ``_build_document`` takes ``progress_callback``.
+
+        Pipelines written before progress events existed override
+        ``_build_document(self, conv_res)`` and must keep working.
+        """
+        params = inspect.signature(self._build_document).parameters
+        return "progress_callback" in params or any(
+            p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+        )
+
     def execute(
         self,
         in_doc: InputDocument,
@@ -112,9 +132,15 @@ class BasePipeline(ABC):
                 # These steps are building and assembling the structure of the
                 # output DoclingDocument.
                 _phase_event(ConversionPhase.BUILD, ProgressEventType.PHASE_START)
-                conv_res = self._build_document(
-                    conv_res, progress_callback=progress_callback
-                )
+                if (
+                    progress_callback is not None
+                    and self._build_accepts_progress_callback()
+                ):
+                    conv_res = self._build_document(
+                        conv_res, progress_callback=progress_callback
+                    )
+                else:
+                    conv_res = self._build_document(conv_res)
                 _phase_event(ConversionPhase.BUILD, ProgressEventType.PHASE_COMPLETE)
 
                 _phase_event(ConversionPhase.ASSEMBLE, ProgressEventType.PHASE_START)
@@ -127,6 +153,10 @@ class BasePipeline(ABC):
                 _phase_event(ConversionPhase.ENRICH, ProgressEventType.PHASE_COMPLETE)
 
                 conv_res.status = self._determine_status(conv_res)
+                # A document that completed but recorded errors is not a clean
+                # success: never report SUCCESS while conv_res.errors is non-empty.
+                if conv_res.status == ConversionStatus.SUCCESS and conv_res.errors:
+                    conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         except Exception as e:
             conv_res.status = ConversionStatus.FAILURE
             if not raises_on_error:
@@ -143,6 +173,44 @@ class BasePipeline(ABC):
 
         return conv_res
 
+    @staticmethod
+    def _concatenate_page_documents(
+        page_documents: list[tuple[int, DoclingDocument]],
+    ) -> DoclingDocument:
+        if not page_documents:
+            return DoclingDocument(name="")
+
+        document = DoclingDocument.concatenate(
+            docs=[page_document for _, page_document in page_documents]
+        )
+        page_no_map = {
+            current_page_no: requested_page_no
+            for current_page_no, (requested_page_no, _) in zip(
+                sorted(document.pages), page_documents
+            )
+        }
+        document.pages = {
+            page_no_map[page_no]: page_item
+            for page_no, page_item in document.pages.items()
+        }
+        for page_no, page_item in document.pages.items():
+            page_item.page_no = page_no
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
+            if isinstance(item, DocItem):
+                for provenance in item.prov:
+                    provenance.page_no = page_no_map[provenance.page_no]
+        return document
+
+    @staticmethod
+    def _release_page_resources(page: Page) -> None:
+        if page._backend is not None:
+            page._backend.unload()
+            page._backend = None
+        page._image_cache = {}
+        page.parsed_page = None
+
     @abstractmethod
     def _build_document(
         self,
@@ -155,6 +223,12 @@ class BasePipeline(ABC):
         return conv_res
 
     def _enrich_document(self, conv_res: ConversionResult) -> ConversionResult:
+        if any(
+            error.category == FailureCategory.TIMEOUT
+            for error in getattr(conv_res, "errors", ())
+        ):
+            return conv_res
+
         def _prepare_elements(
             conv_res: ConversionResult, model: GenericEnrichmentModel[Any]
         ) -> Iterable[NodeItem]:
@@ -231,28 +305,25 @@ class ConvertPipeline(BasePipeline):
             ),
             # Document Picture description
             picture_description_model,
-            # Document Chart Extraction
-            ChartExtractionModelGraniteVision(
-                enabled=(
-                    pipeline_options.do_chart_extraction
-                    and pipeline_options.chart_extraction_options.model
-                    == ChartExtractionModelKind.GRANITE_VISION
-                ),
-                artifacts_path=self.artifacts_path,
-                options=pipeline_options.chart_extraction_options,
-                accelerator_options=pipeline_options.accelerator_options,
-            ),
-            ChartExtractionModelGraniteVisionV4(
-                enabled=(
-                    pipeline_options.do_chart_extraction
-                    and pipeline_options.chart_extraction_options.model
-                    == ChartExtractionModelKind.GRANITE_VISION_V4
-                ),
-                artifacts_path=self.artifacts_path,
-                options=pipeline_options.chart_extraction_options,
-                accelerator_options=pipeline_options.accelerator_options,
-            ),
         ]
+
+        # Lazily import torch-backed chart extraction only when enabled so
+        # docling-slim / ONNX-only installs can import DocumentConverter without
+        # pulling torch+transformers.
+        if pipeline_options.do_chart_extraction:
+            from docling.models.stages.chart_extraction.granite_vision import (
+                ChartExtractionVlmEngineModel,
+            )
+
+            self.enrichment_pipe.append(
+                ChartExtractionVlmEngineModel(
+                    enabled=True,
+                    artifacts_path=self.artifacts_path,
+                    options=pipeline_options.chart_extraction_options,
+                    accelerator_options=pipeline_options.accelerator_options,
+                    enable_remote_services=pipeline_options.enable_remote_services,
+                )
+            )
 
     def _get_picture_description_model(
         self, artifacts_path: Optional[Path] = None
@@ -355,9 +426,20 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                         self.pipeline_options.document_timeout is not None
                         and total_elapsed_time > self.pipeline_options.document_timeout
                     ):
-                        _log.warning(
-                            f"Document processing time ({total_elapsed_time:.3f} seconds) exceeded the specified timeout of {self.pipeline_options.document_timeout:.3f} seconds"
+                        timeout_msg = (
+                            f"Document processing timeout: exceeded {self.pipeline_options.document_timeout:.3f}s limit "
+                            f"after {total_elapsed_time:.3f}s. Processed {total_pages_processed}/{len(conv_res.pages)} pages."
                         )
+                        _log.warning(timeout_msg)
+
+                        # Add structured timeout error
+                        timeout_error = ErrorItem(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name="base_pipeline",
+                            error_message=timeout_msg,
+                            category=FailureCategory.TIMEOUT,
+                        )
+                        conv_res.errors.append(timeout_error)
                         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
                         break
                     total_pages_processed += len(page_batch)
@@ -413,7 +495,9 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     ErrorItem(
                         component_type=DoclingComponentType.DOCUMENT_BACKEND,
                         module_name=type(page._backend).__name__,
-                        error_message=f"Page {page.page_no} failed to parse.",
+                        error_message="Page failed to parse.",
+                        category=FailureCategory.BACKEND_FAILURE,
+                        page_no=page.page_no,
                     )
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS

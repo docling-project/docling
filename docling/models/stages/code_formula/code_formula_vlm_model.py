@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Code and formula extraction stage using the new VLM runtime system.
 
 This module provides a runtime-agnostic code and formula extraction stage that can use
@@ -28,8 +31,10 @@ from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
     VlmEngineInput,
+    VlmEngineType,
     create_vlm_engine,
 )
+from docling.models.utils.generation_utils import TailRepetitionStopper
 
 _log = logging.getLogger(__name__)
 
@@ -87,6 +92,10 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         self.enabled = enabled
         self.options = options
         self.engine: Optional[BaseVlmEngine] = None
+        self.expansion_factor = options.expansion_factor
+        self._repetition_stopper: Optional[TailRepetitionStopper] = (
+            TailRepetitionStopper() if options.stop_on_repetition else None
+        )
 
         if self.enabled:
             # New runtime system path
@@ -250,6 +259,18 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             labels.append(el.item.label)
             images.append(el.image)
 
+        extra_generation_config: dict = {
+            "skip_special_tokens": False,  # Keep special tokens for post-processing
+        }
+        # API engines switch to streaming when given a stopper, so they only get
+        # the repeated tail removed from their output below.
+        if self._repetition_stopper is not None and not VlmEngineType.is_api_variant(
+            self.options.engine_options.engine_type
+        ):
+            extra_generation_config["custom_stopping_criteria"] = [
+                self._repetition_stopper
+            ]
+
         # Process batch through engine
         try:
             # Prepare batch of engine inputs
@@ -261,9 +282,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
                     prompt=self._get_prompt(label),
                     temperature=0.0,
                     max_new_tokens=2048,
-                    extra_generation_config={
-                        "skip_special_tokens": False,  # Keep special tokens for post-processing
-                    },
+                    extra_generation_config=extra_generation_config,
                 )
                 for image, label in zip(images, labels)
             ]
@@ -274,10 +293,14 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
 
         except Exception as e:
             _log.error(f"Error processing code/formula batch: {e}")
-            outputs = [""] * len(images)
+            # Keep the text the backend already extracted instead of erasing it.
+            yield from elements
+            return
 
         # Post-process outputs
         outputs = self._post_process(outputs)
+        if self._repetition_stopper is not None:
+            outputs = [self._repetition_stopper.strip(text) for text in outputs]
 
         # Update elements with extracted text
         for item, output_text in zip(elements, outputs):
@@ -294,4 +317,6 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             try:
                 self.engine.cleanup()
             except Exception as e:
-                _log.warning(f"Error cleaning up engine: {e}")
+                # _log may be None during interpreter shutdown
+                if _log is not None:
+                    _log.warning(f"Error cleaning up engine: {e}")

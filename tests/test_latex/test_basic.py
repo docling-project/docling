@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from io import BytesIO
 from pathlib import Path
 
@@ -6,7 +9,7 @@ from docling_core.types.doc import DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
 
@@ -14,7 +17,7 @@ from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
-LATEX_DATA_DIR = Path("./tests/data/latex/")
+LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
 
 
 def test_latex_basic_conversion():
@@ -204,12 +207,12 @@ def test_e2e_latex_conversions(latex_paths):
         else:
             gt_name = f"{latex_path.parent.name}_{latex_path.name}"
 
-        gt_path = LATEX_DATA_DIR.parent / "groundtruth" / "docling_v2" / gt_name
+        gt_path = LATEX_DATA_DIR.parent / "groundtruth" / gt_name
 
         conv_result: ConversionResult = converter.convert(latex_path)
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
             f"Markdown export mismatch for {latex_path}"
         )
@@ -322,6 +325,35 @@ def test_latex_input_cycle_detection(tmp_path):
     doc = backend.convert()
     md = doc.export_to_markdown()
     assert "A content" in md
+
+
+@pytest.mark.parametrize(
+    ("encoding", "inputenc"), [("utf-8", "utf8"), ("latin-1", "latin1")]
+)
+def test_latex_input_file_in_main_file_encoding(tmp_path, encoding, inputenc):
+    """An \\input file in the same encoding as the main file is kept."""
+    main_file = tmp_path / "main.tex"
+    main_file.write_text(
+        "\\documentclass{article}\n"
+        f"\\usepackage[{inputenc}]{{inputenc}}\n"
+        "\\begin{document}\n"
+        "Résumé of the thesis.\n\n"
+        "\\input{chapter}\n"
+        "\\end{document}\n",
+        encoding=encoding,
+    )
+    (tmp_path / "chapter.tex").write_text(
+        "\\section{Méthode}\nThe chapter body.\n", encoding=encoding
+    )
+
+    conv_result = get_latex_converter().convert(main_file)
+    md = conv_result.document.export_to_markdown()
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert conv_result.errors == []
+    assert "Résumé of the thesis." in md
+    assert "Méthode" in md
+    assert "The chapter body." in md
 
 
 def test_latex_author_date():

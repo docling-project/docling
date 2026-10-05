@@ -1,130 +1,138 @@
+/* ============================================================================
+   Docling brand palette
+   ----------------------------------------------------------------------------
+   All colors are derived from docs/assets/logo.svg. Both modes are driven
+   through Zensical / Material CSS custom properties so most of the theme
+   layout stays untouched.
 
-/* Dark mode styles - only apply when Material theme is in dark mode (slate scheme) */
-[data-md-color-scheme="slate"] .md-header {
-    background-color: #02030C !important;
+      --docling-orange  #FF4902  body gradient end-stop (vivid orange-red)
+      --docling-amber   #FFB02C  body gradient start-stop (warm amber)
+      --docling-yellow  #FFD55F  beak / feet
+      --docling-burnt   #C74406  beak stitching detail
+      --docling-cream   #E9DBBD  warm belly highlight / off-white
+   ============================================================================ */
+
+:root {
+  --docling-orange: #ff4902;
+  --docling-amber:  #ffb02c;
+  --docling-yellow: #ffd55f;
+  --docling-burnt:  #c74406;
+  --docling-cream:  #e9dbbd;
+}
+
+/* ----------------------------------------------------------------------------
+   Light mode — crisp white background, burnt orange primary for AA contrast.
+   ---------------------------------------------------------------------------- */
+[data-md-color-scheme="default"] {
+  /* Primary surface (header, tabs) */
+  --md-primary-fg-color:             var(--docling-burnt);
+  --md-primary-fg-color--light:      var(--docling-orange);
+  --md-primary-fg-color--dark:       #8e2f03;
+  --md-primary-bg-color:             #ffffff;
+  --md-primary-bg-color--light:      rgba(255, 255, 255, 0.7);
+
+  /* Accent (focus, sliders, selection, code highlight) */
+  --md-accent-fg-color:              var(--docling-amber);
+  --md-accent-fg-color--transparent: rgba(255, 176, 44, 0.12);
+  --md-accent-bg-color:              #ffffff;
+  --md-accent-bg-color--light:       rgba(255, 255, 255, 0.7);
+
+  /* Body */
+  --md-default-bg-color:             #ffffff;
+  --md-default-fg-color:             #1a1208;
+  --md-default-fg-color--light:      rgba(26, 18, 8, 0.7);
+  --md-default-fg-color--lighter:    rgba(26, 18, 8, 0.3);
+  --md-default-fg-color--lightest:   rgba(26, 18, 8, 0.07);
+
+  /* Links */
+  --md-typeset-a-color:              var(--docling-burnt);
+
+  /* Code */
+  --md-code-bg-color:                #fff5e6;
+  --md-code-fg-color:                #1a1208;
+
+  /* Footer (Material gives footer its own variables, default is dark) */
+  --md-footer-bg-color:              #1a1208;
+  --md-footer-bg-color--dark:        #0f0904;
+  --md-footer-fg-color:              var(--docling-cream);
+  --md-footer-fg-color--light:       rgba(233, 219, 189, 0.7);
+  --md-footer-fg-color--lighter:     rgba(233, 219, 189, 0.4);
+}
+
+/* ----------------------------------------------------------------------------
+   Dark mode — warm near-black, amber primary so the brand reads as a true
+   accent rather than a giant bar of color.
+   ---------------------------------------------------------------------------- */
+[data-md-color-scheme="slate"] {
+  /* Primary surface — kept dark and warm so it blends with the body. */
+  --md-primary-fg-color:             #15100a;
+  --md-primary-fg-color--light:      #1f1810;
+  --md-primary-fg-color--dark:       #0e0a06;
+  --md-primary-bg-color:             var(--docling-cream);
+  --md-primary-bg-color--light:      rgba(233, 219, 189, 0.7);
+
+  /* Accent */
+  --md-accent-fg-color:              var(--docling-yellow);
+  --md-accent-fg-color--transparent: rgba(255, 213, 95, 0.12);
+  --md-accent-bg-color:              #15100a;
+  --md-accent-bg-color--light:       rgba(21, 16, 10, 0.7);
+
+  /* Body */
+  --md-default-bg-color:             #15100a;
+  --md-default-fg-color:             var(--docling-cream);
+  --md-default-fg-color--light:      rgba(233, 219, 189, 0.75);
+  --md-default-fg-color--lighter:    rgba(233, 219, 189, 0.4);
+  --md-default-fg-color--lightest:   rgba(233, 219, 189, 0.12);
+
+  /* Links — amber on warm dark ≈ 10:1 contrast */
+  --md-typeset-a-color:              var(--docling-amber);
+
+  /* Code */
+  --md-code-bg-color:                #1f1810;
+  --md-code-fg-color:                var(--docling-cream);
+
+  /* Footer matches body — header/footer should feel continuous in dark. */
+  --md-footer-bg-color:              #15100a;
+  --md-footer-bg-color--dark:        #0e0a06;
+  --md-footer-fg-color:              var(--docling-cream);
+  --md-footer-fg-color--light:       rgba(233, 219, 189, 0.7);
+  --md-footer-fg-color--lighter:     rgba(233, 219, 189, 0.4);
+}
+
+/* ----------------------------------------------------------------------------
+   Targeted overrides that don't follow purely from the variables above.
+   Keep this list minimal — only add a rule here if Zensical hard-codes a
+   color it shouldn't.
+   ---------------------------------------------------------------------------- */
+
+/* Search input contrast — slightly raised surface so the field is visible
+   against the body in both modes. */
+[data-md-color-scheme="default"] .md-search__input {
+  background-color: #fff5e6;
+}
+[data-md-color-scheme="default"] .md-search__input::placeholder {
+  color: rgba(26, 18, 8, 0.5);
 }
 [data-md-color-scheme="slate"] .md-search__input {
-    background-color: rgba(22, 18, 48, 0.40) !important;
-    color: rgba(233, 219, 189, 0.90) !important;
+  background-color: #241b12;
 }
 [data-md-color-scheme="slate"] .md-search__input::placeholder {
-    color: rgba(233, 219, 189, 0.60) !important; 
-    opacity: 1;
-}
-[data-md-color-scheme="slate"] .md-tabs {
-    background-color: #02030C !important;
-}
-[data-md-color-scheme="slate"] .md-ellipsis{
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-[data-md-color-scheme="slate"] .md-footer {
-    background-color: #02030C !important;
-}
-[data-md-color-scheme="slate"] .md-footer-meta{
-    background-color: #02030C !important;
-}
-/* General Markdown background and text colors */
-[data-md-color-scheme="slate"] body {
-    background-color: #02030C !important;
-    color: rgba(233, 219, 189, 0.90) !important;
-    font-family: 'Arial', sans-serif;
+  color: rgba(233, 219, 189, 0.55);
 }
 
-/* Main content area background */
-[data-md-color-scheme="slate"] .md-main {
-    background-color: #02030C !important;
+/* Tables — give the header row a subtle warm tint in both modes so it reads
+   as a header rather than blending into the body. */
+[data-md-color-scheme="default"] .md-typeset table:not([class]) th {
+  background-color: #fff5e6;
+}
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  background-color: #241b12;
 }
 
-[data-md-color-scheme="slate"] .md-content {
-    background-color: #02030C !important;
+/* Blockquote — warm accent stripe instead of generic grey. */
+[data-md-color-scheme="default"] .md-typeset blockquote {
+  border-left-color: var(--docling-burnt);
 }
-
-[data-md-color-scheme="slate"] .md-content__inner {
-    background-color: #02030C !important;
-}
-
-[data-md-color-scheme="slate"] .md-typeset {
-    background-color: #02030C !important;
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-
-/* Headings */
-[data-md-color-scheme="slate"] h1, 
-[data-md-color-scheme="slate"] h2, 
-[data-md-color-scheme="slate"] h3, 
-[data-md-color-scheme="slate"] h4, 
-[data-md-color-scheme="slate"] h5, 
-[data-md-color-scheme="slate"] h6 {
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-
-/* Links */
-[data-md-color-scheme="slate"] a {
-    color: rgba(88, 166, 255, 0.90) !important;
-}
-[data-md-color-scheme="slate"] a:hover {
-    color: rgba(121, 192, 255, 0.90) !important;
-}
-
-/* Code blocks */
-[data-md-color-scheme="slate"] pre, 
-[data-md-color-scheme="slate"] code {
-    background-color: rgba(22, 18, 48, 0.40) !important;
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-
-/* Blockquotes */
-[data-md-color-scheme="slate"] blockquote {
-    border-left: 4px solid rgba(233, 219, 189, 0.90);
-    background-color: #02030C !important;
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-
-/* Tables */
-[data-md-color-scheme="slate"] table {
-    background-color: rgba(22, 18, 48, 0.40) !important;
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-[data-md-color-scheme="slate"] th, 
-[data-md-color-scheme="slate"] td {
-    background-color: rgba(22, 18, 48, 0.40) !important;
-    color: rgba(233, 219, 189, 0.90) !important;
-    border: 1px solid rgba(210, 198, 172, 0.08) !important; 
-}
-/* Horizontal rules */
-[data-md-color-scheme="slate"] hr {
-    background-color: rgba(22, 18, 48, 0.40) !important;
-}
-[data-md-color-scheme="slate"] .md-search__icon.md-icon {
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-
-[data-md-color-scheme="slate"] .md-search__icon.md-icon:hover {
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-[data-md-color-scheme="slate"] .card {
-    background-color: rgba(22, 18, 48, 0.40) !important;
-    border: 1px solid rgba(210, 198, 172, 0.08) !important; 
-}
-
-[data-md-color-scheme="slate"] details {
-    border: 1.65px solid rgba(210, 198, 172, 0.08) !important; 
-    background-color: rgba(22, 18, 48, 0.40) !important;
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-[data-md-color-scheme="slate"] summary {
-    background-color: rgba(22, 18, 48, 0.40) !important;
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-[data-md-color-scheme="slate"] .md-header__button {
-    color: rgba(233, 219, 189, 0.90) !important;
-}
-[data-md-color-scheme="slate"] .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
-    background: none !important;
-    box-shadow: none !important;
-}
-[data-md-color-scheme="slate"] .md-nav--secondary .md-nav__title {
-    background: #02030C !important; 
-    box-shadow: none !important;
-    color: rgba(233, 219, 189, 0.90) !important;
+[data-md-color-scheme="slate"] .md-typeset blockquote {
+  border-left-color: var(--docling-amber);
 }

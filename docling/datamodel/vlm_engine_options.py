@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Engine options for VLM inference.
 
 This module defines engine-specific configuration options that are independent
@@ -8,7 +11,7 @@ import logging
 from enum import Enum
 from typing import Any, Dict, Literal, Optional
 
-from pydantic import AnyUrl, Field
+from pydantic import AnyUrl, Field, model_validator
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.settings import default_compile_model
@@ -205,9 +208,7 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
     - OpenAI
     """
 
-    engine_type: VlmEngineType = Field(
-        default=VlmEngineType.API, description="API variant to use"
-    )
+    engine_type: VlmEngineType = Field(description="API variant to use")
 
     url: AnyUrl = Field(
         default=AnyUrl("http://localhost:11434/v1/chat/completions"),
@@ -227,15 +228,20 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
 
     concurrency: int = Field(default=1, description="Number of concurrent requests")
 
-    def __init__(self, **data):
-        """Initialize with default URLs based on engine type."""
-        if "engine_type" in data and "url" not in data:
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_defaults(cls, data: Any) -> Any:
+        """Supply default engine_type and URL when not explicitly provided."""
+        if not isinstance(data, dict):
+            return data
+        if "engine_type" not in data:
+            data = {**data, "engine_type": VlmEngineType.API}
+        if "url" not in data:
             engine_type = data["engine_type"]
             if engine_type == VlmEngineType.API_OLLAMA:
-                data["url"] = "http://localhost:11434/v1/chat/completions"
+                data = {**data, "url": "http://localhost:11434/v1/chat/completions"}
             elif engine_type == VlmEngineType.API_LMSTUDIO:
-                data["url"] = "http://localhost:1234/v1/chat/completions"
+                data = {**data, "url": "http://localhost:1234/v1/chat/completions"}
             elif engine_type == VlmEngineType.API_OPENAI:
-                data["url"] = "https://api.openai.com/v1/chat/completions"
-
-        super().__init__(**data)
+                data = {**data, "url": "https://api.openai.com/v1/chat/completions"}
+        return data

@@ -18,16 +18,33 @@ The latest versions of Docling are supported.
 
 ### Analysis
 
-- Use of [Ruff](https://docs.astral.sh/ruff/), [Mypy](https://mypy.readthedocs.io/) and [Pytest](https://docs.pytest.org/en/7.2.x/) for Python code linting (static and dynamic analysers) on pull requests and builds
+- Use of [Ruff](https://docs.astral.sh/ruff/), [ty](https://docs.astral.sh/ty/) and [Pytest](https://docs.pytest.org/en/7.2.x/) for Python code linting (static and dynamic analysers) on pull requests and builds
 - Use of GitHub Issues for bug reporting and tracking
 
 ## Reporting a Vulnerability
 
-If you think you've identified a security issue in an Docling project repository, please DO NOT report the issue publicly via the GitHub issue tracker, etc.
+If you think you've identified a security issue in a Docling project repository, please DO NOT report the issue publicly via the GitHub issue tracker, discussions, or any other public forum.
 
-Instead, send an email with as many details as possible to [deepsearch-core@zurich.ibm.com](mailto:deepsearch-core@zurich.ibm.com). This is a private mailing list for the maintainers team.
+### Preferred Method: GitHub Private Vulnerability Reporting
 
-Please do not create a public issue.
+**We strongly encourage you to use GitHub's Private Vulnerability Reporting feature**, which provides a secure and streamlined process for disclosing security issues:
+
+1. Navigate to the [Security tab](https://github.com/docling-project/docling/security) of the Docling repository
+2. Click on "Report a vulnerability"
+3. Fill out the vulnerability report form with as many details as possible
+4. Submit the report
+
+This method allows for:
+- **Secure communication** directly with the maintainers team
+- **Coordinated disclosure** through GitHub's built-in workflow
+- **Automatic tracking** of the vulnerability lifecycle
+- **Credit attribution** when the vulnerability is published
+
+### Alternative Method: Email Disclosure
+
+Alternatively, you can send an email with as many details as possible to [deepsearch-core@zurich.ibm.com](mailto:deepsearch-core@zurich.ibm.com). This is a private mailing list for the maintainers team.
+
+**Important:** Please do not create a public issue or discuss the vulnerability in any public channel until it has been addressed.
 
 ### Security Vulnerability Response
 

@@ -1,0 +1,415 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+"""Reader for the object graph of a Numbers 3+ (2013 onwards) document.
+
+The route through the graph is short: ``TN.DocumentArchive`` lists the sheets,
+each ``TN.SheetArchive`` lists what is drawn on it, and every drawable is a
+table, a chart or a sticky note. Tables themselves are the same ``TST`` archives
+Pages embeds, so :mod:`docling.backend.iwork.tables` reads them; what is added
+here is everything around them — the sheets, the frames that position them, and
+the values a spreadsheet cell holds that a Pages cell never does.
+
+Only the message and field numbers are format knowledge; the container layer
+lives in :mod:`docling.backend.iwork.iwa`.
+"""
+
+import logging
+import struct
+import zipfile
+from datetime import datetime
+
+from docling.backend.iwork import archives, cells
+from docling.backend.iwork.archives import drawable_geometry, read_objects
+from docling.backend.iwork.charts import TSCH_CHART_DRAWABLE, iwa_chart
+from docling.backend.iwork.content import Geometry
+from docling.backend.iwork.iwa import IWAObject
+from docling.backend.iwork.numbers_content import (
+    MAX_TABLE_CELLS,
+    Cell,
+    Comment,
+    PlacedChart,
+    Sheet,
+    Table,
+    format_bool,
+    format_date,
+    format_duration,
+    format_number,
+    moment,
+    sheet_order,
+)
+from docling.exceptions import DocumentLoadError
+
+_log = logging.getLogger(__name__)
+
+NUMBERS_KIND = "Numbers"
+"""What Numbers calls its documents, for the error messages of a shared reader."""
+
+TN_DOCUMENT_ARCHIVE = 1
+"""Message type of ``TN.DocumentArchive``, the root of a Numbers document."""
+
+TN_SHEET_ARCHIVE = 2
+"""Message type of ``TN.SheetArchive``, one tab of the document."""
+
+
+TN_COMMENT_INFO = 2014
+"""Message type of the archive placing a comment on a sheet.
+
+Numbers calls these sticky notes. A comment anchored to a cell is stored in a
+list beside the table instead, and is not read.
+"""
+
+TSK_ANNOTATION = 3056
+"""Message type of the annotation a comment archive points at."""
+
+TSK_AUTHOR = 212
+"""Message type of the author archive an annotation is attributed to."""
+
+DOCUMENT_SHEETS_FIELD = 1
+"""Field of ``TN.DocumentArchive`` listing its sheets."""
+
+SHEET_NAME_FIELD = 1
+
+SHEET_DRAWABLES_FIELD = 2
+"""Fields of ``TN.SheetArchive``: its name, and what is drawn on it."""
+
+INFO_SUPER_FIELD = 1
+
+INFO_MODEL_FIELD = 2
+"""Fields of ``TST.TableInfoArchive``: its drawable super, and its table."""
+
+TABLE_NAME_FIELD = 8
+
+TABLE_HEADER_COLS_FIELD = 10
+"""Fields of ``TST.TableModelArchive`` a Pages table has no use for.
+
+Numbers names every table and can freeze columns as well as rows, so both are
+read here rather than in the shared table layer.
+"""
+
+DRAWABLE_GEOMETRY_FIELD = 1
+
+GEOMETRY_POSITION_FIELD = 1
+
+GEOMETRY_SIZE_FIELD = 2
+
+POINT_X_FIELD = 1
+
+POINT_Y_FIELD = 2
+"""Fields leading from a drawable to where it sits on the sheet, in points."""
+
+COMMENT_ANNOTATION_FIELD = 2
+
+ANNOTATION_TEXT_FIELD = 1
+
+ANNOTATION_TIME_FIELD = 2
+
+ANNOTATION_AUTHOR_FIELD = 3
+
+AUTHOR_NAME_FIELD = 1
+"""Fields leading from a comment archive to its text, date and author."""
+
+
+def read_content(
+    archive: zipfile.ZipFile,
+    infos: list[zipfile.ZipInfo],
+    max_file_bytes: int,
+    document_hash: str,
+) -> list[Sheet]:
+    """Read the sheets of a Numbers 3+ document out of its IWA object graph.
+
+    Args:
+        archive: The open ``.numbers`` container.
+        infos: Its members.
+        max_file_bytes: The largest member this is willing to decompress.
+        document_hash: The document's hash, for error messages.
+
+    Returns:
+        The document's sheets, in document order.
+
+    Raises:
+        DocumentLoadError: If a member is too large, or the object graph has no
+            document archive.
+    """
+    objects = read_objects(archive, infos, max_file_bytes, NUMBERS_KIND)
+
+    document = next(
+        (o for o in objects.values() if o.message_type == TN_DOCUMENT_ARCHIVE), None
+    )
+    if document is None:
+        raise DocumentLoadError(
+            f"Numbers document with hash {document_hash} has no "
+            "TN.DocumentArchive; the container may be corrupt or "
+            "password-protected."
+        )
+
+    sheets: list[Sheet] = []
+    for reference in archives.safe_fields(document.payload).get(
+        DOCUMENT_SHEETS_FIELD, []
+    ):
+        sheet = resolve(reference, objects, TN_SHEET_ARCHIVE)
+        if sheet is not None:
+            sheets.append(read_sheet(sheet, objects))
+    return sheets
+
+
+def read_sheet(sheet: IWAObject, objects: dict[int, IWAObject]) -> Sheet:
+    """Read one sheet's name and the tables, charts and notes drawn on it."""
+    fields = archives.safe_fields(sheet.payload)
+
+    sheet_tables: list[Table] = []
+    charts: list[PlacedChart] = []
+    comments: list[Comment] = []
+    for reference in fields.get(SHEET_DRAWABLES_FIELD, []):
+        drawable = dereference(reference, objects)
+        if drawable is None:
+            continue
+        if drawable.message_type == archives.TST_TABULAR_INFO:
+            table = read_table(drawable, objects)
+            if table is not None:
+                sheet_tables.append(table)
+        elif drawable.message_type == TSCH_CHART_DRAWABLE:
+            chart = read_chart(drawable, objects)
+            if chart is not None:
+                charts.append(chart)
+        elif drawable.message_type == TN_COMMENT_INFO:
+            comment = read_comment(drawable, objects)
+            if comment is not None:
+                comments.append(comment)
+
+    sheet_tables.sort(key=sheet_order)
+    charts.sort(key=sheet_order)
+    comments.sort(key=sheet_order)
+    return Sheet(
+        name=text_of(fields.get(SHEET_NAME_FIELD, [None])[0]) or "",
+        tables=sheet_tables,
+        charts=charts,
+        comments=comments,
+    )
+
+
+def read_table(info: IWAObject, objects: dict[int, IWAObject]) -> Table | None:
+    """Build one table from the archive placing it on its sheet.
+
+    Args:
+        info: The ``TST.TableInfoArchive`` for this table.
+        objects: Every object in the document, keyed by identifier.
+
+    Returns:
+        The table, or None when it does not resolve to a readable model.
+    """
+    info_fields = archives.safe_fields(info.payload)
+    model = resolve(
+        info_fields.get(INFO_MODEL_FIELD, [None])[0], objects, archives.TST_TABLE_MODEL
+    )
+    if model is None:
+        return None
+
+    fields = archives.safe_fields(model.payload)
+    num_rows = fields.get(archives.TABLE_ROWS_FIELD, [None])[0]
+    num_cols = fields.get(archives.TABLE_COLS_FIELD, [None])[0]
+    if not isinstance(num_rows, int) or not isinstance(num_cols, int):
+        return None
+    if num_rows <= 0 or num_cols <= 0:
+        return None
+    if num_rows * num_cols > MAX_TABLE_CELLS:
+        _log.warning(
+            "Skipping a Numbers table declaring %d rows by %d columns.",
+            num_rows,
+            num_cols,
+        )
+        return None
+
+    store_raw = fields.get(archives.TABLE_DATA_STORE_FIELD, [None])[0]
+    store = archives.safe_fields(store_raw) if isinstance(store_raw, bytes) else {}
+    values = archives.iwa_cell_values(store, objects)
+
+    return Table(
+        name=text_of(fields.get(TABLE_NAME_FIELD, [None])[0]) or "",
+        num_rows=num_rows,
+        num_cols=num_cols,
+        header_rows=count(fields.get(archives.TABLE_HEADER_ROWS_FIELD, [None])[0]),
+        header_cols=count(fields.get(TABLE_HEADER_COLS_FIELD, [None])[0]),
+        cells=read_cells(store, objects, values, num_rows, num_cols),
+        geometry=drawable_frame(info_fields.get(INFO_SUPER_FIELD, [None])[0]),
+    )
+
+
+def read_cells(
+    store: dict[int, list[int | bytes]],
+    objects: dict[int, IWAObject],
+    values: cells.CellValues,
+    num_rows: int,
+    num_cols: int,
+) -> list[Cell]:
+    """Read every cell of a table that holds something, in tile order.
+
+    Args:
+        store: The table's decoded data store.
+        objects: Every object in the document, keyed by identifier.
+        values: The table's shared value lists.
+        num_rows: How many rows the table declares.
+        num_cols: How many columns the table declares.
+
+    Returns:
+        The cells that hold something, rendered to text.
+    """
+    placed_cells: list[Cell] = []
+    for placed in archives.iwa_placements(store, objects):
+        if placed.row >= num_rows or placed.col >= num_cols:
+            continue
+        rendered = render(cells.iwa_cell(placed.storage, placed.start, values))
+        if rendered:
+            placed_cells.append(Cell(row=placed.row, col=placed.col, text=rendered))
+    return placed_cells
+
+
+def render(decoded: cells.Cell | None) -> str | None:
+    """Turn a decoded cell into the text the spreadsheet shows in it.
+
+    Args:
+        decoded: The cell as the table layer read it.
+
+    Returns:
+        The text, or None for an empty cell or a value type this reader has not
+        been shown how to render.
+    """
+    if decoded is None or decoded.type == cells.CELL_TYPE_EMPTY:
+        return None
+    if decoded.type in (cells.CELL_TYPE_TEXT, cells.CELL_TYPE_RICH_TEXT):
+        return decoded.text
+    if decoded.number is None:
+        return None
+    if decoded.type in (cells.CELL_TYPE_NUMBER, cells.CELL_TYPE_CURRENCY):
+        return format_number(decoded.number)
+    if decoded.type == cells.CELL_TYPE_DATE:
+        return format_date(float(decoded.number))
+    if decoded.type == cells.CELL_TYPE_DURATION:
+        return format_duration(float(decoded.number))
+    if decoded.type == cells.CELL_TYPE_BOOL:
+        return format_bool(float(decoded.number))
+    return None
+
+
+def read_chart(
+    drawable: IWAObject, objects: dict[int, IWAObject]
+) -> PlacedChart | None:
+    """Read one chart on a sheet, and where it sits.
+
+    The chart itself is read by :func:`~docling.backend.iwork.charts.iwa_chart`,
+    which every iWork app shares: a chart on a Numbers sheet and one on a Keynote
+    slide are the same archives, down to the kind of chart and the data it was
+    last drawn from.
+
+    Args:
+        drawable: The archive placing the chart on its sheet.
+        objects: Every object in the document, keyed by identifier.
+
+    Returns:
+        The chart and its frame, or None when it carries nothing to plot.
+    """
+    chart = iwa_chart(drawable, objects)
+    if chart is None:
+        return None
+    return PlacedChart(
+        chart=chart,
+        geometry=drawable_frame(
+            archives.safe_fields(drawable.payload).get(INFO_SUPER_FIELD, [None])[0]
+        ),
+    )
+
+
+def read_comment(info: IWAObject, objects: dict[int, IWAObject]) -> Comment | None:
+    """Read one sticky note: its text, and who left it when.
+
+    Args:
+        info: The archive placing the comment on its sheet.
+        objects: Every object in the document, keyed by identifier.
+
+    Returns:
+        The comment, or None when it has no text.
+    """
+    fields = archives.safe_fields(info.payload)
+    annotation = resolve(
+        fields.get(COMMENT_ANNOTATION_FIELD, [None])[0], objects, TSK_ANNOTATION
+    )
+    if annotation is None:
+        return None
+
+    parsed = archives.safe_fields(annotation.payload)
+    text = (text_of(parsed.get(ANNOTATION_TEXT_FIELD, [None])[0]) or "").strip()
+    if not text:
+        return None
+
+    author = resolve(
+        parsed.get(ANNOTATION_AUTHOR_FIELD, [None])[0], objects, TSK_AUTHOR
+    )
+    name = (
+        text_of(archives.safe_fields(author.payload).get(AUTHOR_NAME_FIELD, [None])[0])
+        if author is not None
+        else None
+    )
+
+    return Comment(
+        text=text,
+        author=name or "",
+        timestamp=timestamp(parsed.get(ANNOTATION_TIME_FIELD, [None])[0]),
+        geometry=drawable_frame(fields.get(INFO_SUPER_FIELD, [None])[0]),
+    )
+
+
+def timestamp(raw: int | bytes | None) -> datetime | None:
+    """Read a ``TSP.Date``, which counts seconds from the Apple epoch."""
+    if not isinstance(raw, bytes):
+        return None
+    seconds = archives.safe_fields(raw).get(1, [None])[0]
+    value = read_fixed64(seconds) if isinstance(seconds, bytes) else None
+    return None if value is None else moment(value)
+
+
+def read_fixed64(raw: bytes) -> float | None:
+    """Decode one 64-bit protobuf float, as a chart point and a date store one."""
+    if len(raw) != 8:
+        return None
+    return float(struct.unpack("<d", raw)[0])
+
+
+def drawable_frame(super_raw: int | bytes | None) -> Geometry | None:
+    """Read where a drawable sits on its sheet, in points from the top left."""
+    if not isinstance(super_raw, bytes):
+        return None
+    return drawable_geometry(super_raw)
+
+
+def dereference(
+    reference: int | bytes | None, objects: dict[int, IWAObject]
+) -> IWAObject | None:
+    """Follow a ``TSP.Reference`` to whatever archive it lands on."""
+    if not isinstance(reference, bytes):
+        return None
+    target = archives.iwa_reference_field(
+        b"\x0a" + bytes([len(reference)]) + reference, 1
+    )
+    return objects.get(target) if target is not None else None
+
+
+def resolve(
+    reference: int | bytes | None,
+    objects: dict[int, IWAObject],
+    message_type: int,
+) -> IWAObject | None:
+    """Follow a ``TSP.Reference``, checking it lands on the expected archive."""
+    obj = dereference(reference, objects)
+    return obj if obj is not None and obj.message_type == message_type else None
+
+
+def text_of(raw: int | bytes | None) -> str | None:
+    """Decode a UTF-8 string field, tolerating one that is not a string."""
+    if not isinstance(raw, bytes):
+        return None
+    return raw.decode("utf-8", errors="replace")
+
+
+def count(raw: int | bytes | None) -> int:
+    """Read a non-negative count field, treating anything else as zero."""
+    return raw if isinstance(raw, int) and raw >= 0 else 0

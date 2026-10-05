@@ -1,0 +1,662 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD with MathML3 v1.3 20210610//EN" "JATS-journalpublishing1-3-mathml3.dtd">
+<article xml:lang="en" article-type="research-article" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink">
+<front>
+<journal-meta>
+<journal-id journal-id-type="publisher-id">ptep</journal-id>
+<journal-title-group>
+<journal-title>Progress of Theoretical and Experimental Physics</journal-title>
+<abbrev-journal-title abbrev-type="pubmed">Prog. Theor. Exp. Phys.</abbrev-journal-title>
+<abbrev-journal-title abbrev-type="publisher">PTEPHY</abbrev-journal-title>
+</journal-title-group>
+<issn pub-type="epub">2050-3911</issn>
+<publisher>
+<publisher-name>Oxford University Press</publisher-name>
+</publisher>
+</journal-meta>
+<article-meta>
+<article-id pub-id-type="doi">10.1093/ptep/ptag100</article-id>
+<article-id pub-id-type="publisher-id">ptag100</article-id>
+<article-categories>
+<subj-group subj-group-type="category-toc-heading">
+<subject>Paper</subject>
+<subj-group subj-group-type="category-toc-heading">
+<subject>General and Mathematical Physics</subject>
+</subj-group>
+</subj-group>
+<subj-group subj-group-type="category-taxonomy-collection">
+<subject>PTEP/A12</subject>
+<subject>PTEP/A60</subject>
+<subject>PTEP/B87</subject>
+</subj-group>
+<subj-group subj-group-type="category-taxonomy-collection">
+<subject>AcademicSubjects/SCI01970</subject>
+</subj-group>
+</article-categories>
+<title-group>
+<article-title>Time-Dependent 3D Oscillator with Coulomb Interaction: An Alternative Approach for Analyzing Quark&#x2013;Antiquark Systems</article-title>
+</title-group>
+<contrib-group>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-4416-4408</contrib-id>
+<name><surname>Choi</surname> <given-names>Jeong Ryeol</given-names></name>
+<aff><institution-wrap><institution-id institution-id-type="ror">https://ror.org/032xf8h46</institution-id><institution>School of Electronic Engineering, Kyonggi University</institution></institution-wrap>, <addr-line>Yeongtong-gu, Suwon, Gyeonggi-do 16227</addr-line>, <country country="KR">Republic of Korea</country></aff>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0003-4896-9470</contrib-id>
+<name><surname>Medjber</surname> <given-names>Salim</given-names></name>
+<aff><institution-wrap><institution-id institution-id-type="ror">https://ror.org/055rz8d64</institution-id><institution>Laboratory of Physical and Chemistry Materials, Faculty of Science, University of M&#x2019;sila</institution></institution-wrap>, <addr-line>University Campus, Road Bourdj Bou Arreiridj, M&#x2019;sila 28000</addr-line>, <country country="DZ">Algeria</country></aff>
+</contrib>
+<contrib contrib-type="author" corresp="yes">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0003-1298-9226</contrib-id>
+<name><surname>Menouar</surname> <given-names>Salah</given-names></name>
+<email xlink:type="simple">menouar_salah@yahoo.fr</email>
+<aff><institution-wrap><institution-id institution-id-type="ror">https://ror.org/02rzqza52</institution-id><institution>Laboratory of Optoelectronics and Compounds (LOC), Department of Physics, Faculty of Science, Setif 1 University-Ferhat Abbas</institution></institution-wrap>, <addr-line>Setif 19000</addr-line>, <country country="DZ">Algeria</country></aff>
+<xref ref-type="corresp" rid="cor1"/>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0001-6207-8098</contrib-id>
+<name><surname>Sever</surname> <given-names>Ramazan</given-names></name>
+<aff>Department of Physics, <institution-wrap><institution-id institution-id-type="ror">https://ror.org/014weej12</institution-id><institution>Middle East Technical University</institution></institution-wrap>, <addr-line>Ankara 06531</addr-line>, <country country="TR">Turkey</country></aff>
+</contrib>
+</contrib-group>
+<author-notes>
+<corresp id="cor1"><email xlink:type="simple">menouar_salah@yahoo.fr</email></corresp>
+</author-notes>
+<pub-date pub-type="cover"><month>July</month><year>2026</year></pub-date>
+<pub-date pub-type="collection" iso-8601-date="2026-07-04"><day>04</day><month>07</month><year>2026</year></pub-date>
+<pub-date pub-type="epub" iso-8601-date="2026-05-30"><day>30</day><month>05</month><year>2026</year></pub-date>
+<volume>2026</volume>
+<issue>7</issue>
+<elocation-id>073A01</elocation-id>
+<history>
+<date date-type="received"><day>10</day><month>10</month><year>2025</year></date>
+<date date-type="rev-recd"><day>14</day><month>05</month><year>2026</year></date>
+<date date-type="accepted"><day>19</day><month>05</month><year>2026</year></date>
+<date date-type="corrected-typeset"><day>06</day><month>07</month><year>2026</year></date>
+</history>
+<permissions>
+<copyright-statement>&#x00A9; The Author(s) 2026. Published by Oxford University Press on behalf of the Physical Society of Japan.</copyright-statement>
+<copyright-year>2026</copyright-year>
+<license license-type="cc-by" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+<license-p>This is an Open Access article distributed under the terms of the Creative Commons Attribution License (<ext-link ext-link-type="uri" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://creativecommons.org/licenses/by/4.0/">https://creativecommons.org/licenses/by/4.0/</ext-link>), which permits unrestricted reuse, distribution, and reproduction in any medium, provided the original work is properly cited.</license-p>
+<license-p>Funded by SCOAP<sup>3</sup></license-p>
+</license>
+</permissions>
+<self-uri xlink:href="ptag100.pdf"/>
+<abstract abstract-type="abstract"><title>Abstract</title>
+<p>In this work, the dynamics of quark&#x2013;antiquark pair systems is investigated by modeling them as general time-dependent 3D oscillators perturbed by a Coulomb potential. Solving this model enables the prediction of key mesonic properties such as the probability density, energy spectra, and quadrature uncertainties, offering theoretical insights into the confinement of quarks via gluon-mediated strong interactions. To tackle the mathematical difficulty raised by the time dependence of parameters in the system, special mathematical techniques, such as the invariant operator method, unitary transformation method, and the Nikiforov&#x2013;Uvarov functional analysis are used. The wave functions of the system, derived using these mathematical techniques, are expressed analytically in terms of the Gauss hypergeometric function whose mathematical properties are well characterized. Our results provide the quantum-mechanical framework of quark&#x2013;antiquark systems that are essential for exploring the nonperturbative aspects of quantum chromodynamics. In addition, the underlying mathematical structure may serve as a foundation for addressing broader challenges in particle physics, including the origin of mass and its connection to the Higgs mechanism.</p>
+</abstract>
+<funding-group>
+<award-group award-type="grant">
+<funding-source>
+<institution-wrap>
+<institution>SCOAP</institution>
+</institution-wrap>
+</funding-source>
+</award-group>
+</funding-group>
+<counts>
+<page-count count="13"/>
+</counts>
+</article-meta>
+</front>
+<body>
+<sec id="sec1" sec-type="intro">
+<label>1.</label>
+<title>Introduction</title>
+<p>Quark&#x2013;antiquark pairs are a key concept in particle physics, essential for understanding the strong interaction and the structure of hadrons such as mesons and baryons. Typical examples of quark&#x2013;antiquark pairs are bound states of a heavy quark and its antiquark, such as charmonium and bottomonium, collectively referred to as quarkonia [<xref ref-type="bibr" rid="bib1">1</xref>]. Quarkonia can be readily produced in experiments such as the LHC, and their properties can be measured with high precision. Quarkonia&#x2019;s distinct mass spectra, unique decay patterns, and relatively long lifetimes are of significant interest in the search for physics that extends past the Standard Model. As such, they may offer a promising avenue for probing potential new phenomena not accounted for by the Higgs sector [<xref ref-type="bibr" rid="bib2">2</xref>,<xref ref-type="bibr" rid="bib3">3</xref>]. This makes quarkonia an important topic requiring collaborative research between experimental and theoretical physicists. Indeed, they are actively studied in connection with new particle searches and dark matter theories [<xref ref-type="bibr" rid="bib4 bib5 bib6 bib7">4&#x2013;7</xref>].</p>
+<p>In light of this, it is essential to establish a theoretical framework that enables systematic analysis and interpretation of quarkonium systems. In particle physics, quark&#x2013;antiquark systems are commonly modeled using a potential that combines harmonic and Coulomb terms [<xref ref-type="bibr" rid="bib8 bib9 bib10">8&#x2013;10</xref>], where the harmonic component captures the long-range confinement effect and the Coulomb term accounts for the short-range interactions based on quantum chromodynamics (QCD). Motivated by this, we focus on the analysis of time-dependent 3D oscillators perturbed by a Coulomb potential throughout this work. The quantum-mechanical solutions of such systems are known to be expressible in terms of biconfluent Heun functions [<xref ref-type="bibr" rid="bib11">11</xref>,<xref ref-type="bibr" rid="bib12">12</xref>]. However, limited knowledge of the properties of such functions continues to make these systems difficult to analyze. At present, the characterization of these functions remains confined to their behavior in certain special cases and their connections to specific recursion relations, particularly their representations in terms of these relations [<xref ref-type="bibr" rid="bib13">13</xref>,<xref ref-type="bibr" rid="bib14">14</xref>]. This lack of comprehensive understanding is the reason why many researchers refer to them primarily through their defining equation, the biconfluent Heun equation, rather than treating them as fully characterized functions in their own right [<xref ref-type="bibr" rid="bib15 bib16 bib17 bib18 bib19">15&#x2013;19</xref>].</p>
+<p>To overcome this limitation, the present work explores an alternative analytical treatment by expressing the solutions in terms of well-established mathematical functions, thereby providing a more accessible and rigorous theoretical understanding of the system. Deriving such solutions to fundamental equations&#x00A0;for our general physical systems governed by time-dependent Hamiltonians [<xref ref-type="bibr" rid="bib20 bib21 bib22">20&#x2013;22</xref>] may require special mathematical techniques beyond conventional methods such as the separation of variables. One promising approach is the invariant operator method [<xref ref-type="bibr" rid="bib23 bib24 bib25 bib26">23&#x2013;26</xref>], which has proven effective in the study of time-dependent Hamiltonian systems (TDHSs). This method allows for the construction of exact quantum solutions in systems with time-dependent parameters. Specifically, if an invariant operator can be identified for a given system, the quantum wave functions, apart from phase parts, can be expressed by eigenfunctions of this operator. Consequently, solving the quantum system reduces to finding the eigenfunctions of the invariant operator, while the required phase factors can be determined with the help of the Schr&#x00F6;dinger equation.</p>
+<p>Regarding coupling of potentials, as well as the system&#x2019;s time dependence, the general form of the invariant operator is typically complicated. Therefore, to solve its eigenvalue equation, more advanced mathematical techniques, such as the unitary transformation method [<xref ref-type="bibr" rid="bib27">27</xref>,<xref ref-type="bibr" rid="bib28">28</xref>] and the Nikiforov&#x2013;Uvarov functional analysis (NUFA) [<xref ref-type="bibr" rid="bib29">29</xref>], are necessary. The NUFA method builds upon and integrates several approaches, including the original Nikiforov&#x2013;Uvarov (NU) method [<xref ref-type="bibr" rid="bib30">30</xref>], the parametric NU method [<xref ref-type="bibr" rid="bib31 bib32 bib33 bib34">31&#x2013;34</xref>], and elements of functional analysis [<xref ref-type="bibr" rid="bib35">35</xref>]. This enhanced method enables one to obtain the solution of related equations, including those of hypergeometric type, in a systematic and elegant manner, allowing the determination of the eigenvalue spectrum and the corresponding wave functions. We demonstrate that the wave functions derived through this approach can be expressed in terms of the well-known Gauss hypergeometric function. This may provide a significantly more tractable framework for analyzing the system compared to existing solutions that are based on biconfluent Heun functions. Taking advantage of these strengths, we show that the newly obtained solutions enable a thorough investigation of the system, particularly in dynamically evolving hadronic environments where effective quark interactions may vary due to medium-induced effects and nonequilibrium processes.</p>
+<p>The main contributions of the present work can be summarized as follows. First, we develop an analytical treatment for a time-dependent quark&#x2013;antiquark model based on a 3D oscillator perturbed by a Coulomb interaction within the framework of invariant operator theory. Second, by combining the invariant operator method, unitary transformation techniques, and the NUFA formalism, we derive analytical expressions for the eigenspectrum, quantum phases, and wave functions of the system in closed form. In contrast to several previous approaches in which the solutions are represented in terms of biconfluent Heun functions, the present treatment expresses the wave functions in terms of the Gauss hypergeometric function, whose mathematical properties are more thoroughly established. This provides a more tractable analytical framework for investigating the dynamical properties of quark&#x2013;antiquark systems governed by time-dependent Hamiltonians.</p>
+</sec>
+<sec id="sec2">
+<label>2.</label>
+<title>Analysis of the system</title>
+<sec id="sec2-1">
+<label>2.1.</label>
+<title>Basic formulations: Hamiltonian and invariant</title>
+<sec id="sec2-1-1">
+<label>2.1.1.</label>
+<title>Setup of the Hamiltonian</title>
+<p>We consider a quark&#x2013;antiquark pair with a time-dependent effective reduced mass <inline-formula><tex-math id="TM0001" notation="LaTeX"><![CDATA[$\mu (t)$]]></tex-math></inline-formula> in spherical coordinates, governed by a central potential&#x00A0;<inline-formula><tex-math id="TM0002" notation="LaTeX"><![CDATA[$g(t)r^{2}-\frac{Z(t)}{r}$]]></tex-math></inline-formula> where <inline-formula><tex-math id="TM0003" notation="LaTeX"><![CDATA[$g(t)$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0004" notation="LaTeX"><![CDATA[$Z(t)$]]></tex-math></inline-formula> are coefficients that depend on time. While&#x00A0;<inline-formula><tex-math id="TM0005" notation="LaTeX"><![CDATA[$g(t)r^{2}$]]></tex-math></inline-formula> represents a confining trap potential with adjustable strength, <inline-formula><tex-math id="TM0006" notation="LaTeX"><![CDATA[$-\frac{Z(t)}{r}$]]></tex-math></inline-formula> is a Coulomb perturbation with the constraint <inline-formula><tex-math id="TM0007" notation="LaTeX"><![CDATA[$Z(t)\gt 0$]]></tex-math></inline-formula>. As the distance between quarks increases, the harmonic potential rises sharply, effectively prohibiting their free separation within a bound state. This potential acts as a simplified representation of the QCD confinement mechanism and dominates at large separations. Meanwhile, the Coulomb term represents the electromagnetic or color interaction mediated by the color charge of one quark acting on the other, effectively serving as a short-range attractive force between the quark and antiquark.</p>
+<p>Time-dependent Hamiltonians naturally arise in hadron physics when quark&#x2013;antiquark systems are embedded in dynamical environments, such as quark&#x2013;gluon plasma or nonequilibrium hadronic media produced in high-energy collisions [<xref ref-type="bibr" rid="bib20 bib21 bib22">20&#x2013;22</xref>]. In such situations, the effective interaction between quarks may vary with time due to medium evolution, color-screening effects, confinement modifications, or changes in the effective quark mass. Consequently, the parameters appearing in phenomenological quarkonium potentials, including the confining strength and Coulomb-like coupling terms, can acquire explicit time dependence. The present model therefore provides an effective framework for investigating dynamical quark&#x2013;antiquark systems within a quantum-mechanical setting.</p>
+<p>Based on the above description, the Hamiltonian that characterizes the motion of the pair of quarks is expressed as:</p>
+<disp-formula id="equ1">
+<label>(1)</label>
+<tex-math id="TM0008" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+H(t)=\frac{p^{2}}{2\mu (t)}+g(t)r^{2}-\frac{Z(t)}{r} .
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>This Hamiltonian enables the calculation of the quantum-mechanical spectrum including wave functions and excitation properties, which is then used to theoretically explain the mass and structure of mesons. The momentum operator in spherical coordinates is represented as <inline-formula><tex-math id="TM0009" notation="LaTeX"><![CDATA[$p^{2}=p_{r}^{2}+\frac{L^{2}}{r^{2}}$]]></tex-math></inline-formula>, where <inline-formula><tex-math id="TM0010" notation="LaTeX"><![CDATA[$p_{r}=-i\hbar (\frac{\partial }{\partial r}+\frac{1}{r})$]]></tex-math></inline-formula> and <italic>L</italic> is the total angular momentum, the formula for which is given by</p>
+<disp-formula id="equ2">
+<label>(2)</label>
+<tex-math id="TM0012" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+L^{2}=-\hbar ^{2}\bigg [\frac{1}{\sin ^{2}\theta }\frac{\partial ^{2}}{\partial \varphi ^{2}}+\frac{1}{\sin \theta }\frac{\partial }{\partial \theta }\bigg (\sin \theta \frac{\partial }{\partial \theta }\bigg )\bigg ].
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>To investigate the dynamical features of the system, we must solve the Schr&#x00F6;dinger equation for the Hamiltonian in Eq. (<xref ref-type="disp-formula" rid="equ1">1</xref>). If we denote the system&#x2019;s state vector as&#x00A0;<inline-formula><tex-math id="TM0013" notation="LaTeX"><![CDATA[$|\Psi (t)\rangle$]]></tex-math></inline-formula>, the corresponding Schr&#x00F6;dinger equation&#x00A0;is of the form</p>
+<disp-formula id="equ3">
+<label>(3)</label>
+<tex-math id="TM0014" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+i\hbar \frac{\partial }{\partial t}|\Psi (t)\rangle =H(t)|\Psi (t)\rangle .
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>The time dependence of the Hamiltonian requires a specialized approach to solve this equation, as will be presented subsequently.</p>
+</sec>
+<sec id="sec2-1-2">
+<label>2.1.2.</label>
+<title>Formulation of the invariant operator</title>
+<p>Because <inline-formula><tex-math id="TM0015" notation="LaTeX"><![CDATA[$H(t)$]]></tex-math></inline-formula> in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ1">1</xref>) is represented in terms of time functions, directly solving Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ3">3</xref>) can be very challenging. To overcome this difficulty, we adopt the dynamical invariant method [<xref ref-type="bibr" rid="bib24">24</xref>]. The core idea of this method is to treat the system in terms of a nontrivial invariant operator <inline-formula><tex-math id="TM0016" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula> rather than <inline-formula><tex-math id="TM0017" notation="LaTeX"><![CDATA[$H(t)$]]></tex-math></inline-formula> in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ1">1</xref>), where <inline-formula><tex-math id="TM0018" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula> does not involve time-derivative operators. Moreover, <inline-formula><tex-math id="TM0019" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula> is closely related to the concept of invariants in classical mechanics (e.g. constants of motion), thereby facilitating interpretation from the perspective of the quantum&#x2013;classical correspondence.</p>
+<p>By the definition of the invariant operator, <inline-formula><tex-math id="TM0020" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula> satisfies the equation:</p>
+<disp-formula id="equ4">
+<label>(4)</label>
+<tex-math id="TM0021" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\frac{dI}{dt}=\frac{\partial I}{\partial t}+\frac{1}{i\hbar }[I,H]=0.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>If such an invariant exists, it is possible to put the solution of the Schr&#x00F6;dinger equation (<xref ref-type="disp-formula" rid="equ3">3</xref>) in terms of its eigenfunction <inline-formula><tex-math id="TM0022" notation="LaTeX"><![CDATA[$\Phi (\vec{r},t)$]]></tex-math></inline-formula>, such that</p>
+<disp-formula id="equ5">
+<label>(5)</label>
+<tex-math id="TM0023" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\Psi (\vec{r},t)=e^{i\alpha (t)}\Phi (\vec{r},t),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0024" notation="LaTeX"><![CDATA[$\alpha (t)$]]></tex-math></inline-formula> is a phase function that can be obtained from</p>
+<disp-formula id="equ6">
+<label>(6)</label>
+<tex-math id="TM0025" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\hbar \frac{d\alpha (t)}{dt}=\left\langle \Phi \left|\bigg (i\hbar \frac{\partial }{\partial t}-H\bigg )\right|\Phi \right\rangle .
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>To find the expression of the invariant <inline-formula><tex-math id="TM0026" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula> utilizing Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ4">4</xref>), we set</p>
+<disp-formula id="equ7">
+<label>(7)</label>
+<tex-math id="TM0027" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+I(t)=A(t)p^{2}+B(t)\left( rp_{r}+p_{r}r\right) +C(t)r^{2}-\frac{D(t)}{r},
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0028" notation="LaTeX"><![CDATA[$A(t)$]]></tex-math></inline-formula>, <inline-formula><tex-math id="TM0029" notation="LaTeX"><![CDATA[$B(t)$]]></tex-math></inline-formula>, <inline-formula><tex-math id="TM0030" notation="LaTeX"><![CDATA[$C(t)$]]></tex-math></inline-formula>, and <inline-formula><tex-math id="TM0031" notation="LaTeX"><![CDATA[$D(t)$]]></tex-math></inline-formula> are time-dependent functions to be determined. Then, a mathematical procedure with this assumed formula of <inline-formula><tex-math id="TM0032" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula> after substituting Eqs.&#x00A0;(<xref ref-type="disp-formula" rid="equ1">1</xref>) and (<xref ref-type="disp-formula" rid="equ7">7</xref>) into Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ4">4</xref>) yields</p>
+<disp-formula id="equ8">
+<label>(8)</label>
+<tex-math id="TM0033" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+A(t) =A_{0}\rho ^{2}(t),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<disp-formula id="equ9">
+<label>(9)</label>
+<tex-math id="TM0034" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+B(t) =-A_{0}\mu (t)\rho (t)\dot{\rho }(t),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<disp-formula id="equ10">
+<label>(10)</label>
+<tex-math id="TM0035" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+C(t) =A_{0}\bigg (\mu ^{2}(t)[\dot{\rho }(t)]^{2}+\frac{\Omega ^{2}}{4\rho ^{2}(t)}\bigg ),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<disp-formula id="equ11">
+<label>(11)</label>
+<tex-math id="TM0036" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+D(t) =2A_{0}\mu (t)Z(t)\rho ^{2}(t),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0037" notation="LaTeX"><![CDATA[$A_{0}$]]></tex-math></inline-formula> is an arbitrary real constant and <inline-formula><tex-math id="TM0038" notation="LaTeX"><![CDATA[$\rho (t)$]]></tex-math></inline-formula> is a solution of the following equation</p>
+<disp-formula id="equ12">
+<label>(12)</label>
+<tex-math id="TM0039" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\ddot{\rho }(t)+\frac{\dot{\mu }(t)}{\mu (t) }\dot{\rho }(t)+2\frac{g(t)}{\mu (t)}\rho (t) =\frac{\Omega ^{2}}{4\mu ^{2}(t)\rho ^{3}(t)},
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>with <inline-formula><tex-math id="TM0040" notation="LaTeX"><![CDATA[$\Omega$]]></tex-math></inline-formula> being a real constant. The above invariant is valid under the condition that <inline-formula><tex-math id="TM0041" notation="LaTeX"><![CDATA[$Z(t)$]]></tex-math></inline-formula> follows the relation</p>
+<disp-formula id="equ13">
+<label>(13)</label>
+<tex-math id="TM0042" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\dot{Z}(t)+\bigg (\frac{\dot{\mu }(t)}{\mu (t)}+\frac{\dot{\rho }(t)}{\rho (t)}\bigg )Z(t)=0.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Equation&#x00A0;(<xref ref-type="disp-formula" rid="equ7">7</xref>) with Eqs.&#x00A0;(<xref ref-type="disp-formula" rid="equ8">8</xref>)&#x2013;(<xref ref-type="disp-formula" rid="equ11">11</xref>) constitutes the complete quadratic invariant operator of the system. This operator provides a robust analytical framework for the system, in which direct solutions are difficult to obtain due to the complicated time evolution of the Hamiltonian. It also enables a deeper understanding of dynamical properties of the system, including phase transitions and topological changes, beyond merely providing a powerful methodology for obtaining solutions.</p>
+</sec>
+<sec id="sec2-1-3">
+<label>2.1.3.</label>
+<title>Solving the eigenvalue equation</title>
+<p>Because the quantum wave functions of the system are represented in terms of the eigenfunctions of <inline-formula><tex-math id="TM0043" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula>, it is now necessary to evaluate its eigenvalue equation. We begin by writing the eigenvalue equation&#x00A0;of the invariant <inline-formula><tex-math id="TM0044" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula> as</p>
+<disp-formula id="equ14">
+<label>(14)</label>
+<tex-math id="TM0045" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+I(t)\Phi _{n}(\vec{r},t)=\Lambda _{n}\Phi _{n}(\vec{r},t),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0046" notation="LaTeX"><![CDATA[$\Lambda _{n}$]]></tex-math></inline-formula> are the eigenvalues and <inline-formula><tex-math id="TM0047" notation="LaTeX"><![CDATA[$\Phi _{n}(\vec{r},t)$]]></tex-math></inline-formula> are time-dependent eigenfunctions. Given that <inline-formula><tex-math id="TM0048" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula>, as defined in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ7">7</xref>) along with Eqs.&#x00A0;(<xref ref-type="disp-formula" rid="equ8">8</xref>)&#x2013;(<xref ref-type="disp-formula" rid="equ11">11</xref>), has a complicated form, it is favorable to solve Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ14">14</xref>) after we transform it mathematically into a simple form. To do this, we consider a unitary transformation of the form</p>
+<disp-formula id="equ15">
+<label>(15)</label>
+<tex-math id="TM0049" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\Phi _{n}^{\prime }(\vec{r})=U(t)\Phi _{n}(\vec{r},t),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0050" notation="LaTeX"><![CDATA[$U(t)$]]></tex-math></inline-formula> is a time-dependent unitary operator given by</p>
+<disp-formula id="equ16">
+<label>(16)</label>
+<tex-math id="TM0051" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+U(t)=\exp \left[ \frac{i\ln \rho (t)}{2\hbar }\left( rp_{r}+p_{r}r\right) \right] \exp \left[ -i\frac{\mu (t)\dot{\rho }(t)}{2\hbar \rho (t)}r^{2}\right] .
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Then, if we write the transformed invariant operator as <inline-formula><tex-math id="TM0052" notation="LaTeX"><![CDATA[$I_0$]]></tex-math></inline-formula>, the eigenvalue equation&#x00A0;in the transformed frame is represented in terms of <inline-formula><tex-math id="TM0053" notation="LaTeX"><![CDATA[$\Phi _{n}^{\prime }(\vec{r})$]]></tex-math></inline-formula>, such that</p>
+<disp-formula id="equ17">
+<label>(17)</label>
+<tex-math id="TM0054" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+UIU^{-1}\Phi _{n}^{\prime }(\vec{r})=I_{0}\Phi _{n}^{\prime }(\vec{r})=\Lambda _{n}\Phi _{n}^{\prime }(\vec{r}).
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Now, from a mathematical procedure using Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ16">16</xref>), we obtain that</p>
+<disp-formula id="equ18">
+<label>(18)</label>
+<tex-math id="TM0055" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\left[ A_{0}p^{2}+A_{0}\frac{\Omega ^{2}}{4}r^{2}-D_{0}\frac{1}{r}\right] \Phi _{nlm}^{\prime }(r,\theta ,\varphi )=\Lambda _{nl}\Phi _{nlm}^{\prime }(r,\theta ,\varphi ),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0056" notation="LaTeX"><![CDATA[$D_{0} = 2A_{0}\mu (t)Z(t)\rho (t)$]]></tex-math></inline-formula> while <inline-formula><tex-math id="TM0057" notation="LaTeX"><![CDATA[$n=0,1,2,\cdots$]]></tex-math></inline-formula>. An infinite number of bound states may arise from the strong confinement of quarkonium, which is primarily attributed to the harmonic term dominating at large distances. By the way, the direct differentiation of <inline-formula><tex-math id="TM0058" notation="LaTeX"><![CDATA[$D_0$]]></tex-math></inline-formula> with respect to <italic>t</italic>, followed by the application of Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ13">13</xref>), yields <inline-formula><tex-math id="TM0060" notation="LaTeX"><![CDATA[$d D_0/dt=0$]]></tex-math></inline-formula>. This means that <inline-formula><tex-math id="TM0061" notation="LaTeX"><![CDATA[$D_0$]]></tex-math></inline-formula> is in fact a constant of motion, as expected&#x2014;since the operator on the left-hand side of Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ18">18</xref>) is the transformed version of the original invariant <inline-formula><tex-math id="TM0062" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula>. It is worth noting that Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ18">18</xref>) is very simple compared to the original eigenvalue equation&#x00A0;represented in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ14">14</xref>).</p>
+<p>The existence of a perturbation of Coulomb potential may make the problem much more difficult. In what follows, the eigenvalue equation (<xref ref-type="disp-formula" rid="equ18">18</xref>) can be rewritten as</p>
+<disp-formula id="equ19">
+<label>(19)</label>
+<tex-math id="TM0063" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\begin{bmatrix}-\hbar ^{2}A_{0}\Big [\frac{1}{r^{2}}\frac{\partial }{\partial r}\left( r^{2}\frac{\partial }{\partial r}\right) +\frac{1}{r^{2}\sin ^{2}\theta }\frac{\partial ^{2}}{\partial \varphi ^{2}} \\+\frac{1}{r^{2}\sin \theta }\frac{\partial }{\partial \theta }(\sin \theta \frac{\partial }{\partial \theta })\Big ]+A_{0}\frac{\Omega ^{2}}{4}r^{2}-\frac{D_{0}}{r} \end{bmatrix} \Phi _{nlm}^{\prime }(r,\theta ,\varphi )=\Lambda _{nl}\Phi _{nlm}^{\prime }(r,\theta ,\varphi ).
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>According to the invariant operator theory, the wave functions of the transformed system are represented in terms of <inline-formula><tex-math id="TM0064" notation="LaTeX"><![CDATA[$\Phi _{nlm}^{\prime }(r,\theta ,\varphi )$]]></tex-math></inline-formula>. Because this equation&#x00A0;is independent of time, we can apply the method of separation of variables in order to solve it. Considering this, we take</p>
+<disp-formula id="equ20">
+<label>(20)</label>
+<tex-math id="TM0065" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\Phi _{nlm}^{\prime }(r,\theta ,\varphi )=R_{nl}(r)Y_{lm}(\theta ,\varphi )=\frac{u_{nl}(r)Y_{lm}(\theta ,\varphi )}{r},
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where we have introduced <inline-formula><tex-math id="TM0066" notation="LaTeX"><![CDATA[$u_{nl}(r) = r R_{nl}(r)$]]></tex-math></inline-formula>, whereas <inline-formula><tex-math id="TM0067" notation="LaTeX"><![CDATA[$Y_{lm}(\theta ,\varphi )$]]></tex-math></inline-formula> are the spherical harmonics. The angular part of the eigenfunctions takes the form</p>
+<disp-formula id="equ21">
+<label>(21)</label>
+<tex-math id="TM0068" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+Y_{lm}(\theta ,\varphi )= N_{lm}e^{im\varphi }P_{l}^{m}(\cos \theta ),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0069" notation="LaTeX"><![CDATA[$P_{l}^{m}(x)$]]></tex-math></inline-formula> are the associated Legendre polynomials, while the spherical normalization constants are <inline-formula><tex-math id="TM0070" notation="LaTeX"><![CDATA[$N_{lm}=(-1)^m \lbrace [(2l+1)/(4\pi )](l-m)!/(l+m)! \rbrace ^{1/2}$]]></tex-math></inline-formula>. The allowed orbital and magnetic quantum numbers are <inline-formula><tex-math id="TM0071" notation="LaTeX"><![CDATA[$l=0,1,2,\cdots$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0072" notation="LaTeX"><![CDATA[$m=-l,-l+1,\cdots ,l$]]></tex-math></inline-formula>, respectively.</p>
+<p>Some algebraic manipulation, after substituting Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ20">20</xref>) into Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ19">19</xref>), leads to the following radial equation:</p>
+<disp-formula id="equ22">
+<label>(22)</label>
+<tex-math id="TM0073" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\frac{d^{2}u_{nl}(r)}{dr^{2}}+\left( \frac{\Lambda _{nl}}{\hbar ^{2}A_{0}}-\frac{\Omega ^{2}}{4\hbar ^{2}}r^{2}+\frac{D_{0}}{\hbar ^{2}A_{0}}\frac{1}{r}-\frac{l(l+1)}{r^{2}}\right) u_{nl}(r)=0.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>The equation&#x00A0;is analytically intractable unless <inline-formula><tex-math id="TM0074" notation="LaTeX"><![CDATA[$\Omega = 0$]]></tex-math></inline-formula> owing to the coexistence of <inline-formula><tex-math id="TM0075" notation="LaTeX"><![CDATA[$r^{2}$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0076" notation="LaTeX"><![CDATA[$-\frac{1}{r^{2}}$]]></tex-math></inline-formula> terms. To resolve this difficulty, we employ the Greene&#x2013;Aldrich approximation scheme of the form [<xref ref-type="bibr" rid="bib36 bib37 bib38 bib39">36&#x2013;39</xref>]</p>
+<disp-formula id="equ23">
+<label>(23)</label>
+<tex-math id="TM0077" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\frac{1}{r^{2}} \simeq \frac{\delta ^{2}}{\left( 1-e^{-\delta r}\right) ^{2}},~~~~~\frac{1}{r} \simeq \frac{\delta }{1-e^{-\delta r}},
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>together with a coordinate transformation <inline-formula><tex-math id="TM0078" notation="LaTeX"><![CDATA[$y=e^{-\delta r}$]]></tex-math></inline-formula>. This type of approximation is commonly used to describe particles governed by a screened potential, where the parameter&#x00A0;<inline-formula><tex-math id="TM0079" notation="LaTeX"><![CDATA[$\delta$]]></tex-math></inline-formula> is typically chosen to be equal to the screening mass [<xref ref-type="bibr" rid="bib29">29</xref>,<xref ref-type="bibr" rid="bib36">36</xref>]. Though the potential in our system is not screened, choosing <inline-formula><tex-math id="TM0080" notation="LaTeX"><![CDATA[$\delta$]]></tex-math></inline-formula> to be similar to the typical screening mass still provides a good approximation, particularly accurate for distances comparable to or smaller than <inline-formula><tex-math id="TM0081" notation="LaTeX"><![CDATA[$1/\delta$]]></tex-math></inline-formula>. For example, in quarkonium models, <inline-formula><tex-math id="TM0082" notation="LaTeX"><![CDATA[$\delta$]]></tex-math></inline-formula> is usually taken to be in the range of approximately 200 to 900 MeV [<xref ref-type="bibr" rid="bib40">40</xref>,<xref ref-type="bibr" rid="bib41">41</xref>]. Thus, selecting <inline-formula><tex-math id="TM0083" notation="LaTeX"><![CDATA[$\delta$]]></tex-math></inline-formula> within this range is a reasonable choice.</p>
+<p>Then, by rewriting the notation as <inline-formula><tex-math id="TM0084" notation="LaTeX"><![CDATA[$u_{nl}(r)\rightarrow U_{nl}(y)$]]></tex-math></inline-formula>, the differential equation (<xref ref-type="disp-formula" rid="equ22">22</xref>) becomes</p>
+<disp-formula id="equ24">
+<label>(24)</label>
+<tex-math id="TM0085" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\frac{d^{2}U_{nl}(y)}{dy^{2}}+\frac{\left( 1-y\right) }{y(1-y)}\frac{dU_{nl}(y)}{dy}+\frac{1}{y^{2}(1-y)^{2}}\begin{bmatrix}-\left( \varepsilon _{nl}-6P\right) y^{2} \\+\left( 2\varepsilon _{nl}-4P+Q\right) y \\-\left( \varepsilon _{nl}-P+Q+\gamma \right) \end{bmatrix} U_{nl}(y)=0,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where</p>
+<disp-formula id="equ25">
+<label>(25)</label>
+<tex-math id="TM0086" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\varepsilon _{nl}=\frac{-\Lambda _{nl}}{\hbar ^{2}A_{0}\delta ^{2}},~~~P=-\frac{\Omega ^{2}}{4\hbar ^{2}\delta ^{4}},~~~Q=-\frac{D_{0}}{\hbar ^{2}A_{0}\delta },~~~\gamma =l(l+1).
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>In the representation of Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ24">24</xref>), we neglected higher-order terms corresponding to <inline-formula><tex-math id="TM0087" notation="LaTeX"><![CDATA[$y^{3}$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0088" notation="LaTeX"><![CDATA[$y^{4}$]]></tex-math></inline-formula>. To solve this equation, we use the NUFA method [<xref ref-type="bibr" rid="bib29">29</xref>] outlined in the next subsection.</p>
+</sec>
+</sec>
+<sec id="sec2-2">
+<label>2.2.</label>
+<title>The NUFA method</title>
+<p>A second-order differential equation of hypergeometric type can be solved in a simple and elegant way by using the so-called NUFA method. This is an improvement over the parametric NU method, which is relatively cumbersome due to the need to find the square of the polynomials and other conditions required. With the NUFA method, many diffierential equations, including our wave equation, can be properly tackled, allowing for the identification of singularities and the determination of the eigenvalue spectrum. As a general type of second-order differential equation, which encompasses Eq. (<xref ref-type="disp-formula" rid="equ24">24</xref>), we consider the following equation&#x00A0;[<xref ref-type="bibr" rid="bib31">31</xref>]:</p>
+<disp-formula id="equ26">
+<label>(26)</label>
+<tex-math id="TM0089" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\left[ \frac{d^{2}}{ds^{2}}+\frac{\alpha _{1}-\alpha _{2}s}{s(1-\alpha _{3}s)}\frac{d}{ds}+\frac{-\zeta _{1}s^{2}+\zeta _{2}s-\zeta _{3}}{s^{2}(1-\alpha _{3}s)^{2}}\right] \phi (s)=0,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0090" notation="LaTeX"><![CDATA[$\alpha _{i}$]]></tex-math></inline-formula><inline-formula><tex-math id="TM0091" notation="LaTeX"><![CDATA[$(i=1,2,3)$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0092" notation="LaTeX"><![CDATA[$\zeta _{i}$]]></tex-math></inline-formula> are parameters appropriately chosen depending on a given system. Because this equation&#x00A0;has two singularities at <inline-formula><tex-math id="TM0093" notation="LaTeX"><![CDATA[$s\rightarrow 0$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0094" notation="LaTeX"><![CDATA[$s\rightarrow 1/\alpha _{3}$]]></tex-math></inline-formula>, it is possible to take the solution in the form</p>
+<disp-formula id="equ27">
+<label>(27)</label>
+<tex-math id="TM0095" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\phi (s)=s^{\lambda }(1-\alpha _{3}s)^{\upsilon }f(s).
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>By substituting this formula into Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ26">26</xref>) along with the following choice,</p>
+<disp-formula id="equ28">
+<label>(28)</label>
+<tex-math id="TM0096" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\lambda =\frac{1}{2}\lbrace 1-\alpha _{1}\pm [\left( 1-\alpha _{1}\right) ^{2}+4\zeta _{3}]^{1/2}\rbrace ,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<disp-formula id="equ29">
+<label>(29)</label>
+<tex-math id="TM0097" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\upsilon &=&\frac{1}{2\alpha _{3}} \lbrace \alpha _{3}+\alpha _{1}\alpha _{3}-\alpha _{2}\pm [\left( \alpha _{3}+\alpha _{1}\alpha _{3}-\alpha _{2}\right) ^{2} \\&&+4\alpha _3 (\zeta _{3}\alpha _{3}-\zeta _{2}+\zeta _{1}/\alpha _{3})]^{1/2}\rbrace ,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>we have [<xref ref-type="bibr" rid="bib29">29</xref>]</p>
+<disp-formula id="equ30">
+<label>(30)</label>
+<tex-math id="TM0098" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+s(1-\alpha _{3}s)\frac{d^{2}f(s)}{ds^{2}}+\kappa \frac{df(s)}{ds} -\alpha _{3} \kappa _+ \kappa _- f(s)=0,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where</p>
+<disp-formula id="equ31">
+<label>(31)</label>
+<tex-math id="TM0099" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\kappa = \alpha _{1}+2\lambda -(2\lambda \alpha _{3}+2\upsilon \alpha _{3}+\alpha _{2})s,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<disp-formula id="equ32">
+<label>(32)</label>
+<tex-math id="TM0100" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\kappa _\pm = \lambda +\upsilon +\frac{1}{2}\left( \frac{\alpha _{2}}{\alpha _{3}}-1\right) \pm \bigg [ \frac{1}{4}\left( \frac{\alpha _{2}}{\alpha _{3}}-1\right) ^{2}+\frac{\zeta _{1}}{\alpha _{3}^{2}} \bigg ]^{1/2}.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Thus, the equation&#x00A0;is reduced to a tractable form.</p>
+<p>We now examine a simple case where <inline-formula><tex-math id="TM0101" notation="LaTeX"><![CDATA[$\alpha _3=1$]]></tex-math></inline-formula>, which meets the equation associated with our considered system. Under the condition that the principal quantum number takes the form</p>
+<disp-formula id="equ33">
+<label>(33)</label>
+<tex-math id="TM0102" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+n=- \kappa _- ,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>the function <inline-formula><tex-math id="TM0103" notation="LaTeX"><![CDATA[$f(s)$]]></tex-math></inline-formula> is represented by the Gauss hypergeometric function as [<xref ref-type="bibr" rid="bib29">29</xref>]</p>
+<disp-formula id="equ34">
+<label>(34)</label>
+<tex-math id="TM0104" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+f (s) = {_{2}F_{1}}(a,b;c;s),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0105" notation="LaTeX"><![CDATA[$a=\kappa _-$]]></tex-math></inline-formula>, <inline-formula><tex-math id="TM0106" notation="LaTeX"><![CDATA[$b=\kappa _+$]]></tex-math></inline-formula>, and <inline-formula><tex-math id="TM0107" notation="LaTeX"><![CDATA[$c=\alpha _{1}+2\lambda$]]></tex-math></inline-formula>. The mathematical formula of this hypergeometric function is as follows: <inline-formula><tex-math id="TM0108" notation="LaTeX"><![CDATA[$_{2}F_{1}(a,b;c;s)=\sum _{k=0}^{\infty }\frac{\left( a\right) _{k}\left( b\right) _{k}}{\left( c\right) _{k}k!}s^{k}$]]></tex-math></inline-formula>, where <inline-formula><tex-math id="TM0109" notation="LaTeX"><![CDATA[$\left( a\right) _{k}=a(a+1)(a+2)\cdots (a+k-1)$]]></tex-math></inline-formula> for <inline-formula><tex-math id="TM0110" notation="LaTeX"><![CDATA[$k\ge 1$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0111" notation="LaTeX"><![CDATA[$\left( a\right) _{0}=1$]]></tex-math></inline-formula>.</p>
+<p>The Gauss hypergeometric function <inline-formula><tex-math id="TM0112" notation="LaTeX"><![CDATA[$_{2}F_{1}(a,b;c;s)$]]></tex-math></inline-formula> serves as a fundamental and unifying special function that encompasses many other functions as special or limiting cases [<xref ref-type="bibr" rid="bib42 bib43 bib44 bib45">42&#x2013;45</xref>]. As defined in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ34">34</xref>) with Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ33">33</xref>), the function <inline-formula><tex-math id="TM0113" notation="LaTeX"><![CDATA[$_{2}F_{1}(a,b;c;s)$]]></tex-math></inline-formula> terminates and reduces to a polynomial when <italic>a</italic> is zero or a negative integer, a case that is often associated with Laguerre polynomials. In particular, <inline-formula><tex-math id="TM0115" notation="LaTeX"><![CDATA[$_{2}F_{1}(a,b;c;s)$]]></tex-math></inline-formula> is a generalization of Kummer&#x2019;s confluent hypergeometric function <inline-formula><tex-math id="TM0116" notation="LaTeX"><![CDATA[$_{1}F_{1}(a;c;s)$]]></tex-math></inline-formula>. Hence, in the limiting case where <inline-formula><tex-math id="TM0117" notation="LaTeX"><![CDATA[$b \rightarrow \infty$]]></tex-math></inline-formula>, <inline-formula><tex-math id="TM0118" notation="LaTeX"><![CDATA[$_{2}F_{1}(a,b;c;s)$]]></tex-math></inline-formula> converges to <inline-formula><tex-math id="TM0119" notation="LaTeX"><![CDATA[$_{1}F_{1}(a;c;s)$]]></tex-math></inline-formula>. This convergence is rooted in the fact that, while <inline-formula><tex-math id="TM0120" notation="LaTeX"><![CDATA[${}_2F_1$]]></tex-math></inline-formula> has two regular singular points, sending one of them to infinity (a process known as confluence) effectively merges the singularities, giving rise to <inline-formula><tex-math id="TM0121" notation="LaTeX"><![CDATA[${}_1F_1$]]></tex-math></inline-formula> [<xref ref-type="bibr" rid="bib44">44</xref>]. Additionally, the Jacobi polynomials can also be expressed in terms of the Gauss hypergeometric function (for a typical representation, see formula 15.9.1 of Ref. [<xref ref-type="bibr" rid="bib45">45</xref>]). The <inline-formula><tex-math id="TM0122" notation="LaTeX"><![CDATA[${}_2F_1$]]></tex-math></inline-formula> function thus plays a major role in constructing analytical solutions and enables rigorous, systematic analysis across a broad spectrum of scientific disciplines beyond mathematics and physics. The method presented in this subsection, which naturally leads to the appearance of the <inline-formula><tex-math id="TM0123" notation="LaTeX"><![CDATA[${}_2F_1$]]></tex-math></inline-formula> function as a solution, is applicable to the analysis of a wide class of physical systems governed by one or more interaction potentials. It is, of course, well suited to handling Eq. (<xref ref-type="disp-formula" rid="equ24">24</xref>).</p>
+</sec>
+<sec id="sec2-3">
+<label>2.3.</label>
+<title>Wave functions</title>
+<sec id="sec2-3-1">
+<label>2.3.1.</label>
+<title>Eigenfunctions of the invariant operator</title>
+<p>We now proceed to derive the wave functions of the system. For clarity and better reader understanding, we briefly summarize our strategy at this point. Because, in our time-dependent case, the wave functions are described by the eigenfunctions of <inline-formula><tex-math id="TM0124" notation="LaTeX"><![CDATA[$I(t)$]]></tex-math></inline-formula> (instead of <inline-formula><tex-math id="TM0125" notation="LaTeX"><![CDATA[$H(t)$]]></tex-math></inline-formula>), we need to determine the eigenfunctions <inline-formula><tex-math id="TM0126" notation="LaTeX"><![CDATA[$\Phi _n$]]></tex-math></inline-formula> of Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ14">14</xref>). However, directly solving for <inline-formula><tex-math id="TM0127" notation="LaTeX"><![CDATA[$\Phi _n$]]></tex-math></inline-formula> is likely to be a formidable task. To circumvent this difficulty, we first derive <inline-formula><tex-math id="TM0128" notation="LaTeX"><![CDATA[$\Phi _n^{\prime }$]]></tex-math></inline-formula> from Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ17">17</xref>), and then reconstruct the desired eigenfunctions <inline-formula><tex-math id="TM0129" notation="LaTeX"><![CDATA[$\Phi _n$]]></tex-math></inline-formula> by inversely transforming the obtained <inline-formula><tex-math id="TM0130" notation="LaTeX"><![CDATA[$\Phi _n^{\prime }$]]></tex-math></inline-formula>, utilizing the inverse relation of Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ15">15</xref>) (for the inverse relation, see Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ46">46</xref>), which appears later). Once <inline-formula><tex-math id="TM0131" notation="LaTeX"><![CDATA[$\Phi _n$]]></tex-math></inline-formula> are obtained, the wave functions <inline-formula><tex-math id="TM0132" notation="LaTeX"><![CDATA[$\Psi _n$]]></tex-math></inline-formula> can be expressed in terms of them accordingly.</p>
+<p>To obtain <inline-formula><tex-math id="TM0133" notation="LaTeX"><![CDATA[$\Phi _n^{\prime }$]]></tex-math></inline-formula>, we need to solve Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ24">24</xref>) by setting the associated functions, in accordance with Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ27">27</xref>), as</p>
+<disp-formula id="equ35">
+<label>(35)</label>
+<tex-math id="TM0134" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+U_{nl}(y)=N_{nl}y^{\lambda }(1-y)^{\upsilon }f_{nl}(y),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0135" notation="LaTeX"><![CDATA[$N_{nl}$]]></tex-math></inline-formula> are normalization constants for the final wave functions. We applied <inline-formula><tex-math id="TM0136" notation="LaTeX"><![CDATA[$\alpha _{3}=1$]]></tex-math></inline-formula> in this equation. In addition, from the comparison of Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ24">24</xref>) with the NUFA equation&#x00A0;(<xref ref-type="disp-formula" rid="equ26">26</xref>), we acquire the following parameter relations:</p>
+<disp-formula id="equ36">
+<label>(36)</label>
+<tex-math id="TM0137" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+&&\alpha _{1}=\alpha _{2}=1,\quad\quad\quad\zeta _{1}=\varepsilon _{nl}-6P,~~~~~~ \\&&\zeta _{2}=2\varepsilon _{nl}-4P+Q,\quad\quad\zeta _{3}=\varepsilon _{nl}-P+Q+\gamma .~~~~~~
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Furthermore, the singularity exponents reduce to</p>
+<disp-formula id="equ37">
+<label>(37)</label>
+<tex-math id="TM0138" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\lambda =\sqrt{\varepsilon _{nl}-P+Q+\gamma },\quad\quad\upsilon =\frac{1}{2}+\sqrt{\left( l+\frac{1}{2}\right) ^{2}-3P}.~~~~~~
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Although the original NUFA representations of <inline-formula><tex-math id="TM0139" notation="LaTeX"><![CDATA[$\lambda$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0140" notation="LaTeX"><![CDATA[$\upsilon$]]></tex-math></inline-formula>, given in Eqs.&#x00A0;(<xref ref-type="disp-formula" rid="equ28">28</xref>) and (<xref ref-type="disp-formula" rid="equ29">29</xref>), include both positive and negative signs (<inline-formula><tex-math id="TM0141" notation="LaTeX"><![CDATA[$\pm$]]></tex-math></inline-formula>) from a purely mathematical perspective, we choose to retain only the positive sign in this case as can be seen from Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ37">37</xref>). This selection is due to the fundamental physical constraint, which is that the wave functions must remain finite throughout the entire range of <italic>r</italic> and must vanish as <inline-formula><tex-math id="TM0143" notation="LaTeX"><![CDATA[$r \rightarrow 0$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0144" notation="LaTeX"><![CDATA[$r \rightarrow \infty$]]></tex-math></inline-formula>.</p>
+<p>The expansion of Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ33">33</xref>) under the first condition in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ36">36</xref>) yields</p>
+<disp-formula id="equ38">
+<label>(38)</label>
+<tex-math id="TM0145" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+n+\lambda +\upsilon = \sqrt{\zeta _1}.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>By squaring both sides of this equation&#x00A0;and using the second relation from Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ36">36</xref>) together with the formula of <inline-formula><tex-math id="TM0146" notation="LaTeX"><![CDATA[$\lambda$]]></tex-math></inline-formula> given in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ37">37</xref>), the equation&#x00A0;associated with the eigenvalues can be obtained as</p>
+<disp-formula id="equ39">
+<label>(39)</label>
+<tex-math id="TM0147" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+2[\varepsilon _{nl}-P+Q+\gamma ]^{1/2}(n+\upsilon )+(n+\upsilon )^{2}+5P+Q+\gamma =0.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>It is possible to rearrange this equation&#x00A0;into a formula for <inline-formula><tex-math id="TM0148" notation="LaTeX"><![CDATA[$\varepsilon _{nl}$]]></tex-math></inline-formula> by first isolating the square root term on the left-hand side, shifting all other terms to the right-hand side, and then squaring both sides. Substituting the expression for <inline-formula><tex-math id="TM0149" notation="LaTeX"><![CDATA[$\upsilon$]]></tex-math></inline-formula> from Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ37">37</xref>) into the resulting equation, and using Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ25">25</xref>), we finally obtain the eigenvalues:</p>
+<disp-formula id="equ40">
+<label>(40)</label>
+<tex-math id="TM0150" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\Lambda _{nl} &=& l(l+1)\hbar ^{2}A_{0}\delta ^{2}+\frac{A_{0}\Omega ^{2}}{4\delta ^{2}}-D_{0}\delta \\&&-\frac{\hbar ^{2}A_{0}\delta ^{2}}{4}\left[ \frac{l(l+1)-\frac{5\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}-\frac{D_{0}}{\hbar ^{2}A_{0}\delta }+\left( n+\upsilon \right) ^{2}}{n+\upsilon }\right] ^{2}.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>The eigenvalues obtained in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ40">40</xref>) depend explicitly on several parameters of the system, including the effective oscillator frequency and coupling constants, which may exhibit time dependence through the Hamiltonian. This feature reflects the fact that the present model belongs to the class of parameter-dependent quantum systems. In such systems, variations of the energy spectrum with respect to the relevant parameters are conceptually related to the Hellmann&#x2013;Feynman theorem [<xref ref-type="bibr" rid="bib46">46</xref>,<xref ref-type="bibr" rid="bib47">47</xref>], which expresses derivatives of eigenvalues in terms of expectation values of derivatives of the Hamiltonian. Although the present work does not explicitly employ the Hellmann&#x2013;Feynman theorem in deriving Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ40">40</xref>), the obtained spectrum is consistent with the general framework of parameter-dependent quantum mechanics.</p>
+<p>In addition, by considering Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ27">27</xref>) with Eqs.&#x00A0;(<xref ref-type="disp-formula" rid="equ28">28</xref>), (<xref ref-type="disp-formula" rid="equ29">29</xref>), and (<xref ref-type="disp-formula" rid="equ34">34</xref>), the corresponding radial wave functions can be derived in terms of <inline-formula><tex-math id="TM0151" notation="LaTeX"><![CDATA[$\Lambda _{nl}$]]></tex-math></inline-formula> to be</p>
+<disp-formula id="equ41">
+<label>(41)</label>
+<tex-math id="TM0152" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+U_{nl}(y) &=& N_{nl}y^{\sqrt{-\frac{\Lambda _{nl}}{\hbar ^{2}A_{0}\delta ^{2}}+\frac{\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}-\frac{D_{0}}{\hbar ^{2}A_{0}\delta }+l(l+1)}} \\&&\times {(1-y)^{\frac{1}{2}+\sqrt{\left( l+\frac{1}{2}\right) ^{2}+\frac{3\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}}}}{_{2}F_{1}}(\bar{a},\bar{b};\bar{c};y),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where the parameters are defined as</p>
+<disp-formula id="equ42">
+<label>(42)</label>
+<tex-math id="TM0153" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\bar{a}=\lambda +\upsilon -\sqrt{\varepsilon _{nl}-6P},
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<disp-formula id="equ43">
+<label>(43)</label>
+<tex-math id="TM0154" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\bar{b}=\lambda +\upsilon +\sqrt{\varepsilon _{nl}-6P},
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<disp-formula id="equ44">
+<label>(44)</label>
+<tex-math id="TM0155" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\bar{c}=1+2\lambda .
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>From a mathematical standpoint, it is possible to define the parameter <inline-formula><tex-math id="TM0156" notation="LaTeX"><![CDATA[$\bar{a}$]]></tex-math></inline-formula> interchangeably with <inline-formula><tex-math id="TM0157" notation="LaTeX"><![CDATA[$\bar{b}$]]></tex-math></inline-formula>. However, by choosing <inline-formula><tex-math id="TM0158" notation="LaTeX"><![CDATA[$\bar{a}$]]></tex-math></inline-formula> as in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ42">42</xref>), we allow the possibility for <inline-formula><tex-math id="TM0159" notation="LaTeX"><![CDATA[$\bar{a}$]]></tex-math></inline-formula> to take on negative values. When <inline-formula><tex-math id="TM0160" notation="LaTeX"><![CDATA[$\bar{a}$]]></tex-math></inline-formula> is a nonpositive integer (i.e. a negative integer or zero), the Gauss hypergeometric function in Eq. (<xref ref-type="disp-formula" rid="equ41">41</xref>) terminates at the (<inline-formula><tex-math id="TM0161" notation="LaTeX"><![CDATA[$n+1$]]></tex-math></inline-formula>)th term and reduces to a polynomial. Through the use of Eq. (<xref ref-type="disp-formula" rid="equ20">20</xref>) with Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ41">41</xref>), the full eigenfunctions of the invariant operator <inline-formula><tex-math id="TM0162" notation="LaTeX"><![CDATA[$I_{0}$]]></tex-math></inline-formula> are represented in the form</p>
+<disp-formula id="equ45">
+<label>(45)</label>
+<tex-math id="TM0163" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\Phi _{nlm}^{\prime }(r,\theta ,\varphi ) &=& N_{nl}\frac{1}{r}e^{-\left( \sqrt{-\frac{\Lambda _{nl}}{\hbar ^{2}A_{0}\delta ^{2}}+\frac{\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}-\frac{D_{0}}{\hbar ^{2}A_{0}\delta }+l(l+1)}\right) \delta r} \\&&\times \left( 1-e^{-\delta r}\right) ^{\frac{1}{2}+\sqrt{\left( l+\frac{1}{2}\right) ^{2}+\frac{3\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}}}{_{2}F_{1}}(\bar{a},\bar{b};\bar{c};e^{-\delta r})Y_{lm}(\theta ,\varphi ).
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>The complete eigenfunctions of the invariant <italic>I</italic> that belongs to the original system, i.e., the untransformed system, are given by the relation</p>
+<disp-formula id="equ46">
+<label>(46)</label>
+<tex-math id="TM0165" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\Phi _{nlm}(\vec{r},t)=U^{-1}(t)\Phi _{nlm}^{\prime }(\vec{r}).
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>The evaluation of this using Eqs.&#x00A0;(<xref ref-type="disp-formula" rid="equ16">16</xref>) and (<xref ref-type="disp-formula" rid="equ45">45</xref>) results in</p>
+<disp-formula id="equ47">
+<label>(47)</label>
+<tex-math id="TM0166" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\Phi _{nlm}(r,\theta ,\varphi ,t) &=& N_{nl} \frac{1 }{\sqrt{\rho (t)}r} \exp \left( \frac{i\mu (t)\dot{\rho }(t)}{2\hbar \rho (t)}r^{2}\right) \\&&\times e^{-\left( \sqrt{-\frac{\Lambda _{nl}}{\hbar ^{2}A_{0}\delta ^{2}}+\frac{\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}-\frac{D_{0}}{\hbar ^{2}A_{0}\delta }+l(l+1)}\right) \delta \frac{r}{\rho (t) }} \\&&\times \left( 1-e^{-\delta \frac{r}{\rho (t) }}\right) ^{\frac{1}{2}+\sqrt{\left( l+\frac{1}{2}\right) ^{2}+\frac{3\Omega ^{2}}{4\hbar ^{2}\delta ^{4}}}}{_{2}F_{1}}(\bar{a},\bar{b};\bar{c};e^{-\delta \frac{r}{\rho (t) }})Y_{lm}(\theta ,\varphi ).
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Meanwhile, <inline-formula><tex-math id="TM0167" notation="LaTeX"><![CDATA[$N_{nl}$]]></tex-math></inline-formula> are derived by normalizing these resultant eigenfunctions. The normalization procedure yields (see Appendix A for a detailed evaluation)</p>
+<disp-formula id="equ48">
+<label>(48)</label>
+<tex-math id="TM0168" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+N_{nl}=\sqrt{\delta } \frac{\Gamma (2(\upsilon +\lambda )+n)}{n!\Gamma (2\lambda +1)} \Bigg [ \sum _{k=0}^n\sum _{k^{\prime }=0}^n (-1)^{k+k^{\prime }} \mathcal {N}_{nl}(k,k^{\prime }) \Bigg ]^{-1/2},
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where</p>
+<disp-formula id="equ49">
+<label>(49)</label>
+<tex-math id="TM0169" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\mathcal {N}_{nl}(k,k^{\prime }) &=& \frac{\Gamma (2(\upsilon +\lambda )+n+k) \Gamma (2(\upsilon +\lambda )+n+k^{\prime })}{k!k^{\prime }!(n-k)!(n-k^{\prime })!\Gamma (2\lambda +k+1)\Gamma (2\lambda +k^{\prime }+1)} \\&& \times {\mathrm{B}}(k+k^{\prime }+2\lambda ,2\upsilon +1),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>whereas <inline-formula><tex-math id="TM0170" notation="LaTeX"><![CDATA[${\mathrm{B}}(a_1,a_2)$]]></tex-math></inline-formula> denotes the Beta function [<xref ref-type="bibr" rid="bib48">48</xref>]. The eigenfunctions in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ47">47</xref>) are essentially related to the Schr&#x00F6;dinger solutions of the system. We demonstrate how to construct the full quantum solutions in terms of these eigenfunctions in the following subsection.</p>
+</sec>
+<sec id="sec2-3-2">
+<label>2.3.2.</label>
+<title>Quantum phases and the Schr&#x00F6;dinger solutions</title>
+<p>According to Lewis&#x2013;Riesenfeld theory [<xref ref-type="bibr" rid="bib24">24</xref>], the wave functions of our time-dependent system are represented in terms of the eigenfunctions <inline-formula><tex-math id="TM0171" notation="LaTeX"><![CDATA[$\Phi _{nlm}(\vec{r},t)$]]></tex-math></inline-formula> of the invariant operator, which are given in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ47">47</xref>). However, these eigenfunctions alone do not fully define the time-dependent wave functions. Another required factor is the phase <inline-formula><tex-math id="TM0172" notation="LaTeX"><![CDATA[$\alpha (t)$]]></tex-math></inline-formula> associated with each quantum state. We begin from Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ6">6</xref>) to derive this factor. Based on the unitary relation given in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ46">46</xref>), Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ6">6</xref>) can be expressed in terms of the transformed eigenstate <inline-formula><tex-math id="TM0173" notation="LaTeX"><![CDATA[$\vert \Phi ^\prime \rangle$]]></tex-math></inline-formula> instead of <inline-formula><tex-math id="TM0174" notation="LaTeX"><![CDATA[$\vert \Phi \rangle$]]></tex-math></inline-formula>, such that</p>
+<disp-formula id="equ50">
+<label>(50)</label>
+<tex-math id="TM0175" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\hbar \frac{d\alpha (t)}{dt}=\left\langle \Phi ^{\prime }\left|\Bigg ( i \hbar \frac{\partial }{\partial t}-\frac{I_{0}}{2A_{0}\mu (t)\rho ^{2}(t)} \Bigg ) \right|\Phi ^{\prime }\right\rangle .
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Then, a minor evaluation using Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ18">18</xref>) yields the phases in the form</p>
+<disp-formula id="equ51">
+<label>(51)</label>
+<tex-math id="TM0176" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\alpha _{nl}(t)=-\frac{\Lambda _{nl}}{2A_{0}\hbar }\int _{0}^{t}\frac{1}{\mu (t^{\prime })\rho ^{2}(t^{\prime })}dt^{\prime }+\alpha _{nl}(0),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0177" notation="LaTeX"><![CDATA[$\Lambda _{nl}$]]></tex-math></inline-formula> are given by Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ40">40</xref>). These phases emerge as a result of the time evolution of the wave functions and can produce observable consequences, such as interference patterns, through relative phase differences between quantum states. Both the geometrical phase and the conventional dynamical phase contribute to the total phase. While the dynamical phase results from the cumulation of energy over time, the geometric phase originates from the intrinsic geometry of the path traced by the state vector during evolution, often under adiabatic conditions. The significance of the geometrical phase lies in the fact that it is not a mathematical artifact but a physically meaningful, gauge-invariant quantity that can influence the actual quantum state of the system. It not only takes place in this system, but appears ubiquitously across various physical systems as well, and can be measured via interference experiments. Unlike the dynamical phase, which depends on the eigenvalues of the Hamiltonian, the geometrical phase depends on the trajectory of the eigenvectors themselves. As such, it plays a critical role in associated phenomena such as energy level splitting and the orbital behavior of quasiparticles, making it a subject of continued theoretical and experimental interest. In particular, in systems with irregular and nonlinear interactions, such as quark&#x2013;antiquark systems, it reflects the underlying symmetries, binding mechanisms, and topological features of the system [<xref ref-type="bibr" rid="bib49">49</xref>,<xref ref-type="bibr" rid="bib50">50</xref>]. Accordingly, the geometrical phase constitutes a fundamental component in the evolution of the system, linking theoretical descriptions to experimental observations.</p>
+<p>The solutions of the original Schr&#x00F6;dinger equation (<xref ref-type="disp-formula" rid="equ3">3</xref>) corresponding to the Hamiltonian in Eq. (<xref ref-type="disp-formula" rid="equ1">1</xref>) can now be written in configuration space as</p>
+<disp-formula id="equ52">
+<label>(52)</label>
+<tex-math id="TM0178" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\Psi _{nlm}(r,\theta ,\varphi ,t)=e^{i\alpha _{nl}(t)}\Phi _{nlm}(r,\theta ,\varphi ,t),
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where the explicit forms of <inline-formula><tex-math id="TM0179" notation="LaTeX"><![CDATA[$\alpha _{nl}(t)$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0180" notation="LaTeX"><![CDATA[$\Phi _{nlm}(r,\theta ,\varphi ,t)$]]></tex-math></inline-formula> are given in Eqs.&#x00A0;(<xref ref-type="disp-formula" rid="equ51">51</xref>) and (<xref ref-type="disp-formula" rid="equ47">47</xref>), respectively. The resulting wave functions (<xref ref-type="disp-formula" rid="equ52">52</xref>), together with <inline-formula><tex-math id="TM0181" notation="LaTeX"><![CDATA[$\Lambda _{nl}$]]></tex-math></inline-formula> in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ40">40</xref>), serve as fundamental solutions for the quark&#x2013;antiquark systems under consideration. The obtained wave functions enable us to compute spatial distributions (densities), transition probabilities, correlations, etc. Consequently, they provide a foundational framework for analyzing these systems, advancing our perspective on the interaction mechanisms between quarks and antiquarks, particularly in the context of quantum effects. The spatial structure of the wave functions enables estimation of key physical properties, such as the size of the particle (e.g. root-mean-square radius) and the binding strength of the bound state, which are critical for characterizing the complexity of strong interaction systems [<xref ref-type="bibr" rid="bib51">51</xref>,<xref ref-type="bibr" rid="bib52">52</xref>]. These wave functions thus serve as important tools for bridging theoretical predictions and experimental results, helping reveal the internal structure, confinement dynamics, and symmetry properties of the quark&#x2013;antiquark pair.</p>
+</sec>
+</sec>
+</sec>
+<sec id="sec3" sec-type="conclusions">
+<label>3.</label>
+<title>Conclusion</title>
+<p>In this study, we investigated the interaction between a quark and an antiquark by modeling its mechanical behavior using a nonstationary 3D harmonic oscillator coupled with a Coulomb potential. To solve the associated Schr&#x00F6;dinger equation, we employed the recently refined NUFA method, together with the invariant operator method and the unitary transformation approach. The NUFA method, based on a novel conceptual framework, allowed us to bypass the complex mathematical manipulations commonly encountered in other techniques. As a result, we obtained the wave functions of the system in closed form, expressed in terms of the Gauss hypergeometric function. These solutions offer advantages over previous ones that employed biconfluent Heun functions, as Gauss hypergeometric functions are among the most thoroughly characterized and best understood special functions in mathematics.</p>
+<p>Our solutions are essential for analyzing quark&#x2013;antiquark pairs, which form the core of mesons and thus play a central role in the strong interaction. Although their dynamics are governed by QCD, the theory exhibits intricate behavior that significantly deviates from classical, nonrelativistic mechanics, encompassing numerous unresolved challenges. These include the incomplete theoretical understanding of quark confinement and hadronization mechanisms, the precise determination of quark masses and meson spectra, and the possible existence of exotic hadrons featuring internal structure beyond conventional quark&#x2013;antiquark configurations [<xref ref-type="bibr" rid="bib53">53</xref>,<xref ref-type="bibr" rid="bib54">54</xref>]. Additional open questions involve the quantitative description of the quark condensate mechanism, the strong CP problem and the role of the <inline-formula><tex-math id="TM0182" notation="LaTeX"><![CDATA[$\theta$]]></tex-math></inline-formula>-term, as well as the difficulty in accurately predicting the spectral properties and decay modes of heavy mesons such as <inline-formula><tex-math id="TM0183" notation="LaTeX"><![CDATA[$J/\psi$]]></tex-math></inline-formula> [<xref ref-type="bibr" rid="bib5">5</xref>,<xref ref-type="bibr" rid="bib55">55</xref>]. The analytical solutions developed in this study may provide insights toward addressing these longstanding issues.</p>
+</sec>
+</body>
+<back>
+<sec id="sec4">
+<title>Funding</title>
+<p>Open Access funding: SCOAP<sup>3</sup>.</p>
+</sec>
+<app-group><app id="sec5"><label>Appendix A.</label>
+<title>Derivation of the normalization constants</title>
+<p>Although normalization is formally defined for the full wave functions, the phase factors do not affect the outcome. Therefore, in the normalization process, it suffices to consider only Eq. (<xref ref-type="disp-formula" rid="equ47">47</xref>), which corresponds to the eigenfunctions. The normalization condition associated with Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ47">47</xref>) is given by</p>
+<disp-formula id="equA1">
+<label>(A.1)</label>
+<tex-math id="TM0184" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\int _0^{2\pi } \int _0^\pi \int _0^\infty \left|\Phi _{nlm} (r,\theta ,\varphi ,t) \right|^{2}r^{2} \sin \theta dr d\theta d\varphi =1.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>Because the angular part <inline-formula><tex-math id="TM0185" notation="LaTeX"><![CDATA[$Y_{lm} (\theta ,\varphi )$]]></tex-math></inline-formula>, defined in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ21">21</xref>), is already normalized, we only need to consider the radial part in this evaluation. Thus, based on the radial part of Eq. (<xref ref-type="disp-formula" rid="equ47">47</xref>), Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equA1">A.1</xref>) can be rewritten as</p>
+<disp-formula id="equA2">
+<label>(A.2)</label>
+<tex-math id="TM0186" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\frac{\left|N_{nl}\right|^{2}}{\rho (t) }\int _{0}^{\infty }e^{-2\lambda \delta \frac{r}{\rho (t)}}\left( 1-e^{-\delta \frac{r}{\rho (t)}}\right) ^{2\upsilon }\left[ {_{2}F_{1}}(\bar{a},\bar{b};\bar{c};e^{-\delta \frac{r}{\rho (t)}})\right] ^{2}dr =1.
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>To simplify the integral, we introduce the substitution</p>
+<disp-formula id="equA3">
+<label>(A.3)</label>
+<tex-math id="TM0187" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+z=e^{-\delta \frac{r}{\rho (t)}},
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>and consider the fact that <inline-formula><tex-math id="TM0188" notation="LaTeX"><![CDATA[$\bar{a}$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0189" notation="LaTeX"><![CDATA[$\bar{b}$]]></tex-math></inline-formula> in this case can be expressed in terms of <italic>n</italic> as</p>
+<disp-formula id="equA4">
+<label>(A.4)</label>
+<tex-math id="TM0191" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\bar{a}=-n,~~~~~~~ \bar{b}=2(\upsilon +\lambda )+n,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>along with Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ44">44</xref>) as the formula of <inline-formula><tex-math id="TM0192" notation="LaTeX"><![CDATA[$\bar{c}$]]></tex-math></inline-formula>. Then, Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equA2">A.2</xref>) becomes</p>
+<disp-formula id="equA5">
+<label>(A.5)</label>
+<tex-math id="TM0193" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\frac{\left|N_{nl}\right|^{2}}{\delta }g_{\rm int}=1,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>where <inline-formula><tex-math id="TM0194" notation="LaTeX"><![CDATA[$g_{\rm int}$]]></tex-math></inline-formula> is the integral part:</p>
+<disp-formula id="equA6">
+<label>(A.6)</label>
+<tex-math id="TM0195" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+g_{\rm int}=\int _{0}^{1}z^{2\lambda -1} \left( 1-z\right) ^{2\upsilon }\left[ {_{2}F_{1}}(-n,2(\upsilon +\lambda )+n;2\lambda +1;z)\right] ^{2}dz .
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>To evaluate the integration <inline-formula><tex-math id="TM0196" notation="LaTeX"><![CDATA[$g_{\rm int}$]]></tex-math></inline-formula>, we use the expansion formula for the hypergeometric function (see formula 15.2.4 of Ref. [<xref ref-type="bibr" rid="bib45">45</xref>]):</p>
+<disp-formula id="equA7">
+<label>(A.7)</label>
+<tex-math id="TM0197" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+{_{2}F_{1}}(-n,b;c;s)=\sum _{k=0}^n (-1)^k \binom{n}{k} \frac{(b)_k}{(c)_k}s^k,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>which holds when <inline-formula><tex-math id="TM0198" notation="LaTeX"><![CDATA[$n=0,1,2,\cdots$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0199" notation="LaTeX"><![CDATA[$c \ne 0,-1,-2,\cdots$]]></tex-math></inline-formula>. This relation also holds when <inline-formula><tex-math id="TM0200" notation="LaTeX"><![CDATA[$c=-n-j$]]></tex-math></inline-formula>, where <inline-formula><tex-math id="TM0201" notation="LaTeX"><![CDATA[$j=0,1,2,\cdots$]]></tex-math></inline-formula>. Substituting this series expansion into Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equA6">A.6</xref>), we obtain</p>
+<disp-formula id="equA8">
+<label>(A.8)</label>
+<tex-math id="TM0202" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+g_{\rm int}&=&\sum _{k=0}^n\sum _{k^{\prime }=0}^n(-1)^{k+k^{\prime }}\binom{n}{k} \binom{n}{k^{\prime }} \frac{(2(\upsilon +\lambda )+n)_k (2(\upsilon +\lambda )+n)_{k^{\prime }}}{(2\lambda +1)_k(2\lambda +1)_{k^{\prime }}} \\&&\times \int _{0}^{1}z^{k+k^{\prime }+2\lambda -1} \left( 1-z\right) ^{2\upsilon }dz .
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>The integral in the above equation&#x00A0;is the Beta function, which is defined as [<xref ref-type="bibr" rid="bib48">48</xref>]</p>
+<disp-formula id="equA9">
+<label>(A.9)</label>
+<tex-math id="TM0203" notation="LaTeX"><![CDATA[$$\begin{eqnarray}
+\mathrm{B}(a_1,a_2)= \int _0^1 s^{a_1-1} (1-s)^{a_2-1} ds,
+\end{eqnarray}$$]]></tex-math>
+</disp-formula>
+<p>under the conditions <inline-formula><tex-math id="TM0204" notation="LaTeX"><![CDATA[${\rm Re}a_1\gt 0$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0205" notation="LaTeX"><![CDATA[${\rm Re}a_2\gt 0$]]></tex-math></inline-formula>. The two shape parameters of this function, in our case, are <inline-formula><tex-math id="TM0206" notation="LaTeX"><![CDATA[$a_1=k+k^{\prime }+2\lambda$]]></tex-math></inline-formula> and <inline-formula><tex-math id="TM0207" notation="LaTeX"><![CDATA[$a_2=2\upsilon +1$]]></tex-math></inline-formula>. Thus, considering that the Pochhammer number is given by <inline-formula><tex-math id="TM0208" notation="LaTeX"><![CDATA[$(a)_k=\Gamma (a+k)/\Gamma (a)$]]></tex-math></inline-formula>, where <inline-formula><tex-math id="TM0209" notation="LaTeX"><![CDATA[$a \ne 0,-1,-2,\cdots$]]></tex-math></inline-formula>, a rearrangement of Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equA5">A.5</xref>) with Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equA8">A.8</xref>) leads directly to the expression for the normalization constants <inline-formula><tex-math id="TM0210" notation="LaTeX"><![CDATA[$N_{nl}$]]></tex-math></inline-formula>, as presented in Eq.&#x00A0;(<xref ref-type="disp-formula" rid="equ48">48</xref>) of the text.</p></app></app-group>
+<ref-list id="ref1">
+<title>References</title>
+<ref id="bib1"><label>[1]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>H.-T.</given-names> <surname>Ding</surname></string-name>, <string-name name-style="western"><given-names>O.</given-names> <surname>Kaczmarek</surname></string-name>, <string-name name-style="western"><given-names>A.-L.</given-names> <surname>Kruse</surname></string-name>, <string-name name-style="western"><given-names>R.</given-names> <surname>Larsen</surname></string-name>, <string-name name-style="western"><given-names>L.</given-names> <surname>Mazur</surname></string-name>, <string-name name-style="western"><given-names>S.</given-names> <surname>Mukherjee</surname></string-name>, <string-name name-style="western"><given-names>H.</given-names> <surname>Ohno</surname></string-name>, <string-name name-style="western"><given-names>H.</given-names> <surname>Sandmeyer</surname></string-name>, <string-name name-style="western"><given-names>H.-T.</given-names> <surname>Shu</surname></string-name></person-group>, <source>Nucl. Phys. A</source>. <volume>982</volume>, <fpage>715</fpage> (<year>2019</year>).<pub-id pub-id-type="doi">10.1016/j.nuclphysa.2018.09.075</pub-id></mixed-citation></ref>
+<ref id="bib2"><label>[2]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>&#x00C9;.</given-names> <surname>Chapon</surname></string-name> <etal>et al.</etal></person-group>, <source>Prog. Part. Nucl. Phys.</source> <volume>122</volume>, <fpage>103906</fpage> (<year>2022</year>).<pub-id pub-id-type="doi">10.1016/j.ppnp.2021.103906</pub-id></mixed-citation></ref>
+<ref id="bib3"><label>[3]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>H.</given-names> <surname>Bahl</surname></string-name>, <string-name name-style="western"><given-names>S.</given-names> <surname>Koren</surname></string-name>, <string-name name-style="western"><given-names>L.-T.</given-names> <surname>Wang</surname></string-name></person-group>, <source>Eur. Phys. J. C</source>. <volume>84</volume>, <fpage>1100</fpage> (<year>2024</year>).<pub-id pub-id-type="doi">10.1140/epjc/s10052-024-13411-3</pub-id></mixed-citation></ref>
+<ref id="bib4"><label>[4]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>M.</given-names> <surname>Doser</surname></string-name>, <string-name name-style="western"><given-names>G.</given-names> <surname>Farrar</surname></string-name>, <string-name name-style="western"><given-names>G.</given-names> <surname>Kornakov</surname></string-name></person-group>, <source>Eur. Phys. J. C</source>. <volume>83</volume>, <fpage>1149</fpage> (<year>2023</year>).<pub-id pub-id-type="doi">10.1140/epjc/s10052-023-12319-8</pub-id></mixed-citation></ref>
+<ref id="bib5"><label>[5]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>T.</given-names> <surname>Li</surname></string-name>, <string-name name-style="western"><given-names>X.-D.</given-names> <surname>Ma</surname></string-name>, <string-name name-style="western"><given-names>M. A.</given-names> <surname>Schmidt</surname></string-name>, <string-name name-style="western"><given-names>R.-J.</given-names> <surname>Zhang</surname></string-name></person-group>, <source>Phys. Rev. D</source>. <volume>104</volume>, <fpage>035024</fpage> (<year>2021</year>).<pub-id pub-id-type="doi">10.1103/PhysRevD.104.035024</pub-id></mixed-citation></ref>
+<ref id="bib6"><label>[6]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>E.</given-names> <surname>Oks</surname></string-name></person-group>, <source>New Astron. Rev.</source> <volume>93</volume>, <fpage>101632</fpage> (<year>2021</year>).<pub-id pub-id-type="doi">10.1016/j.newar.2021.101632</pub-id></mixed-citation></ref>
+<ref id="bib7"><label>[7]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>Q.</given-names> <surname>Bonnefoy</surname></string-name>, <string-name name-style="western"><given-names>L.</given-names> <surname>Hall</surname></string-name>, <string-name name-style="western"><given-names>C. A.</given-names> <surname>Manzari</surname></string-name>, <string-name name-style="western"><given-names>A.</given-names> <surname>McCune</surname></string-name>, <string-name name-style="western"><given-names>C.</given-names> <surname>Scherb</surname></string-name></person-group>, <source>Phys. Rev. D</source>. <volume>109</volume>, <fpage>055045</fpage> (<year>2024</year>).<pub-id pub-id-type="doi">10.1103/PhysRevD.109.055045</pub-id></mixed-citation></ref>
+<ref id="bib8"><label>[8]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>S.</given-names> <surname>Catto</surname></string-name>, <string-name name-style="western"><given-names>F.</given-names> <surname>G&#x00FC;rsey</surname></string-name></person-group>, <source>Nuovo Cimento A</source>. <volume>99</volume>, <fpage>685</fpage> (<year>1988</year>).<pub-id pub-id-type="doi">10.1007/BF02730633</pub-id></mixed-citation></ref>
+<ref id="bib9"><label>[9]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>S.</given-names> <surname>Catto</surname></string-name>, <string-name name-style="western"><given-names>H. Y.</given-names> <surname>Cheung</surname></string-name>, <string-name name-style="western"><given-names>F.</given-names> <surname>G&#x00FC;rsey</surname></string-name></person-group>, <source>Mod. Phys. Lett. A</source>. <volume>6</volume>, <fpage>3485</fpage> (<year>1991</year>).<pub-id pub-id-type="doi">10.1142/S0217732391004024</pub-id></mixed-citation></ref>
+<ref id="bib10"><label>[10]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>A. S.</given-names> <surname>de&#x00A0;Castro</surname></string-name></person-group>, <source>Phys. Lett. A</source>. <volume>346</volume>, <fpage>71</fpage> (<year>2005</year>).<pub-id pub-id-type="doi">10.1016/j.physleta.2005.07.065</pub-id></mixed-citation></ref>
+<ref id="bib11"><label>[11]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>Y.-S.</given-names> <surname>Choun</surname></string-name>, <string-name name-style="western"><given-names>S.-J.</given-names> <surname>Sin</surname></string-name></person-group>, <source>Prog. Theor. Exp. Phys.</source> <volume>2021</volume>, <fpage>013A01</fpage> (<year>2021</year>).<pub-id pub-id-type="doi">10.1093/ptep/ptaa157</pub-id></mixed-citation></ref>
+<ref id="bib12"><label>[12]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>H. S.</given-names> <surname>Vieira</surname></string-name>, <string-name name-style="western"><given-names>V. B.</given-names> <surname>Bezerra</surname></string-name></person-group>, <source>J. Math. Phys.</source> <volume>56</volume>, <fpage>092501</fpage> (<year>2015</year>).<pub-id pub-id-type="doi">10.1063/1.4930871</pub-id></mixed-citation></ref>
+<ref id="bib13"><label>[13]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>D. M.</given-names> <surname>Reyna-Mu&#x00F1;oz</surname></string-name>, <string-name name-style="western"><given-names>M. A.</given-names> <surname>Reyes</surname></string-name>, <string-name name-style="western"><given-names>A. F.</given-names> <surname>T&#x00E9;llez</surname></string-name></person-group>, <source>Rev. Mex. Fis. E</source>. <volume>21</volume>, <fpage>010209</fpage> (<year>2024</year>).</mixed-citation></ref>
+<ref id="bib14"><label>[14]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>A.</given-names> <surname>Ishkhanyan</surname></string-name>, <string-name name-style="western"><given-names>K.-A.</given-names> <surname>Suominen</surname></string-name></person-group>, <source>J. Phys. A: Math. Gen.</source> <volume>34</volume>, <fpage>6301</fpage> (<year>2001</year>).<pub-id pub-id-type="doi">10.1088/0305-4470/34/32/309</pub-id></mixed-citation></ref>
+<ref id="bib15"><label>[15]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>F.</given-names> <surname>Caruso</surname></string-name>, <string-name name-style="western"><given-names>J.</given-names> <surname>Martins</surname></string-name>, <string-name name-style="western"><given-names>V.</given-names> <surname>Oguri</surname></string-name></person-group>, <source>Ann. Phys.</source> <volume>347</volume>, <fpage>130</fpage> (<year>2014</year>).<pub-id pub-id-type="doi">10.1016/j.aop.2014.04.023</pub-id></mixed-citation></ref>
+<ref id="bib16"><label>[16]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>J.</given-names> <surname>Karwowski</surname></string-name>, <string-name name-style="western"><given-names>H. A.</given-names> <surname>Witek</surname></string-name></person-group>, <source>Theor. Chem. Acc.</source> <volume>133</volume>, <fpage>1494</fpage> (<year>2014</year>).<pub-id pub-id-type="doi">10.1007/s00214-014-1494-5</pub-id></mixed-citation></ref>
+<ref id="bib17"><label>[17]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>A.</given-names> <surname>Roseau</surname></string-name></person-group>, <source>Bull. Belg. Math. Soc.</source> <volume>9</volume>, <fpage>321</fpage> (<year>2002</year>).</mixed-citation></ref>
+<ref id="bib18"><label>[18]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>E. R.</given-names> <surname>Arriola</surname></string-name>, <string-name name-style="western"><given-names>A.</given-names> <surname>Zarzo</surname></string-name>, <string-name name-style="western"><given-names>J. S.</given-names> <surname>Dehesa</surname></string-name></person-group>, <source>J. Comput. Appl. Math.</source> <volume>37</volume>, <fpage>161</fpage> (<year>1991</year>).<pub-id pub-id-type="doi">10.1016/0377-0427(91)90114-Y</pub-id></mixed-citation></ref>
+<ref id="bib19"><label>[19]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>E. S.</given-names> <surname>Cheb-Terrab</surname></string-name></person-group>, <source>J. Phys. A: Math. Gen.</source> <volume>37</volume>, <fpage>9923</fpage> (<year>2004</year>).<pub-id pub-id-type="doi">10.1088/0305-4470/37/42/007</pub-id></mixed-citation></ref>
+<ref id="bib20"><label>[20]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>P.</given-names> <surname>Bagchi</surname></string-name>, <string-name name-style="western"><given-names>A.</given-names> <surname>Das</surname></string-name>, <string-name name-style="western"><given-names>A. P.</given-names> <surname>Mishra</surname></string-name>, <string-name name-style="western"><given-names>A. K.</given-names> <surname>Panda</surname></string-name></person-group>, <source>Mod. Phys. Lett. A</source>. <volume>41</volume>, <fpage>2650051</fpage> (<year>2026</year>).<pub-id pub-id-type="doi">10.1142/S0217732326500513</pub-id></mixed-citation></ref>
+<ref id="bib21"><label>[21]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>Y.</given-names> <surname>Akamatsu</surname></string-name></person-group>, <source>Prog. Part. Nucl. Phys.</source> <volume>123</volume>, <fpage>103932</fpage> (<year>2022</year>).<pub-id pub-id-type="doi">10.1016/j.ppnp.2021.103932</pub-id></mixed-citation></ref>
+<ref id="bib22"><label>[22]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>T.</given-names> <surname>Hayata</surname></string-name>, <string-name name-style="western"><given-names>K.</given-names> <surname>Nawa</surname></string-name>, <string-name name-style="western"><given-names>T.</given-names> <surname>Hatsuda</surname></string-name></person-group>, <source>Phys. Rev. D</source>. <volume>87</volume>, <fpage>101901(R)</fpage> (<year>2013</year>).<pub-id pub-id-type="doi">10.1103/PhysRevD.87.101901</pub-id></mixed-citation></ref>
+<ref id="bib23"><label>[23]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>H. R.</given-names> <surname>Lewis</surname> <suffix>Jr</suffix></string-name></person-group>, <source>Phys. Rev. Lett.</source> <volume>18</volume>, <fpage>510</fpage> (<year>1967</year>).<pub-id pub-id-type="doi">10.1103/PhysRevLett.18.510</pub-id></mixed-citation></ref>
+<ref id="bib24"><label>[24]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>H. R.</given-names> <surname>Lewis</surname> <suffix>Jr</suffix></string-name>, <string-name name-style="western"><given-names>W. B.</given-names> <surname>Riesenfeld</surname></string-name></person-group>, <source>J. Math. Phys.</source> <volume>10</volume>, <fpage>1458</fpage> (<year>1969</year>).<pub-id pub-id-type="doi">10.1063/1.1664991</pub-id></mixed-citation></ref>
+<ref id="bib25"><label>[25]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>S.</given-names> <surname>Menouar</surname></string-name>, <string-name name-style="western"><given-names>J. R.</given-names> <surname>Choi</surname></string-name></person-group>, <source>AIP Adv.</source> <volume>6</volume>, <fpage>095110</fpage> (<year>2016</year>).<pub-id pub-id-type="doi">10.1063/1.4962995</pub-id></mixed-citation></ref>
+<ref id="bib26"><label>[26]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>J. R.</given-names> <surname>Choi</surname></string-name></person-group>, <source>Chin. Phys. C</source>. <volume>35</volume>, <fpage>233</fpage> (<year>2011</year>).<pub-id pub-id-type="doi">10.1088/1674-1137/35/3/005</pub-id></mixed-citation></ref>
+<ref id="bib27"><label>[27]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>J.-H.</given-names> <surname>Mun</surname></string-name>, <string-name name-style="western"><given-names>H.</given-names> <surname>Sakai</surname></string-name>, <string-name name-style="western"><given-names>D.-E.</given-names> <surname>Kim</surname></string-name></person-group>, <source>Int. J. Mol. Sci.</source> <volume>22</volume>, <fpage>8514</fpage> (<year>2021</year>).<pub-id pub-id-type="doi">10.3390/ijms22168514</pub-id></mixed-citation></ref>
+<ref id="bib28"><label>[28]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>S.</given-names> <surname>Menouar</surname></string-name>, <string-name name-style="western"><given-names>J. R.</given-names> <surname>Choi</surname></string-name></person-group>, <source>Ann. Phys.</source> <volume>353</volume>, <fpage>307</fpage> (<year>2015</year>).<pub-id pub-id-type="doi">10.1016/j.aop.2014.11.014</pub-id></mixed-citation></ref>
+<ref id="bib29"><label>[29]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>A. N.</given-names> <surname>Ikot</surname></string-name>, <string-name name-style="western"><given-names>U. S.</given-names> <surname>Okorie</surname></string-name>, <string-name name-style="western"><given-names>P. O.</given-names> <surname>Amadi</surname></string-name>, <string-name name-style="western"><given-names>C. O.</given-names> <surname>Edet</surname></string-name>, <string-name name-style="western"><given-names>G. J.</given-names> <surname>Rampho</surname></string-name>, <string-name name-style="western"><given-names>R.</given-names> <surname>Sever</surname></string-name></person-group>, <source>Few-Body Syst.</source> <volume>62</volume>, <fpage>1</fpage> (<year>2021</year>).</mixed-citation></ref>
+<ref id="bib30"><label>[30]</label><mixed-citation publication-type="book"><person-group person-group-type="author"><string-name name-style="western"><given-names>A. F.</given-names> <surname>Nikiforov</surname></string-name>, <string-name name-style="western"><given-names>V. B.</given-names> <surname>Uvarov</surname></string-name></person-group>, <source>Special Functions of Mathematical Physics</source> (<publisher-name>Birkh&#x00E4;user</publisher-name>, <publisher-loc>Boston, MA</publisher-loc>, <year>1988</year>), p. <comment>205</comment>.<pub-id pub-id-type="doi">10.1007/978-1-4757-1595-8</pub-id></mixed-citation></ref>
+<ref id="bib31"><label>[31]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>C.</given-names> <surname>Tezcan</surname></string-name>, <string-name name-style="western"><given-names>R.</given-names> <surname>Sever</surname></string-name></person-group>, <source>Int. J. Theor. Phys.</source> <volume>48</volume>, <fpage>337</fpage> (<year>2009</year>).<pub-id pub-id-type="doi">10.1007/s10773-008-9806-y</pub-id></mixed-citation></ref>
+<ref id="bib32"><label>[32]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>S.</given-names> <surname>Medjber</surname></string-name>, <string-name name-style="western"><given-names>H.</given-names> <surname>Bekkar</surname></string-name>, <string-name name-style="western"><given-names>S.</given-names> <surname>Menouar</surname></string-name>, <string-name name-style="western"><given-names>J. R.</given-names> <surname>Choi</surname></string-name></person-group>, <source>Adv. Math. Phys.</source> <volume>2016</volume>, <fpage>3693572</fpage> (<year>2016</year>).<pub-id pub-id-type="doi">10.1155/2016/3693572</pub-id></mixed-citation></ref>
+<ref id="bib33"><label>[33]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>J. R.</given-names> <surname>Choi</surname></string-name>, <string-name name-style="western"><given-names>S.</given-names> <surname>Menouar</surname></string-name>, <string-name name-style="western"><given-names>S.</given-names> <surname>Medjber</surname></string-name>, <string-name name-style="western"><given-names>H.</given-names> <surname>Bekkar</surname></string-name></person-group>, <source>J. Phys. Commun.</source> <volume>1</volume>, <fpage>052001</fpage> (<year>2017</year>).<pub-id pub-id-type="doi">10.1088/2399-6528/aa83f6</pub-id></mixed-citation></ref>
+<ref id="bib34"><label>[34]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>S.</given-names> <surname>Menouar</surname></string-name>, <string-name name-style="western"><given-names>J. R.</given-names> <surname>Choi</surname></string-name>, <string-name name-style="western"><given-names>R.</given-names> <surname>Sever</surname></string-name></person-group>, <source>Nonlinear Dyn.</source> <volume>92</volume>, <fpage>659</fpage> (<year>2018</year>).<pub-id pub-id-type="doi">10.1007/s11071-018-4081-9</pub-id></mixed-citation></ref>
+<ref id="bib35"><label>[35]</label><mixed-citation publication-type="book"><person-group person-group-type="author"><string-name name-style="western"><given-names>M.</given-names> <surname>Abramowitz</surname></string-name>, <string-name name-style="western"><given-names>I. A.</given-names> <surname>Stegun</surname></string-name></person-group>, <source>Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables</source> (<publisher-name>Dover</publisher-name>, <publisher-loc>New York</publisher-loc>, <year>1972</year>).</mixed-citation></ref>
+<ref id="bib36"><label>[36]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>R. L.</given-names> <surname>Greene</surname></string-name>, <string-name name-style="western"><given-names>C.</given-names> <surname>Aldrich</surname></string-name></person-group>, <source>Phys. Rev. A</source>. <volume>14</volume>, <fpage>2363</fpage> (<year>1976</year>).<pub-id pub-id-type="doi">10.1103/PhysRevA.14.2363</pub-id></mixed-citation></ref>
+<ref id="bib37"><label>[37]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>R.</given-names> <surname>Horchani</surname></string-name>, <string-name name-style="western"><given-names>E.</given-names> <surname>Omugbe</surname></string-name>, <string-name name-style="western"><given-names>I. J.</given-names> <surname>Njoku</surname></string-name>, <string-name name-style="western"><given-names>L. M.</given-names> <surname>P&#x00E9;rez</surname></string-name>, <string-name name-style="western"><given-names>C. A.</given-names> <surname>Onate</surname></string-name>, <string-name name-style="western"><given-names>A.</given-names> <surname>Jahanshir</surname></string-name>, <string-name name-style="western"><given-names>E.</given-names> <surname>Feddi</surname></string-name>, <string-name name-style="western"><given-names>K. O.</given-names> <surname>Emeje</surname></string-name>, <string-name name-style="western"><given-names>E. S.</given-names> <surname>Eyube</surname></string-name></person-group>, <source>Sci. Rep.</source> <volume>14</volume>, <fpage>28582</fpage> (<year>2024</year>).<pub-id pub-id-type="doi">10.1038/s41598-024-80123-9</pub-id></mixed-citation></ref>
+<ref id="bib38"><label>[38]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>C.</given-names> <surname>Ertugay</surname></string-name>, <string-name name-style="western"><given-names>C. O.</given-names> <surname>Edet</surname></string-name>, <string-name name-style="western"><given-names>A. N.</given-names> <surname>Ikot</surname></string-name>, <string-name name-style="western"><given-names>B. C.</given-names> <surname>L&#x00FC;tf&#x00FC;o&#x011F;lu</surname></string-name></person-group>, <source>Mol. Phys.</source> <volume>123</volume>, <fpage>e2411327</fpage> (<year>2025</year>).<pub-id pub-id-type="doi">10.1080/00268976.2024.2411327</pub-id></mixed-citation></ref>
+<ref id="bib39"><label>[39]</label><mixed-citation publication-type="other"><person-group person-group-type="author"><string-name name-style="western"><surname>A.&#x00A0;N.</surname> <given-names>Ikot</given-names></string-name>, <string-name name-style="western"><surname>U.&#x00A0;S.</surname> <given-names>Okorie</given-names></string-name>, <string-name name-style="western"><surname>R.</surname> <given-names>Sever</given-names></string-name>, <string-name name-style="western"><surname>G.&#x00A0;J.</surname> <given-names>Rampho</given-names></string-name></person-group>, <source>Eur. Phys. J. Plus</source>, <volume>134</volume>, <fpage>386</fpage> (<year>2019</year>).</mixed-citation></ref>
+<ref id="bib40"><label>[40]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>D.-H.</given-names> <surname>Lin</surname></string-name>, <string-name name-style="western"><given-names>F.-X.</given-names> <surname>Xie</surname></string-name></person-group>, <source>Acta Phys. Sin.</source> <volume>33</volume>, <fpage>1569</fpage> (<year>1984</year>).<pub-id pub-id-type="doi">10.7498/aps.33.1569</pub-id></mixed-citation></ref>
+<ref id="bib41"><label>[41]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>B.-Q.</given-names> <surname>Li</surname></string-name>, <string-name name-style="western"><given-names>K.-T.</given-names> <surname>Chao</surname></string-name></person-group>, <source>Commun. Theor. Phys.</source> <volume>52</volume>, <fpage>653</fpage> (<year>2009</year>).<pub-id pub-id-type="doi">10.1088/0253-6102/52/4/20</pub-id></mixed-citation></ref>
+<ref id="bib42"><label>[42]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>J.</given-names> <surname>Derezi&#x0144;ski</surname></string-name></person-group>, <source>Ann. Henri Poincar&#x00E9;</source>. <volume>15</volume>, <fpage>1569</fpage> (<year>2014</year>).<pub-id pub-id-type="doi">10.1007/s00023-013-0282-4</pub-id></mixed-citation></ref>
+<ref id="bib43"><label>[43]</label><mixed-citation publication-type="book"><person-group person-group-type="author"><string-name name-style="western"><given-names>W.</given-names> <surname>Koepf</surname></string-name></person-group>, <source>Hypergeometric Summation&#x2013;An Algorithmic Approach to Summation and Special Function Identities</source> (<publisher-name>Springer</publisher-name>, <publisher-loc>London</publisher-loc>, <year>2014</year>).<pub-id pub-id-type="doi">10.1007/978-1-4471-6464-7</pub-id></mixed-citation></ref>
+<ref id="bib44"><label>[44]</label><mixed-citation publication-type="book"><person-group person-group-type="author"><string-name name-style="western"><given-names>G.</given-names> <surname>Kristensson</surname></string-name></person-group>, <article-title>Confluent hypergeometric functions</article-title>, in <source>Second Order Differential Equations: Special Functions and Their Classification</source> (<publisher-name>Springer</publisher-name>, <publisher-loc>New York</publisher-loc>, <year>2010</year>),<comment>Chap. 7, p. 123</comment>.<pub-id pub-id-type="doi">10.1007/978-1-4419-7020-6_7</pub-id></mixed-citation></ref>
+<ref id="bib45"><label>[45]</label><mixed-citation publication-type="book"><person-group person-group-type="author"><string-name name-style="western"><given-names>F. W. J.</given-names> <surname>Olver</surname></string-name>, <string-name name-style="western"><given-names>D. W.</given-names> <surname>Lozier</surname></string-name>, <string-name name-style="western"><given-names>R. F.</given-names> <surname>Boisvert</surname></string-name>, <string-name name-style="western"><given-names>C. W.</given-names> <surname>Clark</surname></string-name></person-group>, <source>NIST Handbook of Mathematical Functions</source> (<publisher-name>Cambridge University Press</publisher-name>, <publisher-loc>New York</publisher-loc>, <year>2010</year>), p. <comment>385.(formula 15.2.4) and p. 393 (formula 15.9.1)</comment>.</mixed-citation></ref>
+<ref id="bib46"><label>[46]</label><mixed-citation publication-type="book"><person-group person-group-type="author"><string-name name-style="western"><given-names>H.</given-names> <surname>Hellmann</surname></string-name></person-group>, <source>Einf&#x00FC;hrung in die Quantenchemie</source> (<publisher-name>F. Deuticke</publisher-name>, <publisher-loc>Leipzig</publisher-loc>, <year>1937</year>).</mixed-citation></ref>
+<ref id="bib47"><label>[47]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>R. P.</given-names> <surname>Feynman</surname></string-name></person-group>, <source>Phys. Rev.</source> <volume>56</volume>, <fpage>340</fpage> (<year>1939</year>).<pub-id pub-id-type="doi">10.1103/PhysRev.56.340</pub-id></mixed-citation></ref>
+<ref id="bib48"><label>[48]</label><mixed-citation publication-type="other"><person-group person-group-type="author"><string-name name-style="western"><given-names>I. S.</given-names> <surname>Gradshteyn</surname></string-name>, <string-name name-style="western"><given-names>I. M.</given-names> <surname>Ryzhik</surname></string-name></person-group>, <source>Table of Integrals, Series, and Products</source> (<publisher-name>Elsevier</publisher-name>, <publisher-loc>Amsterdam</publisher-loc>, <year>2007</year>), <comment>7th ed., p. 908 (formula 3.380(1)) or p. 315 (formula 3.191(3))</comment>.</mixed-citation></ref>
+<ref id="bib49"><label>[49]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>S.</given-names> <surname>Banerjee</surname></string-name>, <string-name name-style="western"><given-names>M.</given-names> <surname>Dorband</surname></string-name>, <string-name name-style="western"><given-names>J.</given-names> <surname>Erdmenger</surname></string-name>, <string-name name-style="western"><given-names>A.-L.</given-names> <surname>Weigel</surname></string-name></person-group>, <source>J. High Energy Phys.</source> <volume>2023</volume>, <fpage>026</fpage> (<year>2023</year>).<pub-id pub-id-type="doi">10.1007/JHEP10(2023)026</pub-id></mixed-citation></ref>
+<ref id="bib50"><label>[50]</label><mixed-citation publication-type="other"><person-group person-group-type="author"><string-name name-style="western"><given-names>T.</given-names> <surname>Asselmeyer-Maluga</surname></string-name>, <string-name name-style="western"><given-names>M.</given-names> <surname>Lulli</surname></string-name>, <string-name name-style="western"><given-names>A.</given-names> <surname>Marcian&#x00F2;</surname></string-name>, <string-name name-style="western"><given-names>R.</given-names> <surname>Pasechnik</surname></string-name>, <string-name name-style="western"><given-names>E.</given-names> <surname>Zappala</surname></string-name></person-group>, <pub-id pub-id-type="arxiv">arXiv:2408.15986v3</pub-id> <comment>[hep-th] [<ext-link ext-link-type="uri" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://inspirehep.net/literature?q=find%20EPRINT%202408.15986v3">Search inSPIRE</ext-link>]</comment>.</mixed-citation></ref>
+<ref id="bib51"><label>[51]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>M.</given-names> <surname>Alberg</surname></string-name>, <string-name name-style="western"><given-names>G. A.</given-names> <surname>Miller</surname></string-name></person-group>, <source>Phys. Rev. C</source>. <volume>110</volume>, <fpage>L042201</fpage> (<year>2024</year>).<pub-id pub-id-type="doi">10.1103/PhysRevC.110.L042201</pub-id></mixed-citation></ref>
+<ref id="bib52"><label>[52]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>G.</given-names> <surname>Ganbold</surname></string-name></person-group>, <source>EPJ Web Conf.</source> <volume>3</volume>, <fpage>03014</fpage> (<year>2010</year>).<pub-id pub-id-type="doi">10.1051/epjconf/20100303014</pub-id></mixed-citation></ref>
+<ref id="bib53"><label>[53]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>G. F.</given-names> <surname>de&#x00A0;T&#x00E9;ramond</surname></string-name>, <string-name name-style="western"><given-names>S. J.</given-names> <surname>Brodsky</surname></string-name></person-group>, <source>Int. J. Mod. Phys. A</source>. <volume>39</volume>, <fpage>2441007</fpage> (<year>2024</year>).</mixed-citation></ref>
+<ref id="bib54"><label>[54]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><string-name name-style="western"><given-names>N.</given-names> <surname>H&#x00FC;sken</surname></string-name>, <string-name name-style="western"><given-names>E. S.</given-names> <surname>Norella</surname></string-name>, <string-name name-style="western"><given-names>I.</given-names> <surname>Polyakov</surname></string-name></person-group>, <source>Mod. Phys. Lett. A</source>. <volume>40</volume>, <fpage>2530002</fpage> (<year>2025</year>).</mixed-citation></ref>
+<ref id="bib55"><label>[55]</label><mixed-citation publication-type="journal"><person-group person-group-type="author"><collab>ALICE Collaboration</collab></person-group>, <source>Eur. Phys. J. C</source>. <volume>84</volume>, <fpage>813</fpage> (<year>2024</year>).</mixed-citation></ref>
+</ref-list>
+</back>
+</article>

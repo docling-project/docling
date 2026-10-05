@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import warnings
 from pathlib import Path
 
@@ -42,7 +45,7 @@ def get_converter():
 
 
 def test_picture_classifier():
-    pdf_path = Path("tests/data/pdf/picture_classification.pdf")
+    pdf_path = Path("tests/data/pdf/sources/picture_classification.pdf")
     converter = get_converter()
 
     print(f"converting {pdf_path}")

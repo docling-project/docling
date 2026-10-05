@@ -49,7 +49,6 @@ from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, Response
 from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, ImageFormatOption
 from docling.pipeline.base_pipeline import ConvertPipeline
-from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.accelerator_utils import decide_device
@@ -101,7 +100,7 @@ def run(
     ),
     doc_size: int = 192,
     batch_size: int = 64,
-    pipeline: Literal["standard", "vlm", "legacy"] = "standard",
+    pipeline: Literal["standard", "vlm"] = "standard",
 ):
     acc_opts = AcceleratorOptions()
     device = decide_device(acc_opts.device)
@@ -116,15 +115,6 @@ def run(
 
     if pipeline == "standard":
         pipeline_cls: type[ConvertPipeline] = StandardPdfPipeline
-        pipeline_options: PipelineOptions = PdfPipelineOptions(
-            ocr_options=ocr_options,
-            ocr_batch_size=batch_size,
-            layout_batch_size=batch_size,
-            table_batch_size=4,
-        )
-    elif pipeline == "legacy":
-        settings.perf.page_batch_size = batch_size
-        pipeline_cls: type[ConvertPipeline] = LegacyStandardPdfPipeline
         pipeline_options: PipelineOptions = PdfPipelineOptions(
             ocr_options=ocr_options,
             ocr_batch_size=batch_size,

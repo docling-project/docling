@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Utilities for parsing DeepSeek OCR annotated markdown format."""
 
 import logging
@@ -252,9 +255,10 @@ def parse_deepseekocr_markdown(
 
     Args:
         content: The annotated markdown content string
-        page_image: Optional PIL Image of the page
-        page_no: Page number (default: 1)
-        filename: Source filename (default: "file")
+        original_page_size: Physical page dimensions (points).
+        page_no: Page number (1-based).
+        filename: Source filename.
+        page_image: Optional PIL image of the page.
 
     Returns:
         DoclingDocument with parsed content
@@ -386,3 +390,45 @@ def parse_deepseekocr_markdown(
         )
 
     return page_doc
+
+
+_UNLIMITED_OCR_ANNOTATION = re.compile(
+    r"<\|det\|>\s*(?P<label>[a-z_]+)\s*\[(?P<bbox>\d+(?:\s*,\s*\d+){3})\]<\|/det\|>"
+)
+
+
+def normalize_unlimited_ocr_annotations(content: str) -> str:
+    """Rewrite Unlimited-OCR grounding annotations into the DeepSeek-OCR shape.
+
+    Unlimited-OCR emits ``<|det|>label [x1, y1, x2, y2]<|/det|>content`` while
+    :func:`parse_deepseekocr_markdown` expects ``<|ref|>label<|/ref|>``,
+    double-bracketed coordinates, and the annotation alone on its line. Content that is
+    already in the DeepSeek-OCR shape is returned unchanged.
+    """
+    return _UNLIMITED_OCR_ANNOTATION.sub(
+        lambda m: (
+            f"<|ref|>{m.group('label')}<|/ref|><|det|>[[{m.group('bbox')}]]<|/det|>\n"
+        ),
+        content,
+    )
+
+
+def parse_unlimited_ocr_markdown(
+    content: str,
+    original_page_size: Size,
+    page_no: int,
+    filename: str = "file",
+    page_image: Optional[PILImage.Image] = None,
+) -> DoclingDocument:
+    """Parse Unlimited-OCR grounding output into a :class:`DoclingDocument`.
+
+    The layout labels and bounding boxes match DeepSeek-OCR, so the annotations are
+    normalised and handed to :func:`parse_deepseekocr_markdown`.
+    """
+    return parse_deepseekocr_markdown(
+        content=normalize_unlimited_ocr_annotations(content),
+        original_page_size=original_page_size,
+        page_no=page_no,
+        filename=filename,
+        page_image=page_image,
+    )

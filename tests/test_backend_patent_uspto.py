@@ -1,7 +1,11 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test methods in module docling.backend.patent_uspto_backend.py."""
 
 import logging
 import os
+from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -9,16 +13,75 @@ import pytest
 from docling_core.types import DoclingDocument
 from docling_core.types.doc import DocItemLabel, TableData, TextItem
 
-from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend, XmlTable
-from docling.datamodel.base_models import InputFormat
+from docling.backend.xml.uspto_backend import (
+    PatentUsptoDocumentBackend,
+    XmlTable,
+    _extract_raw_tables,
+)
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
+from docling.document_converter import DocumentConverter
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
 
 GENERATE: bool = GEN_TEST_DATA
-DATA_PATH: Path = Path("./tests/data/uspto/")
-GT_PATH: Path = Path("./tests/data/groundtruth/docling_v2/")
+DATA_PATH: Path = Path("./tests/data/uspto/sources/")
+GT_PATH: Path = Path("./tests/data/uspto/groundtruth/")
+
+
+def test_patent_uspto_grant_aps_accepts_crlf_bytesio(tmp_path: Path) -> None:
+    source = DATA_PATH / "pftaps057006474.txt"
+    content = b"\r\n".join(source.read_bytes().splitlines()) + b"\r\n"
+    path = tmp_path / "pftaps057006474.txt"
+    path.write_bytes(content)
+
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XML_USPTO,
+        backend=PatentUsptoDocumentBackend,
+    )
+    stream_backend = PatentUsptoDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(content),
+    )
+
+    assert stream_backend.is_valid()
+
+    stream_document = stream_backend.convert()
+    assert len(stream_document.texts) == 75
+    assert stream_document.texts[0].text == "Carbocation containing cyanine-type dye"
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "pftaps057006474.txt",  # APS text
+        "pg06442728.xml",  # grant v2.5
+        "pa20010031492.xml",  # application v1
+        "ipg07997973.xml",  # ICE v4
+    ],
+)
+def test_patent_uspto_converts_a_stream_source(name: str) -> None:
+    """A stream source must convert to the same document as its path.
+
+    ``InputDocument`` reads a stream to its end to hash it, and the backend read
+    on from wherever the stream happened to be, so the patent came out empty and
+    the document was rejected. That hit every stream source, including a plain
+    string path, which ``DocumentConverter`` turns into a stream.
+    """
+    source = DATA_PATH / name
+    converter = DocumentConverter(allowed_formats=[InputFormat.XML_USPTO])
+
+    expected = converter.convert(source).document.export_to_markdown()
+
+    from_stream = converter.convert(
+        DocumentStream(name=name, stream=BytesIO(source.read_bytes()))
+    ).document
+    assert from_stream.export_to_markdown() == expected
+
+    from_string_path = converter.convert(str(source)).document
+    assert from_string_path.export_to_markdown() == expected
 
 
 def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:
@@ -29,7 +92,7 @@ def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:
         coord_precision=COORD_PREC,
         confid_precision=CONFID_PREC,
     )
-    doc.save_as_markdown(GT_PATH / f"{file_stem}.md")
+    doc.save_as_markdown(GT_PATH / f"{file_stem}.md", compact_tables=True)
 
 
 @pytest.fixture(scope="module")
@@ -116,7 +179,7 @@ def test_patent_groundtruth(patents, groundtruth):
             continue
         md_name = path.stem + ".md"
         if md_name in gt_names:
-            pred_md = doc.export_to_markdown()
+            pred_md = doc.export_to_markdown(compact_tables=True)
             assert pred_md == gt_names[md_name], (
                 f"Markdown file mismatch against groundtruth {md_name}"
             )
@@ -141,6 +204,50 @@ def test_tables(tables):
     assert file_table.num_rows == 13
     assert file_table.num_cols == 10
     assert len(file_table.table_cells) == 130
+
+
+def test_table_out_of_range_namest_does_not_crash():
+    """An entry whose numeric namest points past the declared columns must degrade, not crash."""
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        '<tbody><row><entry namest="9">a</entry></row></tbody>'
+        "</tgroup></table>"
+    )
+    table = XmlTable(xml).parse()
+    assert table is not None
+    assert table.num_cols == 2
+    # the malformed cell is dropped; a well-formed sibling table still parses
+    well_formed = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        "<tbody><row><entry>a</entry><entry>b</entry></row></tbody>"
+        "</tgroup></table>"
+    )
+    ok = XmlTable(well_formed).parse()
+    assert ok is not None
+    assert [cell.text for cell in ok.table_cells] == ["a", "b"]
+
+
+def test_extract_raw_tables_matches_line_leading_tables():
+    """Tables start at a line-leading ``<table `` and end at the next ``</table>``."""
+    content = (
+        '<p>inline <table id="skip">no</table></p>\n'
+        '<table id="t1">\n<table id="nested">\n</table>\n'
+        '<table id="t2">b</table> tail\n'
+        '<table id="open">\n'
+    )
+    assert _extract_raw_tables(content) == [
+        '<table id="t1">\n<table id="nested">\n</table>',
+        '<table id="t2">b</table>',
+    ]
+
+
+def test_extract_raw_tables_stops_at_unterminated_tables():
+    """Many unterminated ``<table `` lines must not trigger a quadratic scan (#4410)."""
+    content = '<table id="t1">a</table>\n' + '<table id="open">\n' * 200_000
+
+    assert _extract_raw_tables(content) == ['<table id="t1">a</table>']
 
 
 def test_patent_uspto_ice(patents):

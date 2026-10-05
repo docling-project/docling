@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """KServe v2-based OCR model implementation."""
 
 import logging
@@ -11,11 +14,17 @@ from docling_core.types.doc.page import BoundingRectangle, TextCell
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import (
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    Page,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.datamodel.pipeline_options import KserveV2OcrOptions, OcrOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import OperationNotAllowed
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
 from docling.utils.profiling import TimeRecorder
@@ -45,6 +54,7 @@ class KserveV2OcrModel(BaseOcrModel):
         options: KserveV2OcrOptions,
         accelerator_options: AcceleratorOptions,
         default_language: str = "en",
+        enable_remote_services: bool = False,
     ):
         """Initialize the KServe v2 OCR model.
 
@@ -53,6 +63,10 @@ class KserveV2OcrModel(BaseOcrModel):
             artifacts_path: Path to model artifacts (not used for remote inference).
             options: KServe v2 OCR configuration options.
             accelerator_options: Accelerator configuration (not used for remote inference).
+            default_language: Language sent when `options.lang` is empty.
+            enable_remote_services: Whether connections to remote services are
+                allowed. The model sends page crops to a remote inference server
+                and raises ``OperationNotAllowed`` if enabled while this is ``False``.
         """
         super().__init__(
             enabled=enabled,
@@ -64,7 +78,23 @@ class KserveV2OcrModel(BaseOcrModel):
         self._kserve_client: Optional[KserveV2Client] = None
 
         if self.enabled:
+            # Checked before the client is created.
+            if not enable_remote_services:
+                raise OperationNotAllowed(
+                    "Connections to remote services are only allowed when set explicitly. "
+                    "pipeline_options.enable_remote_services=True."
+                )
+
             self._initialize_client()
+
+            # Keep only the first language and warn
+            if len(options.lang) > 1:
+                _log.warning(
+                    "KServe v2 OCR sends one language at a time. Using %r and "
+                    "ignoring %s; the order of `lang` is the order of preference.",
+                    options.lang[0],
+                    options.lang[1:],
+                )
 
             # Prepare the lang_input during the initialization as it stays the same for all requests
             self._lang = options.lang[0] if len(options.lang) > 0 else default_language
@@ -101,6 +131,7 @@ class KserveV2OcrModel(BaseOcrModel):
                 use_tls=self.options.grpc_use_tls,
                 max_message_bytes=self.options.grpc_max_message_bytes,
                 use_binary_data=self.options.use_binary_data,
+                grpc_channel_args=list(self.options.grpc_channel_args),
             )
 
         _log.info(
@@ -249,13 +280,25 @@ class KserveV2OcrModel(BaseOcrModel):
                             rect_idx,
                             str(e),
                         )
+                        # Record the failure but keep the page: the page still
+                        # yields, and conv_res.errors carries the INFERENCE_FAILURE
+                        # (which downgrades the document to PARTIAL_SUCCESS).
+                        conv_res.errors.append(
+                            ErrorItem(
+                                component_type=DoclingComponentType.MODEL,
+                                module_name=type(self).__name__,
+                                error_message=str(e) or e.__class__.__name__,
+                                category=FailureCategory.INFERENCE_FAILURE,
+                                page_no=page.page_no,
+                            )
+                        )
                         # Continue processing other rectangles
 
                     finally:
                         del high_res_image
 
                 # Post-process the cells (inherited from BaseOcrModel)
-                self.post_process_cells(all_ocr_cells, page)
+                self.post_process_cells(all_ocr_cells, page, conv_res)
 
             # DEBUG code:
             if settings.debug.visualize_ocr:

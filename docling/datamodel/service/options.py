@@ -1,4 +1,8 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 # Define the input options for the API
+import json
 import warnings
 from typing import Annotated, Any, Optional, Union
 
@@ -9,6 +13,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    SerializeAsAny,
     field_validator,
     model_validator,
 )
@@ -18,8 +23,10 @@ from docling.datamodel import vlm_model_specs
 from docling.datamodel.base_models import InputFormat, OutputFormat
 
 # Import new engine system (available in docling>=2.73.0)
+from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
+    HeadingHierarchyOptions,
     PdfBackend,
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmEngineOptions,
@@ -36,6 +43,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
     TransformersModelType,
 )
+from docling.datamodel.service.chunking import ChunkingOptionType
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     PageRange,
@@ -329,12 +337,12 @@ class ConvertDocumentsOptions(BaseModel):
                 "Image export mode for the document (in case of JSON,"
                 " Markdown or HTML). "
                 f"Allowed values: {', '.join([v.value for v in ImageRefMode])}. "
-                "Optional, defaults to Embedded."
+                "Optional, defaults to Placeholder."
             ),
-            examples=[ImageRefMode.EMBEDDED.value],
+            examples=[ImageRefMode.PLACEHOLDER.value],
             # pattern="embedded|placeholder|referenced",
         ),
-    ] = ImageRefMode.EMBEDDED
+    ] = ImageRefMode.PLACEHOLDER
 
     do_ocr: Annotated[
         bool,
@@ -372,12 +380,13 @@ class ConvertDocumentsOptions(BaseModel):
         Optional[list[str]],
         Field(
             description=(
-                "List of languages used by the OCR engine. "
-                "Note that each OCR engine has "
-                "different values for the language names. String or list of strings. "
-                "Optional, defaults to empty."
+                "OCR languages as BCP-47 tags (e.g. `en`, `de-DE`, `zh-Hant`), in "
+                "order of preference. The service canonicalizes them to a "
+                "language-script pair, so `deu`, `ger` and `de-DE` are all German. "
+                "The reserved tag `mul` must be used alone. Optional; "
+                "the selected engine's default applies when omitted or empty."
             ),
-            examples=[["fr", "de", "es", "en"]],
+            examples=[["fr", "de", "es", "en"], ["zh-Hant"], []],
         ),
     ] = None
 
@@ -405,12 +414,10 @@ class ConvertDocumentsOptions(BaseModel):
                     "lang": ["en", "fr"],
                     "use_gpu": True,
                     "confidence_threshold": 0.5,
-                    "force_full_page_ocr": False,
                 },
                 {
                     "kind": "tesseract_cli",
                     "lang": ["eng", "deu"],
-                    "force_full_page_ocr": False,
                 },
             ],
         ),
@@ -422,11 +429,11 @@ class ConvertDocumentsOptions(BaseModel):
             description=(
                 "The PDF backend to use. String. "
                 f"Allowed values: {', '.join([v.value for v in PdfBackend])}. "
-                f"Optional, defaults to {PdfBackend.DOCLING_PARSE.value}."
+                f"Optional, defaults to {PdfBackend.THREADED_DOCLING_PARSE.value}."
             ),
-            examples=[PdfBackend.DOCLING_PARSE],
+            examples=[PdfBackend.THREADED_DOCLING_PARSE],
         ),
-    ] = PdfBackend.DOCLING_PARSE
+    ] = PdfBackend.THREADED_DOCLING_PARSE
 
     table_mode: Annotated[
         TableFormerMode,
@@ -490,16 +497,57 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = True
 
+    do_pdf_heading_hierarchy: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, section-header levels are inferred for PDF and image "
+                "inputs processed by the standard pipeline, from the PDF bookmarks / "
+                "table of contents, from outline numbering and from font style. When "
+                "disabled, every detected heading stays at level 1 and the document "
+                "hierarchy is flat. Boolean. Optional, defaults to false."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
+    pdf_heading_hierarchy_options: Annotated[
+        HeadingHierarchyOptions,
+        Field(
+            description=(
+                "Fine-tuning of the section-header level inference, applied when "
+                "do_pdf_heading_hierarchy is enabled. The nested enabled flag is set "
+                "automatically from do_pdf_heading_hierarchy and does not need to be "
+                "provided."
+            ),
+            examples=[
+                HeadingHierarchyOptions(use_bookmarks=False, max_level=4),
+                HeadingHierarchyOptions(use_style=False),
+            ],
+        ),
+    ] = HeadingHierarchyOptions()
+
     include_images: Annotated[
         bool,
         Field(
             description=(
-                "If enabled, images will be extracted from the document. "
-                "Boolean. Optional, defaults to true."
+                "If enabled, picture element images are generated and included in "
+                "the output. Boolean. Optional, defaults to true."
             ),
             examples=[True],
         ),
     ] = True
+
+    include_page_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, full-page images are generated and included in the "
+                "output. Boolean. Optional, defaults to false."
+            ),
+            examples=[False],
+        ),
+    ] = False
 
     images_scale: Annotated[
         float,
@@ -516,6 +564,44 @@ class ConvertDocumentsOptions(BaseModel):
             examples=["<!-- page-break -->", ""],
         ),
     ] = ""
+
+    md_compact_tables: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to use compact table format without column padding in the "
+                "markdown output. When False (default), tables use padded columns "
+                "for better visual formatting. When True, tables use minimal "
+                "whitespace, which is better for large tables and downstream processing."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
+    chunking_options: Annotated[
+        Optional[ChunkingOptionType],
+        Field(
+            default=None,
+            description="Chunker configuration.",
+            discriminator="chunker",
+        ),
+    ] = None
+
+    chunking_preset: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description=(
+                'Preset ID for chunking (e.g. "granite_embedding_278m"). '
+                "Mutually exclusive with chunking_options."
+            ),
+            examples=[
+                "granite_embedding_278m",
+                "minilm_l6",
+                "hierarchical",
+            ],
+        ),
+    ] = None
 
     do_code_enrichment: Annotated[
         bool,
@@ -560,6 +646,46 @@ class ConvertDocumentsOptions(BaseModel):
             examples=[False],
         ),
     ] = False
+
+    chart_extraction_preset: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description=(
+                "Preset ID for chart extraction. "
+                'Use "default" for the admin-controlled default, or a specific preset '
+                'such as "granite_vision_v4" or "granite_vision".'
+            ),
+            examples=["default", "granite_vision_v4", "granite_vision"],
+        ),
+    ] = None
+
+    chart_extraction_custom_config: Annotated[
+        Optional[SerializeAsAny[Union[ChartExtractionVlmEngineOptions, dict]]],
+        Field(
+            default=None,
+            description=(
+                "Custom chart extraction configuration including model spec and engine options. "
+                "Only available if the admin allows it. "
+                "Accepts a ChartExtractionVlmEngineOptions object or an equivalent dict with "
+                "'model_spec', 'engine_options', and optional output flags "
+                "(chart2csv, chart2summary, chart2code)."
+            ),
+            examples=[
+                {
+                    "model_spec": {
+                        "name": "Granite-Vision-4.1-4B",
+                        "default_repo_id": "ibm-granite/granite-vision-4.1-4b",
+                        "prompt": "<chart2csv>",
+                        "response_format": "plain text",
+                    },
+                    "engine_options": {"engine_type": "api_lmstudio"},
+                    "chart2csv": True,
+                    "chart2summary": True,
+                },
+            ],
+        ),
+    ] = None
 
     do_picture_description: Annotated[
         bool,
@@ -810,6 +936,32 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = None
 
+    @field_validator(
+        "ocr_custom_config",
+        "table_structure_custom_config",
+        "layout_custom_config",
+        "picture_classification_custom_config",
+        "chart_extraction_custom_config",
+        mode="before",
+    )
+    @classmethod
+    def _decode_json_string_config(cls, value: Any) -> Any:
+        """Accept a JSON-encoded string for nested config fields.
+
+        Local-file conversions submit options as ``multipart/form-data``, where
+        nested configs are sent as JSON strings because form fields cannot carry
+        objects. Decode them back into dicts here. Values that already arrive as
+        objects (e.g. via JSON request bodies) are returned unchanged.
+        """
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    f"Invalid JSON for nested config field: {exc}"
+                ) from exc
+        return value
+
     # Field validators for deprecated fields - trigger warnings on assignment
     @field_validator("picture_description_api", mode="before")
     @classmethod
@@ -982,6 +1134,16 @@ class ConvertDocumentsOptions(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def validate_chart_extraction_options(self) -> Self:
+        """Ensure preset and custom config are mutually exclusive for chart extraction."""
+        if self.chart_extraction_preset and self.chart_extraction_custom_config:
+            raise ValueError(
+                "Cannot specify both chart_extraction_preset and "
+                "chart_extraction_custom_config."
+            )
+        return self
+
+    @model_validator(mode="after")
     def validate_layout_options(self) -> Self:
         """Ensure preset and custom config are mutually exclusive for layout."""
         if self.layout_preset and self.layout_custom_config:
@@ -1024,5 +1186,14 @@ class ConvertDocumentsOptions(BaseModel):
         # Ensure preset and custom_config are mutually exclusive
         if self.ocr_preset != "auto" and self.ocr_custom_config:
             raise ValueError("Cannot specify both ocr_preset and ocr_custom_config.")
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_chunking_options(self) -> Self:
+        if self.chunking_preset and self.chunking_options is not None:
+            raise ValueError(
+                "Cannot specify both chunking_preset and chunking_options."
+            )
 
         return self

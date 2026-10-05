@@ -1,0 +1,38 @@
+<html>
+<body>
+<!-- Test case 1: Ordered list with inline elements (img, dl) -->
+<h2>Ordered list with inline elements</h2>
+<ol>
+ <li>Step 1 text <img src="screenshot.png"> <dl class="note"><dd>Note text</dd></dl></li>
+ <li>Step 2 text <img src="screenshot.png"> <dl class="note"><dd>Note text</dd></dl></li>
+ <li>Step 3 text</li>
+ <li>Step 4 text</li>
+</ol>
+
+<!-- Test case 2: Ordered list with formatting and paragraph blocks -->
+<h2>Ordered list with paragraph blocks</h2>
+<ol>
+ <li>Item with <b>bold</b> text <p>First paragraph block</p> <p>Second paragraph block</p></li>
+ <li>Another item in <code>python</code> language</li>
+ <li>Final item</li>
+</ol>
+
+<!-- Test case 3: Nested list wrapped in divs (DITA-style) -->
+<h2>Nested list in divs</h2>
+<ul>
+  <li class="step stepexpand">
+    <span class="ph cmd">Step instruction text</span>
+    <div>
+      <div class="itemgroup info">
+        <div>
+          <ul>
+            <li>Nested detail 1</li>
+            <li>Nested detail 2</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </li>
+</ul>
+</body>
+</html>

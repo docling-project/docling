@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 MACROS_NEWCOMMAND = frozenset(["newcommand", "renewcommand", "providecommand"])
 
 MACROS_PREAMBLE_METADATA = frozenset(["title", "author", "date"])
@@ -257,5 +260,10 @@ TABLE_MACROS_IGNORE = frozenset(
         "hphantom",
         "vphantom",
         "noalign",
+        # longtable repeating header/footer markers are not cell content
+        "endhead",
+        "endfirsthead",
+        "endfoot",
+        "endlastfoot",
     ]
 )

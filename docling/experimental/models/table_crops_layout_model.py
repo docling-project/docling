@@ -1,17 +1,18 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Internal TableCrops layout model that marks full pages as table clusters."""
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc import BoundingBox, DocItemLabel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
+from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
 from docling.experimental.datamodel.table_crops_layout_options import (
     TableCropsLayoutOptions,
@@ -27,6 +28,8 @@ class TableCropsLayoutModel(BaseLayoutModel):
 
     This model is internal and not part of the stable public interface.
     """
+
+    requires_layout_postprocessing: bool = False
 
     def __init__(
         self,
@@ -59,8 +62,6 @@ class TableCropsLayoutModel(BaseLayoutModel):
 
             clusters = self._build_page_clusters(page)
             prediction = LayoutPrediction(clusters=clusters)
-
-            self._update_confidence(conv_res, page, clusters)
 
             layout_predictions.append(prediction)
 
@@ -96,21 +97,3 @@ class TableCropsLayoutModel(BaseLayoutModel):
                 clusters = []
 
         return clusters
-
-    def _update_confidence(
-        self, conv_res: ConversionResult, page: Page, clusters: list[Cluster]
-    ) -> None:
-        """Populate layout and OCR confidence scores for the page."""
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                "Mean of empty slice|invalid value encountered in scalar divide",
-                RuntimeWarning,
-                "numpy",
-            )
-
-            conv_res.confidence.pages[page.page_no].layout_score = 1.0
-
-            ocr_cells = [cell for cell in page.cells if cell.from_ocr]
-            ocr_confidence = float(np.mean([cell.confidence for cell in ocr_cells]))
-            conv_res.confidence.pages[page.page_no].ocr_score = ocr_confidence
