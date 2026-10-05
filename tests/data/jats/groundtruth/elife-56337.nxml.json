@@ -485,52 +485,52 @@
     {
       "self_ref": "#/groups/15",
       "parent": {
-        "$ref": "#/texts/139"
+        "$ref": "#/texts/140"
       },
       "children": [
         {
-          "$ref": "#/texts/140"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/16",
-      "parent": {
-        "$ref": "#/texts/141"
-      },
-      "children": [
+          "$ref": "#/texts/141"
+        },
         {
           "$ref": "#/texts/142"
+        },
+        {
+          "$ref": "#/texts/143"
         },
         {
           "$ref": "#/texts/144"
         },
         {
+          "$ref": "#/texts/145"
+        },
+        {
           "$ref": "#/texts/146"
+        },
+        {
+          "$ref": "#/texts/147"
         },
         {
           "$ref": "#/texts/148"
         },
         {
-          "$ref": "#/texts/150"
+          "$ref": "#/texts/149"
         },
+        {
+          "$ref": "#/texts/150"
+        }
+      ],
+      "content_layer": "body",
+      "name": "footnotes",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/16",
+      "parent": {
+        "$ref": "#/texts/151"
+      },
+      "children": [
         {
           "$ref": "#/texts/152"
-        },
-        {
-          "$ref": "#/texts/154"
-        },
-        {
-          "$ref": "#/texts/156"
-        },
-        {
-          "$ref": "#/texts/158"
-        },
-        {
-          "$ref": "#/texts/160"
         }
       ],
       "content_layer": "body",
@@ -540,177 +540,45 @@
     {
       "self_ref": "#/groups/17",
       "parent": {
-        "$ref": "#/texts/142"
+        "$ref": "#/texts/164"
       },
       "children": [
         {
-          "$ref": "#/texts/143"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/18",
-      "parent": {
-        "$ref": "#/texts/144"
-      },
-      "children": [
+          "$ref": "#/texts/165"
+        },
         {
-          "$ref": "#/texts/145"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/19",
-      "parent": {
-        "$ref": "#/texts/146"
-      },
-      "children": [
+          "$ref": "#/texts/166"
+        },
         {
-          "$ref": "#/texts/147"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/20",
-      "parent": {
-        "$ref": "#/texts/148"
-      },
-      "children": [
+          "$ref": "#/texts/167"
+        },
         {
-          "$ref": "#/texts/149"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/21",
-      "parent": {
-        "$ref": "#/texts/150"
-      },
-      "children": [
+          "$ref": "#/texts/168"
+        },
         {
-          "$ref": "#/texts/151"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/22",
-      "parent": {
-        "$ref": "#/texts/152"
-      },
-      "children": [
+          "$ref": "#/texts/169"
+        },
         {
-          "$ref": "#/texts/153"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/23",
-      "parent": {
-        "$ref": "#/texts/154"
-      },
-      "children": [
+          "$ref": "#/texts/170"
+        },
         {
-          "$ref": "#/texts/155"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/24",
-      "parent": {
-        "$ref": "#/texts/156"
-      },
-      "children": [
+          "$ref": "#/texts/171"
+        },
         {
-          "$ref": "#/texts/157"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/25",
-      "parent": {
-        "$ref": "#/texts/158"
-      },
-      "children": [
+          "$ref": "#/texts/172"
+        },
         {
-          "$ref": "#/texts/159"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/26",
-      "parent": {
-        "$ref": "#/texts/160"
-      },
-      "children": [
+          "$ref": "#/texts/173"
+        },
         {
-          "$ref": "#/texts/161"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/27",
-      "parent": {
-        "$ref": "#/texts/162"
-      },
-      "children": [
+          "$ref": "#/texts/174"
+        },
         {
-          "$ref": "#/texts/163"
-        }
-      ],
-      "content_layer": "body",
-      "name": "footnotes",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/28",
-      "parent": {
-        "$ref": "#/texts/163"
-      },
-      "children": [
+          "$ref": "#/texts/175"
+        },
         {
-          "$ref": "#/texts/164"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/29",
-      "parent": {
-        "$ref": "#/texts/176"
-      },
-      "children": [
+          "$ref": "#/texts/176"
+        },
         {
           "$ref": "#/texts/177"
         },
@@ -842,42 +710,6 @@
         },
         {
           "$ref": "#/texts/220"
-        },
-        {
-          "$ref": "#/texts/221"
-        },
-        {
-          "$ref": "#/texts/222"
-        },
-        {
-          "$ref": "#/texts/223"
-        },
-        {
-          "$ref": "#/texts/224"
-        },
-        {
-          "$ref": "#/texts/225"
-        },
-        {
-          "$ref": "#/texts/226"
-        },
-        {
-          "$ref": "#/texts/227"
-        },
-        {
-          "$ref": "#/texts/228"
-        },
-        {
-          "$ref": "#/texts/229"
-        },
-        {
-          "$ref": "#/texts/230"
-        },
-        {
-          "$ref": "#/texts/231"
-        },
-        {
-          "$ref": "#/texts/232"
         }
       ],
       "content_layer": "body",
@@ -923,13 +755,13 @@
           "$ref": "#/texts/137"
         },
         {
-          "$ref": "#/texts/165"
+          "$ref": "#/texts/153"
         },
         {
-          "$ref": "#/texts/166"
+          "$ref": "#/texts/154"
         },
         {
-          "$ref": "#/texts/176"
+          "$ref": "#/texts/164"
         }
       ],
       "content_layer": "body",
@@ -2927,10 +2759,10 @@
           "$ref": "#/texts/138"
         },
         {
-          "$ref": "#/texts/141"
+          "$ref": "#/texts/140"
         },
         {
-          "$ref": "#/texts/162"
+          "$ref": "#/texts/151"
         }
       ],
       "content_layer": "body",
@@ -2962,33 +2794,174 @@
       "parent": {
         "$ref": "#/groups/14"
       },
-      "children": [
-        {
-          "$ref": "#/groups/15"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "",
-      "text": "",
+      "orig": "No competing interests declared.",
+      "text": "No competing interests declared.",
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/140",
       "parent": {
+        "$ref": "#/texts/137"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/15"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Author contributions",
+      "text": "Author contributions",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/141",
+      "parent": {
         "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
-      "label": "footnote",
+      "label": "list_item",
       "prov": [],
-      "orig": "No competing interests declared.",
-      "text": "No competing interests declared."
+      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft.",
+      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft.",
+      "enumerated": false,
+      "marker": ""
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/142",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing.",
+      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/143",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing.",
+      "text": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/144",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Conceptualization, Formal analysis, Investigation, Writing - review and editing.",
+      "text": "Conceptualization, Formal analysis, Investigation, Writing - review and editing.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/145",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Investigation.",
+      "text": "Investigation.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/146",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Investigation.",
+      "text": "Investigation.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/147",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Data curation, Software, Formal analysis, Visualization.",
+      "text": "Data curation, Software, Formal analysis, Visualization.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/148",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Investigation.",
+      "text": "Investigation.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/149",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing.",
+      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/150",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing.",
+      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/texts/137"
       },
@@ -3000,359 +2973,26 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Author contributions",
-      "text": "Author contributions",
+      "orig": "Ethics",
+      "text": "Ethics",
       "level": 2
-    },
-    {
-      "self_ref": "#/texts/142",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/17"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/143",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft.",
-      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft."
-    },
-    {
-      "self_ref": "#/texts/144",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/18"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/145",
-      "parent": {
-        "$ref": "#/groups/18"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing.",
-      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing."
-    },
-    {
-      "self_ref": "#/texts/146",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/19"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/147",
-      "parent": {
-        "$ref": "#/groups/19"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing.",
-      "text": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing."
-    },
-    {
-      "self_ref": "#/texts/148",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/20"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/149",
-      "parent": {
-        "$ref": "#/groups/20"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Conceptualization, Formal analysis, Investigation, Writing - review and editing.",
-      "text": "Conceptualization, Formal analysis, Investigation, Writing - review and editing."
-    },
-    {
-      "self_ref": "#/texts/150",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/21"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/151",
-      "parent": {
-        "$ref": "#/groups/21"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Investigation.",
-      "text": "Investigation."
     },
     {
       "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/groups/16"
       },
-      "children": [
-        {
-          "$ref": "#/groups/22"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "",
-      "text": "",
+      "orig": "Animal experimentation: All studies using mice were performed in accordance to the Guide for the Care and Use of Laboratory Animals of the NIH, under IACUC animal protocol (ASP )18-026.",
+      "text": "Animal experimentation: All studies using mice were performed in accordance to the Guide for the Care and Use of Laboratory Animals of the NIH, under IACUC animal protocol (ASP )18-026.",
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/153",
-      "parent": {
-        "$ref": "#/groups/22"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Investigation.",
-      "text": "Investigation."
-    },
-    {
-      "self_ref": "#/texts/154",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/23"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/155",
-      "parent": {
-        "$ref": "#/groups/23"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Data curation, Software, Formal analysis, Visualization.",
-      "text": "Data curation, Software, Formal analysis, Visualization."
-    },
-    {
-      "self_ref": "#/texts/156",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/24"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/157",
-      "parent": {
-        "$ref": "#/groups/24"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Investigation.",
-      "text": "Investigation."
-    },
-    {
-      "self_ref": "#/texts/158",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/25"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/159",
-      "parent": {
-        "$ref": "#/groups/25"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing.",
-      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing."
-    },
-    {
-      "self_ref": "#/texts/160",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/26"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/161",
-      "parent": {
-        "$ref": "#/groups/26"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing.",
-      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing."
-    },
-    {
-      "self_ref": "#/texts/162",
-      "parent": {
-        "$ref": "#/texts/137"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/27"
-        }
-      ],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [],
-      "orig": "Ethics",
-      "text": "Ethics",
-      "level": 2
-    },
-    {
-      "self_ref": "#/texts/163",
-      "parent": {
-        "$ref": "#/groups/27"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/28"
-        }
-      ],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "",
-      "text": "",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/164",
-      "parent": {
-        "$ref": "#/groups/28"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "footnote",
-      "prov": [],
-      "orig": "Animal experimentation: All studies using mice were performed in accordance to the Guide for the Care and Use of Laboratory Animals of the NIH, under IACUC animal protocol (ASP )18-026.",
-      "text": "Animal experimentation: All studies using mice were performed in accordance to the Guide for the Care and Use of Laboratory Animals of the NIH, under IACUC animal protocol (ASP )18-026."
-    },
-    {
-      "self_ref": "#/texts/165",
       "parent": {
         "$ref": "#/texts/0"
       },
@@ -3365,37 +3005,37 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/154",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/167"
+          "$ref": "#/texts/155"
         },
         {
-          "$ref": "#/texts/168"
+          "$ref": "#/texts/156"
         },
         {
-          "$ref": "#/texts/169"
+          "$ref": "#/texts/157"
         },
         {
-          "$ref": "#/texts/170"
+          "$ref": "#/texts/158"
         },
         {
-          "$ref": "#/texts/171"
+          "$ref": "#/texts/159"
         },
         {
-          "$ref": "#/texts/172"
+          "$ref": "#/texts/160"
         },
         {
-          "$ref": "#/texts/173"
+          "$ref": "#/texts/161"
         },
         {
-          "$ref": "#/texts/174"
+          "$ref": "#/texts/162"
         },
         {
-          "$ref": "#/texts/175"
+          "$ref": "#/texts/163"
         }
       ],
       "content_layer": "body",
@@ -3406,9 +3046,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/155",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3418,9 +3058,9 @@
       "text": "All NGS data has been deposited in GEO (GSE115291). Sequences of full-length de novo ETn insertions have been deposited in the GenBank database (MH449667- MH449669)."
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/156",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3430,9 +3070,9 @@
       "text": "The following datasets were generated:"
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/157",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3442,9 +3082,9 @@
       "text": "Wolf G. Retrotransposon reactivation and mobilization upon deletions of megabase scale KRAB zinc finger gene clusters in mice. NCBI Gene Expression Omnibus (2019). NCBI: GSE115291"
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/158",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3454,9 +3094,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449667"
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/159",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3466,9 +3106,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449668"
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/160",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3478,9 +3118,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449669"
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/161",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3490,9 +3130,9 @@
       "text": "The following previously published datasets were used:"
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/162",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3502,9 +3142,9 @@
       "text": "Castro-Diaz N, Ecco G, Coluccio A, Kapopoulou A, Duc J, Trono D. Evollutionally dynamic L1 regulation in embryonic stem cells. NCBI Gene Expression Omnibus (2014). NCBI: GSM1406445"
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/163",
       "parent": {
-        "$ref": "#/texts/166"
+        "$ref": "#/texts/154"
       },
       "children": [],
       "content_layer": "body",
@@ -3514,13 +3154,13 @@
       "text": "Andrew ZX. H3K9me3_ChIPSeq (Ctrl). NCBI Gene Expression Omnibus (2014). NCBI: GSM1327148"
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/164",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/groups/29"
+          "$ref": "#/groups/17"
         }
       ],
       "content_layer": "body",
@@ -3531,9 +3171,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/165",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3545,9 +3185,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/166",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3559,9 +3199,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/167",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3573,9 +3213,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/168",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3587,9 +3227,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/169",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3601,9 +3241,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/170",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3615,9 +3255,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/171",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3629,9 +3269,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/172",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3643,9 +3283,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/173",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3657,9 +3297,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/174",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3671,9 +3311,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/175",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3685,9 +3325,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/176",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3699,9 +3339,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/177",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3713,9 +3353,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/178",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3727,9 +3367,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/179",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3741,9 +3381,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/180",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3755,9 +3395,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/181",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3769,9 +3409,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/182",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3783,9 +3423,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/183",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3797,9 +3437,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/184",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3811,9 +3451,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/197",
+      "self_ref": "#/texts/185",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3825,9 +3465,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/186",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3839,9 +3479,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/187",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3853,9 +3493,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/188",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3867,9 +3507,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/189",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3881,9 +3521,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/190",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3895,9 +3535,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/203",
+      "self_ref": "#/texts/191",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3909,9 +3549,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/192",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3923,9 +3563,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/205",
+      "self_ref": "#/texts/193",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3937,9 +3577,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/206",
+      "self_ref": "#/texts/194",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3951,9 +3591,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/207",
+      "self_ref": "#/texts/195",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3965,9 +3605,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/208",
+      "self_ref": "#/texts/196",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3979,9 +3619,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/209",
+      "self_ref": "#/texts/197",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3993,9 +3633,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/210",
+      "self_ref": "#/texts/198",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4007,9 +3647,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/211",
+      "self_ref": "#/texts/199",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4021,9 +3661,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/212",
+      "self_ref": "#/texts/200",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4035,9 +3675,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/213",
+      "self_ref": "#/texts/201",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4049,9 +3689,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/214",
+      "self_ref": "#/texts/202",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4063,9 +3703,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/215",
+      "self_ref": "#/texts/203",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4077,9 +3717,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/216",
+      "self_ref": "#/texts/204",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4091,9 +3731,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/217",
+      "self_ref": "#/texts/205",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4105,9 +3745,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/218",
+      "self_ref": "#/texts/206",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4119,9 +3759,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/219",
+      "self_ref": "#/texts/207",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4133,9 +3773,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/220",
+      "self_ref": "#/texts/208",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4147,9 +3787,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/221",
+      "self_ref": "#/texts/209",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4161,9 +3801,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/222",
+      "self_ref": "#/texts/210",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4175,9 +3815,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/223",
+      "self_ref": "#/texts/211",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4189,9 +3829,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/224",
+      "self_ref": "#/texts/212",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4203,9 +3843,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/225",
+      "self_ref": "#/texts/213",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4217,9 +3857,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/226",
+      "self_ref": "#/texts/214",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4231,9 +3871,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/227",
+      "self_ref": "#/texts/215",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4245,9 +3885,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/228",
+      "self_ref": "#/texts/216",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4259,9 +3899,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/217",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4273,9 +3913,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/218",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4287,9 +3927,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/219",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -4301,9 +3941,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/220",
       "parent": {
-        "$ref": "#/groups/29"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",

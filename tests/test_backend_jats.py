@@ -66,6 +66,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import Script
 from PIL import Image
 
+from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.datamodel.backend_options import JatsBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
@@ -253,11 +254,7 @@ def test_jats_plain_abstract_styling_is_preserved():
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    # Abstract paragraphs go through the paragraph implementation
-    # (_walk_linear, from #3726): one inline run per styled span, boundary
-    # whitespace stripped per run. Spacing on markdown export is delegated
-    # to the docling-core serializers (docling-core#693); runs are not fused
-    # across spaceless boundaries here.
+    # Each styled span remains a separate inline run.
     assert [_formatting_tuple(item) for item in groups[0]] == [
         (DocItemLabel.TEXT, "We study", None),
         (
@@ -305,14 +302,7 @@ def test_jats_plain_abstract_styling_is_preserved():
 
 
 def test_jats_abstract_styling_preserves_inline_runs():
-    """Styled spans become their own inline runs; nothing is fused or dropped.
-
-    Per the docling-core serializer contract (docling-core#693), spacing on
-    export is the serializers' job: the backend must not fuse runs across
-    spaceless boundaries (``CO<sub>2</sub>`` stays three runs) nor invent
-    whitespace. Markdown export is therefore not asserted here — it is
-    suboptimal until #693 lands and is deliberately out of scope.
-    """
+    """Styled spans become their own inline runs without fusion or loss."""
 
     def abstract_runs(paragraph: str) -> list:
         doc = convert_jats_article_meta(
@@ -415,6 +405,23 @@ def test_jats_inline_runs_drop_xml_indentation_but_keep_same_line_whitespace():
         assert [_formatting_tuple(item) for item in groups[0]] == expected
 
 
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (" leading  space", " leading  space"),
+        ("trailing  space ", "trailing  space "),
+        ("a  b", "a  b"),
+        ("a \n   b", "a b"),
+        ("a\n   \n b", "a b"),
+        ("\n", " "),
+    ],
+)
+def test_jats_xml_line_break_normalization_preserves_same_line_whitespace(
+    text: str, expected: str
+):
+    assert JatsDocumentBackend._normalize_xml_line_breaks(text) == expected
+
+
 def test_jats_structured_abstract_styling_is_preserved():
     doc = convert_jats_article_meta(
         """
@@ -466,6 +473,22 @@ def test_jats_plain_abstract_without_styling_stays_a_single_text_item():
     assert texts == ["Plain abstract."]
 
 
+def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Plain Footnote Test</title>
+          <fn-group><fn><p>Plain footnote.</p></fn></fn-group>
+        </sec>
+        """
+    )
+
+    assert _inline_group_items(doc) == []
+    list_items = [t.text for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert list_items == ["Plain footnote."]
+    assert "- Plain footnote." in doc.export_to_markdown()
+
+
 def test_jats_footnote_styling_is_preserved():
     doc = convert_jats_body(
         """
@@ -483,9 +506,7 @@ def test_jats_footnote_styling_is_preserved():
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    # No workaround: the "." after the bold run stays its own inline run,
-    # and the bold scope ends before it. Spacing on export is delegated to
-    # the docling-core serializers (docling-core#693).
+    # The punctuation after the bold run remains separate and unformatted.
     assert [_formatting_tuple(item) for item in groups[0]] == [
         (DocItemLabel.FOOTNOTE, "1", None),
         (DocItemLabel.FOOTNOTE, "See", None),

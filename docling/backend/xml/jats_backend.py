@@ -23,7 +23,6 @@ Security Note:
 from __future__ import annotations
 
 import logging
-import re
 import traceback
 import warnings
 from dataclasses import dataclass, replace
@@ -80,9 +79,6 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
-_XML_INDENTED_LINE_BREAK_RE: Final[re.Pattern[str]] = re.compile(
-    r"[^\S\r\n]*(?:\r\n?|\n)(?:[^\S\r\n]*(?:\r\n?|\n))*[^\S\r\n]*"
-)
 
 _RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
     ".jpg",
@@ -129,15 +125,12 @@ class AbstractSection(TypedDict):
     """A single titled section inside a structured abstract."""
 
     title: str
-    # The <p> elements; walked with the paragraph implementation
-    # (_walk_linear) at emit time so abstracts share the body-paragraph
-    # styling path instead of a parallel one.
+    # Raw <p> nodes are walked at emit time to preserve inline styling.
     paragraphs: list[etree._Element]
 
 
 class Abstract(TypedDict):
     label: str
-    # Plain <p> children, as above.
     paragraphs: list[etree._Element]
     sections: list[AbstractSection]  # structured sub-sections (<sec> children)
 
@@ -332,9 +325,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _parse_abstract_section(section_node: etree._Element) -> AbstractSection:
-        """Parse a single `<sec>` element inside an abstract into an
-        `AbstractSection` with a title and its `<p>` elements. Styling is
-        applied at emit time via the paragraph implementation."""
+        """Parse an abstract section while retaining its paragraph nodes."""
         title_nodes = section_node.xpath("title|label")
         title = (
             JatsDocumentBackend._get_node_text(title_nodes[0]) if title_nodes else ""
@@ -544,11 +535,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.root, text=title, level=self.hlevel + 1
             )
 
-            # Plain (un-sectioned) abstract paragraphs: walked with the
-            # paragraph implementation (_walk_linear, from #3726) so that
-            # abstracts share the body-paragraph styling path. Inline-group
-            # spacing is left to the docling-core serializers per their
-            # contract (docling-core#693); no spacing workaround here.
+            # Inline-group serializer spacing is tracked in docling-core#693.
             for paragraph in paragraphs:
                 self._walk_linear(doc, abstract_heading, paragraph)
 
@@ -831,13 +818,18 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _normalize_xml_line_breaks(text: str) -> str:
-        """Remove XML formatting indentation around line breaks.
+        """Collapse XML formatting whitespace around line breaks."""
+        if "\n" not in text:
+            return text
 
-        Same-line whitespace is significant and remains untouched. A run of
-        line breaks and its surrounding indentation, however, comes from the
-        source XML layout and represents a single word boundary.
-        """
-        return _XML_INDENTED_LINE_BREAK_RE.sub(" ", text)
+        chunks = text.split("\n")
+        middle = [chunk.strip(" \t") for chunk in chunks[1:-1]]
+        normalized = [
+            chunks[0].rstrip(" \t"),
+            *(chunk for chunk in middle if chunk),
+            chunks[-1].lstrip(" \t"),
+        ]
+        return " ".join(normalized)
 
     @staticmethod
     def _append_run(
@@ -1205,9 +1197,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         footnote_segments: list[list[InlineSegment]] = []
         for fn in node.iterchildren(tag="fn"):
-            # Styled runs via the shared inline walker (#3726); spacing is
-            # left to the docling-core serializers per their contract
-            # (docling-core#693), with no spacing workaround here.
             segments = JatsDocumentBackend._strip_segments(
                 JatsDocumentBackend._walk_inline_formula(fn)
             )
@@ -1240,16 +1229,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             parent=heading,
         )
         for segments in footnote_segments:
-            list_item = doc.add_list_item(parent=footnote_group, text="")
-            inline_item = doc.add_inline_group(parent=list_item)
-            for segment in segments:
-                doc.add_text(
-                    label=segment.label,
+            if len(segments) == 1 and segments[0].label == DocItemLabel.FOOTNOTE:
+                segment = segments[0]
+                doc.add_list_item(
+                    parent=footnote_group,
                     text=segment.text,
                     formatting=segment.formatting,
                     hyperlink=segment.hyperlink,
-                    parent=inline_item,
                 )
+                continue
+            list_item = doc.add_list_item(parent=footnote_group, text="")
+            JatsDocumentBackend._emit_inline(doc, list_item, segments)
 
     def _walk_linear(
         self,
