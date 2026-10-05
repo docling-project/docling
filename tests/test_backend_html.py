@@ -573,6 +573,73 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+@pytest.mark.parametrize(
+    "html,expected",
+    [
+        pytest.param(
+            "<ul><li>alpha<li>beta<li>gamma</ul>",
+            "- alpha\n- beta\n- gamma",
+            id="ul",
+        ),
+        pytest.param("<ol><li>one<li>two</ol>", "1. one\n2. two", id="ol"),
+        pytest.param(
+            "<ul><li>a<li>b</li><li>c</li></ul>",
+            "- a\n- b\n- c",
+            id="first-li-unclosed",
+        ),
+        pytest.param(
+            "<ul><li>a<ul><li>b<li>c</ul><li>d</ul>",
+            "- a\n    - b\n    - c\n- d",
+            id="nested-list",
+        ),
+        pytest.param(
+            "<ul><li>a<p>para<li>b</ul>", "- a para\n- b", id="li-after-open-p"
+        ),
+        pytest.param(
+            "<dl><dt>A<dd>B<dt>C<dd>D</dl>",
+            "- **A**\n    - B\n- **C**\n    - D",
+            id="dl",
+        ),
+        pytest.param(
+            "<table><tr><td>a<td>b<tr><td>c<td>d</table>",
+            "| a   | b   |\n|-----|-----|\n| c   | d   |",
+            id="table",
+        ),
+        pytest.param(
+            "<table><tr><th>H1<th>H2<tr><td>1<td>2</table>",
+            "|   H1 |   H2 |\n|------|------|\n|    1 |    2 |",
+            id="table-header",
+        ),
+        pytest.param(
+            "<table><tbody><tr><td>1<td>2<tr><td>3<td>4</tbody></table>",
+            "|   1 |   2 |\n|-----|-----|\n|   3 |   4 |",
+            id="table-tbody",
+        ),
+        pytest.param(
+            "<table><tr><td>a</td><td>b</td><tr><td>c</td><td>d</td></tr></table>",
+            "| a   | b   |\n|-----|-----|\n| c   | d   |",
+            id="first-tr-unclosed",
+        ),
+        pytest.param(
+            "<table><tr><td>x<table><tr><td>i<td>j</table><td>y</table>",
+            "| x  i j   | y   |\n|----------|-----|",
+            id="nested-table",
+        ),
+    ],
+)
+def test_omitted_end_tags(html: str, expected: str):
+    """Optional end tags (li, dt, dd, td, th, tr) close like in a browser."""
+    src = f"<html><body>{html}</body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+    assert doc.export_to_markdown() == expected
+
+
 def test_orig_keeps_source_text():
     """Regression for #4423: `text` is sanitized, `orig` keeps the source text."""
     html = (

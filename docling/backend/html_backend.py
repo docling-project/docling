@@ -191,6 +191,17 @@ _PARA_BREAKERS = {
     "td",
 }
 
+# Elements whose end tag may be omitted, mapped to (ancestors that a new
+# element implicitly closes, ancestors that stop the search).
+_IMPLIED_END_TAGS: Final = {
+    "li": ({"li"}, {"ul", "ol", "menu"}),
+    "dt": ({"dt", "dd"}, {"dl"}),
+    "dd": ({"dt", "dd"}, {"dl"}),
+    "td": ({"td", "th"}, {"tr", "table"}),
+    "th": ({"td", "th"}, {"tr", "table"}),
+    "tr": ({"tr", "td", "th"}, {"table", "thead", "tbody", "tfoot"}),
+}
+
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
 
 _FORMAT_TAG_MAP: Final = {
@@ -909,6 +920,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # remove any hidden tag
         for tag in self.soup(hidden=True):
             tag.decompose()
+        HTMLDocumentBackend._close_implied_end_tags(self.soup)
         # fix flow content that is not permitted inside <p>
         HTMLDocumentBackend._fix_invalid_paragraph_structure(self.soup)
 
@@ -1718,6 +1730,30 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             bbox=bbox,
             charspan=(0, len(text)),
         )
+
+    @staticmethod
+    def _close_implied_end_tags(soup: BeautifulSoup) -> None:
+        """Close elements whose end tag was omitted, as a browser would.
+
+        `html.parser` ignores optional end tags, so `<li>a<li>b` nests the
+        second item inside the first. Each such element is moved out of the
+        element it implicitly closes, together with the content that follows
+        it, which in a browser would also come after the closed element.
+
+        Args:
+            soup: The HTML document. The DOM may be rewritten.
+        """
+        for tag in soup.find_all(list(_IMPLIED_END_TAGS)):
+            closes, stops = _IMPLIED_END_TAGS[tag.name]
+            while True:
+                open_tag = tag.find_parent(list(closes | stops))
+                if open_tag is None or open_tag.name in stops:
+                    break
+                parent = tag.parent
+                while parent is not None and parent is not open_tag.parent:
+                    for node in reversed([tag, *tag.next_siblings]):
+                        parent.insert_after(node)
+                    parent = tag.parent
 
     @staticmethod
     def _fix_invalid_paragraph_structure(soup: BeautifulSoup) -> None:
