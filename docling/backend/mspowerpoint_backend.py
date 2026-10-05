@@ -62,6 +62,7 @@ try:  # pragma: no cover - import-time guard
     from pptx.exc import InvalidXmlError
     from pptx.oxml.ns import qn
     from pptx.oxml.text import CT_TextLineBreak
+    from pptx.shapes.picture import Picture
 
     _PPTX_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -1499,8 +1500,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_chart:
                     self._handle_chart(shape, parent_slide, slide_ind, doc, slide_size)
-                if _safe_shape_type(shape) == MSO_SHAPE_TYPE.PICTURE:
-                    # Handle Pictures
+                if isinstance(shape, Picture):
+                    # Handle Pictures, including those inserted into a picture placeholder
                     self._handle_pictures(
                         shape, parent_slide, slide_ind, doc, slide_size
                     )

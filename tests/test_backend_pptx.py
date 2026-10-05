@@ -1105,3 +1105,45 @@ def test_pptx_numbered_list_honors_start_at(tmp_path: Path):
     doc = get_converter().convert(pptx_path).document
 
     assert doc.export_to_markdown() == "4. Step four\n    1. Sub a\n5. Step five"
+
+
+def test_pptx_picture_in_placeholder(tmp_path: Path):
+    """A picture inserted into a picture placeholder is extracted.
+
+    PowerPoint layouts like "Picture with Caption" contain a picture placeholder
+    (`PP_PLACEHOLDER.PICTURE`). When a user inserts a picture into it,
+    python-pptx returns a `PlaceholderPicture` whose `shape_type` is
+    `MSO_SHAPE_TYPE.PLACEHOLDER`, not `MSO_SHAPE_TYPE.PICTURE`. The backend
+    must still extract the picture because `PlaceholderPicture` subclasses
+    `pptx.shapes.picture.Picture`.
+    """
+    from io import BytesIO
+
+    from PIL import Image
+    from pptx import Presentation
+    from pptx.enum.shapes import PP_PLACEHOLDER
+
+    png = BytesIO()
+    Image.new("RGB", (200, 100), (200, 30, 30)).save(png, format="PNG")
+    png.seek(0)
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[8])
+    placeholder = next(
+        p
+        for p in slide.placeholders
+        if p.placeholder_format.type == PP_PLACEHOLDER.PICTURE
+    )
+    placeholder.insert_picture(png)
+
+    pptx_path = tmp_path / "placeholder_picture.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert len(doc.pictures) == 1
+    picture = doc.pictures[0]
+    assert picture.image is not None
+    assert picture.image.mimetype == "image/png"
+    assert picture.image.size.width == 200.0
+    assert picture.image.size.height == 100.0
