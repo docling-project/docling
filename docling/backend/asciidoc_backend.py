@@ -150,8 +150,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         caption_data: list[str],
         parent: Union[GroupItem, None],
     ) -> list[str]:
-        """Emit a pending block title as a bold paragraph, per the parsing
-        contract for titles whose target is not a floating item."""
+        """Emit a pending block title as a bold paragraph.
+
+        Used for block titles whose target is not a floating item (picture,
+        table, or code block), which have no caption slot.
+        """
         doc.add_text(
             text=" ".join(caption_data),
             label=DocItemLabel.PARAGRAPH,
@@ -397,7 +400,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             )
         elif caption_data:
             # A block title never followed by a floating element must still
-            # reach the document; it used to be discarded entirely.
+            # reach the document.
             self._flush_caption_as_paragraph(
                 doc, caption_data, self._get_current_parent(parents)
             )
@@ -425,6 +428,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _has_matching_closer(lines: list[str], open_idx: int, delimiter: str) -> bool:
+        """Return True if `delimiter` appears on a line of its own after `open_idx`."""
         for j in range(open_idx + 1, len(lines)):
             if lines[j].strip() == delimiter:
                 return True
