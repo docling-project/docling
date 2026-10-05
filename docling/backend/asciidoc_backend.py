@@ -127,21 +127,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         text_data: list[str],
         parent: Union[GroupItem, None],
     ) -> tuple[list[str], list[str]]:
-        """End a block title's association at a blank line.
+        """Flush both accumulators on a blank line.
 
-        Pending caption text is emitted as its own paragraph instead of
-        silently absorbing every following line and being dropped at EOF;
-        accumulated plain text is flushed as usual.
+        Plain text accumulated before a block title is emitted first to
+        preserve reading order, then any pending caption is emitted as a
+        bold paragraph.
         """
-        if caption_data:
-            caption_data = self._flush_caption_as_paragraph(doc, caption_data, parent)
-        elif text_data:
+        if text_data:
             doc.add_text(
                 text=" ".join(text_data),
                 label=DocItemLabel.PARAGRAPH,
                 parent=parent,
             )
             text_data = []
+        if caption_data:
+            caption_data = self._flush_caption_as_paragraph(doc, caption_data, parent)
         return caption_data, text_data
 
     def _flush_caption_as_paragraph(

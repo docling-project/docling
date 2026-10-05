@@ -628,6 +628,23 @@ def test_block_title_blank_line_separates_paragraphs() -> None:
     assert "Body text." in texts
 
 
+def test_text_before_block_title_is_not_merged_with_text_after() -> None:
+    # Plain text followed by a block title and more text on the next line:
+    # the pre-title paragraph must be emitted before the title, not merged
+    # with the paragraph that follows the blank line after the title.
+    src = b"text1\n.Caption\ntext2\n\ntext3\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="text-caption-text.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert texts == ["text1", "Caption text2", "text3"]
+
+
 def test_content_block_delimiters_not_leaked() -> None:
     # paired example/sidebar/open/passthrough/quote/listing delimiters used
     # to render as literal text around their content
