@@ -2056,12 +2056,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
 
             if isinstance(item, Hyperlink):
+                # Hyperlink.text and Hyperlink.runs only read the direct w:r
+                # children, so also read the runs nested in the same wrappers
+                # as above (e.g. a tracked insertion inside the link).
+                runs = [
+                    Run(r_el, paragraph)
+                    for r_el in _get_children_recursive(child)
+                    if r_el.tag == f"{_W_NS_CLARK}r"
+                ]
                 content.append(
                     (
-                        item.text,
+                        "".join(run.text for run in runs),
                         (
-                            self._get_format_from_run(item.runs[0], paragraph)
-                            if item.runs and len(item.runs) > 0
+                            self._get_format_from_run(runs[0], paragraph)
+                            if runs
                             else None
                         ),
                         self._get_hyperlink_target(item),
