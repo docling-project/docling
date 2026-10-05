@@ -139,8 +139,14 @@ class TextHelperMixin:
             if node.nodeargd and node.nodeargd.argnlist:
                 arg = node.nodeargd.argnlist[0]
                 if arg:
-                    opt_text = arg.latex_verbatim().strip("[] ")
-                    return (f"{opt_text}: ", consumed)
+                    if hasattr(arg, "nodelist"):
+                        opt_text = self._nodes_to_text(arg.nodelist)
+                        if not opt_text:
+                            opt_text = arg.latex_verbatim().strip("[] ")
+                    else:
+                        opt_text = arg.latex_verbatim().strip("[] ")
+                    if opt_text:
+                        return (f"{opt_text}: ", consumed)
             return ("", consumed)
         if node.macroname in MACROS_ESCAPED:
             return (node.macroname, consumed)
