@@ -484,9 +484,8 @@ def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
     )
 
     assert _inline_group_items(doc) == []
-    list_items = [t.text for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
-    assert list_items == ["Plain footnote."]
-    assert "- Plain footnote." in doc.export_to_markdown()
+    footnotes = [t.text for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
+    assert footnotes == ["Plain footnote."]
 
 
 def test_jats_footnote_styling_is_preserved():

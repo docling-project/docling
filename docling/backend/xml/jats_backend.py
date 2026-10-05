@@ -1229,15 +1229,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             parent=heading,
         )
         for segments in footnote_segments:
-            if len(segments) == 1 and segments[0].label == DocItemLabel.FOOTNOTE:
-                segment = segments[0]
-                doc.add_list_item(
-                    parent=footnote_group,
-                    text=segment.text,
-                    formatting=segment.formatting,
-                    hyperlink=segment.hyperlink,
-                )
-                continue
             list_item = doc.add_list_item(parent=footnote_group, text="")
             JatsDocumentBackend._emit_inline(doc, list_item, segments)
 
