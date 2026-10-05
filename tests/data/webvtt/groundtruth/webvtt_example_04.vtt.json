@@ -75,9 +75,6 @@
         },
         {
           "$ref": "#/texts/9"
-        },
-        {
-          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
@@ -143,8 +140,8 @@
           "identifier": "agcvs-08234"
         }
       ],
-      "orig": "steaming bowl of ",
-      "text": "steaming bowl of ",
+      "orig": "steaming bowl of",
+      "text": "steaming bowl of",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -264,12 +261,12 @@
           "identifier": "agcvs-08234"
         }
       ],
-      "orig": " ",
-      "text": " ",
+      "orig": "arcobaleno",
+      "text": "arcobaleno",
       "formatting": {
         "bold": false,
         "italic": true,
-        "underline": false,
+        "underline": true,
         "strikethrough": false,
         "script": "baseline"
       }
@@ -291,35 +288,8 @@
           "identifier": "agcvs-08234"
         }
       ],
-      "orig": "arcobaleno",
-      "text": "arcobaleno",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": true,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/9",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "source": [
-        {
-          "kind": "track",
-          "start_time": 14760.0,
-          "end_time": 14818.239,
-          "identifier": "agcvs-08234"
-        }
-      ],
-      "orig": " of flavors",
-      "text": " of flavors",
+      "orig": "of flavors",
+      "text": "of flavors",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -329,7 +299,7 @@
       }
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/groups/1"
       },

@@ -150,6 +150,56 @@ WEBVTT
     assert _process_vtt_doc(doc) == expected
 
 
+def test_emphasis_markers_stay_clear_of_span_edge_whitespace(converter):
+    """A space inside the emphasis markers stops CommonMark from flanking them.
+
+    The italic span ends with the space that separates it from the nested voice
+    span. Emitting that space inside the markers produces ``*steaming bowl of *``,
+    where the closing ``*`` is preceded by whitespace and therefore is not a
+    right-flanking delimiter: the markup is written out but never renders.
+    """
+    vtt = """
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000
+The waiter offered a <i>steaming bowl of <lang es-ES>paella</lang></i> that arrived.
+"""
+    stream = _create_vtt_stream(vtt)
+    doc = converter.convert(stream).document
+    md = doc.export_to_markdown(escape_html=False)
+
+    assert "*steaming bowl of*" in md
+    assert "*paella*" in md
+    assert "*steaming bowl of *" not in md
+
+
+def test_whitespace_only_span_emits_no_bare_markers(converter):
+    """A span holding nothing but whitespace used to emit unrenderable markers.
+
+    The space between ``</b>`` and ``<u>`` is itself an italic span, so it was
+    exported as a pair of markers with the space between them, which shows up as
+    literal asterisks. The following span started with the same separator space,
+    which broke its opening marker in the same way.
+    """
+    vtt = """
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000
+The dessert's <i><b>unexpected</b> <u><lang it>arcobaleno</lang></u> of flavors</i> left everyone in awe.
+"""
+    stream = _create_vtt_stream(vtt)
+    doc = converter.convert(stream).document
+    md = doc.export_to_markdown(escape_html=False)
+
+    assert "***unexpected***" in md
+    assert "*arcobaleno*" in md
+    assert "*of flavors*" in md
+    # the whitespace-only span contributed a bare pair of markers, and the span
+    # after it opened with a space
+    assert "* * *" not in md
+    assert "* of flavors*" not in md
+
+
 def test_blank_cue_contributes_no_text(converter):
     # First cue has text; second cue is intentionally blank (zero transcript lines).
     vtt = """

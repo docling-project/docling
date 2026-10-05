@@ -53,6 +53,30 @@ class AnnotatedPar:
     items: list[AnnotatedText]
 
 
+def _detach_span_edge_whitespace(items: list[AnnotatedText]) -> list[AnnotatedText]:
+    """Drop the whitespace at the edges of the spans that carry formatting.
+
+    Emphasis markers wrap an item's text verbatim, so a space at the edge of a
+    bold/italic/underline item lands *inside* the markers (``* text*``).
+    CommonMark does not treat a space-adjacent ``*`` as a flanking delimiter, so
+    the markup is emitted but never renders. The inline-group serializer already
+    inserts a separator between the items it joins, so the whitespace can simply
+    be dropped instead of being moved elsewhere.
+    """
+    detached: list[AnnotatedText] = []
+    for item in items:
+        if item.formatting is None:
+            detached.append(item)
+            continue
+        core = item.text.strip()
+        if not core:
+            # A whitespace-only span would emit bare markers that render as
+            # literal asterisks.
+            continue
+        detached.append(item.copy_meta(core))
+    return detached
+
+
 class WebVTTDocumentBackend(DeclarativeDocumentBackend):
     """Declarative backend for WebVTT (.vtt) files.
 
@@ -193,10 +217,11 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
             identifier = str(block.identifier) if block.identifier else None
             _extract_components(block.payload)
             for par in cue_text:
-                if not par.items:
+                items = _detach_span_edge_whitespace(par.items)
+                if not items:
                     continue
-                if len(par.items) == 1:
-                    item = par.items[0]
+                if len(items) == 1:
+                    item = items[0]
                     _add_text_item(
                         text=item.text,
                         formatting=item.formatting,
@@ -206,7 +231,7 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                     group = doc.add_inline_group(
                         "WebVTT cue span", content_layer=ContentLayer.BODY
                     )
-                    for item in par.items:
+                    for item in items:
                         _add_text_item(
                             text=item.text,
                             formatting=item.formatting,
