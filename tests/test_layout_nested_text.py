@@ -120,6 +120,29 @@ def test_nested_predictions_restore_separated_paragraphs():
     ]
 
 
+@pytest.mark.parametrize("line_gap", [4, 20])
+def test_single_line_predictions_do_not_fragment_a_compact_text_block(line_gap):
+    # Publication metadata is a compact four-line block. A prediction for
+    # each slightly clipped line must not erase its grouping without paragraph
+    # whitespace, even though its parent is a better fit for the complete lines.
+    texts = ["Published April 2", "Publisher", "Editor", "www.example.org"]
+    tops = [10 + index * (10 + line_gap) for index in range(len(texts))]
+    cells = [
+        _cell(index, text, _box(10, top, 150, top + 10))
+        for index, (text, top) in enumerate(zip(texts, tops))
+    ]
+    clusters = [
+        _cluster(index, _box(9, top - 1, 149, top + 11), 0.9)
+        for index, top in enumerate(tops)
+    ]
+    clusters.append(_cluster(4, _box(9, 9, 151, tops[-1] + 11), 0.6))
+
+    result = _postprocess(cells, clusters)
+
+    expected = [texts] if line_gap < 10 else [[text] for text in texts]
+    assert [[cell.text for cell in cluster.cells] for cluster in result] == expected
+
+
 def test_text_proposal_with_unique_continuation_is_retained():
     cells = [
         _cell(0, "Opening", _box(10, 10, 90, 20)),

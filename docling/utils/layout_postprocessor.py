@@ -702,6 +702,35 @@ class LayoutPostprocessor:
                     containment_threshold,
                 )
             }
+            # Predictions for individual lines do not establish paragraph
+            # boundaries within a compact block, e.g. publication metadata.
+            # Keep its parent unless whitespace separates the physical lines.
+            cell_ids = overlaps[cluster.id].keys()
+            covered = [overlaps[cid].keys() & cell_ids for cid in alternatives]
+            if (
+                len(covered) > 1
+                and all(len(ids) == 1 for ids in covered)
+                and set().union(*covered) == cell_ids
+            ):
+                boxes = sorted(
+                    (
+                        cell.rect.to_bounding_box()
+                        for cell in self.cells
+                        if cell.index in cell_ids
+                    ),
+                    key=lambda box: box.t,
+                )
+                line_height = median(box.height for box in boxes)
+                if (
+                    line_height > 0
+                    and min(box.r for box in boxes) > max(box.l for box in boxes)
+                    and all(
+                        0 <= after.t - before.b < line_height
+                        for before, after in pairwise(boxes)
+                    )
+                ):
+                    retained.add(cluster.id)
+                    continue
             # Use the overlap-resolution tolerance for cell coverage too. A
             # narrow fragment must not replace a substantially better fit.
             if overlaps[cluster.id] and all(
