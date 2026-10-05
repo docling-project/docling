@@ -2052,7 +2052,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
         return data
 
-    def _walk(self, element: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
+    def _walk(  # noqa: C901
+        self,
+        element: Tag,
+        doc: DoclingDocument,
+        skip_tags: frozenset[str] = frozenset(),
+    ) -> list[RefItem]:
         """Parse an XML tag by recursively walking its content.
 
         While walking, the method buffers inline text across tags like <b> or <span>,
@@ -2061,6 +2066,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         Args:
             element: The XML tag to parse.
             doc: The Docling document to be updated with the parsed content.
+            skip_tags: Names of direct children to leave out of the walk.
         """
         added_refs: list[RefItem] = []
         buffer: AnnotatedTextList = AnnotatedTextList()
@@ -2131,6 +2137,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for node in element.contents:
             if isinstance(node, Tag):
                 name = node.name.lower()
+                if name in skip_tags:
+                    _flush_buffer()
+                    continue
                 if form_field := self._consume_form_field_for_tag(node):
                     _flush_buffer()
                     added_refs.extend(
@@ -3128,24 +3137,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         tag_name = tag.name.lower()
 
         if tag_name == "figure":
-            # 1. Dispatch all direct children except <figcaption>.
-            # This leaves <figcaption> in the tree so _emit_image can find it
-            # and link it to the PictureItem automatically.
-            for child in tag.contents:
-                if isinstance(child, Tag) and child.name != "figcaption":
-                    name = child.name.lower()
-                    if name == "img":
-                        im_ref = self._emit_image(child, doc)
-                        if im_ref is not None:
-                            added_refs.append(im_ref)
-                    elif name == "input":
-                        input_ref = self._emit_input(child, doc)
-                        if input_ref is not None:
-                            added_refs.append(input_ref)
-                    elif name in _BLOCK_TAGS:
-                        added_refs.extend(self._handle_block(child, doc))
-                    else:
-                        added_refs.extend(self._walk(child, doc))
+            # 1. Walk all direct children except <figcaption>, including text
+            # placed directly in the figure. This leaves <figcaption> in the tree
+            # so _emit_image can find it and link it to the PictureItem.
+            added_refs.extend(self._walk(tag, doc, skip_tags=frozenset({"figcaption"})))
 
             # 2. Check if an image was produced. If so, _emit_image handled the caption.
             any_image_produced = any(
