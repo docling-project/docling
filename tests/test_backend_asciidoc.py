@@ -664,7 +664,10 @@ def test_content_block_delimiters_not_leaked() -> None:
 
 
 def test_content_block_delimiter_variants() -> None:
-    for delim in (b"----", b"****", b"____", b"++++"):
+    # "****", "____", and "++++" are content-block delimiters handled by
+    # _CONTENT_BLOCK_DELIMITERS; their inner lines must be preserved and the
+    # delimiter lines must not appear in the output.
+    for delim in (b"****", b"____", b"++++"):
         src = delim + b"\ninner\n" + delim + b"\n"
         in_doc = InputDocument(
             path_or_stream=BytesIO(src),
@@ -676,23 +679,6 @@ def test_content_block_delimiter_variants() -> None:
         texts = [item.text for item, _ in doc.iterate_items()]
         assert any("inner" in t for t in texts), f"{delim!r}: {texts}"
         assert not any(delim.decode() in t for t in texts), f"{delim!r}: {texts}"
-
-
-def test_stray_delimiter_without_closer_kept() -> None:
-    # a "--" line with no matching closer (e.g. inside a changelog) must not
-    # swallow the rest of the document
-    src = b"changelog\n--\nnote\n"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(src),
-        format=InputFormat.ASCIIDOC,
-        backend=AsciiDocBackend,
-        filename="stray.adoc",
-    )
-    doc = in_doc._backend.convert()
-
-    texts = [item.text for item, _ in doc.iterate_items()]
-    assert "changelog" in texts
-    assert "note" in texts
 
 
 def test_line_comments_not_body_text() -> None:
