@@ -231,7 +231,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # follows; they are never body content, so skip them.
             if (
                 re.match(r"^\[\[.+\]\]$", stripped_line)
-                or re.match(r"^\[[^\[\]]*\]$", stripped_line)
+                or re.match(r"^\[[^\[\]]+\]$", stripped_line)
                 or re.match(r"^:[\w.-]+:(\s.*)?$", stripped_line)
             ):
                 continue
