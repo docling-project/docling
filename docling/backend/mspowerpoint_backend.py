@@ -620,7 +620,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             }
 
         # 3) Layout placeholder lstStyle (if this is a placeholder)
-        layout_result = None
         if shape.is_placeholder:
             idx = shape.placeholder_format.idx
             layout = shape.part.slide.slide_layout
@@ -640,7 +639,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
                 # Only use layout result if is_list is explicitly True/False
                 if is_list is not None:
-                    layout_result = {
+                    return {
                         "is_list": is_list,
                         "kind": kind,
                         "detail": detail,
@@ -669,11 +668,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         "detail": detail,
                         "level": lvl,
                     }
-
-            # If layout has explicit is_list value but master didn't override it, use
-            # layout
-            if layout_result is not None:
-                return layout_result
 
         return {
             "is_list": None,

@@ -1105,3 +1105,56 @@ def test_pptx_numbered_list_honors_start_at(tmp_path: Path):
     doc = get_converter().convert(pptx_path).document
 
     assert doc.export_to_markdown() == "4. Step four\n    1. Sub a\n5. Step five"
+
+
+@pytest.mark.parametrize(
+    ("layout_marker", "override_layer", "expected"),
+    [
+        ("buNone", None, "Item one\n\nItem two"),
+        ("buAutoNum", None, "1. Item one\n2. Item two"),
+        (None, None, "- Item one\n- Item two"),
+        ("buNone", "shape", "- Item one\n- Item two"),
+        ("buNone", "paragraph", "- Item one\n- Item two"),
+    ],
+)
+def test_pptx_layout_list_marker_precedence(
+    tmp_path: Path,
+    layout_marker: str | None,
+    override_layer: str | None,
+    expected: str,
+) -> None:
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+
+    presentation = Presentation()
+    layout = presentation.slide_layouts[1]
+    layout_body = layout.placeholders[1]
+    layout_style = layout_body._element.find(".//" + qn("a:lstStyle"))
+    assert layout_style is not None
+    if layout_marker is not None:
+        level = layout_style.makeelement(qn("a:lvl1pPr"))
+        attrs = {"type": "arabicPeriod"} if layout_marker == "buAutoNum" else {}
+        level.append(level.makeelement(qn("a:" + layout_marker), attrs))
+        layout_style.append(level)
+
+    slide = presentation.slides.add_slide(layout)
+    slide.shapes.title.text = "Agenda"
+    body = slide.placeholders[1]
+    body.text_frame.text = "Item one"
+    body.text_frame.add_paragraph().text = "Item two"
+    if override_layer == "shape":
+        style = body._element.find(".//" + qn("a:lstStyle"))
+        assert style is not None
+        level = style.makeelement(qn("a:lvl1pPr"))
+        level.append(level.makeelement(qn("a:buChar"), {"char": "•"}))
+        style.append(level)
+    elif override_layer == "paragraph":
+        for paragraph in body.text_frame.paragraphs:
+            properties = paragraph._p.get_or_add_pPr()
+            properties.append(properties.makeelement(qn("a:buChar"), {"char": "•"}))
+
+    path = tmp_path / "layout_bullets.pptx"
+    presentation.save(path)
+    document = get_converter().convert(path).document
+
+    assert document.export_to_markdown() == "# Agenda\n\n" + expected
