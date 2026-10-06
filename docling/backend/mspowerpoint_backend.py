@@ -92,6 +92,15 @@ _IMAGE_RENDER_HINT = (
     "image data."
 )
 
+_MAX_CHART_TABLE_CELLS: Final = 100_000
+"""Backstop on the total cells emitted for one chart's reconstructed data table.
+
+Charts whose declared category range far exceeds their plotted data are trimmed
+to populated rows first; this cap only binds genuinely huge charts. 100k cells
+still admit e.g. a 10k-point, 5-series chart while keeping any single chart's
+markdown output to a few megabytes.
+"""
+
 # Windows metafile signatures. A placeable WMF opens with the Aldus magic and an
 # EMF carries " EMF" in the dSignature field of its EMR_HEADER, 40 bytes in.
 # These are the two Pillow itself identifies, so a bare WMF never reaches here.
@@ -133,6 +142,33 @@ def _is_metafile(image_bytes: bytes) -> bool:
     return image_bytes[:4] == _WMF_PLACEABLE_MAGIC or (
         image_bytes[_EMF_SIGNATURE_OFFSET : _EMF_SIGNATURE_OFFSET + 4] == _EMF_SIGNATURE
     )
+
+
+def _last_populated_row(
+    categories: list[str], columns: list[tuple[str, list[str]]], num_data_rows: int
+) -> int:
+    """Return the index of the last data row carrying any chart data.
+
+    A row is populated when its category label or at least one series value is
+    non-empty. The scan runs from the end so declared-but-empty trailing ranges
+    (e.g. whole-column references such as ``$A$2:$A$1048576``) collapse without
+    walking the empty region more than once. Interior gaps are kept: only
+    trailing empty rows are trimmed.
+
+    Args:
+        categories: Category labels, one per data row (may be shorter or longer
+            than ``num_data_rows``).
+        columns: ``(series name, values)`` pairs, one per chart series.
+        num_data_rows: Untrimmed data-row count.
+
+    Returns:
+        The last populated row index, or -1 when no row carries data.
+    """
+    for row in range(num_data_rows - 1, -1, -1):
+        category = categories[row] if row < len(categories) else ""
+        if category or any(row < len(values) and values[row] for _, values in columns):
+            return row
+    return -1
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
@@ -1050,11 +1086,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         labels on the plot (``plot.categories``) — no workbook reference
         resolution is needed.
 
+        The declared category range can far exceed the plotted data (e.g. a
+        chart referencing whole Excel columns declares ~1M categories for a
+        handful of points), so trailing rows whose category label and every
+        series value are empty are trimmed and the table is sized by populated
+        data instead. As a backstop for genuinely huge charts, the emitted
+        table is additionally capped at ``_MAX_CHART_TABLE_CELLS`` cells.
+
         Args:
             chart: A python-pptx ``Chart`` object.
 
         Returns:
-            A TableData, or None if the chart exposes no usable series.
+            A TableData, or None if the chart exposes no usable series or no
+            populated data row.
         """
         series_list = list(chart.series)
         if not series_list:
@@ -1075,8 +1119,25 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if num_data_rows == 0:
             return None
 
-        num_rows = num_data_rows + 1
+        # Trim trailing rows that carry no data at all; interior gaps are kept.
+        num_data_rows = _last_populated_row(categories, columns, num_data_rows) + 1
+        if num_data_rows == 0:
+            return None
+
         num_cols = 1 + len(columns)
+        if num_data_rows * num_cols > _MAX_CHART_TABLE_CELLS:
+            capped_rows = max(1, _MAX_CHART_TABLE_CELLS // num_cols)
+            _log.warning(
+                "Truncating chart data table from %d to %d data rows: "
+                "%d cells would exceed the %d-cell cap.",
+                num_data_rows,
+                capped_rows,
+                num_data_rows * num_cols,
+                _MAX_CHART_TABLE_CELLS,
+            )
+            num_data_rows = capped_rows
+
+        num_rows = num_data_rows + 1
         cells: list[TableCell] = []
 
         header_labels = [""] + [name for name, _ in columns]
