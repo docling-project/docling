@@ -386,7 +386,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 cell_text = MarkdownDocumentBackend._cell_plain_text(cell).strip()
 
                 if MarkdownDocumentBackend._cell_has_rich_content(cell):
-                    inline_group = doc.add_inline_group(parent=docling_table)
+                    group_name = (
+                        f"rich_cell_group_{len(doc.tables) - 1}_{col_idx}_{row_idx}"
+                    )
+                    cell_group = doc.add_group(
+                        label=GroupLabel.UNSPECIFIED,
+                        name=group_name,
+                        parent=docling_table,
+                    )
+                    inline_group = doc.add_inline_group(parent=cell_group)
                     inline_refs: list[RefItem] = []
                     for child in cell.children:
                         self._iterate_cell_inline(
@@ -399,20 +407,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         )
 
                     if inline_refs:
-                        group_name = (
-                            f"rich_cell_group_{len(doc.tables) - 1}_{col_idx}_{row_idx}"
-                        )
-                        # RichTableCell.ref must point to a group whose parent
-                        # is the table; wrap the InlineGroup accordingly.
-                        cell_group = doc.add_group(
-                            label=GroupLabel.UNSPECIFIED,
-                            name=group_name,
-                            parent=docling_table,
-                        )
-                        cell_group.children.append(inline_group.get_ref())
-                        docling_table.children.remove(inline_group.get_ref())
-                        inline_group.parent = cell_group.get_ref()
-
                         doc.add_table_cell(
                             table_item=docling_table,
                             cell=RichTableCell(
@@ -429,10 +423,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                             ),
                         )
                     else:
-                        # No items created; discard the empty InlineGroup.
-                        if inline_group.get_ref() in docling_table.children:
-                            docling_table.children.remove(inline_group.get_ref())
+                        # No items created; clean up unused groups.
                         doc.groups.remove(inline_group)
+                        doc.groups.remove(cell_group)
+                        docling_table.children.pop()
                         doc.add_table_cell(
                             table_item=docling_table,
                             cell=TableCell(
