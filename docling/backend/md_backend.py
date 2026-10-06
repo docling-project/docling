@@ -90,7 +90,6 @@ try:  # pragma: no cover - import-time guard
             _gfm_el.Table,
             _gfm_el.TableRow,
             _gfm_el.TableCell,
-            _gfm_el.Alert,
         ],
         renderer_mixins=_gfm.GFM.renderer_mixins,
     )
