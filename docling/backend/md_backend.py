@@ -309,10 +309,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         def _node_text(node) -> str:
             if isinstance(node, marko.inline.CodeSpan):
                 return str(node.children)
-            children = getattr(node, "children", None)
-            if isinstance(children, str):
-                return unescape(children)
-            return "".join(_node_text(c) for c in children or [])
+            if isinstance(node.children, str):
+                return unescape(node.children)
+            return "".join(_node_text(c) for c in node.children)
 
         return "".join(_node_text(child) for child in cell.children)
 
@@ -339,20 +338,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             marko.inline.Link,
             marko.inline.AutoLink,
             marko.inline.Image,
+            _GfmStrikethrough,
         )
-        if hasattr(_gfm_el, "Strikethrough"):
-            rich_inline_types = (
-                *rich_inline_types,
-                _gfm_el.Strikethrough,
-                _GfmStrikethrough,
-            )
 
         def _check(node) -> bool:
             if isinstance(node, rich_inline_types):
                 return True
-            children = getattr(node, "children", None)
-            if isinstance(children, list):
-                return any(_check(c) for c in children)
+            if isinstance(node.children, list):
+                return any(_check(c) for c in node.children)
             return False
 
         return any(_check(child) for child in cell.children)
@@ -565,9 +558,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
                 collected_refs.append(item.get_ref())
 
-        elif hasattr(_gfm_el, "Strikethrough") and isinstance(
-            element, (_gfm_el.Strikethrough, _GfmStrikethrough)
-        ):
+        elif isinstance(element, _GfmStrikethrough):
             formatting = MarkdownDocumentBackend._apply_formatting(
                 formatting, strikethrough=True
             )
@@ -598,16 +589,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             collected_refs.append(pic.get_ref())
 
         else:
-            for child in getattr(element, "children", []):
-                if not isinstance(child, str):
-                    self._iterate_cell_inline(
-                        element=child,
-                        doc=doc,
-                        inline_parent=inline_parent,
-                        collected_refs=collected_refs,
-                        formatting=formatting,
-                        hyperlink=hyperlink,
-                    )
+            if isinstance(element.children, list):
+                for child in element.children:
+                    if not isinstance(child, str):
+                        self._iterate_cell_inline(
+                            element=child,
+                            doc=doc,
+                            inline_parent=inline_parent,
+                            collected_refs=collected_refs,
+                            formatting=formatting,
+                            hyperlink=hyperlink,
+                        )
 
     def _create_list_item(
         self,
@@ -855,9 +847,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 formatting, bold=True
             )
 
-        elif hasattr(_gfm_el, "Strikethrough") and isinstance(
-            element, (_gfm_el.Strikethrough, _GfmStrikethrough)
-        ):
+        elif isinstance(element, _GfmStrikethrough):
             _log.debug(" - Strikethrough: %s", element.children)
             formatting = MarkdownDocumentBackend._apply_formatting(
                 formatting, strikethrough=True
