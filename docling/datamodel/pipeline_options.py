@@ -257,6 +257,20 @@ class OcrOptions(BaseOptions):
         ),
     ] = 3.0
 
+    replace_broken_text_layer: Annotated[
+        bool,
+        Field(
+            description=(
+                "Replace a broken PDF text layer with OCR, page by page. A page whose"
+                " `parse_score` is in the `poor` quality grade (below 0.5) is OCR'd in"
+                " full and its OCR text is used instead of its PDF text"
+                " for that page only. Other pages, and pages"
+                " without a text layer, keep the usual behaviour."
+            ),
+            examples=[False, True],
+        ),
+    ] = False
+
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,

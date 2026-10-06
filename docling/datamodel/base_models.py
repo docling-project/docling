@@ -519,6 +519,9 @@ class Page(BaseModel):
     # conversion results.
     _shape_lines: list[BoundingBox] | None = PrivateAttr(default=None)
     _shape_bounding_boxes: list[BoundingBox] | None = PrivateAttr(default=None)
+    # Quality of the page's PDF text layer, as in its confidence report; read by
+    # the OCR stage to replace a broken text layer (OcrOptions.replace_broken_text_layer).
+    _parse_score: float = PrivateAttr(default=float("nan"))
     _default_image_scale: float = 1.0  # Default image scale for external usage.
     _image_cache: dict[
         float, Image

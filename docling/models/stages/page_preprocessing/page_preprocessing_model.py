@@ -20,6 +20,7 @@ from docling.datamodel.pipeline_options import OcrMode, PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_quality import is_broken_text_layer
 
 
 def resolve_skip_cell_extraction(pipeline_options: PdfPipelineOptions) -> bool:
@@ -114,11 +115,21 @@ class PagePreprocessingModel(BasePageModel):
             warnings.filterwarnings(
                 "ignore", "Mean of empty slice", RuntimeWarning, "numpy"
             )
-            conv_res.confidence.pages[page.page_no].parse_score = float(
+            parse_score = float(
                 np.nanquantile(
                     text_scores, q=0.10
                 )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
             )
+
+        # Some broken text layers only show across the whole page (a font encoding
+        # read as control characters, a legacy font read as Latin letters).
+        if not np.isnan(parse_score) and is_broken_text_layer(
+            "\n".join(c.text for c in page.cells),
+            has_bitmap=any(True for _ in page._backend.get_bitmap_rects()),
+        ):
+            parse_score = 0.0
+        conv_res.confidence.pages[page.page_no].parse_score = parse_score
+        page._parse_score = parse_score
 
         def draw_cell_boxes(
             image: Image,

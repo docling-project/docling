@@ -139,6 +139,24 @@ def _segregate_by_visibility(
     return visible, invisible
 
 
+# Upper bound of QualityGrade.POOR (PageConfidenceScores._score_to_grade).
+_POOR_PARSE_SCORE = 0.5
+
+
+def _ocr_full_page(options: OcrOptions, page: Page) -> bool:
+    """Whether a page is OCR'd in full and its PDF cells dropped.
+
+    True in `OcrMode.FULL_PAGE`, and, with `replace_broken_text_layer`, for a page
+    whose text layer is graded poor. A page without a text layer has no parse score
+    (NaN) and is never poor.
+    """
+    if options.mode == OcrMode.FULL_PAGE:
+        return True
+    if not getattr(options, "replace_broken_text_layer", False):
+        return False
+    return page._parse_score < _POOR_PARSE_SCORE
+
+
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     r"""
     Base class for all OCR models.
@@ -231,15 +249,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Compute the OCR rects according to the mode
         ocr_rects: list[BoundingBox]
 
-        # Both DEFAULT and PDF_AWARE_LAYOUT_REGIONS make OCR input as layout detections eliminated by PDF cells
-        if (
-            self.options.mode == OcrMode.DEFAULT
-            or self.options.mode == OcrMode.PDF_AWARE_LAYOUT_REGIONS
-        ):
-            ocr_rects = self._find_pdf_aware_layout_ocr_rects(page)
-        elif self.options.mode == OcrMode.LAYOUT_REGIONS:
-            ocr_rects = self._find_layout_ocr_rects(page)
-        elif self.options.mode == OcrMode.FULL_PAGE:
+        if _ocr_full_page(self.options, page):
+            if self.options.mode != OcrMode.FULL_PAGE:
+                _log.info(
+                    "Page %s: parse score %.2f is graded poor;"
+                    " replacing its text layer with full-page OCR",
+                    page.page_no,
+                    page._parse_score,
+                )
             # A big bbox covering the entire page
             ocr_rects = [
                 BoundingBox(
@@ -250,6 +267,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     coord_origin=CoordOrigin.TOPLEFT,
                 )
             ]
+        # Both DEFAULT and PDF_AWARE_LAYOUT_REGIONS make OCR input as layout detections eliminated by PDF cells
+        elif (
+            self.options.mode == OcrMode.DEFAULT
+            or self.options.mode == OcrMode.PDF_AWARE_LAYOUT_REGIONS
+        ):
+            ocr_rects = self._find_pdf_aware_layout_ocr_rects(page)
+        elif self.options.mode == OcrMode.LAYOUT_REGIONS:
+            ocr_rects = self._find_layout_ocr_rects(page)
         return ocr_rects
 
     def _find_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
@@ -427,7 +452,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         r"""
         Post-process the OCR cells and update the page object according to the algorithm:
 
-        - If FULL_PAGE: Any existing PDF cells are ignored and only the OCR cells are used.
+        - If FULL_PAGE, or with `replace_broken_text_layer` the page's parse score is
+          graded poor:
+          Any existing PDF cells are ignored and only the OCR cells are used.
         - If LAYOUT_REGIONS or PDF_AWARE_LAYOUT_REGIONS and the priority parameter is None,
           the priority is auto-selected based on the OcrMode:
               - OCR_FIRST when LAYOUT_REGIONS
@@ -438,7 +465,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         existing_cells = page.cells
 
         # Combine existing and OCR cells with overlap filtering
-        if self.options.mode == OcrMode.FULL_PAGE:
+        full_page = _ocr_full_page(self.options, page)
+        if full_page:
             final_cells = ocr_cells
         else:
             if priority is None:
@@ -468,7 +496,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page.parsed_page.has_lines = len(final_cells) > 0
 
         # In OcrMode.FULL_PAGE, PDF-extracted word/char cells are unreliable. Keep only OCR cells
-        if self.options.mode == OcrMode.FULL_PAGE:
+        if full_page:
             page.parsed_page.word_cells = [
                 c for c in page.parsed_page.word_cells if c.from_ocr
             ]
