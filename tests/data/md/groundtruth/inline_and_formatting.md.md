@@ -23,15 +23,20 @@ Some *`formatted_code`*
 
 ## *Partially formatted* heading to\_escape `not_to_escape`
 
+This is ~~old~~ new.
+
+Approx ~5 items and ~10 more.
+
 [$$E=mc^2$$](https://en.wikipedia.org/wiki/Albert_Einstein)
 
 ## Table Heading
 
-| Bold Heading | Italic Heading |
+| **Bold Heading** | *Italic Heading* |
 | - | - |
 | data a | data b |
-| C Cadre | x |
-| foo bar | y |
-| A B | z |
-| italic and bold | w |
-| run build now | code in a cell |
+| **C** Cadre | x |
+| foo **bar** | y |
+| **A** **B** | z |
+| *italic* and **bold** and ~~strikethrough~~ | w |
+| run `build` now | code in a cell |
+| visit [Docling](https://github.com/docling-project/docling) | link in a cell |
