@@ -325,13 +325,16 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
 
                 # unit
                 unit_text = ""
-                if fact.unit is not None and fact.unit.measures:
-                    # numerator and denominator measures, rendered like Arelle's
-                    # ModelUnit.value, e.g. "USD / shares" for a divide unit
+                if fact.unit is not None:
+                    # ModelUnit.measures is always a (numerators, denominators) pair,
+                    # rendered like Arelle's ModelUnit.value, e.g. "USD / shares"
                     numerators, denominators = fact.unit.measures
-                    unit_text = " ".join(m.localName for m in numerators)
-                    if denominators:
-                        unit_text += " / " + " ".join(m.localName for m in denominators)
+                    if numerators:
+                        unit_text = " ".join(m.localName for m in numerators)
+                        if denominators:
+                            unit_text += " / " + " ".join(
+                                m.localName for m in denominators
+                            )
 
                 # decimals
                 decimals_text = str(fact.decimals) if fact.decimals is not None else ""
