@@ -66,6 +66,7 @@ class EnvironmentHandlerMixin:
         def _parse_table(self, node: Any) -> Any: ...
         def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str: ...
         def _extract_macro_arg(self, node: Any) -> str: ...
+        def _add_formula(self, doc: Any, parent: Any, text: str) -> None: ...
 
     def _find_document_env(self, nodes, depth: int = 0):
         if nodes is None or depth > 10:
@@ -104,11 +105,11 @@ class EnvironmentHandlerMixin:
 
         elif node.envname.replace("*", "") in ENV_MATH:
             math_text = self._clean_math(node.latex_verbatim(), node.envname)
-            doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
+            self._add_formula(doc, parent, math_text)
 
         elif node.envname == "math":
             math_text = self._clean_math(node.latex_verbatim(), node.envname)
-            doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
+            self._add_formula(doc, parent, math_text)
 
         elif node.envname == "subequations":
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)

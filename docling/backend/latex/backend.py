@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
-from docling_core.types.doc.document import Formatting
+from docling_core.types.doc.document import Formatting, InlineGroup
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin
@@ -76,6 +76,8 @@ class LatexDocumentBackend(
         self._custom_macros: dict[str, str] = {}
         self._custom_macro_num_args: dict[str, int] = {}
         self._input_stack: set[str] = set()
+        # The line of a list item that starts with a formula, by item reference.
+        self._list_item_lines: dict[str, InlineGroup] = {}
         self._tectonic_engine: TectonicEngine | None = None
         self._tikz_executor: concurrent.futures.ThreadPoolExecutor | None = None
         self._tikz_futures: list[concurrent.futures.Future] = []

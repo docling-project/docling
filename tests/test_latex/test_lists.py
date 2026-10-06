@@ -306,6 +306,85 @@ def test_latex_enumerate_item_starting_with_paragraph_break(item: bytes):
     assert doc.export_to_markdown() == "1. First\nContinuation\n2. Second"
 
 
+@pytest.mark.parametrize(
+    "item",
+    [
+        rb"\item \[x=1\] First",
+        rb"\item \begin{equation}x=1\end{equation} First",
+    ],
+    ids=["display_math", "equation"],
+)
+def test_latex_enumerate_item_starting_with_formula(item: bytes):
+    """A formula at the start of an item is on the line of the item, with its text.
+
+    As a block child of an item without text, it was exported as ``1. `` followed
+    by the formula on its own line, which a CommonMark parser reads as an empty
+    item; ``2. Second`` then loses its numbering.
+    """
+    latex_content = (
+        b"\\documentclass{article}\n\\begin{document}\n\\begin{enumerate}\n"
+        + item
+        + b"\n\\item Second\n\\end{enumerate}\n\\end{document}\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    first, second = (child.resolve(doc) for child in outer.children)
+    assert (first.text, second.text) == ("", "Second")
+    (line,) = (child.resolve(doc) for child in first.children)
+    assert line.label == GroupLabel.INLINE
+    assert [
+        (child.resolve(doc).label, child.resolve(doc).text) for child in line.children
+    ] == [(DocItemLabel.FORMULA, "x=1"), (DocItemLabel.TEXT, "First")]
+    assert doc.export_to_markdown() == "1. $x=1$ First\n2. Second"
+
+
+@pytest.mark.parametrize(
+    ("item", "children", "expected_md"),
+    [
+        (
+            rb"\item \[x=1\] \begin{itemize}\item In\end{itemize} After",
+            [GroupLabel.INLINE, GroupLabel.LIST, DocItemLabel.TEXT],
+            "1. $x=1$\n    - In\nAfter\n2. Second",
+        ),
+        (
+            rb"\item \[x=1\]\footnote{Note.} First",
+            [GroupLabel.INLINE, DocItemLabel.FOOTNOTE],
+            "1. $x=1$ First\nNote.\n2. Second",
+        ),
+    ],
+    ids=["nested_list", "footnote"],
+)
+def test_latex_enumerate_line_of_item_starting_with_formula(
+    item: bytes, children: list, expected_md: str
+):
+    """The line of an item ends at other content; a footnote does not end it."""
+    latex_content = (
+        b"\\documentclass{article}\n\\begin{document}\n\\begin{enumerate}\n"
+        + item
+        + b"\n\\item Second\n\\end{enumerate}\n\\end{document}\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    first = doc.groups[0].children[0].resolve(doc)
+    assert [child.resolve(doc).label for child in first.children] == children
+    assert doc.export_to_markdown() == expected_md
+
+
 def test_latex_enumerate_empty_item_keeps_numbering():
     """An empty ``\\item`` still takes a number, as in the typeset document."""
     latex_content = rb"""
