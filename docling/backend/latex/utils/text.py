@@ -53,6 +53,7 @@ class TextHelperMixin:
             text_label: Any = ...,
         ) -> None: ...
         def _extract_macro_arg(self, node: Any) -> str: ...
+        def _href_link_text(self, node: Any) -> str: ...
         def _expand_macros(self, latex_str: str) -> str: ...
         def _expand_custom_macro_invocation(
             self, node: Any, following_nodes: Any
@@ -131,6 +132,8 @@ class TextHelperMixin:
             return ("", consumed)
         if node.macroname in MACROS_CITATION:
             return (node.latex_verbatim(), consumed)
+        if node.macroname == "href":
+            return (self._href_link_text(node), consumed)
         if node.macroname == "\\":
             return ("\n", consumed)
         if node.macroname in ["~"]:
