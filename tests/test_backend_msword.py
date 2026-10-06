@@ -2070,13 +2070,14 @@ def test_fragment_only_rel_does_not_crash_backend():
     )
     converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
     result = converter.convert(stream, raises_on_error=True)
-    texts = [
-        item.text
+    text_items = [
+        item
         for item, _ in result.document.iterate_items()
         if isinstance(item, TextItem)
     ]
-    assert "Before internal link after" in "".join(texts)
-    assert all(item.hyperlink is None for item in result.document.texts)
+    assert len(text_items) == 1
+    assert text_items[0].text == "Before internal link after"
+    assert text_items[0].hyperlink is None
 
 
 def _docx_with_notes():
