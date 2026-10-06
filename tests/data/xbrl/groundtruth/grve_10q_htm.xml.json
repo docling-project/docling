@@ -3143,7 +3143,7 @@
           {
             "label": "value",
             "cell_id": 13,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -3173,7 +3173,7 @@
           {
             "label": "value",
             "cell_id": 18,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -3443,7 +3443,7 @@
           {
             "label": "value",
             "cell_id": 63,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -4283,7 +4283,7 @@
           {
             "label": "value",
             "cell_id": 203,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -4373,7 +4373,7 @@
           {
             "label": "value",
             "cell_id": 218,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -4523,7 +4523,7 @@
           {
             "label": "value",
             "cell_id": 243,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -5993,7 +5993,7 @@
           {
             "label": "value",
             "cell_id": 488,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -6023,7 +6023,7 @@
           {
             "label": "value",
             "cell_id": 493,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -6053,7 +6053,7 @@
           {
             "label": "value",
             "cell_id": 498,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -6083,7 +6083,7 @@
           {
             "label": "value",
             "cell_id": 503,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -11543,7 +11543,7 @@
           {
             "label": "value",
             "cell_id": 1413,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -11693,7 +11693,7 @@
           {
             "label": "value",
             "cell_id": 1438,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {
@@ -12143,7 +12143,7 @@
           {
             "label": "value",
             "cell_id": 1513,
-            "text": "currency: USD",
+            "text": "currency: USD / shares",
             "orig": "unit"
           },
           {

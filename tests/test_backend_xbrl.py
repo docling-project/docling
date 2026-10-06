@@ -9,14 +9,13 @@ and Retrieval (EDGAR) system.
 """
 
 import os
-from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import DoclingDocument
 
 from docling.datamodel.backend_options import XBRLBackendOptions
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.document_converter import DocumentConverter, XBRLFormatOption
 
@@ -49,10 +48,12 @@ def xbrl_paths() -> list[tuple[Path, Path]]:
         "Mismatch in XBRL instance reports and taxonomy directories"
     )
 
-    return zip(xml_files, taxonomy_dir)
+    return list(zip(xml_files, taxonomy_dir))
 
 
-def test_e2e_xbrl_conversions(xbrl_paths, use_stream=False):
+@pytest.fixture(scope="module")
+def documents(xbrl_paths) -> list[tuple[Path, DoclingDocument]]:
+    documents: list[tuple[Path, DoclingDocument]] = []
     for report, taxonomy in xbrl_paths:
         gt_path = report.parent.parent / "groundtruth" / report.name
 
@@ -65,15 +66,17 @@ def test_e2e_xbrl_conversions(xbrl_paths, use_stream=False):
                 InputFormat.XML_XBRL: XBRLFormatOption(backend_options=backend_options)
             },
         )
-
-        if use_stream:
-            buf = BytesIO(report.open("rb").read())
-            stream = DocumentStream(name=report.name, stream=buf)
-            conv_result: ConversionResult = converter.convert(stream)
-        else:
-            conv_result: ConversionResult = converter.convert(report)
+        conv_result: ConversionResult = converter.convert(report)
         doc: DoclingDocument = conv_result.document
 
+        assert doc, f"Failed to convert document from file {report}"
+        documents.append((gt_path, doc))
+
+    return documents
+
+
+def test_e2e_xbrl_conversions(documents):
+    for gt_path, doc in documents:
         pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
             "export to md"
@@ -87,3 +90,32 @@ def test_e2e_xbrl_conversions(xbrl_paths, use_stream=False):
         )
 
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), "export to json"
+
+
+def test_xbrl_divide_unit_keeps_denominator(documents):
+    """A fact measured in a divide unit must report both of its measures.
+
+    XBRL 2.1 (sections 4.8.3-4.8.4) defines a ``<divide>`` unit as the ratio of its
+    numerator and denominator measures. In ``grve_10q_htm.xml`` the per-share facts
+    use the unit ``USDPShares`` (``iso4217:USD`` divided by ``shares``), which must
+    not be reported as a plain ``USD`` amount.
+    """
+    name = "grve_10q_htm.xml"
+    doc = next(item[1] for item in documents if item[0].name == name)
+
+    unit_texts: dict[str, set[str]] = {}
+    for kv_item in doc.key_value_items:
+        cells = {cell.cell_id: cell for cell in kv_item.graph.cells}
+        for link in kv_item.graph.links:
+            target = cells[link.target_cell_id]
+            if target.orig == "unit":
+                concept = cells[link.source_cell_id].orig
+                unit_texts.setdefault(concept, set()).add(target.text)
+
+    for concept in (
+        "us-gaap:EarningsPerShareDiluted",
+        "us-gaap:CommonStockParOrStatedValuePerShare",
+        "us-gaap:PreferredStockParOrStatedValuePerShare",
+    ):
+        assert unit_texts.get(concept) == {"currency: USD / shares"}, concept
+    assert unit_texts.get("us-gaap:Assets") == {"currency: USD"}
