@@ -666,10 +666,11 @@ def _remove_fragment_only_rels(content: bytes) -> bytes:
     return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
-def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> None:
+def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
     """Remove XML comment nodes and processing instructions from every XML part.
 
-    Word comments (``w:comment`` elements) are not affected.
+    Word comments (``w:comment`` elements) are not affected. Returns the text of
+    the XML comments found in the main document part, in document order.
 
     Some producers write them into the document body (docx4j adds
     ``<!-- Created by docx4j ... -->``). The backend walks element children and
@@ -677,6 +678,7 @@ def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> None:
     conversion or drops the content of the table it sits in. Text following a
     removed node is kept.
     """
+    texts: list[str] = []
     for part in docx_obj.part.package.iter_parts():
         element = getattr(part, "_element", None)
         if element is None:
@@ -685,6 +687,9 @@ def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> None:
             parent = node.getparent()
             if parent is None:
                 continue
+            if part is docx_obj.part and node.tag is etree.Comment and node.text:
+                if text := node.text.strip():
+                    texts.append(text)
             if node.tail:
                 previous = node.getprevious()
                 if previous is not None:
@@ -692,6 +697,7 @@ def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> None:
                 else:
                     parent.text = (parent.text or "") + node.tail
             parent.remove(node)
+    return texts
 
 
 def _sanitize_docx(archive: zipfile.ZipFile, limits: ArchiveLimits) -> BytesIO:
@@ -974,6 +980,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._last_paragraph_content: (
             tuple[Any, list[tuple[str, Formatting | None, AnyUrl | Path | None]]] | None
         ) = None
+        self._xml_comments: list[str] = []
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -1037,7 +1044,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             limits=self._archive_limits,
         )
         if self.docx_obj:
-            _remove_xml_comment_nodes(self.docx_obj)
+            self._xml_comments = _remove_xml_comment_nodes(self.docx_obj)
             self.valid = True
             self.current_part = self.docx_obj.part
             _normalize_list_style_types(self.docx_obj)
@@ -1106,6 +1113,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_header_footer(self.docx_obj, doc)
             # Add comments and link them to annotated paragraphs
             self._add_comments(self.docx_obj, doc)
+            for text in self._xml_comments:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=text,
+                    content_layer=ContentLayer.NOTES,
+                )
             # Add footnotes and endnotes (their body text lives in a separate part;
             # the in-body reference is otherwise silently empty, see docstring below)
             self._add_footnotes_and_endnotes(self.docx_obj, doc)
