@@ -2186,3 +2186,34 @@ def test_footnotes_and_endnotes_are_not_dropped():
     assert len(footnote_items) == 2, (
         "expected exactly one real footnote and one real endnote, no placeholders"
     )
+
+
+def test_symbol_font_glyphs(docx_paths):
+    """w:sym characters are kept and Symbol font text is mapped to Unicode."""
+    name = "docx_symbol_font_glyphs.docx"
+    path = next(item for item in docx_paths if item.name == name)
+    doc = get_converter().convert(path).document
+
+    # each paragraph is "<label>: <payload> end"
+    payloads = {
+        label: payload.removesuffix(" end")
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem)
+        for label, payload in [item.text.split(": ", 1)]
+    }
+
+    # Symbol font text, stored as the PUA code point or as the plain byte
+    assert payloads["T1 Symbol F0B7"] == "\N{BULLET}"
+    assert payloads["T5 Symbol PUA greek"] == (
+        "\N{GREEK SMALL LETTER ALPHA}\N{GREEK SMALL LETTER BETA}\N{GREEK SMALL LETTER PI}"
+    )
+    assert payloads["T6 Symbol ASCII greek"] == (
+        "\N{GREEK SMALL LETTER ALPHA} \N{GREEK SMALL LETTER BETA} \N{GREEK SMALL LETTER PI}"
+    )
+    # w:sym is no longer dropped: mapped for Symbol, kept unchanged otherwise
+    assert payloads["S2 sym Symbol F061"] == "\N{GREEK SMALL LETTER ALPHA}"
+    assert payloads["S1 sym Wingdings F06C"] == "\uf06c"
+    assert payloads["S3 sym Wingdings F0E8"] == "\uf0e8"
+    # text in other fonts is unchanged
+    assert payloads["T2 Wingdings F0A7"] == "\uf0a7"
+    assert payloads["C1 Arial"] == "\N{LATIN SMALL LETTER E WITH ACUTE} a b p"
