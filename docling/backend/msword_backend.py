@@ -1207,6 +1207,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Recursively walk the SDT content to catch textboxes, tables, and nested structures
                     _, te = self._walk_linear(sdt_content, doc)
                     added_elements.extend(te)
+            # A body-level mc:AlternateContent holds the same blocks twice, in a
+            # modern (Choice) and a legacy (Fallback) form. Walk one branch only.
+            elif tag_name == "AlternateContent":
+                branch = self._select_alternate_content_branch(element)
+                if branch is not None:
+                    _, te = self._walk_linear(branch, doc)
+                    added_elements.extend(te)
             # Check for Image
             elif drawing_blip:
                 pics = self._handle_pictures(drawing_blip, doc)
@@ -1280,6 +1287,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
 
         return doc, added_elements
+
+    @staticmethod
+    def _select_alternate_content_branch(
+        element: BaseOxmlElement,
+    ) -> BaseOxmlElement | None:
+        """Pick the branch of an ``mc:AlternateContent`` to read.
+
+        Take the first ``mc:Choice`` whose ``Requires`` prefixes all map to
+        namespaces this backend understands. If none does, take ``mc:Fallback``.
+        """
+        supported = set(_OOXML_NAMESPACES.values())
+        for choice in element.findall("mc:Choice", namespaces=_OOXML_NAMESPACES):
+            prefixes = (choice.get("Requires") or "").split()
+            if all(choice.nsmap.get(prefix) in supported for prefix in prefixes):
+                return choice
+        return element.find("mc:Fallback", namespaces=_OOXML_NAMESPACES)
 
     def _is_invisible_spacer(self, pil_image: Image.Image | None) -> bool:
         """Check if an image is an invisible layout spacer rather than a meaningful graphic."""

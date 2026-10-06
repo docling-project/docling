@@ -2186,3 +2186,61 @@ def test_footnotes_and_endnotes_are_not_dropped():
     assert len(footnote_items) == 2, (
         "expected exactly one real footnote and one real endnote, no placeholders"
     )
+
+
+_MC_BODY_BLOCK = """
+<mc:AlternateContent
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex">
+  <mc:Choice Requires="{requires}">
+    <w:p><w:r><w:t>CHOICE_BRANCH_ACTIVE</w:t></w:r></w:p>
+    <w:p><w:r><w:t>LEGITIMATE_DUPLICATE_PARAGRAPH</w:t></w:r></w:p>
+    <w:p><w:r><w:t>LEGITIMATE_DUPLICATE_PARAGRAPH</w:t></w:r></w:p>
+  </mc:Choice>
+  <mc:Fallback>
+    <w:p><w:r><w:t>FALLBACK_LEGACY_BRANCH</w:t></w:r></w:p>
+  </mc:Fallback>
+</mc:AlternateContent>
+"""
+
+
+def _body_texts_around_alternate_content(tmp_path, requires: str) -> list[str]:
+    document = Document()
+    document.add_paragraph("Paragraph before AlternateContent")
+    block = etree.fromstring(_MC_BODY_BLOCK.format(requires=requires))
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("Paragraph after AlternateContent")
+    doc = _convert_built(document, tmp_path)
+    return [item.text for item in doc.texts]
+
+
+def test_body_level_alternate_content_reads_the_supported_choice(tmp_path):
+    """A body-level ``mc:AlternateContent`` must not drop its paragraphs.
+
+    Only the supported ``mc:Choice`` is read, so the legacy ``mc:Fallback``
+    text does not appear and identical paragraphs in the Choice both stay.
+    """
+    texts = _body_texts_around_alternate_content(tmp_path, requires="wps")
+
+    assert texts == [
+        "Paragraph before AlternateContent",
+        "CHOICE_BRANCH_ACTIVE",
+        "LEGITIMATE_DUPLICATE_PARAGRAPH",
+        "LEGITIMATE_DUPLICATE_PARAGRAPH",
+        "Paragraph after AlternateContent",
+    ]
+
+
+def test_body_level_alternate_content_falls_back_when_choice_is_unsupported(
+    tmp_path,
+):
+    """A Choice that requires an unknown namespace yields to ``mc:Fallback``."""
+    texts = _body_texts_around_alternate_content(tmp_path, requires="w16se")
+
+    assert texts == [
+        "Paragraph before AlternateContent",
+        "FALLBACK_LEGACY_BRANCH",
+        "Paragraph after AlternateContent",
+    ]
