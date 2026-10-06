@@ -9,8 +9,10 @@ body:
   - $ref: '#/groups/8'
   - $ref: '#/groups/11'
   - $ref: '#/texts/43'
-  - $ref: '#/texts/47'
-  - $ref: '#/texts/48'
+  - $ref: '#/groups/13'
+  - $ref: '#/texts/50'
+  - $ref: '#/texts/51'
+  - $ref: '#/texts/52'
   - $ref: '#/tables/0'
   content_layer: body
   label: unspecified
@@ -159,71 +161,47 @@ groups:
     $ref: '#/texts/43'
   self_ref: '#/groups/12'
 - children:
+  - $ref: '#/texts/47'
+  - $ref: '#/texts/48'
   - $ref: '#/texts/49'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/groups/14'
+    $ref: '#/body'
   self_ref: '#/groups/13'
 - children:
-  - $ref: '#/groups/13'
+  - $ref: '#/texts/53'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/15'
+  self_ref: '#/groups/14'
+- children:
+  - $ref: '#/groups/14'
   content_layer: body
   label: unspecified
   name: rich_cell_group_0_0_0
   parent:
     $ref: '#/tables/0'
-  self_ref: '#/groups/14'
-- children:
-  - $ref: '#/texts/50'
-  content_layer: body
-  label: inline
-  name: group
-  parent:
-    $ref: '#/groups/16'
   self_ref: '#/groups/15'
 - children:
-  - $ref: '#/groups/15'
-  content_layer: body
-  label: unspecified
-  name: rich_cell_group_0_1_0
-  parent:
-    $ref: '#/tables/0'
-  self_ref: '#/groups/16'
-- children:
-  - $ref: '#/texts/51'
-  - $ref: '#/texts/52'
-  content_layer: body
-  label: inline
-  name: group
-  parent:
-    $ref: '#/groups/18'
-  self_ref: '#/groups/17'
-- children:
-  - $ref: '#/groups/17'
-  content_layer: body
-  label: unspecified
-  name: rich_cell_group_0_0_2
-  parent:
-    $ref: '#/tables/0'
-  self_ref: '#/groups/18'
-- children:
-  - $ref: '#/texts/53'
   - $ref: '#/texts/54'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/groups/20'
-  self_ref: '#/groups/19'
+    $ref: '#/groups/17'
+  self_ref: '#/groups/16'
 - children:
-  - $ref: '#/groups/19'
+  - $ref: '#/groups/16'
   content_layer: body
   label: unspecified
-  name: rich_cell_group_0_0_3
+  name: rich_cell_group_0_1_0
   parent:
     $ref: '#/tables/0'
-  self_ref: '#/groups/20'
+  self_ref: '#/groups/17'
 - children:
   - $ref: '#/texts/55'
   - $ref: '#/texts/56'
@@ -231,73 +209,109 @@ groups:
   label: inline
   name: group
   parent:
-    $ref: '#/groups/22'
+    $ref: '#/groups/19'
+  self_ref: '#/groups/18'
+- children:
+  - $ref: '#/groups/18'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_2
+  parent:
+    $ref: '#/tables/0'
+  self_ref: '#/groups/19'
+- children:
+  - $ref: '#/texts/57'
+  - $ref: '#/texts/58'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/21'
+  self_ref: '#/groups/20'
+- children:
+  - $ref: '#/groups/20'
+  content_layer: body
+  label: unspecified
+  name: rich_cell_group_0_0_3
+  parent:
+    $ref: '#/tables/0'
   self_ref: '#/groups/21'
 - children:
-  - $ref: '#/groups/21'
+  - $ref: '#/texts/59'
+  - $ref: '#/texts/60'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/groups/23'
+  self_ref: '#/groups/22'
+- children:
+  - $ref: '#/groups/22'
   content_layer: body
   label: unspecified
   name: rich_cell_group_0_0_4
   parent:
     $ref: '#/tables/0'
-  self_ref: '#/groups/22'
+  self_ref: '#/groups/23'
 - children:
-  - $ref: '#/texts/57'
-  - $ref: '#/texts/58'
-  - $ref: '#/texts/59'
+  - $ref: '#/texts/61'
+  - $ref: '#/texts/62'
+  - $ref: '#/texts/63'
+  - $ref: '#/texts/64'
+  - $ref: '#/texts/65'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/groups/24'
-  self_ref: '#/groups/23'
+    $ref: '#/groups/25'
+  self_ref: '#/groups/24'
 - children:
-  - $ref: '#/groups/23'
+  - $ref: '#/groups/24'
   content_layer: body
   label: unspecified
   name: rich_cell_group_0_0_5
   parent:
     $ref: '#/tables/0'
-  self_ref: '#/groups/24'
+  self_ref: '#/groups/25'
 - children:
-  - $ref: '#/texts/60'
-  - $ref: '#/texts/61'
-  - $ref: '#/texts/62'
+  - $ref: '#/texts/66'
+  - $ref: '#/texts/67'
+  - $ref: '#/texts/68'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/groups/26'
-  self_ref: '#/groups/25'
+    $ref: '#/groups/27'
+  self_ref: '#/groups/26'
 - children:
-  - $ref: '#/groups/25'
+  - $ref: '#/groups/26'
   content_layer: body
   label: unspecified
   name: rich_cell_group_0_0_6
   parent:
     $ref: '#/tables/0'
-  self_ref: '#/groups/26'
+  self_ref: '#/groups/27'
 - children:
-  - $ref: '#/texts/63'
-  - $ref: '#/texts/64'
+  - $ref: '#/texts/69'
+  - $ref: '#/texts/70'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/groups/28'
-  self_ref: '#/groups/27'
+    $ref: '#/groups/29'
+  self_ref: '#/groups/28'
 - children:
-  - $ref: '#/groups/27'
+  - $ref: '#/groups/28'
   content_layer: body
   label: unspecified
   name: rich_cell_group_0_0_7
   parent:
     $ref: '#/tables/0'
-  self_ref: '#/groups/28'
+  self_ref: '#/groups/29'
 key_value_items: []
 name: inline_and_formatting
 origin:
-  binary_hash: 12173229376050275371
+  binary_hash: 14343850828760368334
   filename: inline_and_formatting.md
   mimetype: text/markdown
 pages: {}
@@ -307,14 +321,14 @@ tables:
 - annotations: []
   captions: []
   children:
-  - $ref: '#/groups/14'
-  - $ref: '#/groups/16'
-  - $ref: '#/groups/18'
-  - $ref: '#/groups/20'
-  - $ref: '#/groups/22'
-  - $ref: '#/groups/24'
-  - $ref: '#/groups/26'
-  - $ref: '#/groups/28'
+  - $ref: '#/groups/15'
+  - $ref: '#/groups/17'
+  - $ref: '#/groups/19'
+  - $ref: '#/groups/21'
+  - $ref: '#/groups/23'
+  - $ref: '#/groups/25'
+  - $ref: '#/groups/27'
+  - $ref: '#/groups/29'
   content_layer: body
   data:
     grid:
@@ -438,7 +452,7 @@ tables:
         row_span: 1
         start_col_offset_idx: 0
         start_row_offset_idx: 5
-        text: italic and bold
+        text: italic and bold and strikethrough
       - col_span: 1
         column_header: false
         end_col_offset_idx: 2
@@ -504,7 +518,7 @@ tables:
       end_row_offset_idx: 1
       fillable: false
       ref:
-        $ref: '#/groups/14'
+        $ref: '#/groups/15'
       row_header: false
       row_section: false
       row_span: 1
@@ -517,7 +531,7 @@ tables:
       end_row_offset_idx: 1
       fillable: false
       ref:
-        $ref: '#/groups/16'
+        $ref: '#/groups/17'
       row_header: false
       row_section: false
       row_span: 1
@@ -552,7 +566,7 @@ tables:
       end_row_offset_idx: 3
       fillable: false
       ref:
-        $ref: '#/groups/18'
+        $ref: '#/groups/19'
       row_header: false
       row_section: false
       row_span: 1
@@ -576,7 +590,7 @@ tables:
       end_row_offset_idx: 4
       fillable: false
       ref:
-        $ref: '#/groups/20'
+        $ref: '#/groups/21'
       row_header: false
       row_section: false
       row_span: 1
@@ -600,7 +614,7 @@ tables:
       end_row_offset_idx: 5
       fillable: false
       ref:
-        $ref: '#/groups/22'
+        $ref: '#/groups/23'
       row_header: false
       row_section: false
       row_span: 1
@@ -624,13 +638,13 @@ tables:
       end_row_offset_idx: 6
       fillable: false
       ref:
-        $ref: '#/groups/24'
+        $ref: '#/groups/25'
       row_header: false
       row_section: false
       row_span: 1
       start_col_offset_idx: 0
       start_row_offset_idx: 5
-      text: italic and bold
+      text: italic and bold and strikethrough
     - col_span: 1
       column_header: false
       end_col_offset_idx: 2
@@ -648,7 +662,7 @@ tables:
       end_row_offset_idx: 7
       fillable: false
       ref:
-        $ref: '#/groups/26'
+        $ref: '#/groups/27'
       row_header: false
       row_section: false
       row_span: 1
@@ -672,7 +686,7 @@ tables:
       end_row_offset_idx: 8
       fillable: false
       ref:
-        $ref: '#/groups/28'
+        $ref: '#/groups/29'
       row_header: false
       row_section: false
       row_span: 1
@@ -1245,13 +1259,55 @@ texts:
   text: not_to_escape
 - children: []
   content_layer: body
+  label: text
+  orig: This is
+  parent:
+    $ref: '#/groups/13'
+  prov: []
+  self_ref: '#/texts/47'
+  text: This is
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: false
+    script: baseline
+    strikethrough: true
+    underline: false
+  label: text
+  orig: old
+  parent:
+    $ref: '#/groups/13'
+  prov: []
+  self_ref: '#/texts/48'
+  text: old
+- children: []
+  content_layer: body
+  label: text
+  orig: new.
+  parent:
+    $ref: '#/groups/13'
+  prov: []
+  self_ref: '#/texts/49'
+  text: new.
+- children: []
+  content_layer: body
+  label: text
+  orig: Approx ~5 items and ~10 more.
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/50'
+  text: Approx ~5 items and ~10 more.
+- children: []
+  content_layer: body
   hyperlink: https://en.wikipedia.org/wiki/Albert_Einstein
   label: text
   orig: $$E=mc^2$$
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/47'
+  self_ref: '#/texts/51'
   text: $$E=mc^2$$
 - children: []
   content_layer: body
@@ -1261,7 +1317,7 @@ texts:
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/48'
+  self_ref: '#/texts/52'
   text: Table Heading
 - children: []
   content_layer: body
@@ -1274,9 +1330,9 @@ texts:
   label: text
   orig: Bold Heading
   parent:
-    $ref: '#/groups/13'
+    $ref: '#/groups/14'
   prov: []
-  self_ref: '#/texts/49'
+  self_ref: '#/texts/53'
   text: Bold Heading
 - children: []
   content_layer: body
@@ -1289,9 +1345,9 @@ texts:
   label: text
   orig: Italic Heading
   parent:
-    $ref: '#/groups/15'
+    $ref: '#/groups/16'
   prov: []
-  self_ref: '#/texts/50'
+  self_ref: '#/texts/54'
   text: Italic Heading
 - children: []
   content_layer: body
@@ -1304,27 +1360,27 @@ texts:
   label: text
   orig: C
   parent:
-    $ref: '#/groups/17'
+    $ref: '#/groups/18'
   prov: []
-  self_ref: '#/texts/51'
+  self_ref: '#/texts/55'
   text: C
 - children: []
   content_layer: body
   label: text
   orig: Cadre
   parent:
-    $ref: '#/groups/17'
+    $ref: '#/groups/18'
   prov: []
-  self_ref: '#/texts/52'
+  self_ref: '#/texts/56'
   text: Cadre
 - children: []
   content_layer: body
   label: text
   orig: foo
   parent:
-    $ref: '#/groups/19'
+    $ref: '#/groups/20'
   prov: []
-  self_ref: '#/texts/53'
+  self_ref: '#/texts/57'
   text: foo
 - children: []
   content_layer: body
@@ -1337,9 +1393,9 @@ texts:
   label: text
   orig: bar
   parent:
-    $ref: '#/groups/19'
+    $ref: '#/groups/20'
   prov: []
-  self_ref: '#/texts/54'
+  self_ref: '#/texts/58'
   text: bar
 - children: []
   content_layer: body
@@ -1352,9 +1408,9 @@ texts:
   label: text
   orig: A
   parent:
-    $ref: '#/groups/21'
+    $ref: '#/groups/22'
   prov: []
-  self_ref: '#/texts/55'
+  self_ref: '#/texts/59'
   text: A
 - children: []
   content_layer: body
@@ -1367,9 +1423,9 @@ texts:
   label: text
   orig: B
   parent:
-    $ref: '#/groups/21'
+    $ref: '#/groups/22'
   prov: []
-  self_ref: '#/texts/56'
+  self_ref: '#/texts/60'
   text: B
 - children: []
   content_layer: body
@@ -1382,18 +1438,18 @@ texts:
   label: text
   orig: italic
   parent:
-    $ref: '#/groups/23'
+    $ref: '#/groups/24'
   prov: []
-  self_ref: '#/texts/57'
+  self_ref: '#/texts/61'
   text: italic
 - children: []
   content_layer: body
   label: text
   orig: and
   parent:
-    $ref: '#/groups/23'
+    $ref: '#/groups/24'
   prov: []
-  self_ref: '#/texts/58'
+  self_ref: '#/texts/62'
   text: and
 - children: []
   content_layer: body
@@ -1406,18 +1462,42 @@ texts:
   label: text
   orig: bold
   parent:
-    $ref: '#/groups/23'
+    $ref: '#/groups/24'
   prov: []
-  self_ref: '#/texts/59'
+  self_ref: '#/texts/63'
   text: bold
+- children: []
+  content_layer: body
+  label: text
+  orig: and
+  parent:
+    $ref: '#/groups/24'
+  prov: []
+  self_ref: '#/texts/64'
+  text: and
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: false
+    script: baseline
+    strikethrough: true
+    underline: false
+  label: text
+  orig: strikethrough
+  parent:
+    $ref: '#/groups/24'
+  prov: []
+  self_ref: '#/texts/65'
+  text: strikethrough
 - children: []
   content_layer: body
   label: text
   orig: run
   parent:
-    $ref: '#/groups/25'
+    $ref: '#/groups/26'
   prov: []
-  self_ref: '#/texts/60'
+  self_ref: '#/texts/66'
   text: run
 - captions: []
   children: []
@@ -1427,28 +1507,28 @@ texts:
   label: code
   orig: build
   parent:
-    $ref: '#/groups/25'
+    $ref: '#/groups/26'
   prov: []
   references: []
-  self_ref: '#/texts/61'
+  self_ref: '#/texts/67'
   text: build
 - children: []
   content_layer: body
   label: text
   orig: now
   parent:
-    $ref: '#/groups/25'
+    $ref: '#/groups/26'
   prov: []
-  self_ref: '#/texts/62'
+  self_ref: '#/texts/68'
   text: now
 - children: []
   content_layer: body
   label: text
   orig: visit
   parent:
-    $ref: '#/groups/27'
+    $ref: '#/groups/28'
   prov: []
-  self_ref: '#/texts/63'
+  self_ref: '#/texts/69'
   text: visit
 - children: []
   content_layer: body
@@ -1456,8 +1536,8 @@ texts:
   label: text
   orig: Docling
   parent:
-    $ref: '#/groups/27'
+    $ref: '#/groups/28'
   prov: []
-  self_ref: '#/texts/64'
+  self_ref: '#/texts/70'
   text: Docling
 version: 1.10.0

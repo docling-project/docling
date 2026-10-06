@@ -74,10 +74,18 @@ try:  # pragma: no cover - import-time guard
                     return True
             return False
 
+    class _GfmStrikethrough(marko.inline.InlineElement):
+        """GFM double-tilde strikethrough element matching ``~~text~~``."""
+
+        pattern = re.compile(r"(?<!~)~~([^~]+)~~(?!~)")
+        priority = 5
+        parse_children = True
+        parse_group = 1
+
     _GFM_EXTENSION = MarkoExtension(
         elements=[
             _GfmParagraph,
-            _gfm_el.Strikethrough,
+            _GfmStrikethrough,
             _gfm_el.Url,
             _gfm_el.Table,
             _gfm_el.TableRow,
@@ -334,7 +342,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             marko.inline.Image,
         )
         if hasattr(_gfm_el, "Strikethrough"):
-            rich_inline_types = (*rich_inline_types, _gfm_el.Strikethrough)
+            rich_inline_types = (
+                *rich_inline_types,
+                _gfm_el.Strikethrough,
+                _GfmStrikethrough,
+            )
 
         def _check(node) -> bool:
             if isinstance(node, rich_inline_types):
@@ -555,7 +567,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 collected_refs.append(item.get_ref())
 
         elif hasattr(_gfm_el, "Strikethrough") and isinstance(
-            element, _gfm_el.Strikethrough
+            element, (_gfm_el.Strikethrough, _GfmStrikethrough)
         ):
             formatting = MarkdownDocumentBackend._apply_formatting(
                 formatting, strikethrough=True
@@ -842,6 +854,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(" - StrongEmphasis: %s", element.children)
             formatting = MarkdownDocumentBackend._apply_formatting(
                 formatting, bold=True
+            )
+
+        elif hasattr(_gfm_el, "Strikethrough") and isinstance(
+            element, (_gfm_el.Strikethrough, _GfmStrikethrough)
+        ):
+            _log.debug(" - Strikethrough: %s", element.children)
+            formatting = MarkdownDocumentBackend._apply_formatting(
+                formatting, strikethrough=True
             )
 
         elif isinstance(element, marko.inline.Link):
