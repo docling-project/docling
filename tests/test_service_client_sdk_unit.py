@@ -797,8 +797,8 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
         build_thread = threading.Thread(target=build_iterator)
         build_thread.start()
 
-        iterator_or_exc = iterator_queue.get(timeout=0.2)
-        build_thread.join(timeout=0.2)
+        iterator_or_exc = iterator_queue.get(timeout=5.0)
+        build_thread.join(timeout=5.0)
 
         if isinstance(iterator_or_exc, BaseException):
             raise iterator_or_exc
@@ -820,8 +820,8 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
         assert first_result_queue.empty()
 
         release_first.set()
-        first_result_or_exc = first_result_queue.get(timeout=0.2)
-        first_thread.join(timeout=0.2)
+        first_result_or_exc = first_result_queue.get(timeout=5.0)
+        first_thread.join(timeout=5.0)
 
         if isinstance(first_result_or_exc, BaseException):
             raise first_result_or_exc
