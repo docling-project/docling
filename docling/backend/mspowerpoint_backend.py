@@ -46,6 +46,7 @@ from docling.backend.docx.drawingml.utils import (
     crop_whitespace,
     get_docx_to_pdf_converter,
 )
+from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -932,7 +933,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Open it with PIL
         image_ref: Optional[ImageRef] = None
         try:
-            pil_image = Image.open(BytesIO(image_bytes))
+            pil_image = normalize_image_for_png(Image.open(BytesIO(image_bytes)))
             image_ref = ImageRef.from_pil(image=pil_image, dpi=im_dpi)
         except (UnidentifiedImageError, OSError, ValueError) as e:
             if not _is_metafile(image_bytes):

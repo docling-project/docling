@@ -50,6 +50,7 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import FormatToMimeType
 from docling.datamodel.document import InputDocument, InputFormat
@@ -3670,7 +3671,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     try:
                         image_bytes = BytesIO(image_data)
-                        pil_image = Image.open(image_bytes)
+                        pil_image = normalize_image_for_png(Image.open(image_bytes))
                         # Try to ensure the image is usable by converting to PNG
                         # This will fail for WMF/EMF files that PIL can't render
                         test_bytes = BytesIO()
@@ -3743,7 +3744,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     try:
                         image_bytes = BytesIO(image_data)
-                        pil_image = Image.open(image_bytes)
+                        pil_image = normalize_image_for_png(Image.open(image_bytes))
                         test_bytes = BytesIO()
                         pil_image.save(test_bytes, format="PNG")
                         test_bytes.seek(0)
