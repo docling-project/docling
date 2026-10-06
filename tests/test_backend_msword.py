@@ -2208,7 +2208,7 @@ _COMMENT = b"<!-- Created by docx4j 8.2.8 (Apache licensed) -->"
         ),
     ],
 )
-def test_xml_comments_and_processing_instructions_are_ignored(insert):
+def test_xml_comments_and_processing_instructions_keep_body_text(insert):
     """Regression test: an XML comment or processing instruction in the document
     part (docx4j writes one at the start of the body) used to fail the whole
     conversion with ``ValueError: Invalid input tag``, or drop the text of the
@@ -2219,3 +2219,29 @@ def test_xml_comments_and_processing_instructions_are_ignored(insert):
     markdown = result.document.export_to_markdown()
     for text in ("Title", "first run", "second run", "cell A", "cell B"):
         assert text in markdown
+
+
+def test_xml_comment_text_goes_to_notes():
+    """XML comments in the document part are kept in the NOTES layer, out of the
+    body; processing instructions are dropped."""
+
+    def insert(data):
+        data = data.replace(b"<w:body>", b"<w:body>" + _COMMENT, 1)
+        data = data.replace(b">first run <", b">first <!-- inline -->run <", 1)
+        return data.replace(b"<w:tc>", b"<w:tc><?producer note?>", 1)
+
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    notes = [
+        item.text
+        for item, _ in doc.iterate_items(included_content_layers={ContentLayer.NOTES})
+        if isinstance(item, TextItem)
+    ]
+    assert notes == ["Created by docx4j 8.2.8 (Apache licensed)", "inline"]
+    markdown = doc.export_to_markdown()
+    assert "first run second run" in markdown
+    assert "docx4j" not in markdown
+    assert "inline" not in markdown
+    assert "producer" not in markdown
