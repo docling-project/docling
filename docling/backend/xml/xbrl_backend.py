@@ -320,12 +320,24 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
 
             if fact.concept.isNumeric and fact.localName and fact.value:
                 # period
+                # Arelle adjusts date-only instants and end dates by one day
+                # (they denote the end of that day); `instantDate`/`endDate`
+                # report the dates as declared in the instance contexts.
+                # The properties are `date | None`, so guard against a
+                # malformed context producing a literal "None" in the cell.
                 period_text = ""
                 if fact.context is not None:
-                    if fact.context.isInstantPeriod:
-                        period_text = str(fact.context.instantDatetime.date())
-                    elif fact.context.isStartEndPeriod:
-                        period_text = f"{fact.context.startDatetime.date()} - {fact.context.endDatetime.date()}"
+                    if (
+                        fact.context.isInstantPeriod
+                        and fact.context.instantDate is not None
+                    ):
+                        period_text = str(fact.context.instantDate)
+                    elif (
+                        fact.context.isStartEndPeriod
+                        and fact.context.startDatetime is not None
+                        and fact.context.endDate is not None
+                    ):
+                        period_text = f"{fact.context.startDatetime.date()} - {fact.context.endDate}"
 
                 # unit
                 unit_text = ""
