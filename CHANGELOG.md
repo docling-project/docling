@@ -1,3 +1,39 @@
+## [v2.134.0](https://github.com/docling-project/docling/releases/tag/v2.134.0) - 2026-10-06
+
+### Feature
+
+* **iwork:** Add Apple Numbers (.numbers) support ([#4113](https://github.com/docling-project/docling/issues/4113)) ([`8d7cc9f`](https://github.com/docling-project/docling/commit/8d7cc9f7f42b9d85f48e953f281e228acf3f6ea8))
+* **vlm:** Expose logprobs on the streaming API path ([#4528](https://github.com/docling-project/docling/issues/4528)) ([`3073a27`](https://github.com/docling-project/docling/commit/3073a27187f22166f8045fa8ac7db1d34be99afc))
+
+### Fix
+
+* **docx:** Preserve text from dangling fragment hyperlinks ([#4563](https://github.com/docling-project/docling/issues/4563)) ([`d15cf10`](https://github.com/docling-project/docling/commit/d15cf10c26cf33c54ef2779a1fd9d4e3066d07e0))
+* **html:** Keep text placed directly inside a figure ([#4574](https://github.com/docling-project/docling/issues/4574)) ([`caba660`](https://github.com/docling-project/docling/commit/caba660f6ff3a2ee8df39bd39d478046749f815c))
+* **docx:** Keep hyperlink runs nested in a wrapper ([#4576](https://github.com/docling-project/docling/issues/4576)) ([`7833b32`](https://github.com/docling-project/docling/commit/7833b326991902e1cd2d6da187059a4bc3a561ec))
+* **docx:** Add use_outline_level_for_headings option to backend ([#4480](https://github.com/docling-project/docling/issues/4480)) ([`b38ed49`](https://github.com/docling-project/docling/commit/b38ed495f016e5cbd90cb888d5d4b35b89fdec01))
+* **html:** Separate inline text from a following block tag in get_text ([#4484](https://github.com/docling-project/docling/issues/4484)) ([`d451d71`](https://github.com/docling-project/docling/commit/d451d71e204eca90b05314da207af9f25778fd11))
+* **md:** Drop whitespace-only lines before code block content ([#4543](https://github.com/docling-project/docling/issues/4543)) ([`eda5b5f`](https://github.com/docling-project/docling/commit/eda5b5fc86d10b2b79a900ff3e69fc159d5f6014))
+* **datamodel:** Let the extension pick between OLE2 legacy Office formats ([#4476](https://github.com/docling-project/docling/issues/4476)) ([`58f1f8d`](https://github.com/docling-project/docling/commit/58f1f8d907fdc4610cd8dca20da6ef53a4550ee8))
+* **xbrl:** Tolerate open taxonomy packages during temp dir cleanup ([#4482](https://github.com/docling-project/docling/issues/4482)) ([`d65cbd6`](https://github.com/docling-project/docling/commit/d65cbd64d024a39438fe4a1d71f91dd7d4a251d5))
+* **cli:** Write plain text for --to text ([#4508](https://github.com/docling-project/docling/issues/4508)) ([`e34b74d`](https://github.com/docling-project/docling/commit/e34b74d26feb0e089c15857ef30f8063c4f2e33a))
+* **cli:** Detect LaTeX documents by content when the name gives no format ([#4551](https://github.com/docling-project/docling/issues/4551)) ([`93ce581`](https://github.com/docling-project/docling/commit/93ce581b12f3876c74b68b963557d62c6857e7b4))
+* **code-formula:** Stop repetition loops and make the crop margin configurable ([#4548](https://github.com/docling-project/docling/issues/4548)) ([`012b611`](https://github.com/docling-project/docling/commit/012b6110cdab50badef3087783887f6f15c79032))
+* **cli:** Keep local LaTeX sources in place so included files resolve ([#4532](https://github.com/docling-project/docling/issues/4532)) ([`734e8f0`](https://github.com/docling-project/docling/commit/734e8f0d69071355c0aea98bed33a7f397eba1b6))
+* **latex:** Keep the first-line indentation of code environments ([#4502](https://github.com/docling-project/docling/issues/4502)) ([`51fe9ff`](https://github.com/docling-project/docling/commit/51fe9ff4578e9f150ef3bc6246433e6092a8ebfb))
+* **email:** Keep Cc recipients in the converted document ([#4505](https://github.com/docling-project/docling/issues/4505)) ([`53eec17`](https://github.com/docling-project/docling/commit/53eec17c5cc81e68a1f2d7430562c905a44247b2))
+* **image:** Flatten transparent images onto white instead of black ([#4511](https://github.com/docling-project/docling/issues/4511)) ([`0cd61e0`](https://github.com/docling-project/docling/commit/0cd61e0050a9ef68e5e10495b87e41d31acd79c9))
+* **odf:** Respect page_range in ODS and ODP ([#4512](https://github.com/docling-project/docling/issues/4512)) ([`7bfbdb9`](https://github.com/docling-project/docling/commit/7bfbdb95ee179128879677ba1c2a5902cafbc821))
+* **mets-gbs:** Rewind the stream so archives passed as DocumentStream load ([#4521](https://github.com/docling-project/docling/issues/4521)) ([`31aca0f`](https://github.com/docling-project/docling/commit/31aca0ff9b7b58a141ee36839deb5b39bd925171))
+* **cli:** Apply the video options to videos found in a directory ([#4523](https://github.com/docling-project/docling/issues/4523)) ([`1cd56d8`](https://github.com/docling-project/docling/commit/1cd56d87b4117eefe09d233d95b77ec5120d946a))
+* **md:** Reset pending line breaks at block boundaries ([#4525](https://github.com/docling-project/docling/issues/4525)) ([`dd7e1ef`](https://github.com/docling-project/docling/commit/dd7e1ef4c79f8edf1a62e98f192a5a33113282d5))
+* **html,jats,boxnote:** Count the columns a rowspan shifts cells into ([#4527](https://github.com/docling-project/docling/issues/4527)) ([`c87c9ce`](https://github.com/docling-project/docling/commit/c87c9cefb43bfb7d5fa2d10214ec54067e1a0288))
+* **opendocument:** Emit the embedded chart title as a caption ([#4529](https://github.com/docling-project/docling/issues/4529)) ([`dfa8728`](https://github.com/docling-project/docling/commit/dfa87284be91927ec59c9bb46e9e7347b375c17f))
+* **md:** Keep text after a line break out of a code span ([#4509](https://github.com/docling-project/docling/issues/4509)) ([`5c5a8c1`](https://github.com/docling-project/docling/commit/5c5a8c1b3fdf4d3cb02b18a152e577dac2d7eef1))
+
+### Documentation
+
+* **agents:** Require simplified technical English ([#4552](https://github.com/docling-project/docling/issues/4552)) ([`b91e6b2`](https://github.com/docling-project/docling/commit/b91e6b22b3fac9c15f3cb78b8db573c7c54f4d64))
+
 ## [v2.133.0](https://github.com/docling-project/docling/releases/tag/v2.133.0) - 2026-10-03
 
 ### Feature
