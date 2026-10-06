@@ -155,6 +155,7 @@ _W10_NS: Final[str] = "urn:schemas-microsoft-com:office:word"
 _A14_NS: Final[str] = "http://schemas.microsoft.com/office/drawing/2010/main"
 _W14_NS: Final[str] = "http://schemas.microsoft.com/office/word/2010/wordml"
 _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
+_MC_NS_CLARK: Final[str] = f"{{{_MC_NS}}}"
 
 _OOXML_NAMESPACES: Final[dict[str, str]] = {
     "a": _A_NS,
@@ -2301,8 +2302,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _is_in_mc_fallback_with_choice_txbx(element: etree._Element) -> bool:
-        """Return True when *element* is inside mc:Fallback of an mc:AlternateContent
-        whose mc:Choice branch also contains a w:txbxContent.
+        """Return True when *element* is inside mc:Fallback whose mc:Choice sibling has a w:txbxContent.
 
         Word saves a text box under ``mc:AlternateContent`` with two branches:
 
@@ -2321,10 +2321,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             True if the element is inside mc:Fallback and the enclosing
             mc:AlternateContent has an mc:Choice sibling with a w:txbxContent.
         """
-        mc_fallback_tag = f"{{{_MC_NS}}}Fallback"
-        mc_choice_tag = f"{{{_MC_NS}}}Choice"
-        mc_alternate_tag = f"{{{_MC_NS}}}AlternateContent"
-        txbx_content_tag = f"{{{_W_NS}}}txbxContent"
+        mc_fallback_tag = f"{_MC_NS_CLARK}Fallback"
+        mc_choice_tag = f"{_MC_NS_CLARK}Choice"
+        mc_alternate_tag = f"{_MC_NS_CLARK}AlternateContent"
+        txbx_content_tag = f"{_W_NS_CLARK}txbxContent"
 
         fallback = None
         for ancestor in element.iterancestors():
@@ -2332,7 +2332,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 fallback = ancestor
             if ancestor.tag == mc_alternate_tag:
                 if fallback is None:
-                    # Not inside Fallback
                     return False
                 # Inside Fallback — skip if mc:Choice has a w:txbxContent.
                 for choice in ancestor:
@@ -2369,9 +2368,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             processed_paragraphs.add(element)
 
             # Handle paragraphs directly found (VML textboxes).
-            # Skip paragraphs that belong to the mc:Fallback branch when the
-            # mc:Choice branch already provides the same content via a
-            # w:txbxContent element (which is collected in the elif branch).
+            # Skip any element inside mc:Fallback when mc:Choice carries the content.
             if tag_name == "p":
                 if self._is_in_mc_fallback_with_choice_txbx(element):
                     continue
@@ -2426,7 +2423,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _handle_textbox_content(
         self,
-        textbox_elements: list,
+        textbox_elements: list[etree._Element],
         doc: DoclingDocument,
     ) -> list[RefItem]:
         """Process textbox content and add it to the document structure."""
@@ -2466,7 +2463,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             all_paragraphs.extend(sorted_container_paragraphs)
 
         # Process all the paragraphs
-        for p, position in all_paragraphs:
+        for p, _ in all_paragraphs:
             elem_ref.extend(self._handle_text_elements(p, doc))
 
             # Extract embedded images inside the text box
