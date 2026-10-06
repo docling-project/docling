@@ -5,6 +5,11 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.transforms.serializer.markdown import (
+    MarkdownDocSerializer,
+    MarkdownParams,
+    OrigListItemMarkerMode,
+)
 from docling_core.types.doc import DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
@@ -69,7 +74,47 @@ def test_latex_list_enumerate():
     doc = backend.convert()
 
     list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
-    assert len(list_items) >= 2
+    assert [(item.text, item.enumerated) for item in list_items] == [
+        ("Alpha", True),
+        ("Beta", True),
+    ]
+    assert doc.export_to_markdown() == "1. Alpha\n2. Beta"
+
+
+def test_latex_enumerate_custom_labels_stay_ordered():
+    """Test labelled items keep an enumerate an ordered list"""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item[(a)] First
+    \item[(b)] Second
+    \item Third
+    \end{enumerate}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert [(item.marker, item.enumerated) for item in list_items] == [
+        ("(a)", True),
+        ("(b)", True),
+        ("", True),
+    ]
+    # by default the Markdown export shows a custom marker as "- (a)"; with the
+    # original markers kept, the list is numbered
+    serializer = MarkdownDocSerializer(
+        doc=doc,
+        params=MarkdownParams(orig_list_item_marker_mode=OrigListItemMarkerMode.ALWAYS),
+    )
+    assert serializer.serialize().text == "1. (a) First\n2. (b) Second\n3. Third"
 
 
 def test_latex_description_list():
@@ -139,6 +184,7 @@ def test_latex_list_custom_item_label(env: str):
         ("", "Second"),
         ("", "Third"),
     ]
+    assert all(item.enumerated == (env == "enumerate") for item in list_items)
 
 
 def test_latex_description_term_before_block_definition():

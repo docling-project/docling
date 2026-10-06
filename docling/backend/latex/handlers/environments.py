@@ -15,6 +15,7 @@ from docling_core.types.doc.document import (
     DoclingDocument,
     Formatting,
     GroupLabel,
+    ListItem,
     NodeItem,
     PictureMeta,
 )
@@ -341,8 +342,11 @@ class EnvironmentHandlerMixin:
         if current_item or current_marker:
             items.append((current_marker, current_item))
 
+        enumerated = node.envname == "enumerate"
+
         for marker, item_nodes in items:
             if not marker:
+                first_child = len(list_group.children)
                 self._process_nodes(
                     item_nodes,
                     doc,
@@ -350,12 +354,18 @@ class EnvironmentHandlerMixin:
                     formatting,
                     text_label=DocItemLabel.LIST_ITEM,
                 )
+                if enumerated:
+                    for ref in list_group.children[first_child:]:
+                        if isinstance(child := ref.resolve(doc), ListItem):
+                            child.enumerated = True
                 continue
 
             # A labelled item exists before its definition, which goes under it,
             # so the term stays first even when the definition starts with a
             # formula or a nested list. Leading text becomes the item text.
-            list_item = doc.add_list_item(text="", marker=marker, parent=list_group)
+            list_item = doc.add_list_item(
+                text="", enumerated=enumerated, marker=marker, parent=list_group
+            )
             self._process_nodes(
                 item_nodes, doc, list_item, formatting, leading_text_item=list_item
             )

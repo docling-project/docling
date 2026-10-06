@@ -919,7 +919,7 @@
       "prov": [],
       "orig": "Left-looking cell rule: \nThe left neighbour of an \"L\" cell must be either another \"L\" cell or a \"C\" cell.",
       "text": "Left-looking cell rule: \nThe left neighbour of an \"L\" cell must be either another \"L\" cell or a \"C\" cell.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -933,7 +933,7 @@
       "prov": [],
       "orig": "Up-looking cell rule:\nThe upper neighbour of a \"U\" cell must be either another \"U\" cell or a \"C\" cell.",
       "text": "Up-looking cell rule:\nThe upper neighbour of a \"U\" cell must be either another \"U\" cell or a \"C\" cell.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -947,7 +947,7 @@
       "prov": [],
       "orig": "Cross cell rule:",
       "text": "Cross cell rule:",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -961,7 +961,7 @@
       "prov": [],
       "orig": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell.",
       "text": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -975,7 +975,7 @@
       "prov": [],
       "orig": "First row rule:\nOnly \"L\" cells and \"C\" cells are allowed in the first row.",
       "text": "First row rule:\nOnly \"L\" cells and \"C\" cells are allowed in the first row.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -989,7 +989,7 @@
       "prov": [],
       "orig": "First column rule:\nOnly \"U\" cells and \"C\" cells are allowed in the first column.",
       "text": "First column rule:\nOnly \"U\" cells and \"C\" cells are allowed in the first column.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -1003,7 +1003,7 @@
       "prov": [],
       "orig": "Rectangular rule:\nThe table representation is always rectangular - all rows must have an equal number of tokens, terminated with \"NL\" token.",
       "text": "Rectangular rule:\nThe table representation is always rectangular - all rows must have an equal number of tokens, terminated with \"NL\" token.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
