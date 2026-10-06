@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+from collections import Counter
 from collections.abc import Iterator
 from datetime import datetime
 from io import BytesIO
@@ -920,6 +921,98 @@ def test_sparse_table_cells_inside_bbox_are_not_duplicated(tmp_path: Path) -> No
     texts = [cell.text for cell in table.data.table_cells]
     assert texts.count("foo") == 1
     assert texts.count("bar") == 1
+
+
+@pytest.mark.parametrize(("row_offset", "col_offset"), [(0, 0), (3, 2)])
+def test_fragment_before_containing_table_is_not_duplicated(
+    tmp_path: Path, row_offset: int, col_offset: int
+) -> None:
+    """Keep an earlier fragment only in its later containing table (#4618)."""
+    rows = [
+        ["Date:", None, "2025-02-25"],
+        ["Customer:", None, "Acme"],
+        [None, None, "PO-123"],
+        ["UPC", "Qty", "Description"],
+        ["00001", 10, "Orange juice"],
+        ["00002", 20, "Apple juice"],
+    ]
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Order"
+    for row_index, row in enumerate(rows, start=row_offset + 1):
+        for col_index, value in enumerate(row, start=col_offset + 1):
+            sheet.cell(row=row_index, column=col_index, value=value)
+    file_path = tmp_path / "fragment_before_table.xlsx"
+    workbook.save(file_path)
+
+    doc = get_converter().convert(file_path).document
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (6, 3)
+    bbox = table.prov[0].bbox
+    assert (bbox.l, bbox.t, bbox.r, bbox.b) == (
+        col_offset,
+        row_offset,
+        col_offset + 3,
+        row_offset + 6,
+    )
+    assert [[cell.text for cell in row] for row in table.data.grid] == [
+        [str(value) if value is not None else "" for value in row] for row in rows
+    ]
+    markdown = doc.export_to_markdown()
+    assert markdown.count("Date:") == 1
+    assert markdown.count("Customer:") == 1
+
+
+def test_contained_fragments_preserve_merges_comments_and_separate_tables(
+    tmp_path: Path,
+) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["H1"], sheet["I1"] = "Key", "Value"
+    sheet["H2"], sheet["I2"] = "Status", "Open"
+    sheet.append([])
+    sheet.append(["Date:", None, "Customer:", None, "2025-02-25"])
+    sheet.append([None, None, None, None, "Acme"])
+    sheet.append([None, None, None, None, "PO-123"])
+    sheet.append(["UPC", "Qty", "Price", "Tax", "Description"])
+    sheet.append(["00001", 10, 2, 1, "Orange juice"])
+    sheet.merge_cells("A4:A5")
+    sheet.merge_cells("C4:C5")
+    sheet["A4"].comment = Comment("Check date", "Reviewer")
+    sheet["C4"].comment = Comment("Check customer", "Reviewer")
+    sheet["H1"].comment = Comment("Keep separate", "Reviewer")
+    file_path = tmp_path / "contained_merged_fragments.xlsx"
+    workbook.save(file_path)
+
+    doc = get_converter().convert(file_path).document
+
+    assert len(doc.tables) == 2
+    separate, containing = doc.tables
+    assert (containing.data.num_rows, containing.data.num_cols) == (5, 5)
+    assert (separate.data.num_rows, separate.data.num_cols) == (2, 2)
+    assert (separate.prov[0].bbox.l, separate.prov[0].bbox.t) == (7, 0)
+    assert Counter(
+        cell.text
+        for table in doc.tables
+        for cell in table.data.table_cells
+        if cell.text
+    ) == Counter(
+        str(cell.value) for row in sheet for cell in row if cell.value is not None
+    )
+    assert [
+        (cell.text, cell.row_span, cell.col_span)
+        for cell in containing.data.table_cells
+        if cell.text in {"Date:", "Customer:"}
+    ] == [("Date:", 2, 1), ("Customer:", 2, 1)]
+    assert [ref.resolve(doc).text for ref in containing.comments] == [
+        "[author: Reviewer]: Check date",
+        "[author: Reviewer]: Check customer",
+    ]
+    assert [ref.resolve(doc).text for ref in separate.comments] == [
+        "[author: Reviewer]: Keep separate"
+    ]
 
 
 def test_gap_tolerance_comparison() -> None:

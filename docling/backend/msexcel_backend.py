@@ -1027,6 +1027,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     max_col=bounds.max_col,
                     merged_cell_index=merged_cell_index,
                 )
+                # A later rectangle can include fragments found earlier. Its
+                # extracted data already contains all cells in those fragments.
+                if not visited.isdisjoint(visited_cells):
+                    tables = [
+                        table
+                        for table in tables
+                        if not (
+                            table_bounds.anchor[0] <= table.anchor[0]
+                            and table_bounds.anchor[1] <= table.anchor[1]
+                            and table.anchor[0] + table.num_cols
+                            <= table_bounds.anchor[0] + table_bounds.num_cols
+                            and table.anchor[1] + table.num_rows
+                            <= table_bounds.anchor[1] + table_bounds.num_rows
+                        )
+                    ]
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
 
