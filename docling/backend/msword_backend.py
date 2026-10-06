@@ -569,8 +569,10 @@ def _remove_fragment_only_rels(content: bytes) -> bytes:
     return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
-def _remove_xml_comments(docx_obj: DocxDocument) -> None:
-    """Remove XML comments and processing instructions from every XML part.
+def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> None:
+    """Remove XML comment nodes and processing instructions from every XML part.
+
+    Word comments (``w:comment`` elements) are not affected.
 
     Some producers write them into the document body (docx4j adds
     ``<!-- Created by docx4j ... -->``). The backend walks element children and
@@ -878,7 +880,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             path_or_stream=self.path_or_stream, document_hash=self.document_hash
         )
         if self.docx_obj:
-            _remove_xml_comments(self.docx_obj)
+            _remove_xml_comment_nodes(self.docx_obj)
             self.valid = True
             self.current_part = self.docx_obj.part
             self._default_paragraph_style = self.docx_obj.styles.default(
