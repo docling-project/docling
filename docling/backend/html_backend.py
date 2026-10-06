@@ -2454,7 +2454,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         else:
             if isinstance(this_href, str) and this_href:
                 old_hyperlink = self.hyperlink
-                this_href = self._resolve_relative_path(this_href)
+                try:
+                    this_href = self._resolve_relative_path(this_href)
+                except ValueError:
+                    # A link is not fetched: a target outside the base
+                    # directory (e.g. "/about" or "../index.html") is kept
+                    # as written instead of failing the conversion.
+                    pass
                 # ugly fix for relative links since pydantic does not support them.
                 try:
                     new_hyperlink = AnyUrl(this_href)
@@ -5082,8 +5088,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             return placeholder.get_ref()
 
-        src_loc = self._resolve_relative_path(src_loc)
-        img_ref = self._create_image_ref(src_loc)
+        img_ref: Optional[ImageRef] = None
+        try:
+            src_loc = self._resolve_relative_path(src_loc)
+        except ValueError as e:
+            # The source is not loaded, but the picture is kept, as for an
+            # image file that cannot be read.
+            warnings.warn(f"Could not process an image from {src_loc}: {e}")
+        else:
+            img_ref = self._create_image_ref(src_loc)
 
         docling_pic = doc.add_picture(
             image=img_ref,
