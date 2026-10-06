@@ -54,6 +54,7 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import OMML_NS, oMath2Latex
+from docling.backend.docx.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.backend.utils.archive_limits import (
     ArchiveLimits,
     check_archive_limits,
@@ -251,6 +252,54 @@ _ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
     (4, "IV"),
     (1, "I"),
 )
+
+_RUN_TEXT_XPATH: Final[str] = (
+    "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym"
+)
+"""Run children that hold text: python-docx ``Run.text`` plus ``w:sym``."""
+
+_SYMBOL_FONT: Final[str] = "Symbol"
+
+
+def _map_symbol_font_char(char: str) -> str:
+    """Map a Symbol font code point to Unicode.
+
+    Word stores the font byte either as is or shifted to ``U+F000``-``U+F0FF``.
+    Characters without a mapping are kept unchanged.
+    """
+    code = ord(char)
+    if 0xF000 <= code <= 0xF0FF:
+        code -= 0xF000
+    return SYMBOL_FONT_TO_UNICODE.get(code, char)
+
+
+def _get_sym_text(sym: BaseOxmlElement) -> str:
+    """Return the character of a ``w:sym`` element (Insert > Symbol in Word)."""
+    try:
+        char = chr(int(sym.get(f"{_W_NS_CLARK}char", ""), 16))
+    except ValueError:
+        return ""
+    if sym.get(f"{_W_NS_CLARK}font") == _SYMBOL_FONT:
+        return _map_symbol_font_char(char)
+    return char
+
+
+def _get_run_text(run: Run) -> str:
+    """Return the text of a run, including its ``w:sym`` characters.
+
+    python-docx ``Run.text`` skips ``w:sym``, so these characters are lost.
+    Text set in the Symbol font is mapped to Unicode.
+    """
+    symbol_font = run.font.name == _SYMBOL_FONT
+    parts: list[str] = []
+    for child in run._r.xpath(_RUN_TEXT_XPATH):
+        if child.tag == f"{_W_NS_CLARK}sym":
+            parts.append(_get_sym_text(child))
+        elif symbol_font and child.tag == f"{_W_NS_CLARK}t":
+            parts.append("".join(map(_map_symbol_font_char, str(child))))
+        else:
+            parts.append(str(child))
+    return "".join(parts)
 
 
 def _int_to_letter_marker(value: int) -> str:
@@ -2537,7 +2586,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     continue  # a fully hidden link
                 content.append(
                     (
-                        "".join(run.text for run in runs),
+                        "".join(_get_run_text(run) for run in runs),
                         (
                             self._get_format_from_run(
                                 runs[0],
@@ -2553,7 +2602,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elif _is_shown(item):
                 content.append(
                     (
-                        item.text,
+                        _get_run_text(item),
                         self._get_format_from_run(
                             item, paragraph, self._get_style_chain(paragraph.style)
                         ),
