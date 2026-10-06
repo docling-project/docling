@@ -400,6 +400,8 @@ members = ["packages/docling", "packages/docling-client"]
 [tool.uv.sources]
 docling = { workspace = true }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
+# Pinned by commit (not branch) until docling-parse ships the structure-tree reader (docling-project/docling-parse#337); repoint to a release before merge.
+docling-parse = { git = "https://github.com/wittjeff/docling-parse.git", rev = "9e3b4eb9642576c1a39ba897037c287c85d0a033" }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
 
 [tool.uv]
