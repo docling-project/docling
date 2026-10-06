@@ -37,6 +37,12 @@ repos:
         files: '^(docling|tests|docs/examples|perfs).*\.(py|ipynb)$'
   - repo: local
     hooks:
+      - id: skill-routes
+        name: Skill routing and link integrity
+        entry: python3 .github/scripts/check_skill_routes.py
+        pass_filenames: false
+        language: system
+        files: '^(AGENTS\.md|\.agents/skills/|\.(codex|claude)/skills/|\.github/scripts/check_skill_routes\.py|tests/test_check_skill_routes\.py)'
       - id: ty
         name: ty
         entry: uv run --no-sync ty check
