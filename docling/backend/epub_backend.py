@@ -260,13 +260,13 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             if src.startswith(("data:", "http://", "https://", "/")):
                 return match.group(0)
 
-            # An image src is a URL, while the archive stores the literal file
-            # name, so percent-escapes are decoded, as for manifest hrefs.
-            # The path is made relative to temp_dir.
+            # src is a URL; decode percent-escapes to get the archive entry name.
             image_path = posixpath.normpath(posixpath.join(content_dir, unquote(src)))
             return 'src="{}"'.format(image_path.replace('"', "&quot;"))
 
-        # Pattern to match src attributes in img tags, in either quote style
+        # Group 1: the opening quote (" or '). Group 2: the value, up to the
+        # matching closing quote. The lookbehind skips attributes that only end
+        # in "src", such as data-src.
         pattern = r"""(?<![\w-])src=(["'])((?:(?!\1).)+)\1"""
         return re.sub(pattern, replace_image_src, html_content)
 
