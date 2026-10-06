@@ -2010,13 +2010,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             An ``AnyUrl`` for a valid URL, a ``Path`` for a scheme-less address,
             or ``None`` when there is no address or the URL is malformed.
         """
-        relationship_id = hyperlink._hyperlink.rId
-        if relationship_id and relationship_id not in hyperlink.part.rels:
-            # Fragment-only relationships are removed while loading the archive.
-            # Keep their visible text even though the relationship is now absent.
+        try:
+            address = hyperlink.address
+        except KeyError:
+            # Relationship removed from the part (e.g. by _sanitize_docx); drop target.
             return None
-
-        address = hyperlink.address
         if address:
             if not urlparse(address).scheme:
                 return Path(address)
