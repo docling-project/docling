@@ -20,3 +20,13 @@
 - Step instruction text
     - Nested detail 1
     - Nested detail 2
+
+## Paragraph between list items
+
+- First item
+
+A paragraph placed directly inside the list.
+
+- Second item
+
+After.
