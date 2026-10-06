@@ -5277,7 +5277,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             """Recursively extract text from all child nodes."""
             result: list[str] = []
 
-            if isinstance(item, NavigableString):
+            # Skip comments, CDATA, doctypes and processing instructions
+            if isinstance(item, NavigableString) and not isinstance(
+                item, PreformattedString
+            ):
                 text = str(item).replace(_BR_SENTINEL, "\n")
                 result = [text]
             elif isinstance(item, Tag):
