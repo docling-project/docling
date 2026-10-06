@@ -328,7 +328,11 @@ def test_leading_blank_lines_preserve_nonuniform_dialect(
     ]
 
 
-@pytest.mark.parametrize("prefix", ["\n", "\n" * 4096])
+@pytest.mark.parametrize(
+    "prefix",
+    ["\n", "\n" * 4096],
+    ids=["single_blank_line", "many_blank_lines"],
+)
 def test_leading_blank_lines_before_quoted_multiline_header(prefix):
     payload = (prefix + '"Title: details\ncontinued";value\n1;2\n').encode()
     doc = (
