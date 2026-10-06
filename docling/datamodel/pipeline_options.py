@@ -261,11 +261,14 @@ class OcrOptions(BaseOptions):
         bool,
         Field(
             description=(
-                "Replace a broken PDF text layer with OCR, page by page. A page whose"
-                " `parse_score` is in the `poor` quality grade (below 0.5) is OCR'd in"
-                " full and its OCR text is used instead of its PDF text"
-                " for that page only. Other pages, and pages"
-                " without a text layer, keep the usual behaviour."
+                "Replace a broken PDF text layer with OCR, page by page. When enabled,"
+                " a page's `parse_score` also drops to 0 if its text layer comes from"
+                " a font whose glyphs were not mapped to real characters. A page whose"
+                " `parse_score` is in the `poor` quality grade (below 0.5), from this"
+                " check or from the existing glyph-name checks, is OCR'd in full and"
+                " its OCR text is used instead of its PDF text for that page only."
+                " Its `parse_score` keeps describing the PDF text layer. Other pages,"
+                " and pages without a text layer, keep the usual behaviour."
             ),
             examples=[False, True],
         ),

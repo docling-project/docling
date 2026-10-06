@@ -68,6 +68,7 @@ Decision guide:
 | Document | Use |
 |---|---|
 | Born-digital PDF (text selectable) | Standard (fast, no GPU) |
+| Text looks right on the page but copies out as garbage | Standard with `--replace-broken-text-layer` |
 | Scanned / image-only PDF | Standard with OCR, or `--pipeline vlm` for best quality |
 | Complex/multi-column layout, dense tables | `--pipeline vlm` |
 | Handwriting or formulas | `--pipeline vlm` (standard OCR won't handle these) |
@@ -85,6 +86,7 @@ docling scan.pdf --ocr-engine rapidocr --output /tmp/    # lightweight
 docling scan.pdf --ocr-engine tesserocr --output /tmp/   # needs system Tesseract
 docling scan.pdf --ocr-engine ocrmac --output /tmp/      # macOS Vision (mac only)
 docling scan.pdf --force-ocr --output /tmp/              # re-OCR even extractable text
+docling report.pdf --replace-broken-text-layer --output /tmp/  # OCR only pages whose text layer is broken
 docling report.pdf --no-ocr --output /tmp/               # skip OCR (faster)
 docling scan.pdf --ocr-lang eng,deu --output /tmp/       # the engine's own codes
 docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `iso:`

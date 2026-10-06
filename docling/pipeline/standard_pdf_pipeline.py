@@ -614,6 +614,10 @@ class StandardPdfPipeline(ConvertPipeline):
                 capture_reading_order_separators=(
                     self.pipeline_options.use_reading_order_separators
                 ),
+                detect_broken_text_layer=(
+                    self.pipeline_options.do_ocr
+                    and self.pipeline_options.ocr_options.replace_broken_text_layer
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)

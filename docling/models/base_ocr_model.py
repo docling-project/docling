@@ -22,7 +22,7 @@ from docling_core.types.doc.page import (
 from PIL import Image, ImageDraw
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import POOR_SCORE_BOUND, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
@@ -139,10 +139,6 @@ def _segregate_by_visibility(
     return visible, invisible
 
 
-# Upper bound of QualityGrade.POOR (PageConfidenceScores._score_to_grade).
-_POOR_PARSE_SCORE = 0.5
-
-
 def _ocr_full_page(options: OcrOptions, page: Page) -> bool:
     """Whether a page is OCR'd in full and its PDF cells dropped.
 
@@ -152,9 +148,7 @@ def _ocr_full_page(options: OcrOptions, page: Page) -> bool:
     """
     if options.mode == OcrMode.FULL_PAGE:
         return True
-    if not getattr(options, "replace_broken_text_layer", False):
-        return False
-    return page._parse_score < _POOR_PARSE_SCORE
+    return options.replace_broken_text_layer and page._parse_score < POOR_SCORE_BOUND
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):

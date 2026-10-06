@@ -3,145 +3,97 @@
 
 """Replacing a broken PDF text layer with OCR (OcrOptions.replace_broken_text_layer).
 
-A page whose text layer is broken scores 0 in its parse score; with the option
-on, the OCR stage reads every page graded poor (below 0.5) in full and keeps only
-its OCR text. Other pages, and pages without a text layer, are left as they were.
+The test page shows "Proxy Statement" as an image, over a text layer that either
+matches it or is the output of a font decoded as accented Latin letters.
 """
 
-import math
-from types import SimpleNamespace
-from unittest.mock import Mock
+import ctypes
+from pathlib import Path
 
+import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_c
 import pytest
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from PIL import Image, ImageDraw, ImageFont
 
-from docling.datamodel.base_models import ConfidenceReport, Page, Size
-from docling.datamodel.pipeline_options import OcrMode, OcrOptions
-from docling.models.base_ocr_model import BaseOcrModel, _empty_segmented_page
-from docling.models.stages.page_preprocessing.page_preprocessing_model import (
-    PagePreprocessingModel,
-    PagePreprocessingOptions,
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    TesseractCliOcrOptions,
 )
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
-_BROKEN = "&>66*;B \x1b8?.;7*7,. \x182;.,=8;< \x17869.7<*=287#;898<*5<"
-_CLEAN = "We have audited the accompanying financial statements of the village."
+pytestmark = pytest.mark.ml_ocr
 
-
-def _cell(text: str, *, from_ocr: bool, y: float) -> TextCell:
-    return TextCell(
-        rect=BoundingRectangle(
-            r_x0=10,
-            r_y0=y,
-            r_x1=300,
-            r_y1=y,
-            r_x2=300,
-            r_y2=y + 12,
-            r_x3=10,
-            r_y3=y + 12,
-        ),
-        text=text,
-        orig=text,
-        from_ocr=from_ocr,
-        confidence=0.9 if from_ocr else 1.0,
-    )
-
-
-def _page(*pdf_texts: str, parse_score: float = math.nan) -> Page:
-    page = Page(page_no=1)
-    page.size = Size(width=600.0, height=800.0)
-    page.parsed_page = _empty_segmented_page(page)
-    page.parsed_page.textline_cells = [
-        _cell(text, from_ocr=False, y=700 - 20 * i) for i, text in enumerate(pdf_texts)
-    ]
-    page.parsed_page.has_lines = bool(pdf_texts)
-    page._parse_score = parse_score
-    return page
-
-
-def _ocr_model(mode: OcrMode, replace: bool, **methods: Mock):
-    options = SimpleNamespace(mode=mode, replace_broken_text_layer=replace)
-    return SimpleNamespace(options=options, **methods)
-
-
-@pytest.mark.parametrize(
-    ("texts", "expected"), [((_BROKEN,) * 4, 0.0), ((_CLEAN,) * 4, 1.0)]
-)
-def test_parse_score_reflects_a_broken_text_layer(
-    texts: tuple[str, ...], expected: float
-) -> None:
-    page = _page()
-    segmented = _page(*texts).parsed_page
-    page._backend = SimpleNamespace(
-        get_segmented_page=lambda: segmented, get_bitmap_rects=lambda: iter(())
-    )  # type: ignore[assignment]
-    conv_res = SimpleNamespace(confidence=ConfidenceReport())
-    model = PagePreprocessingModel(PagePreprocessingOptions(images_scale=None))
-
-    model._parse_page_cells(conv_res, page)  # type: ignore[arg-type]
-
-    assert conv_res.confidence.pages[1].parse_score == expected
-    assert page._parse_score == expected
-
-
-def test_page_below_threshold_is_ocrd_in_full() -> None:
-    page = _page(_BROKEN, parse_score=0.0)
-    find_rects = Mock(return_value=[])
-    model = _ocr_model(
-        OcrMode.DEFAULT, True, _find_pdf_aware_layout_ocr_rects=find_rects
-    )
-
-    (rect,) = BaseOcrModel.get_ocr_rects(model, page)  # type: ignore[arg-type]
-
-    assert (rect.l, rect.t, rect.r, rect.b) == (0, 0, 600.0, 800.0)
-    find_rects.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    ("replace", "parse_score"),
+_SHOWN = "Proxy Statement"
+_BROKEN_LAYER = " ".join(
     [
-        (True, 1.0),  # good text layer
-        (True, math.nan),  # no text layer: left to the usual OCR
-        (False, 0.0),  # option off: behaviour unchanged
-    ],
+        "\N{LATIN SMALL LETTER A WITH ACUTE}\N{LATIN SMALL LETTER A WITH DIAERESIS}"
+        "\N{LATIN SMALL LETTER C WITH CEDILLA}\N{LATIN SMALL LETTER E WITH GRAVE}"
+        "\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}"
+    ]
+    * 12
 )
-def test_other_pages_keep_their_ocr_regions(replace: bool, parse_score: float) -> None:
-    page = _page(_CLEAN, parse_score=parse_score)
-    find_rects = Mock(return_value=[])
-    model = _ocr_model(
-        OcrMode.DEFAULT, replace, _find_pdf_aware_layout_ocr_rects=find_rects
+
+
+def _page_pdf(path: Path, text_layer: str) -> Path:
+    """One page: `_SHOWN` drawn as an image, under a text layer of `text_layer`."""
+    width, height = 400, 200
+    image = Image.new("RGB", (width * 3, height * 3), "white")
+    font = ImageFont.load_default(size=110)
+    ImageDraw.Draw(image).text((60, 230), _SHOWN, fill="black", font=font)
+
+    pdf = pdfium.PdfDocument.new()
+    page = pdf.new_page(width, height)
+    picture = pdfium.PdfImage.new(pdf)
+    picture.set_bitmap(pdfium.PdfBitmap.from_pil(image))
+    picture.set_matrix(pdfium.PdfMatrix().scale(width, height))
+    page.insert_obj(picture)
+
+    helvetica = pdfium_c.FPDFText_LoadStandardFont(pdf.raw, b"Helvetica")
+    text = pdfium_c.FPDFPageObj_CreateTextObj(pdf.raw, helvetica, 9.0)
+    utf16 = (text_layer + "\0").encode("utf-16-le")
+    pdfium_c.FPDFText_SetText(
+        text, ctypes.cast(ctypes.c_char_p(utf16), ctypes.POINTER(pdfium_c.FPDF_WCHAR))
     )
-
-    assert BaseOcrModel.get_ocr_rects(model, page) == []  # type: ignore[arg-type]
-    find_rects.assert_called_once_with(page)
-
-
-def test_ocr_text_replaces_the_pdf_text_below_threshold() -> None:
-    page = _page(_BROKEN, parse_score=0.0)
-    ocr_cell = _cell("Proxy Statement", from_ocr=True, y=700)
-    merge = Mock()
-    model = _ocr_model(OcrMode.DEFAULT, True, _merge_ocr_and_pdf_cells=merge)
-    conv_res = SimpleNamespace(confidence=ConfidenceReport())
-
-    BaseOcrModel.post_process_cells(model, [ocr_cell], page, conv_res)  # type: ignore[arg-type]
-
-    assert page.cells == [ocr_cell]
-    merge.assert_not_called()
+    # A broken layer still draws the right glyphs; white ink keeps this one from
+    # adding marks of its own to the image the OCR reads.
+    pdfium_c.FPDFPageObj_SetFillColor(text, 255, 255, 255, 255)
+    pdfium_c.FPDFPageObj_Transform(text, 1, 0, 0, 1, 20, 112)
+    pdfium_c.FPDFPage_InsertObject(page.raw, text)
+    page.gen_content()
+    pdf.save(path)
+    return path
 
 
-def test_pdf_text_is_kept_above_threshold() -> None:
-    page = _page(_CLEAN, parse_score=1.0)
-    pdf_cell = page.cells[0]
-    ocr_cell = _cell("figure label", from_ocr=True, y=100)
-    merge = Mock(return_value=[pdf_cell, ocr_cell])
-    model = _ocr_model(OcrMode.DEFAULT, True, _merge_ocr_and_pdf_cells=merge)
-    conv_res = SimpleNamespace(confidence=ConfidenceReport())
-
-    BaseOcrModel.post_process_cells(model, [ocr_cell], page, conv_res)  # type: ignore[arg-type]
-
-    assert page.cells == [pdf_cell, ocr_cell]
-    merge.assert_called_once()
+def _convert(path: Path, *, replace: bool) -> ConversionResult:
+    ocr = TesseractCliOcrOptions(lang=["eng"], replace_broken_text_layer=replace)
+    options = PdfPipelineOptions(do_ocr=True, do_table_structure=False, ocr_options=ocr)
+    converter = DocumentConverter(
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
+    )
+    return converter.convert(path)
 
 
-def test_option_is_off_by_default() -> None:
-    assert OcrOptions(lang=[]).replace_broken_text_layer is False
-    assert OcrOptions(lang=[], replace_broken_text_layer=True).replace_broken_text_layer
+def test_broken_text_layer_is_replaced_by_ocr(tmp_path: Path) -> None:
+    result = _convert(_page_pdf(tmp_path / "broken.pdf", _BROKEN_LAYER), replace=True)
+
+    assert result.confidence.pages[1].parse_score == 0.0
+    markdown = result.document.export_to_markdown()
+    assert _SHOWN in markdown
+    assert _BROKEN_LAYER[:5] not in markdown
+
+
+def test_option_off_keeps_the_text_layer_and_its_score(tmp_path: Path) -> None:
+    result = _convert(_page_pdf(tmp_path / "broken.pdf", _BROKEN_LAYER), replace=False)
+
+    assert result.confidence.pages[1].parse_score == 1.0
+    assert _BROKEN_LAYER[:5] in result.document.export_to_markdown()
+
+
+def test_good_text_layer_is_kept(tmp_path: Path) -> None:
+    layer = "Annual Proxy Statement of the Company"
+    result = _convert(_page_pdf(tmp_path / "good.pdf", layer), replace=True)
+
+    assert result.confidence.pages[1].parse_score == 1.0
+    assert layer in result.document.export_to_markdown()

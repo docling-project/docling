@@ -43,6 +43,8 @@ class PagePreprocessingOptions(BaseModel):
         False  # Skip text cell extraction for VLM-only processing
     )
     capture_reading_order_separators: bool = False
+    # Score a broken text layer as poor, for OcrOptions.replace_broken_text_layer.
+    detect_broken_text_layer: bool = False
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -121,11 +123,12 @@ class PagePreprocessingModel(BasePageModel):
                 )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
             )
 
-        # Some broken text layers only show across the whole page (a font encoding
-        # read as control characters, a legacy font read as Latin letters).
-        if not np.isnan(parse_score) and is_broken_text_layer(
-            "\n".join(c.text for c in page.cells),
-            has_bitmap=any(True for _ in page._backend.get_bitmap_rects()),
+        # Some broken text layers only show across the whole page, such as an
+        # unmapped font encoding. Judged only when the OCR may replace the layer.
+        if (
+            self.options.detect_broken_text_layer
+            and not np.isnan(parse_score)
+            and is_broken_text_layer("\n".join(c.text for c in page.cells))
         ):
             parse_score = 0.0
         conv_res.confidence.pages[page.page_no].parse_score = parse_score

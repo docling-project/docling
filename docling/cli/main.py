@@ -942,6 +942,16 @@ def convert(  # noqa: C901
             help="Which document regions are fed to the OCR engine.",
         ),
     ] = OcrMode.DEFAULT,
+    replace_broken_text_layer: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Replace a page's PDF text with OCR when its text layer is broken, "
+                "e.g. from a font whose glyphs were not mapped to real characters."
+            ),
+        ),
+    ] = False,
     tables: Annotated[
         bool,
         typer.Option(
@@ -1456,7 +1466,10 @@ def convert(  # noqa: C901
             resolved_ocr_mode = OcrMode.FULL_PAGE
         else:
             resolved_ocr_mode = ocr_mode
-        ocr_kwargs: dict[str, Any] = {"mode": resolved_ocr_mode}
+        ocr_kwargs: dict[str, Any] = {
+            "mode": resolved_ocr_mode,
+            "replace_broken_text_layer": replace_broken_text_layer,
+        }
         ocr_lang_list = _split_list(ocr_lang)
         # `_split_list` returns None only when the option was not given, so an
         # explicitly empty value reaches the engine as `lang=[]`: "your default".

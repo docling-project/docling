@@ -629,6 +629,10 @@ class OpenAiApiResponse(BaseModel):
 ScoreValue = float
 
 
+# Scores below this bound are graded QualityGrade.POOR.
+POOR_SCORE_BOUND: float = 0.5
+
+
 class QualityGrade(str, Enum):
     POOR = "poor"
     FAIR = "fair"
@@ -656,7 +660,7 @@ class PageConfidenceScores(BaseModel):
         return v
 
     def _score_to_grade(self, score: ScoreValue) -> QualityGrade:
-        if score < 0.5:
+        if score < POOR_SCORE_BOUND:
             return QualityGrade.POOR
         elif score < 0.8:
             return QualityGrade.FAIR
