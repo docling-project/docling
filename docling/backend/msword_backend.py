@@ -2008,7 +2008,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         Returns:
             An ``AnyUrl`` for a valid URL, a ``Path`` for a scheme-less address,
-            or ``None`` when there is no address or the URL is malformed.
+            or ``None`` when there is no address, the URL is malformed, or the
+            hyperlink's relationship has been removed from the part.
         """
         try:
             address = hyperlink.address
