@@ -82,7 +82,7 @@ item-0 at level 0: unspecified: group _root_
   item-72 at level 1: paragraph: One is the total computational c ... ber of sequential operations required.
   item-73 at level 1: text: The third is the path length bet ... composed of the different layer types.
   item-74 at level 1: text: Maximum path lengths, per-layer  ... hborhood in restricted self-attention.
-  item-75 at level 1: table with [7x4]
+  item-75 at level 1: table with [6x4]
   item-76 at level 1: text: As noted in Table [tab:op_comple ...  this approach further in future work.
   item-77 at level 1: text: A single convolutional layer wit ... er, the approach we take in our model.
   item-78 at level 1: paragraph: As side benefit, self-attention  ... d semantic structure of the sentences.
@@ -103,7 +103,7 @@ item-0 at level 0: unspecified: group _root_
   item-93 at level 1: section_header: Results
   item-94 at level 1: section_header: Machine Translation
   item-95 at level 1: text: The Transformer achieves better  ... ts at a fraction of the training cost.
-  item-96 at level 1: table with [13x43]
+  item-96 at level 1: table with [12x6]
   item-97 at level 1: text: On the WMT 2014 English-to-Germa ... cost of any of the competitive models.
   item-98 at level 1: text: On the WMT 2014 English-to-Frenc ... rate $P_{drop}=0.1$, instead of $0.3$.
   item-99 at level 1: text: For the base models, we used a s ... te early when possible [wu2016google].
@@ -112,13 +112,13 @@ item-0 at level 0: unspecified: group _root_
   item-102 at level 1: text: .
   item-103 at level 1: section_header: Model Variations
   item-104 at level 1: text: Variations on the Transformer ar ...  be compared to per-word perplexities.
-  item-105 at level 1: table with [23x13]
+  item-105 at level 1: table with [22x13]
   item-106 at level 1: text: To evaluate the importance of di ... hese results in Table[tab:variations].
   item-107 at level 1: text: In Table[tab:variations] rows (A ... ty also drops off with too many heads.
   item-108 at level 1: text: In Table[tab:variations] rows (B ... y identical results to the base model.
   item-109 at level 1: section_header: English Constituency Parsing
   item-110 at level 1: text: The Transformer generalizes well ... ing (Results are on Section 23 of WSJ)
-  item-111 at level 1: table with [14x4]
+  item-111 at level 1: table with [13x4]
   item-112 at level 1: text: To evaluate if the Transformer c ... lts in small-data regimes [KVparse15].
   item-113 at level 1: text: We trained a 4-layer transformer ... okens for the semi-supervised setting.
   item-114 at level 1: text: We performed only a small number ...  only and the semi-supervised setting.

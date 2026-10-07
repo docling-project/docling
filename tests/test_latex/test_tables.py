@@ -268,3 +268,91 @@ def test_latex_table_formatting_in_cells():
     assert not any("\\tiny" in c for c in cells), f"raw LaTeX in cells: {cells}"
     assert any("Both" in c for c in cells), f"cells: {cells}"
     assert any("Bold Cell" in c for c in cells), f"cells: {cells}"
+
+
+def _convert_table(latex_content: bytes) -> "DoclingDocument":
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    return backend.convert()
+
+
+def test_latex_multirow_args_in_real_document():
+    r"""\multirow arguments must be parsed even when the tabular does not
+    start at source position 0, and the consumed brace groups must not
+    leak into cells.
+
+    pylatexenc reports document-global node positions while
+    latex_verbatim() is relative to the node; slicing the argument source
+    with the global position silently missed the arguments whenever the
+    document had a preamble, mangling cells into "2*A" and losing the row
+    span. The brace groups re-yielded by the walker also used to become
+    phantom cells and the trailing whitespace produced an empty row.
+    """
+    doc = _convert_table(
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tabular}{|l|l|}
+    \hline
+    \multirow{2}{*}{A} & B \\
+    C & D \\
+    \hline
+    \end{tabular}
+    \end{document}
+    """
+    )
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert table.data.num_rows == 2
+    assert table.data.num_cols == 2
+
+    cells = {
+        (c.start_row_offset_idx, c.start_col_offset_idx): c
+        for c in table.data.table_cells
+    }
+    assert cells[(0, 0)].text == "A"
+    assert cells[(0, 1)].text == "B"
+    assert cells[(1, 0)].text == "C"
+    assert cells[(1, 1)].text == "D"
+    # the row span of \multirow{2} is now actually applied
+    assert cells[(0, 0)].end_row_offset_idx == 2
+
+
+def test_latex_multicolumn_without_phantom_cells():
+    """The & following a consumed \\multicolumn must not emit an empty
+    phantom cell, and the table must not gain a trailing empty row."""
+    doc = _convert_table(
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tabular}{ccc}
+    \multicolumn{2}{c}{Wide} & Right \\
+    a & b & c \\
+    \end{tabular}
+    \end{document}
+    """
+    )
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert table.data.num_rows == 2
+    assert table.data.num_cols == 3
+
+    cells = {
+        (c.start_row_offset_idx, c.start_col_offset_idx): c
+        for c in table.data.table_cells
+    }
+    assert cells[(0, 0)].text == "Wide"
+    assert cells[(0, 0)].end_col_offset_idx == 2
+    assert cells[(0, 2)].text == "Right"
+    assert cells[(1, 0)].text == "a"
+    assert cells[(1, 1)].text == "b"
+    assert cells[(1, 2)].text == "c"
+    # no phantom cell between the multicolumn and Right
+    assert (0, 1) not in cells
