@@ -64,6 +64,21 @@ RULE_THROUGH_GLYPHS = BoundingBox(
 # A rule drawn as a filled rectangle, which no stroked-segment report mentions.
 FILLED_RULE = BoundingBox(l=30, t=235, r=280, b=270, coord_origin=CoordOrigin.TOPLEFT)
 
+# Two constructions where a connected shape reaches well beyond the cluster it
+# touches, so what the text layer accounts for must be judged inside the cluster
+# (page height 300).
+MERGED_FILL_FIXTURE = Path("./tests/data/pdf/vector_glyphs_merged_fill.pdf")
+
+# Native text beside filled letterforms that connected-shape merging fuses with a
+# large panel below them. The panel carries native text far outside the cluster.
+GLYPHS_FUSED_WITH_PANEL = BoundingBox(
+    l=30, t=25, r=220, b=75, coord_origin=CoordOrigin.TOPLEFT
+)
+# Native text whose cluster is crossed, by 2pt, by the top of a text-bearing panel.
+PANEL_EDGE_IN_CLUSTER = BoundingBox(
+    l=30, t=125, r=130, b=175, coord_origin=CoordOrigin.TOPLEFT
+)
+
 
 class _OcrRectsOnlyModel(BaseOcrModel):
     """Minimal concrete `BaseOcrModel`: only the rect selection is under test."""
@@ -271,5 +286,56 @@ def test_a_rule_drawn_as_a_filled_rectangle_does_not_force_ocr(
             _make_page(page_backend, FILLED_RULE)
         )
         assert rects == []
+    finally:
+        doc_backend.unload()
+
+
+@pytest.mark.parametrize(
+    ("backend_cls", "native_queries"),
+    [
+        (ThreadedDoclingParseDocumentBackend, True),
+        (PyPdfiumDocumentBackend, True),
+        (ThreadedDoclingParseDocumentBackend, False),
+    ],
+    ids=["threaded", "pypdfium2", "threaded-spatial-index"],
+)
+def test_text_behind_a_shape_is_judged_inside_the_cluster(
+    backend_cls, native_queries, monkeypatch
+):
+    """Only the part of a shape inside the cluster can be accounted for by text.
+
+    A connected shape may extend far past the cluster: outlined glyphs fused with a
+    page-wide panel, say. Text under the panel elsewhere on the page says nothing
+    about the glyphs, so probing the whole shape would wrongly clear the cluster.
+    Conversely, a text-bearing panel whose edge just crosses a cluster leaves only
+    a sliver inside it, which must not force OCR any more than a rule does.
+    """
+    doc_backend, page_backend = _load_first_page(backend_cls, MERGED_FILL_FIXTURE)
+    model = _make_model()
+    if not native_queries:
+        # No backend lacks `has_content_in` any more; force the fallback path.
+        monkeypatch.setattr(page_backend, "has_content_in", lambda **kwargs: None)
+
+    try:
+        # Sanity: the fused shape reaches past the cluster, and the panel's text
+        # lies outside it.
+        shapes = page_backend.get_connected_shape_bounding_boxes() or []
+        fused = [s for s in shapes if model._boxes_touch(s, GLYPHS_FUSED_WITH_PANEL)]
+        assert len(fused) == 1 and fused[0].b > GLYPHS_FUSED_WITH_PANEL.b
+        assert "Panel text" in page_backend.get_text_in_rect(fused[0])
+        assert "Panel text" not in page_backend.get_text_in_rect(
+            GLYPHS_FUSED_WITH_PANEL
+        )
+
+        fused_rects = model._find_pdf_aware_layout_ocr_rects(
+            _make_page(page_backend, GLYPHS_FUSED_WITH_PANEL)
+        )
+        assert len(fused_rects) == 1
+        assert fused_rects[0].intersection_over_self(GLYPHS_FUSED_WITH_PANEL) > 0
+
+        edge_rects = model._find_pdf_aware_layout_ocr_rects(
+            _make_page(page_backend, PANEL_EDGE_IN_CLUSTER)
+        )
+        assert edge_rects == []
     finally:
         doc_backend.unload()

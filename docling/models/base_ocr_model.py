@@ -275,6 +275,22 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         """
         return a.l <= b.r and b.l <= a.r and a.t <= b.b and b.t <= a.b
 
+    @staticmethod
+    def _clip_box(box: BoundingBox, clip: BoundingBox) -> BoundingBox:
+        """The part of `box` inside `clip`, for two boxes that `_boxes_touch`.
+
+        Unlike `BoundingBox.get_intersection_bbox`, a degenerate result is kept
+        rather than turned into `None`, so a shape that merely touches the clip
+        edge yields a zero-thickness box that `_is_rule_like` then dismisses.
+        """
+        return BoundingBox(
+            l=max(box.l, clip.l),
+            t=max(box.t, clip.t),
+            r=min(box.r, clip.r),
+            b=min(box.b, clip.b),
+            coord_origin=box.coord_origin,
+        )
+
     @classmethod
     def _is_rule_like(cls, bbox: BoundingBox) -> bool:
         """Whether a shape is a rule, an underline or a table border.
@@ -308,6 +324,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
            OCR (#4209). A shape counts as a rule when its extent says so: long and
            thin. That holds whether the rule was stroked or filled, and it does not
            mistake letterforms for rules the way a stroked-segment report does.
+           Whether text sits behind a shape is judged on the part of the shape
+           inside the cluster only: a connected shape may extend well past the
+           cluster, and text under it elsewhere cannot account for what is here.
         3. Deduplicate the remaining cluster bboxes.
         """
         if page.predictions.layout is None:
@@ -403,16 +422,24 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     continue
                 if self._is_rule_like(shape):
                     continue
+                # Judge only the part of the shape that lies inside the cluster. A
+                # connected shape can reach far beyond it -- an outlined glyph fused
+                # with a page-wide fill, say -- and text under the fill elsewhere on
+                # the page says nothing about the glyph. A sliver of a neighbouring
+                # fill that just crosses the cluster edge is treated like a rule.
+                probe = self._clip_box(shape, cluster_bbox)
+                if self._is_rule_like(probe):
+                    continue
                 if use_backend_queries:
                     backed_by_text = (
                         backend.has_content_in(
-                            bbox=shape, chars=True, shapes=False, bitmaps=False
+                            bbox=probe, chars=True, shapes=False, bitmaps=False
                         )
                         is True
                     )
                 else:
                     assert text_index is not None
-                    backed_by_text = any(True for _ in text_index.intersection(shape))
+                    backed_by_text = any(True for _ in text_index.intersection(probe))
                 if not backed_by_text:
                     ocr_rects.append(cluster_bbox)
                     break
