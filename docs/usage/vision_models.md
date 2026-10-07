@@ -134,6 +134,16 @@ More examples on how to connect with the remote inference services can be found 
 
 - [vlm_pipeline_api_model.py](./../examples/vlm_pipeline_api_model.py)
 
+## Native dots inline formatting
+
+Native dots.ocr and dots.mocr JSON text can contain Markdown bold and italic
+markers. Docling maps this emphasis and inline HTML to styled text spans. Mixed
+text uses inline groups. Titles, heading levels, list items, and text block labels
+are preserved. Formula blocks, inline math, and code keep their literal content.
+
+Markdown emphasis uses the existing `marko` dependency. For slim installations,
+install it with `pip install 'docling-slim[format-markdown]'`.
+
 ## Native MinerU and dots captions
 
 MinerU and dots caption blocks are linked when exactly one immediately adjacent
