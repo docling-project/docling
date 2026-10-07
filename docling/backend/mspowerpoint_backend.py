@@ -162,9 +162,8 @@ def _iter_paragraph_elements(element: etree._Element) -> Iterator[etree._Element
             yield child
 
 
-# One unit of paragraph content: ``(label, text, formatting, hyperlink)``. Text
-# runs carry their own formatting/hyperlink; equations are ``FORMULA`` entries
-# holding LaTeX, with neither.
+# ``(label, text, formatting, hyperlink)``; equations are FORMULA entries with
+# neither formatting nor hyperlink.
 _ParagraphRun = tuple[
     DocItemLabel, str, Optional[Formatting], Optional[Union[AnyUrl, Path]]
 ]
@@ -865,12 +864,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 yield si.shape
 
     def _get_run_format(self, run: _Run) -> Formatting:
-        """Build a ``Formatting`` from a run's font, mirroring the DOCX backend.
-
-        Only bold/italic/underline are read: ``python-pptx``'s public ``Font``
-        API exposes nothing for strikethrough or sub/superscript, unlike
-        python-docx's richer run API.
-        """
+        """Build a ``Formatting`` (bold, italic, underline) from a run's font."""
         font = run.font
         return Formatting(
             bold=bool(font.bold),
@@ -879,13 +873,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         )
 
     def _get_run_hyperlink_target(self, run: _Run) -> Optional[AnyUrl | Path]:
-        """Resolve a run's hyperlink address to a URL or a local path.
-
-        Mirrors the DOCX backend's ``_get_hyperlink_target``: addresses
-        without a URL scheme are treated as (relative) filesystem paths, and
-        a malformed address is dropped (returning ``None``) rather than
-        aborting the whole conversion.
-        """
+        """Resolve a run's hyperlink to a URL or local path, or ``None``."""
         address = run.hyperlink.address
         if not address:
             return None
@@ -898,15 +886,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return None
 
     def _iter_paragraph_runs(self, paragraph) -> list[_ParagraphRun]:
-        """Split a paragraph into ``(label, text, formatting, hyperlink)`` units.
-
-        Text runs carry their own formatting and hyperlink; native Office Math
-        equations are kept as separate ``FORMULA`` units (LaTeX, no formatting).
-        A line break (``a:br``) is a sibling of ``a:r`` at the paragraph
-        level in DrawingML (unlike python-docx, where an embedded break is
-        already folded into ``Run.text``), so it is kept as its own
-        formatting-less, hyperlink-less space entry.
-        """
+        """Split a paragraph into ``(label, text, formatting, hyperlink)`` units."""
         elements: list[_ParagraphRun] = []
         for e in _iter_paragraph_elements(paragraph._element):
             if e.tag == f"{{{_MATH_NAMESPACE}}}oMath":
@@ -926,14 +906,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     )
                 )
 
-        # PowerPoint sometimes splits a single word across adjacent runs with
-        # no formatting difference at all (e.g. spell-check markup); joining
-        # each run into its own item would then split that word with a
-        # spurious space wherever they land in an inline group (the markdown
-        # serializer always inserts one between siblings). Coalescing
-        # adjacent text runs that share the exact same formatting/hyperlink
-        # keeps those words intact while still separating any run that is
-        # actually different. Equations are never merged into text.
+        # Merge adjacent text runs that share formatting and hyperlink, so a word
+        # split across runs doesn't get a spurious space between its parts.
         coalesced: list[_ParagraphRun] = []
         for label, text, format, hyperlink in elements:
             if (
@@ -960,18 +934,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         slide_ind: int,
         slide_size,
     ) -> ListItem:
-        """Add a list item, preserving per-run formatting/hyperlinks.
-
-        A single (or no) text run keeps the one-``ListItem``-per-paragraph
-        shape. Multiple runs, or any equation, need an empty marker item plus
-        an inline group of per-run items, mirroring the DOCX backend's
-        ``_add_formatted_list_item`` — a bare ``ListItem`` has no per-span
-        formatting of its own, and cannot hold an equation. Each item gets its
-        own provenance, built from its own text, so its charspan matches its
-        own length rather than the whole paragraph's (python-pptx exposes no
-        finer bbox than the shape's, so the bbox itself stays shape-level for
-        every item).
-        """
+        """Add a list item; several runs or an equation go in an inline group."""
         non_empty = [element for element in elements if element[1]]
         has_equations = any(label == DocItemLabel.FORMULA for label, *_ in non_empty)
         if len(non_empty) <= 1 and not has_equations:
@@ -1020,11 +983,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             is_a_list, bullet_type = self._is_list_item(paragraph)
             p = paragraph._element
 
-            # Split into (label, text, formatting, hyperlink) per run so a bold
-            # word or a link inside an otherwise plain sentence isn't lost, and
-            # native equations stay separate FORMULA units. Each resulting item
-            # gets its own provenance (below), built from its own text, not one
-            # shared paragraph-wide span.
             paragraph_elements = self._iter_paragraph_runs(paragraph)
             has_equations = any(
                 label == DocItemLabel.FORMULA for label, *_ in paragraph_elements
@@ -1087,9 +1045,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         doc_label = DocItemLabel.TITLE
 
                 if has_equations:
-                    # Equations stay separate FORMULA items next to their
-                    # surrounding text runs, which keep their own
-                    # formatting/hyperlink; whitespace-only runs are dropped.
+                    # Whitespace-only runs are dropped.
                     has_text = any(
                         label != DocItemLabel.FORMULA and text.strip()
                         for label, text, _, _ in paragraph_elements
@@ -1122,10 +1078,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                                 hyperlink=hyperlink,
                             )
                 elif doc_label == DocItemLabel.TITLE:
-                    # A title/section-header is one heading-level unit, not a
-                    # sequence of independently formatted spans: keep it a
-                    # single item exactly as before, run-formatting is not
-                    # meaningful at this level.
+                    # Titles stay a single item; run formatting is not applied.
                     doc.add_text(
                         label=doc_label,
                         parent=parent_slide,
@@ -1133,13 +1086,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         prov=self._generate_prov(shape, slide_ind, p_text, slide_size),
                     )
                 else:
-                    # output accumulated inline text, one item per run so
-                    # each run's own formatting/hyperlink survives. Multiple
-                    # runs are nested under an inline group (mirroring the
-                    # DOCX backend's own _create_or_reuse_parent) so a
-                    # sentence with a bold word or a link in the middle stays
-                    # one flowing paragraph on export instead of splintering
-                    # into separate blocks.
+                    # One item per run, in an inline group when there are several.
                     non_empty = [
                         element for element in paragraph_elements if element[1]
                     ]

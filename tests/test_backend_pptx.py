@@ -320,13 +320,7 @@ def test_pptx_left_flush_shape_keeps_own_bbox(tmp_path: Path):
 
 
 def test_pptx_preserves_run_level_formatting_and_hyperlinks(tmp_path: Path):
-    """A paragraph mixing a bold run, a plain run, and a hyperlinked run
-    must keep each run's own formatting/hyperlink.
-
-    The text-extraction loop used to flatten every run in a paragraph into
-    one plain string, silently dropping both bold/italic/underline and any
-    hyperlink target.
-    """
+    """Each run in a paragraph keeps its own formatting and hyperlink."""
     from pptx import Presentation
     from pptx.util import Inches
 
