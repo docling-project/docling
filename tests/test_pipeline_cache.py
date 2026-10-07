@@ -6,6 +6,7 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionApiOptions,
     PictureDescriptionVlmOptions,
     PipelineOptions,
+    VlmPipelineOptions,
 )
 from docling.utils.pipeline_cache import create_pipeline_options_hash
 
@@ -106,3 +107,12 @@ def test_fallback_resilience_when_sub_dump_fails(monkeypatch):
     monkeypatch.setattr(sub_class, "model_dump", fail_model_dump)
     dump_str_sub = _dump_pipeline_options_fallback(opts)
     assert sub_class.__qualname__ in dump_str_sub
+
+
+def test_default_vlm_options_serialize_and_keep_scalar_changes_in_hash():
+    # A value that JSON cannot serialize sends the hash to the fallback dump,
+    # which drops the scalar options, so different settings would share a key.
+    VlmPipelineOptions().model_dump_json(serialize_as_any=True)
+    assert create_pipeline_options_hash(
+        VlmPipelineOptions(images_scale=1.0)
+    ) != create_pipeline_options_hash(VlmPipelineOptions(images_scale=3.0))

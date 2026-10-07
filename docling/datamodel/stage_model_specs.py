@@ -950,7 +950,12 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
     "max_new_tokens": 8192,
     "engine_overrides": {
         VlmEngineType.MLX: EngineModelConfig(
-            repo_id="ibm-granite/granite-docling-258M-mlx"
+            repo_id="ibm-granite/granite-docling-258M-mlx",
+            extra_config={
+                "extra_generation_config": {
+                    "retry_repetition_penalty": 1.1,
+                },
+            },
         ),
         VlmEngineType.TRANSFORMERS: EngineModelConfig(
             extra_config={
