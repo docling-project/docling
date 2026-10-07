@@ -935,12 +935,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for br in content("br"):
             br.replace_with(NavigableString(_BR_SENTINEL))
 
-        # Furniture before the first heading rule, except for headers in tables
+        # Furniture before the first heading rule, except for headers in tables and lists
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        # Keep only those that do NOT have a <table> in a parent chain
-        clean_headers = [h for h in all_headers if not h.find_parent("table")]
+        # Skip headers that become cell or list item text: they never switch the
+        # layer back to body
+        clean_headers = [
+            h for h in all_headers if not self._is_header_in_cell_or_item(h)
+        ]
         # Pick the first header from the remaining
         if len(clean_headers):
             header = clean_headers[0]
@@ -955,6 +958,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._render_visibility_cache.clear()
         self._walk(content, doc)
         return doc
+
+    @staticmethod
+    def _is_header_in_cell_or_item(header: Tag) -> bool:
+        """Whether a header is emitted as table cell or list item text.
+
+        Headers that are direct children of <ul>/<ol> (or in a <div> there) and
+        headers in <menu> items are still emitted as headers."""
+        if header.find_parent(["table", "dl"]):
+            return True
+        item = header.find_parent("li")
+        if item is None:
+            return False
+        parent_list = item.find_parent(["ul", "ol", "menu"])
+        return parent_list is not None and parent_list.name in ("ul", "ol")
 
     @staticmethod
     def _get_header_origins(
@@ -2473,7 +2490,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         else:
             if isinstance(this_href, str) and this_href:
                 old_hyperlink = self.hyperlink
-                this_href = self._resolve_relative_path(this_href)
+                try:
+                    this_href = self._resolve_relative_path(this_href)
+                except ValueError:
+                    # A link is not fetched: a target outside the base
+                    # directory (e.g. "/about" or "../index.html") is kept
+                    # as written instead of failing the conversion.
+                    pass
                 # ugly fix for relative links since pydantic does not support them.
                 try:
                     new_hyperlink = AnyUrl(this_href)
@@ -2961,11 +2984,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _description_list_children(dl: Tag) -> list[PageElement]:
         """The <dt>/<dd> elements of a <dl>, including those wrapped in a <div>
-        (HTML allows wrapping each group of <dt> and <dd> elements in a <div>)."""
+        (HTML allows wrapping each group of <dt> and <dd> elements in a <div>;
+        accordion markup sometimes nests several)."""
         children: list[PageElement] = []
         for child in dl.find_all(["dt", "dd", "div"], recursive=False):
             if isinstance(child, Tag) and child.name == "div":
-                children.extend(child.find_all(["dt", "dd"], recursive=False))
+                children.extend(HTMLDocumentBackend._description_list_children(child))
             else:
                 children.append(child)
         return children
@@ -3178,6 +3202,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         enumerated=is_ordered,
                         marker=marker,
                     )
+                    if list_item is None and any(
+                        not self._has_list_ancestor(elem, li)
+                        for elem in li.find_all(["table", "img"])
+                    ):
+                        # An item without text still holds its table or image
+                        list_item = doc.add_list_item(
+                            text="",
+                            enumerated=is_ordered,
+                            marker=marker,
+                            parent=list_group,
+                            content_layer=self.content_layer,
+                            prov=self._make_text_prov(text="", tag=li),
+                        )
 
                 # Increment counter only when a list item is actually added
                 if list_item:
@@ -5154,8 +5191,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             return placeholder.get_ref()
 
-        src_loc = self._resolve_relative_path(src_loc)
-        img_ref = self._create_image_ref(src_loc)
+        img_ref: Optional[ImageRef] = None
+        try:
+            src_loc = self._resolve_relative_path(src_loc)
+        except ValueError as e:
+            # The source is not loaded, but the picture is kept, as for an
+            # image file that cannot be read.
+            warnings.warn(f"Could not process an image from {src_loc}: {e}")
+        else:
+            img_ref = self._create_image_ref(src_loc)
 
         docling_pic = doc.add_picture(
             image=img_ref,
@@ -5277,7 +5321,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             """Recursively extract text from all child nodes."""
             result: list[str] = []
 
-            if isinstance(item, NavigableString):
+            # Skip comments, CDATA, doctypes and processing instructions
+            if isinstance(item, NavigableString) and not isinstance(
+                item, PreformattedString
+            ):
                 text = str(item).replace(_BR_SENTINEL, "\n")
                 result = [text]
             elif isinstance(item, Tag):
