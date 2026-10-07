@@ -63,6 +63,14 @@ more than 60 source files or 2000 changed source lines, or for a commit that it
 already reviewed. After a push, it reviews only the new commits, if the history
 was not rewritten.
 
+The triage also adds topic labels from the existing repository labels, for
+example `bug`, `enhancement`, `docx`, `markdown`, `ocr`, or `table structure`.
+Rules map the conventional-commit title (`fix` → `bug`, scope `(docx)` →
+`docx`) and the changed source paths to labels, and the model can add up to
+three more. The list is in `.github/scripts/pr_topic_labels.py`. The workflow
+adds topic labels only on the first triage of a PR, never creates a label, and
+never removes one, so maintainers can correct them.
+
 The comment also summarizes changed reference data in `tests/data/**/groundtruth/`.
 It separates formatting-only and coordinate-only changes from text, table, and
 structure changes.

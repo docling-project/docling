@@ -45,6 +45,7 @@ def make_context(**overrides: object) -> object:
         "risk": {"forced": [], "hints": []},
         "groundtruth_markdown": "",
         "diff_truncated": False,
+        "topic_labels": [],
     }
     data.update(overrides)
     return triage.TriageContext.from_dict(data)
@@ -56,6 +57,7 @@ def answer(**overrides: object) -> dict[str, object]:
         "duplicates": [{"pr": 7, "verdict": "duplicate", "reason": "Same fix."}],
         "ci_safety": {"verdict": "safe", "concerns": []},
         "groundtruth": None,
+        "topics": [],
     }
     data.update(overrides)
     return data
@@ -158,7 +160,11 @@ def test_deterministic_findings_override_a_safe_model_verdict() -> None:
 
 def test_stored_result_round_trips_through_validation_in_publish() -> None:
     result = triage.parse_triage_result(
-        answer(groundtruth={"verdict": "expected", "reason": "Matches the fix."}), {7}
+        answer(
+            groundtruth={"verdict": "expected", "reason": "Matches the fix."},
+            topics=["table structure"],
+        ),
+        {7},
     )
     stored = json.loads(json.dumps(triage.asdict(result)))
     assert triage.parse_triage_result(triage._result_to_answer(stored), {7}) == result
@@ -193,3 +199,8 @@ def test_comment_states_failed_analysis() -> None:
     comment = triage.render_comment(context, None, set())
     assert "did not finish" in comment
     assert "| #7 | open |" in comment
+
+
+def test_model_topics_must_come_from_the_repository_label_set() -> None:
+    with pytest.raises(ValueError, match="unknown topic"):
+        triage.parse_triage_result(answer(topics=["priority:high"]), {7})
