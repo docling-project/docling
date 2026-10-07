@@ -51,9 +51,9 @@ from docling.utils.pdf_outline import _PdfOutlineItem
 # the ``arabic`` rank and is ordered below it by its segment depth (1.1 below 1.).
 _DEFAULT_FAMILY_ORDER = [
     "part",  # PART I / TITLE I / BOOK I
+    "chapter",  # CHAPTER 1
     "division",  # DIVISION I / Division 1 / Division A
     "subdivision",  # SUBDIVISION A / Subdivision a
-    "chapter",  # CHAPTER 1
     "article",  # ARTICLE 1 / SECTION 1 / Clause / § 1
     "roman_u",  # I. II. III.
     "arabic",  # 1. 2. 3.  (and dotted 1.1, 1.1.1 by depth)

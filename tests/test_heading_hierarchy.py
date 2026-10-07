@@ -190,6 +190,13 @@ def test_keyword_division_and_subdivision():
     assert _strip_marker("Division I Powers").strip() == "Powers"
 
 
+def test_chapter_outranks_division_in_default_order():
+    # In codes that use both (e.g. Australian Commonwealth acts), a Chapter contains
+    # Divisions, so chapter must rank above division/subdivision in the default order.
+    levels = _levels(["Chapter 1 A", "Division 1 B", "Subdivision A C"])
+    assert levels == {0: 1, 1: 2, 2: 3}
+
+
 def test_non_marker_text_is_ignored():
     assert _parse_marker("Summary") is None
     assert _parse_marker("Introduction to the topic") is None

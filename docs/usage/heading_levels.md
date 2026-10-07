@@ -93,13 +93,15 @@ be uniform throughout. Docling recognizes keyword markers (`PART`, `TITLE`, `BOO
 numerals, dotted decimals and parenthesized letters, and ranks them in this default order:
 
 ```text
-part  →  division  →  subdivision  →  chapter  →  article  →  roman_u  →  arabic  →  alpha_u  →  alpha_l  →  roman_l
-PART I   DIVISION I   SUBDIVISION A   CHAPTER 1   ARTICLE 1     I.          1.          A.          (a)         (i)
+part  →  chapter  →  division  →  subdivision  →  article  →  roman_u  →  arabic  →  alpha_u  →  alpha_l  →  roman_l
+PART I   CHAPTER 1   DIVISION I   SUBDIVISION A   ARTICLE 1     I.          1.          A.          (a)         (i)
 ```
 
 `DIVISION` and `SUBDIVISION` are ordinary words too, so they are read as markers only when a number, letter, or Roman numeral follows.
 
 The default order places `part`/`title` above `division`; in codes where a `Division` sits above a `Title` (some US omnibus acts), reorder with `numbering_schemes` so `division` comes first.
+
+If you pinned a custom `numbering_schemes` from before `division`/`subdivision` existed, add the two families to your list, or those headings fall to the lowest rank.
 
 Dotted decimals share the `arabic` rank and sort by their depth, so `1.1` lands one level below
 `1.` and `1.1.1` one below that. If your documents follow a different convention, reorder the

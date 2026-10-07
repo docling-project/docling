@@ -2027,7 +2027,7 @@ class HeadingHierarchyOptions(BaseModel):
         Field(
             description=(
                 "Optional override of the numbering-scheme precedence (highest level first). "
-                "Known schemes: 'part', 'division', 'subdivision', 'chapter', 'article', "
+                "Known schemes: 'part', 'chapter', 'division', 'subdivision', 'article', "
                 "'roman_u', 'arabic', 'alpha_u', 'alpha_l', 'roman_l'. When None, a default "
                 "legal/regulatory ordering is used."
             )
