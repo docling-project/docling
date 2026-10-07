@@ -116,8 +116,10 @@ def review_scope(files: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def is_reviewable(files: list[dict[str, Any]]) -> bool:
     scope = review_scope(files)
     changed = sum(int(item.get("changes", 0)) for item in scope)
-    return bool(scope) and len(scope) <= MAX_REVIEW_FILES and (
-        changed <= MAX_REVIEW_CHANGED_LINES
+    return (
+        bool(scope)
+        and len(scope) <= MAX_REVIEW_FILES
+        and (changed <= MAX_REVIEW_CHANGED_LINES)
     )
 
 
@@ -368,7 +370,9 @@ def publish(repo: str, pr_number: int, context_dir: Path, result_path: Path) -> 
     }
     result = parse_review_result(answer, set(anchors))
 
-    review = build_review(result, anchors, context.pr.head_sha, meta["incremental_base"])
+    review = build_review(
+        result, anchors, context.pr.head_sha, meta["incremental_base"]
+    )
     gh_write("POST", f"repos/{repo}/pulls/{pr_number}/reviews", review)
 
     label = review_label(result)
