@@ -238,6 +238,7 @@ class TableStructureModelV2(BaseTableStructureModel):
         skip_tokens = {"<pad>", "[UNK]", "<start>", "<end>"}
 
         for tid in token_ids.tolist():
+            assert self.tokenizer is not None
             decoded_token = self.tokenizer.decode([tid])
             assert isinstance(decoded_token, str)
             token = decoded_token.strip()
@@ -499,17 +500,45 @@ class TableStructureModelV2(BaseTableStructureModel):
                     # Build TableCell objects
                     table_cells = []
                     cell_match_idx = 0
+                    has_ocr_cells = any(
+                        getattr(c, "from_ocr", False) for c in table_cluster.cells
+                    )
                     for element in cell_data:
                         if element["bbox"] is not None:
                             bbox = cell_matches[cell_match_idx][1]
                             if self.do_cell_matching:
                                 # Prefer text from cluster cells (includes OCR-assigned cells),
-                                # then fall back to backend text extraction.
+                                # then fall back to backend text extraction if not from OCR.
                                 text_piece = matched_texts[cell_match_idx]
-                                if not text_piece.strip():
-                                    text_piece = page._backend.get_text_in_rect(bbox)
+                                if not text_piece.strip() and not has_ocr_cells:
+                                    text_piece = (
+                                        page._backend.get_text_in_rect(bbox)
+                                        if page._backend is not None
+                                        else ""
+                                    )
                             else:
-                                text_piece = page._backend.get_text_in_rect(bbox)
+                                if has_ocr_cells:
+                                    matching_texts = [
+                                        c.text.strip()
+                                        for c in table_cluster.cells
+                                        if c.rect.to_bounding_box().get_intersection_bbox(
+                                            bbox
+                                        )
+                                        is not None
+                                        and c.rect.to_bounding_box().intersection_over_self(
+                                            bbox
+                                        )
+                                        > 0.3
+                                    ]
+                                    text_piece = " ".join(
+                                        t for t in matching_texts if t
+                                    )
+                                else:
+                                    text_piece = (
+                                        page._backend.get_text_in_rect(bbox)
+                                        if page._backend is not None
+                                        else ""
+                                    )
                             element["bbox"]["token"] = text_piece
                             cell_match_idx += 1
                         tc = TableCell.model_validate(element)
