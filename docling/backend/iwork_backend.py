@@ -1068,10 +1068,11 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
           Numbers stores rather than the label it shows; the labels are not
           reachable from the cell. An iWork '09 document stores the label, and
           that is what is read there.
-        * A chart's kind is not read, so every chart is classified as a chart of
-          unspecified kind. The kind is an integer, and the two container
-          generations number them differently; what the chart plots is recovered
-          either way.
+        * A chart becomes a picture classified by its kind, carrying the data it
+          plots as a table and captioned with its title, as on a Keynote slide.
+          Numbers keeps no picture of a chart, so the picture is empty. A mixed
+          or two-axis chart is classified as a chart of unspecified kind. A
+          value that is a date or a duration rather than a number is left empty.
         * Only sheet-level comments — the ones Numbers calls sticky notes — are
           read. A comment attached to a cell is stored beside the table rather
           than on the sheet and is not.

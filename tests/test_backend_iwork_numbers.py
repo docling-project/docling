@@ -13,6 +13,10 @@ stores its content as ``Index/*.iwa``, while ``numbers_iwork09`` uses the iWork
 '09 ``index.xml`` layout. Both hold the same two-sheet checking register, so the
 two readers can be checked against each other.
 
+``numbers_iwork09_charts.numbers`` is ``testNumbersCharts.numbers`` from the same
+corpus and under the same license: iWork '09 output holding three charts of
+different kinds, plotted in both directions. Only its charts are pinned.
+
 See https://github.com/apache/tika (``tika-parser-apple-module`` test resources).
 
 The cell buffers in :func:`test_version_5_cell_storage_is_decoded` were captured
@@ -24,6 +28,7 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 
+import defusedxml.ElementTree as ET
 import pytest
 from docling_core.types.doc import (
     ContentLayer,
@@ -35,7 +40,9 @@ from docling_core.types.doc import (
     TextItem,
 )
 
-from docling.backend.iwork import cells
+from docling.backend.iwork import cells, numbers_xml
+from docling.backend.iwork.content import Chart, ChartKind, ChartSeries
+from docling.backend.iwork.legacy import SF_NAMESPACE, SFA_NAMESPACE
 from docling.backend.iwork.numbers_iwa import render
 from docling.backend.iwork_backend import IWorkNumbersDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
@@ -51,9 +58,10 @@ from .verify_utils import verify_document, verify_export
 SOURCES = Path("./tests/data/numbers/sources")
 NUMBERS_2013 = SOURCES / "numbers_2013.numbers"
 NUMBERS_IWORK09 = SOURCES / "numbers_iwork09.numbers"
+NUMBERS_IWORK09_CHARTS = SOURCES / "numbers_iwork09_charts.numbers"
 GROUNDTRUTH = Path("./tests/data/numbers/groundtruth")
 
-# Every fixture, each of which converts and so has a stored groundtruth.
+# The fixtures whose whole conversion is pinned by a stored groundtruth.
 CONVERTIBLE = [NUMBERS_2013, NUMBERS_IWORK09]
 
 BOTH_GENERATIONS = pytest.mark.parametrize(
@@ -361,14 +369,13 @@ def _chart_grid(picture: PictureItem) -> list[list[str]]:
 
 @BOTH_GENERATIONS
 def test_charts_carry_the_data_they_plot(source: Path):
-    """Numbers renders no image for a chart, so what a reader can be given is the
+    """Numbers keeps no image of a chart, so what a reader is always given is the
     data it draws. Both generations cache that beside the chart — one in the chart
     archive, one in a property list of its own — and the summary table on the same
     sheet is what says whether it was read correctly.
 
-    The two orient it differently, so the values are what is compared rather than
-    the grid: see
-    :func:`test_the_two_generations_orient_the_chart_differently`.
+    How the values are laid out is pinned separately, by
+    :func:`test_both_generations_orient_the_chart_the_same_way`.
     """
     doc = _backend(source).convert()
     pictures = list(doc.pictures)
@@ -391,48 +398,99 @@ def test_charts_carry_the_data_they_plot(source: Path):
     }
 
 
-def test_the_two_generations_orient_the_chart_differently():
-    """A 2013+ chart records which way round its data is plotted and an iWork '09
-    one does not, so the same chart comes out transposed between them.
-
-    The modern file says the rows of its grid are the series, which is what the
-    shared reader honours; the '09 share has no such flag, only a list of series
-    and a list of categories. Both carry the same numbers, which is what
-    :func:`test_charts_carry_the_data_they_plot` holds them to.
-    """
+def test_both_generations_orient_the_chart_the_same_way():
+    """Both generations record which way round a chart's data is plotted: a 2013+
+    chart in its series direction, an iWork '09 one in ``sf:chart-direction``.
+    The pie plots its rows as series in both, so the same chart comes out the
+    same way round from either reader: a wedge per row, as Numbers draws it."""
     modern = _chart_grid(next(iter(_backend(NUMBERS_2013).convert().pictures)))
     legacy = _chart_grid(next(iter(_backend(NUMBERS_IWORK09).convert().pictures)))
 
     # Series run across the header, categories down the first column.
-    assert modern[0] == ["", "Home", "Food", "Gas", "Credit Card", "Entertainment"]
-    assert legacy[0] == ["", "Amount"]
-    assert [row[0] for row in legacy[1:]] == [
-        "Home",
-        "Food",
-        "Gas",
-        "Credit Card",
-        "Entertainment",
+    assert modern == legacy
+    assert legacy == [
+        ["", "Home", "Food", "Gas", "Credit Card", "Entertainment"],
+        ["Amount", "-872.4", "-226", "-137.5", "-1095", "-245"],
     ]
 
 
-def test_a_chart_is_classified_by_its_kind():
-    """A 2013+ chart says what kind it is in the enum every iWork app shares, so
-    the summary pie is classified as one. iWork '09 numbers the kinds its own way
-    and that numbering has not been established against real documents, so a
-    chart from one is left as a chart of unspecified kind."""
-    modern = next(iter(_backend(NUMBERS_2013).convert().pictures))
-    legacy = next(iter(_backend(NUMBERS_IWORK09).convert().pictures))
+@BOTH_GENERATIONS
+def test_a_chart_is_classified_by_its_kind(source: Path):
+    """The summary chart is a pie in both fixtures, which each generation says in
+    a numbering of its own: ``TSCH.ChartType`` in a 2013+ document, and the
+    order of Keynote '09's scripting dictionary in an iWork '09 one."""
+    picture = next(iter(_backend(source).convert().pictures))
 
-    assert modern.meta is not None and modern.meta.classification is not None
+    assert picture.meta is not None and picture.meta.classification is not None
     assert (
-        modern.meta.classification.predictions[0].class_name
+        picture.meta.classification.predictions[0].class_name
         == PictureClassificationLabel.PIE_CHART
     )
-    assert legacy.meta is not None and legacy.meta.classification is not None
-    assert (
-        legacy.meta.classification.predictions[0].class_name
-        == PictureClassificationLabel.OTHER_CHART
+
+
+def _legacy_charts(path: Path) -> list[Chart]:
+    """Read the charts of an iWork '09 document, sheet by sheet, top to bottom."""
+    with zipfile.ZipFile(path) as archive:
+        sheets = numbers_xml.read_content(
+            archive, "index.xml", 300 * 1024 * 1024, 100 * 1024 * 1024, "test"
+        )
+    return [placed.chart for sheet in sheets for placed in sheet.charts]
+
+
+def test_iwork09_chart_kinds_follow_the_keynote_09_scripting_dictionary():
+    """``sf:chart-type`` is the position of the kind in Keynote '09's ``add
+    chart`` command. Each of these three charts confirms it independently: the
+    pie by the thumbnail Numbers saved and by its 2013 twin, the 3D area by the
+    thumbnail and its ``SFC3DAreaChartScaleProperty`` style, and the 3D column by
+    its ``SFC3DColumnChartScaleProperty`` style."""
+    charts = _legacy_charts(NUMBERS_IWORK09_CHARTS)
+
+    assert [(chart.title, chart.kind, chart.stacked) for chart in charts] == [
+        ("Expenditure by Category", ChartKind.PIE, False),
+        ("Currency Chart name", ChartKind.AREA, False),
+        ("Chart 2", ChartKind.COLUMN, False),
+    ]
+
+
+def test_iwork09_charts_are_read_in_the_direction_they_plot():
+    """``sf:chart-direction`` 0 plots each row as a series and 1 each column.
+    The 3D area chart says 1 and Numbers draws it with a legend entry for each of
+    its four columns; the column chart says 0, so its two regions are the series
+    and the years the categories."""
+    _, area, columns = _legacy_charts(NUMBERS_IWORK09_CHARTS)
+
+    assert len(area.series) == 4
+    assert len(area.categories) == 9
+    assert area.categories[1:3] == ("average pay", "maximum wage")
+    assert [series.values[1:3] for series in area.series] == [
+        (None, None),
+        (0.5, None),
+        (0.1, 0.6),
+        (None, None),
+    ]
+
+    assert columns.categories == ("2007", "2008", "2009", "2010")
+    assert columns.series == (
+        ChartSeries("Region 1", (17.0, 26.0, 53.0, 96.0)),
+        ChartSeries("Region 2", (55.0, 43.0, 70.0, 58.0)),
     )
+
+
+@pytest.mark.parametrize(
+    "chart_type", ['sf:chart-type="18"', ""], ids=["unknown", "unsaid"]
+)
+def test_an_unknown_iwork09_chart_kind_is_not_guessed(chart_type: str):
+    """Kinds outside the scripting dictionary, such as the mixed and two-axis
+    charts, and a chart that does not say, are left unspecified."""
+    info = ET.fromstring(
+        f'<sf:chart-info xmlns:sf="{SF_NAMESPACE}" xmlns:sfa="{SFA_NAMESPACE}" '
+        f'{chart_type}><sf:chart-row_names><sf:string sfa:string="a"/>'
+        "</sf:chart-row_names></sf:chart-info>"
+    )
+    placed = numbers_xml.read_chart(info, {})
+
+    assert placed is not None
+    assert placed.chart.kind == ChartKind.OTHER
 
 
 def test_a_chart_is_captioned_with_its_title():
