@@ -111,6 +111,7 @@ format-docx = [
 
 format-pptx = [
   'python-pptx>=1.0.2,<2.0.0',
+  'pylatexenc>=2.10,<3.0',
 ]
 
 format-xlsx = [
