@@ -1474,7 +1474,7 @@ class ConvertPipelineOptions(PipelineOptions):
             description=(
                 "Configuration for the chart extraction stage. "
                 "Use ChartExtractionVlmEngineOptions.from_preset('granite_vision_v4') "
-                "(default) or from_preset('granite_vision') for the CSV-only model. "
+                "(default) or from_preset('granite_vision_v3_3') for the CSV-only model. "
                 "Controls which output formats are generated (chart2csv, chart2summary, chart2code)."
             )
         ),

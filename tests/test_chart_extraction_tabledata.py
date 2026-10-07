@@ -21,7 +21,11 @@ from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
-from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+    ChartExtractionVlmEngineOptions,
+)
 from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
     MlxVlmEngineOptions,
@@ -58,6 +62,16 @@ def test_granite_vision_v4_mlx_preset_uses_official_model() -> None:
         == "0.7.0"
     )
     assert "granite_vision_v4_mlx" in ChartExtractionVlmEngineOptions.list_preset_ids()
+
+
+def test_legacy_granite_vision_choice_keeps_v4_checkpoint() -> None:
+    with pytest.warns(DeprecationWarning):
+        options = ChartExtractionModelOptions(
+            model=ChartExtractionModelKind.GRANITE_VISION
+        )
+
+    assert options.model_spec.default_repo_id == "ibm-granite/granite-vision-4.1-4b"
+    assert "granite_vision_v3_3" in ChartExtractionVlmEngineOptions.list_preset_ids()
 
 
 @pytest.mark.parametrize(
@@ -251,14 +265,14 @@ def test_legacy_chart_preset_uses_its_csv_prompt_and_parser() -> None:
         def cleanup(self) -> None:
             pass
 
-    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision")
+    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v3_3")
     assert (
         options.model_spec.default_repo_id
         == "ibm-granite/granite-vision-3.3-2b-chart2csv-preview"
     )
     with pytest.raises(ValueError, match="supports CSV output only"):
         ChartExtractionVlmEngineOptions.from_preset(
-            "granite_vision", chart2summary=True
+            "granite_vision_v3_3", chart2summary=True
         )
 
     model = ChartExtractionVlmEngineModel.__new__(ChartExtractionVlmEngineModel)

@@ -48,7 +48,7 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
     * ``chart2summary`` — generate a natural-language description (default: False)
     * ``chart2code``    — generate Python code that recreates the chart (default: False)
 
-    The ``granite_vision`` preset uses the older CSV-only Chart2CSV model and
+    The ``granite_vision_v3_3`` preset uses the older CSV-only Chart2CSV model and
     its recommended plain-language prompt. ``granite_vision_v4`` remains the
     default and additionally supports summaries and code.
 
@@ -130,7 +130,7 @@ class ChartExtractionVlmEngineOptions(StagePresetMixin, VlmEngineOptionsMixin):
         if self.output_format == ChartExtractionOutputFormat.GRANITE_VISION_CHART2CSV:
             if not self.chart2csv or self.chart2summary or self.chart2code:
                 raise ValueError(
-                    "The granite_vision Chart2CSV preset supports CSV output only."
+                    "The granite_vision_v3_3 Chart2CSV preset supports CSV output only."
                 )
         return self
 
@@ -192,7 +192,7 @@ class ChartExtractionModelKind(metaclass=_ChartExtractionModelKindMeta):
         Use :meth:`ChartExtractionVlmEngineOptions.from_preset` with
         ``'granite_vision_v4'`` instead.
 
-    ``GRANITE_VISION`` selects the older CSV-only Chart2CSV model.
+    ``GRANITE_VISION`` retains the current Granite Vision 4.1 default.
     """
 
     GRANITE_VISION = "granite-vision"
@@ -224,7 +224,7 @@ class ChartExtractionModelKind(metaclass=_ChartExtractionModelKindMeta):
 
     # Map legacy enum values to the registered preset IDs.
     _PRESET_MAP: ClassVar[Dict[str, str]] = {
-        "granite-vision": "granite_vision",
+        "granite-vision": "granite_vision_v4",
         "granite-vision-v4": "granite_vision_v4",
     }
 

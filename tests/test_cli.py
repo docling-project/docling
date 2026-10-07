@@ -1309,7 +1309,7 @@ def test_parse_page_range_is_shared_with_convert_remote():
     ("preset_id", "device", "repo_id", "engine_type"),
     [
         (
-            "granite_vision",
+            "granite_vision_v3_3",
             "cpu",
             "ibm-granite/granite-vision-3.3-2b-chart2csv-preview",
             "transformers",

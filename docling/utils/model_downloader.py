@@ -69,6 +69,7 @@ def download_models(
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
     with_granite_chart_extraction: bool = False,
+    with_granite_chart_extraction_v3_3: bool = False,
     with_granite_chart_extraction_v4: bool = False,
     with_rapidocr: bool = True,
     rapidocr_models: Optional[list[str]] = None,
@@ -217,12 +218,12 @@ def download_models(
             progress=progress,
         )
 
-    if with_granite_chart_extraction:
+    if with_granite_chart_extraction_v3_3:
         from docling.datamodel.chart_extraction_options import (
             ChartExtractionVlmEngineOptions,
         )
 
-        preset = ChartExtractionVlmEngineOptions.get_preset("granite_vision")
+        preset = ChartExtractionVlmEngineOptions.get_preset("granite_vision_v3_3")
         repo_id = preset.model_spec.get_repo_id(preset.default_engine_type)
         revision = preset.model_spec.get_revision(preset.default_engine_type)
         _log.info(f"Downloading Granite Vision 3.3 Chart2CSV model ({repo_id})...")
@@ -234,7 +235,7 @@ def download_models(
             progress=progress,
         )
 
-    if with_granite_chart_extraction_v4:
+    if with_granite_chart_extraction or with_granite_chart_extraction_v4:
         from docling.datamodel.chart_extraction_options import (
             ChartExtractionVlmEngineOptions,
         )

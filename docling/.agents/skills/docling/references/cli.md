@@ -57,7 +57,7 @@ docling report.pdf --pipeline native --from pdf --output /tmp/
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
 classifies pictures first and adds chart data only where the VLM has not
 already provided it.
-Use `--chart-extraction-preset granite_vision` for the older CSV-only
+Use `--chart-extraction-preset granite_vision_v3_3` for the older CSV-only
 `ibm-granite/granite-vision-3.3-2b-chart2csv-preview` checkpoint. The default
 `granite_vision_v4` preset uses Granite Vision 4.1 4B, selecting MLX on
 compatible Apple Silicon systems and Transformers elsewhere. To require MLX,

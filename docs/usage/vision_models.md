@@ -61,8 +61,8 @@ The default chart model is Granite Vision 4.1 4B. On Apple Silicon, it uses
 MLX when `mlx-vlm>=0.7.0` and MPS are available; otherwise it uses Transformers.
 To use the older CSV-only
 `ibm-granite/granite-vision-3.3-2b-chart2csv-preview` model, add
-`--chart-extraction-preset granite_vision` to the command. In Python, set
-`chart_extraction_options=ChartExtractionVlmEngineOptions.from_preset("granite_vision")`
+`--chart-extraction-preset granite_vision_v3_3` to the command. In Python, set
+`chart_extraction_options=ChartExtractionVlmEngineOptions.from_preset("granite_vision_v3_3")`
 on `VlmPipelineOptions` or `PdfPipelineOptions`.
 
 To require MLX explicitly, select `--chart-extraction-preset granite_vision_v4_mlx`.

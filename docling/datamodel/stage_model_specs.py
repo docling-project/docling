@@ -1938,7 +1938,7 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
 # -----------------------------------------------------------------------------
 
 CHART_EXTRACTION_GRANITE_VISION = StageModelPreset(
-    preset_id="granite_vision",
+    preset_id="granite_vision_v3_3",
     name="Granite-Vision-3.3-2B-Chart2CSV",
     description="IBM Granite Vision chart extraction model (3.3-2B preview, CSV output only)",
     model_spec=VlmModelSpec(

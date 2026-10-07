@@ -654,13 +654,13 @@ class ConvertDocumentsOptions(BaseModel):
             description=(
                 "Preset ID for chart extraction. "
                 'Use "default" for the admin-controlled default, or a specific preset '
-                'such as "granite_vision_v4", "granite_vision_v4_mlx", or "granite_vision".'
+                'such as "granite_vision_v4", "granite_vision_v4_mlx", or "granite_vision_v3_3".'
             ),
             examples=[
                 "default",
                 "granite_vision_v4",
                 "granite_vision_v4_mlx",
-                "granite_vision",
+                "granite_vision_v3_3",
             ],
         ),
     ] = None
