@@ -156,6 +156,7 @@ _W10_NS: Final[str] = "urn:schemas-microsoft-com:office:word"
 _A14_NS: Final[str] = "http://schemas.microsoft.com/office/drawing/2010/main"
 _W14_NS: Final[str] = "http://schemas.microsoft.com/office/word/2010/wordml"
 _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
+_MC_NS_CLARK: Final[str] = f"{{{_MC_NS}}}"
 
 _OOXML_NAMESPACES: Final[dict[str, str]] = {
     "a": _A_NS,
@@ -2369,10 +2370,59 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else None
         )
 
+    @staticmethod
+    def _is_in_mc_fallback_with_choice_txbx(element: etree._Element) -> bool:
+        """Return True when *element* is inside mc:Fallback whose mc:Choice sibling has a w:txbxContent.
+
+        Word saves a text box under ``mc:AlternateContent`` with two branches:
+
+        - ``mc:Choice`` (DrawingML / ``wps:txbx``) — the preferred branch.
+        - ``mc:Fallback`` (VML / ``v:textbox``) — the legacy fallback.
+
+        Both branches carry identical paragraph content.  When a ``mc:Choice``
+        sibling exists with its own ``w:txbxContent``, every element inside
+        ``mc:Fallback`` is a redundant duplicate and must be skipped during
+        collection to prevent paragraphs from appearing twice in the output.
+
+        Args:
+            element: Any XML element that may be inside mc:Fallback.
+
+        Returns:
+            True if the element is inside mc:Fallback and the enclosing
+            mc:AlternateContent has an mc:Choice sibling with a w:txbxContent.
+        """
+        mc_fallback_tag = f"{_MC_NS_CLARK}Fallback"
+        mc_choice_tag = f"{_MC_NS_CLARK}Choice"
+        mc_alternate_tag = f"{_MC_NS_CLARK}AlternateContent"
+        txbx_content_tag = f"{_W_NS_CLARK}txbxContent"
+
+        fallback = None
+        for ancestor in element.iterancestors():
+            if ancestor.tag == mc_fallback_tag:
+                fallback = ancestor
+            if ancestor.tag == mc_alternate_tag:
+                if fallback is None:
+                    return False
+                # Inside Fallback — skip if mc:Choice has a w:txbxContent.
+                for choice in ancestor:
+                    if choice.tag == mc_choice_tag:
+                        if choice.find(f".//{txbx_content_tag}") is not None:
+                            return True
+                return False
+        return False
+
     def _collect_textbox_paragraphs(
         self, textbox_elements: list[etree._Element]
     ) -> dict[etree._Element | None, list[tuple[etree._Element, int | None]]]:
-        """Collect and organize paragraphs from textbox elements."""
+        """Collect and organize paragraphs from textbox elements.
+
+        Args:
+            textbox_elements: List of textbox-related XML elements to process.
+
+        Returns:
+            A mapping from container element (or None) to a list of
+            ``(paragraph_element, position)`` tuples.
+        """
         # Elements, not their ``id()`` -- see ``processed_textbox_elements``.
         processed_paragraphs: set[etree._Element] = set()
         container_paragraphs: dict[
@@ -2387,8 +2437,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             tag_name = etree.QName(element).localname
             processed_paragraphs.add(element)
 
-            # Handle paragraphs directly found (VML textboxes)
+            # Handle paragraphs directly found (VML textboxes).
+            # Skip any element inside mc:Fallback when mc:Choice carries the content.
             if tag_name == "p":
+                if self._is_in_mc_fallback_with_choice_txbx(element):
+                    continue
+
                 # Find the containing textbox or shape element
                 container_id = None
                 for ancestor in element.iterancestors():
@@ -2402,8 +2456,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     (element, self._get_paragraph_position(element))
                 )
 
-            # Handle txbxContent elements (Word DrawingML textboxes)
+            # Handle txbxContent elements (Word DrawingML / VML textboxes).
+            # When Word saves a textbox under mc:AlternateContent it writes
+            # an mc:Choice copy (DrawingML) *and* an mc:Fallback copy (VML)
+            # with identical paragraphs.  Skip any element inside the Fallback
+            # branch so that paragraphs are not collected twice.
             elif tag_name == "txbxContent":
+                if self._is_in_mc_fallback_with_choice_txbx(element):
+                    continue
                 paragraphs = element.findall(".//w:p", namespaces=element.nsmap)
                 container_id = element
                 if container_id not in container_paragraphs:
@@ -2433,7 +2493,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _handle_textbox_content(
         self,
-        textbox_elements: list,
+        textbox_elements: list[etree._Element],
         doc: DoclingDocument,
     ) -> list[RefItem]:
         """Process textbox content and add it to the document structure."""
@@ -2472,27 +2532,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Add the sorted paragraphs to our processing list
             all_paragraphs.extend(sorted_container_paragraphs)
 
-        # Track processed paragraphs to avoid duplicates
-        processed_paragraphs = set()
-
         # Process all the paragraphs
-        for p, position in all_paragraphs:
-            # Create paragraph object to get text content
-            paragraph = Paragraph(p, self.docx_obj)
-            text_content = paragraph.text.strip()
-
-            if text_content:
-                # Deduplicate AlternateContent by exact text natively
-                if text_content in processed_paragraphs:
-                    continue
-                processed_paragraphs.add(text_content)
-            else:
-                # Preserve empty regions (images) based on position
-                paragraph_id = (text_content, position)
-                if paragraph_id in processed_paragraphs:
-                    continue
-                processed_paragraphs.add(paragraph_id)
-
+        for p, _ in all_paragraphs:
             elem_ref.extend(self._handle_text_elements(p, doc))
 
             # Extract embedded images inside the text box
