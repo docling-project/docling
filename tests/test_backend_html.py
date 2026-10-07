@@ -942,6 +942,29 @@ def test_description_lists():
         )
     )
 
+    # Groups wrapped in several nested divs (accordion markup, #4570)
+    test_set.append(
+        (
+            b"<html><body><dl><div><div><div><dt>Q?</dt><dd><p>Answer</p></dd></div></div></div></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+
+    # A heading inside the list is list text, not the first heading that ends
+    # the furniture, so the list must stay in the body (#4570)
+    test_set.append(
+        (
+            b"<html><body><dl><h6>Group</h6><dt>Q?</dt><dd><p>Answer</p></dd></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+    test_set.append(
+        (
+            b"<html><body><dl><dt><button><span></span><h3>Q?</h3></button></dt><dd><p>Answer</p></dd></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+
     for idx, pair in enumerate(test_set):
         in_doc = InputDocument(
             path_or_stream=BytesIO(pair[0]),
@@ -959,6 +982,44 @@ def test_description_lists():
         assert markdown_output == pair[1], (
             f"Error in case {idx}: expected '{pair[1]}', got '{markdown_output}'"
         )
+
+
+def test_heading_inside_list_keeps_content_in_body():
+    """Headings inside <ul>/<ol> items or a <dl> become list item text, so they
+    must not put the whole page in the furniture layer (#4570)."""
+    for html in (
+        b"<html><body><p>intro</p><ul><li><h3>Step</h3><p>Do it</p></li></ul><p>after</p></body></html>",
+        b"<html><body><p>intro</p><dl><dt>Q</dt><dd><h3>H</h3><p>A</p></dd></dl><p>after</p></body></html>",
+    ):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(html),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+        assert doc.texts
+        assert all(t.content_layer == ContentLayer.BODY for t in doc.texts)
+
+
+def test_heading_as_list_child_ends_furniture():
+    """A heading that is a direct child of <ul> (or in a <div> there) or in a
+    <menu> item is emitted as a heading, so the body starts there."""
+    for html in (
+        b"<html><body><div>nav junk</div><ul><h2>X</h2><li>a</li></ul></body></html>",
+        b"<html><body><div>nav junk</div><ul><div><h2>X</h2><p>para</p></div><li>a</li></ul></body></html>",
+        b"<html><body><div>nav junk</div><menu><li><h2>X</h2></li></menu></body></html>",
+    ):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(html),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+        layers = {t.text: t.content_layer for t in doc.texts}
+        assert layers["nav junk"] == ContentLayer.FURNITURE
+        assert layers["X"] == ContentLayer.BODY
 
 
 def test_unicode_characters():
