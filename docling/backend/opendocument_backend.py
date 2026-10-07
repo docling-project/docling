@@ -2078,6 +2078,12 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 continue
             _log.info(f"Processing sheet {sheet_idx}: {table.name} as page {page_no}")
 
+            # LibreOffice pads sheets towards its full grid (16,384 columns and
+            # 1,048,576 rows) with repeated empty cells and rows that only carry a
+            # style. odfdo expands each repetition when it traverses the sheet, so
+            # remove the trailing padding first. Cells with content are kept.
+            table.rstrip(aggressive=True)
+
             # Add page for this sheet
             page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
 
