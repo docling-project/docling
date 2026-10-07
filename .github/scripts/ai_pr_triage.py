@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from groundtruth_diff import is_groundtruth_path, render_markdown, summarize_file
+from pr_topic_labels import deterministic_topics, parse_model_topics, select_topics
 
 COMMENT_MARKER = "<!-- ai-pr-triage -->"
 LABEL_DUPLICATE = "ai:possible-duplicate"
@@ -167,6 +168,7 @@ class TriageContext:
     risk: RiskReport
     groundtruth_markdown: str
     diff_truncated: bool
+    topic_labels: list[str]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TriageContext:
@@ -181,6 +183,7 @@ class TriageContext:
             ),
             groundtruth_markdown=data["groundtruth_markdown"],
             diff_truncated=data["diff_truncated"],
+            topic_labels=list(data["topic_labels"]),
         )
 
 
@@ -205,6 +208,7 @@ class TriageResult:
     ci_concerns: list[SafetyConcern]
     groundtruth_verdict: str | None
     groundtruth_reason: str
+    topics: list[str]
 
 
 DUPLICATE_VERDICTS = frozenset({"duplicate", "related", "unrelated"})
@@ -254,6 +258,7 @@ def parse_triage_result(data: Any, allowed_prs: set[int]) -> TriageResult:
         ci_concerns=concerns,
         groundtruth_verdict=groundtruth_verdict,
         groundtruth_reason=groundtruth_reason,
+        topics=parse_model_topics(data.get("topics")),
     )
 
 
@@ -623,6 +628,9 @@ def prepare(repo: str, pr_number: int, out_dir: Path, git_dir: Path) -> bool:
             git_dir, pr_number, merge_base, head_sha, files
         ),
         diff_truncated=truncated,
+        topic_labels=deterministic_topics(
+            pr["title"], [item["filename"] for item in files]
+        ),
     )
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -669,7 +677,10 @@ def decide_labels(context: TriageContext, result: TriageResult | None) -> set[st
 
 
 def render_comment(
-    context: TriageContext, result: TriageResult | None, labels: set[str]
+    context: TriageContext,
+    result: TriageResult | None,
+    labels: set[str],
+    added_topics: list[str] | None = None,
 ) -> str:
     head = context.pr.head_sha[:10]
     lines = [
@@ -688,6 +699,9 @@ def render_comment(
         ]
     elif result.summary:
         lines += [result.summary, ""]
+    if added_topics:
+        names = ", ".join(f"`{topic}`" for topic in added_topics)
+        lines += [f"Topic labels added: {names}.", ""]
 
     if LABEL_CI_NEEDS_CARE in labels:
         lines.append("**CI safety: needs maintainer care** before you approve CI.")
@@ -776,18 +790,6 @@ def publish(
         except (ValueError, KeyError, TypeError) as exc:
             print(f"Ignoring an invalid analysis result: {exc}")
 
-    labels = decide_labels(context, result)
-    current = {label["name"] for label in pr["labels"]}
-    for label in sorted((current & set(MANAGED_LABELS)) - labels):
-        gh_write("DELETE", f"repos/{repo}/issues/{pr_number}/labels/{label}")
-    if labels - current:
-        gh_write(
-            "POST",
-            f"repos/{repo}/issues/{pr_number}/labels",
-            {"labels": sorted(labels - current)},
-        )
-
-    body = render_comment(context, result, labels)
     comments = gh_api(
         f"repos/{repo}/issues/{pr_number}/comments?per_page=100", paginate=True
     )
@@ -799,6 +801,32 @@ def publish(
             and COMMENT_MARKER in comment["body"]
         ),
         None,
+    )
+
+    labels = decide_labels(context, result)
+    # Topic labels are set only on the first triage of a PR, so a label that a
+    # maintainer removed is not added again after the next push.
+    topics: list[str] = []
+    if existing is None:
+        repo_labels = gh_api(f"repos/{repo}/labels?per_page=100", paginate=True)
+        topics = select_topics(
+            context.topic_labels,
+            result.topics if result is not None else [],
+            {label["name"] for label in repo_labels},
+        )
+    current = {label["name"] for label in pr["labels"]}
+    for label in sorted((current & set(MANAGED_LABELS)) - labels):
+        gh_write("DELETE", f"repos/{repo}/issues/{pr_number}/labels/{label}")
+    to_add = (labels | set(topics)) - current
+    if to_add:
+        gh_write(
+            "POST",
+            f"repos/{repo}/issues/{pr_number}/labels",
+            {"labels": sorted(to_add)},
+        )
+
+    body = render_comment(
+        context, result, labels, [t for t in topics if t not in current]
     )
     if existing is None:
         gh_write("POST", f"repos/{repo}/issues/{pr_number}/comments", {"body": body})
@@ -821,6 +849,7 @@ def _result_to_answer(data: dict[str, Any]) -> dict[str, Any]:
         "duplicates": data["duplicates"],
         "ci_safety": {"verdict": data["ci_verdict"], "concerns": data["ci_concerns"]},
         "groundtruth": groundtruth,
+        "topics": data["topics"],
     }
 
 

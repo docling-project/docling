@@ -53,6 +53,14 @@ sticky comment and sets these labels:
 - `ai:possible-duplicate`: the model rated an open or earlier PR as a duplicate.
   Candidates come from shared issue references and overlapping diff hunks.
 
+The triage also adds topic labels from the existing repository labels, for
+example `bug`, `enhancement`, `docx`, `markdown`, `ocr`, or `table structure`.
+Rules map the conventional-commit title (`fix` → `bug`, scope `(docx)` →
+`docx`) and the changed source paths to labels, and the model can add up to
+three more. The list is in `.github/scripts/pr_topic_labels.py`. The workflow
+adds topic labels only on the first triage of a PR, never creates a label, and
+never removes one, so maintainers can correct them.
+
 The comment also summarizes changed reference data in `tests/data/**/groundtruth/`.
 It separates formatting-only and coordinate-only changes from text, table, and
 structure changes.
