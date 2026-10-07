@@ -3026,10 +3026,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.parents[level] = original_parent
         return elem_ref
 
-    def _get_hidden_text_elements(
-        self, element: BaseOxmlElement
-    ) -> set[etree._Element]:
-        """Return the ``w:t`` elements of the hidden runs in ``element``.
+    def _get_hidden_run_elements(self, element: BaseOxmlElement) -> set[etree._Element]:
+        """Return the ``w:r`` elements of the hidden runs in ``element``.
 
         Only an element with an equation needs them, so for any other element
         the result is empty.
@@ -3042,7 +3040,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             style_chain = self._get_style_chain(paragraph.style)
             for r_el in p_el.iter(f"{_W_NS_CLARK}r"):
                 if self._is_hidden_run(Run(r_el, paragraph), style_chain):
-                    hidden.update(r_el.iter(f"{_W_NS_CLARK}t"))
+                    hidden.add(r_el)
         return hidden
 
     def _handle_equations_in_text(self, element, text):
@@ -3050,7 +3048,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         only_equations = []
         texts_and_equations = []
         # ``text`` has no hidden text, so leave it out here too.
-        hidden_texts = self._get_hidden_text_elements(element)
+        hidden_runs = self._get_hidden_run_elements(element)
 
         # Collect oMath elements and text runs from the paragraph.
         # Use direct children iteration first; fall back to deep iteration
@@ -3076,29 +3074,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                 else:
                     # Collect text from non-math children (e.g. <w:r> runs)
-                    for t_elem in child.iter():
-                        t_tag = etree.QName(t_elem).localname
-                        if (
-                            t_tag == "t"
-                            and "math" not in t_elem.tag
-                            and t_elem not in hidden_texts
-                        ):
-                            if isinstance(t_elem.text, str):
-                                only_texts.append(t_elem.text)
-                                texts_and_equations.append(t_elem.text)
+                    for run in child.iter(f"{_W_NS_CLARK}r"):
+                        if run not in hidden_runs:
+                            run_text = _get_run_text(Run(run, None))
+                            only_texts.append(run_text)
+                            texts_and_equations.append(run_text)
         else:
             # Original deep-iteration fallback for nested oMath (e.g.
             # inside oMathPara or other wrapper elements).
             for subt in element.iter():
-                tag_name = etree.QName(subt).localname
-                if (
-                    tag_name == "t"
-                    and "math" not in subt.tag
-                    and subt not in hidden_texts
-                ):
-                    if isinstance(subt.text, str):
-                        only_texts.append(subt.text)
-                        texts_and_equations.append(subt.text)
+                if subt.tag == f"{_W_NS_CLARK}r" and subt not in hidden_runs:
+                    run_text = _get_run_text(Run(subt, None))
+                    only_texts.append(run_text)
+                    texts_and_equations.append(run_text)
                 elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
                     latex_equation = str(oMath2Latex(subt)).strip()
                     if len(latex_equation) > 0:
@@ -3302,7 +3290,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         elif len(equations) > 0:
             # The paragraph's text without equations or hidden runs.
-            if len(self._get_paragraph_text(paragraph).strip()) == 0 and len(text) > 0:
+            if not self._get_paragraph_text(paragraph).strip() and len(text) > 0:
                 # Standalone equation(s) — emit each as a separate formula
                 level = self._get_level()
                 parent = self.parents[level - 1]
