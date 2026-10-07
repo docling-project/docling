@@ -77,5 +77,5 @@ If a step fails, the comment shows only the parts that finished.
 
 The workflow needs the `BOB_API_KEY` secret (an API key with the Inference
 scope). Optional repository variables: `BOB_TEAM_ID` (for `general` keys) and
-`BOB_TRIAGE_MAX_COST` (default `2`), and `BOB_REVIEW_MAX_COST` (default `5`). Without the secret, the comment shows only
+`BOB_TRIAGE_MAX_COST` (default `2`), and `BOB_REVIEW_MAX_COST` (default `3`). Without the secret, the comment shows only
 the deterministic checks.

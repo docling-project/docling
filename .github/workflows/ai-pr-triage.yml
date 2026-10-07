@@ -260,7 +260,7 @@ jobs:
           mode: docling-pr-review
           prompt-file: .github/ai-triage/review-prompt.md
           max-turns: "40"
-          max-cost: ${{ vars.BOB_REVIEW_MAX_COST || '5' }}
+          max-cost: ${{ vars.BOB_REVIEW_MAX_COST || '3' }}
           output: ${{ runner.temp }}/bob-review-output.json
 
       - name: Validate the review
