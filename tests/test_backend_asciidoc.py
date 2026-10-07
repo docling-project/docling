@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import glob
+import threading
 from io import BytesIO
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from docling_core.types.doc import (
     CodeItem,
     CodeLanguageLabel,
     DocItemLabel,
+    DoclingDocument,
     ImageRefMode,
     ListItem,
 )
@@ -742,3 +744,45 @@ def test_comment_block_hides_content() -> None:
     texts = [item.text for item, _ in doc.iterate_items()]
     assert not any("hidden" in t for t in texts)
     assert "visible" in texts
+
+
+def _convert_within(src: bytes, seconds: float = 10.0) -> DoclingDocument:
+    """Convert `src`, failing rather than hanging if the parser never returns.
+
+    The work runs on a daemon thread so a parser stuck in a loop cannot hold up
+    the test session: the deadline turns it into a plain assertion failure and
+    the thread dies with the interpreter.
+    """
+    result: list[DoclingDocument] = []
+
+    def run() -> None:
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(src),
+            format=InputFormat.ASCIIDOC,
+            backend=AsciiDocBackend,
+            filename="unclosed.adoc",
+        )
+        result.append(in_doc._backend.convert())
+
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    worker.join(seconds)
+    assert not worker.is_alive(), (
+        f"convert() did not return within {seconds}s for {src!r}; "
+        "the parser is looping over one line"
+    )
+    return result[0]
+
+
+def test_unclosed_content_block_delimiter_terminates() -> None:
+    # A content block delimiter with no closer used to leave the line cursor in
+    # place, so _iter_blocks looped over that one line forever and convert()
+    # never returned. The delimiter is markup, so it breaks the paragraph and
+    # the text around it survives.
+    for delim in (b"====", b"****", b"____", b"++++", b"--"):
+        doc = _convert_within(b"before\n" + delim + b"\nafter\n")
+
+        texts = [item.text for item, _ in doc.iterate_items()]
+        assert "before" in texts, f"{delim!r}: {texts}"
+        assert "after" in texts, f"{delim!r}: {texts}"
+        assert not any(delim.decode() in t for t in texts), f"{delim!r}: {texts}"
