@@ -376,6 +376,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if self.pptx_obj:
             # Build author map once for all comments
             author_map = self._build_comment_author_map(self.pptx_obj)
+
             start_page, end_page = self.page_range
             doc = self._walk_linear(
                 self.pptx_obj, doc, author_map, start_page=start_page, end_page=end_page
