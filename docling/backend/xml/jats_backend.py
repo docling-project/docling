@@ -305,7 +305,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             else ""
         )
         for child in list(node):
-            if child.tag not in skip_tags:
+            if child.tag == "break":
+                text += " "
+            elif child.tag == "fn" or (
+                child.tag == "xref" and child.get("ref-type") == "fn"
+            ):
+                pass
+            elif child.tag not in skip_tags:
                 # TODO: apply styling according to child.tag when supported by docling-core
                 text += JatsDocumentBackend._get_text(child, sep)
             if sep:

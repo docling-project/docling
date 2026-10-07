@@ -1139,6 +1139,38 @@ def test_jats_title_with_inline_markup_is_complete():
     assert titles[0].text == "Effects of Escherichia coli on health"
 
 
+@pytest.mark.parametrize(
+    ("title_xml", "expected"),
+    [
+        pytest.param(
+            "<article-title>Part one<break/>Part two</article-title>",
+            "Part one Part two",
+            id="break-as-space",
+        ),
+        pytest.param(
+            '<article-title>Main title<xref ref-type="fn" rid="fn1">*</xref></article-title>',
+            "Main title",
+            id="footnote-xref-ignored",
+        ),
+        pytest.param(
+            "<article-title>Title<fn><p>Footnote body</p></fn></article-title>",
+            "Title",
+            id="footnote-content-ignored",
+        ),
+        pytest.param(
+            '<article-title>Main<xref ref-type="fn" rid="fn1">*</xref> title</article-title>',
+            "Main title",
+            id="tail-after-footnote-xref",
+        ),
+    ],
+)
+def test_jats_title_ignores_breaks_and_footnotes(title_xml, expected):
+    doc = convert_jats_article_meta(f"<title-group>{title_xml}</title-group>")
+    titles = [t for t in doc.texts if t.label == DocItemLabel.TITLE]
+    assert len(titles) == 1
+    assert titles[0].text == expected
+
+
 def test_jats_citation_source_with_inline_markup_is_kept():
     doc = convert_jats_body(
         "<ref-list><ref><element-citation>"
