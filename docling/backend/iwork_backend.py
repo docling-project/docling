@@ -122,7 +122,7 @@ _LEGACY_INDEX_MEMBERS = ("index.xml", "index.xml.gz")
 _KEYNOTE_LEGACY_INDEX_MEMBERS = ("index.apxl", "index.apxl.gz")
 
 _CHART_RENDER_HINT = (
-    "LibreOffice is required to render Keynote charts as images "
+    "LibreOffice is required to render iWork charts as images "
     "(render_chart_images=True): each chart is rebuilt as an Office chart for "
     "LibreOffice to draw. Install LibreOffice and make sure `soffice` is on PATH. "
     "Charts still keep their classification and data."
@@ -549,7 +549,7 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         size = Size(width=self._presentation.width, height=self._presentation.height)
 
-        render_chart = self._chart_renderer()
+        render_chart = _chart_renderer(self.options)
         for index, slide in enumerate(self._presentation.slides):
             doc.add_page(page_no=index + 1, size=size)
             group = doc.add_group(name=f"slide-{index}", label=GroupLabel.CHAPTER)
@@ -557,25 +557,29 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return doc
 
-    def _chart_renderer(self) -> _ChartRenderer | None:
-        """Return what draws the presentation's charts, if the caller asked for it.
 
-        Returns:
-            A renderer, or None when rendering is off or cannot run here, which
-            is reported once rather than once per chart.
-        """
-        if not self.options.render_chart_images:
-            return None
-        converter = get_docx_to_pdf_converter()
-        if converter is None:
-            _log.warning(_CHART_RENDER_HINT)
-            return None
+def _chart_renderer(options: IWorkBackendOptions) -> _ChartRenderer | None:
+    """Return what draws a document's charts, if the caller asked for it.
 
-        def render(chart: Chart, geometry: Geometry | None) -> ImageRef | None:
-            image = chart_image.render_chart(chart, geometry, converter)
-            return ImageRef.from_pil(image=image, dpi=72) if image is not None else None
+    Args:
+        options: The backend options, which say whether to draw charts.
 
-        return render
+    Returns:
+        A renderer, or None when rendering is off or cannot run here, which is
+        reported once rather than once per chart.
+    """
+    if not options.render_chart_images:
+        return None
+    converter = get_docx_to_pdf_converter()
+    if converter is None:
+        _log.warning(_CHART_RENDER_HINT)
+        return None
+
+    def render(chart: Chart, geometry: Geometry | None) -> ImageRef | None:
+        image = chart_image.render_chart(chart, geometry, converter)
+        return ImageRef.from_pil(image=image, dpi=72) if image is not None else None
+
+    return render
 
 
 class _ListStack:
@@ -1070,9 +1074,12 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
           that is what is read there.
         * A chart becomes a picture classified by its kind, carrying the data it
           plots as a table and captioned with its title, as on a Keynote slide.
-          Numbers keeps no picture of a chart, so the picture is empty. A mixed
-          or two-axis chart is classified as a chart of unspecified kind. A
-          value that is a date or a duration rather than a number is left empty.
+          Numbers keeps no picture of a chart, so the picture is empty unless
+          ``render_chart_images`` redraws one from that data, without the
+          original's colours and fonts. A mixed, two-axis, bubble or
+          interactive chart is not redrawn, and a mixed or two-axis one is
+          classified as a chart of unspecified kind. A value that is a date or
+          a duration rather than a number is left empty.
         * Only sheet-level comments — the ones Numbers calls sticky notes — are
           read. A comment attached to a cell is stored beside the table rather
           than on the sheet and is not.
@@ -1180,6 +1187,7 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
+        render_chart = _chart_renderer(self.options)
         start_page, end_page = self.page_range
         for index, sheet in enumerate(self._selected_sheets(), start=1):
             # Page numbers are 1-based positions within the selected sheets, so a
@@ -1210,6 +1218,11 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         drawable.chart,
                         parent=group,
                         prov=_sheet_prov(drawable.geometry, index),
+                        image=(
+                            render_chart(drawable.chart, drawable.geometry)
+                            if render_chart is not None
+                            else None
+                        ),
                     )
 
             for position, comment in enumerate(sheet.comments, start=1):

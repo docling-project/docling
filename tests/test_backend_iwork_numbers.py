@@ -24,6 +24,7 @@ from Numbers documents saved by releases newer than either fixture, whose cells
 use a storage layout the fixtures never exercise.
 """
 
+import logging
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -39,8 +40,12 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
+from PIL import Image, ImageDraw
 
+import docling.backend.iwork_backend as iwork_backend
+from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
 from docling.backend.iwork import cells, numbers_xml
+from docling.backend.iwork.chart_image import PALETTE
 from docling.backend.iwork.content import Chart, ChartKind, ChartSeries
 from docling.backend.iwork.legacy import SF_NAMESPACE, SFA_NAMESPACE
 from docling.backend.iwork.numbers_iwa import render
@@ -567,6 +572,143 @@ def test_a_comment_records_who_left_it_and_when():
 
     assert modern[0].startswith("[author: Author, time: 2016-05-04T13:08:26")
     assert legacy[0].startswith("Try adding your own account transactions")
+
+
+def _fake_converter(received: list[bytes]):
+    """Stand in for LibreOffice, drawing a black box on a white page."""
+
+    def converter(input_path: Path, output_path: Path) -> None:
+        received.append(Path(input_path).read_bytes())
+        page = Image.new("RGB", (300, 200), "white")
+        ImageDraw.Draw(page).rectangle((50, 40, 149, 119), fill="black")
+        page.save(output_path, "PDF", resolution=72)
+
+    return converter
+
+
+def _rebuilt_kinds(received: list[bytes]) -> list[str]:
+    """The DrawingML chart type each rebuilt chart was written as."""
+    kinds = []
+    for document in received:
+        with zipfile.ZipFile(BytesIO(document)) as package:
+            space = ET.fromstring(package.read("word/charts/chart1.xml"))
+        (plot,) = space.iter(
+            "{http://schemas.openxmlformats.org/drawingml/2006/chart}plotArea"
+        )
+        kinds.extend(child.tag.split("}")[1] for child in plot if "Chart" in child.tag)
+    return kinds
+
+
+@pytest.mark.parametrize(
+    "source", [NUMBERS_2013, NUMBERS_IWORK09_CHARTS], ids=["iwa", "iwork09"]
+)
+def test_chart_images_are_not_rendered_by_default(source: Path):
+    """Rendering needs LibreOffice and enlarges the output, so it is opt-in."""
+    doc = _backend(source).convert()
+    assert all(picture.image is None for picture in doc.pictures)
+
+
+@pytest.mark.parametrize(
+    ("source", "kinds"),
+    [
+        (NUMBERS_2013, ["pieChart"]),
+        (NUMBERS_IWORK09_CHARTS, ["pieChart", "areaChart", "barChart"]),
+    ],
+    ids=["iwa", "iwork09"],
+)
+def test_every_chart_on_a_sheet_is_drawn_when_asked(
+    source: Path, kinds: list[str], monkeypatch: pytest.MonkeyPatch
+):
+    """The route after LibreOffice, without LibreOffice: each chart is rebuilt
+    as the kind of Office chart it is, and whatever PDF comes back is cropped to
+    what was drawn and attached to the chart's picture, beside its data."""
+    received: list[bytes] = []
+    monkeypatch.setattr(
+        iwork_backend, "get_docx_to_pdf_converter", lambda: _fake_converter(received)
+    )
+
+    doc = _backend(source, IWorkBackendOptions(render_chart_images=True)).convert()
+
+    assert _rebuilt_kinds(received) == kinds
+    for picture in doc.pictures:
+        image = picture.get_image(doc)
+        assert image is not None
+        assert image.width < 600 and image.height < 400, "the page should be cropped"
+        assert picture.meta is not None and picture.meta.tabular_chart is not None
+
+
+def test_a_chart_that_cannot_be_redrawn_stays_a_picture_with_its_data(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A chart of a kind an Office chart cannot stand in for is left undrawn
+    rather than drawn as something it is not, and keeps its place, its
+    classification and its data."""
+    received: list[bytes] = []
+    monkeypatch.setattr(
+        iwork_backend, "get_docx_to_pdf_converter", lambda: _fake_converter(received)
+    )
+    monkeypatch.setattr(numbers_xml, "LEGACY_CHART_TYPES", {})
+
+    doc = _backend(
+        NUMBERS_IWORK09_CHARTS, IWorkBackendOptions(render_chart_images=True)
+    ).convert()
+
+    assert received == []
+    pictures = list(doc.pictures)
+    assert len(pictures) == 3
+    for picture in pictures:
+        assert picture.image is None
+        assert picture.prov
+        assert picture.meta is not None and picture.meta.classification is not None
+        assert (
+            picture.meta.classification.predictions[0].class_name
+            == PictureClassificationLabel.OTHER_CHART
+        )
+        assert picture.meta.tabular_chart is not None
+
+
+def test_rendering_without_libreoffice_keeps_the_data(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """Asking for images on a machine that cannot draw them warns once and
+    leaves the chart's classification and data in place."""
+    monkeypatch.setattr(iwork_backend, "get_docx_to_pdf_converter", lambda: None)
+
+    with caplog.at_level(logging.WARNING):
+        doc = _backend(
+            NUMBERS_IWORK09_CHARTS, IWorkBackendOptions(render_chart_images=True)
+        ).convert()
+
+    assert caplog.text.count("LibreOffice is required") == 1
+    for picture in doc.pictures:
+        assert picture.image is None
+        assert picture.meta is not None and picture.meta.tabular_chart is not None
+
+
+@pytest.mark.parametrize(
+    "source", [NUMBERS_2013, NUMBERS_IWORK09], ids=["iwa", "iwork09"]
+)
+def test_a_chart_is_rendered_through_libreoffice(source: Path):
+    """The whole route, where LibreOffice is installed, for the same pie read
+    from either generation. Its output is not byte-stable across versions, so
+    rather than pixels, what is checked is that there is a picture and that its
+    wedges were filled in."""
+    # The backend's own check, which unlike running `soffice -h` does not open a
+    # help window and wait on Windows.
+    if get_docx_to_pdf_converter() is None:
+        pytest.skip("LibreOffice is not installed — chart rendering cannot be tested")
+
+    doc = _backend(source, IWorkBackendOptions(render_chart_images=True)).convert()
+
+    picture = next(iter(doc.pictures))
+    image = picture.get_image(doc)
+    assert image is not None, "the chart picture should carry a rendered image"
+    assert image.width > 50 and image.height > 50
+    colours = image.convert("RGB").getcolors(image.width * image.height) or []
+    first_wedge = tuple(bytes.fromhex(PALETTE[0]))
+    assert any(colour == first_wedge for _, colour in colours), (
+        "the wedges should be filled in"
+    )
 
 
 @pytest.mark.parametrize("source", CONVERTIBLE, ids=lambda path: path.name)
