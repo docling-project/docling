@@ -1,6 +1,6 @@
 Docling is available as an official [LlamaIndex](https://docs.llamaindex.ai/) extension.
 
-To get started, check out the [step-by-step guide in LlamaIndex](https://docs.llamaindex.ai/en/stable/examples/data_connectors/DoclingReaderDemo/).
+To get started, check out the [step-by-step guide in LlamaIndex](https://developers.llamaindex.ai/python/examples/data_connectors/doclingreaderdemo/).
 
 ## Components
 
