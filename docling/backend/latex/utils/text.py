@@ -25,6 +25,7 @@ from docling.backend.latex.constants import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from typing import Any
 
 try:  # pragma: no cover - import-time guard
@@ -34,9 +35,22 @@ try:  # pragma: no cover - import-time guard
         LatexGroupNode,
         LatexMacroNode,
         LatexMathNode,
+        LatexSpecialsNode,
     )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
+
+
+def iter_child_nodelists(node: Any) -> Iterator[list]:
+    """Yield the node lists of ``node`` and of its group arguments."""
+    if isinstance(node, (LatexGroupNode, LatexEnvironmentNode, LatexMathNode)):
+        if node.nodelist is not None:
+            yield node.nodelist
+    if isinstance(node, (LatexMacroNode, LatexEnvironmentNode, LatexSpecialsNode)):
+        if node.nodeargd and node.nodeargd.argnlist:
+            for arg in node.nodeargd.argnlist:
+                if isinstance(arg, LatexGroupNode) and arg.nodelist is not None:
+                    yield arg.nodelist
 
 
 class TextHelperMixin:
@@ -134,7 +148,7 @@ class TextHelperMixin:
         if node.macroname in MACROS_COLOR_INLINE:
             if node.nodeargd and node.nodeargd.argnlist:
                 text_arg = node.nodeargd.argnlist[-1]
-                if text_arg is not None and hasattr(text_arg, "nodelist"):
+                if isinstance(text_arg, LatexGroupNode):
                     return (self._nodes_to_text(text_arg.nodelist), consumed)
             return ("", consumed)
         if node.macroname in MACROS_CITATION:
@@ -161,7 +175,7 @@ class TextHelperMixin:
         if node.nodeargd and node.nodeargd.argnlist:
             for arg in node.nodeargd.argnlist:
                 if arg is not None:
-                    if hasattr(arg, "nodelist"):
+                    if isinstance(arg, LatexGroupNode):
                         text = self._nodes_to_text(arg.nodelist)
                         if text:
                             arg_parts.append(text)
