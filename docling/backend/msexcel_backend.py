@@ -203,6 +203,23 @@ class DataRegion:
         """Number of rows in the data region."""
         return self.max_row - self.min_row + 1
 
+    def overlaps(self, other: DataRegion) -> bool:
+        """Return whether the regions share any cell coordinates."""
+        return (
+            self.min_row <= other.max_row
+            and other.min_row <= self.max_row
+            and self.min_col <= other.max_col
+            and other.min_col <= self.max_col
+        )
+
+    def cell_coordinates(self) -> set[tuple[int, int]]:
+        """Return all zero-based cell coordinates in the region."""
+        return {
+            (row, col)
+            for row in range(self.min_row - 1, self.max_row)
+            for col in range(self.min_col - 1, self.max_col)
+        }
+
 
 class _MergedCellIndex:
     """Index merged-cell anchors without expanding their coordinate ranges."""
@@ -969,7 +986,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         merged_cell_index = _MergedCellIndex(sheet)
         bounds = self._find_true_data_bounds(sheet, merged_cell_index)
-        tables: list[ExcelTable] = []  # List to store found tables
+        regions: list[DataRegion] = []
+        has_overlaps = False
         visited: set[tuple[int, int]] = set()  # Track already visited cells
         comment_map: dict[
             tuple[int, int], list[tuple[str, str, datetime | None]]
@@ -1019,7 +1037,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     continue
 
                 # If the cell starts a new table, find its bounds
-                table_bounds, visited_cells = self._find_table_bounds(
+                region = self._find_table_bounds(
                     sheet,
                     start_row=ri,
                     start_col=rj,
@@ -1027,25 +1045,53 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     max_col=bounds.max_col,
                     merged_cell_index=merged_cell_index,
                 )
-                # A later rectangle can include fragments found earlier. Its
-                # extracted data already contains all cells in those fragments.
-                if not visited.isdisjoint(visited_cells):
-                    tables = [
-                        table
-                        for table in tables
-                        if not (
-                            table_bounds.anchor[0] <= table.anchor[0]
-                            and table_bounds.anchor[1] <= table.anchor[1]
-                            and table.anchor[0] + table.num_cols
-                            <= table_bounds.anchor[0] + table_bounds.num_cols
-                            and table.anchor[1] + table.num_rows
-                            <= table_bounds.anchor[1] + table_bounds.num_rows
-                        )
-                    ]
+                visited_cells = region.cell_coordinates()
+                has_overlaps = has_overlaps or not visited.isdisjoint(visited_cells)
                 visited.update(visited_cells)  # Mark these cells as visited
-                tables.append(table_bounds)
+                regions.append(region)
+
+        # Discover all regions before merging. Marking a merged rectangle as
+        # visited while scanning could hide an enclosed anchor whose merged-cell
+        # span extends beyond that rectangle.
+        if has_overlaps:
+            visited.clear()
+            regions = self._merge_overlapping_regions(regions)
+        tables = [
+            self._extract_table(sheet, region, merged_cell_index) for region in regions
+        ]
 
         return tables, comment_map
+
+    @staticmethod
+    def _merge_overlapping_regions(regions: list[DataRegion]) -> list[DataRegion]:
+        """Merge intersecting rectangles, preserving their earliest position."""
+        merged: list[DataRegion] = []
+        covered: set[tuple[int, int]] = set()
+        for region in regions:
+            coordinates = region.cell_coordinates()
+            insert_at = len(merged)
+            if not covered.isdisjoint(coordinates):
+                index = 0
+                while index < len(merged):
+                    other = merged[index]
+                    if not region.overlaps(other):
+                        index += 1
+                        continue
+                    region = DataRegion(
+                        min(region.min_row, other.min_row),
+                        max(region.max_row, other.max_row),
+                        min(region.min_col, other.min_col),
+                        max(region.max_col, other.max_col),
+                    )
+                    insert_at = min(insert_at, index)
+                    merged.pop(index)
+                    # The expanded rectangle can now overlap a region that
+                    # was checked earlier in this pass.
+                    index = 0
+                coordinates = region.cell_coordinates()
+            merged.insert(insert_at, region)
+            covered.update(coordinates)
+        return merged
 
     def _find_table_bounds(
         self,
@@ -1056,18 +1102,13 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         max_row: int,
         max_col: int,
         merged_cell_index: _MergedCellIndex,
-    ) -> tuple[ExcelTable, set[tuple[int, int]]]:
+    ) -> DataRegion:
         """Determine table bounds using a Flood Fill (BFS) strategy.
 
         This method identifies contiguous regions of non-empty cells in an Excel worksheet
         using a breadth-first search algorithm. It accurately detects non-rectangular tables
         (e.g., L-shapes, staggered columns) by exploring connected cells with optional gap
         tolerance.
-
-        The algorithm operates in two phases:
-        1. Flood Fill: Uses BFS to find all connected cells starting from the given position
-        2. Data Extraction: Builds a rectangular bounding box and extracts cell data,
-           handling merged cells appropriately
 
         Args:
             sheet: The Excel worksheet to analyze.
@@ -1077,11 +1118,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             max_col: The exclusive column bound to consider in the worksheet.
 
         Returns:
-            A tuple containing:
-                - ExcelTable: An object representing the detected table with its anchor
-                  position, dimensions, and cell data.
-                - set[tuple[int, int]]: A set of (row, col) tuples representing all cells
-                  that were visited during the flood fill, used to prevent re-scanning.
+            The bounding rectangle of the connected cells, with 1-based indices.
 
         Note:
             The method respects the GAP_TOLERANCE option, which allows cells separated by
@@ -1114,7 +1151,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             # 2. Check the worksheet-level merged-cell index.
             return merged_cell_index.contains(cell)
 
-        # --- Phase 1: Flood Fill (Connectivity Check) ---
+        # Flood fill (connectivity check).
         while queue:
             curr_r, curr_c = queue.popleft()
 
@@ -1148,7 +1185,15 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         # Found a connection in this direction, stop extending 'gap'
                         break
 
-        # --- Phase 2: Extract Data (Semantic Grid) ---
+        return DataRegion(min_r + 1, max_r + 1, min_c + 1, max_c + 1)
+
+    @staticmethod
+    def _extract_table(
+        sheet: Worksheet, region: DataRegion, merged_cell_index: _MergedCellIndex
+    ) -> ExcelTable:
+        """Extract the final rectangular grid with relative cell offsets and spans."""
+        min_r, max_r = region.min_row - 1, region.max_row - 1
+        min_c, max_c = region.min_col - 1, region.max_col - 1
         data = []
 
         # We iterate the bounding box of the found region
@@ -1180,22 +1225,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
                 )
 
-        # The extracted table is the full rectangular bounding box, including
-        # gaps and disconnected non-empty cells inside that rectangle. Mark the
-        # same rectangle as visited so those cells are not scanned again and
-        # emitted as duplicate fragment tables.
-        visited_cells = {
-            (ri, rj) for ri in range(min_r, max_r + 1) for rj in range(min_c, max_c + 1)
-        }
-
-        return (
-            ExcelTable(
-                anchor=(min_c, min_r),
-                num_rows=max_r + 1 - min_r,
-                num_cols=max_c + 1 - min_c,
-                data=data,
-            ),
-            visited_cells,
+        return ExcelTable(
+            anchor=(min_c, min_r),
+            num_rows=region.height(),
+            num_cols=region.width(),
+            data=data,
         )
 
     @staticmethod

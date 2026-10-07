@@ -1015,6 +1015,156 @@ def test_contained_fragments_preserve_merges_comments_and_separate_tables(
     ]
 
 
+@pytest.mark.parametrize("transpose", [False, True])
+def test_partially_overlapping_fragments_are_not_duplicated(
+    tmp_path: Path, transpose: bool
+) -> None:
+    rows = [
+        ["Date:", None, None],
+        ["Customer:", None, "Acme"],
+        [None, None, "PO-123"],
+        ["UPC", "Qty", "Description"],
+        ["00001", 10, "Orange juice"],
+    ]
+    if transpose:
+        rows = [list(row) for row in zip(*rows)]
+    workbook = Workbook()
+    sheet = workbook.active
+    for row in rows:
+        sheet.append(row)
+    file_path = tmp_path / "partially_overlapping_fragments.xlsx"
+    workbook.save(file_path)
+
+    doc = get_converter().convert(file_path).document
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (len(rows), len(rows[0]))
+    assert [[cell.text for cell in row] for row in table.data.grid] == [
+        [str(value) if value is not None else "" for value in row] for row in rows
+    ]
+    markdown = doc.export_to_markdown()
+    assert markdown.count("Date:") == 1
+    assert markdown.count("Customer:") == 1
+
+
+def test_overlap_expansion_merges_earlier_regions_and_preserves_separate_table(
+    tmp_path: Path,
+) -> None:
+    """A5:E9 joins A2:A5, then its expanded bounds also overlap C1:D2."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["C1"], sheet["C2"], sheet["D2"] = "Header", "Left value", "Right value"
+    sheet.merge_cells("C1:D1")
+    sheet["H1"], sheet["I1"] = "Key", "Value"
+    sheet["H2"], sheet["I2"] = "Status", "Open"
+    sheet["A2"], sheet["A4"], sheet["A5"] = "Side label", "Side 4", "Side 5"
+    sheet.merge_cells("A2:A3")
+    for row in range(5, 10):
+        sheet.cell(row=row, column=5, value=f"Right {row}")
+    for col in range(1, 5):
+        sheet.cell(row=9, column=col, value=f"Bottom {col}")
+    sheet["C1"].comment = Comment("Header note", "Reviewer")
+    sheet["A2"].comment = Comment("Side note", "Reviewer")
+    sheet["E5"].comment = Comment("Right note", "Reviewer")
+    sheet["H1"].comment = Comment("Separate note", "Reviewer")
+    file_path = tmp_path / "overlap_expansion.xlsx"
+    workbook.save(file_path)
+
+    doc = get_converter().convert(file_path).document
+
+    assert len(doc.tables) == 2
+    merged, separate = doc.tables
+    assert (merged.data.num_rows, merged.data.num_cols) == (9, 5)
+    bbox = merged.prov[0].bbox
+    assert (bbox.l, bbox.t, bbox.r, bbox.b) == (0, 0, 5, 9)
+    assert (separate.data.num_rows, separate.data.num_cols) == (2, 2)
+    assert (separate.prov[0].bbox.l, separate.prov[0].bbox.t) == (7, 0)
+    assert Counter(
+        cell.text
+        for table in doc.tables
+        for cell in table.data.table_cells
+        if cell.text
+    ) == Counter(
+        str(cell.value) for row in sheet for cell in row if cell.value is not None
+    )
+    assert [
+        (
+            cell.text,
+            cell.start_row_offset_idx,
+            cell.start_col_offset_idx,
+            cell.row_span,
+            cell.col_span,
+        )
+        for cell in merged.data.table_cells
+        if cell.text in {"Header", "Side label"}
+    ] == [("Header", 0, 2, 1, 2), ("Side label", 1, 0, 2, 1)]
+    assert [ref.resolve(doc).text for ref in merged.comments] == [
+        "[author: Reviewer]: Header note",
+        "[author: Reviewer]: Side note",
+        "[author: Reviewer]: Right note",
+    ]
+    assert [ref.resolve(doc).text for ref in separate.comments] == [
+        "[author: Reviewer]: Separate note"
+    ]
+    html = doc.export_to_html()
+    assert html.count("Header") == 1
+    assert html.count("Side label") == 1
+
+
+def test_overlap_expansion_keeps_newly_enclosed_merged_cell_span(
+    tmp_path: Path,
+) -> None:
+    """The union C1:F4 + A3:D7 must not hide the later F6:H6 region."""
+    workbook = Workbook()
+    sheet = workbook.active
+    for coordinate in (
+        "C1",
+        "D1",
+        "E1",
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "B7",
+        "C7",
+        "D7",
+        "F6",
+    ):
+        sheet[coordinate] = coordinate
+    sheet.merge_cells("F6:H6")
+    sheet["F6"].comment = Comment("Merged corner", "Reviewer")
+    file_path = tmp_path / "overlap_merged_corner.xlsx"
+    workbook.save(file_path)
+
+    doc = get_converter().convert(file_path).document
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (7, 8)
+    assert Counter(
+        cell.text for cell in table.data.table_cells if cell.text
+    ) == Counter(
+        str(cell.value) for row in sheet for cell in row if cell.value is not None
+    )
+    corner = next(cell for cell in table.data.table_cells if cell.text == "F6")
+    assert (corner.start_row_offset_idx, corner.start_col_offset_idx) == (5, 5)
+    assert (corner.row_span, corner.col_span) == (1, 3)
+    assert all(
+        cell.end_row_offset_idx <= table.data.num_rows
+        and cell.end_col_offset_idx <= table.data.num_cols
+        for cell in table.data.table_cells
+    )
+    assert [ref.resolve(doc).text for ref in table.comments] == [
+        "[author: Reviewer]: Merged corner"
+    ]
+
+
 def test_gap_tolerance_comparison() -> None:
     """Test the effect of gap_tolerance on table detection.
 
