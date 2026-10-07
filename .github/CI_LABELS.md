@@ -53,6 +53,16 @@ sticky comment and sets these labels:
 - `ai:possible-duplicate`: the model rated an open or earlier PR as a duplicate.
   Candidates come from shared issue references and overlapping diff hunks.
 
+- `ai:review-lgtm`: the AI first review found no `blocker` or `major` issue.
+- `ai:review-changes`: the AI first review suggests changes. See its inline
+  comments.
+
+The first review is a `COMMENT` review with inline comments. It never approves
+or requests changes. It does not run for PRs rated as duplicates, for PRs with
+more than 60 source files or 2000 changed source lines, or for a commit that it
+already reviewed. After a push, it reviews only the new commits, if the history
+was not rewritten.
+
 The triage also adds topic labels from the existing repository labels, for
 example `bug`, `enhancement`, `docx`, `markdown`, `ocr`, or `table structure`.
 Rules map the conventional-commit title (`fix` → `bug`, scope `(docx)` →
@@ -75,5 +85,5 @@ If a step fails, the comment shows only the parts that finished.
 
 The workflow needs the `BOB_API_KEY` secret (an API key with the Inference
 scope). Optional repository variables: `BOB_TEAM_ID` (for `general` keys) and
-`BOB_TRIAGE_MAX_COST` (default `2`). Without the secret, the comment shows only
+`BOB_TRIAGE_MAX_COST` (default `2`), and `BOB_REVIEW_MAX_COST` (default `3`). Without the secret, the comment shows only
 the deterministic checks.
