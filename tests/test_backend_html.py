@@ -13,7 +13,12 @@ from urllib.parse import quote
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import DocItemLabel, PictureItem, RichTableCell
+from docling_core.types.doc import (
+    DocItemLabel,
+    GroupLabel,
+    PictureItem,
+    RichTableCell,
+)
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -517,6 +522,35 @@ def test_table_and_image_inside_figure_are_parsed():
     assert len(doc.tables[0].captions) == 0
 
 
+@pytest.mark.parametrize(
+    ("figure", "expected"),
+    [
+        ("<figure>Quote text<figcaption>cap</figcaption></figure>", ["Quote text"]),
+        ("<figure>one <code>two</code> three</figure>", ["one", "two", "three"]),
+        ("<figure><em>one</em> two</figure>", ["one", "two"]),
+        ('<figure><img src="x.png"/>after</figure>', ["after"]),
+    ],
+)
+def test_text_directly_inside_figure_is_kept(figure: str, expected: list[str]):
+    html = f"<html><body><h1>Title</h1>{figure}</body></html>".encode()
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    body_texts = [t.text for t in doc.texts if t.label != DocItemLabel.CAPTION]
+    assert body_texts == ["Title", *expected]
+    # The <figcaption> is still emitted once, as a caption
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == (
+        ["cap"] if "figcaption" in figure else []
+    )
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
@@ -571,6 +605,73 @@ def test_ordered_lists():
         doc: DoclingDocument = backend.convert()
         assert doc
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
+
+
+@pytest.mark.parametrize(
+    "html,expected",
+    [
+        pytest.param(
+            "<ul><li>alpha<li>beta<li>gamma</ul>",
+            "- alpha\n- beta\n- gamma",
+            id="ul",
+        ),
+        pytest.param("<ol><li>one<li>two</ol>", "1. one\n2. two", id="ol"),
+        pytest.param(
+            "<ul><li>a<li>b</li><li>c</li></ul>",
+            "- a\n- b\n- c",
+            id="first-li-unclosed",
+        ),
+        pytest.param(
+            "<ul><li>a<ul><li>b<li>c</ul><li>d</ul>",
+            "- a\n    - b\n    - c\n- d",
+            id="nested-list",
+        ),
+        pytest.param(
+            "<ul><li>a<p>para<li>b</ul>", "- a para\n- b", id="li-after-open-p"
+        ),
+        pytest.param(
+            "<dl><dt>A<dd>B<dt>C<dd>D</dl>",
+            "- **A**\n    - B\n- **C**\n    - D",
+            id="dl",
+        ),
+        pytest.param(
+            "<table><tr><td>a<td>b<tr><td>c<td>d</table>",
+            "| a   | b   |\n|-----|-----|\n| c   | d   |",
+            id="table",
+        ),
+        pytest.param(
+            "<table><tr><th>H1<th>H2<tr><td>1<td>2</table>",
+            "|   H1 |   H2 |\n|------|------|\n|    1 |    2 |",
+            id="table-header",
+        ),
+        pytest.param(
+            "<table><tbody><tr><td>1<td>2<tr><td>3<td>4</tbody></table>",
+            "|   1 |   2 |\n|-----|-----|\n|   3 |   4 |",
+            id="table-tbody",
+        ),
+        pytest.param(
+            "<table><tr><td>a</td><td>b</td><tr><td>c</td><td>d</td></tr></table>",
+            "| a   | b   |\n|-----|-----|\n| c   | d   |",
+            id="first-tr-unclosed",
+        ),
+        pytest.param(
+            "<table><tr><td>x<table><tr><td>i<td>j</table><td>y</table>",
+            "| x  i j   | y   |\n|----------|-----|",
+            id="nested-table",
+        ),
+    ],
+)
+def test_omitted_end_tags(html: str, expected: str):
+    """Optional end tags (li, dt, dd, td, th, tr) close like in a browser."""
+    src = f"<html><body>{html}</body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+    assert doc.export_to_markdown() == expected
 
 
 def test_orig_keeps_source_text():
@@ -641,6 +742,79 @@ def test_nested_table_in_list_item():
     assert "3. Third step." in md
     # Cell text lives in the table, not duplicated into the list item text.
     assert md.count("Fault type.") == 1
+
+
+def test_list_non_li_children():
+    """Regression for #4424: children of <ul>/<ol> other than <li> are kept in
+    document order. They are invalid HTML, but common in CMS output.
+
+    Previously <p> and <table> children were dropped, and a <ol> child was added
+    directly to the parent list group, which broke the numbering.
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<p>Intro.</p>"
+        b"<li>First.</li>"
+        b"<p>About the first.</p>"
+        b"<li>Second.</li><br>"
+        b"<ol><li>Nested.</li></ol>"
+        b"<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>"
+        b"<li>Third.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    # Content before the first <li> precedes the list. Any other content closes
+    # the list and is emitted at the parent level, like in the DOCX backend. A
+    # <br> adds nothing and does not close the list.
+    assert [child.resolve(doc).label for child in doc.body.children] == [
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TABLE,
+        GroupLabel.LIST,
+    ]
+    # A nested list stays a sub-list of the preceding list item.
+    nested_list = texts["Nested."].parent.resolve(doc)
+    assert nested_list.parent.cref == texts["Second."].self_ref
+    # The list items that follow an interruption continue the numbering.
+    assert "3. Third." in doc.export_to_markdown()
+
+
+def test_list_non_li_children_stay_in_table_cell():
+    """#4424: the content emitted around a split list stays in its table cell."""
+    html = (
+        b"<html><body><table><tbody><tr>"
+        b"<td><ul><li>First.</li><p>Between.</p><li>Second.</li></ul></td>"
+        b"</tr></tbody></table><p>After.</p></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    cell_group = texts["Between."].parent.resolve(doc)
+    assert cell_group.parent.cref == doc.tables[0].self_ref
+    assert [child.resolve(doc).label for child in cell_group.children] == [
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+    ]
+    assert texts["After."].parent.resolve(doc) == doc.body
 
 
 @pytest.mark.parametrize(

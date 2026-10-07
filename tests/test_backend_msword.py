@@ -1472,6 +1472,35 @@ def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     assert hyperlinks == []
 
 
+@pytest.mark.parametrize("wrapper", ["ins", "smartTag", "customXml", "fldSimple"])
+def test_hyperlink_keeps_runs_nested_in_a_wrapper(tmp_path, wrapper):
+    """Runs inside a hyperlink can sit in the same wrappers as in a paragraph,
+    e.g. a tracked insertion made inside the link text. python-docx's
+    ``Hyperlink.text`` only joins the direct ``w:r`` children, so the nested
+    text used to be dropped.
+    """
+
+    doc = Document()
+    para = doc.add_paragraph("See ")
+    r_id = doc.part.relate_to("https://example.com/", RT.HYPERLINK, is_external=True)
+    hyperlink = etree.SubElement(para._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), r_id)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "the "
+    wrapped = etree.SubElement(hyperlink, qn(f"w:{wrapper}"))
+    run = etree.SubElement(wrapped, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "docs"
+
+    result = _convert_built(doc, tmp_path)
+
+    links = [
+        (item.text, str(item.hyperlink))
+        for item, _ in result.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+    assert links == [("the docs", "https://example.com/")]
+
+
 def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     """A whitespace-only trailing run must not overwrite the paragraph's formatting.
 
@@ -1991,7 +2020,16 @@ def _docx_with_fragment_only_rel():
     from io import BytesIO
 
     doc = Document()
-    doc.add_paragraph("Hello, world!")
+    paragraph = doc.add_paragraph("Before ")
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), "rId999")
+    run = OxmlElement("w:r")
+    text = OxmlElement("w:t")
+    text.text = "internal link"
+    run.append(text)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+    paragraph.add_run(" after")
 
     buf = BytesIO()
     doc.save(buf)
@@ -2037,7 +2075,8 @@ def test_fragment_only_rel_does_not_crash_backend():
         for item, _ in result.document.iterate_items()
         if isinstance(item, TextItem)
     ]
-    assert any("Hello, world!" in t for t in texts)
+    assert "Before internal link after" in "".join(texts)
+    assert all(item.hyperlink is None for item in result.document.texts)
 
 
 def _docx_with_notes():

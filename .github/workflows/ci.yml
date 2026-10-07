@@ -86,6 +86,10 @@ jobs:
         with:
           filters: |
             run_ci:
+              - "AGENTS.md"
+              - ".agents/skills/**"
+              - ".codex/skills/**"
+              - ".claude/skills/**"
               - ".github/workflows/**"
               - ".github/scripts/**"
               - ".github/actions/**"
