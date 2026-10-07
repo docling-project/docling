@@ -23,7 +23,7 @@ from docling_core.types.doc import (
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-from docx.oxml import OxmlElement
+from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
@@ -1234,14 +1234,18 @@ def test_handle_equations_in_text_returns_original_text_on_mismatch(
 def test_handle_equations_in_text_skips_empty_substrings(backend, monkeypatch):
     equation = backend.equation_bookends.format(EQ="x")
 
-    element = etree.Element("p")
-    empty_run = etree.SubElement(element, "r")
-    empty_text = etree.SubElement(empty_run, "t")
+    element = OxmlElement("w:p")
+    empty_run = OxmlElement("w:r")
+    empty_text = OxmlElement("w:t")
     empty_text.text = ""
-    etree.SubElement(element, "oMath")
-    tail_run = etree.SubElement(element, "r")
-    tail_text = etree.SubElement(tail_run, "t")
+    empty_run.append(empty_text)
+    element.append(empty_run)
+    etree.SubElement(element, qn("m:oMath"))
+    tail_run = OxmlElement("w:r")
+    tail_text = OxmlElement("w:t")
     tail_text.text = "tail"
+    tail_run.append(tail_text)
+    element.append(tail_run)
 
     monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
 
@@ -2259,3 +2263,35 @@ def test_sym_with_invalid_char_is_skipped(tmp_path):
     texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
 
     assert texts == ["abc"]
+
+
+def test_equation_next_to_symbol_font_text_is_kept(tmp_path):
+    """An inline equation is kept when its paragraph or cell has Symbol text."""
+    omath = (
+        '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+        "<m:r><m:t>x=1</m:t></m:r></m:oMath>"
+    )
+    docx_path = tmp_path / "equation_next_to_symbol.docx"
+    document = Document()
+    paragraph = document.add_paragraph("sym ")
+    _append_sym(paragraph, "Symbol", "F061")
+    paragraph._p.append(parse_xml(omath))
+    sym_only_paragraph = document.add_paragraph()
+    _append_sym(sym_only_paragraph, "Symbol", "F062")
+    sym_only_paragraph._p.append(parse_xml(omath))
+    table = document.add_table(rows=1, cols=2)
+    cell_paragraph = table.cell(0, 0).paragraphs[0]
+    cell_paragraph.add_run("a").font.name = "Symbol"
+    cell_paragraph._p.append(parse_xml(omath))
+    table.cell(0, 1).text = "b"
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+
+    texts = [(item.text, item.label) for item in doc.texts]
+    assert ("sym \N{GREEK SMALL LETTER ALPHA}", DocItemLabel.TEXT) in texts
+    assert ("\N{GREEK SMALL LETTER BETA}", DocItemLabel.TEXT) in texts
+    formulas = [text for text, label in texts if label == DocItemLabel.FORMULA]
+    assert formulas == ["x=1", "x=1"]
+    cell_texts = [cell.text for cell in doc.tables[0].data.table_cells]
+    assert cell_texts == ["\N{GREEK SMALL LETTER ALPHA}$x=1$", "b"]

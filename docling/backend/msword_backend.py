@@ -2525,21 +2525,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                 else:
                     # Collect text from non-math children (e.g. <w:r> runs)
-                    for t_elem in child.iter():
-                        t_tag = etree.QName(t_elem).localname
-                        if t_tag == "t" and "math" not in t_elem.tag:
-                            if isinstance(t_elem.text, str):
-                                only_texts.append(t_elem.text)
-                                texts_and_equations.append(t_elem.text)
+                    for run in child.iter(f"{_W_NS_CLARK}r"):
+                        run_text = _get_run_text(Run(run, None))
+                        only_texts.append(run_text)
+                        texts_and_equations.append(run_text)
         else:
             # Original deep-iteration fallback for nested oMath (e.g.
             # inside oMathPara or other wrapper elements).
             for subt in element.iter():
-                tag_name = etree.QName(subt).localname
-                if tag_name == "t" and "math" not in subt.tag:
-                    if isinstance(subt.text, str):
-                        only_texts.append(subt.text)
-                        texts_and_equations.append(subt.text)
+                if subt.tag == f"{_W_NS_CLARK}r":
+                    run_text = _get_run_text(Run(subt, None))
+                    only_texts.append(run_text)
+                    texts_and_equations.append(run_text)
                 elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
                     latex_equation = str(oMath2Latex(subt)).strip()
                     if len(latex_equation) > 0:
@@ -2720,9 +2717,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
-            if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
-                text
-            ) > 0:
+            if not self._get_paragraph_text(paragraph).strip() and len(text) > 0:
                 # Standalone equation(s) — emit each as a separate formula
                 level = self._get_level()
                 parent = self.parents[level - 1]
@@ -3419,12 +3414,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 cell = _Cell(tc, table)
 
-                # Detect equations in cell text
+                # Detect equations in cell text. python-docx ``_Cell.text`` skips
+                # ``w:sym``, so build the text from the runs like for paragraphs.
+                cell_text = "\n".join(
+                    self._get_paragraph_text(cell_paragraph)
+                    for cell_paragraph in cell.paragraphs
+                )
                 text, equations = self._handle_equations_in_text(
-                    element=cell._element, text=cell.text
+                    element=cell._element, text=cell_text
                 )
                 if len(equations) == 0:
-                    text = cell.text
+                    text = cell_text
                 else:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
