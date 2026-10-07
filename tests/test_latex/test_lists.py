@@ -131,6 +131,43 @@ def test_latex_description_list_edge_cases():
     ]
 
 
+@pytest.mark.parametrize(
+    ("env_name", "items", "expected"),
+    [
+        ("compactitem", "\\item Alpha\n\\item Beta\n", ["Alpha", "Beta"]),
+        (
+            "compactdesc",
+            "\\item[One] Alpha\n\\item[Two] Beta\n",
+            ["One: Alpha", "Two: Beta"],
+        ),
+    ],
+)
+def test_latex_items_outside_list_environments(env_name, items, expected):
+    """Each item starts a new text item, also outside itemize/enumerate/description.
+
+    These environments reach the inline text path as one node list, so the
+    text buffer must be flushed at every item, not only at the end.
+    """
+    latex_content = (
+        "\\documentclass{article}\n"
+        "\\begin{document}\n"
+        f"\\begin{{{env_name}}}\n"
+        f"{items}"
+        f"\\end{{{env_name}}}\n"
+        "\\end{document}\n"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts] == expected
+
+
 def test_latex_list_nested():
     """Test nested lists (itemize within itemize, enumerate within itemize)"""
     latex_content = b"""

@@ -261,7 +261,8 @@ class MacroHandlerMixin:
                     text = self._nodes_to_text(text_arg.nodelist)
                     if text:
                         text_buffer.append(text)
-        elif node.macroname == "item" and node.nodeargd and node.nodeargd.argnlist:
+        elif node.macroname == "item":
+            flush_fn()
             self._process_item_macro_inline(node, text_buffer, following_nodes)
         else:
             if node.macroname in MACROS_STRUCTURAL:
