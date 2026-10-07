@@ -38,7 +38,8 @@ from docling_core.types.doc import (
 )
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from docling.utils.chandra_utils import _parse_table_html
+from docling.utils.chandra_utils import _add_html_table
+from docling.utils.vlm_utils import parse_markdown_heading
 
 _log = logging.getLogger(__name__)
 
@@ -132,19 +133,10 @@ _PICTURE_LABELS = {
     "seal",
 }
 
-_MARKDOWN_HEADING_PATTERN = re.compile(r"^(#{1,6})[ \t]+(.*?)\s*$", re.DOTALL)
 _CENTERED_DIV_PATTERN = re.compile(
     r'^\s*<div style="text-align: center;">(.*)</div>\s*$',
     re.DOTALL,
 )
-
-
-def _parse_formatted_heading(text: str) -> tuple[str, int | None]:
-    """Undo Paddle's optional Markdown heading wrapper."""
-    match = _MARKDOWN_HEADING_PATTERN.match(text)
-    if match is None:
-        return text, None
-    return match.group(2), len(match.group(1))
 
 
 def _strip_formatted_centering(text: str) -> str:
@@ -258,24 +250,22 @@ def _add_block(
 
     if label == "doc_title":
         if formatted_content:
-            text, _ = _parse_formatted_heading(text)
+            text, _ = parse_markdown_heading(text)
         doc.add_title(text=text, prov=prov)
     elif label == "paragraph_title":
         heading_level = 1
         if formatted_content:
-            text, markdown_level = _parse_formatted_heading(text)
+            text, markdown_level = parse_markdown_heading(text)
             if markdown_level is not None:
                 # Paddle reserves Markdown H1 for ``doc_title``. Docling's
                 # section level 1 is exported as H2, so remove that offset.
                 heading_level = max(1, markdown_level - 1)
         doc.add_heading(text=text, level=heading_level, prov=prov)
     elif label == "table":
-        table_data = _parse_table_html(text)
-        if table_data.num_rows == 0 or table_data.num_cols == 0:
+        if _add_html_table(doc, text, prov) is None:
             raise ValueError(
                 f"Invalid table HTML for PaddleOCR-VL block {block.block_id}"
             )
-        doc.add_table(data=table_data, prov=prov)
     elif label in _FORMULA_LABELS:
         doc.add_formula(text=text, prov=prov)
     elif label in _PICTURE_LABELS:

@@ -268,15 +268,27 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 num_tokens = 0
                 stop_reason = "unspecified"
 
+                generation_kwargs: dict[str, Any] = {
+                    "max_tokens": input_data.max_new_tokens,
+                    "verbose": False,
+                    "temp": input_data.temperature,
+                }
+                if self.options.repetition_penalty is not None:
+                    generation_kwargs["repetition_penalty"] = (
+                        self.options.repetition_penalty
+                    )
+                if self.options.repetition_context_size is not None:
+                    generation_kwargs["repetition_context_size"] = (
+                        self.options.repetition_context_size
+                    )
+
                 # Use stream_generate for proper stop string handling
                 for token in self.stream_generate(
                     self.vlm_model,
                     self.processor,
                     formatted_prompt,
                     [image],  # MLX stream_generate expects list of images
-                    max_tokens=input_data.max_new_tokens,
-                    verbose=False,
-                    temp=input_data.temperature,
+                    **generation_kwargs,
                 ):
                     output_text += token.text
                     num_tokens += 1

@@ -12,18 +12,23 @@ from enum import Enum
 from html import unescape
 from io import BytesIO
 from pathlib import Path
-from typing import Literal, Optional, Union, cast
+from typing import Literal, cast
 
 from docling_core.types.doc import (
+    CodeItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
     Formatting,
+    GroupLabel,
     ImageRef,
     ListItem,
     NodeItem,
+    RefItem,
+    RichTableCell,
     TableCell,
     TableData,
+    TableItem,
     TextItem,
 )
 from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
@@ -44,19 +49,50 @@ from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import detect_code_language
 from docling.utils.text_decoding import decode_text
 
-# marko is only installed by the `format-markdown` extra, but DocumentConverter
-# imports every backend eagerly. Importing it at module load would therefore
-# break `import docling` on installs that omit the extra (the slim packages in
-# particular). Guard the imports like the opendocument and xbrl backends do, and
-# surface the failure only when Markdown is actually parsed.
-# See https://github.com/docling-project/docling/issues/3613.
 _MARKO_AVAILABLE: bool = False
 _MARKO_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     import marko
     import marko.element
+    import marko.ext.gfm as _gfm
     import marko.inline
     from marko import Markdown
+    from marko.ext.gfm import elements as _gfm_el
+    from marko.helpers import MarkoExtension
+
+    class _GfmParagraph(_gfm_el.Paragraph):
+        @classmethod
+        def break_paragraph(
+            cls, source: marko.source.Source, lazy: bool = False
+        ) -> bool:
+            if super().break_paragraph(source, lazy):
+                return True
+            if "Table" in source.parser.block_elements:
+                matched = source.parser.block_elements["Table"].match(source)
+                if matched:
+                    source.reset()
+                    return True
+            return False
+
+    class _GfmStrikethrough(marko.inline.InlineElement):
+        """GFM double-tilde strikethrough element matching ``~~text~~``."""
+
+        pattern = re.compile(r"(?<!~)~~([^~]+)~~(?!~)")
+        priority = 5
+        parse_children = True
+        parse_group = 1
+
+    _GFM_EXTENSION = MarkoExtension(
+        elements=[
+            _GfmParagraph,
+            _GfmStrikethrough,
+            _gfm_el.Url,
+            _gfm_el.Table,
+            _gfm_el.TableRow,
+            _gfm_el.TableCell,
+        ],
+        renderer_mixins=_gfm.GFM.renderer_mixins,
+    )
 
     _MARKO_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -93,10 +129,7 @@ class _ListItemCreationPayload(BaseModel):
 
 
 _CreationPayload = Annotated[
-    Union[
-        _HeadingCreationPayload,
-        _ListItemCreationPayload,
-    ],
+    _HeadingCreationPayload | _ListItemCreationPayload,
     Field(discriminator="kind"),
 ]
 
@@ -129,131 +162,66 @@ def _only_plain_line_breaks(children: list) -> bool:
 
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
-    _ENTITY_RE = re.compile(r"&(#\d+|#x[0-9a-fA-F]+|\w+);")
-    _DELIMITER_CELL_RE = re.compile(r":?-+:?")
-    _PIPE_ENTITY = "&#124;"
-
     @staticmethod
-    def _split_table_row(row: str) -> list[str]:
-        """Split a table row into its cells.
+    def _apply_formatting(
+        current: Formatting | None,
+        *,
+        bold: bool = False,
+        italic: bool = False,
+        strikethrough: bool = False,
+    ) -> Formatting:
+        """Return a copy of `current` with the requested flag(s) set.
 
-        The leading and trailing pipes are optional in GFM, so an empty field is
-        only dropped when it comes from a pipe at the very edge of the row.
+        If `current` is `None` a fresh `Formatting` instance is created.
+        Always returns a new object so the caller's reference is never mutated
+        in place.
+
+        Args:
+            current: The inherited `Formatting` state, or `None`.
+            bold: Set the bold flag when `True`.
+            italic: Set the italic flag when `True`.
+            strikethrough: Set the strikethrough flag when `True`.
+
+        Returns:
+            A `Formatting` instance with the requested flag(s) applied.
         """
-        cells = row.split("|")
-        if cells and not cells[0].strip():
-            cells = cells[1:]
-        if cells and not cells[-1].strip():
-            cells = cells[:-1]
-        return [cell.strip() for cell in cells]
+        fmt = deepcopy(current) if current else Formatting()
+        if bold:
+            fmt.bold = True
+        if italic:
+            fmt.italic = True
+        if strikethrough:
+            fmt.strikethrough = True
+        return fmt
 
     @staticmethod
-    def _is_delimiter_row(row: str) -> bool:
-        """Whether a row is a GFM table delimiter row, e.g. ``--- | :---:``."""
-        cells = MarkdownDocumentBackend._split_table_row(row)
-        return bool(cells) and all(
-            MarkdownDocumentBackend._DELIMITER_CELL_RE.fullmatch(cell) for cell in cells
-        )
+    def _resolve_link_dest(dest: str) -> AnyUrl | Path | None:
+        """Parse a link destination string into an `AnyUrl` or `Path`.
 
-    @staticmethod
-    def _escape_pipes(text: str) -> str:
-        """Carry a pipe that is cell content rather than a cell delimiter.
+        Shared between the paragraph inline-element walker and the table-cell
+        inline walker so that link-destination resolution is not duplicated.
 
-        An entity is how the row buffer already spells such a pipe: a source
-        ``&#124;`` survives ``_unescape_except_pipe`` intact and ``_close_table``
-        turns it back into ``|`` once the cells are split. A backslash-escaped
-        pipe has to join it there, because Marko resolves ``\\|`` to a Literal
-        node holding a bare ``|``, which the buffer cannot tell from markup.
+        Args:
+            dest: The raw destination string from a marko `Link` or
+                `AutoLink` element.
+
+        Returns:
+            An `AnyUrl` or `Path` instance, or `None` when the destination
+            cannot be parsed.
         """
-        return text.replace("|", MarkdownDocumentBackend._PIPE_ENTITY)
-
-    @staticmethod
-    def _inline_text(node) -> str:
-        """The text of an inline node, its markers dropped.
-
-        A pipe goes on delimiting cells inside emphasis, code spans and links,
-        so the markers can go but the text they wrap has to stay.
-        """
-        children = getattr(node, "children", None)
-        if isinstance(children, str):
-            # A Literal is a backslash escape, so its pipe is content.
-            if isinstance(node, marko.inline.Literal):
-                return MarkdownDocumentBackend._escape_pipes(children)
-            return children
-        return "".join(
-            MarkdownDocumentBackend._inline_text(child) for child in children or []
-        )
-
-    @staticmethod
-    def _starts_pipeless_table(element: marko.block.Paragraph) -> bool:
-        """Whether a paragraph is a GFM table whose header has no leading pipe.
-
-        Tables that do start with a pipe are detected line by line and must not
-        go through here, so that their existing behaviour is left untouched.
-        Without a leading pipe the header is indistinguishable from prose, so
-        the delimiter row on the second line is the only reliable signal - hence
-        the lookahead at paragraph level, where all lines are visible at once.
-        """
-        # Rebuilt line by line rather than read off the RawText nodes: a header
-        # cell in bold or a link is a node of its own, so reading those alone
-        # would split one line into several and shift the delimiter row away.
-        lines = [""]
-        for child in element.children:
-            if isinstance(child, marko.inline.LineBreak):
-                if len(lines) == 2:
-                    break
-                lines.append("")
-            else:
-                lines[-1] += MarkdownDocumentBackend._inline_text(child)
-        if len(lines) < 2 or lines[0].lstrip().startswith("|"):
-            return False
-        if "|" not in lines[0] or not MarkdownDocumentBackend._is_delimiter_row(
-            lines[1]
-        ):
-            return False
-        # GFM: "The delimiter row must match the header row in the number of
-        # cells. If not, a table will not be recognized."
-        return len(MarkdownDocumentBackend._split_table_row(lines[0])) == len(
-            MarkdownDocumentBackend._split_table_row(lines[1])
-        )
-
-    # md_table_buffer holds the rows of the table being read, one string per
-    # row, in a form _split_table_row can split on "|" and _close_table decodes
-    # exactly once with unescape(): a RawText is decoded on the way in except
-    # for the pipe entities, so a pipe that is cell content survives the split;
-    # literal text, such as a code span, is entity-encoded on the way in and
-    # its pipes become &#124;.
-    @staticmethod
-    def _unescape_except_pipe(text: str) -> str:
-        def replace(match):
-            entity = match.group(0)
-            decoded = unescape(entity)
-
-            # Any spelling of | (&#x7c;, &verbar;, ...) stays encoded so it is not
-            # taken for a cell delimiter; _close_table unescapes it after the split.
-            if decoded == "|":
-                return entity
-
-            return decoded
-
-        return MarkdownDocumentBackend._ENTITY_RE.sub(replace, text)
+        return TypeAdapter(AnyUrl | Path | None).validate_python(dest)
 
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
-        # This regex will match any sequence of underscores
         pattern = r"_+"
 
         def replace_match(match):
-            underscore_sequence = match.group(
-                0
-            )  # Get the full match (sequence of underscores)
+            underscore_sequence = match.group(0)
 
-            # Shorten the sequence if it exceeds max_length
             if len(underscore_sequence) > max_length:
                 return "_" * max_length
             else:
-                return underscore_sequence  # Leave it unchanged if it is shorter or equal to max_length
+                return underscore_sequence
 
-        # Use re.sub to replace long underscore sequences
         shortened_text = re.sub(pattern, replace_match, markdown_text)
 
         if len(shortened_text) != len(markdown_text):
@@ -278,8 +246,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def __init__(
         self,
         in_doc: InputDocument,
-        path_or_stream: Union[BytesIO, Path],
-        options: Optional[MarkdownBackendOptions] = None,
+        path_or_stream: BytesIO | Path,
+        options: MarkdownBackendOptions | None = None,
     ):
         # Raised first so a missing optional dependency gives an actionable
         # message rather than a NameError when marko is dereferenced below.
@@ -291,18 +259,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         _log.debug("Starting MarkdownDocumentBackend...")
 
-        # Markdown file:
         self.path_or_stream = path_or_stream
         self.valid = True
-        self.markdown = ""  # To store original Markdown string
+        self.markdown = ""
 
-        self.in_table = False
-        self.in_pipeless_table = False
-        self.md_table_buffer: list[str] = []
         self._pending_hard_line_break = False
         self._pending_soft_line_break = False
         self._html_blocks: int = 0
-        self._image_loader: Optional[ImageResourceLoader] = None
+        self._image_loader: ImageResourceLoader | None = None
 
         # A leading BOM is dropped. Kept, it prefixes the first line, so a
         # leading "# Title" is parsed as paragraph text and the BOM reaches the
@@ -328,93 +292,318 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return
 
     @staticmethod
-    def _encode_table_literal(text: str) -> str:
-        """Encode literal text for md_table_buffer: entities are escaped so the
-        decode in _close_table returns the text as written, and a pipe is not
-        a column separator."""
-        return MarkdownDocumentBackend._escape_pipes(html.escape(text, quote=False))
+    def _cell_plain_text(cell: _gfm_el.TableCell) -> str:
+        """Return the plain-text content of a GFM `TableCell`.
 
-    def _append_table_text(self, text: str) -> None:
-        """Add text to the current row of md_table_buffer."""
-        if self.md_table_buffer:
-            self.md_table_buffer[-1] += text
-        else:
-            self.md_table_buffer.append(text)
+        Unlike `_inline_text`, this method treats `CodeSpan` nodes as literal
+        text (no HTML unescaping) and HTML-unescapes only `RawText` and
+        `Literal` nodes.
 
-    def _close_table(self, doc: DoclingDocument):
-        self.in_pipeless_table = False
-        if self.in_table:
-            _log.debug("=== TABLE START ===")
-            for md_table_row in self.md_table_buffer:
-                _log.debug(md_table_row)
-            _log.debug("=== TABLE END ===")
-            tcells: list[TableCell] = []
-            result_table = []
-            for n, md_table_row in enumerate(self.md_table_buffer):
-                data = []
-                if n == 0:
-                    header = MarkdownDocumentBackend._split_table_row(md_table_row)
-                    for value in header:
-                        data.append(value)
-                    result_table.append(data)
-                if n > 1:
-                    values = MarkdownDocumentBackend._split_table_row(md_table_row)
-                    for value in values:
-                        data.append(value)
-                    result_table.append(data)
+        Args:
+            cell: A parsed GFM `TableCell` element.
 
-            # GFM: "The remainder of the table's rows may vary in the number of
-            # cells. If a row has fewer cells than the header row, empty cells
-            # are inserted. If it has greater, the excess is ignored."
-            if result_table and result_table[0]:
-                num_header_cells = len(result_table[0])
-                result_table = [
-                    row[:num_header_cells] + [""] * (num_header_cells - len(row))
-                    for row in result_table
-                ]
+        Returns:
+            The plain-text string for the cell, without markup markers.
+        """
 
-            for trow_ind, trow in enumerate(result_table):
-                for tcol_ind, cellval in enumerate(trow):
-                    row_span = (
-                        1  # currently supporting just simple tables (without spans)
+        def _node_text(node) -> str:
+            if isinstance(node, marko.inline.CodeSpan):
+                return str(node.children)
+            if isinstance(node.children, str):
+                return unescape(node.children)
+            return "".join(_node_text(c) for c in node.children)
+
+        return "".join(_node_text(child) for child in cell.children)
+
+    @staticmethod
+    def _cell_has_rich_content(cell: _gfm_el.TableCell) -> bool:
+        """Return True when a GFM TableCell contains inline formatting.
+
+        A cell is considered rich when it contains any inline element that
+        carries formatting (bold, italic, code span, link, image, or
+        strikethrough). Plain cells that hold only `RawText` or `Literal`
+        nodes are not rich.
+
+        Args:
+            cell: A parsed GFM `TableCell` element whose `children` contain
+                marko inline nodes.
+
+        Returns:
+            `True` when rich inline content is detected, `False` otherwise.
+        """
+        rich_inline_types = (
+            marko.inline.StrongEmphasis,
+            marko.inline.Emphasis,
+            marko.inline.CodeSpan,
+            marko.inline.Link,
+            marko.inline.AutoLink,
+            marko.inline.Image,
+            _GfmStrikethrough,
+        )
+
+        def _check(node) -> bool:
+            if isinstance(node, rich_inline_types):
+                return True
+            if isinstance(node.children, list):
+                return any(_check(c) for c in node.children)
+            return False
+
+        return any(_check(child) for child in cell.children)
+
+    def _parse_gfm_table(
+        self,
+        table: _gfm_el.Table,
+        doc: DoclingDocument,
+        parent_item: NodeItem | None,
+    ) -> None:
+        """Convert a parsed GFM `Table` AST node into a Docling table.
+
+        Each cell whose content is plain text is stored as a `TableCell`.
+        Cells that contain inline formatting (bold, italic, code spans, links,
+        …) are stored as `RichTableCell` objects. The cell's inline children
+        are collected in an `InlineGroup` so that the markdown serializer
+        renders them correctly on a single line.
+
+        Args:
+            table: The GFM `Table` element produced by the marko GFM extension.
+            doc: The `DoclingDocument` being populated.
+            parent_item: The docling node that will be the parent of the
+                resulting `TableItem`.
+        """
+        rows = table.children
+        num_rows = len(rows)
+        if num_rows == 0:
+            return
+        num_cols = table.num_of_cols
+
+        table_data = TableData(num_rows=num_rows, num_cols=num_cols)
+        docling_table: TableItem = doc.add_table(data=table_data, parent=parent_item)
+
+        for row_idx, row in enumerate(rows):
+            is_header_row = row_idx == 0  # first row is the header in GFM
+            cells = row.children
+            for col_idx, cell in enumerate(cells):
+                cell_text = MarkdownDocumentBackend._cell_plain_text(cell).strip()
+
+                if MarkdownDocumentBackend._cell_has_rich_content(cell):
+                    group_name = (
+                        f"rich_cell_group_{len(doc.tables) - 1}_{col_idx}_{row_idx}"
                     )
-                    col_span = (
-                        1  # currently supporting just simple tables (without spans)
+                    cell_group = doc.add_group(
+                        label=GroupLabel.UNSPECIFIED,
+                        name=group_name,
+                        parent=docling_table,
                     )
-                    icell = TableCell(
-                        text=unescape(cellval.strip()),
-                        row_span=row_span,
-                        col_span=col_span,
-                        start_row_offset_idx=trow_ind,
-                        end_row_offset_idx=trow_ind + row_span,
-                        start_col_offset_idx=tcol_ind,
-                        end_col_offset_idx=tcol_ind + col_span,
-                        column_header=trow_ind == 0,
-                        row_header=False,
-                    )
-                    tcells.append(icell)
+                    inline_group = doc.add_inline_group(parent=cell_group)
+                    inline_refs: list[RefItem] = []
+                    for child in cell.children:
+                        self._iterate_cell_inline(
+                            element=child,
+                            doc=doc,
+                            inline_parent=inline_group,
+                            collected_refs=inline_refs,
+                            formatting=None,
+                            hyperlink=None,
+                        )
 
-            num_rows = len(result_table)
-            num_cols = len(result_table[0])
-            self.in_table = False
-            self.md_table_buffer = []  # clean table markdown buffer
-            # Initialize Docling TableData
-            table_data = TableData(
-                num_rows=num_rows, num_cols=num_cols, table_cells=tcells
+                    if inline_refs:
+                        doc.add_table_cell(
+                            table_item=docling_table,
+                            cell=RichTableCell(
+                                text=cell_text,
+                                row_span=1,
+                                col_span=1,
+                                start_row_offset_idx=row_idx,
+                                end_row_offset_idx=row_idx + 1,
+                                start_col_offset_idx=col_idx,
+                                end_col_offset_idx=col_idx + 1,
+                                column_header=is_header_row,
+                                row_header=False,
+                                ref=cell_group.get_ref(),
+                            ),
+                        )
+                    else:
+                        # No items created; clean up unused groups.
+                        doc.groups.remove(inline_group)
+                        doc.groups.remove(cell_group)
+                        docling_table.children.pop()
+                        doc.add_table_cell(
+                            table_item=docling_table,
+                            cell=TableCell(
+                                text=cell_text,
+                                row_span=1,
+                                col_span=1,
+                                start_row_offset_idx=row_idx,
+                                end_row_offset_idx=row_idx + 1,
+                                start_col_offset_idx=col_idx,
+                                end_col_offset_idx=col_idx + 1,
+                                column_header=is_header_row,
+                                row_header=False,
+                            ),
+                        )
+                else:
+                    doc.add_table_cell(
+                        table_item=docling_table,
+                        cell=TableCell(
+                            text=cell_text,
+                            row_span=1,
+                            col_span=1,
+                            start_row_offset_idx=row_idx,
+                            end_row_offset_idx=row_idx + 1,
+                            start_col_offset_idx=col_idx,
+                            end_col_offset_idx=col_idx + 1,
+                            column_header=is_header_row,
+                            row_header=False,
+                        ),
+                    )
+
+    def _iterate_cell_inline(
+        self,
+        *,
+        element,
+        doc: DoclingDocument,
+        inline_parent: NodeItem,
+        collected_refs: list[RefItem],
+        formatting: Formatting | None,
+        hyperlink: AnyUrl | Path | None,
+    ) -> None:
+        """Process a single inline element from a GFM table cell.
+
+        Recursively walks the inline AST of a table cell and creates the
+        appropriate Docling text or code items as children of `inline_parent`,
+        collecting their references in `collected_refs`. Only inline content
+        permitted by the GFM specification inside a table cell is processed;
+        block-level nodes are ignored.
+
+        Args:
+            element: A marko inline AST node.
+            doc: The `DoclingDocument` being populated.
+            inline_parent: The `InlineGroup` (or other `NodeItem`) to use as
+                the parent for newly created text and code items.
+            collected_refs: Accumulator for the `RefItem` values of every
+                top-level doc item created while processing this cell.
+            formatting: Inherited `Formatting` from ancestor inline nodes
+                (e.g. bold wrapping a link).
+            hyperlink: Inherited hyperlink URL from an ancestor `Link` node.
+        """
+        if isinstance(element, marko.inline.StrongEmphasis):
+            formatting = MarkdownDocumentBackend._apply_formatting(
+                formatting, bold=True
             )
-            if len(tcells) > 0:
-                doc.add_table(data=table_data)
-        return
+            for child in element.children:
+                self._iterate_cell_inline(
+                    element=child,
+                    doc=doc,
+                    inline_parent=inline_parent,
+                    collected_refs=collected_refs,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+
+        elif isinstance(element, marko.inline.Emphasis):
+            formatting = MarkdownDocumentBackend._apply_formatting(
+                formatting, italic=True
+            )
+            for child in element.children:
+                self._iterate_cell_inline(
+                    element=child,
+                    doc=doc,
+                    inline_parent=inline_parent,
+                    collected_refs=collected_refs,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+
+        elif isinstance(element, marko.inline.Link | marko.inline.AutoLink):
+            # AutoLink covers <https://url> and the GFM bare-URL form (gfm_el.Url
+            # subclasses AutoLink).
+            link_hyperlink = MarkdownDocumentBackend._resolve_link_dest(element.dest)
+            for child in element.children:
+                self._iterate_cell_inline(
+                    element=child,
+                    doc=doc,
+                    inline_parent=inline_parent,
+                    collected_refs=collected_refs,
+                    formatting=formatting,
+                    hyperlink=link_hyperlink,
+                )
+
+        elif isinstance(element, marko.inline.CodeSpan):
+            snippet = str(element.children).strip()
+            if snippet:
+                item = doc.add_code(
+                    parent=inline_parent,
+                    text=snippet,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+                collected_refs.append(item.get_ref())
+
+        elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
+            raw = element.children if isinstance(element.children, str) else ""
+            text = unescape(raw.strip())
+            if text:
+                item = doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=inline_parent,
+                    text=text,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+                collected_refs.append(item.get_ref())
+
+        elif isinstance(element, _GfmStrikethrough):
+            formatting = MarkdownDocumentBackend._apply_formatting(
+                formatting, strikethrough=True
+            )
+            for child in element.children:
+                self._iterate_cell_inline(
+                    element=child,
+                    doc=doc,
+                    inline_parent=inline_parent,
+                    collected_refs=collected_refs,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+
+        elif isinstance(element, marko.inline.Image):
+            image_ref = self._load_image_ref(element.dest)
+            fig_caption = None
+            if element.title:
+                title = unescape(element.title)
+                fig_caption = doc.add_text(
+                    label=DocItemLabel.CAPTION,
+                    text=title,
+                )
+            pic = doc.add_picture(
+                parent=inline_parent,
+                image=image_ref,
+                caption=fig_caption,
+            )
+            collected_refs.append(pic.get_ref())
+
+        else:
+            if isinstance(element.children, list):
+                for child in element.children:
+                    if not isinstance(child, str):
+                        self._iterate_cell_inline(
+                            element=child,
+                            doc=doc,
+                            inline_parent=inline_parent,
+                            collected_refs=collected_refs,
+                            formatting=formatting,
+                            hyperlink=hyperlink,
+                        )
 
     def _create_list_item(
         self,
         doc: DoclingDocument,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
         text: str,
         enumerated: bool,
         marker: str = "",
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ):
         item = doc.add_list_item(
             text=text,
@@ -429,11 +618,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def _create_heading_item(
         self,
         doc: DoclingDocument,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
         text: str,
         level: int,
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ):
         if level == 1:
             item = doc.add_title(
@@ -458,14 +647,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         creation_stack: list[_CreationPayload],
         snippet_text: str,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
         list_ordered_flag_by_ref: dict[str, bool],
         list_start_by_ref: dict[str, int],
         list_item_counter_by_ref: dict[str, int],
         list_last_item_by_ref: dict[str, ListItem],
-        formatting: Optional[Formatting],
-        hyperlink: Optional[Union[AnyUrl, Path]],
-    ) -> Optional[NodeItem]:
+        formatting: Formatting | None,
+        hyperlink: AnyUrl | Path | None,
+    ) -> NodeItem | None:
         """Lazily create list items / headings when we first see their inline content.
 
         Important: Marko list items/headings can contain inline nodes that are NOT RawText
@@ -520,12 +709,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         list_start_by_ref: dict[str, int],
         list_item_counter_by_ref: dict[str, int],
         list_last_item_by_ref: dict[str, ListItem],
-        parent_item: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        parent_item: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ):
         if element in visited:
             return
+
+        # A line break only joins runs of the same paragraph. When no text run
+        # follows the break inside it (for example, the paragraph ends in inline
+        # HTML or a code span, or the next lines are table rows), the pending
+        # flag would otherwise join the first run of a later block onto the
+        # last text item.
+        if isinstance(element, marko.block.BlockElement):
+            self._pending_hard_line_break = False
+            self._pending_soft_line_break = False
 
         # Iterates over all elements in the AST
         # Check for different element types and process relevant details
@@ -533,7 +731,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             isinstance(element, marko.block.Heading)
             or isinstance(element, marko.block.SetextHeading)
         ) and len(element.children) > 0:
-            self._close_table(doc)
             _log.debug(
                 " - Heading level %s, content: %s",
                 element.level,
@@ -559,7 +756,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     has_non_empty_list_items = True
                     break
 
-            self._close_table(doc)
             _log.debug(" - List %s", "ordered" if element.ordered else "unordered")
             if has_non_empty_list_items:
                 parent_item = doc.add_list_group(name="list", parent=parent_item)
@@ -573,7 +769,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             and isinstance((child := element.children[0]), marko.block.Paragraph)
             and len(child.children) > 0
         ):
-            self._close_table(doc)
             _log.debug(" - List item")
 
             enumerated = (
@@ -581,7 +776,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 if parent_item
                 else False
             )
-            parent_ref: Optional[str] = parent_item.self_ref if parent_item else None
+            parent_ref: str | None = parent_item.self_ref if parent_item else None
             marker = ""
             if enumerated and parent_ref is not None:
                 start = list_start_by_ref.get(parent_ref, 1)
@@ -598,9 +793,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             if len(non_list_children) > 1 and not _only_plain_line_breaks(
                 non_list_children
             ):  # inline group will be created further down
-                parent_ref: Optional[str] = (
-                    parent_item.self_ref if parent_item else None
-                )
+                parent_ref: str | None = parent_item.self_ref if parent_item else None
                 parent_item = self._create_list_item(
                     doc=doc,
                     parent_item=parent_item,
@@ -621,10 +814,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         elif isinstance(element, marko.inline.Image):
-            self._close_table(doc)
             _log.debug(" - Image with alt: %s, url: %s", element.title, element.dest)
 
-            fig_caption: Optional[TextItem] = None
+            fig_caption: TextItem | None = None
             if element.title is not None and element.title != "":
                 title = unescape(element.title)
                 fig_caption = doc.add_text(
@@ -639,19 +831,25 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.Emphasis):
             _log.debug(" - Emphasis: %s", element.children)
-            formatting = deepcopy(formatting) if formatting else Formatting()
-            formatting.italic = True
+            formatting = MarkdownDocumentBackend._apply_formatting(
+                formatting, italic=True
+            )
 
         elif isinstance(element, marko.inline.StrongEmphasis):
             _log.debug(" - StrongEmphasis: %s", element.children)
-            formatting = deepcopy(formatting) if formatting else Formatting()
-            formatting.bold = True
+            formatting = MarkdownDocumentBackend._apply_formatting(
+                formatting, bold=True
+            )
+
+        elif isinstance(element, _GfmStrikethrough):
+            _log.debug(" - Strikethrough: %s", element.children)
+            formatting = MarkdownDocumentBackend._apply_formatting(
+                formatting, strikethrough=True
+            )
 
         elif isinstance(element, marko.inline.Link):
             _log.debug(" - Link: %s", element.children)
-            hyperlink = TypeAdapter(Optional[Union[AnyUrl, Path]]).validate_python(
-                element.dest
-            )
+            hyperlink = MarkdownDocumentBackend._resolve_link_dest(element.dest)
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             _log.debug(" - RawText/Literal: %s", element.children)
@@ -659,33 +857,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element.children if isinstance(element.children, str) else ""
             )
             snippet_text = unescape(original_text.strip())
-            # A Literal is a backslash escape, so a pipe it holds is content
-            # and not markup: it cannot open a table of its own.
-            is_escape = isinstance(element, marko.inline.Literal)
-            is_table_row = bool(snippet_text) and (
-                # A header cell in bold or a link arrives as its own node with
-                # no pipe in it, so once the paragraph is known to be a table,
-                # every piece of it belongs to that table, pipe or not.
-                self.in_pipeless_table
-                or (
-                    not is_escape
-                    and "|" in snippet_text
-                    and (self.in_table or original_text.lstrip().startswith("|"))
-                )
-            )
-            if is_table_row:
-                self.in_table = True
-            if self.in_table and original_text:
-                # Whitespace is kept: a cell can be several nodes ("run ", a
-                # code span, " now"), and _split_table_row strips the cell once.
-                cell_text = self._unescape_except_pipe(original_text)
-                if is_escape:
-                    cell_text = self._escape_pipes(cell_text)
-                self._append_table_text(cell_text)
-            elif snippet_text:
-                # Not in table - close any pending table and process as regular text
-                self._close_table(doc)
-
+            if snippet_text:
                 if creation_stack:
                     parent_item = self._flush_creation_stack(
                         doc=doc,
@@ -702,9 +874,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     self._pending_hard_line_break = False
                     self._pending_soft_line_break = False
                 else:
+                    # A code span is its own item: text after a break never
+                    # joins it (that would type prose as code).
+                    last_is_code = bool(doc.texts) and isinstance(
+                        doc.texts[-1], CodeItem
+                    )
                     if (
                         self._pending_hard_line_break
                         and doc.texts
+                        and not last_is_code
                         and doc.texts[-1].formatting == formatting
                         and doc.texts[-1].hyperlink == hyperlink
                     ):
@@ -713,6 +891,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     elif (
                         self._pending_soft_line_break
                         and doc.texts
+                        and not last_is_code
                         and doc.texts[-1].formatting == formatting
                         and doc.texts[-1].hyperlink == hyperlink
                     ):
@@ -732,47 +911,50 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.CodeSpan):
             _log.debug(" - Code Span: %s", element.children)
-            snippet_text = str(element.children)
-            if self.in_table:
-                # A CodeSpan does not delimit cells; keep its content in the
-                # current buffer slot. Its text is literal, so it is encoded for
-                # the one decode in _close_table, and a pipe in it is not a
-                # column separator.
-                self._append_table_text(self._encode_table_literal(snippet_text))
-            else:
-                self._close_table(doc)
-                snippet_text = snippet_text.strip()
-                # If this CodeSpan is the only content of a list item / heading, Marko won't
-                # emit RawText. Flush pending creations here to avoid leaking payloads.
-                if creation_stack and snippet_text:
-                    parent_item = self._flush_creation_stack(
-                        doc=doc,
-                        creation_stack=creation_stack,
-                        snippet_text=snippet_text,
-                        parent_item=parent_item,
-                        list_ordered_flag_by_ref=list_ordered_flag_by_ref,
-                        list_start_by_ref=list_start_by_ref,
-                        list_item_counter_by_ref=list_item_counter_by_ref,
-                        list_last_item_by_ref=list_last_item_by_ref,
-                        formatting=formatting,
-                        hyperlink=hyperlink,
-                    )
-                    # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
-                    return
-                doc.add_code(
-                    parent=parent_item,
-                    text=snippet_text,
+            snippet_text = str(element.children).strip()
+            # If this CodeSpan is the only content of a list item / heading, Marko won't
+            # emit RawText. Flush pending creations here to avoid leaking payloads.
+            if creation_stack and snippet_text:
+                parent_item = self._flush_creation_stack(
+                    doc=doc,
+                    creation_stack=creation_stack,
+                    snippet_text=snippet_text,
+                    parent_item=parent_item,
+                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_start_by_ref=list_start_by_ref,
+                    list_item_counter_by_ref=list_item_counter_by_ref,
+                    list_last_item_by_ref=list_last_item_by_ref,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+                self._pending_hard_line_break = False
+                self._pending_soft_line_break = False
+                # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
+                return
+            doc.add_code(
+                parent=parent_item,
+                text=snippet_text,
+                formatting=formatting,
+                hyperlink=hyperlink,
+            )
+            # The code span consumed the break that preceded it, like a
+            # text run does.
+            self._pending_hard_line_break = False
+            self._pending_soft_line_break = False
 
         elif (
             isinstance(element, marko.block.CodeBlock | marko.block.FencedCode)
             and len(element.children) > 0
             and isinstance((child := element.children[0]), marko.inline.RawText)
-            and len(snippet_text := (child.children.strip())) > 0
+            # Drop blank lines around the code but keep the first line's
+            # indentation, which is part of the code.
+            and len(
+                snippet_text := re.sub(
+                    r"\A(?:[ \t]*\r?\n)+", "", child.children
+                ).rstrip()
+            )
+            > 0
         ):
-            self._close_table(doc)
             _log.debug(" - Code Block: %s", element.children)
             doc.add_code(
                 parent=parent_item,
@@ -783,10 +965,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
 
         elif isinstance(element, marko.inline.LineBreak):
-            if self.in_table:
-                _log.debug("Line break in a table")
-                self.md_table_buffer.append("")
-            elif element.soft:
+            if element.soft:
                 _log.debug("Soft line break")
                 self._pending_soft_line_break = True
             else:
@@ -795,7 +974,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1
-            self._close_table(doc)
             _log.debug("HTML Block: %s", element)
             if (
                 len(element.body) > 0
@@ -810,17 +988,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+
+        elif isinstance(element, _gfm_el.Table):
+            _log.debug(" - GFM Table")
+            self._parse_gfm_table(
+                table=element,
+                doc=doc,
+                parent_item=parent_item,
+            )
+            # Mark visited to skip the default child-iteration loop below.
+            visited.add(element)
+            return
+
         else:
             if not isinstance(element, str):
-                self._close_table(doc)
                 _log.debug("Some other element: %s", type(element).__name__)
-
-        if isinstance(element, marko.block.Paragraph):
-            # Set before descending: the RawText branch below reads this to let a
-            # header without a leading pipe open a table. _close_table clears it.
-            self.in_pipeless_table = MarkdownDocumentBackend._starts_pipeless_table(
-                element
-            )
 
         element_children = getattr(element, "children", [])
         if (
@@ -836,7 +1018,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             marko.inline.RawText,
         )
 
-        # Iterate through the element's children (if any)
         if hasattr(element, "children") and not isinstance(
             element, processed_block_types
         ):
@@ -885,7 +1066,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
         return self._image_loader
 
-    def _load_image_ref(self, dest: str) -> Optional[ImageRef]:
+    def _load_image_ref(self, dest: str) -> ImageRef | None:
         """Resolve and decode a Markdown image source into an ``ImageRef``.
 
         Returns ``None`` when image loading is disabled, the source is empty, or
@@ -927,10 +1108,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         if self.is_valid():
-            # Parse the markdown into an abstract syntax tree (AST)
-            marko_parser = Markdown()
+            # The GFM extension gives tables a structured AST with inline
+            # children per cell, enabling RichTableCell for formatted content.
+            marko_parser = Markdown(extensions=[_GFM_EXTENSION])
             parsed_ast = marko_parser.parse(self.markdown)
-            # Start iterating from the root of the AST
             self._iterate_elements(
                 element=parsed_ast,
                 depth=0,
@@ -943,11 +1124,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 list_item_counter_by_ref={},
                 list_last_item_by_ref={},
             )
-            self._close_table(doc=doc)  # handle any last hanging table
 
-            # if HTML blocks were detected, export to HTML and delegate to HTML backend
             if self._html_blocks > 0:
-                # export to HTML
                 html_backend_cls = HTMLDocumentBackend
                 html_str = doc.export_to_html()
 

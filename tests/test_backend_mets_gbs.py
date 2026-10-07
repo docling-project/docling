@@ -9,8 +9,9 @@ import pytest
 
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend, MetsGbsPageBackend
 from docling.datamodel.backend_options import MetsGbsBackendOptions
-from docling.datamodel.base_models import BoundingBox, InputFormat
+from docling.datamodel.base_models import BoundingBox, DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
+from docling.document_converter import DocumentConverter
 
 
 @pytest.fixture
@@ -297,3 +298,28 @@ def test_format_detection_stops_at_member_limit(test_doc_path, tmp_path):
 
     assert _DocumentConversionInput._detect_mets_gbs(archive) is None
     assert _DocumentConversionInput._detect_mets_gbs(test_doc_path) is not None
+
+
+def _input_doc(source: Path | DocumentStream) -> InputDocument:
+    format_options = DocumentConverter(
+        allowed_formats=[InputFormat.METS_GBS]
+    ).format_to_options
+    conv_input = _DocumentConversionInput(path_or_stream_iterator=[source])
+    return next(iter(conv_input.docs(format_options)))
+
+
+def test_stream_input_matches_path_input(test_doc_path):
+    """An archive given as a stream is detected and loaded like the same path."""
+    stream = DocumentStream(
+        name=test_doc_path.name, stream=BytesIO(test_doc_path.read_bytes())
+    )
+
+    from_path = _input_doc(test_doc_path)
+    from_stream = _input_doc(stream)
+
+    assert from_stream.format == InputFormat.METS_GBS
+    assert from_stream.valid
+    assert from_stream.page_count == from_path.page_count
+    assert from_stream.document_hash == from_path.document_hash
+    from_path._backend.unload()
+    from_stream._backend.unload()

@@ -35,6 +35,7 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.utils.encoding import decode_latex_content
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 
 if TYPE_CHECKING:
@@ -181,6 +182,28 @@ class MacroHandlerMixin:
                                 arg.nodelist, doc, depth + 1
                             )
 
+    def _process_item_macro_inline(
+        self,
+        node: LatexMacroNode,
+        text_buffer: list[str],
+        following_nodes=None,
+    ) -> None:
+        if not node.nodeargd or not node.nodeargd.argnlist:
+            return
+        arg = node.nodeargd.argnlist[0]
+        if not arg:
+            return
+        if hasattr(arg, "nodelist"):
+            opt_text = self._nodes_to_text(arg.nodelist)
+            if not opt_text:
+                opt_text = arg.latex_verbatim().strip("[] ")
+        else:
+            opt_text = arg.latex_verbatim().strip("[] ")
+        if opt_text:
+            text_buffer.append(f"{opt_text}: ")
+            if following_nodes and isinstance(following_nodes[0], LatexCharsNode):
+                following_nodes[0].chars = following_nodes[0].chars.lstrip()
+
     def _process_macro_node_inline(
         self,
         node: LatexMacroNode,
@@ -238,6 +261,8 @@ class MacroHandlerMixin:
                     text = self._nodes_to_text(text_arg.nodelist)
                     if text:
                         text_buffer.append(text)
+        elif node.macroname == "item" and node.nodeargd and node.nodeargd.argnlist:
+            self._process_item_macro_inline(node, text_buffer, following_nodes)
         else:
             if node.macroname in MACROS_STRUCTURAL:
                 flush_fn()
@@ -422,7 +447,7 @@ class MacroHandlerMixin:
                 elif input_path.exists():
                     self._input_stack.add(resolved)
                     try:
-                        content = input_path.read_text(encoding="utf-8")
+                        content = decode_latex_content(input_path)
                         sub_walker = LatexWalker(
                             content,
                             tolerant_parsing=True,

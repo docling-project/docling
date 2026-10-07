@@ -69,6 +69,20 @@ def _oriented_frame(image: Image.Image) -> tuple[Image.Image, tuple[float, float
     return oriented, (dpi_x, dpi_y)
 
 
+def _to_rgb(frame: Image.Image) -> Image.Image:
+    """Convert a frame to RGB, flattening any transparency onto white.
+
+    A plain ``convert("RGB")`` drops the alpha channel and keeps the colour
+    stored under it, which is usually black for fully transparent pixels. Dark
+    content on a transparent background would then become a black page.
+    """
+    if frame.mode in ("RGBA", "LA", "PA") or "transparency" in frame.info:
+        rgba = frame.convert("RGBA")
+        background = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+        return Image.alpha_composite(background, rgba).convert("RGB")
+    return frame.convert("RGB")
+
+
 class _ImagePageBackend(PdfPageBackend):
     def __init__(
         self, image: Image.Image, page_no: int, dpi: tuple[float, float]
@@ -235,11 +249,11 @@ class ImageDocumentBackend(PdfDocumentBackend):
                         img.seek(i)
                         frame, dpi = _oriented_frame(img)
                         self._frame_dpi.append(dpi)
-                        self._frames.append(frame.convert("RGB"))
+                        self._frames.append(_to_rgb(frame))
                 else:
                     frame, dpi = _oriented_frame(img)
                     self._frame_dpi.append(dpi)
-                    self._frames.append(frame.convert("RGB"))
+                    self._frames.append(_to_rgb(frame))
         except Exception as e:
             for frame in self._frames:
                 frame.close()

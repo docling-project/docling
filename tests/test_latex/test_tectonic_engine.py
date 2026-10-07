@@ -203,6 +203,38 @@ def test_tectonic_render_stages_explicit_local_dependencies(
     assert captured["asset_exists"] is True
 
 
+def test_tectonic_render_stages_dependencies_of_8bit_file(
+    monkeypatch, untrusted_engine, tmp_path
+):
+    """A Latin-1 dependency is still scanned for the files it inputs."""
+    engine = untrusted_engine
+
+    (tmp_path / "macros.tex").write_bytes(
+        "% Réglages\n\\input{nested}\n".encode("latin-1")
+    )
+    (tmp_path / "nested.tex").write_text("\\newcommand{\\baz}{qux}\n", encoding="utf-8")
+
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured["nested_exists"] = (Path(kwargs["cwd"]) / "nested.tex").exists()
+        raise subprocess.CalledProcessError(
+            returncode=1, cmd=cmd, output=b"", stderr=b"forced failure"
+        )
+
+    monkeypatch.setattr(tectonic.subprocess, "run", fake_run)
+
+    assert (
+        engine.render(
+            r"\begin{tikzpicture}\end{tikzpicture}",
+            preamble="\\input{macros}",
+            source_root=tmp_path,
+        )
+        is None
+    )
+    assert captured["nested_exists"] is True
+
+
 def test_tectonic_render_blocks_dependency_path_traversal(monkeypatch, tmp_path):
     # With shell escape the source pre-check is off, so staging alone must
     # refuse the parent-directory dependency.

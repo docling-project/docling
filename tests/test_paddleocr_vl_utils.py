@@ -22,6 +22,7 @@ from docling_core.types.doc import (
     CoordOrigin,
     DocItemLabel,
     DoclingDocument,
+    RichTableCell,
 )
 
 from docling.utils.paddleocr_vl_utils import parse_paddleocr_vl_result
@@ -222,6 +223,23 @@ def test_parses_table_html_into_table_data() -> None:
         "收入",
         "42",
     ]
+
+
+def test_parses_rich_table_cells_and_caption() -> None:
+    html = (
+        "<table><caption>Results <sup>1</sup></caption>"
+        "<tr><td><b>Bold</b> <i>value</i><sup>1</sup><sub>2</sub></td></tr></table>"
+    )
+
+    doc = parse_paddleocr_vl_result(_payload([_block("table", html)]))
+
+    table = doc.tables[0]
+    assert isinstance(table.data.table_cells[0], RichTableCell)
+    assert len(table.captions) == 1
+    assert table.captions[0].resolve(doc).text == "Results 1"
+    assert "<caption>" in doc.export_to_doclang()
+    assert table.prov
+    assert all(not item.prov for item in doc.texts)
 
 
 def test_preserves_formula_content_exactly() -> None:
