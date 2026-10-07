@@ -922,10 +922,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        # Keep only those that do NOT have a <table> or a list in a parent chain: those
-        # become cell or list item text, so they never switch the layer back to body
+        # Skip headers that become cell or list item text: they never switch the
+        # layer back to body
         clean_headers = [
-            h for h in all_headers if not h.find_parent(["table", "ul", "ol", "dl"])
+            h for h in all_headers if not self._is_header_in_cell_or_item(h)
         ]
         # Pick the first header from the remaining
         if len(clean_headers):
@@ -941,6 +941,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._render_visibility_cache.clear()
         self._walk(content, doc)
         return doc
+
+    @staticmethod
+    def _is_header_in_cell_or_item(header: Tag) -> bool:
+        """Whether a header is emitted as table cell or list item text.
+
+        Headers that are direct children of <ul>/<ol> (or in a <div> there) and
+        headers in <menu> items are still emitted as headers."""
+        if header.find_parent(["table", "dl"]):
+            return True
+        item = header.find_parent("li")
+        if item is None:
+            return False
+        parent_list = item.find_parent(["ul", "ol", "menu"])
+        return parent_list is not None and parent_list.name in ("ul", "ol")
 
     @staticmethod
     def _get_header_origins(

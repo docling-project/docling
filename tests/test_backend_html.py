@@ -749,8 +749,8 @@ def test_description_lists():
 
 
 def test_heading_inside_list_keeps_content_in_body():
-    """Headings inside <ul>/<ol>/<dl> become list item text, so they must not
-    put the whole page in the furniture layer (#4570)."""
+    """Headings inside <ul>/<ol> items or a <dl> become list item text, so they
+    must not put the whole page in the furniture layer (#4570)."""
     for html in (
         b"<html><body><p>intro</p><ul><li><h3>Step</h3><p>Do it</p></li></ul><p>after</p></body></html>",
         b"<html><body><p>intro</p><dl><dt>Q</dt><dd><h3>H</h3><p>A</p></dd></dl><p>after</p></body></html>",
@@ -764,6 +764,26 @@ def test_heading_inside_list_keeps_content_in_body():
         doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
         assert doc.texts
         assert all(t.content_layer == ContentLayer.BODY for t in doc.texts)
+
+
+def test_heading_as_list_child_ends_furniture():
+    """A heading that is a direct child of <ul> (or in a <div> there) or in a
+    <menu> item is emitted as a heading, so the body starts there."""
+    for html in (
+        b"<html><body><div>nav junk</div><ul><h2>X</h2><li>a</li></ul></body></html>",
+        b"<html><body><div>nav junk</div><ul><div><h2>X</h2><p>para</p></div><li>a</li></ul></body></html>",
+        b"<html><body><div>nav junk</div><menu><li><h2>X</h2></li></menu></body></html>",
+    ):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(html),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+        layers = {t.text: t.content_layer for t in doc.texts}
+        assert layers["nav junk"] == ContentLayer.FURNITURE
+        assert layers["X"] == ContentLayer.BODY
 
 
 def test_unicode_characters():
