@@ -716,7 +716,9 @@ def render_comment(
     reasons = {d.pr: d.reason for d in result.duplicates} if result else {}
     # Duplicates and unassessed candidates stay visible. Related PRs are
     # collapsed, and unrelated PRs are hidden.
-    main = [c for c in context.candidates if verdicts.get(c.number) in (None, "duplicate")]
+    main = [
+        c for c in context.candidates if verdicts.get(c.number) in (None, "duplicate")
+    ]
     related = [c for c in context.candidates if verdicts.get(c.number) == "related"]
     if main:
         title = "Possible duplicates" if result else "Possibly related pull requests"
