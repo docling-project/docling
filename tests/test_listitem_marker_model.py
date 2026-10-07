@@ -204,4 +204,6 @@ def test_infinity_bullet_from_pdf_is_stripped():
     assert [item.marker for item in items] == ["∞", "∞"]
     assert [item.text for item in items] == ["Test Item 1", "Test Item 2"]
     assert all(not item.enumerated for item in items)
+    # orig keeps the raw PDF text; only marker/text split off the leading marker.
+    assert all(item.orig == f"{item.marker} {item.text}" for item in items)
     assert "∞" not in doc.export_to_markdown()
