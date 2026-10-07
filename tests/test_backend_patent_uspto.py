@@ -3,6 +3,7 @@
 
 """Test methods in module docling.backend.patent_uspto_backend.py."""
 
+import json
 import logging
 import os
 from io import BytesIO
@@ -23,7 +24,7 @@ from docling.datamodel.document import InputDocument
 from docling.document_converter import DocumentConverter
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
+from .verify_utils import CONFID_PREC, COORD_PREC, verify_document, write_ground_truth
 
 GENERATE: bool = GEN_TEST_DATA
 DATA_PATH: Path = Path("./tests/data/uspto/sources/")
@@ -85,14 +86,18 @@ def test_patent_uspto_converts_a_stream_source(name: str) -> None:
 
 
 def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:
-    with open(GT_PATH / f"{file_stem}.itxt", "w", encoding="utf-8") as file_obj:
-        file_obj.write(doc._export_to_indented_text())
-    doc.save_as_json(
+    write_ground_truth(GT_PATH / f"{file_stem}.itxt", doc._export_to_indented_text())
+    write_ground_truth(
         GT_PATH / f"{file_stem}.json",
-        coord_precision=COORD_PREC,
-        confid_precision=CONFID_PREC,
+        json.dumps(
+            doc.export_to_dict(coord_precision=COORD_PREC, confid_precision=CONFID_PREC),
+            ensure_ascii=False,
+            indent=2,
+        ),
     )
-    doc.save_as_markdown(GT_PATH / f"{file_stem}.md", compact_tables=True)
+    write_ground_truth(
+        GT_PATH / f"{file_stem}.md", doc.export_to_markdown(compact_tables=True)
+    )
 
 
 @pytest.fixture(scope="module")

@@ -47,6 +47,17 @@ def _normalize_newlines(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
+def write_ground_truth(path: Path, text: str) -> None:
+    """Write generated ground truth with LF line endings on every platform.
+
+    ``Path.write_text`` translates ``\\n`` to the OS newline, so ground truth
+    regenerated on Windows would be written (and committed) with CRLF unless
+    the newline is pinned here.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+
+
 def _strip_embedded_image_data(text: str) -> str:
     return _EMBEDDED_IMAGE_DATA.sub(r"\1", text)
 
@@ -502,28 +513,22 @@ def check_conversion_result_v2(
     dt_path = gt.doctags
 
     if generate:  # only used when re-generating truth
-        pages_path.parent.mkdir(parents=True, exist_ok=True)
-
         pages_data = PageMetaList.dump_json(doc_pred_pages_meta, indent=indent)
-        with open(pages_path, mode="w", encoding="utf-8") as fw:
-            fw.write(pages_data.decode())
+        write_ground_truth(pages_path, pages_data.decode())
 
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-        doc_pred.save_as_json(
-            json_path,
+        # Replicates DoclingDocument.save_as_json's serialization (the platform
+        # newline its write_text emits is the reason this helper pins LF).
+        document_json = json.dumps(
+            doc_pred.export_to_dict(coord_precision=COORD_PREC, confid_precision=CONFID_PREC),
+            ensure_ascii=False,
             indent=indent,
-            coord_precision=COORD_PREC,
-            confid_precision=CONFID_PREC,
         )
+        write_ground_truth(json_path, document_json)
 
-        md_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(md_path, mode="w", encoding="utf-8", newline="") as fw:
-            fw.write(doc_pred_md)
+        write_ground_truth(md_path, doc_pred_md)
 
         if verify_doctags:
-            dt_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(dt_path, mode="w", encoding="utf-8", newline="") as fw:
-                fw.write(doc_pred_dt)
+            write_ground_truth(dt_path, doc_pred_dt)
     else:  # default branch in test
         with open(pages_path, encoding="utf-8") as fr:
             doc_true_pages_meta = PageMetaList.validate_json(fr.read())
@@ -623,8 +628,7 @@ def verify_export(
     pred_text = _normalize_newlines(pred_text)
 
     if not file.exists() or generate:
-        with file.open(mode="w", encoding="utf-8", newline="") as fw:
-            fw.write(pred_text)
+        write_ground_truth(file, pred_text)
         return True
 
     with file.open(encoding="utf-8", newline="") as fr:

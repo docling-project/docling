@@ -9,7 +9,7 @@ from docling_core.types.doc.base import BoundingBox, Size
 from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 
-from tests.verify_utils import verify_docitems, verify_export
+from tests.verify_utils import verify_docitems, verify_export, write_ground_truth
 
 
 def _make_doc_with_bbox(
@@ -195,3 +195,17 @@ def test_verify_export_ignores_embedded_image_data(tmp_path: Path) -> None:
     assert not verify_export(
         prediction.replace("image/png", "image/jpeg"), str(fixture)
     )
+
+
+def test_write_ground_truth_pins_lf_and_creates_dirs(tmp_path: Path) -> None:
+    """Ground truth must land on disk with LF line endings on every platform.
+
+    ``Path.write_text`` translates ``\\n`` to the OS newline, which would
+    produce CRLF files when regenerating on Windows.
+    """
+    path = tmp_path / "nested" / "dir" / "gt.md"
+    write_ground_truth(path, "line1\nline2\n")
+
+    data = path.read_bytes()
+    assert data == b"line1\nline2\n"
+    assert b"\r" not in data

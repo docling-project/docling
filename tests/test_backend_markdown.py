@@ -18,7 +18,7 @@ from docling.datamodel.document import (
     InputDocument,
 )
 from docling.document_converter import DocumentConverter
-from tests.verify_utils import CONFID_PREC, COORD_PREC
+from tests.verify_utils import CONFID_PREC, COORD_PREC, write_ground_truth
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_docitems, verify_document
@@ -62,8 +62,7 @@ def test_convert_valid():
             )
 
         if GEN_TEST_DATA:
-            with open(md_gt_path, mode="w", encoding="utf-8") as f:
-                f.write(f"{act_data}\n")
+            write_ground_truth(md_gt_path, f"{act_data}\n")
 
             if in_path.stem in yaml_filter:
                 act_doc.save_as_yaml(
