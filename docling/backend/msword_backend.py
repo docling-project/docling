@@ -839,6 +839,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.last_list_group: ListGroup | None = None
         self.last_list_group_numid: int | None = None
         self.last_list_group_parent: NodeItem | None = None
+        # Empty paragraphs before a resumed list item, deleted at the end of
+        # convert(); keyed by reference, as a later resume finds them again
+        self._deferred_empty_paragraphs: dict[str, TextItem] = {}
         # Lists nested under an open list's item by left indentation, innermost
         # last, and the last list item's effective left indentation in twips
         self.nested_lists: list[_NestedList] = []
@@ -923,6 +926,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Reset mappings for a fresh conversion pass
             self.paragraph_comment_map.clear()
             self.paragraph_to_items.clear()
+            self._deferred_empty_paragraphs.clear()
             doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
             self._add_header_footer(self.docx_obj, doc)
             # Add comments and link them to annotated paragraphs
@@ -930,6 +934,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Add footnotes and endnotes (their body text lives in a separate part;
             # the in-body reference is otherwise silently empty, see docstring below)
             self._add_footnotes_and_endnotes(self.docx_obj, doc)
+            self._delete_deferred_empty_paragraphs(doc)
 
             return doc
         else:
@@ -1048,8 +1053,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     trailing_empty.append(item)
                     continue
                 if item.self_ref == self.last_list_group.self_ref:
-                    if trailing_empty:
-                        doc.delete_items(node_items=trailing_empty)
+                    for empty in trailing_empty:
+                        self._deferred_empty_paragraphs[empty.self_ref] = empty
                     return self.last_list_group
                 break
 
@@ -1066,6 +1071,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.last_list_group_parent = parent
 
         return list_gr
+
+    def _delete_deferred_empty_paragraphs(self, doc: DoclingDocument) -> None:
+        """Delete the empty paragraphs before resumed list items.
+
+        This runs last: deleting invalidates the item references that table
+        cells and comments collect while the document is walked.
+        """
+        try:
+            doc.delete_items(node_items=list(self._deferred_empty_paragraphs.values()))
+        except ValueError as err:
+            _log.warning(f"Kept the empty paragraphs before resumed list items: {err}")
 
     def _clear_list_group_cache(self) -> None:
         """Clear the cached list group to prevent reuse across contexts."""

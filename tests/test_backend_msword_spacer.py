@@ -7,6 +7,7 @@ Kept separate from ``test_backend_msword.py`` so that file stays under the
 repository's per-file line limit.
 """
 
+from docling_core.types.doc import ListItem
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -95,3 +96,59 @@ def test_empty_paragraph_between_list_items_keeps_body_text_in_place(tmp_path):
     sub_one = next(i for i, line in enumerate(lines) if line.endswith("Sub one"))
     sub_two = next(i for i, line in enumerate(lines) if line.endswith("Sub two"))
     assert sub_one < prose < sub_two
+
+
+def test_spacers_before_a_resumed_list_item_in_a_table_cell_keep_the_table(tmp_path):
+    """Spacers before a resumed list item in a table cell keep the whole table."""
+    doc = Document()
+    table = doc.add_table(rows=3, cols=1)
+    table.cell(0, 0).paragraphs[0].text = "row zero"
+    cell = table.cell(1, 0)
+    cell.paragraphs[0].text = "steps"
+    for text in ("first", "second", "", "", "third"):
+        cell.add_paragraph(text, style="List Number" if text else None)
+    table.cell(2, 0).paragraphs[0].text = "row two"
+    doc.add_paragraph("after the table")
+    docx_path = tmp_path / "resumed_in_cell.docx"
+    doc.save(str(docx_path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    converted = converter.convert(docx_path).document
+
+    table_item = converted.tables[0]
+    rows = {
+        table_cell.start_row_offset_idx for table_cell in table_item.data.table_cells
+    }
+    assert rows == {0, 1, 2}
+    items = {item.text: item for item in converted.texts if isinstance(item, ListItem)}
+    markers = [items[text].marker for text in ("first", "second", "third")]
+    assert markers == ["1.", "2.", "3."]
+    list_group = items["first"].parent.resolve(converted)
+    assert items["third"].parent == list_group.get_ref()
+    assert list_group.parent.resolve(converted).parent == table_item.get_ref()
+    assert all(item.text.strip() for item in converted.texts)
+
+
+def test_text_after_a_resumed_list_keeps_only_its_own_comment(tmp_path):
+    """Comments on spacers before a resumed list item do not move to later text."""
+    doc = Document()
+    doc.add_paragraph("first", style="List Number")
+    spacer_runs = [doc.add_paragraph().add_run("") for _ in range(2)]
+    doc.add_paragraph("second", style="List Number")
+    note = doc.add_paragraph("note")
+    for run in spacer_runs:
+        doc.add_comment(run, text="on a spacer")
+    doc.add_comment(note.runs, text="on the note")
+    docx_path = tmp_path / "commented_spacers.docx"
+    doc.save(str(docx_path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    converted = converter.convert(docx_path).document
+
+    note_item = next(item for item in converted.texts if item.text == "note")
+    comment_texts = [
+        ref.resolve(converted).children[0].resolve(converted).text
+        for ref in note_item.comments
+    ]
+    assert len(comment_texts) == 1
+    assert comment_texts[0].endswith("on the note")
