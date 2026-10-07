@@ -632,7 +632,10 @@ def verify_export(
         return True
 
     with file.open(encoding="utf-8", newline="") as fr:
-        true_text = fr.read()
+        # The ground-truth file may carry CRLF line endings on Windows
+        # checkouts for extensions not covered by an `eol=lf` gitattribute;
+        # normalize it just like the prediction so the comparison is LF-only.
+        true_text = _normalize_newlines(fr.read())
 
     pred_text = _strip_embedded_image_data(pred_text)
     true_text = _strip_embedded_image_data(true_text)

@@ -70,7 +70,7 @@ def _parse_table_html(html_content: str) -> TableData:
             num_cols = max(num_cols, col_count)
 
         # Create grid to track cell positions
-        grid: list[list[Union[None, str]]] = [
+        grid: list[list[Union[str, None]]] = [
             [None for _ in range(num_cols)] for _ in range(num_rows)
         ]
         table_data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])

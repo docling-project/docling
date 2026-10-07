@@ -288,6 +288,30 @@ def test_odp_conversion(odp_path: Path):
     } <= body_texts
 
 
+def test_ods_page_range(ods_path: Path):
+    """page_range selects sheets, keeping their page numbers, as for XLSX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(
+        ods_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    assert set(doc.pages) == {2}
+    assert [g.name for g in doc.groups] == ["sheet: Sheet2"]
+    assert len(doc.tables) == 1
+
+
+def test_odp_page_range(odp_path: Path):
+    """page_range selects slides, as for PPTX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(
+        odp_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    texts = {t.text for t in doc.texts}
+    assert "Second Slide Heading" in texts
+    assert not {"Slide One", "Headline Slide", "First bullet"} & texts
+
+
 @pytest.mark.parametrize(
     ("input_format", "document_type", "suffix"),
     [
@@ -885,6 +909,11 @@ def test_odt_text_document_embedded_chart():
     )
     assert chart.meta.tabular_chart is not None
 
+    # This fixture's chart carries no <chart:title>: the title stays unset and
+    # no caption is invented for it.
+    assert chart.meta.tabular_chart.title is None
+    assert not chart.captions
+
     table_data = chart.meta.tabular_chart.chart_data
     assert table_data.num_rows == 5
     assert table_data.num_cols == 4
@@ -896,6 +925,54 @@ def test_odt_text_document_embedded_chart():
     assert cell_texts[(1, 0)] == "Row 1"
     assert cell_texts[(1, 1)] == "9.1"
     assert cell_texts[(4, 3)] == "6.2"
+
+
+def test_odt_embedded_chart_title_is_read(tmp_path: Path):
+    """An embedded chart's own chart:title reaches the meta and a caption.
+
+    The PowerPoint backend emits a native chart's title as a text item, but the
+    ODF backend read only the chart's local table, so a chart embedded in an ODP
+    or ODT lost its title entirely. The title is injected here rather than added
+    as a new binary fixture, so the chart keeps the structure the sources already
+    exercise.
+    """
+    source = Path("tests/data/odf/sources/text_document_02.odt")
+    path = tmp_path / "chart_with_title.odt"
+    with (
+        zipfile.ZipFile(source) as src,
+        zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as dst,
+    ):
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename == "Object 1/content.xml":
+                text = data.decode("utf-8")
+                # chart:title is a child of chart:chart, so it goes right after
+                # the opening tag.
+                start = text.index("<chart:chart")
+                end = text.index(">", start) + 1
+                text = (
+                    text[:end]
+                    + "<chart:title><text:p>Chart Title</text:p></chart:title>"
+                    + text[end:]
+                )
+                data = text.encode("utf-8")
+            dst.writestr(item, data)
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    charts = [
+        item
+        for item in res.document.pictures
+        if item.meta is not None and item.meta.tabular_chart is not None
+    ]
+
+    assert len(charts) == 1
+    assert charts[0].meta.tabular_chart.title == "Chart Title"
+
+    captions = [
+        item for item in res.document.texts if item.label == DocItemLabel.CAPTION
+    ]
+    assert [item.text for item in captions] == ["Chart Title"]
+    assert charts[0].caption_text(res.document) == "Chart Title"
 
 
 def test_odt_dangling_embedded_object_is_skipped(tmp_path: Path):

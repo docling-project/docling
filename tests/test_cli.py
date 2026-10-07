@@ -167,6 +167,27 @@ def test_cli_exports_doclang(tmp_path):
     assert "DocLang CLI" in content
 
 
+def test_cli_exports_plain_text_without_markdown_markers(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text(
+        "# Title\n\nSome **bold** text and a [link](https://example.com).\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [str(source), "--from", "md", "--to", "text", "--output", str(output)],
+    )
+
+    assert result.exit_code == 0
+    content = (output / "input.txt").read_text(encoding="utf-8")
+    assert content.startswith("Title")
+    assert "Some bold text and a link" in content
+    for marker in ("#", "**", "](", "https://example.com"):
+        assert marker not in content
+
+
 def test_cli_exports_dclx(tmp_path):
     source = tmp_path / "input.md"
     source.write_text("# DCLX CLI\n\nHello from Markdown.", encoding="utf-8")
@@ -486,6 +507,59 @@ def test_cli_html_fetches_local_images_per_input(tmp_path):
     assert result.exit_code == 0
     _assert_markdown_embeds_png(output / "first.md", first_png)
     _assert_markdown_embeds_png(output / "second.md", second_png)
+
+
+def test_cli_latex_reads_included_files_next_to_the_source(tmp_path):
+    """Files pulled in with \\input are read from the source's own directory."""
+    source = tmp_path / "paper"
+    source.mkdir()
+    (source / "main.tex").write_text(
+        "\\documentclass{article}\n\\begin{document}\n\\input{body}\n\\end{document}\n"
+    )
+    (source / "body.tex").write_text("Text from the included file.\n")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app, [str(source / "main.tex"), "--to", "md", "--output", str(output)]
+    )
+
+    assert result.exit_code == 0
+    assert "Text from the included file." in (output / "main.md").read_text()
+
+
+def test_cli_from_latex_keeps_any_source_in_place(tmp_path, monkeypatch):
+    """With --from latex alone, a file is handed over in place whatever its name."""
+    captured: dict[str, list[Path]] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pass
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            captured["paths"] = [Path(path) for path in input_doc_paths]
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "paper" / "paper.ltx"
+    source.parent.mkdir()
+    source.write_text("\\documentclass{article}\n")
+
+    result = runner.invoke(
+        app,
+        [str(source), "--from", "latex", "--output", str(tmp_path / "out")],
+    )
+
+    assert result.exit_code == 0
+    assert captured["paths"] == [source]
 
 
 def test_cli_directory_skips_office_lock_files(tmp_path):
@@ -961,6 +1035,47 @@ def test_cli_directory_includes_gif_images(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     assert sorted(path.name for path in captured["paths"]) == ["photo.gif", "photo.png"]
+
+
+def test_cli_applies_video_options_to_videos_in_a_directory(tmp_path, monkeypatch):
+    """Video options apply when the video is found by expanding a directory."""
+    captured: dict[InputFormat, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            captured.update(format_options)
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = tmp_path / "videos"
+    source.mkdir()
+    (source / "talk.mp4").write_bytes(b"not a real video")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--video-frame-interval",
+            "2",
+            "--output",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert InputFormat.VIDEO in captured
+    assert captured[InputFormat.VIDEO].pipeline_options.frame_interval_seconds == 2.0
 
 
 def test_cli_audio_extensions_coverage():

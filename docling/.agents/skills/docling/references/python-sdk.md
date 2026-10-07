@@ -63,6 +63,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `do_table_structure` | Detect table structure |
 | `extract_form_fields` | Convert docling-parse PDF widgets (AcroForm) into fillable fields keyed to their printed captions |
 | `do_code_enrichment` / `do_formula_enrichment` | Enrich code / formulas |
+| `code_formula_options` | Code/formula model, crop margin (`expansion_factor`), and stopping repeated output (`stop_on_repetition`, on by default) |
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
 | `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |

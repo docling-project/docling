@@ -114,7 +114,7 @@ class TextHelperMixin:
         pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"
         match = re.search(pattern, latex_str, re.DOTALL)
         if match:
-            return match.group(1).strip()
+            return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
         return latex_str
 
     def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
@@ -139,8 +139,14 @@ class TextHelperMixin:
             if node.nodeargd and node.nodeargd.argnlist:
                 arg = node.nodeargd.argnlist[0]
                 if arg:
-                    opt_text = arg.latex_verbatim().strip("[] ")
-                    return (f"{opt_text}: ", consumed)
+                    if hasattr(arg, "nodelist"):
+                        opt_text = self._nodes_to_text(arg.nodelist)
+                        if not opt_text:
+                            opt_text = arg.latex_verbatim().strip("[] ")
+                    else:
+                        opt_text = arg.latex_verbatim().strip("[] ")
+                    if opt_text:
+                        return (f"{opt_text}: ", consumed)
             return ("", consumed)
         if node.macroname in MACROS_ESCAPED:
             return (node.macroname, consumed)

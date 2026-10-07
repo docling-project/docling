@@ -592,7 +592,6 @@ class StandardPdfPipeline(ConvertPipeline):
         super().__init__(pipeline_options)
         self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
         self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
-        self._page_sizes_by_no: dict[int, Size] = {}
 
         # initialise heavy models once
         self._init_models()
@@ -839,7 +838,6 @@ class StandardPdfPipeline(ConvertPipeline):
         The thread continues running until the blocking call completes, potentially holding
         resources (e.g., pypdfium2_lock).
         """
-        self._page_sizes_by_no = {}
         run_id = next(self._run_seq)
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
         backend = conv_res.input._backend
@@ -888,7 +886,7 @@ class StandardPdfPipeline(ConvertPipeline):
                     page._backend = page_backend
                     try:
                         page.size = page_backend.get_size()
-                        self._page_sizes_by_no[page.page_no] = page.size
+                        conv_res._page_sizes_by_no[page.page_no] = page.size
                     except Exception:
                         if page_backend.is_valid():
                             page_backend.unload()
@@ -1193,7 +1191,7 @@ class StandardPdfPipeline(ConvertPipeline):
             return
 
         for page_no in sorted(missing_page_nos):
-            size = self._page_sizes_by_no.get(page_no, Size(width=0.0, height=0.0))
+            size = conv_res._page_sizes_by_no.get(page_no, Size(width=0.0, height=0.0))
 
             # Add the failed page to the document's pages dict
             conv_res.document.pages[page_no] = PageItem(
@@ -1221,7 +1219,6 @@ class StandardPdfPipeline(ConvertPipeline):
         return conv_res.status
 
     def _unload(self, conv_res: ConversionResult) -> None:
-        self._page_sizes_by_no = {}
         for p in conv_res.pages:
             if p._backend is not None:
                 p._backend.unload()

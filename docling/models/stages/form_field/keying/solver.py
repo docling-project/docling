@@ -13,8 +13,6 @@ from itertools import combinations
 import numpy as np
 from docling_core.types.doc import BoundingBox, TableCell
 from docling_core.types.doc.page import PdfWidget
-from scipy.optimize import Bounds, LinearConstraint, milp
-from scipy.sparse import coo_matrix
 
 from docling.datamodel.base_models import Cluster
 from docling.models.stages.form_field.keying.candidates import (
@@ -174,6 +172,9 @@ def abstained(
 
 def _sparse(rows: list[dict[int, float]], columns: int):
     """The constraint matrix, rows and columns in their construction order."""
+    # SciPy is optional for converters that do not process PDFs.
+    from scipy.sparse import coo_matrix
+
     rr, cc, data = [], [], []
     for r, row in enumerate(rows):
         for c, coefficient in row.items():
@@ -367,6 +368,9 @@ def _solve(
     )
     if not costs:
         return Assignment(values, labels, proposed + tables, fixed, "optimal", slots)
+    # Load the optional solver only when a page needs it.
+    from scipy.optimize import Bounds, LinearConstraint, milp
+
     matrix = _sparse(rows, len(costs))
     result = milp(
         np.array(costs),

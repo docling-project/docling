@@ -13,7 +13,12 @@ from urllib.parse import quote
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import DocItemLabel, PictureItem, RichTableCell
+from docling_core.types.doc import (
+    DocItemLabel,
+    GroupLabel,
+    PictureItem,
+    RichTableCell,
+)
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -26,7 +31,7 @@ from docling.backend.utils.image_resource_loader import (
     validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -220,6 +225,68 @@ def test_table_zero_span_defaults_to_one():
     ]
 
 
+def test_table_cell_text_separates_inline_text_from_block():
+    # Inline text directly inside a <td> followed by a <p> used to be
+    # concatenated without a separator in TableCell.text ("Kingdomof Norway").
+    src = b"<table><tr><td>For the Kingdom<p>of Norway</p></td></tr></table>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+    assert [cell.text.strip() for cell in cells] == ["For the Kingdom of Norway"]
+
+    # A block tag at the start of a cell gets no leading separator, and inline
+    # text that already ends with whitespace is not given a doubled one.
+    assert (
+        HTMLDocumentBackend.get_text(
+            BeautifulSoup("<td><p>lead</p></td>", "html.parser").find("td")
+        )
+        == "lead  "
+    )
+    assert (
+        HTMLDocumentBackend.get_text(
+            BeautifulSoup("<td>trail <p>block</p></td>", "html.parser").find("td")
+        )
+        == "trail block  "
+    )
+
+
+def test_table_cell_text_skips_html_comments():
+    # Comments in a cell, such as the placeholders that Vue renders or the
+    # conditional comments of Outlook, used to be included in TableCell.text.
+    src = (
+        b"<table><tr><th>Plan</th><th>Price</th></tr>"
+        b"<tr><td><span>Basic</span><!--v-if--></td>"
+        b"<td><!--[--><span>$10</span><!--]--></td></tr>"
+        b"<tr><td>Pro <!-- TODO: confirm --></td>"
+        b"<td>Configure<!--[if gte vml 1]><v:shape/><![endif]--></td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+    assert [cell.text.strip() for cell in cells] == [
+        "Plan",
+        "Price",
+        "Basic",
+        "$10",
+        "Pro",
+        "Configure",
+    ]
+
+
 @pytest.mark.parametrize(
     "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
 )
@@ -250,6 +317,74 @@ def test_table_oversized_spans_clamped_to_table_size(huge: str):
         ["A", "B"],
         ["A", "C"],
     ]
+
+
+def test_table_rowspan_shifts_later_cells_into_the_table():
+    # A cell goes in the first column of its row that no earlier cell still
+    # covers, so a rowspan pushes the cells of the rows it reaches to the
+    # right: here "North" holds column 0 of all three rows, so Q1 lands in
+    # column 1 and 10 in column 2, and the table is three columns wide. The
+    # width used to be the colspan sum of the widest row (two), which put 10
+    # and 20 past the last column: they were dropped from the grid and from
+    # the exported markdown.
+    src = (
+        b'<table><tr><td rowspan="3">North</td></tr>'
+        b"<tr><td>Q1</td><td>10</td></tr>"
+        b"<tr><td>Q2</td><td>20</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (3, 3)
+    assert [[cell.text if cell else "" for cell in row] for row in data.grid] == [
+        ["North", "", ""],
+        ["North", "Q1", "10"],
+        ["North", "Q2", "20"],
+    ]
+    assert "10" in doc.export_to_markdown()
+
+
+def test_table_row_header_rowspan_keeps_the_row_cells():
+    # The row-header form of the same shift: the spanning "<th>2025</th>" row
+    # holds column 0, so the cells of the data rows start in column 1 and the
+    # table needs a column the header row does not declare.
+    src = (
+        b"<table>"
+        b"<tr><th>Month</th><th>Revenue</th></tr>"
+        b'<tr><th rowspan="2">2025</th></tr>'
+        b"<tr><td>January</td><td>$134</td></tr>"
+        b"<tr><td>February</td><td>$150</td></tr>"
+        b"</table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert [cell.text for cell in data.table_cells] == [
+        "Month",
+        "Revenue",
+        "2025",
+        "January",
+        "$134",
+        "February",
+        "$150",
+    ]
+    grid_texts = [cell.text for row in data.grid for cell in row if cell.text]
+    assert grid_texts == [cell.text for cell in data.table_cells]
+    assert "$134" in doc.export_to_markdown()
 
 
 def test_table_inside_figure_is_parsed():
@@ -417,6 +552,35 @@ def test_table_and_image_inside_figure_are_parsed():
     assert len(doc.tables[0].captions) == 0
 
 
+@pytest.mark.parametrize(
+    ("figure", "expected"),
+    [
+        ("<figure>Quote text<figcaption>cap</figcaption></figure>", ["Quote text"]),
+        ("<figure>one <code>two</code> three</figure>", ["one", "two", "three"]),
+        ("<figure><em>one</em> two</figure>", ["one", "two"]),
+        ('<figure><img src="x.png"/>after</figure>', ["after"]),
+    ],
+)
+def test_text_directly_inside_figure_is_kept(figure: str, expected: list[str]):
+    html = f"<html><body><h1>Title</h1>{figure}</body></html>".encode()
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    body_texts = [t.text for t in doc.texts if t.label != DocItemLabel.CAPTION]
+    assert body_texts == ["Title", *expected]
+    # The <figcaption> is still emitted once, as a caption
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == (
+        ["cap"] if "figcaption" in figure else []
+    )
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
@@ -471,6 +635,73 @@ def test_ordered_lists():
         doc: DoclingDocument = backend.convert()
         assert doc
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
+
+
+@pytest.mark.parametrize(
+    "html,expected",
+    [
+        pytest.param(
+            "<ul><li>alpha<li>beta<li>gamma</ul>",
+            "- alpha\n- beta\n- gamma",
+            id="ul",
+        ),
+        pytest.param("<ol><li>one<li>two</ol>", "1. one\n2. two", id="ol"),
+        pytest.param(
+            "<ul><li>a<li>b</li><li>c</li></ul>",
+            "- a\n- b\n- c",
+            id="first-li-unclosed",
+        ),
+        pytest.param(
+            "<ul><li>a<ul><li>b<li>c</ul><li>d</ul>",
+            "- a\n    - b\n    - c\n- d",
+            id="nested-list",
+        ),
+        pytest.param(
+            "<ul><li>a<p>para<li>b</ul>", "- a para\n- b", id="li-after-open-p"
+        ),
+        pytest.param(
+            "<dl><dt>A<dd>B<dt>C<dd>D</dl>",
+            "- **A**\n    - B\n- **C**\n    - D",
+            id="dl",
+        ),
+        pytest.param(
+            "<table><tr><td>a<td>b<tr><td>c<td>d</table>",
+            "| a   | b   |\n|-----|-----|\n| c   | d   |",
+            id="table",
+        ),
+        pytest.param(
+            "<table><tr><th>H1<th>H2<tr><td>1<td>2</table>",
+            "|   H1 |   H2 |\n|------|------|\n|    1 |    2 |",
+            id="table-header",
+        ),
+        pytest.param(
+            "<table><tbody><tr><td>1<td>2<tr><td>3<td>4</tbody></table>",
+            "|   1 |   2 |\n|-----|-----|\n|   3 |   4 |",
+            id="table-tbody",
+        ),
+        pytest.param(
+            "<table><tr><td>a</td><td>b</td><tr><td>c</td><td>d</td></tr></table>",
+            "| a   | b   |\n|-----|-----|\n| c   | d   |",
+            id="first-tr-unclosed",
+        ),
+        pytest.param(
+            "<table><tr><td>x<table><tr><td>i<td>j</table><td>y</table>",
+            "| x  i j   | y   |\n|----------|-----|",
+            id="nested-table",
+        ),
+    ],
+)
+def test_omitted_end_tags(html: str, expected: str):
+    """Optional end tags (li, dt, dd, td, th, tr) close like in a browser."""
+    src = f"<html><body>{html}</body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+    assert doc.export_to_markdown() == expected
 
 
 def test_orig_keeps_source_text():
@@ -541,6 +772,108 @@ def test_nested_table_in_list_item():
     assert "3. Third step." in md
     # Cell text lives in the table, not duplicated into the list item text.
     assert md.count("Fault type.") == 1
+
+
+def test_list_non_li_children():
+    """Regression for #4424: children of <ul>/<ol> other than <li> are kept in
+    document order. They are invalid HTML, but common in CMS output.
+
+    Previously <p> and <table> children were dropped, and a <ol> child was added
+    directly to the parent list group, which broke the numbering.
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<p>Intro.</p>"
+        b"<li>First.</li>"
+        b"<p>About the first.</p>"
+        b"<li>Second.</li><br>"
+        b"<ol><li>Nested.</li></ol>"
+        b"<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>"
+        b"<li>Third.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    # Content before the first <li> precedes the list. Any other content closes
+    # the list and is emitted at the parent level, like in the DOCX backend. A
+    # <br> adds nothing and does not close the list.
+    assert [child.resolve(doc).label for child in doc.body.children] == [
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TABLE,
+        GroupLabel.LIST,
+    ]
+    # A nested list stays a sub-list of the preceding list item.
+    nested_list = texts["Nested."].parent.resolve(doc)
+    assert nested_list.parent.cref == texts["Second."].self_ref
+    # The list items that follow an interruption continue the numbering.
+    assert "3. Third." in doc.export_to_markdown()
+
+
+def test_list_non_li_children_stay_in_table_cell():
+    """#4424: the content emitted around a split list stays in its table cell."""
+    html = (
+        b"<html><body><table><tbody><tr>"
+        b"<td><ul><li>First.</li><p>Between.</p><li>Second.</li></ul></td>"
+        b"</tr></tbody></table><p>After.</p></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    cell_group = texts["Between."].parent.resolve(doc)
+    assert cell_group.parent.cref == doc.tables[0].self_ref
+    assert [child.resolve(doc).label for child in cell_group.children] == [
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+    ]
+    assert texts["After."].parent.resolve(doc) == doc.body
+
+
+def test_list_item_without_text():
+    """Regression for #4462: a <li> without text keeps its table or image.
+
+    Previously no list item was created for it, so its content was dropped and the
+    following items were numbered as if it did not exist.
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<li><table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>"
+        b"<li><div><img src='chart.png'></div></li>"
+        b"<li>Third.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+    assert [item.text for item in list_items] == ["", "", "Third."]
+    assert doc.tables[0].parent.cref == list_items[0].self_ref
+    assert doc.pictures[0].parent.cref == list_items[1].self_ref
+    assert "3. Third." in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize(
@@ -630,6 +963,37 @@ def test_description_lists():
         )
     )
 
+    # Description list with each dt/dd group wrapped in a div (allowed by the HTML spec)
+    test_set.append(
+        (
+            b"<html><body><dl><div><dt>Weight</dt><dd>1.2 kg</dd></div><div><dt>Color</dt><dd>Black</dd><dd>White</dd></div></dl></body></html>",
+            "- **Weight**\n    - 1.2 kg\n- **Color**\n    - Black\n    - White",
+        )
+    )
+
+    # Groups wrapped in several nested divs (accordion markup, #4570)
+    test_set.append(
+        (
+            b"<html><body><dl><div><div><div><dt>Q?</dt><dd><p>Answer</p></dd></div></div></div></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+
+    # A heading inside the list is list text, not the first heading that ends
+    # the furniture, so the list must stay in the body (#4570)
+    test_set.append(
+        (
+            b"<html><body><dl><h6>Group</h6><dt>Q?</dt><dd><p>Answer</p></dd></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+    test_set.append(
+        (
+            b"<html><body><dl><dt><button><span></span><h3>Q?</h3></button></dt><dd><p>Answer</p></dd></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+
     for idx, pair in enumerate(test_set):
         in_doc = InputDocument(
             path_or_stream=BytesIO(pair[0]),
@@ -647,6 +1011,44 @@ def test_description_lists():
         assert markdown_output == pair[1], (
             f"Error in case {idx}: expected '{pair[1]}', got '{markdown_output}'"
         )
+
+
+def test_heading_inside_list_keeps_content_in_body():
+    """Headings inside <ul>/<ol> items or a <dl> become list item text, so they
+    must not put the whole page in the furniture layer (#4570)."""
+    for html in (
+        b"<html><body><p>intro</p><ul><li><h3>Step</h3><p>Do it</p></li></ul><p>after</p></body></html>",
+        b"<html><body><p>intro</p><dl><dt>Q</dt><dd><h3>H</h3><p>A</p></dd></dl><p>after</p></body></html>",
+    ):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(html),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+        assert doc.texts
+        assert all(t.content_layer == ContentLayer.BODY for t in doc.texts)
+
+
+def test_heading_as_list_child_ends_furniture():
+    """A heading that is a direct child of <ul> (or in a <div> there) or in a
+    <menu> item is emitted as a heading, so the body starts there."""
+    for html in (
+        b"<html><body><div>nav junk</div><ul><h2>X</h2><li>a</li></ul></body></html>",
+        b"<html><body><div>nav junk</div><ul><div><h2>X</h2><p>para</p></div><li>a</li></ul></body></html>",
+        b"<html><body><div>nav junk</div><menu><li><h2>X</h2></li></menu></body></html>",
+    ):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(html),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+        layers = {t.text: t.content_layer for t in doc.texts}
+        assert layers["nav junk"] == ContentLayer.FURNITURE
+        assert layers["X"] == ContentLayer.BODY
 
 
 def test_unicode_characters():
@@ -1596,6 +1998,47 @@ def test_valid_local_paths_still_work():
     resolved = html_doc._resolve_relative_path("example_image_01.png")
     assert "tests/data/html" in resolved
     assert "example_image_01.png" in resolved
+
+
+def test_link_and_image_outside_base_directory_keep_conversion(tmp_path: Path):
+    """A link or an image that points outside the base directory is not loaded.
+
+    Site-root ("/about") and parent ("../index.html") locations are common in
+    saved web pages. With local fetch on, they must not fail the conversion
+    of the whole document.
+    """
+    html_path = tmp_path / "site" / "page.html"
+    html_path.parent.mkdir()
+    html_path.write_text(
+        "<html><body>"
+        '<p>Go <a href="/about">about</a> or <a href="../index.html">home</a>.</p>'
+        '<img src="../logo.png" alt="logo">'
+        '<img src="/img/banner.png" alt="banner">'
+        "<p>End</p>"
+        "</body></html>",
+        encoding="utf-8",
+    )
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(
+                backend_options=HTMLBackendOptions(
+                    enable_local_fetch=True, fetch_images=True
+                )
+            )
+        }
+    )
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        result = converter.convert(html_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    doc = result.document
+    assert doc.texts[-1].text == "End"
+    links = {t.text: t.hyperlink for t in doc.texts if t.hyperlink is not None}
+    assert Path(str(links["about"])).as_posix() == "/about"
+    assert Path(str(links["home"])).as_posix() == "../index.html"
+    assert len(doc.pictures) == 2
+    assert all(pic.image is None for pic in doc.pictures)
 
 
 def test_html_newline_handling():

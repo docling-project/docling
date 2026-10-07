@@ -103,6 +103,16 @@ class MlxVlmEngineOptions(BaseVlmEngineOptions):
         default=False, description="Allow execution of custom code from model repo"
     )
 
+    repetition_penalty: Optional[float] = Field(
+        default=None,
+        description="Penalty applied to repeated tokens during generation",
+    )
+
+    repetition_context_size: Optional[int] = Field(
+        default=None,
+        description="Number of recent tokens considered for repetition penalty",
+    )
+
 
 # =============================================================================
 # VLLM ENGINE OPTIONS

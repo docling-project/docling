@@ -93,7 +93,42 @@ def test_latex_description_list():
     doc = backend.convert()
 
     list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
-    assert len(list_items) >= 2
+    assert len(list_items) == 2
+    assert list_items[0].text == "Term1: Definition one"
+    assert list_items[1].text == "Term2: Definition two"
+
+
+def test_latex_description_list_edge_cases():
+    """Test description list with formatted terms, special symbols, and spacing"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\begin{description}
+    \\item[\\textbf{Term}] Bold term definition
+    \\item[--] Dash bullet
+    \\item Plain item
+    \\item[] Empty term definition
+    \\item[Spaced]   Multiple spaces after term
+    \\end{description}
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert [item.text for item in list_items] == [
+        "Term: Bold term definition",
+        "--: Dash bullet",
+        "Plain item",
+        "Empty term definition",
+        "Spaced: Multiple spaces after term",
+    ]
 
 
 def test_latex_list_nested():

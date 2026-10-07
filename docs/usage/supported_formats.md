@@ -15,6 +15,7 @@ Below you can find a listing of all supported input and output formats.
 | ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
 | EPUB | Electronic Publication format for e-books |
 | Pages | Apple Pages documents (`.pages`), both container generations (Pages 5+ and iWork '09); requires the `format-iwork` extra |
+| Numbers | Apple Numbers spreadsheets (`.numbers`), both container generations (Numbers 3+ and iWork '09); requires the `format-iwork` extra |
 | Keynote | Apple Keynote presentations (`.key`), every container generation (Keynote 6+, the flattened package Keynote 2018+ writes, and iWork '09); requires the `format-iwork` extra |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
@@ -29,6 +30,9 @@ Below you can find a listing of all supported input and output formats.
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 | AFP | IBM Advanced Function Presentation / MO:DCA |
+
+PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
+LaTeX formula items. Equations mixed with text or list content retain their order.
 
 Schema-specific support:
 

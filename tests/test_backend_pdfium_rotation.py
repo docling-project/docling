@@ -13,6 +13,11 @@ no extra dependency: the same three words are drawn at the same *displayed*
 position four times, once with a plain landscape MediaBox and once for each of
 ``/Rotate 90``, ``180`` and ``270``. All four documents look identical to a
 reader, so the text cells the backend extracts from them must match too.
+
+Each variant can also be built with its page box shifted away from ``(0, 0)``,
+content shifted along with it. PDFium reports text and object coordinates in
+absolute user space, while the display frame starts at the visible box, so the
+shifted variant must give the same cells as the unshifted one.
 """
 
 from pathlib import Path
@@ -45,6 +50,9 @@ BASELINE_Y = 512.0
 # difference is floating-point noise from the rotation arithmetic.
 TOLERANCE = 0.5
 
+# Lower-left corner of the shifted page box, as cropped or imposed PDFs have.
+PAGE_BOX_OFFSET = 100.0
+
 
 def _media_box(rotation: int) -> tuple[float, float]:
     """Size of the MediaBox needed to display as ``DISPLAY_WIDTH x DISPLAY_HEIGHT``."""
@@ -68,17 +76,24 @@ def _text_matrix(rotation: int, x: float) -> tuple[float, ...]:
     return (1.0, 0.0, 0.0, 1.0, x, BASELINE_Y)
 
 
-def _build_pdf(rotation: int) -> bytes:
-    """A one-page PDF with the three words, stored with the given ``/Rotate``."""
+def _build_pdf(rotation: int, origin: float = 0.0) -> bytes:
+    """A one-page PDF with the three words, stored with the given ``/Rotate``.
+
+    The MediaBox starts at ``(origin, origin)`` and the text is moved by the same
+    amount, so every ``origin`` displays the same page.
+    """
     media_width, media_height = _media_box(rotation)
-    blocks = [
-        "BT /F1 {size} Tf {matrix} Tm ({word}) Tj ET".format(
-            size=FONT_SIZE,
-            matrix=" ".join(f"{v:g}" for v in _text_matrix(rotation, x)),
-            word=word,
+    blocks = []
+    for x, word in zip(WORD_X, WORDS, strict=True):
+        a, b, c, d, e, f = _text_matrix(rotation, x)
+        matrix = (a, b, c, d, e + origin, f + origin)
+        blocks.append(
+            "BT /F1 {size} Tf {matrix} Tm ({word}) Tj ET".format(
+                size=FONT_SIZE,
+                matrix=" ".join(f"{v:g}" for v in matrix),
+                word=word,
+            )
         )
-        for x, word in zip(WORD_X, WORDS, strict=True)
-    ]
     content = ("\n".join(blocks) + "\n").encode("ascii")
 
     rotate_entry = f" /Rotate {rotation}" if rotation else ""
@@ -87,7 +102,8 @@ def _build_pdf(rotation: int) -> bytes:
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
         (
             f"<< /Type /Page /Parent 2 0 R "
-            f"/MediaBox [0 0 {media_width:g} {media_height:g}]{rotate_entry} "
+            f"/MediaBox [{origin:g} {origin:g} {origin + media_width:g} "
+            f"{origin + media_height:g}]{rotate_entry} "
             f"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"
         ).encode("ascii"),
         b"<< /Length "
@@ -117,15 +133,17 @@ def _build_pdf(rotation: int) -> bytes:
     return bytes(out)
 
 
-def _write_pdf(tmp_path: Path, rotation: int) -> Path:
-    path = tmp_path / f"rotate_{rotation}.pdf"
-    path.write_bytes(_build_pdf(rotation))
+def _write_pdf(tmp_path: Path, rotation: int, origin: float = 0.0) -> Path:
+    path = tmp_path / f"rotate_{rotation}_origin_{origin:g}.pdf"
+    path.write_bytes(_build_pdf(rotation, origin))
     return path
 
 
-def _page_backend(tmp_path: Path, rotation: int) -> PyPdfiumPageBackend:
+def _page_backend(
+    tmp_path: Path, rotation: int, origin: float = 0.0
+) -> PyPdfiumPageBackend:
     in_doc = InputDocument(
-        path_or_stream=_write_pdf(tmp_path, rotation),
+        path_or_stream=_write_pdf(tmp_path, rotation, origin),
         format=InputFormat.PDF,
         backend=PyPdfiumDocumentBackend,
     )
@@ -220,3 +238,21 @@ def test_merged_cell_text_survives_rotation(tmp_path: Path, rotation: int) -> No
     assert len(cells) == 1
     for word in WORDS:
         assert word in cells[0].text
+
+
+@pytest.mark.parametrize("rotation", [0, 90, 180, 270])
+def test_shifted_page_box_matches_twin_at_origin(tmp_path: Path, rotation: int) -> None:
+    """A page box that does not start at ``(0, 0)`` must not move the cells."""
+    at_origin = list(_page_backend(tmp_path, rotation).get_text_cells())
+    page_backend = _page_backend(tmp_path, rotation, origin=PAGE_BOX_OFFSET)
+    shifted = list(page_backend.get_text_cells())
+
+    assert [cell.text for cell in shifted] == [cell.text for cell in at_origin]
+    assert _union(shifted) == pytest.approx(_union(at_origin), abs=TOLERANCE)
+
+    left, top, right, bottom = _union(shifted)
+    around_words = BoundingBox(l=left - 2, t=top - 2, r=right + 2, b=bottom + 2)
+    text = page_backend.get_text_in_rect(around_words)
+    for word in WORDS:
+        assert word in text
+    assert page_backend.has_content_in(bbox=around_words, chars=True)
