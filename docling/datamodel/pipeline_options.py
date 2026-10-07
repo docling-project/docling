@@ -188,6 +188,29 @@ class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
     """Options for the table structure model using Granite Vision (VLM-based)."""
 
     kind: ClassVar[str] = "granite_vision_table"
+    max_new_tokens: Annotated[
+        int,
+        Field(
+            gt=0,
+            description=(
+                "Maximum number of OTSL tokens generated per table. A table crop "
+                "that never ends its sequence stops here instead of running until "
+                "the process is killed; the tokens generated so far are still parsed."
+            ),
+        ),
+    ] = 8192
+    stop_on_repetition: Annotated[
+        bool,
+        Field(
+            description=(
+                "Stop a generation that keeps repeating the same OTSL fragment "
+                "(for example an endless row of identical cells) before "
+                "`max_new_tokens`, and drop the repeated tail from the output. "
+                "The thresholds are wide enough to leave real runs of empty or "
+                "identical cells untouched."
+            ),
+        ),
+    ] = True
 
 
 class OcrOptions(BaseOptions):
