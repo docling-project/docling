@@ -1301,3 +1301,45 @@ def test_pptx_picture_in_placeholder(tmp_path: Path):
     assert picture.image.mimetype == "image/png"
     assert picture.image.size.width == 200.0
     assert picture.image.size.height == 100.0
+
+
+def test_pptx_hidden_slide_goes_to_invisible_layer(tmp_path: Path):
+    """A slide hidden in PowerPoint (``show="0"``) is left out of the default export.
+
+    Its content stays available in ``ContentLayer.INVISIBLE``, like a hidden
+    Excel sheet, and speaker notes keep the notes layer.
+    """
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    for title, body, hidden in [
+        ("Visible slide", "Presented text", False),
+        ("Hidden slide", "Backup text", True),
+    ]:
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        slide.shapes.title.text = title
+        box = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
+        box.text_frame.text = body
+        if hidden:
+            slide._element.set("show", "0")
+        slide.notes_slide.notes_text_frame.text = f"Notes for {title}"
+
+    pptx_path = tmp_path / "hidden.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    def texts(layer: ContentLayer) -> list[str]:
+        return [
+            item.text
+            for item, _ in doc.iterate_items(included_content_layers={layer})
+            if isinstance(item, TextItem)
+        ]
+
+    assert doc.export_to_markdown() == "# Visible slide\n\nPresented text"
+    assert texts(ContentLayer.INVISIBLE) == ["Hidden slide", "Backup text"]
+    assert texts(ContentLayer.NOTES) == [
+        "Notes for Visible slide",
+        "Notes for Hidden slide",
+    ]
