@@ -34,6 +34,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     ImageRef,
+    NodeItem,
     ProvenanceItem,
     Size,
     TableData,
@@ -54,6 +55,92 @@ _HTML_TAG_PATTERN = re.compile(
     r"</?(?:a|b|br|code|del|div|em|i|p|s|span|strong|sub|sup|table|tbody|td|tfoot|th|thead|tr|u)(?=[\s/>])",
     re.IGNORECASE,
 )
+_LITERAL_INLINE_PATTERN = re.compile(
+    r"(?<!\\)(?:\$\$[\s\S]*?(?<!\\)\$\$|\$[^\n$]+?(?<!\\)\$"
+    r"|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\])"
+    r"|<code\b[^>]*>[\s\S]*?</code>",
+    re.IGNORECASE,
+)
+
+
+def _add_inline_text(
+    doc: DoclingDocument,
+    text: str,
+    *,
+    label: DocItemLabel,
+    prov: ProvenanceItem | None = None,
+    parent: NodeItem | None = None,
+) -> bool:
+    """Map Markdown emphasis and inline HTML through the rich HTML builder."""
+    html_text = text
+    if "*" in text or "_" in text:
+        # Markdown is an optional format dependency, also used for DOTS emphasis.
+        try:
+            import marko
+        except ImportError as exc:
+            raise ImportError(
+                "DOTS Markdown emphasis requires "
+                "`pip install 'docling-slim[format-markdown]'`."
+            ) from exc
+        from marko.helpers import MarkoExtension
+
+        class Paragraph(marko.block.Paragraph):
+            override = True
+
+            @classmethod
+            def break_paragraph(
+                cls, source: marko.source.Source, lazy: bool = False
+            ) -> bool:
+                return False
+
+        class InlineParser(marko.Parser):
+            def __init__(self) -> None:
+                super().__init__()
+                # Native DOTS categories already define the block structure.
+                self.block_elements = {
+                    name: element
+                    for name, element in self.block_elements.items()
+                    if name in {"Document", "Paragraph", "BlankLine"}
+                }
+
+        class LiteralInline(marko.inline.InlineElement):
+            children: str
+            pattern = _LITERAL_INLINE_PATTERN
+            priority = 8
+            parse_group = 0
+
+        class CodeSpan(marko.inline.CodeSpan):
+            override = True
+            priority = 9
+
+        class LiteralRenderer:
+            def render_literal_inline(self, element: LiteralInline) -> str:
+                return (
+                    element.children
+                    if element.children.lower().startswith("<code")
+                    else marko.HTMLRenderer.escape_html(element.children)
+                )
+
+        markdown = marko.Markdown(
+            parser=InlineParser,
+            extensions=[
+                MarkoExtension(
+                    elements=[Paragraph, LiteralInline, CodeSpan],
+                    renderer_mixins=[LiteralRenderer],
+                )
+            ],
+        )
+        rendered = markdown.convert(text)
+        if "<strong>" in rendered or "<em>" in rendered:
+            html_text = rendered
+    if not _HTML_TAG_PATTERN.search(html_text):
+        return False
+    if parent is None:
+        parent = doc.add_text(label=label, text="", orig=text, prov=prov)
+        label = DocItemLabel.TEXT
+        prov = None
+    return _add_html_fragment(doc, html_text, label=label, prov=prov, parent=parent)
+
 
 # Mapping from dots.ocr/dots.mocr category strings to DocItemLabel.
 _LABEL_MAP: dict[str, DocItemLabel] = {
@@ -208,26 +295,29 @@ def parse_dots_json(
         elif category == "Title":
             current_list_group = None
             clean_text, _ = parse_markdown_heading(text)
-            doc.add_title(text=clean_text, orig=text, prov=prov)
+            item = doc.add_title(text=clean_text, orig=text, prov=prov)
+            if _add_inline_text(doc, clean_text, label=DocItemLabel.TEXT, parent=item):
+                item.text = ""
         elif category == "Section-header":
             current_list_group = None
             clean_text, markdown_level = parse_markdown_heading(text)
-            doc.add_heading(
+            item = doc.add_heading(
                 text=clean_text,
                 orig=text,
                 level=max(1, markdown_level - 1) if markdown_level is not None else 1,
                 prov=prov,
             )
+            if _add_inline_text(doc, clean_text, label=DocItemLabel.TEXT, parent=item):
+                item.text = ""
         elif category == "List-item":
             if current_list_group is None:
                 current_list_group = doc.add_list_group()
-            if _HTML_TAG_PATTERN.search(text):
-                item = doc.add_list_item(
-                    text="", orig=text, parent=current_list_group, prov=prov
-                )
-                _add_html_fragment(doc, text, label=DocItemLabel.TEXT, parent=item)
-                continue
-            doc.add_list_item(text=text, parent=current_list_group, prov=prov)
+            item = doc.add_list_item(
+                text="", orig=text, parent=current_list_group, prov=prov
+            )
+            if not _add_inline_text(doc, text, label=DocItemLabel.TEXT, parent=item):
+                item.text = text
+            item.orig = text
         else:
             current_list_group = None
             code = _FENCED_CODE_PATTERN.fullmatch(text)
@@ -241,7 +331,7 @@ def parse_dots_json(
                         code_text, hint=code.group("hint").strip() or None
                     ),
                 )
-            elif not _HTML_TAG_PATTERN.search(text) or not _add_html_fragment(
+            elif category == "Formula" or not _add_inline_text(
                 doc, text, label=doc_label, prov=prov
             ):
                 doc.add_text(label=doc_label, text=text, prov=prov)
