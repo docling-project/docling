@@ -72,7 +72,8 @@ _ROMAN_RE = re.compile(
 )
 
 _KW_PART = re.compile(r"^(part|title|book)\b", re.IGNORECASE)
-_KW_CHAPTER = re.compile(r"^(chapter)\b", re.IGNORECASE)
+# Skip statute citations like "Chapter A-15" (letter-dash-digit); real chapters still match.
+_KW_CHAPTER = re.compile(r"^(chapter)\b(?!\s+[a-z]-\d)", re.IGNORECASE)
 _KW_ARTICLE = re.compile(
     r"^(article|section|clause|schedule|annex|appendix|rule)\b", re.IGNORECASE
 )

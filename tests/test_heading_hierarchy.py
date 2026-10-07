@@ -197,6 +197,22 @@ def test_chapter_outranks_division_in_default_order():
     assert levels == {0: 1, 1: 2, 2: 3}
 
 
+def test_statute_citation_is_not_a_chapter():
+    # Statute citations are not chapters; numbered, Roman and lettered chapters still match.
+    assert _parse_marker("Chapter A-15") is None
+    assert _parse_marker("Chapter B-9") is None
+    assert _parse_marker("Chapter P-6.5") is None
+    assert _parse_marker("Chapter 1").family == "chapter"
+    assert _parse_marker("Chapter 2D").family == "chapter"
+    assert _parse_marker("Chapter I").family == "chapter"
+    assert _parse_marker("Chapter A").family == "chapter"
+    assert _parse_marker("Chapter 1-A").family == "chapter"
+
+    # A citation alone adds no level: Divisions stay directly under the Part.
+    levels = _levels(["Part 1 X", "Chapter A-15", "Division 1 Y"])
+    assert levels == {0: 1, 2: 2}
+
+
 def test_non_marker_text_is_ignored():
     assert _parse_marker("Summary") is None
     assert _parse_marker("Introduction to the topic") is None
