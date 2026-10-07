@@ -1,0 +1,189 @@
+name: "AI PR Triage"
+
+# Advisory triage before a maintainer approves CI. It looks for duplicate PRs,
+# checks if the change is safe to run in CI, and summarizes reference data
+# changes. No job checks out or runs code from the pull request.
+#
+# The workflow is a review aid, not a gate. Every step uses continue-on-error,
+# and long steps have a timeout below the job timeout, so a problem shows as a
+# warning annotation and never as a failed check on the PR.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  reset-labels:
+    # A new push makes the previous verdict stale.
+    if: github.event.action == 'synchronize'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove stale AI labels
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          for label in ai:ci-safe ai:ci-needs-care ai:possible-duplicate; do
+            gh pr edit "${PR_NUMBER}" --remove-label "${label}" || true
+          done
+
+  prepare:
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    outputs:
+      run_llm: ${{ steps.prepare.outputs.run_llm }}
+    steps:
+      # Trusted base commit only. The PR is read through the API and git objects.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        continue-on-error: true
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Collect deterministic triage data
+        continue-on-error: true
+        timeout-minutes: 10
+        id: prepare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python3 .github/scripts/ai_pr_triage.py prepare \
+            --repo "${REPO}" --pr "${PR_NUMBER}" \
+            --out "${RUNNER_TEMP}/ai-triage" --git-dir "${GITHUB_WORKSPACE}"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        continue-on-error: true
+        with:
+          name: ai-triage-context
+          path: ${{ runner.temp }}/ai-triage
+          retention-days: 7
+
+  analyze:
+    needs: prepare
+    if: needs.prepare.outputs.run_llm == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    # No GitHub write access here. The model output is validated and applied by
+    # the publish job.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        continue-on-error: true
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: ai-triage-context
+          path: .ai-triage
+
+      - name: Run Bob Shell (read-only mode)
+        id: bob
+        continue-on-error: true
+        timeout-minutes: 15
+        uses: ./.github/actions/run-bobshell
+        with:
+          api-key: ${{ secrets.BOB_API_KEY }}
+          team-id: ${{ vars.BOB_TEAM_ID }}
+          mode: docling-pr-triage
+          prompt-file: .github/ai-triage/triage-prompt.md
+          max-turns: "25"
+          max-cost: ${{ vars.BOB_TRIAGE_MAX_COST || '2' }}
+          output: ${{ runner.temp }}/bob-output.json
+
+      - name: Validate the answer
+        continue-on-error: true
+        if: steps.bob.outcome == 'success'
+        env:
+          BOB_API_KEY: ${{ secrets.BOB_API_KEY }}
+        run: |
+          mkdir -p "${RUNNER_TEMP}/ai-triage-result"
+          result="${RUNNER_TEMP}/ai-triage-result/result.json"
+          python3 .github/scripts/ai_pr_triage.py extract \
+            --bob-output "${RUNNER_TEMP}/bob-output.json" \
+            --context .ai-triage/context.json \
+            --out "${result}" || exit 0
+          # Defense in depth: never publish text that contains the API key.
+          if grep -qF -- "${BOB_API_KEY}" "${result}"; then
+            echo "::error::The answer contains the API key. It is discarded."
+            rm -f "${result}"
+          fi
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        continue-on-error: true
+        with:
+          name: ai-triage-result
+          path: ${{ runner.temp }}/ai-triage-result
+          if-no-files-found: ignore
+          retention-days: 7
+
+  publish:
+    needs: [prepare, analyze]
+    # run_llm is set only when the prepare step succeeded.
+    if: always() && needs.prepare.outputs.run_llm != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        continue-on-error: true
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: ai-triage-context
+          path: ${{ runner.temp }}/ai-triage
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: ai-triage-result
+          path: ${{ runner.temp }}/ai-triage-result
+
+      - name: Apply labels and update the triage comment
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python3 .github/scripts/ai_pr_triage.py publish \
+            --repo "${REPO}" --pr "${PR_NUMBER}" \
+            --context "${RUNNER_TEMP}/ai-triage/context.json" \
+            --result "${RUNNER_TEMP}/ai-triage-result/result.json"
