@@ -22,6 +22,7 @@ import pytest
 
 from docling.models.utils.generation_utils import (
     DocTagsRepetitionStopper,
+    EmptyPictureRunStopper,
     GenerationStopper,
 )
 
@@ -166,3 +167,40 @@ def test_the_base_interface_requires_a_should_stop_implementation():
     assert custom.should_stop("please halt")
     assert not custom.should_stop("carry on")
     assert custom.lookback_tokens() == sys.maxsize
+
+
+def _empty_pictures(count: int) -> str:
+    return "".join(
+        f"<picture><loc_259><loc_{y}><loc_261><loc_{y + 5}></picture>\n"
+        for y in range(count)
+    )
+
+
+def test_run_of_empty_pictures_stops_generation():
+    assert EmptyPictureRunStopper(min_run=12).should_stop(
+        "<text>caption</text>" + _empty_pictures(12)
+    )
+
+
+def test_run_of_empty_pictures_below_the_limit_does_not_stop():
+    assert not EmptyPictureRunStopper(min_run=12).should_stop(
+        "<text>caption</text>" + _empty_pictures(11)
+    )
+
+
+def test_pictures_separated_by_text_do_not_stop():
+    blocks = "<text>x</text>".join(_empty_pictures(1) for _ in range(30))
+    assert not EmptyPictureRunStopper(min_run=12).should_stop(blocks)
+
+
+def test_picture_with_content_splits_the_run():
+    content = "<picture><loc_1><loc_2><loc_3><loc_4><text>a</text></picture>"
+    assert not EmptyPictureRunStopper(min_run=12).should_stop(
+        _empty_pictures(6) + content + _empty_pictures(6)
+    )
+
+
+def test_run_ending_mid_tag_stops_generation():
+    assert EmptyPictureRunStopper(min_run=12).should_stop(
+        _empty_pictures(12) + "<picture><loc_25"
+    )

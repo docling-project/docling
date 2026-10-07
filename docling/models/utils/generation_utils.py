@@ -168,6 +168,30 @@ class TailRepetitionStopper(GenerationStopper):
         return strip_repeated_tail(text, unit)
 
 
+class EmptyPictureRunStopper(GenerationStopper):
+    """Stops a DocTags generation once it emits a long run of empty pictures.
+
+    Page models occasionally split a dense figure into dozens of tiny
+    ``<picture>`` elements with no content, then end the page before any text
+    that follows the figure. A real page rarely has `min_run` consecutive
+    pictures with nothing between them.
+    """
+
+    def __init__(self, *, min_run: int = 12, lookback_tokens: int = 2048):
+        self._lookback_tokens = max(1, int(lookback_tokens))
+        self._pattern = re.compile(
+            r"(?:<picture>(?:<loc_\d+>){4}</picture>\s*){"
+            + f"{max(2, int(min_run))}"
+            + ",}"
+        )
+
+    def lookback_tokens(self) -> int:
+        return self._lookback_tokens
+
+    def should_stop(self, s: str) -> bool:
+        return self._pattern.search(s) is not None
+
+
 class DocTagsRepetitionStopper(GenerationStopper):
     """
     Detects repetitive <tag>...<loc_x><loc_y><loc_w><loc_h>text</tag> blocks,

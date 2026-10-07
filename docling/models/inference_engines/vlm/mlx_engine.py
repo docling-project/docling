@@ -255,82 +255,27 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         self.processor, self.config, input_data.prompt, num_images=1
                     )
 
-                # Extract custom stopping criteria
-                custom_stoppers = extract_generation_stoppers(
-                    input_data.extra_generation_config
-                )
-
-                # Stream generate with stop strings and custom stopping criteria support
                 start_time = time.time()
                 _log.debug("Starting MLX generation...")
+                output_text, num_tokens, stop_reason = self._generate(
+                    input_data, formatted_prompt, image
+                )
 
-                output_text = ""
-                num_tokens = 0
-                stop_reason = "unspecified"
-
-                generation_kwargs: dict[str, Any] = {
-                    "max_tokens": input_data.max_new_tokens,
-                    "verbose": False,
-                    "temp": input_data.temperature,
-                }
-                if self.options.repetition_penalty is not None:
-                    generation_kwargs["repetition_penalty"] = (
-                        self.options.repetition_penalty
+                # A looping generation (e.g. runs of empty pictures) is retried
+                # once with a repetition penalty, which a plain run does not need.
+                retry_penalty = input_data.extra_generation_config.get(
+                    "retry_repetition_penalty"
+                )
+                if retry_penalty and self._looped(input_data, output_text, stop_reason):
+                    _log.warning(
+                        "MLX generation looped after %s tokens, retrying with "
+                        "repetition_penalty=%s",
+                        num_tokens,
+                        retry_penalty,
                     )
-                if self.options.repetition_context_size is not None:
-                    generation_kwargs["repetition_context_size"] = (
-                        self.options.repetition_context_size
+                    output_text, num_tokens, stop_reason = self._generate(
+                        input_data, formatted_prompt, image, retry_penalty
                     )
-
-                # Use stream_generate for proper stop string handling
-                for token in self.stream_generate(
-                    self.vlm_model,
-                    self.processor,
-                    formatted_prompt,
-                    [image],  # MLX stream_generate expects list of images
-                    **generation_kwargs,
-                ):
-                    output_text += token.text
-                    num_tokens += 1
-
-                    # Check for configured stop strings
-                    if input_data.stop_strings:
-                        if any(
-                            stop_str in output_text
-                            for stop_str in input_data.stop_strings
-                        ):
-                            _log.debug("Stopping generation due to stop string match")
-                            stop_reason = "stop_string"
-                            break
-
-                    # Check for custom stopping criteria
-                    if custom_stoppers:
-                        for stopper in custom_stoppers:
-                            # Determine the text window to check based on lookback_tokens
-                            lookback_tokens = stopper.lookback_tokens()
-                            text_to_check = (
-                                output_text[-lookback_tokens:]
-                                if len(output_text) > lookback_tokens
-                                else output_text
-                            )
-
-                            try:
-                                if stopper.should_stop(text_to_check):
-                                    _log.info(
-                                        f"Stopping generation due to GenerationStopper: {type(stopper).__name__}"
-                                    )
-                                    stop_reason = "custom_criteria"
-                                    break
-                            except Exception as e:
-                                _log.warning(
-                                    f"Error in GenerationStopper.should_stop: {e}"
-                                )
-                                continue
-                        else:
-                            # for-else: only executed if inner loop didn't break
-                            continue
-                        # Break outer loop if any stopper triggered
-                        break
 
                 generation_time = time.time() - start_time
 
@@ -361,6 +306,100 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             _log.debug("MLX model: Released global lock")
 
         return outputs
+
+    def _looped(
+        self, input_data: VlmEngineInput, output_text: str, stop_reason: str
+    ) -> bool:
+        # The streaming detokenizer can hold text back until generation ends, so a
+        # stopper may only see the loop in the finished output.
+        if stop_reason == "custom_criteria":
+            return True
+        return any(
+            stopper.should_stop(output_text)
+            for stopper in extract_generation_stoppers(
+                input_data.extra_generation_config
+            )
+        )
+
+    def _generate(
+        self,
+        input_data: VlmEngineInput,
+        formatted_prompt: Any,
+        image: Image,
+        repetition_penalty: float | None = None,
+    ) -> tuple[str, int, str]:
+        # Stream generate with stop strings and custom stopping criteria support.
+        # A retry runs without stoppers so a false positive cannot cut the page.
+        custom_stoppers = (
+            extract_generation_stoppers(input_data.extra_generation_config)
+            if repetition_penalty is None
+            else []
+        )
+        generation_kwargs: dict[str, Any] = {
+            "max_tokens": input_data.max_new_tokens,
+            "verbose": False,
+            "temp": input_data.temperature,
+        }
+        if self.options.repetition_penalty is not None:
+            generation_kwargs["repetition_penalty"] = self.options.repetition_penalty
+        if self.options.repetition_context_size is not None:
+            generation_kwargs["repetition_context_size"] = (
+                self.options.repetition_context_size
+            )
+        # A retry penalty replaces the engine-level one for that attempt only.
+        if repetition_penalty is not None:
+            generation_kwargs["repetition_penalty"] = repetition_penalty
+
+        output_text = ""
+        num_tokens = 0
+        stop_reason = "unspecified"
+
+        # Use stream_generate for proper stop string handling
+        for token in self.stream_generate(
+            self.vlm_model,
+            self.processor,
+            formatted_prompt,
+            [image],  # MLX stream_generate expects list of images
+            **generation_kwargs,
+        ):
+            output_text += token.text
+            num_tokens += 1
+
+            # Check for configured stop strings
+            if input_data.stop_strings:
+                if any(stop_str in output_text for stop_str in input_data.stop_strings):
+                    _log.debug("Stopping generation due to stop string match")
+                    stop_reason = "stop_string"
+                    break
+
+            # Check for custom stopping criteria
+            if custom_stoppers:
+                for stopper in custom_stoppers:
+                    # Determine the text window to check based on lookback_tokens
+                    lookback_tokens = stopper.lookback_tokens()
+                    text_to_check = (
+                        output_text[-lookback_tokens:]
+                        if len(output_text) > lookback_tokens
+                        else output_text
+                    )
+
+                    try:
+                        if stopper.should_stop(text_to_check):
+                            _log.info(
+                                f"Stopping generation due to GenerationStopper: {type(stopper).__name__}"
+                            )
+                            stop_reason = "custom_criteria"
+                            break
+                    except Exception as e:
+                        _log.warning(f"Error in GenerationStopper.should_stop: {e}")
+                        continue
+                else:
+                    # for-else: only executed if inner loop didn't break
+                    continue
+                # Break outer loop if any stopper triggered
+                break
+
+        return output_text, num_tokens, stop_reason
 
     def cleanup(self) -> None:
         """Clean up model resources."""
