@@ -420,9 +420,39 @@ def test_latex_href_macro():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    md = doc.export_to_markdown()
-    assert "Example Site" in md
-    assert "https://example.com" in md
+    assert [t.text for t in doc.texts] == [
+        "Visit [Example Site](https://example.com) for more."
+    ]
+
+
+def test_latex_href_keeps_text_together():
+    """\\href stays inside its paragraph, list item or heading, takes an optional
+    argument, and keeps the URL as written."""
+    latex_content = rb"""
+    \documentclass{article}
+    \usepackage{hyperref}
+    \begin{document}
+    \section{About \href{https://example.com}{us}}
+    Go \href[pdfnewwindow=true]{https://example.com/my_page#top}{there} now.
+    \begin{itemize}
+    \item See \href{https://example.com}{the site} here
+    \end{itemize}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts] == [
+        "About [us](https://example.com)",
+        "Go [there](https://example.com/my_page#top) now.",
+        "See [the site](https://example.com) here",
+    ]
 
 
 def test_latex_textcolor_macro():

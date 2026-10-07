@@ -38,7 +38,6 @@ MACROS_STRUCTURAL = frozenset(
         "textrm",
         "textnormal",
         "mbox",
-        "href",
         "newline",
         "hfill",
         "break",

@@ -9,7 +9,7 @@ from typing import Any
 
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexwalker import get_default_latex_context_db
-    from pylatexenc.macrospec import EnvironmentSpec
+    from pylatexenc.macrospec import EnvironmentSpec, MacroSpec
 
     _PYLATEXENC_AVAILABLE = True
 except ImportError:  # pragma: no cover - import-time guard
@@ -26,6 +26,13 @@ def _build_context_db() -> Any:
     db.add_context_category(
         "docling-tables",
         environments=[EnvironmentSpec("longtable", "[{")],
+        prepend=True,
+    )
+    # pylatexenc does not know hyperref's \href[options]{URL}{text}, so its two
+    # arguments would stay in the body and be read as text glued together.
+    db.add_context_category(
+        "docling-links",
+        macros=[MacroSpec("href", "[{{")],
         prepend=True,
     )
     return db
