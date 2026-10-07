@@ -16,6 +16,17 @@ def _words(first: int, last: int, count: int = 40) -> str:
     )
 
 
+_PROSE = (
+    "The quarterly report shows that revenue increased across all regions, "
+    "driven by strong demand for cloud services and improved margins. "
+) * 3
+
+
+def _shift(text: str, offset: int) -> str:
+    """Letters moved by a constant, as a broken ToUnicode map does."""
+    return "".join(chr(ord(ch) + offset) if ch.isalpha() else ch for ch in text)
+
+
 # Ordinary text layers: never broken.
 ORDINARY = {
     "latex": r"The loss $L = \frac{1}{n}\sum_{i=1}^{n} (y_i - \hat{y}_i)^2$ with "
@@ -47,6 +58,41 @@ ORDINARY = {
     "thai": _words(0x0E01, 0x0E2E),
     "devanagari": _words(0x0915, 0x0939),
     "cjk": _words(0x4E00, 0x4E40),
+    # Long enough for the letter-frequency check.
+    "english_prose": _PROSE,
+    "czech": "Vl\N{LATIN SMALL LETTER A WITH ACUTE}da schv\N{LATIN SMALL LETTER A WITH ACUTE}lila "
+    "n\N{LATIN SMALL LETTER A WITH ACUTE}vrh z\N{LATIN SMALL LETTER A WITH ACUTE}kona, kter\N{LATIN SMALL LETTER Y WITH ACUTE} "
+    "zjednodu\N{LATIN SMALL LETTER S WITH CARON}uje stavebn\N{LATIN SMALL LETTER I WITH ACUTE} "
+    "\N{LATIN SMALL LETTER R WITH CARON}\N{LATIN SMALL LETTER I WITH ACUTE}zen\N{LATIN SMALL LETTER I WITH ACUTE} "
+    "a podporuje v\N{LATIN SMALL LETTER Y WITH ACUTE}stavbu nov\N{LATIN SMALL LETTER Y WITH ACUTE}ch byt\N{LATIN SMALL LETTER U WITH RING ABOVE} "
+    "ve velk\N{LATIN SMALL LETTER Y WITH ACUTE}ch m\N{LATIN SMALL LETTER E WITH CARON}stech. "
+    * 3,
+    "welsh": "Mae'r llywodraeth wedi cyhoeddi cynllun newydd i gefnogi busnesau bach "
+    "yng nghefn gwlad Cymru dros y blynyddoedd nesaf. " * 3,
+    "vietnamese": "\N{LATIN CAPITAL LETTER D WITH STROKE}\N{LATIN SMALL LETTER U WITH HORN AND GRAVE}\N{LATIN SMALL LETTER O WITH HORN}ng "
+    "\N{LATIN SMALL LETTER D WITH STROKE}\N{LATIN SMALL LETTER E WITH CIRCUMFLEX AND GRAVE}n t\N{LATIN SMALL LETTER U WITH HORN}\N{LATIN SMALL LETTER O WITH HORN}ng "
+    "lai c\N{LATIN SMALL LETTER U WITH HOOK ABOVE}a nh\N{LATIN SMALL LETTER U WITH HORN AND TILDE}ng ng\N{LATIN SMALL LETTER U WITH HORN}\N{LATIN SMALL LETTER O WITH HORN AND GRAVE}i "
+    "d\N{LATIN SMALL LETTER A WITH CIRCUMFLEX}n Vi\N{LATIN SMALL LETTER E WITH CIRCUMFLEX AND DOT BELOW}t Nam "
+    "r\N{LATIN SMALL LETTER A WITH CIRCUMFLEX AND GRAVE}t d\N{LATIN SMALL LETTER A WITH GRAVE}i. "
+    * 4,
+    "c_code": "for (int i = 0; i < n; i++) { ptr->buf[i] = xmm_mul(cfg.k, src[i]); "
+    "if (!chk(ptr)) return -EINVAL; } " * 4,
+    "part_numbers": "STM32F407VGT6 LQFP100 GPIO PB12 SPI2_NSS PB13 SPI2_SCK TIM1_CH1N "
+    "HCLK PCLK1 PCLK2 RCC_CFGR SYSCLK PLLM PLLN\n" * 4,
+    "base64": "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsuIFRoZSBxdWljayBicm93biBmb3gganVtcHM=\n"
+    * 5,
+    "dna": "ACGTTGCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCGGGTACCGAGCTCGAATTC\n" * 5,
+    # Icon fonts repeat a few private-use code points, also in a row.
+    "icon_rating_and_footer": _PROSE
+    + "\n"
+    + chr(0xF0AB) * 4
+    + chr(0xF0AA)
+    + "\n"
+    + " ".join(chr(0xF09A + i) for i in range(5)),
+    # One U+FFFD from a math font, on a full page.
+    "single_replacement_character": _PROSE + "\nx \N{REPLACEMENT CHARACTER} y\n",
+    # pdfium can mark one end-of-line hyphen with a control character.
+    "hyphen_control": _PROSE.replace("regions", "re\x02\ngions", 1),
 }
 
 # Text layers from fonts whose glyphs were not mapped to real characters.
@@ -60,6 +106,24 @@ BROKEN = {
         "".join(chr(0xF021 + (i + j) % 60) for j in range(4)) for i in range(30)
     ),
     "glyphs_as_accented_latin": _words(0x0100, 0x017F),
+    "glyphs_as_shifted_letters": _shift(_PROSE, 3),
+    "glyphs_as_letters_and_digits": _shift(_PROSE, -11),
+    # One cell in a broken font, on an otherwise good page.
+    "one_private_use_cell": _PROSE * 2
+    + "\n"
+    + "".join(chr(0xF041 + i) for i in range(6))
+    + "\n",
+    "one_control_code_cell": _PROSE * 2
+    + "\nTotal "
+    + "".join(chr(0x10 + i) for i in range(6))
+    + "\n",
+    # Below the share the control check needs, but in runs or in several cells.
+    "replacement_run_on_short_page": "Annual report of the regional transport "
+    "authority for 2024: \N{REPLACEMENT CHARACTER}\N{REPLACEMENT CHARACTER} "
+    "summary, outlook, notes",
+    "replacement_characters_in_many_cells": _PROSE
+    + "\n"
+    + "\n".join("Item " + "\N{REPLACEMENT CHARACTER}" * n for n in (4, 3, 3)),
 }
 
 
