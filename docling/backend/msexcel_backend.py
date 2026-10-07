@@ -83,7 +83,7 @@ try:  # pragma: no cover - import-time guard
     )
     from openpyxl.packaging.relationship import get_dependents, get_rels_path
     from openpyxl.styles import PatternFill
-    from openpyxl.utils.cell import range_boundaries
+    from openpyxl.utils.cell import column_index_from_string, range_boundaries
     from openpyxl.worksheet.worksheet import Worksheet
     from openpyxl.xml.constants import IMAGE_NS
 
@@ -745,8 +745,24 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                                 origin=CoordOrigin.TOPLEFT,
                             ),
                         ),
-                        content_layer=content_layer,
+                        content_layer=(
+                            ContentLayer.INVISIBLE
+                            if self._cell_is_hidden(
+                                sheet,
+                                origin_row - 1,
+                                origin_col + title_cell.col,
+                                title_cell.col_span,
+                            )
+                            else content_layer
+                        ),
                     )
+
+                if content_layer != ContentLayer.INVISIBLE:
+                    excel_table = self._project_visible_table(
+                        doc, sheet, excel_table, page_no
+                    )
+                    if not excel_table.data:
+                        continue
 
                 if treat_singleton_as_text and len(excel_table.data) == 1:
                     doc.add_text(
@@ -770,8 +786,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
                 else:
                     table_data = TableData(
-                        num_rows=num_rows,
-                        num_cols=num_cols,
+                        num_rows=excel_table.num_rows,
+                        num_cols=excel_table.num_cols,
                         table_cells=[],
                     )
 
@@ -846,6 +862,109 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
 
         return doc
+
+    @staticmethod
+    def _cell_is_hidden(sheet: Worksheet, row: int, col: int, col_span: int) -> bool:
+        """Check 0-based cell coordinates, including grouped column dimensions."""
+        row_dimension = sheet.row_dimensions.get(row + 1)
+        if row_dimension is not None and row_dimension.hidden:
+            return True
+        return all(
+            any(
+                dimension.hidden
+                and (dimension.min or column_index_from_string(dimension.index))
+                <= column + 1
+                <= (dimension.max or column_index_from_string(dimension.index))
+                for dimension in sheet.column_dimensions.values()
+            )
+            for column in range(col, col + col_span)
+        )
+
+    def _project_visible_table(
+        self,
+        doc: DoclingDocument,
+        sheet: Worksheet,
+        table: ExcelTable,
+        page_no: int,
+    ) -> ExcelTable:
+        """Remove hidden dimensions from the grid and retain their text as invisible."""
+        origin_col, origin_row = table.anchor
+        rows = [
+            row
+            for row in range(table.num_rows)
+            if not (
+                (dimension := sheet.row_dimensions.get(origin_row + row + 1))
+                is not None
+                and dimension.hidden
+            )
+        ]
+        columns = [
+            col
+            for col in range(table.num_cols)
+            if not any(
+                dimension.hidden
+                and (dimension.min or column_index_from_string(dimension.index))
+                <= origin_col + col + 1
+                <= (dimension.max or column_index_from_string(dimension.index))
+                for dimension in sheet.column_dimensions.values()
+            )
+        ]
+        if len(rows) == table.num_rows and len(columns) == table.num_cols:
+            return table
+
+        row_offsets = {row: offset for offset, row in enumerate(rows)}
+        col_offsets = {col: offset for offset, col in enumerate(columns)}
+        visible_cells: list[ExcelCell] = []
+        for cell in table.data:
+            cell_rows = [
+                row
+                for row in range(cell.row, cell.row + cell.row_span)
+                if row in row_offsets
+            ]
+            cell_cols = [
+                col
+                for col in range(cell.col, cell.col + cell.col_span)
+                if col in col_offsets
+            ]
+            if cell_rows and cell_cols:
+                visible_cells.append(
+                    cell.model_copy(
+                        update={
+                            "row": row_offsets[cell_rows[0]],
+                            "col": col_offsets[cell_cols[0]],
+                            "row_span": len(cell_rows),
+                            "col_span": len(cell_cols),
+                        }
+                    )
+                )
+            elif cell.text:
+                doc.add_text(
+                    text=cell.text,
+                    label=DocItemLabel.TEXT,
+                    parent=self.parent,
+                    content_layer=ContentLayer.INVISIBLE,
+                    prov=ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, len(cell.text)),
+                        bbox=BoundingBox.from_tuple(
+                            (
+                                origin_col + cell.col,
+                                origin_row + cell.row,
+                                origin_col + cell.col + cell.col_span,
+                                origin_row + cell.row + cell.row_span,
+                            ),
+                            origin=CoordOrigin.TOPLEFT,
+                        ),
+                    ),
+                )
+
+        return table.model_copy(
+            update={
+                "num_rows": len(rows),
+                "num_cols": len(columns),
+                "data": visible_cells,
+            }
+        )
 
     def _split_leading_section_label(
         self, table: ExcelTable
