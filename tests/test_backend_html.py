@@ -287,6 +287,76 @@ def test_table_cell_text_skips_html_comments():
     ]
 
 
+def test_nested_block_content_preserves_following_text_order():
+    """Regression for #4422: text after nested blocks stays after them."""
+    html = b"""
+    <html><body>
+    <ol>
+      <li><p>Intro:</p>
+        <ol>
+          <li><p>First nested.</p></li>
+          <li><p>Second nested.</p></li>
+        </ol>
+        <p>After the nested list.</p>
+      </li>
+    </ol>
+    <p>Next paragraph.</p>
+    </body></html>
+    """
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="nested_block_trailing_text.html",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    texts = [
+        getattr(item, "text", "")
+        for item, _ in doc.iterate_items()
+        if getattr(item, "text", "")
+    ]
+    assert texts.index("Intro:") < texts.index("First nested.")
+    assert texts.index("First nested.") < texts.index("Second nested.")
+    assert texts.index("Second nested.") < texts.index("After the nested list.")
+    assert texts[-1] == "Next paragraph."
+
+
+def test_nested_table_and_description_list_trailing_text_order():
+    """Regression for #4422: trailing content after nested table/list stays ordered."""
+    html = b"""
+    <html><body>
+    <ul>
+      <li>Intro<table><tr><td>A</td></tr></table><p>After the table.</p></li>
+    </ul>
+    <dl>
+      <dt>Term</dt>
+      <dd>Intro<ul><li>x</li></ul><p>After the list.</p></dd>
+    </dl>
+    </body></html>
+    """
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="nested_block_trailing_text_2.html",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    texts = [
+        getattr(item, "text", "")
+        for item, _ in doc.iterate_items()
+        if getattr(item, "text", "")
+    ]
+    assert texts.index("Intro") < texts.index("A")
+    assert texts.index("A") < texts.index("After the table.")
+    assert texts.index("Intro") < texts.index("x")
+    assert texts.index("x") < texts.index("After the list.")
+
 @pytest.mark.parametrize(
     "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
 )
