@@ -1107,6 +1107,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         added_elements = []
         for element in body:
             tag_name = etree.QName(element).localname
+            # A body-level mc:AlternateContent holds the same blocks twice, in a modern (Choice) and
+            # a legacy (Fallback) form. Walk one branch only, and do it before the image and
+            # text-box detection below: those run over descendants, so on this element they would
+            # read both branches, and again on the chosen branch's own children.
+            if tag_name == "AlternateContent":
+                branch = self._select_alternate_content_branch(element)
+                if branch is not None:
+                    _, te = self._walk_linear(branch, doc)
+                    added_elements.extend(te)
+                continue
             # Check for Inline Images (blip elements)
             _raw_drawing_blip = self.blip_xpath_expr(element)
             _raw_drawingml_els = element.findall(
@@ -1207,13 +1217,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Recursively walk the SDT content to catch textboxes, tables, and nested structures
                     _, te = self._walk_linear(sdt_content, doc)
                     added_elements.extend(te)
-            # A body-level mc:AlternateContent holds the same blocks twice, in a
-            # modern (Choice) and a legacy (Fallback) form. Walk one branch only.
-            elif tag_name == "AlternateContent":
-                branch = self._select_alternate_content_branch(element)
-                if branch is not None:
-                    _, te = self._walk_linear(branch, doc)
-                    added_elements.extend(te)
             # Check for Image
             elif drawing_blip:
                 pics = self._handle_pictures(drawing_blip, doc)
@@ -1296,6 +1299,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         Take the first ``mc:Choice`` whose ``Requires`` prefixes all map to
         namespaces this backend understands. If none does, take ``mc:Fallback``.
+
+        "Understands" means the namespaces in ``_OOXML_NAMESPACES``, so a Choice that requires
+        another one, such as ``wpg`` or ``w15``, yields to the Fallback.
         """
         supported = set(_OOXML_NAMESPACES.values())
         for choice in element.findall("mc:Choice", namespaces=_OOXML_NAMESPACES):
