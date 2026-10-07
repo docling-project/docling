@@ -91,6 +91,7 @@ class MacroHandlerMixin:
             text_label: Any = ...,
         ) -> None: ...
         def _nodes_to_text(self, nodes: Any) -> str: ...
+        def _item_term(self, node: Any) -> str: ...
 
     def _preprocess_custom_macros(self, latex_text: str) -> str:
         latex_text = re.sub(r"\\be\b", r"\\begin{equation}", latex_text)
@@ -188,19 +189,9 @@ class MacroHandlerMixin:
         text_buffer: list[str],
         following_nodes=None,
     ) -> None:
-        if not node.nodeargd or not node.nodeargd.argnlist:
-            return
-        arg = node.nodeargd.argnlist[0]
-        if not arg:
-            return
-        if hasattr(arg, "nodelist"):
-            opt_text = self._nodes_to_text(arg.nodelist)
-            if not opt_text:
-                opt_text = arg.latex_verbatim().strip("[] ")
-        else:
-            opt_text = arg.latex_verbatim().strip("[] ")
-        if opt_text:
-            text_buffer.append(f"{opt_text}: ")
+        term = self._item_term(node)
+        if term:
+            text_buffer.append(f"{term}: ")
             if following_nodes and isinstance(following_nodes[0], LatexCharsNode):
                 following_nodes[0].chars = following_nodes[0].chars.lstrip()
 

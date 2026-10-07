@@ -117,6 +117,14 @@ class TextHelperMixin:
             return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
         return latex_str
 
+    def _item_term(self, node: LatexMacroNode) -> str:
+        """Return the text of the ``\\item[...]`` term, or ``""`` if it has none."""
+        if node.nodeargd and node.nodeargd.argnlist:
+            arg = node.nodeargd.argnlist[0]
+            if isinstance(arg, LatexGroupNode):
+                return self._nodes_to_text(arg.nodelist).strip()
+        return ""
+
     def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
         """Return ``(text, consumed_following)`` for a single macro node."""
         consumed = 0
@@ -136,18 +144,8 @@ class TextHelperMixin:
         if node.macroname in ["~"]:
             return (" ", consumed)
         if node.macroname == "item":
-            if node.nodeargd and node.nodeargd.argnlist:
-                arg = node.nodeargd.argnlist[0]
-                if arg:
-                    if hasattr(arg, "nodelist"):
-                        opt_text = self._nodes_to_text(arg.nodelist)
-                        if not opt_text:
-                            opt_text = arg.latex_verbatim().strip("[] ")
-                    else:
-                        opt_text = arg.latex_verbatim().strip("[] ")
-                    if opt_text:
-                        return (f"{opt_text}: ", consumed)
-            return ("", consumed)
+            term = self._item_term(node)
+            return (f"{term}: " if term else "", consumed)
         if node.macroname in MACROS_ESCAPED:
             return (node.macroname, consumed)
         if node.macroname in self._custom_macros:
