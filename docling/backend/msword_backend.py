@@ -4260,6 +4260,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ("linked to previous") from an already-emitted section is skipped so it is not
         duplicated. Sections with different_first_page_header_footer contribute both their
         first-page and their regular header/footer, since both are actually used.
+        When the document enables even/odd headers (``evenAndOddHeaders``), the
+        even-page header/footer of every section is visited as well.
 
         Args:
             docx_obj: A docx Document object to be parsed.
@@ -4314,14 +4316,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._walk_linear(part._element, doc)
             self.current_part = self.docx_obj.part
 
+        # Even-page headers/footers are only used when the document settings enable
+        # <w:evenAndOddHeaders/>; otherwise the even part is ignored by Word.
+        use_even_pages = docx_obj.settings.odd_and_even_pages_header_footer
+
         for section in docx_obj.sections:
             if section.different_first_page_header_footer:
                 _add_hdr_ftr_part(section.first_page_header, "page header")
             _add_hdr_ftr_part(section.header, "page header")
+            if use_even_pages:
+                _add_hdr_ftr_part(section.even_page_header, "page header")
 
             if section.different_first_page_header_footer:
                 _add_hdr_ftr_part(section.first_page_footer, "page footer")
             _add_hdr_ftr_part(section.footer, "page footer")
+            if use_even_pages:
+                _add_hdr_ftr_part(section.even_page_footer, "page footer")
 
         self._force_new_code_block = True
         self._pending_code_blank_lines = 0
