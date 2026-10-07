@@ -204,9 +204,8 @@ _IMPLIED_END_TAGS: Final = {
     "tr": ({"tr", "td", "th"}, {"table", "thead", "tbody", "tfoot"}),
 }
 
-# Direct children of <table> that wrap rows. Unwrapping them makes <tr>
-# visible to the non-recursive row scan.
-_TABLE_SECTION_TAGS: Final = ("thead", "tbody", "tfoot")
+# HTML table row-group elements that wrap <tr> children.
+_TABLE_SECTION_TAGS: Final = frozenset({"thead", "tbody", "tfoot"})
 
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
 

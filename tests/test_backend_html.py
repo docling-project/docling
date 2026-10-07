@@ -407,6 +407,9 @@ def test_table_tfoot_rows_are_kept(body, expected_grid):
     assert doc.tables[0].data.num_rows == 3
     grid = [[cell.text for cell in row] for row in doc.tables[0].data.grid]
     assert grid == expected_grid
+    if b"rowspan=" in body:
+        total = next(c for c in doc.tables[0].data.table_cells if c.text == "Total")
+        assert total.end_row_offset_idx - total.start_row_offset_idx == 1
 
 
 def test_table_inside_figure_is_parsed():
