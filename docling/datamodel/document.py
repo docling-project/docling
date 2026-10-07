@@ -601,6 +601,11 @@ class ConversionResult(ConversionAssets):
     # conversion result (not on the pipeline) because one pipeline instance is shared
     # by every conversion made through the same DocumentConverter.
     _page_sizes_by_no: dict[int, Size] = PrivateAttr(default_factory=dict)
+    # Absolute (monotonic-clock) deadline for the whole conversion, derived from
+    # `document_timeout` when set. Private transient plumbing, same rationale as
+    # above: the assembly stage reads it to bound work that runs after the page
+    # stages (e.g. reading-order separator extraction).
+    _conversion_deadline: Optional[float] = PrivateAttr(default=None)
 
 
 class _DummyBackend(AbstractDocumentBackend):

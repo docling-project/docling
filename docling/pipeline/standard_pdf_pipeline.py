@@ -843,6 +843,16 @@ class StandardPdfPipeline(ConvertPipeline):
         proc = ProcessingResult(total_expected=total_pages)
         batch_size: int = 32  # drain chunk
         start_time = time.monotonic()
+        if self.pipeline_options.document_timeout is not None:
+            # Absolute deadline for the whole conversion, so that stages
+            # running after the page loop (e.g. reading-order separator
+            # extraction in _assemble_document) can bound their own work.
+            # Kept on the conversion result because one pipeline instance is
+            # shared by every conversion made through the same
+            # DocumentConverter.
+            conv_res._conversion_deadline = (
+                start_time + self.pipeline_options.document_timeout
+            )
         timeout_exceeded = False
         producer_error: list[Exception] = []
 
@@ -1054,7 +1064,18 @@ class StandardPdfPipeline(ConvertPipeline):
             conv_res.assembled = AssembledUnit(
                 elements=elements, headers=headers, body=body
             )
-            conv_res.document = self.reading_order_model(conv_res)
+            time_budget_s: float | None = None
+            if (
+                self.pipeline_options.document_timeout is not None
+                and conv_res._conversion_deadline is not None
+            ):
+                # Remaining document budget for the reading-order stage, so
+                # that page separator extraction aborts instead of blocking
+                # the conversion once the timeout is exceeded.
+                time_budget_s = conv_res._conversion_deadline - time.monotonic()
+            conv_res.document = self.reading_order_model(
+                conv_res, time_budget_s=time_budget_s
+            )
             conv_res.document = self.heading_hierarchy_model(conv_res)
 
             # Generate page images in the output

@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import logging
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from statistics import median
@@ -28,6 +30,9 @@ from docling.datamodel.base_models import (
     BasePageElement,
     Cluster,
     ContainerElement,
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
     FigureElement,
     PageElement,
     Table,
@@ -44,6 +49,8 @@ from docling.models.postprocessing.reading_order_rb import (
     build_page_separators,
 )
 from docling.utils.profiling import ProfilingScope, TimeRecorder
+
+_log = logging.getLogger(__name__)
 
 
 class ReadingOrderOptions(BaseModel):
@@ -691,7 +698,20 @@ class ReadingOrderModel:
         if new_item.hyperlink != merged_elem.hyperlink:
             new_item.hyperlink = None
 
-    def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
+    def __call__(
+        self,
+        conv_res: ConversionResult,
+        *,
+        time_budget_s: float | None = None,
+    ) -> DoclingDocument:
+        """Assemble the document in reading order.
+
+        `time_budget_s` is the remaining document processing budget in
+        seconds, derived from the pipeline's `document_timeout`. Page
+        separator extraction aborts once the budget is exhausted; affected
+        pages fall back to the pre-separator reading order and a TIMEOUT
+        error is recorded on the conversion result.
+        """
         with TimeRecorder(conv_res, "reading_order", scope=ProfilingScope.DOCUMENT):
             page_elements = self._assembled_to_readingorder_elements(conv_res)
             page_separators: list[SeparatorElement] = []
@@ -699,9 +719,17 @@ class ReadingOrderModel:
                 elements_by_page: dict[int, list[ReadingOrderPageElement]] = {}
                 for element in page_elements:
                     elements_by_page.setdefault(element.page_no, []).append(element)
+                deadline = (
+                    time.monotonic() + time_budget_s
+                    if time_budget_s is not None
+                    else None
+                )
                 for page in conv_res.pages:
                     if page.size is None:
                         continue
+                    time_limit_s = (
+                        deadline - time.monotonic() if deadline is not None else None
+                    )
                     page_separators.extend(
                         build_page_separators(
                             page_no=page.page_no,
@@ -709,6 +737,23 @@ class ReadingOrderModel:
                             page_elements=elements_by_page.get(page.page_no, []),
                             shape_lines=page._shape_lines,
                             shape_bounding_boxes=page._shape_bounding_boxes,
+                            time_limit_s=time_limit_s,
+                        )
+                    )
+                if deadline is not None and time.monotonic() > deadline:
+                    timeout_msg = (
+                        "Document processing timeout: reading-order separator "
+                        "extraction exceeded its time budget. Pages processed "
+                        "after the budget ran out fall back to the "
+                        "pre-separator reading order."
+                    )
+                    _log.warning(timeout_msg)
+                    conv_res.errors.append(
+                        ErrorItem(
+                            component_type=DoclingComponentType.DOC_ASSEMBLER,
+                            module_name="ReadingOrderModel",
+                            error_message=timeout_msg,
+                            category=FailureCategory.TIMEOUT,
                         )
                     )
             assembled_by_ref = {
