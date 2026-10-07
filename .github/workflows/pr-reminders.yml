@@ -1,55 +1,41 @@
 name: PR Workflow Approval Reminder
 
+# Every morning, list the open PRs whose CI waits for a maintainer to approve
+# it, grouped by their AI triage label, and post the list to Slack.
 on:
-  # schedule:
-  #   - cron: "0 */6 * * *" # every 6 hours
+  schedule:
+    - cron: "0 6 * * *"
+      timezone: "Europe/Zurich"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print the message in the log instead of posting it.
+        type: boolean
+        default: false
+
+permissions: {}
 
 jobs:
-  check-prs:
+  remind:
+    # Forks also run schedules. Only the upstream repository posts to Slack.
+    if: github.repository == 'docling-project/docling'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
     steps:
-      - name: Check PRs blocked by workflow approval
-        id: filter
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { data: pulls } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open'
-            });
+          persist-credentials: false
+          sparse-checkout: .github/scripts
 
-            let result = '';
-
-            for (const pr of pulls) {
-              const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                event: 'pull_request',
-                head_sha: pr.head.sha
-              });
-
-              const waitingRuns = runs.workflow_runs.filter(r => r.status === 'waiting');
-              if (waitingRuns.length > 0) {
-                const runNames = waitingRuns.map(r => r.name).join(', ');
-                result += `• **PR #${pr.number}**: [${pr.title}](${pr.html_url})  \n   ⏸️ Workflows: ${runNames}\n\n`;
-              }
-            }
-
-            let message;
-            if (result === '') {
-              message = '✅ No PRs are blocked by workflow approval right now.';
-            } else {
-              message = `🚦 **PRs waiting for maintainer approval to run workflows:**\n\n${result}`;
-            }
-
-            core.setOutput('message', message);
-
-      - name: Send message to Discord via webhook
+      - name: Post the reminder to Slack
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SLACK_WEBHOOK_URL: ${{ secrets.PR_REMINDER_SLACK_WEBHOOK }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: |
-          payload=$(jq -n --arg content "${{ steps.filter.outputs.message }}" '{content: $content}')
-          curl -X POST -H "Content-Type: application/json" \
-            -d "$payload" \
-            ${{ secrets.PR_REMINDER_DISCORD_WEBHOOK }}
+          python3 .github/scripts/pr_approval_reminder.py --repo "${REPO}" ${DRY_RUN}
