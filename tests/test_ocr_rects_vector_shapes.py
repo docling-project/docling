@@ -79,6 +79,23 @@ PANEL_EDGE_IN_CLUSTER = BoundingBox(
     l=30, t=125, r=130, b=175, coord_origin=CoordOrigin.TOPLEFT
 )
 
+# Three filled panels that differ only in how much of them the text layer covers
+# (page height 300).
+FIGURE_FIXTURE = Path("./tests/data/pdf/vector_glyphs_in_figure.pdf")
+
+# A figure panel with one small native caption in a corner and letterforms drawn
+# as filled paths in the middle: text covers about 1% of it.
+FIGURE_WITH_CAPTION = BoundingBox(
+    l=30, t=25, r=280, b=120, coord_origin=CoordOrigin.TOPLEFT
+)
+# A 14pt shaded band with one short native word: text covers under a tenth of it,
+# but it is no thicker than a line of text.
+SHADED_BAND = BoundingBox(l=30, t=130, r=280, b=165, coord_origin=CoordOrigin.TOPLEFT)
+# A shaded sidebar with four lines of native text covering well over a tenth of it.
+SHADED_SIDEBAR = BoundingBox(
+    l=30, t=175, r=280, b=275, coord_origin=CoordOrigin.TOPLEFT
+)
+
 
 class _OcrRectsOnlyModel(BaseOcrModel):
     """Minimal concrete `BaseOcrModel`: only the rect selection is under test."""
@@ -337,5 +354,51 @@ def test_text_behind_a_shape_is_judged_inside_the_cluster(
             _make_page(page_backend, PANEL_EDGE_IN_CLUSTER)
         )
         assert edge_rects == []
+    finally:
+        doc_backend.unload()
+
+
+@pytest.mark.parametrize(
+    ("backend_cls", "native_queries"),
+    [
+        (ThreadedDoclingParseDocumentBackend, True),
+        (PyPdfiumDocumentBackend, True),
+        (ThreadedDoclingParseDocumentBackend, False),
+    ],
+    ids=["threaded", "pypdfium2", "threaded-spatial-index"],
+)
+def test_a_caption_does_not_account_for_a_figure(
+    backend_cls, native_queries, monkeypatch
+):
+    """Text accounts for a thick shape only when it covers a fair share of it.
+
+    Found on a DocLayNet page: an aeronautical chart drawn entirely as paths, one
+    connected shape, with a native caption in its corner. Judged on text presence
+    alone the chart was cleared and its vector-drawn labels were never OCR'd. A
+    band no thicker than a couple of lines is still explained by any text on it,
+    and a sidebar full of text is explained by its coverage.
+    """
+    doc_backend, page_backend = _load_first_page(backend_cls, FIGURE_FIXTURE)
+    model = _make_model()
+    if not native_queries:
+        # No backend lacks `has_content_in` any more; force the fallback path.
+        monkeypatch.setattr(page_backend, "has_content_in", lambda **kwargs: None)
+
+    try:
+        # Sanity: every region carries native text, and none carries a bitmap.
+        for region in (FIGURE_WITH_CAPTION, SHADED_BAND, SHADED_SIDEBAR):
+            assert page_backend.get_text_in_rect(region).strip()
+
+        figure_rects = model._find_pdf_aware_layout_ocr_rects(
+            _make_page(page_backend, FIGURE_WITH_CAPTION)
+        )
+        assert len(figure_rects) == 1
+        assert figure_rects[0].intersection_over_self(FIGURE_WITH_CAPTION) > 0
+
+        for region in (SHADED_BAND, SHADED_SIDEBAR):
+            rects = model._find_pdf_aware_layout_ocr_rects(
+                _make_page(page_backend, region)
+            )
+            assert rects == []
     finally:
         doc_backend.unload()

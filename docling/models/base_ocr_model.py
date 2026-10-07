@@ -142,6 +142,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     # the stroke to 2pt thick), while vector letterforms report 1.3:1 to 6:1 whether
     # drawn filled or stroked, and a rule merged with the glyph it crosses reports 2.6:1.
     RULE_LIKE_ASPECT_RATIO = 12.0
+    # A shape no thicker than this many text lines is a band -- a highlight, a table
+    # stripe, a filled cell -- and any text on it accounts for it.
+    THIN_SHAPE_LINE_HEIGHTS = 2.0
+    # A thicker shape is accounted for only when text covers this share of its area.
+    TEXT_BACKED_MIN_COVERAGE = 0.1
 
     # Whether the engine can run several languages at once
     multiple_languages: ClassVar[bool] = False
@@ -276,6 +281,54 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         return a.l <= b.r and b.l <= a.r and a.t <= b.b and b.t <= a.b
 
     @staticmethod
+    def _text_geometry(
+        page: Page,
+    ) -> tuple[list[BoundingBox], BoundingBoxSpatialIndex]:
+        """The page's visible text cell boxes, top-left origin, with a spatial index."""
+        assert page._backend is not None
+        assert page.size is not None
+        cells = page._backend.get_visible_text_cells()
+        if cells is None:
+            cells = page._backend.get_text_cells()
+        boxes = [
+            cell.rect.to_bounding_box().to_top_left_origin(page.size.height)
+            for cell in cells
+        ]
+        index = BoundingBoxSpatialIndex()
+        for i, box in enumerate(boxes):
+            index.insert(i, box)
+        return boxes, index
+
+    @classmethod
+    def _text_accounts_for(
+        cls,
+        probe: BoundingBox,
+        text_boxes: list[BoundingBox],
+        text_index: BoundingBoxSpatialIndex,
+    ) -> bool:
+        """Whether the text cells under `probe` explain the shape it was cut from.
+
+        A band no thicker than a couple of text lines -- a highlight, a table
+        stripe, a filled cell -- is explained by any text on it. A thicker shape
+        is explained only when text covers a fair share of its area: a chart box
+        with one native caption in a corner is not, and the labels drawn as paths
+        inside it still need OCR.
+        """
+        under = [
+            (box, area)
+            for box in (text_boxes[i] for i in text_index.intersection(probe))
+            if (area := box.intersection_area_with(probe)) > 0
+        ]
+        if not under:
+            return False
+        heights = sorted(box.height for box, _ in under)
+        line_height = heights[len(heights) // 2]
+        if min(probe.width, probe.height) <= cls.THIN_SHAPE_LINE_HEIGHTS * line_height:
+            return True
+        covered = sum(area for _, area in under)
+        return covered / probe.area() >= cls.TEXT_BACKED_MIN_COVERAGE
+
+    @staticmethod
     def _clip_box(box: BoundingBox, clip: BoundingBox) -> BoundingBox:
         """The part of `box` inside `clip`, for two boxes that `_boxes_touch`.
 
@@ -324,9 +377,13 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
            OCR (#4209). A shape counts as a rule when its extent says so: long and
            thin. That holds whether the rule was stroked or filled, and it does not
            mistake letterforms for rules the way a stroked-segment report does.
-           Whether text sits behind a shape is judged on the part of the shape
+           Whether text accounts for a shape is judged on the part of the shape
            inside the cluster only: a connected shape may extend well past the
            cluster, and text under it elsewhere cannot account for what is here.
+           Any text on a band no thicker than a couple of lines accounts for it;
+           a thicker shape needs text over a fair share of its area, since one
+           native caption inside a chart says nothing about the labels drawn as
+           paths in it.
         3. Deduplicate the remaining cluster bboxes.
         """
         if page.predictions.layout is None:
@@ -347,17 +404,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         )
         use_backend_queries = backend.has_content_in(bbox=page_bbox) is not None
 
+        # Text cell geometry, read at most once. The spatial-index path needs it for
+        # every cluster; the native-query path only for clusters that carry both text
+        # and shapes, so it is read lazily there.
+        text_boxes: list[BoundingBox] | None = None
         text_index: BoundingBoxSpatialIndex | None = None
         non_text_index: BoundingBoxSpatialIndex | None = None
         if not use_backend_queries:
-            # Index for the text PDF cells
-            text_cells = backend.get_visible_text_cells()
-            if text_cells is None:
-                text_cells = backend.get_text_cells()
-
-            text_index = BoundingBoxSpatialIndex()
-            for i, text_cell in enumerate(text_cells):
-                text_index.insert(i, text_cell.rect.to_bounding_box())
+            text_boxes, text_index = self._text_geometry(page)
 
             # Index for the bitmaps. Shapes are deliberately left out (see docstring).
             non_text_index = BoundingBoxSpatialIndex()
@@ -430,17 +484,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 probe = self._clip_box(shape, cluster_bbox)
                 if self._is_rule_like(probe):
                     continue
-                if use_backend_queries:
-                    backed_by_text = (
-                        backend.has_content_in(
-                            bbox=probe, chars=True, shapes=False, bitmaps=False
-                        )
-                        is True
-                    )
-                else:
-                    assert text_index is not None
-                    backed_by_text = any(True for _ in text_index.intersection(probe))
-                if not backed_by_text:
+                if text_boxes is None or text_index is None:
+                    text_boxes, text_index = self._text_geometry(page)
+                if not self._text_accounts_for(probe, text_boxes, text_index):
                     ocr_rects.append(cluster_bbox)
                     break
 
