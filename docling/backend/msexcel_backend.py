@@ -6,10 +6,11 @@ from __future__ import annotations
 import collections
 import logging
 import posixpath
+import re
 import shutil
 import warnings
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -83,7 +84,9 @@ try:  # pragma: no cover - import-time guard
     )
     from openpyxl.packaging.relationship import get_dependents, get_rels_path
     from openpyxl.styles import PatternFill
+    from openpyxl.styles.numbers import is_date_format
     from openpyxl.utils.cell import range_boundaries
+    from openpyxl.utils.datetime import from_excel
     from openpyxl.worksheet.worksheet import Worksheet
     from openpyxl.xml.constants import IMAGE_NS
 
@@ -115,6 +118,145 @@ _CHART_RENDER_HINT = (
 # Maps an openpyxl chart object's ``tagname`` (the DrawingML element name, e.g.
 # "barChart") to the docling picture-classification label we tag the emitted
 # PictureItem with. Chart types not listed fall back to OTHER_CHART.
+_GENERAL_NUMBER_FORMATS: Final[frozenset[str]] = frozenset({"general", "@", ""})
+_EXCEL_DATE_TOKEN_RE: Final[re.Pattern[str]] = re.compile(
+    r"yyyy|yy|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s|am/pm"
+)
+_CURRENCY_NUMBER_RE: Final[re.Pattern[str]] = re.compile(r"[0#.,]+")
+
+
+def _displayed_cell_text(cell: Cell | MergedCell) -> str:
+    """Return the cell text as Excel would display it.
+
+    ``data_only=True`` gives the cached computed value. Applying the stored
+    number format keeps currency, percentages, and dates from collapsing to
+    ``str(value)`` (``12.5``, ``0.1``, ``2025-02-01 00:00:00``).
+    """
+    value = cell.value
+    if value is None:
+        return ""
+    number_format = getattr(cell, "number_format", None) or "General"
+    return _format_excel_value(value, number_format)
+
+
+def _plain_excel_format(number_format: str) -> str:
+    """Strip locale, color, quotes, and escape slashes from a number format."""
+    primary = number_format.split(";")[0]
+    primary = re.sub(r"\[[^\]]*\]", "", primary)
+    primary = primary.replace('"', "")
+    primary = re.sub(r"\\(.)", r"\1", primary)
+    return primary.strip()
+
+
+def _format_excel_value(value: Any, number_format: str) -> str:
+    """Apply well-known Excel formats; leave custom formats as ``str(value)``."""
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, str):
+        return value
+
+    normalized = _plain_excel_format(number_format)
+    if normalized.lower() in _GENERAL_NUMBER_FORMATS:
+        return str(value)
+
+    date_like = isinstance(value, (datetime, date, time)) or (
+        isinstance(value, (int, float)) and is_date_format(normalized)
+    )
+    if date_like:
+        return _format_excel_date(value, normalized)
+    if isinstance(value, (int, float)):
+        if "%" in normalized:
+            return _format_excel_percent(float(value), normalized)
+        if "$" in normalized:
+            return _format_excel_currency(float(value), normalized)
+    return str(value)
+
+
+def _format_excel_percent(value: float, fmt: str) -> str:
+    """Format a fraction as a percentage, matching ``0%`` / ``0.00%``."""
+    match = re.search(r"\.([0#]+)%", fmt)
+    decimals = len(match.group(1)) if match else 0
+    scaled = value * 100.0
+    if decimals == 0:
+        body = str(round(scaled))
+    else:
+        body = f"{scaled:.{decimals}f}"
+    return f"{body}%"
+
+
+def _format_excel_currency(value: float, fmt: str) -> str:
+    """Format a number with a ``$`` currency marker and its decimal pattern."""
+    match = _CURRENCY_NUMBER_RE.search(fmt.replace("?", ""))
+    if match is None:
+        return str(value)
+    numeric = match.group(0)
+    decimals = len(numeric.split(".", 1)[1].replace(",", "")) if "." in numeric else 0
+    if "," in numeric:
+        body = f"{value:,.{decimals}f}"
+    else:
+        body = f"{value:.{decimals}f}"
+    if fmt.strip().endswith("$"):
+        return f"{body}$"
+    return f"${body}"
+
+
+def _excel_date_format_to_strftime(fmt: str) -> str:
+    """Translate a simple Excel date/time format into strftime tokens.
+
+    ``mm`` after ``h`` is minutes; remaining ``mm`` / ``m`` tokens are months.
+    """
+    lowered = fmt.lower()
+    lowered = re.sub(r"(?<=h:)mm", "\x01", lowered)
+    lowered = re.sub(r"(?<=h:)m(?!m)", "\x01", lowered)
+
+    def replace_token(match: re.Match[str]) -> str:
+        token = match.group(0)
+        mapping = {
+            "yyyy": "%Y",
+            "yy": "%y",
+            "mmmm": "%B",
+            "mmm": "%b",
+            "mm": "%m",
+            "m": "%m",
+            "dddd": "%A",
+            "ddd": "%a",
+            "dd": "%d",
+            "d": "%d",
+            "hh": "%H",
+            "h": "%H",
+            "ss": "%S",
+            "s": "%S",
+            "am/pm": "%p",
+        }
+        return mapping.get(token, token)
+
+    return _EXCEL_DATE_TOKEN_RE.sub(replace_token, lowered).replace("\x01", "%M")
+
+
+def _format_excel_date(value: Any, fmt: str) -> str:
+    """Format a date, time, or Excel serial with the cell's date format."""
+    parsed: datetime | date | time | None
+    if isinstance(value, (datetime, date, time)):
+        parsed = value
+    else:
+        try:
+            parsed = from_excel(value)
+        except Exception:
+            return str(value)
+    if isinstance(parsed, datetime):
+        dt = parsed
+    elif isinstance(parsed, date):
+        dt = datetime(parsed.year, parsed.month, parsed.day)
+    elif isinstance(parsed, time):
+        dt = datetime.combine(date(1900, 1, 1), parsed)
+    else:
+        return str(value)
+    try:
+        return dt.strftime(_excel_date_format_to_strftime(fmt))
+    except Exception:
+        return str(value)
+
+
 _CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
     "barChart": PictureClassificationLabel.BAR_CHART,
     "bar3DChart": PictureClassificationLabel.BAR_CHART,
@@ -1150,7 +1292,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 if merged_cell_index.is_shadow(cell):
                     continue
 
-                cell_text = str(cell.value) if cell.value is not None else ""
+                cell_text = _displayed_cell_text(cell)
 
                 # Compute Spans
                 row_span, col_span = merged_cell_index.span_at(ri, rj)
@@ -1913,8 +2055,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         values: list[str] = []
         for row in range(min_row, max_row + 1):
             for col in range(min_col, max_col + 1):
-                value = target_sheet.cell(row=row, column=col).value
-                values.append("" if value is None else str(value))
+                values.append(
+                    _displayed_cell_text(target_sheet.cell(row=row, column=col))
+                )
 
         return values
 

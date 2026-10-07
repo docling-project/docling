@@ -30,6 +30,7 @@ from docling.backend.msexcel_backend import (
     ExcelCell,
     ExcelTable,
     MsExcelDocumentBackend,
+    _format_excel_value,
     _order_comment_thread,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
@@ -1028,6 +1029,59 @@ def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
     assert table.data.num_cols == 1
     assert len(table.data.table_cells) == 1
     assert table.data.table_cells[0].text == "last row"
+
+
+def test_format_excel_value_matches_excel_display() -> None:
+    """Currency, percent, and mmm-yy formats keep the text Excel shows."""
+    assert _format_excel_value(12.5, '"$"#,##0.00') == "$12.50"
+    assert _format_excel_value(0.1, "0%") == "10%"
+    assert _format_excel_value(datetime(2025, 2, 1), "mmm-yy") == "Feb-25"
+    assert (
+        _format_excel_value(
+            datetime(2024, 1, 2, 0, 0),
+            "yyyy\\-mm\\-dd\\ h:mm:ss",
+        )
+        == "2024-01-02 00:00:00"
+    )
+    assert _format_excel_value(12.5, "General") == "12.5"
+    assert _format_excel_value(1, "\\1\\.0#") == "1"
+
+
+def test_xlsx_keeps_excel_number_formats(tmp_path: Path) -> None:
+    """Table cell text uses the stored number format, not str(value)."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Order"
+    sheet["A1"] = "Item"
+    sheet["B1"] = "Qty"
+    sheet["C1"] = "Price"
+    sheet["D1"] = "Line total"
+    sheet["A2"] = "Orange juice"
+    sheet["B2"] = 10
+    sheet["C2"] = 12.5
+    sheet["C2"].number_format = '"$"#,##0.00'
+    sheet["D2"] = 125
+    sheet["D2"].number_format = '"$"#,##0.00'
+    sheet["C4"] = "Discount"
+    sheet["D4"] = 0.1
+    sheet["D4"].number_format = "0%"
+    sheet["C5"] = "Order month"
+    sheet["D5"] = datetime(2025, 2, 1)
+    sheet["D5"].number_format = "mmm-yy"
+    file_path = tmp_path / "formulas_and_number_formats.xlsx"
+    workbook.save(file_path)
+
+    converter = get_converter()
+    doc = converter.convert(file_path).document
+    cells = {cell.text for table in doc.tables for cell in table.data.table_cells}
+
+    assert "$12.50" in cells
+    assert "$125.00" in cells
+    assert "10%" in cells
+    assert "Feb-25" in cells
+    assert "12.5" not in cells
+    assert "0.1" not in cells
+    assert "2025-02-01 00:00:00" not in cells
 
 
 def test_emf_images_in_xlsx(libreoffice_available):
