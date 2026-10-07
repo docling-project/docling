@@ -1451,6 +1451,41 @@ def test_odp_presentation_with_mixed_slide_content():
     )
 
 
+def test_odp_slide_comment_becomes_comment_not_body_text():
+    """A slide comment (officeooo:annotation), as LibreOffice Impress saves it,
+    must not become slide body text. As in the PPTX backend, each comment is a
+    COMMENT_SECTION group in the NOTES layer, keeping its author and date. A
+    comment without author or date keeps only its text."""
+    path = Path("tests/data/odf/sources/odf_presentation_with_slide_comment.odp")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
+    doc = res.document
+
+    # No comment text in the body text or in the Markdown export.
+    assert doc.export_to_markdown() == "# Q3 results\n\nRevenue grew 4%.\n\n# Roadmap"
+    assert [
+        item.text for item in doc.texts if item.content_layer == ContentLayer.BODY
+    ] == ["Q3 results", "Revenue grew 4%.", "Roadmap"]
+
+    comment_groups = [
+        group for group in doc.groups if group.label == GroupLabel.COMMENT_SECTION
+    ]
+    assert {group.content_layer for group in comment_groups} == {ContentLayer.NOTES}
+    assert [group.name for group in comment_groups] == [
+        "comment-slide1-1",
+        "comment-slide1-2",
+        "comment-slide2-1",
+    ]
+    assert [
+        [child.resolve(doc).text for child in group.children]
+        for group in comment_groups
+    ] == [
+        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Check this number."],
+        ["Needs a second pair of eyes."],
+        ["[author: Bo Writer]: First milestone.\nSecond milestone."],
+    ]
+
+
 def test_odt_mime_detection_without_extension(odt_path: Path):
     # No filename extension forces the conversion pipeline to detect the format
     # by inspecting the zip contents (mimetype file).

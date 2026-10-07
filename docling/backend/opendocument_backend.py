@@ -1864,6 +1864,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     text=slide_name,
                 )
             self._walk_slide(page, parent=slide_group, doc=doc)
+            self._extract_slide_comments(page, slide_idx, doc)
         return doc
 
     def _walk_slide(
@@ -1871,7 +1872,11 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     ) -> None:
         seen_text_content = False
         for element in page.children:
-            if getattr(element, "tag", None) in {"anim:par", "presentation:notes"}:
+            if getattr(element, "tag", None) in {
+                "anim:par",
+                "presentation:notes",
+                "officeooo:annotation",
+            }:
                 continue
             has_text = bool(
                 _clean_odf_text_lines(getattr(element, "text_recursive", ""))
@@ -1894,11 +1899,67 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     is_title=is_title,
                 )
 
+    def _extract_slide_comments(
+        self, page: DrawPage, slide_idx: int, doc: DoclingDocument
+    ) -> None:
+        """Add the slide comments as comment groups in the NOTES layer.
+
+        LibreOffice Impress stores each slide comment as an ``officeooo:annotation``
+        element, the last child of the ``draw:page``. As in the PPTX backend, every
+        comment becomes a ``COMMENT_SECTION`` group in the ``NOTES`` layer, so the
+        comment text no longer leaks into the slide body text and the author and
+        date are kept.
+        """
+        comment_no = 0
+        for element in page.children:
+            if getattr(element, "tag", None) != "officeooo:annotation":
+                continue
+            metadata: list[str] = []
+            creator = element.get_element("dc:creator")
+            if creator is not None and creator.text:
+                author = f"author: {creator.text}"
+                # LibreOffice writes meta:creator-initials or loext:sender-initials.
+                initials = element.get_element(
+                    "meta:creator-initials | loext:sender-initials"
+                )
+                if initials is not None and initials.text:
+                    author += f" ({initials.text})"
+                metadata.append(author)
+            date = element.get_element("dc:date")
+            if date is not None and date.text:
+                metadata.append(f"time: {date.text}")
+            prefix = ", ".join(metadata)
+            # Note: Paragraph.text_content is empty for these children in odfdo;
+            # text_recursive reliably concatenates the paragraph's text runs.
+            text = "\n".join(
+                paragraph
+                for paragraph in (
+                    child.text_recursive.strip()
+                    for child in element.children
+                    if isinstance(child, Paragraph)
+                )
+                if paragraph
+            )
+            if not text:
+                continue
+            comment = f"[{prefix}]: {text}" if prefix else text
+            comment_no += 1
+            group = doc.add_group(
+                label=GroupLabel.COMMENT_SECTION,
+                name=f"comment-slide{slide_idx + 1}-{comment_no}",
+                content_layer=ContentLayer.NOTES,
+            )
+            doc.add_comment(text=comment, parent=group)
+
     @staticmethod
     def _slide_has_visible_title(page: DrawPage) -> bool:
         seen_text_content = False
         for element in page.children:
-            if getattr(element, "tag", None) in {"anim:par", "presentation:notes"}:
+            if getattr(element, "tag", None) in {
+                "anim:par",
+                "presentation:notes",
+                "officeooo:annotation",
+            }:
                 continue
             if OdpDocumentBackend._is_slide_title_element(
                 element, not seen_text_content
