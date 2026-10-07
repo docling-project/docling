@@ -456,6 +456,26 @@ def test_chandra_picture_descriptions_data_captions_and_crop():
     assert doc.validate_tree(doc.body)
 
 
+def test_chandra_picture_bare_text_sibling_of_img_is_dropped():
+    content = (
+        "<div data-label='Image' data-bbox='100 200 600 700'>"
+        "<img alt='A kitten peeking over a horizon line.'>"
+        "A small orange and white kitten is peeking over a horizon line, "
+        "looking directly at the camera."
+        "</div>"
+    )
+    doc = parse_chandra_html(
+        content,
+        Size(width=100, height=100),
+        1,
+        page_image=Image.new("RGB", (200, 200), "red"),
+    )
+    picture = doc.pictures[0]
+    assert picture.meta.description.text == "A kitten peeking over a horizon line."
+    assert not picture.children
+    assert not doc.texts
+
+
 def test_chandra_chemical_structure_and_page_furniture():
     doc = _parse_fragment("<chem>CC(=O)O</chem>", "Chemical-Block")
     assert len(doc.pictures) == 1
@@ -556,3 +576,29 @@ def test_chandra_empty_html_is_not_a_successful_transcription():
         _parse_fragment("<hr>")
     blank = _parse_fragment("", "Blank-Page")
     assert not blank.texts
+
+
+def test_chandra_equation_block_with_prose_becomes_text():
+    # Chandra labels exercise lines ("1. Compute <math>...</math> .") as
+    # Equation-Block; a formula cannot hold prose, so the block is text with an
+    # inline formula run.
+    doc = _parse_fragment(
+        "1. Compute <math>\\int_0^1 x\\,dx</math> .", "Equation-Block"
+    )
+    assert [(t.label, t.text) for t in doc.texts] == [
+        (DocItemLabel.TEXT, "1. Compute"),
+        (DocItemLabel.FORMULA, "\\int_0^1 x\\,dx"),
+        (DocItemLabel.TEXT, "."),
+    ]
+    dclg = doc.export_to_doclang()
+    assert dclg.count("<formula>") == 1
+    assert dclg.count("<location") == 4
+    # A pure equation block stays one formula.
+    doc = _parse_fragment("<math>E = mc^2</math>", "Equation-Block")
+    assert [(t.label, t.text) for t in doc.texts] == [
+        (DocItemLabel.FORMULA, "E = mc^2")
+    ]
+    # So does math with only punctuation around it.
+    doc = _parse_fragment("<math>R = 1</math> ,", "Equation-Block")
+    assert [(t.label, t.text) for t in doc.texts] == [(DocItemLabel.FORMULA, "R = 1 ,")]
+    assert doc.texts[0].prov

@@ -55,10 +55,10 @@
           "page_no": 1,
           "bbox": {
             "l": 1041400.0,
-            "t": 4582390.0,
+            "t": 1689099.0,
             "r": 8083550.0,
-            "b": 1689099.0,
-            "coord_origin": "BOTTOMLEFT"
+            "b": 4582390.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,

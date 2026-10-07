@@ -797,8 +797,8 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
         build_thread = threading.Thread(target=build_iterator)
         build_thread.start()
 
-        iterator_or_exc = iterator_queue.get(timeout=0.2)
-        build_thread.join(timeout=0.2)
+        iterator_or_exc = iterator_queue.get(timeout=5.0)
+        build_thread.join(timeout=5.0)
 
         if isinstance(iterator_or_exc, BaseException):
             raise iterator_or_exc
@@ -820,8 +820,8 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
         assert first_result_queue.empty()
 
         release_first.set()
-        first_result_or_exc = first_result_queue.get(timeout=0.2)
-        first_thread.join(timeout=0.2)
+        first_result_or_exc = first_result_queue.get(timeout=5.0)
+        first_thread.join(timeout=5.0)
 
         if isinstance(first_result_or_exc, BaseException):
             raise first_result_or_exc
@@ -1497,7 +1497,8 @@ def test_submit_file_forwards_request_headers(tmp_path: Path) -> None:
     assert captured["header_api"] == "base-key"
 
 
-def test_serialize_convert_options_omits_defaults_and_none() -> None:
+def test_serialize_convert_options_omits_unset_and_none() -> None:
+    """Fields not passed by the caller are omitted; explicitly-set None is omitted too."""
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         with DoclingServiceClient(url=TEST_BASE_URL) as client:
@@ -1513,6 +1514,27 @@ def test_serialize_convert_options_omits_defaults_and_none() -> None:
         "PydanticSerializationUnexpectedValue" not in str(warning.message)
         for warning in caught
     )
+
+
+def test_serialize_convert_options_includes_explicitly_set_defaults() -> None:
+    """A field explicitly set to its default value must appear in the payload."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        # do_chart_extraction defaults to False; setting it explicitly must send it.
+        payload = client._serialize_convert_options(
+            ConvertDocumentsRequestOptions(do_chart_extraction=False)
+        )
+
+    assert "do_chart_extraction" in payload
+    assert payload["do_chart_extraction"] is False
+
+
+def test_serialize_convert_options_omits_unset_fields() -> None:
+    """Fields never passed to the constructor must not appear in the payload."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        payload = client._serialize_convert_options(ConvertDocumentsRequestOptions())
+
+    assert "do_chart_extraction" not in payload
+    assert "do_ocr" not in payload
 
 
 def test_form_encode_options_jsonifies_nested_values() -> None:

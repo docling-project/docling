@@ -28,6 +28,10 @@ from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
     ApiVlmEngine,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineInput
+from docling.models.stages.vlm_convert.vlm_convert_model import (
+    _prediction_from_engine_output,
+)
+from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
     api_image_request,
     api_image_request_streaming,
@@ -110,12 +114,11 @@ def test_the_prompt_and_image_are_both_sent_in_the_message(api, endpoint, image)
     assert image_part["image_url"]["url"].startswith("data:image/png;base64,")
 
 
-def test_timeout_is_applied_and_reported_as_an_empty_result(api, endpoint, image):
-    """A read timeout is swallowed rather than raised.
+def test_timeout_is_applied_and_reported_as_an_inference_error(api, endpoint, image):
+    """A read timeout is not raised, but it is not an empty completion either.
 
-    The caller gets an empty result with an unspecified stop reason, which is
-    indistinguishable from a model that genuinely produced nothing. Asserted
-    here as the current contract, not as an endorsement of it.
+    The caller gets an empty result marked INFERENCE_ERROR with the reason, so it
+    can be told apart from a model that genuinely produced nothing (#4009).
     """
     api.delay_seconds = 1.0
 
@@ -124,7 +127,8 @@ def test_timeout_is_applied_and_reported_as_an_empty_result(api, endpoint, image
     elapsed = time.monotonic() - started
 
     assert result.text == ""
-    assert result.stop_reason == VlmStopReason.UNSPECIFIED
+    assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
+    assert result.error is not None and "timed out" in result.error
     # It gave up on the configured timeout instead of waiting for the response.
     assert elapsed < 0.9
 
@@ -153,13 +157,18 @@ def test_a_missing_usage_block_leaves_the_token_count_unset(api, endpoint, image
 
 
 @pytest.mark.parametrize("status", [400, 401, 429, 500])
-def test_api_errors_do_not_raise_but_yield_no_text(api, endpoint, image, status):
-    """A failed call is reported as empty output, not an exception."""
+def test_api_errors_do_not_raise_but_are_marked_as_inference_errors(
+    api, endpoint, image, status
+):
+    """A failed call is not an exception, but it is not empty output either:
+    the result carries INFERENCE_ERROR and the provider's status (#4009)."""
     api.fail_status = status
 
     result = api_image_request(image, "describe", endpoint, model="m")
 
     assert result.text == ""
+    assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
+    assert result.error is not None and result.error.startswith(f"HTTP {status}")
 
 
 # -- streaming -----------------------------------------------------------
@@ -202,6 +211,21 @@ def test_malformed_json_chunks_are_skipped(api, endpoint, image):
     assert result.text == "good"
 
 
+def test_streamed_logprobs_are_collected_in_order(api, endpoint, image):
+    api.stream_chunks = ["Hel", "lo"]
+    api.stream_logprobs = [-0.25, -1.5]
+
+    result = api_image_request_streaming(
+        image, "describe", endpoint, model="m", logprobs=True
+    )
+
+    assert result.logprobs is not None
+    assert [(t.token, t.logprob) for t in result.logprobs.content] == [
+        ("Hel", -0.25),
+        ("lo", -1.5),
+    ]
+
+
 # -- the engine layer ----------------------------------------------------
 
 
@@ -230,6 +254,37 @@ def test_engine_options_drive_the_outgoing_request(api, image):
     assert body["temperature"] == 0.25
     sent = api.service.requests_for("POST", r"/v1/chat/completions")[-1].headers
     assert sent["x-tenant"] == "acme"
+
+
+def test_engine_keeps_logprobs_when_a_stopper_aborts_the_stream(api, image):
+    """A custom stopper switches the engine to streaming; generated tokens
+    must still reach the prediction, up to the point where it stopped."""
+
+    class _StopOnLoop(GenerationStopper):
+        def should_stop(self, s: str) -> bool:
+            return "loop" in s
+
+    api.stream_chunks = ["ok ", "loop", " not read"]
+    api.stream_logprobs = [-0.1, -0.2, -0.3]
+    engine = _engine(api, params={"model": "m", "logprobs": True})
+
+    outputs = engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=image,
+                prompt="describe",
+                extra_generation_config={"custom_stopping_criteria": [_StopOnLoop]},
+            )
+        ]
+    )
+
+    assert _sent_body(api)["stream"] is True
+    prediction = _prediction_from_engine_output(outputs[0])
+    assert prediction.text == "ok loop"
+    assert [(t.text, t.logprob) for t in prediction.generated_tokens] == [
+        ("ok ", -0.1),
+        ("loop", -0.2),
+    ]
 
 
 def test_engine_requires_remote_services_to_be_enabled(api):

@@ -74,13 +74,11 @@ class TextHelperMixin:
         if "\n\n" in text:
             parts = text.split("\n\n")
 
-            first_part = parts[0].strip()
-            if first_part:
-                text_buffer.append(first_part)
+            text_buffer.append(parts[0])
 
             flush_fn()
 
-            for part in parts[1:]:
+            for part in parts[1:-1]:
                 part_stripped = part.strip()
                 if part_stripped:
                     doc.add_text(
@@ -89,6 +87,8 @@ class TextHelperMixin:
                         text=part_stripped,
                         formatting=formatting,
                     )
+
+            text_buffer.append(parts[-1])
         else:
             text_buffer.append(text)
 
@@ -114,7 +114,7 @@ class TextHelperMixin:
         pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"
         match = re.search(pattern, latex_str, re.DOTALL)
         if match:
-            return match.group(1).strip()
+            return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
         return latex_str
 
     def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
@@ -139,8 +139,14 @@ class TextHelperMixin:
             if node.nodeargd and node.nodeargd.argnlist:
                 arg = node.nodeargd.argnlist[0]
                 if arg:
-                    opt_text = arg.latex_verbatim().strip("[] ")
-                    return (f"{opt_text}: ", consumed)
+                    if hasattr(arg, "nodelist"):
+                        opt_text = self._nodes_to_text(arg.nodelist)
+                        if not opt_text:
+                            opt_text = arg.latex_verbatim().strip("[] ")
+                    else:
+                        opt_text = arg.latex_verbatim().strip("[] ")
+                    if opt_text:
+                        return (f"{opt_text}: ", consumed)
             return ("", consumed)
         if node.macroname in MACROS_ESCAPED:
             return (node.macroname, consumed)

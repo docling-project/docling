@@ -36,31 +36,22 @@
         "$ref": "#/texts/10"
       },
       {
-        "$ref": "#/texts/11"
+        "$ref": "#/groups/2"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/13"
       },
       {
         "$ref": "#/texts/14"
       },
       {
-        "$ref": "#/texts/15"
+        "$ref": "#/groups/3"
       },
       {
         "$ref": "#/texts/16"
       },
       {
-        "$ref": "#/groups/3"
-      },
-      {
-        "$ref": "#/texts/18"
-      },
-      {
-        "$ref": "#/texts/19"
-      },
-      {
-        "$ref": "#/texts/20"
+        "$ref": "#/texts/17"
       },
       {
         "$ref": "#/groups/4"
@@ -69,22 +60,22 @@
         "$ref": "#/tables/1"
       },
       {
-        "$ref": "#/texts/28"
+        "$ref": "#/texts/25"
       },
       {
         "$ref": "#/tables/2"
       },
       {
+        "$ref": "#/texts/26"
+      },
+      {
+        "$ref": "#/texts/27"
+      },
+      {
+        "$ref": "#/texts/28"
+      },
+      {
         "$ref": "#/texts/29"
-      },
-      {
-        "$ref": "#/texts/30"
-      },
-      {
-        "$ref": "#/texts/31"
-      },
-      {
-        "$ref": "#/texts/32"
       }
     ],
     "content_layer": "body",
@@ -145,10 +136,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/12"
+          "$ref": "#/texts/11"
         },
         {
-          "$ref": "#/texts/13"
+          "$ref": "#/texts/12"
         }
       ],
       "content_layer": "body",
@@ -162,7 +153,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/17"
+          "$ref": "#/texts/15"
         }
       ],
       "content_layer": "body",
@@ -176,6 +167,15 @@
       },
       "children": [
         {
+          "$ref": "#/texts/18"
+        },
+        {
+          "$ref": "#/texts/19"
+        },
+        {
+          "$ref": "#/texts/20"
+        },
+        {
           "$ref": "#/texts/21"
         },
         {
@@ -186,15 +186,6 @@
         },
         {
           "$ref": "#/texts/24"
-        },
-        {
-          "$ref": "#/texts/25"
-        },
-        {
-          "$ref": "#/texts/26"
-        },
-        {
-          "$ref": "#/texts/27"
         }
       ],
       "content_layer": "body",
@@ -217,7 +208,7 @@
           "bbox": {
             "l": 129.78,
             "t": 539.6,
-            "r": 478.14,
+            "r": 476.33,
             "b": 519.75,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -360,7 +351,7 @@
           "bbox": {
             "l": 129.78,
             "t": 404.08,
-            "r": 479.07,
+            "r": 477.25,
             "b": 372.24,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -474,10 +465,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 148.77,
-            "t": 313.14,
-            "r": 158.48,
-            "b": 301.04,
+            "l": 158.48,
+            "t": 312.25,
+            "r": 162.08,
+            "b": 301.51,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -501,50 +492,23 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 158.48,
-            "t": 312.25,
-            "r": 162.08,
-            "b": 301.51,
+            "l": 148.77,
+            "t": 313.14,
+            "r": 177.63,
+            "b": 301.04,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            1
+            4
           ]
         }
       ],
-      "orig": "\u0084",
-      "text": "\u0084"
+      "orig": "\u0084 No",
+      "text": "\u0084 No"
     },
     {
       "self_ref": "#/texts/11",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 166.77,
-            "t": 309.41,
-            "r": 177.63,
-            "b": 301.52,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            2
-          ]
-        }
-      ],
-      "orig": "No",
-      "text": "No"
-    },
-    {
-      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -573,7 +537,7 @@
       "marker": "25."
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -602,34 +566,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/14",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 148.77,
-            "t": 200.8,
-            "r": 158.48,
-            "b": 188.69,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "\u0084",
-      "text": "\u0084"
-    },
-    {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/body"
       },
@@ -656,7 +593,7 @@
       "text": "\u0084"
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/body"
       },
@@ -667,23 +604,23 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 166.77,
-            "t": 197.06,
+            "l": 148.77,
+            "t": 200.8,
             "r": 274.5,
-            "b": 189.17,
+            "b": 188.69,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            33
+            35
           ]
         }
       ],
-      "orig": "Yes, at regional (district) level",
-      "text": "Yes, at regional (district) level"
+      "orig": "\u0084 Yes, at regional (district) level",
+      "text": "\u0084 Yes, at regional (district) level"
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -712,34 +649,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/18",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 148.77,
-            "t": 165.46,
-            "r": 158.48,
-            "b": 153.36,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "\u0084",
-      "text": "\u0084"
-    },
-    {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/body"
       },
@@ -766,7 +676,7 @@
       "text": "\u0084"
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/body"
       },
@@ -777,23 +687,23 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 166.77,
-            "t": 161.72,
+            "l": 148.77,
+            "t": 165.46,
             "r": 177.63,
-            "b": 153.83,
+            "b": 153.36,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            2
+            4
           ]
         }
       ],
-      "orig": "No",
-      "text": "No"
+      "orig": "\u0084 No",
+      "text": "\u0084 No"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -806,7 +716,7 @@
           "bbox": {
             "l": 755.96,
             "t": 734.63,
-            "r": 1112.48,
+            "r": 1111.2,
             "b": 702.74,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -822,7 +732,7 @@
       "marker": "26."
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -835,7 +745,7 @@
           "bbox": {
             "l": 774.94,
             "t": 696.69,
-            "r": 1078.25,
+            "r": 1076.35,
             "b": 684.59,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -851,7 +761,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -880,7 +790,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -909,7 +819,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -922,7 +832,7 @@
           "bbox": {
             "l": 774.94,
             "t": 643.68,
-            "r": 838.06,
+            "r": 836.15,
             "b": 631.58,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -938,7 +848,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -967,7 +877,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -980,7 +890,7 @@
           "bbox": {
             "l": 755.95,
             "t": 285.9,
-            "r": 1113.81,
+            "r": 1111.99,
             "b": 254.05,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -996,7 +906,7 @@
       "marker": "28."
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/body"
       },
@@ -1023,7 +933,7 @@
       "text": "(Please select all that apply)"
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/body"
       },
@@ -1050,34 +960,7 @@
       "text": "208"
     },
     {
-      "self_ref": "#/texts/30",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "page_footer",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 1167.31,
-            "t": 34.75,
-            "r": 1182.3,
-            "b": 26.9,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            3
-          ]
-        }
-      ],
-      "orig": "209",
-      "text": "209"
-    },
-    {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/body"
       },
@@ -1104,7 +987,7 @@
       "text": "Global Study on Legal Aid - Global Report"
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/body"
       },
@@ -1129,6 +1012,33 @@
       ],
       "orig": "Annex",
       "text": "Annex"
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "page_footer",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 1167.31,
+            "t": 34.75,
+            "r": 1182.3,
+            "b": 26.9,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            3
+          ]
+        }
+      ],
+      "orig": "209",
+      "text": "209"
     }
   ],
   "pictures": [],
@@ -1276,7 +1186,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "\u0084 \u0084 Other (Please specify) ______________________________________________________",
+            "text": "\u0084 \u0084 Other (Please specify)______________________________________________________",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -1432,7 +1342,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "\u0084 \u0084 Other (Please specify) ______________________________________________________",
+              "text": "\u0084 \u0084 Other (Please specify)______________________________________________________",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -1728,7 +1638,7 @@
             "end_row_offset_idx": 12,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "\u0084 \u0084 Other (Please specify) ______________________________________________________",
+            "text": "\u0084 \u0084 Other (Please specify)______________________________________________________",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -1996,7 +1906,7 @@
               "end_row_offset_idx": 12,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "\u0084 \u0084 Other (Please specify) ______________________________________________________",
+              "text": "\u0084 \u0084 Other (Please specify)______________________________________________________",
               "column_header": false,
               "row_header": false,
               "row_section": false,

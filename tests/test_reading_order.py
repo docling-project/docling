@@ -9,7 +9,7 @@ import sys
 from typing import Dict, List
 
 import pytest
-from docling_core.types.doc.base import CoordOrigin, Size
+from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import (
     ContentLayer,
     DocItem,
@@ -21,6 +21,8 @@ from docling_core.types.doc.labels import DocItemLabel
 from docling.models.postprocessing.reading_order_rb import (
     PageElement,
     ReadingOrderPredictor,
+    SeparatorElement,
+    build_page_separators,
 )
 
 IS_CI = bool(os.getenv("CI"))
@@ -627,3 +629,530 @@ def test_reading_order_near_boundary_clusters(monkeypatch):
     state = _ReadingOrderPredictorState()
     # Must not raise; before the fix this built y_min > y_max.
     ReadingOrderPredictor()._init_ud_maps(page_elems, state)
+
+
+def test_horizontal_separator_finishes_upper_band_before_lower_columns() -> None:
+    page_size = Size(width=600, height=800)
+
+    def element(
+        cid: int, left: float, bottom: float, right: float, top: float
+    ) -> PageElement:
+        return PageElement(
+            cid=cid,
+            text=str(cid),
+            page_no=1,
+            page_size=page_size,
+            label=DocItemLabel.TEXT,
+            l=left,
+            r=right,
+            b=bottom,
+            t=top,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    elements = [
+        element(0, 40, 500, 250, 600),
+        element(1, 330, 470, 560, 600),
+        element(2, 40, 200, 250, 400),
+        element(3, 330, 200, 560, 400),
+    ]
+    separator = SeparatorElement(
+        cid=-1,
+        page_no=1,
+        page_size=page_size,
+        orientation="horizontal",
+        l=40,
+        r=560,
+        b=440,
+        t=440,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+    baseline = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements)
+    )
+    separated = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements), page_separators=[separator]
+    )
+
+    assert [element.cid for element in baseline] == [0, 2, 1, 3]
+    assert [element.cid for element in separated] == [0, 1, 2, 3]
+    assert all(isinstance(element, PageElement) for element in separated)
+
+
+def test_horizontal_separator_finishes_columns_in_spatial_order() -> None:
+    page_size = Size(width=600, height=800)
+
+    def element(
+        cid: int, left: float, bottom: float, right: float, top: float
+    ) -> PageElement:
+        return PageElement(
+            cid=cid,
+            text=str(cid),
+            page_no=1,
+            page_size=page_size,
+            label=DocItemLabel.TEXT,
+            l=left,
+            r=right,
+            b=bottom,
+            t=top,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    # Bottom-left origin: the three columns share the same vertical span.
+    # Their spatial order (1, 3, 2) differs from their CID order (1, 2, 3).
+    #
+    #          x=40   180 220   360 400   540 560
+    # y=740    +--------------- 0 ---------------+
+    # y=700    +-----------------------------------+
+    # y=650    +-- 1 --+  +-- 3 --+  +-- 2 --+
+    # y=500    +-------+  +-------+  +-------+
+    # y=400    ========== separator =============
+    # y=350    +--------------- 4 ---------------+
+    # y=200    +-----------------------------------+
+    elements = [
+        element(0, 40, 700, 560, 740),  # cid=0, l=40, r=560, b=700, t=740
+        element(1, 40, 500, 180, 650),  # cid=1, l=40, r=180, b=500, t=650
+        element(2, 400, 500, 540, 650),  # cid=2, l=400, r=540, b=500, t=650
+        element(3, 220, 500, 360, 650),  # cid=3, l=220, r=360, b=500, t=650
+        element(4, 40, 200, 560, 350),  # cid=4, l=40, r=560, b=200, t=350
+    ]
+    separator = SeparatorElement(
+        cid=-1,
+        page_no=1,
+        page_size=page_size,
+        orientation="horizontal",
+        l=40,
+        r=560,
+        b=400,
+        t=400,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+    result = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements), page_separators=[separator]
+    )
+
+    assert [element.cid for element in result] == [0, 1, 3, 2, 4]
+
+
+def test_horizontal_separator_finishes_sidecar_before_next_band() -> None:
+    page_size = Size(width=600, height=800)
+
+    def element(
+        cid: int,
+        left: float,
+        bottom: float,
+        right: float,
+        top: float,
+        *,
+        label: DocItemLabel = DocItemLabel.TEXT,
+    ) -> PageElement:
+        return PageElement(
+            cid=cid,
+            text=str(cid),
+            page_no=1,
+            page_size=page_size,
+            label=label,
+            l=left,
+            r=right,
+            b=bottom,
+            t=top,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    elements = [
+        element(0, 40, 620, 420, 680),
+        element(1, 40, 580, 180, 610),
+        element(2, 40, 540, 260, 570),
+        element(3, 40, 200, 560, 350),
+        element(30, 480, 620, 560, 680, label=DocItemLabel.PICTURE),
+    ]
+    separators = [
+        SeparatorElement(
+            cid=-1,
+            page_no=1,
+            page_size=page_size,
+            orientation="horizontal",
+            l=40,
+            r=560,
+            b=700,
+            t=700,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        ),
+        SeparatorElement(
+            cid=-2,
+            page_no=1,
+            page_size=page_size,
+            orientation="horizontal",
+            l=40,
+            r=560,
+            b=500,
+            t=500,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        ),
+    ]
+
+    result = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements), page_separators=separators
+    )
+
+    assert [element.cid for element in result] == [0, 1, 2, 30, 3]
+
+
+def test_horizontal_separator_is_not_a_dilation_anchor() -> None:
+    from docling.models.postprocessing.reading_order_rb import (
+        _ReadingOrderPredictorState,
+    )
+
+    page_size = Size(width=600, height=800)
+    element = PageElement(
+        cid=0,
+        text="text",
+        page_no=1,
+        page_size=page_size,
+        label=DocItemLabel.TEXT,
+        l=100,
+        r=200,
+        b=300,
+        t=350,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+    separator = SeparatorElement(
+        cid=-1,
+        page_no=1,
+        page_size=page_size,
+        orientation="horizontal",
+        l=90,
+        r=210,
+        b=250,
+        t=250,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+    state = _ReadingOrderPredictorState(
+        up_map={0: [], 1: [0]},
+        dn_map={0: [1], 1: []},
+    )
+
+    result = ReadingOrderPredictor()._do_horizontal_dilation(
+        [element, separator],
+        copy.deepcopy([element, separator]),
+        state,
+        vertical_separators=None,
+    )
+
+    assert result[0].l == element.l
+    assert result[0].r == element.r
+
+
+def test_horizontal_dilation_preserves_columns_at_graph_branches() -> None:
+    page_size = Size(width=600, height=800)
+
+    def element(
+        cid: int,
+        left: float,
+        bottom: float,
+        right: float,
+        top: float,
+        *,
+        label: DocItemLabel = DocItemLabel.TEXT,
+    ) -> PageElement:
+        return PageElement(
+            cid=cid,
+            text=str(cid),
+            page_no=1,
+            page_size=page_size,
+            label=label,
+            l=left,
+            r=right,
+            b=bottom,
+            t=top,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    elements = [
+        element(0, 40, 700, 360, 740, label=DocItemLabel.SECTION_HEADER),
+        element(1, 40, 620, 180, 680),
+        element(2, 40, 520, 180, 600),
+        element(3, 220, 620, 360, 680),
+        element(4, 220, 520, 360, 600),
+        element(30, 40, 400, 360, 500, label=DocItemLabel.PICTURE),
+    ]
+
+    result = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements)
+    )
+
+    assert [element.cid for element in result] == [0, 1, 2, 3, 4, 30]
+
+
+def test_graphics_continue_left_to_right_only_across_an_empty_gap() -> None:
+    from docling.models.postprocessing.reading_order_rb import (
+        _ReadingOrderPredictorState,
+    )
+
+    page_size = Size(width=600, height=800)
+
+    def element(cid: int, left: float, right: float) -> PageElement:
+        return PageElement(
+            cid=cid,
+            text=str(cid),
+            page_no=1,
+            page_size=page_size,
+            label=DocItemLabel.PICTURE,
+            l=left,
+            r=right,
+            b=200,
+            t=300,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    left = element(0, 40, 120)
+    right = element(1, 300, 380)
+    predictor = ReadingOrderPredictor()
+
+    empty_gap_state = _ReadingOrderPredictorState()
+    predictor._init_l2r_map([left, right], empty_gap_state, vertical_separators=None)
+    assert empty_gap_state.l2r_map == {0: 1}
+
+    occupied_gap_state = _ReadingOrderPredictorState()
+    predictor._init_l2r_map(
+        [left, element(10, 160, 240), right],
+        occupied_gap_state,
+        vertical_separators=None,
+    )
+    assert occupied_gap_state.l2r_map == {}
+
+
+def test_build_page_separators_merges_visible_rules_and_rejects_text_crossing() -> None:
+    page_size = Size(width=600, height=800)
+    elements = [
+        _box(0, DocItemLabel.TEXT, l=40, r=560, b=500, t=650).model_copy(
+            update={"text": "upper band"}
+        ),
+        _box(1, DocItemLabel.TEXT, l=40, r=560, b=150, t=300).model_copy(
+            update={"text": "lower band"}
+        ),
+    ]
+    horizontal_line = BoundingBox(
+        l=40,
+        r=560,
+        t=400,
+        b=400,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+    horizontal_filled_rule = BoundingBox(
+        l=40,
+        r=560,
+        t=399.8,
+        b=400.2,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+    crossing_vertical = BoundingBox(
+        l=300,
+        r=300,
+        t=100,
+        b=700,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+
+    separators = build_page_separators(
+        page_no=1,
+        page_size=page_size,
+        page_elements=elements,
+        shape_lines=[horizontal_line, crossing_vertical],
+        shape_bounding_boxes=[horizontal_filled_rule],
+    )
+
+    assert len(separators) == 1
+    assert separators[0].orientation == "horizontal"
+    assert separators[0].l == pytest.approx(40)
+    assert separators[0].r == pytest.approx(560)
+
+
+def test_vertical_separator_clamps_horizontal_dilation() -> None:
+    element = _box(0, DocItemLabel.TEXT, l=100, r=200, b=200, t=300)
+    separator = SeparatorElement(
+        cid=-1,
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        orientation="vertical",
+        l=250,
+        r=250,
+        b=100,
+        t=400,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+    x0, x1 = ReadingOrderPredictor._clamp_dilation_to_vertical_separators(
+        element,
+        x0=80,
+        x1=300,
+        vertical_separators=[separator],
+    )
+
+    assert x0 == 80
+    assert x1 == 250
+
+
+def _text(cid: int, b: float, t: float, l: float, r: float) -> PageElement:  # noqa: E741
+    return _box(cid, DocItemLabel.TEXT, b, t, l, r).model_copy(update={"text": "text"})
+
+
+def _hline(l: float, r: float, y: float) -> BoundingBox:  # noqa: E741
+    return BoundingBox(l=l, r=r, b=y, t=y, coord_origin=CoordOrigin.BOTTOMLEFT)
+
+
+def _vline(x: float, b: float, t: float) -> BoundingBox:
+    return BoundingBox(l=x, r=x, b=b, t=t, coord_origin=CoordOrigin.BOTTOMLEFT)
+
+
+def _page_separators(
+    elements: list[PageElement], lines: list[BoundingBox]
+) -> list[SeparatorElement]:
+    return build_page_separators(
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        page_elements=elements,
+        shape_lines=lines,
+        shape_bounding_boxes=None,
+    )
+
+
+def test_build_page_separators_joins_fragmented_rule() -> None:
+    elements = [_text(0, 500, 600, 40, 560), _text(1, 200, 300, 40, 560)]
+    # One rule drawn as three collinear pieces with sub-point gaps.
+    lines = [_hline(381, 560, 400), _hline(40, 200, 400), _hline(200.5, 380, 400)]
+
+    separators = _page_separators(elements, lines)
+
+    assert [(s.l, s.r, s.b) for s in separators] == [(40, 560, 400)]
+
+
+def test_build_page_separators_joins_short_horizontal_fragments() -> None:
+    elements = [_text(0, 500, 600, 40, 560), _text(1, 200, 300, 40, 560)]
+    lines = [_hline(40 + i * 40, 79.5 + i * 40, 400) for i in range(13)]
+    lines.extend([_hline(100, 130, 390), _hline(40, 70, 380), _hline(72, 102, 380)])
+
+    separators = _page_separators(elements, lines)
+
+    assert [(s.l, s.r, s.b) for s in separators] == [(40, 559.5, 400)]
+
+
+def test_build_page_separators_joins_short_vertical_fragments() -> None:
+    elements = [_text(0, 220, 580, 40, 250), _text(1, 220, 580, 350, 560)]
+    lines = [_vline(300, 200 + i * 30, 229.5 + i * 30) for i in range(13)]
+    lines.extend([_vline(310, 300, 330), _vline(320, 200, 230), _vline(320, 232, 262)])
+
+    separators = _page_separators(elements, lines)
+
+    assert [(s.l, s.b, s.t) for s in separators] == [(300, 200, 589.5)]
+
+
+def test_build_page_separators_merges_until_no_rules_overlap() -> None:
+    # One greedy pass merged (60..280) into (40..100) and (250..360 @ 400.5)
+    # into (300..360 @ 399.5), leaving two overlapping rules at y=400. Each
+    # was then strictly above the other, and the reading order never ended.
+    elements = [_text(0, 500, 600, 40, 360), _text(1, 200, 300, 40, 360)]
+    lines = [
+        _hline(300, 360, 399.5),
+        _hline(40, 100, 400),
+        _hline(60, 280, 400),
+        _hline(250, 360, 400.5),
+    ]
+
+    separators = _page_separators(elements, lines)
+
+    assert [(s.l, s.r, s.b) for s in separators] == [(40, 360, 400)]
+
+
+def test_build_page_separators_rejects_rule_through_graphic() -> None:
+    # 2206.01062 p9: a chart rule overshoots the predicted picture box, so it
+    # is not inside it, yet it runs through it and must not split the page.
+    elements = [
+        _box(0, DocItemLabel.PICTURE, 343, 707, 54, 549),
+        _text(1, 720, 750, 54, 549),
+        _text(2, 100, 320, 54, 549),
+    ]
+    through = _hline(53.0, 575.4, 530.9)
+    below = _hline(53.0, 575.4, 331.0)
+
+    separators = _page_separators(elements, [through, below])
+
+    assert [s.b for s in separators] == [331.0]
+
+
+def test_build_page_separators_rejects_graphic_frame_and_one_sided_rules() -> None:
+    elements = [
+        _text(0, 600, 700, 100, 500),
+        _box(1, DocItemLabel.PICTURE, 300, 500, 100, 500),
+    ]
+    between = _hline(100, 500, 550)
+    # A rule strictly inside a graphic already crosses it; this check is what
+    # drops the graphic's own frame.
+    frame = _hline(100, 500, 500)
+    # Nothing below it to separate from.
+    trailing = _hline(100, 500, 200)
+
+    separators = _page_separators(elements, [between, frame, trailing])
+
+    assert [s.b for s in separators] == [550]
+
+
+def test_vertical_separator_blocks_left_to_right_link() -> None:
+    elements = [
+        _text(0, 600, 700, 40, 280),
+        _text(1, 600, 700, 320, 560),
+        _text(2, 400, 580, 40, 280),
+    ]
+    separator = SeparatorElement(
+        cid=-1,
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        orientation="vertical",
+        l=300,
+        r=300,
+        b=380,
+        t=720,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+
+    baseline = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements)
+    )
+    separated = ReadingOrderPredictor().predict_reading_order(
+        page_elements=copy.deepcopy(elements), page_separators=[separator]
+    )
+
+    # 0 -> 1 is a same-row continuation until the rule divides the columns.
+    assert [element.cid for element in baseline] == [0, 1, 2]
+    assert [element.cid for element in separated] == [0, 2, 1]
+
+
+def test_consecutive_text_overlapping_slightly_stays_in_sequence() -> None:
+    # 1 continues 0 in the left column but its top pokes 1pt into 0, so 0 is
+    # not strictly above it; without the link, 0 flows into the right column
+    # (2) first.
+    elements = [
+        _text(0, 600, 700, 40, 560),
+        _text(1, 200, 601, 40, 280),
+        _text(2, 500, 590, 320, 560),
+    ]
+    assert not elements[0].is_strictly_above(elements[1])
+
+    result = ReadingOrderPredictor().predict_reading_order(page_elements=elements)
+
+    assert [element.cid for element in result] == [0, 1, 2]
+
+
+def test_upward_walk_stops_on_up_map_cycle() -> None:
+    from docling.models.postprocessing.reading_order_rb import (
+        _ReadingOrderPredictorState,
+    )
+
+    # Each node above the other, as two overlapping rules at one height were.
+    state = _ReadingOrderPredictorState(up_map={0: [1], 1: [0]})
+
+    top = ReadingOrderPredictor()._depth_first_search_upwards(0, [False, False], state)
+
+    assert top == 1

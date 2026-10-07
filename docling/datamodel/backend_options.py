@@ -4,6 +4,7 @@
 from enum import Enum
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
+from urllib.parse import urlparse
 
 from pydantic import (
     AnyUrl,
@@ -15,6 +16,7 @@ from pydantic import (
     PrivateAttr,
     SecretStr,
     conint,
+    field_validator,
     model_validator,
 )
 
@@ -149,10 +151,25 @@ class HTMLBackendOptions(BaseBackendOptions):
             description=(
                 "HTTP headers to include when fetching remote images. Use for "
                 "authentication (e.g., API keys, bearer tokens) or custom headers "
-                "required by image servers."
+                "required by image servers. They are only sent to the origins in "
+                "`headers_allowed_origins`, and are dropped on redirects to other "
+                "origins."
             ),
             examples=[{"Authorization": "Bearer TOKEN"}, {"X-API-Key": "your-api-key"}],
             repr=False,
+        ),
+    ] = None
+    headers_allowed_origins: Annotated[
+        list[str] | None,
+        Field(
+            description=(
+                "Origins (scheme, host and optional port, e.g. "
+                "`https://cdn.example.com`) that receive `headers`. When None, "
+                "headers are only sent to the origin of the source document "
+                "(`source_uri`); for local files and streams without a remote "
+                "`source_uri` they are then not sent at all."
+            ),
+            examples=[["https://example.com", "https://cdn.example.com:8443"]],
         ),
     ] = None
     add_title: bool = Field(
@@ -173,6 +190,18 @@ class HTMLBackendOptions(BaseBackendOptions):
         5,
         description="Maximum number of HTTP redirects to follow when fetching remote resources. Set to 0 to disable redirects.",
     )
+
+    @field_validator("headers_allowed_origins")
+    @classmethod
+    def _check_origins(cls, value: list[str] | None) -> list[str] | None:
+        for origin in value or []:
+            parsed = urlparse(origin)
+            if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+                raise ValueError(
+                    f"Invalid origin {origin!r}: expected an http(s) URL such as "
+                    "'https://cdn.example.com'"
+                )
+        return value
 
 
 class MarkdownBackendOptions(TextBackendOptions):
@@ -348,6 +377,37 @@ class IWorkBackendOptions(BaseBackendOptions):
     max_member_count: Annotated[
         PositiveInt, Field(description="Maximum number of archive members to inspect")
     ] = 5000
+    sheet_names: Annotated[
+        Optional[list[str]],
+        Field(
+            description=(
+                "An optional list of sheet names to include when converting a "
+                "Numbers spreadsheet. When set, only sheets whose names appear "
+                "in this list will be processed. Sheet names are matched "
+                "case-sensitively. Set to None (default) to include all sheets. "
+                "Ignored by the Pages backend, which has no sheets."
+            )
+        ),
+    ] = None
+    render_chart_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to render an image for each chart in a Keynote "
+                "presentation or a Numbers spreadsheet and attach it to the "
+                "chart PictureItem. Neither app stores a picture of a chart, so "
+                "the chart is rebuilt from the data read out of the document as "
+                "a single-chart Office document and "
+                "rasterized with LibreOffice, the route the Office backends "
+                "render their charts by. The image has the chart's kind, data "
+                "and title but not its colours or fonts, and a chart with no "
+                "Office equivalent (mixed, two-axis, bubble or interactive) "
+                "gets none. Opt-in (default False) because it requires "
+                "LibreOffice and inflates the output size. Charts always keep "
+                "their classification and data regardless of this option."
+            )
+        ),
+    ] = False
 
 
 class MsExcelBackendOptions(BaseBackendOptions):
@@ -439,6 +499,20 @@ class MsWordBackendOptions(BaseBackendOptions):
         ),
     )
 
+    use_outline_level_for_headings: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use `w:outlineLvl` as a heading signal when no name-based signal "
+                "exists (e.g. localized styles such as `Nadpis1`). Known limitation: "
+                "styles that carry an outline level only for TOC participation are "
+                "also promoted to headings. Set to `False` to disable. Note: for "
+                "styles already identified as headings by name, the level is still "
+                "read from `w:outlineLvl` regardless of this option."
+            )
+        ),
+    ] = True
+
 
 class OdsBackendOptions(BaseBackendOptions):
     """Options specific to the ODS (OpenDocument Spreadsheet) backend."""
@@ -490,7 +564,12 @@ class LatexBackendOptions(BaseBackendOptions):
         None,
         description=(
             "The engine to use for rendering Tikz diagrams into images. "
-            "Set to 'tectonic' to enable asynchronous image generation."
+            "Set to 'tectonic' to enable asynchronous image generation. "
+            "Without shell escape, Tectonic runs with --untrusted and "
+            "--only-cached, and diagrams whose source names absolute or "
+            "parent-directory files are kept as TikZ code instead of rendered. "
+            "This check is best-effort: process untrusted LaTeX in an isolated "
+            "environment."
         ),
     )
     tikz_engine_timeout: float = Field(
@@ -502,7 +581,7 @@ class LatexBackendOptions(BaseBackendOptions):
         description=(
             "Allow Tectonic TikZ rendering to enable shell escape during "
             "compilation. Disabled by default for safer rendering of untrusted "
-            "LaTeX."
+            "LaTeX; enable only for trusted input."
         ),
     )
 

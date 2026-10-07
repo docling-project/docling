@@ -56,6 +56,7 @@ from odfdo import (
     Link,
     List as OdfList,
     ListItem,
+    Note,
     Paragraph,
     Section,
     Spacer,
@@ -287,6 +288,30 @@ def test_odp_conversion(odp_path: Path):
     } <= body_texts
 
 
+def test_ods_page_range(ods_path: Path):
+    """page_range selects sheets, keeping their page numbers, as for XLSX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(
+        ods_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    assert set(doc.pages) == {2}
+    assert [g.name for g in doc.groups] == ["sheet: Sheet2"]
+    assert len(doc.tables) == 1
+
+
+def test_odp_page_range(odp_path: Path):
+    """page_range selects slides, as for PPTX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(
+        odp_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    texts = {t.text for t in doc.texts}
+    assert "Second Slide Heading" in texts
+    assert not {"Slide One", "Headline Slide", "First bullet"} & texts
+
+
 @pytest.mark.parametrize(
     ("input_format", "document_type", "suffix"),
     [
@@ -366,6 +391,39 @@ def test_ods_merged_cells(tmp_path: Path):
     assert anchor.row_span == 2
     assert anchor.col_span == 1
     assert anchor.text == "merged"
+
+
+def test_ods_oversized_spans_clamped_to_table_size(tmp_path: Path):
+    # Declared spans far beyond the sheet must not size the table: it keeps the
+    # shape of its real cells, and the spans stop at its edges.
+    path = tmp_path / "oversized_spans.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    t = Table("S", width=2, height=2)
+    t.set_value("A1", "A")
+    t.set_value("B1", "B")
+    t.set_value("B2", "C")
+    t.set_span([0, 0, 0, 1])  # A1 spans two rows, A2 becomes covered
+    a1 = t.get_cell("A1")
+    a1.set_attribute("table:number-rows-spanned", "100000000")
+    t.set_cell("A1", a1)
+    b1 = t.get_cell("B1")
+    b1.set_attribute("table:number-columns-spanned", "3000000")
+    t.set_cell("B1", b1)
+    body.append(t)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+
+    assert len(res.document.tables) == 1
+    data = res.document.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
 
 
 def test_odt_rich_table_cell_text(tmp_path: Path):
@@ -595,6 +653,49 @@ def test_odt_hyperlink_preserved(tmp_path: Path):
     assert "example.com/talk" in res.document.model_dump_json()
 
 
+def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
+    """A footnote's body text must not be spliced into the citing sentence, and
+    must not be silently dropped either.
+
+    Regression test: ``_odf_text_runs`` used to have no special case for
+    ``text:note``, so it recursed into the note's citation and body exactly like
+    any other inline span, concatenating an arbitrary-length footnote body
+    straight into the middle of the paragraph that cited it - corrupting the
+    reading-order text rather than merely losing content.
+    """
+    path = tmp_path / "footnote.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    paragraph = Paragraph("Sentence before the marker")
+    paragraph.append(
+        Note(
+            citation="1",
+            body="This is the footnote body text that should not vanish.",
+        )
+    )
+    paragraph.append(Span(" and sentence after the marker."))
+    body.append(paragraph)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    body_texts = [
+        item.text for item in res.document.texts if item.label != DocItemLabel.FOOTNOTE
+    ]
+    assert body_texts == [
+        "Sentence before the marker and sentence after the marker."
+    ], "the footnote body must not be spliced into the citing paragraph"
+
+    footnote_texts = [
+        item.text for item in res.document.texts if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_texts == [
+        "This is the footnote body text that should not vanish."
+    ], "the footnote body must be recovered, not silently dropped"
+
+
 @pytest.mark.parametrize(
     ("kind", "expected_label", "expected_markdown"),
     [
@@ -808,6 +909,11 @@ def test_odt_text_document_embedded_chart():
     )
     assert chart.meta.tabular_chart is not None
 
+    # This fixture's chart carries no <chart:title>: the title stays unset and
+    # no caption is invented for it.
+    assert chart.meta.tabular_chart.title is None
+    assert not chart.captions
+
     table_data = chart.meta.tabular_chart.chart_data
     assert table_data.num_rows == 5
     assert table_data.num_cols == 4
@@ -819,6 +925,54 @@ def test_odt_text_document_embedded_chart():
     assert cell_texts[(1, 0)] == "Row 1"
     assert cell_texts[(1, 1)] == "9.1"
     assert cell_texts[(4, 3)] == "6.2"
+
+
+def test_odt_embedded_chart_title_is_read(tmp_path: Path):
+    """An embedded chart's own chart:title reaches the meta and a caption.
+
+    The PowerPoint backend emits a native chart's title as a text item, but the
+    ODF backend read only the chart's local table, so a chart embedded in an ODP
+    or ODT lost its title entirely. The title is injected here rather than added
+    as a new binary fixture, so the chart keeps the structure the sources already
+    exercise.
+    """
+    source = Path("tests/data/odf/sources/text_document_02.odt")
+    path = tmp_path / "chart_with_title.odt"
+    with (
+        zipfile.ZipFile(source) as src,
+        zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as dst,
+    ):
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename == "Object 1/content.xml":
+                text = data.decode("utf-8")
+                # chart:title is a child of chart:chart, so it goes right after
+                # the opening tag.
+                start = text.index("<chart:chart")
+                end = text.index(">", start) + 1
+                text = (
+                    text[:end]
+                    + "<chart:title><text:p>Chart Title</text:p></chart:title>"
+                    + text[end:]
+                )
+                data = text.encode("utf-8")
+            dst.writestr(item, data)
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    charts = [
+        item
+        for item in res.document.pictures
+        if item.meta is not None and item.meta.tabular_chart is not None
+    ]
+
+    assert len(charts) == 1
+    assert charts[0].meta.tabular_chart.title == "Chart Title"
+
+    captions = [
+        item for item in res.document.texts if item.label == DocItemLabel.CAPTION
+    ]
+    assert [item.text for item in captions] == ["Chart Title"]
+    assert charts[0].caption_text(res.document) == "Chart Title"
 
 
 def test_odt_dangling_embedded_object_is_skipped(tmp_path: Path):

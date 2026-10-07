@@ -145,6 +145,12 @@
       },
       {
         "$ref": "#/texts/1312"
+      },
+      {
+        "$ref": "#/texts/1376"
+      },
+      {
+        "$ref": "#/texts/1378"
       }
     ],
     "content_layer": "body",
@@ -6192,7 +6198,14 @@
       "parent": {
         "$ref": "#/groups/188"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/1375"
+        },
+        {
+          "$ref": "#/texts/1377"
+        }
+      ],
       "content_layer": "furniture",
       "name": "list",
       "label": "list"
@@ -12073,7 +12086,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The largest of these, the Anatini, contains the 'dabbling' or 'river' ducks - named for their method of feeding primarily at the surface of fresh water.",
+      "orig": "The largest of these, the Anatini, contains the 'dabbling' or 'river' ducks – named for their method of feeding primarily at the surface of fresh water.",
       "text": "The largest of these, the Anatini, contains the 'dabbling' or 'river' ducks - named for their method of feeding primarily at the surface of fresh water."
     },
     {
@@ -14751,7 +14764,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "- which are",
+      "orig": "– which are",
       "text": "- which are"
     },
     {
@@ -14776,7 +14789,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "- make a noise like \"scaup\" (hence their name). Calls may be loud displaying calls or quieter contact calls.",
+      "orig": "– make a noise like \"scaup\" (hence their name). Calls may be loud displaying calls or quieter contact calls.",
       "text": "- make a noise like \"scaup\" (hence their name). Calls may be loud displaying calls or quieter contact calls."
     },
     {
@@ -15418,7 +15431,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in California dating to 7800 - 6400",
+      "orig": "in California dating to 7800 – 6400",
       "text": "in California dating to 7800 - 6400"
     },
     {
@@ -17657,7 +17670,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". K. Dictionaries Ltd. 2000-2006 . Retrieved 2015-05-22 .",
+      "orig": ". K. Dictionaries Ltd. 2000–2006 . Retrieved 2015-05-22 .",
       "text": ". K. Dictionaries Ltd. 2000-2006 . Retrieved 2015-05-22 ."
     },
     {
@@ -18095,7 +18108,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", pp. 737-738.",
+      "orig": ", pp. 737–738.",
       "text": ", pp. 737-738."
     },
     {
@@ -18221,7 +18234,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", pp. 353-354.",
+      "orig": ", pp. 353–354.",
       "text": ", pp. 353-354."
     },
     {
@@ -18585,7 +18598,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", p. 622-623.",
+      "orig": ", p. 622–623.",
       "text": ", p. 622-623."
     },
     {
@@ -19316,7 +19329,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", pp. 98-107.",
+      "orig": ", pp. 98–107.",
       "text": ", pp. 98-107."
     },
     {
@@ -19379,7 +19392,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", pp. 52-3.",
+      "orig": ", pp. 52–3.",
       "text": ", pp. 52-3."
     },
     {
@@ -19735,7 +19748,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". pp. 187-221.",
+      "orig": ". pp. 187–221.",
       "text": ". pp. 187-221."
     },
     {
@@ -19960,7 +19973,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(1): 201-205.",
+      "orig": "(1): 201–205.",
       "text": "(1): 201-205."
     },
     {
@@ -23072,7 +23085,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(3): 339-356.",
+      "orig": "(3): 339–356.",
       "text": "(3): 339-356."
     },
     {
@@ -23471,7 +23484,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Vol. I: A-K. Santa Barbara: ABC-CLIO.",
+      "orig": ". Vol. I: A–K. Santa Barbara: ABC-CLIO.",
       "text": ". Vol. I: A-K. Santa Barbara: ABC-CLIO."
     },
     {
@@ -24186,7 +24199,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(4): 737-754.",
+      "orig": "(4): 737–754.",
       "text": "(4): 737-754."
     },
     {
@@ -24378,7 +24391,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(3): 452-459.",
+      "orig": "(3): 452–459.",
       "text": "(3): 452-459."
     },
     {
@@ -26526,6 +26539,68 @@
       "hyperlink": "//en.m.wikipedia.org/w/index.php?title=Duck&mobileaction=toggle_view_mobile",
       "enumerated": false,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1375",
+      "parent": {
+        "$ref": "#/groups/192"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/25"
+        }
+      ],
+      "content_layer": "furniture",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1376",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "caption",
+      "prov": [],
+      "orig": "Wikimedia Foundation",
+      "text": "Wikimedia Foundation",
+      "hyperlink": "https://wikimediafoundation.org/"
+    },
+    {
+      "self_ref": "#/texts/1377",
+      "parent": {
+        "$ref": "#/groups/192"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/26"
+        }
+      ],
+      "content_layer": "furniture",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1378",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "caption",
+      "prov": [],
+      "orig": "Powered by MediaWiki",
+      "text": "Powered by MediaWiki",
+      "hyperlink": "https://www.mediawiki.org/"
     }
   ],
   "pictures": [
@@ -26941,6 +27016,42 @@
       "captions": [
         {
           "$ref": "#/texts/1312"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/25",
+      "parent": {
+        "$ref": "#/texts/1375"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/1376"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/26",
+      "parent": {
+        "$ref": "#/texts/1377"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/1378"
         }
       ],
       "references": [],

@@ -8,23 +8,30 @@ import time
 from io import BytesIO
 from pathlib import Path, PurePath
 from unittest.mock import Mock, mock_open, patch
+from urllib.parse import quote
 
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import DocItemLabel, PictureItem, RichTableCell
+from docling_core.types.doc import (
+    DocItemLabel,
+    GroupLabel,
+    PictureItem,
+    RichTableCell,
+)
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
 from docling.backend.html_backend import (
     _BR_SENTINEL,
     HTMLDocumentBackend,
+    _warn_headers_without_origin,
 )
 from docling.backend.utils.image_resource_loader import (
     validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -33,6 +40,7 @@ from docling.datamodel.document import (
 )
 from docling.document_converter import DocumentConverter, HTMLFormatOption
 from docling.exceptions import OperationNotAllowed
+from tests.fakes.image_server import PNG_1X1, SERVER_IP, local_server, use_test_network
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -48,17 +56,6 @@ def _create_html_converter(backend_options):
             InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
         },
     )
-
-
-def _create_mock_response(data=b"fake_image_data"):
-    """Helper to create a mock HTTP response for image fetching."""
-    mock_resp = Mock()
-    mock_resp.headers = {}
-    mock_resp.raise_for_status = Mock()
-    mock_resp.iter_content = Mock(return_value=[data])
-    mock_resp.is_redirect = False
-    mock_resp.is_permanent_redirect = False
-    return mock_resp
 
 
 def test_html_backend_options():
@@ -228,6 +225,168 @@ def test_table_zero_span_defaults_to_one():
     ]
 
 
+def test_table_cell_text_separates_inline_text_from_block():
+    # Inline text directly inside a <td> followed by a <p> used to be
+    # concatenated without a separator in TableCell.text ("Kingdomof Norway").
+    src = b"<table><tr><td>For the Kingdom<p>of Norway</p></td></tr></table>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+    assert [cell.text.strip() for cell in cells] == ["For the Kingdom of Norway"]
+
+    # A block tag at the start of a cell gets no leading separator, and inline
+    # text that already ends with whitespace is not given a doubled one.
+    assert (
+        HTMLDocumentBackend.get_text(
+            BeautifulSoup("<td><p>lead</p></td>", "html.parser").find("td")
+        )
+        == "lead  "
+    )
+    assert (
+        HTMLDocumentBackend.get_text(
+            BeautifulSoup("<td>trail <p>block</p></td>", "html.parser").find("td")
+        )
+        == "trail block  "
+    )
+
+
+def test_table_cell_text_skips_html_comments():
+    # Comments in a cell, such as the placeholders that Vue renders or the
+    # conditional comments of Outlook, used to be included in TableCell.text.
+    src = (
+        b"<table><tr><th>Plan</th><th>Price</th></tr>"
+        b"<tr><td><span>Basic</span><!--v-if--></td>"
+        b"<td><!--[--><span>$10</span><!--]--></td></tr>"
+        b"<tr><td>Pro <!-- TODO: confirm --></td>"
+        b"<td>Configure<!--[if gte vml 1]><v:shape/><![endif]--></td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+    assert [cell.text.strip() for cell in cells] == [
+        "Plan",
+        "Price",
+        "Basic",
+        "$10",
+        "Pro",
+        "Configure",
+    ]
+
+
+@pytest.mark.parametrize(
+    "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
+)
+def test_table_oversized_spans_clamped_to_table_size(huge: str):
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    src = (
+        f'<table><tr><td rowspan="{huge}">A</td><td colspan="{huge}">B</td></tr>'
+        "<tr><td>C</td></tr></table>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
+    ]
+
+
+def test_table_rowspan_shifts_later_cells_into_the_table():
+    # A cell goes in the first column of its row that no earlier cell still
+    # covers, so a rowspan pushes the cells of the rows it reaches to the
+    # right: here "North" holds column 0 of all three rows, so Q1 lands in
+    # column 1 and 10 in column 2, and the table is three columns wide. The
+    # width used to be the colspan sum of the widest row (two), which put 10
+    # and 20 past the last column: they were dropped from the grid and from
+    # the exported markdown.
+    src = (
+        b'<table><tr><td rowspan="3">North</td></tr>'
+        b"<tr><td>Q1</td><td>10</td></tr>"
+        b"<tr><td>Q2</td><td>20</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (3, 3)
+    assert [[cell.text if cell else "" for cell in row] for row in data.grid] == [
+        ["North", "", ""],
+        ["North", "Q1", "10"],
+        ["North", "Q2", "20"],
+    ]
+    assert "10" in doc.export_to_markdown()
+
+
+def test_table_row_header_rowspan_keeps_the_row_cells():
+    # The row-header form of the same shift: the spanning "<th>2025</th>" row
+    # holds column 0, so the cells of the data rows start in column 1 and the
+    # table needs a column the header row does not declare.
+    src = (
+        b"<table>"
+        b"<tr><th>Month</th><th>Revenue</th></tr>"
+        b'<tr><th rowspan="2">2025</th></tr>'
+        b"<tr><td>January</td><td>$134</td></tr>"
+        b"<tr><td>February</td><td>$150</td></tr>"
+        b"</table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert [cell.text for cell in data.table_cells] == [
+        "Month",
+        "Revenue",
+        "2025",
+        "January",
+        "$134",
+        "February",
+        "$150",
+    ]
+    grid_texts = [cell.text for row in data.grid for cell in row if cell.text]
+    assert grid_texts == [cell.text for cell in data.table_cells]
+    assert "$134" in doc.export_to_markdown()
+
+
 def test_table_inside_figure_is_parsed():
     """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
     html = (
@@ -267,6 +426,58 @@ def test_table_inside_figure_is_parsed():
     cap_item = cap_ref.resolve(doc)
     assert cap_item.text == "Table 1: demo caption."
     assert cap_item.label == DocItemLabel.CAPTION
+
+
+def test_table_caption_is_parsed():
+    """Regression: <caption> is the element HTML defines for table captions."""
+    html = (
+        b"<html><body>"
+        b"<table>"
+        b"<caption>Table 1: sales by region</caption>"
+        b"<tr><th>A</th><th>B</th></tr>"
+        b"<tr><td>1</td><td>2</td></tr>"
+        b"</table>"
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "A",
+        "B",
+        "1",
+        "2",
+    ]
+
+    assert len(doc.tables[0].captions) == 1
+    cap_item = doc.tables[0].captions[0].resolve(doc)
+    assert cap_item.text == "Table 1: sales by region"
+    assert cap_item.label == DocItemLabel.CAPTION
+    assert "Table 1: sales by region" in doc.export_to_markdown()
+
+
+def test_empty_table_caption_is_skipped():
+    """A whitespace-only <caption> should not produce a caption item."""
+    html = b"<html><body><table><caption>  </caption><tr><td>1</td></tr></table></body></html>"
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].captions == []
+    assert doc.texts == []
 
 
 def test_image_inside_figure_is_parsed():
@@ -341,6 +552,35 @@ def test_table_and_image_inside_figure_are_parsed():
     assert len(doc.tables[0].captions) == 0
 
 
+@pytest.mark.parametrize(
+    ("figure", "expected"),
+    [
+        ("<figure>Quote text<figcaption>cap</figcaption></figure>", ["Quote text"]),
+        ("<figure>one <code>two</code> three</figure>", ["one", "two", "three"]),
+        ("<figure><em>one</em> two</figure>", ["one", "two"]),
+        ('<figure><img src="x.png"/>after</figure>', ["after"]),
+    ],
+)
+def test_text_directly_inside_figure_is_kept(figure: str, expected: list[str]):
+    html = f"<html><body><h1>Title</h1>{figure}</body></html>".encode()
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    body_texts = [t.text for t in doc.texts if t.label != DocItemLabel.CAPTION]
+    assert body_texts == ["Title", *expected]
+    # The <figcaption> is still emitted once, as a caption
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == (
+        ["cap"] if "figcaption" in figure else []
+    )
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
@@ -397,6 +637,100 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+@pytest.mark.parametrize(
+    "html,expected",
+    [
+        pytest.param(
+            "<ul><li>alpha<li>beta<li>gamma</ul>",
+            "- alpha\n- beta\n- gamma",
+            id="ul",
+        ),
+        pytest.param("<ol><li>one<li>two</ol>", "1. one\n2. two", id="ol"),
+        pytest.param(
+            "<ul><li>a<li>b</li><li>c</li></ul>",
+            "- a\n- b\n- c",
+            id="first-li-unclosed",
+        ),
+        pytest.param(
+            "<ul><li>a<ul><li>b<li>c</ul><li>d</ul>",
+            "- a\n    - b\n    - c\n- d",
+            id="nested-list",
+        ),
+        pytest.param(
+            "<ul><li>a<p>para<li>b</ul>", "- a para\n- b", id="li-after-open-p"
+        ),
+        pytest.param(
+            "<dl><dt>A<dd>B<dt>C<dd>D</dl>",
+            "- **A**\n    - B\n- **C**\n    - D",
+            id="dl",
+        ),
+        pytest.param(
+            "<table><tr><td>a<td>b<tr><td>c<td>d</table>",
+            "| a   | b   |\n|-----|-----|\n| c   | d   |",
+            id="table",
+        ),
+        pytest.param(
+            "<table><tr><th>H1<th>H2<tr><td>1<td>2</table>",
+            "|   H1 |   H2 |\n|------|------|\n|    1 |    2 |",
+            id="table-header",
+        ),
+        pytest.param(
+            "<table><tbody><tr><td>1<td>2<tr><td>3<td>4</tbody></table>",
+            "|   1 |   2 |\n|-----|-----|\n|   3 |   4 |",
+            id="table-tbody",
+        ),
+        pytest.param(
+            "<table><tr><td>a</td><td>b</td><tr><td>c</td><td>d</td></tr></table>",
+            "| a   | b   |\n|-----|-----|\n| c   | d   |",
+            id="first-tr-unclosed",
+        ),
+        pytest.param(
+            "<table><tr><td>x<table><tr><td>i<td>j</table><td>y</table>",
+            "| x  i j   | y   |\n|----------|-----|",
+            id="nested-table",
+        ),
+    ],
+)
+def test_omitted_end_tags(html: str, expected: str):
+    """Optional end tags (li, dt, dd, td, th, tr) close like in a browser."""
+    src = f"<html><body>{html}</body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+    assert doc.export_to_markdown() == expected
+
+
+def test_orig_keeps_source_text():
+    """Regression for #4423: `text` is sanitized, `orig` keeps the source text."""
+    html = (
+        "<html><body>"
+        "<p>See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept.</p>"
+        "<ul><li>Item 3\u20135 with <b>bold</b> \u201ctext\u201d</li></ul>"
+        "</body></html>"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    items = {item.text: item for item in doc.texts if item.text}
+
+    paragraph = items['See §§ 3-5 and "quoted" text ... it\'s kept.']
+    assert (
+        paragraph.orig
+        == "See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept."
+    )
+    assert items["Item 3-5 with"].orig == "Item 3\u20135 with"
+    assert items['"text"'].orig == "\u201ctext\u201d"
+
+
 def test_nested_table_in_list_item():
     """Regression for #3508: a <table> nested inside an <ol>/<li> must be parsed
     as a table instead of being flattened into the list item's text.
@@ -438,6 +772,108 @@ def test_nested_table_in_list_item():
     assert "3. Third step." in md
     # Cell text lives in the table, not duplicated into the list item text.
     assert md.count("Fault type.") == 1
+
+
+def test_list_non_li_children():
+    """Regression for #4424: children of <ul>/<ol> other than <li> are kept in
+    document order. They are invalid HTML, but common in CMS output.
+
+    Previously <p> and <table> children were dropped, and a <ol> child was added
+    directly to the parent list group, which broke the numbering.
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<p>Intro.</p>"
+        b"<li>First.</li>"
+        b"<p>About the first.</p>"
+        b"<li>Second.</li><br>"
+        b"<ol><li>Nested.</li></ol>"
+        b"<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>"
+        b"<li>Third.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    # Content before the first <li> precedes the list. Any other content closes
+    # the list and is emitted at the parent level, like in the DOCX backend. A
+    # <br> adds nothing and does not close the list.
+    assert [child.resolve(doc).label for child in doc.body.children] == [
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+        DocItemLabel.TABLE,
+        GroupLabel.LIST,
+    ]
+    # A nested list stays a sub-list of the preceding list item.
+    nested_list = texts["Nested."].parent.resolve(doc)
+    assert nested_list.parent.cref == texts["Second."].self_ref
+    # The list items that follow an interruption continue the numbering.
+    assert "3. Third." in doc.export_to_markdown()
+
+
+def test_list_non_li_children_stay_in_table_cell():
+    """#4424: the content emitted around a split list stays in its table cell."""
+    html = (
+        b"<html><body><table><tbody><tr>"
+        b"<td><ul><li>First.</li><p>Between.</p><li>Second.</li></ul></td>"
+        b"</tr></tbody></table><p>After.</p></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    texts = {item.text: item for item in doc.texts}
+
+    cell_group = texts["Between."].parent.resolve(doc)
+    assert cell_group.parent.cref == doc.tables[0].self_ref
+    assert [child.resolve(doc).label for child in cell_group.children] == [
+        GroupLabel.LIST,
+        DocItemLabel.TEXT,
+        GroupLabel.LIST,
+    ]
+    assert texts["After."].parent.resolve(doc) == doc.body
+
+
+def test_list_item_without_text():
+    """Regression for #4462: a <li> without text keeps its table or image.
+
+    Previously no list item was created for it, so its content was dropped and the
+    following items were numbered as if it did not exist.
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<li><table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>"
+        b"<li><div><img src='chart.png'></div></li>"
+        b"<li>Third.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+    assert [item.text for item in list_items] == ["", "", "Third."]
+    assert doc.tables[0].parent.cref == list_items[0].self_ref
+    assert doc.pictures[0].parent.cref == list_items[1].self_ref
+    assert "3. Third." in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize(
@@ -527,6 +963,37 @@ def test_description_lists():
         )
     )
 
+    # Description list with each dt/dd group wrapped in a div (allowed by the HTML spec)
+    test_set.append(
+        (
+            b"<html><body><dl><div><dt>Weight</dt><dd>1.2 kg</dd></div><div><dt>Color</dt><dd>Black</dd><dd>White</dd></div></dl></body></html>",
+            "- **Weight**\n    - 1.2 kg\n- **Color**\n    - Black\n    - White",
+        )
+    )
+
+    # Groups wrapped in several nested divs (accordion markup, #4570)
+    test_set.append(
+        (
+            b"<html><body><dl><div><div><div><dt>Q?</dt><dd><p>Answer</p></dd></div></div></div></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+
+    # A heading inside the list is list text, not the first heading that ends
+    # the furniture, so the list must stay in the body (#4570)
+    test_set.append(
+        (
+            b"<html><body><dl><h6>Group</h6><dt>Q?</dt><dd><p>Answer</p></dd></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+    test_set.append(
+        (
+            b"<html><body><dl><dt><button><span></span><h3>Q?</h3></button></dt><dd><p>Answer</p></dd></dl></body></html>",
+            "- **Q?**\n    - Answer",
+        )
+    )
+
     for idx, pair in enumerate(test_set):
         in_doc = InputDocument(
             path_or_stream=BytesIO(pair[0]),
@@ -544,6 +1011,44 @@ def test_description_lists():
         assert markdown_output == pair[1], (
             f"Error in case {idx}: expected '{pair[1]}', got '{markdown_output}'"
         )
+
+
+def test_heading_inside_list_keeps_content_in_body():
+    """Headings inside <ul>/<ol> items or a <dl> become list item text, so they
+    must not put the whole page in the furniture layer (#4570)."""
+    for html in (
+        b"<html><body><p>intro</p><ul><li><h3>Step</h3><p>Do it</p></li></ul><p>after</p></body></html>",
+        b"<html><body><p>intro</p><dl><dt>Q</dt><dd><h3>H</h3><p>A</p></dd></dl><p>after</p></body></html>",
+    ):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(html),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+        assert doc.texts
+        assert all(t.content_layer == ContentLayer.BODY for t in doc.texts)
+
+
+def test_heading_as_list_child_ends_furniture():
+    """A heading that is a direct child of <ul> (or in a <div> there) or in a
+    <menu> item is emitted as a heading, so the body starts there."""
+    for html in (
+        b"<html><body><div>nav junk</div><ul><h2>X</h2><li>a</li></ul></body></html>",
+        b"<html><body><div>nav junk</div><ul><div><h2>X</h2><p>para</p></div><li>a</li></ul></body></html>",
+        b"<html><body><div>nav junk</div><menu><li><h2>X</h2></li></menu></body></html>",
+    ):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(html),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+        layers = {t.text: t.content_layer for t in doc.texts}
+        assert layers["nav junk"] == ContentLayer.FURNITURE
+        assert layers["X"] == ContentLayer.BODY
 
 
 def test_unicode_characters():
@@ -644,9 +1149,8 @@ def test_e2e_html_conversions(html_paths):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)
 
 
-@patch("docling.backend.utils.image_resource_loader.requests.get")
 @patch("docling.backend.utils.image_resource_loader.open", new_callable=mock_open)
-def test_e2e_html_conversion_with_images(mock_local, mock_remote):
+def test_e2e_html_conversion_with_images(mock_local, monkeypatch):
     source = "tests/data/html/sources/example_01.html"
     image_path = "tests/data/html/sources/example_image_01.png"
     with open(image_path, "rb") as f:
@@ -673,22 +1177,14 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
             num_pic += 1
     assert num_pic == 1, "No embedded picture was found in the converted file"
 
-    # fetching image remotely - need to mock Session.get instead of requests.get
-    with patch(
-        "docling.backend.utils.image_resource_loader.requests.Session.get"
-    ) as mocked_session_get:
-        mock_resp = Mock()
-        mock_resp.status_code = 200
-        mock_resp.headers = {}
-        mock_resp.raise_for_status = Mock()
-        mock_resp.iter_content = Mock(return_value=[img_bytes])
-        mock_resp.is_redirect = False
-        mock_resp.is_permanent_redirect = False
-        mocked_session_get.return_value = mock_resp
-        source_location = "https://example.com/example_01.html"
-
+    # fetching image remotely from a local server
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    with local_server() as server:
+        server.files = {"/example_image_01.png": img_bytes}
         backend_options = HTMLBackendOptions(
-            enable_remote_fetch=True, fetch_images=True, source_uri=source_location
+            enable_remote_fetch=True,
+            fetch_images=True,
+            source_uri=server.url("images.test", "/example_01.html"),
         )
         converter = DocumentConverter(
             allowed_formats=[InputFormat.HTML],
@@ -697,13 +1193,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
             },
         )
         res_remote = converter.convert(source)
-        # Verify the session.get was called
-        assert mocked_session_get.call_count == 1
-        call_args = mocked_session_get.call_args
-        assert call_args[0][0] == "https://example.com/example_image_01.png"
-        assert call_args[1]["stream"] is True
-        assert call_args[1]["headers"] == {"Range": "bytes=0-20971519"}
-        assert call_args[1]["timeout"] == (5, 30)
+        assert server.paths() == ["/example_image_01.png"]
     assert res_remote.document
     num_pic = 0
     for element, _ in res_remote.document.iterate_items():
@@ -761,22 +1251,24 @@ def test_fetch_remote_images(monkeypatch):
         HTMLBackendOptions(fetch_images=False, source_uri="http://example.com")
     )
     with patch(
-        "docling.backend.utils.image_resource_loader.requests.get"
-    ) as mocked_get:
+        "docling.backend.utils.image_resource_loader._open_direct"
+    ) as mocked_open_direct:
         res = converter.convert(source)
-        mocked_get.assert_not_called()
+        mocked_open_direct.assert_not_called()
     assert res.document
 
     # no image fetching: the source location is False and enable_local_fetch is False
     converter = _create_html_converter(HTMLBackendOptions(fetch_images=True))
     with (
-        patch("docling.backend.utils.image_resource_loader.requests.get") as mocked_get,
+        patch(
+            "docling.backend.utils.image_resource_loader._open_direct"
+        ) as mocked_open_direct,
         pytest.warns(
             match="Fetching local resources is only allowed when set explicitly"
         ),
     ):
         res = converter.convert(source)
-        mocked_get.assert_not_called()
+        mocked_open_direct.assert_not_called()
     assert res.document
 
     # no image fetching: the enable_remote_fetch is False
@@ -784,30 +1276,31 @@ def test_fetch_remote_images(monkeypatch):
         HTMLBackendOptions(fetch_images=True, source_uri="http://example.com")
     )
     with (
-        patch("docling.backend.utils.image_resource_loader.requests.get") as mocked_get,
+        patch(
+            "docling.backend.utils.image_resource_loader._open_direct"
+        ) as mocked_open_direct,
         pytest.warns(
             match="Fetching remote resources is only allowed when set explicitly"
         ),
     ):
         res = converter.convert(source)
-        mocked_get.assert_not_called()
+        mocked_open_direct.assert_not_called()
     assert res.document
 
     # image fetching: all conditions apply, source location is remote
-    converter = _create_html_converter(
-        HTMLBackendOptions(
-            enable_remote_fetch=True, fetch_images=True, source_uri="http://example.com"
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    with local_server() as server:
+        server.files = {"/example_image_01.png": b"not an image"}
+        converter = _create_html_converter(
+            HTMLBackendOptions(
+                enable_remote_fetch=True,
+                fetch_images=True,
+                source_uri=server.url("images.test", "/"),
+            )
         )
-    )
-    with (
-        patch(
-            "docling.backend.utils.image_resource_loader.requests.Session.get"
-        ) as mocked_session_get,
-        pytest.warns(UserWarning, match="Could not process an image"),
-    ):
-        mocked_session_get.return_value = _create_mock_response()
-        res = converter.convert(source)
-        mocked_session_get.assert_called_once()
+        with pytest.warns(UserWarning, match="Could not process an image"):
+            res = converter.convert(source)
+        assert server.paths() == ["/example_image_01.png"]
     assert res.document
 
     # image fetching: all conditions apply, local fetching allowed
@@ -826,36 +1319,61 @@ def test_fetch_remote_images(monkeypatch):
         assert res.document
 
 
-def test_fetch_remote_images_with_custom_headers():
-    """Test that custom headers are passed when fetching remote images."""
+def test_fetch_remote_images_with_custom_headers(monkeypatch):
+    """Custom headers go to the source origin, or to the allowed origins if set."""
     custom_headers = {"Authorization": "Bearer test-token", "X-API-Key": "test-api-key"}
-    backend_options = HTMLBackendOptions(
-        enable_remote_fetch=True,
-        fetch_images=True,
-        source_uri="http://example.com",
-        headers=custom_headers,
-    )
-    # Verify sensitive headers are not exposed in string representation
-    repr_str = repr(backend_options)
-    assert (
-        "test-token" not in repr_str
-        and "test-api-key" not in repr_str
-        and "headers=" not in repr_str
-    )
+    # Sensitive headers are not exposed in the string representation.
+    repr_str = repr(HTMLBackendOptions(headers=custom_headers))
+    assert "test-token" not in repr_str and "headers=" not in repr_str
 
-    converter = _create_html_converter(backend_options)
-    with (
-        patch(
-            "docling.backend.utils.image_resource_loader.requests.Session.get"
-        ) as mocked_session_get,
-        pytest.warns(UserWarning, match="Could not process an image"),
-    ):
-        mocked_session_get.return_value = _create_mock_response()
-        res = converter.convert("./tests/data/html/sources/example_01.html")
-        headers_arg = mocked_session_get.call_args[1].get("headers", {})
-        assert headers_arg["Authorization"] == "Bearer test-token"
-        assert headers_arg["X-API-Key"] == "test-api-key" and "Range" in headers_arg
-    assert res.document
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    source = "./tests/data/html/sources/example_01.html"
+    with local_server() as server:
+        server.files = {"/example_image_01.png": PNG_1X1}
+        source_uri = server.url("images.test", "/example_01.html")
+
+        # Default: headers are sent to the source document's origin.
+        _create_html_converter(
+            HTMLBackendOptions(
+                enable_remote_fetch=True,
+                fetch_images=True,
+                source_uri=source_uri,
+                headers=custom_headers,
+            )
+        ).convert(source)
+        # An explicit allowlist replaces the source origin.
+        _create_html_converter(
+            HTMLBackendOptions(
+                enable_remote_fetch=True,
+                fetch_images=True,
+                source_uri=source_uri,
+                headers=custom_headers,
+                headers_allowed_origins=["https://cdn.example.com"],
+            )
+        ).convert(source)
+
+    first, second = server.requests
+    assert first.headers["Authorization"] == "Bearer test-token"
+    assert first.headers["X-API-Key"] == "test-api-key"
+    assert "Authorization" not in second.headers
+    assert "X-API-Key" not in second.headers
+
+
+def test_headers_without_allowed_origin_log_a_warning(caplog):
+    """Headers configured for a local source with no allowlist are reported once."""
+    _warn_headers_without_origin.cache_clear()
+    with caplog.at_level("WARNING", logger="docling.backend.html_backend"):
+        for _ in range(2):
+            _make_html_backend(
+                HTMLBackendOptions(enable_remote_fetch=True, headers={"X-Key": "k"})
+            )
+    messages = [r.getMessage() for r in caplog.records]
+    assert sum("headers_allowed_origins" in m for m in messages) == 1
+
+
+def test_headers_allowed_origins_must_be_http_urls():
+    with pytest.raises(ValidationError, match="Invalid origin"):
+        HTMLBackendOptions(headers_allowed_origins=["cdn.example.com"])
 
 
 def test_is_rich_table_cell(html_paths):
@@ -1182,43 +1700,13 @@ def test_validate_url_safety_rejects_private_ips():
 
 def test_load_image_data_enforces_size_limit(monkeypatch):
     """Test that image downloads are capped at the size limit."""
-
-    class MockResponse:
-        def __init__(self, content_size):
-            self.status_code = 200
-            self.headers = {"content-length": str(content_size)}
-            self._content_size = content_size
-
-        def raise_for_status(self):
-            pass
-
-        def iter_content(self, chunk_size=8192):
-            remaining = self._content_size
-            while remaining > 0:
-                chunk_len = min(chunk_size, remaining)
-                yield b"x" * chunk_len
-                remaining -= chunk_len
-
-    html_path = Path("./tests/data/html/sources/example_01.html")
-    in_doc = InputDocument(
-        path_or_stream=html_path,
-        format=InputFormat.HTML,
-        backend=HTMLDocumentBackend,
-        filename="test",
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    backend = _make_html_backend(
+        HTMLBackendOptions(enable_remote_fetch=True, max_remote_image_bytes=16)
     )
-    backend = HTMLDocumentBackend(
-        in_doc=in_doc,
-        path_or_stream=html_path,
-        options=HTMLBackendOptions(enable_remote_fetch=True),
-    )
-
-    oversized_response = MockResponse(25 * 1024 * 1024)  # 25 MB, exceeds 20 MB limit
-    monkeypatch.setattr(
-        requests.Session, "get", lambda *args, **kwargs: oversized_response
-    )
-
-    with pytest.raises(ValueError, match="Resource size exceeds limit"):
-        backend._load_image_data("http://example.com/huge_image.png")
+    with local_server() as server:
+        with pytest.raises(ValueError, match="Resource size exceeds limit"):
+            backend._load_image_data(server.url("images.test", "/img.png"))
 
 
 def test_load_image_data_enforces_data_uri_size_limit():
@@ -1412,6 +1900,56 @@ def test_browser_request_block_reason_policy():
     )
 
 
+def _require_chromium() -> None:
+    sync_api = pytest.importorskip("playwright.sync_api")
+    try:
+        with sync_api.sync_playwright() as playwright:
+            playwright.chromium.launch(headless=True).close()
+    except Exception as exc:
+        pytest.skip(f"Chromium is not available: {exc}")
+
+
+def test_browser_render_fetches_remote_resources_through_image_loader(
+    tmp_path, monkeypatch
+):
+    """Rendered pages get remote resources from the validated fetch path.
+
+    An allowed image is served, while an image that redirects to a non-public
+    address is refused before the redirect target is requested.
+    """
+    _require_chromium()
+    use_test_network(monkeypatch, {})
+    with local_server() as server:
+        server.files["/secret.png"] = PNG_1X1
+        allowed = server.url(SERVER_IP, "/img.png")
+        redirected = server.url(
+            SERVER_IP,
+            "/redirect?to=" + quote(server.url("localhost", "/secret.png"), safe=""),
+        )
+        html_path = tmp_path / "page.html"
+        html_path.write_text(
+            f'<html><body><img src="{allowed}"><img src="{redirected}"></body></html>'
+        )
+        in_doc = InputDocument(
+            path_or_stream=html_path,
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="page.html",
+        )
+        backend = HTMLDocumentBackend(
+            in_doc=in_doc,
+            path_or_stream=html_path,
+            options=HTMLBackendOptions(render_page=True, enable_remote_fetch=True),
+        )
+        with pytest.warns(UserWarning, match="restricted IP address"):
+            backend.convert()
+
+    paths = server.paths()
+    assert "/img.png" in paths
+    assert "/redirect" in paths
+    assert "/secret.png" not in paths
+
+
 def test_browser_request_block_reason_local_fetch_confined_to_source_directory():
     html_path = Path("./tests/data/html/sources/example_01.html").resolve()
     backend = _make_html_backend(
@@ -1460,6 +1998,47 @@ def test_valid_local_paths_still_work():
     resolved = html_doc._resolve_relative_path("example_image_01.png")
     assert "tests/data/html" in resolved
     assert "example_image_01.png" in resolved
+
+
+def test_link_and_image_outside_base_directory_keep_conversion(tmp_path: Path):
+    """A link or an image that points outside the base directory is not loaded.
+
+    Site-root ("/about") and parent ("../index.html") locations are common in
+    saved web pages. With local fetch on, they must not fail the conversion
+    of the whole document.
+    """
+    html_path = tmp_path / "site" / "page.html"
+    html_path.parent.mkdir()
+    html_path.write_text(
+        "<html><body>"
+        '<p>Go <a href="/about">about</a> or <a href="../index.html">home</a>.</p>'
+        '<img src="../logo.png" alt="logo">'
+        '<img src="/img/banner.png" alt="banner">'
+        "<p>End</p>"
+        "</body></html>",
+        encoding="utf-8",
+    )
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(
+                backend_options=HTMLBackendOptions(
+                    enable_local_fetch=True, fetch_images=True
+                )
+            )
+        }
+    )
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        result = converter.convert(html_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    doc = result.document
+    assert doc.texts[-1].text == "End"
+    links = {t.text: t.hyperlink for t in doc.texts if t.hyperlink is not None}
+    assert Path(str(links["about"])).as_posix() == "/about"
+    assert Path(str(links["home"])).as_posix() == "../index.html"
+    assert len(doc.pictures) == 2
+    assert all(pic.image is None for pic in doc.pictures)
 
 
 def test_html_newline_handling():
@@ -1609,3 +2188,46 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+def test_gfm_task_list_renders_checkbox_with_text():
+    # <li><input type=checkbox>text</li> is the canonical GFM task list. The
+    # text belongs to the checkbox item; it used to become a separate list
+    # item, pushing the checkbox onto its own bullet *after* the text.
+    html = (
+        "<ul><li><input type='checkbox' checked>done</li>"
+        "<li><input type='checkbox'>todo</li></ul>"
+    )
+    stream = BytesIO(html.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="tasks.html",
+    )
+    doc = in_doc._backend.convert()
+
+    markdown = doc.export_to_markdown()
+    assert markdown == "- [x] done\n- [ ] todo"
+
+
+def test_task_list_item_keeps_nested_content_list_item():
+    # An <li> holding a checkbox plus real block content still gets its list
+    # item; only the pure checkbox+text form is consumed by the checkbox.
+    html = (
+        "<ul><li><input type='checkbox' checked>done<p>details paragraph</p></li></ul>"
+    )
+    stream = BytesIO(html.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="tasks_nested.html",
+    )
+    doc = in_doc._backend.convert()
+
+    markdown = doc.export_to_markdown()
+    assert "done" in markdown
+    assert "details paragraph" in markdown
+    # the checkbox must not be rendered as an empty extra bullet
+    assert "- [x] \n" not in markdown and "- [x] \r" not in markdown

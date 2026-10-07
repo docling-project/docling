@@ -19,11 +19,15 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 
 import logging
 import zipfile
+from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import TextItem
+from PIL import Image
 
 from docling.backend.epub_backend import EpubDocumentBackend
+from docling.datamodel.backend_options import EpubBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -31,7 +35,7 @@ from docling.datamodel.document import (
     DoclingDocument,
     InputDocument,
 )
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, EpubFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -179,11 +183,19 @@ def test_epub_content_combination():
     assert len(total_text) > 100, "Combined content should have substantial text"
 
 
-def _build_epub_with_hrefs(path: Path, hrefs: list[str], names: list[str]) -> Path:
+def _build_epub_with_hrefs(
+    path: Path,
+    hrefs: list[str],
+    names: list[str],
+    bodies: list[str] | None = None,
+) -> Path:
     """Build a minimal EPUB whose manifest hrefs and ZIP entry names differ.
 
     ``hrefs`` are written into the package document, ``names`` are the file
-    names actually stored in the archive, both relative to ``OEBPS/``.
+    names actually stored in the archive, both relative to ``OEBPS/``. Every
+    item is declared ``application/xhtml+xml``, which is what makes it a
+    content document; the file name only varies. ``bodies`` replaces the
+    default body markup of each document, one entry per name.
     """
     container = (
         '<?xml version="1.0" encoding="UTF-8"?>'
@@ -210,18 +222,21 @@ def _build_epub_with_hrefs(path: Path, hrefs: list[str], names: list[str]) -> Pa
         "</package>"
     )
 
+    if bodies is None:
+        bodies = [f"<p>Chapter {i} body.</p>" for i in range(len(names))]
+
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         zi = zipfile.ZipInfo("mimetype")
         zi.compress_type = zipfile.ZIP_STORED
         z.writestr(zi, "application/epub+zip")
         z.writestr("META-INF/container.xml", container)
         z.writestr("OEBPS/content.opf", opf)
-        for i, name in enumerate(names):
+        for name, body in zip(names, bodies, strict=True):
             z.writestr(
                 f"OEBPS/{name}",
                 '<?xml version="1.0" encoding="UTF-8"?>'
                 '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
-                f"<p>Chapter {i} body.</p>"
+                f"{body}"
                 "</body></html>",
             )
     return path
@@ -324,6 +339,78 @@ def test_epub_parent_relative_manifest_href_is_read(tmp_path: Path):
     assert "Chapter 1 body." in text
 
 
+def _build_epub_with_utf16_content(path: Path) -> Path:
+    """Build a minimal EPUB whose second content document is stored as UTF-16.
+
+    The declaration names the encoding and the bytes carry a byte order mark,
+    which is what XML requires of a UTF-16 document.
+    """
+    container = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<container version="1.0"'
+        ' xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
+        "<rootfiles>"
+        '<rootfile full-path="OEBPS/content.opf"'
+        ' media-type="application/oebps-package+xml"/>'
+        "</rootfiles></container>"
+    )
+    opf = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<package xmlns="http://www.idpf.org/2007/opf" version="3.0"'
+        ' unique-identifier="uid">'
+        '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        "<dc:title>Utf Sixteen</dc:title></metadata>"
+        "<manifest>"
+        '<item id="c0" href="chapter-0.xhtml"'
+        ' media-type="application/xhtml+xml"/>'
+        '<item id="c1" href="chapter-1.xhtml"'
+        ' media-type="application/xhtml+xml"/>'
+        "</manifest>"
+        '<spine><itemref idref="c0"/><itemref idref="c1"/></spine>'
+        "</package>"
+    )
+
+    def chapter(index: int, encoding: str) -> str:
+        return (
+            f'<?xml version="1.0" encoding="{encoding}"?>'
+            '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
+            f"<p>Chapter {index} body.</p>"
+            "</body></html>"
+        )
+
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/epub+zip")
+        z.writestr("META-INF/container.xml", container)
+        z.writestr("OEBPS/content.opf", opf)
+        z.writestr("OEBPS/chapter-0.xhtml", chapter(0, "UTF-8"))
+        z.writestr("OEBPS/chapter-1.xhtml", chapter(1, "UTF-16").encode("utf-16"))
+    return path
+
+
+def test_epub_utf16_content_document_is_read(tmp_path: Path):
+    """A content document may be stored as UTF-16, so its bytes are decoded as such.
+
+    Decoding every content document as UTF-8 raises on a UTF-16 chapter, and
+    the per-chapter handler turns that into a warning, so the chapter is
+    dropped from the converted document while the conversion still reports
+    success.
+    """
+    epub_path = _build_epub_with_utf16_content(tmp_path / "utf16.epub")
+
+    result = get_converter().convert(epub_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []
+
+    doc = result.document
+    text = "\n".join(item.text for item in doc.texts)
+
+    assert "Chapter 0 body." in text
+    assert "Chapter 1 body." in text
+
+
 def test_epub_link_fixing():
     """Test that internal EPUB links are properly fixed after content combination."""
     epub_path = Path("./tests/data/epub/sources/epub_purvis_poetry.epub")
@@ -340,3 +427,88 @@ def test_epub_link_fixing():
     # This is a basic check - the actual link format may vary
     assert markdown is not None, "Should be able to export to markdown"
     assert len(markdown) > 0, "Markdown export should not be empty"
+
+
+def test_epub_internal_links_are_fixed_for_every_content_document_extension(
+    tmp_path: Path,
+):
+    """A content document is XHTML by its declared media type, not by its name.
+
+    The spine documents are merged into one HTML document, so a link into
+    another of them has to lose the file part or it points at a file that no
+    longer exists. All four extensions below are legal for
+    application/xhtml+xml, and Calibre commonly writes .html. One book covers
+    them: each chapter links into the next one, so every extension appears as
+    the target of a cross-file link.
+
+    The absolute URL is here for the opposite reason. Its host must survive,
+    because the fragment belongs to that host and not to this book.
+    """
+    names = ["chapter1.xhtml", "chapter2.html", "chapter3.htm", "chapter4.xht"]
+    absolute = "https://example.com/page.html#about"
+    bodies = [
+        f'<p id="note1">See <a href="{names[1]}#note2">note 2</a>.</p>'
+        f'<p>Read <a href="{absolute}">about</a>.</p>',
+        f'<p id="note2">Note 2. Then <a href="{names[2]}#note3">note 3</a>.</p>',
+        f'<p id="note3">Note 3. Then <a href="{names[3]}#note4">note 4</a>.</p>',
+        f'<p id="note4">Note 4. Back to <a href="{names[0]}#note1">note 1</a>.</p>',
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "extensions.epub", hrefs=names, names=names, bodies=bodies
+    )
+
+    doc = get_converter().convert(epub_path, raises_on_error=True).document
+
+    hyperlinks = [
+        str(item.hyperlink)
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+
+    assert hyperlinks == ["#note2", absolute, "#note3", "#note4", "#note1"]
+
+
+def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
+    tmp_path: Path,
+):
+    """Every image src of a content document is resolved inside the archive.
+
+    The src is a URL relative to its content document. Single quotes are as
+    legal as double quotes, and a src escapes a space as "%20" while the
+    archive stores the literal file name. A src that is not rewritten stays
+    relative to the merged document at the archive root, so "../Images/..."
+    leaves the extraction directory and its image is lost.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+    png = buf.getvalue()
+
+    bodies = [
+        "<p>Cover.</p>"
+        '<img src="../Images/cover%20art.png" alt="cover"/>'
+        "<img src='../Images/map.png' alt='map'/>"
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "images.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=bodies,
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        z.writestr("OEBPS/Images/cover art.png", png)
+        z.writestr("OEBPS/Images/map.png", png)
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    doc = converter.convert(epub_path, raises_on_error=True).document
+
+    assert len(doc.pictures) == 2
+    assert all(pic.image is not None for pic in doc.pictures)

@@ -9,12 +9,24 @@ repository's per-file line limit.
 
 from io import BytesIO
 
-from docling_core.types.doc import DoclingDocument, DocumentOrigin, ListGroup, ListItem
+import pytest
+from docling_core.types.doc import (
+    DoclingDocument,
+    DocumentOrigin,
+    ListGroup,
+    ListItem,
+)
 from docx import Document
+from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Twips
 
-from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.msword_backend import (
+    _CJK_ENUM_FORMATTERS,
+    MsWordDocumentBackend,
+    _format_enum_counter,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -320,6 +332,381 @@ def test_list_markers_follow_num_fmt_end_to_end(tmp_path):
     ]
 
 
+# Expected strings are the markers Microsoft Word 16.112 (macOS) renders for a
+# level with the given ``w:numFmt`` and ``w:start``. Character sets are from
+# ECMA-376-1:2016 §17.18.59; the rule each format follows is noted inline.
+# Zero glyphs look alike, so they are written as escapes: U+25CB for
+# chineseCounting, U+3007 for chineseCountingThousand and ideographDigital,
+# U+96F6 (零) for chineseLegalSimplified.
+_BOUNDARY_COUNTERS = (
+    1,
+    9,
+    10,
+    11,
+    19,
+    20,
+    21,
+    99,
+    100,
+    101,
+    110,
+    999,
+    1000,
+    1001,
+    10000,
+    10005,
+    100000,
+)
+_EAST_ASIAN_MARKERS: dict[str, tuple[str, ...]] = {
+    # 十 reading to 99, digit by digit with U+25CB from 100 (ECMA-376 example
+    # 九十九, 一○○, 一○一; Word identical, no upper limit).
+    "chineseCounting": (
+        "一",
+        "九",
+        "十",
+        "十一",
+        "十九",
+        "二十",
+        "二十一",
+        "九十九",
+        "一\u25cb\u25cb",
+        "一\u25cb一",
+        "一一\u25cb",
+        "九九九",
+        "一\u25cb\u25cb\u25cb",
+        "一\u25cb\u25cb一",
+        "一\u25cb\u25cb\u25cb\u25cb",
+        "一\u25cb\u25cb\u25cb五",
+        "一\u25cb\u25cb\u25cb\u25cb\u25cb",
+    ),
+    # Place-value reading; 一 dropped only for a bare 10-19; U+3007 marks every
+    # zero run followed by a digit, also right after 万 (Word: 一万〇五). The
+    # standard's example 一十 and its zero 零 are not what Word renders.
+    "chineseCountingThousand": (
+        "一",
+        "九",
+        "十",
+        "十一",
+        "十九",
+        "二十",
+        "二十一",
+        "九十九",
+        "一百",
+        "一百\u3007一",
+        "一百一十",
+        "九百九十九",
+        "一千",
+        "一千\u3007一",
+        "一万",
+        "一万\u3007五",
+        "一十万",
+    ),
+    # Banker's digits with 拾佰仟, coefficient never dropped (10 = 壹拾), zero
+    # 零, ten thousand U+842C as in Word ([MS-OI29500] 2.1.548 q).
+    "chineseLegalSimplified": (
+        "壹",
+        "玖",
+        "壹拾",
+        "壹拾壹",
+        "壹拾玖",
+        "贰拾",
+        "贰拾壹",
+        "玖拾玖",
+        "壹佰",
+        "壹佰零壹",
+        "壹佰壹拾",
+        "玖佰玖拾玖",
+        "壹仟",
+        "壹仟零壹",
+        "壹萬",
+        "壹萬零伍",
+        "壹拾萬",
+    ),
+    # No zero inside a number; 一 omitted before 十, 百 and a leading 千, kept
+    # as 一万 and as 一千 after a 万 group (Word renders; ECMA-376 shows only
+    # the pattern to 二十一).
+    "japaneseCounting": (
+        "一",
+        "九",
+        "十",
+        "十一",
+        "十九",
+        "二十",
+        "二十一",
+        "九十九",
+        "百",
+        "百一",
+        "百十",
+        "九百九十九",
+        "千",
+        "千一",
+        "一万",
+        "一万五",
+        "十万",
+    ),
+    # Digit substitution with U+3007 (ECMA-376; Word identical).
+    "ideographDigital": (
+        "一",
+        "九",
+        "一\u3007",
+        "一一",
+        "一九",
+        "二\u3007",
+        "二一",
+        "九九",
+        "一\u3007\u3007",
+        "一\u3007一",
+        "一一\u3007",
+        "九九九",
+        "一\u3007\u3007\u3007",
+        "一\u3007\u3007一",
+        "一\u3007\u3007\u3007\u3007",
+        "一\u3007\u3007\u3007五",
+        "一\u3007\u3007\u3007\u3007\u3007",
+    ),
+    # Fullwidth digits U+FF10-U+FF19 (ECMA-376; Word identical).
+    "decimalFullWidth": (
+        "\uff11",
+        "\uff19",
+        "\uff11\uff10",
+        "\uff11\uff11",
+        "\uff11\uff19",
+        "\uff12\uff10",
+        "\uff12\uff11",
+        "\uff19\uff19",
+        "\uff11\uff10\uff10",
+        "\uff11\uff10\uff11",
+        "\uff11\uff11\uff10",
+        "\uff19\uff19\uff19",
+        "\uff11\uff10\uff10\uff10",
+        "\uff11\uff10\uff10\uff11",
+        "\uff11\uff10\uff10\uff10\uff10",
+        "\uff11\uff10\uff10\uff10\uff15",
+        "\uff11\uff10\uff10\uff10\uff10\uff10",
+    ),
+    # Ten Heavenly Stems, then the decimal string (ECMA-376 example 癸, 11, 12;
+    # Word identical).
+    "ideographTraditional": (
+        "甲",
+        "壬",
+        "癸",
+        "11",
+        "19",
+        "20",
+        "21",
+        "99",
+        "100",
+        "101",
+        "110",
+        "999",
+        "1000",
+        "1001",
+        "10000",
+        "10005",
+        "100000",
+    ),
+    # Twelve Earthly Branches, then the decimal string (ECMA-376 example 亥,
+    # 13, 14; Word identical for the fallback).
+    "ideographZodiac": (
+        "子",
+        "申",
+        "酉",
+        "戌",
+        "19",
+        "20",
+        "21",
+        "99",
+        "100",
+        "101",
+        "110",
+        "999",
+        "1000",
+        "1001",
+        "10000",
+        "10005",
+        "100000",
+    ),
+    # U+2460-U+2473 for 1-20, then the decimal string (ECMA-376; Word identical).
+    "decimalEnclosedCircle": (
+        "①",
+        "⑨",
+        "⑩",
+        "⑪",
+        "⑲",
+        "⑳",
+        "21",
+        "99",
+        "100",
+        "101",
+        "110",
+        "999",
+        "1000",
+        "1001",
+        "10000",
+        "10005",
+        "100000",
+    ),
+}
+
+
+_EXTRA_EAST_ASIAN_CASES: list[tuple[str, int, str]] = [
+    # Zero is a valid w:start value.
+    ("chineseCounting", 0, "\u25cb"),
+    ("chineseCountingThousand", 0, "\u3007"),
+    ("chineseLegalSimplified", 0, "零"),
+    ("japaneseCounting", 0, "\u3007"),
+    ("ideographDigital", 0, "\u3007"),
+    ("decimalFullWidth", 0, "\uff10"),
+    ("ideographTraditional", 0, "0"),
+    ("decimalEnclosedCircle", 0, "0"),
+    # Zero runs inside and across the 万 group.
+    ("chineseCountingThousand", 1010, "一千\u3007一十"),
+    ("chineseCountingThousand", 10101, "一万\u3007一百\u3007一"),
+    ("chineseCountingThousand", 100010, "一十万\u3007一十"),
+    ("chineseCountingThousand", 909090, "九十万\u3007九千\u3007九十"),
+    ("chineseLegalSimplified", 100100, "壹拾萬零壹佰"),
+    ("chineseLegalSimplified", 909090, "玖拾萬零玖仟零玖拾"),
+    ("japaneseCounting", 1100, "千百"),
+    ("japaneseCounting", 11100, "一万一千百"),
+    ("japaneseCounting", 111111, "十一万一千百十一"),
+    # Word renders an empty marker from 1,000,000 ([MS-OI29500] 2.1.548 j).
+    ("chineseCountingThousand", 999999, "九十九万九千九百九十九"),
+    ("chineseCountingThousand", 1000000, ""),
+    ("chineseLegalSimplified", 1000000, ""),
+    ("japaneseCounting", 1000000, ""),
+    ("chineseCounting", 1000000, "一\u25cb\u25cb\u25cb\u25cb\u25cb\u25cb"),
+]
+
+
+@pytest.mark.parametrize(
+    ("num_fmt", "counter", "expected"),
+    [
+        pytest.param(num_fmt, counter, expected, id=f"{num_fmt}-{counter}")
+        for num_fmt, markers in _EAST_ASIAN_MARKERS.items()
+        for counter, expected in zip(_BOUNDARY_COUNTERS, markers, strict=True)
+    ]
+    + [
+        pytest.param(num_fmt, counter, expected, id=f"{num_fmt}-{counter}")
+        for num_fmt, counter, expected in _EXTRA_EAST_ASIAN_CASES
+    ],
+)
+def test_format_enum_counter_east_asian_num_fmt(num_fmt, counter, expected):
+    assert _format_enum_counter(counter, num_fmt) == expected
+
+
+@pytest.mark.parametrize("num_fmt", sorted(_CJK_ENUM_FORMATTERS))
+def test_east_asian_formatters_keep_negative_values_decimal(num_fmt):
+    """Negative counters fall back to decimal, as in the letter and roman helpers."""
+    assert _CJK_ENUM_FORMATTERS[num_fmt](-12) == "-12"
+
+
+def test_list_markers_follow_east_asian_num_fmt_end_to_end(tmp_path):
+    """East Asian ``w:numFmt`` levels must keep their markers through convert().
+
+    Chinese regulations and contracts number articles with ``第%1条`` and a
+    ``%2`` wrapped in fullwidth parentheses. These formats used to be treated as non-numbered, so the list
+    items came out as bullets with an empty marker and the article numbers were
+    lost.
+    """
+
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    def add_numbering(
+        abstract_id: str, num_id: str, levels: list[tuple[str, str, int]]
+    ):
+        abstract_num = OxmlElement("w:abstractNum")
+        abstract_num.set(qn("w:abstractNumId"), abstract_id)
+        for ilvl, (num_fmt, lvl_text, start_val) in enumerate(levels):
+            lvl = OxmlElement("w:lvl")
+            lvl.set(qn("w:ilvl"), str(ilvl))
+            start = OxmlElement("w:start")
+            start.set(qn("w:val"), str(start_val))
+            lvl.append(start)
+            fmt = OxmlElement("w:numFmt")
+            fmt.set(qn("w:val"), num_fmt)
+            lvl.append(fmt)
+            text_el = OxmlElement("w:lvlText")
+            text_el.set(qn("w:val"), lvl_text)
+            lvl.append(text_el)
+            abstract_num.append(lvl)
+        numbering.append(abstract_num)
+        num = OxmlElement("w:num")
+        num.set(qn("w:numId"), num_id)
+        ref = OxmlElement("w:abstractNumId")
+        ref.set(qn("w:val"), abstract_id)
+        num.append(ref)
+        numbering.append(num)
+
+    # Articles start at 9 so the list crosses the 十 boundary.
+    add_numbering(
+        "500",
+        "501",
+        [
+            ("chineseCountingThousand", "第%1条", 9),
+            ("chineseCounting", "\uff08%2\uff09", 1),
+            ("decimalEnclosedCircle", "%3", 1),
+        ],
+    )
+    # Punctuation-only templates must also take the lvlText path.
+    add_numbering("600", "601", [("chineseLegalSimplified", "%1、", 1)])
+    add_numbering("700", "701", [("ideographTraditional", "%1.", 1)])
+    add_numbering("800", "801", [("japaneseCounting", "%1", 100)])
+
+    def add_item(text: str, num_id: str, ilvl_val: int = 0):
+        paragraph = doc.add_paragraph(text, style="List Paragraph")
+        num_pr = OxmlElement("w:numPr")
+        ilvl = OxmlElement("w:ilvl")
+        ilvl.set(qn("w:val"), str(ilvl_val))
+        num_pr.append(ilvl)
+        num_id_elem = OxmlElement("w:numId")
+        num_id_elem.set(qn("w:val"), num_id)
+        num_pr.append(num_id_elem)
+        paragraph._element.get_or_add_pPr().append(num_pr)
+
+    add_item("article nine", "501", 0)
+    add_item("first clause", "501", 1)
+    add_item("second clause", "501", 1)
+    add_item("first point", "501", 2)
+    add_item("article ten", "501", 0)
+    add_item("article eleven", "501", 0)
+
+    add_item("legal one", "601")
+    add_item("legal two", "601")
+    add_item("stem one", "701")
+    add_item("japanese hundred", "801")
+
+    docx_path = tmp_path / "east_asian_num_fmt_markers.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    converted = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+    items = [
+        (item.text, item.marker, item.enumerated)
+        for item, _ in converted.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+
+    assert items == [
+        ("article nine", "第九条", True),
+        ("first clause", "\uff08一\uff09", True),
+        ("second clause", "\uff08二\uff09", True),
+        ("first point", "①", True),
+        ("article ten", "第十条", True),
+        ("article eleven", "第十一条", True),
+        ("legal one", "壹、", True),
+        ("legal two", "贰、", True),
+        ("stem one", "甲.", True),
+        ("japanese hundred", "百", True),
+    ]
+
+
 def _make_empty_docx():
     """Return an in-memory .docx with no content."""
 
@@ -327,3 +714,200 @@ def _make_empty_docx():
     Document().save(buf)
     buf.seek(0)
     return buf
+
+
+def _convert_docx(document, tmp_path) -> DoclingDocument:
+    """Save a python-docx document and convert it with the Word backend."""
+    docx_path = tmp_path / "list_styles.docx"
+    document.save(str(docx_path))
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    return MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+
+def _convert_styled_paragraphs(tmp_path, paragraphs) -> DoclingDocument:
+    """Convert a document built from ``(text, paragraph style name)`` pairs."""
+    document = Document()
+    for text, style in paragraphs:
+        document.add_paragraph(text, style=style)
+    return _convert_docx(document, tmp_path)
+
+
+def _list_items_by_text(doc: DoclingDocument) -> dict[str, ListItem]:
+    return {item.text: item for item in doc.texts if isinstance(item, ListItem)}
+
+
+def test_list_styles_nest_by_indentation(tmp_path):
+    """Items styled "List Bullet 2" / "List Number 2" nest under the item above.
+
+    Each of these built-in styles links to its own numId at ``w:ilvl`` 0 and
+    differs from "List Bullet" / "List Number" only by a deeper indentation,
+    so every style used to start a separate top-level list.
+    """
+    doc = _convert_styled_paragraphs(
+        tmp_path,
+        [
+            ("apple", "List Bullet"),
+            ("banana", "List Bullet"),
+            ("banana split", "List Bullet 2"),
+            ("banana bread", "List Bullet 2"),
+            ("cherry", "List Bullet"),
+            ("first", "List Number"),
+            ("first-a", "List Number 2"),
+            ("second", "List Number"),
+        ],
+    )
+    items = _list_items_by_text(doc)
+
+    bullets = items["banana"].parent.resolve(doc)
+    sub_bullets = items["banana split"].parent.resolve(doc)
+    assert sub_bullets.parent == bullets.get_ref()
+    assert items["banana bread"].parent == sub_bullets.get_ref()
+    numbers = items["first"].parent.resolve(doc)
+    assert items["first-a"].parent.resolve(doc).parent == numbers.get_ref()
+
+    assert doc.export_to_markdown() == (
+        "- apple\n"
+        "- banana\n"
+        "    - banana split\n"
+        "    - banana bread\n"
+        "- cherry\n"
+        "\n"
+        "1. first\n"
+        "    1. first-a\n"
+        "2. second"
+    )
+
+
+def test_lists_at_the_same_indentation_stay_siblings(tmp_path):
+    """Lists of different numIds at one indentation are siblings, never nested.
+
+    This holds at the top level ("List Bullet", then "List Number") and for two
+    sub-lists under one item ("List Bullet 2", then "List Number 2").
+    """
+    doc = _convert_styled_paragraphs(
+        tmp_path,
+        [
+            ("bullet", "List Bullet"),
+            ("bullet-a", "List Bullet 2"),
+            ("bullet-1", "List Number 2"),
+            ("number", "List Number"),
+        ],
+    )
+    items = _list_items_by_text(doc)
+
+    bullets = items["bullet"].parent.resolve(doc)
+    sub_bullets = items["bullet-a"].parent.resolve(doc)
+    sub_numbers = items["bullet-1"].parent.resolve(doc)
+    assert sub_bullets.parent == bullets.get_ref()
+    assert sub_numbers.parent == bullets.get_ref()
+    assert sub_numbers.get_ref() != sub_bullets.get_ref()
+
+    numbers = items["number"].parent.resolve(doc)
+    assert numbers.get_ref() != bullets.get_ref()
+    assert numbers.parent == bullets.parent == doc.body.get_ref()
+
+
+def test_list_styles_return_to_the_outer_list(tmp_path):
+    """An item back at the outer indentation continues the outer list.
+
+    This also holds when it returns from two levels deep, and a deeper item
+    after it opens a new sub-list under it.
+    """
+    doc = _convert_styled_paragraphs(
+        tmp_path,
+        [
+            ("one", "List Number"),
+            ("one-a", "List Number 2"),
+            ("one-a-i", "List Number 3"),
+            ("two", "List Number"),
+            ("two-a", "List Number 2"),
+            ("three", "List Number"),
+        ],
+    )
+    items = _list_items_by_text(doc)
+
+    outer = items["one"].parent
+    assert items["two"].parent == outer
+    assert items["three"].parent == outer
+    assert [items[text].marker for text in ("one", "two", "three")] == [
+        "1.",
+        "2.",
+        "3.",
+    ]
+    assert items["one-a-i"].parent.resolve(doc).parent == items["one-a"].parent
+    second_sub_list = items["two-a"].parent.resolve(doc)
+    assert second_sub_list.parent == outer
+    assert second_sub_list.get_ref() != items["one-a"].parent
+
+
+def test_blank_paragraph_closes_a_nested_list_style(tmp_path):
+    """A blank paragraph inside a nested list closes it like any other list.
+
+    The group kept for reuse across the blank is the outer list's: an outer
+    item after it resumes the outer list, a nested item is not attached to it.
+    """
+
+    def convert(last_paragraph: tuple[str, str]) -> dict[str, ListItem]:
+        document = Document()
+        # Lists below a heading keep their group for reuse across a blank.
+        document.add_heading("Section", level=1)
+        for text, style in [
+            ("first", "List Number"),
+            ("first-a", "List Number 2"),
+            ("", "Normal"),
+            last_paragraph,
+        ]:
+            document.add_paragraph(text, style=style)
+        return _list_items_by_text(_convert_docx(document, tmp_path))
+
+    items = convert(("second", "List Number"))
+    assert items["second"].parent == items["first"].parent
+    assert items["second"].marker == "2."
+
+    items = convert(("first-b", "List Number 2"))
+    assert items["first-b"].parent != items["first"].parent
+
+
+def test_list_nesting_follows_word_indentation_precedence(tmp_path):
+    """The indentation compared is the one Word applies to the paragraph.
+
+    A paragraph's own ``w:ind`` (here spelled ``w:start``) overrides its
+    numbering level's; when neither sets one, the style's ``basedOn`` chain
+    decides.
+    """
+    document = Document()
+    # "List Number 2" inherits its indentation from a base style once its
+    # numbering level no longer sets one.
+    base = document.styles.add_style("Indented Base", WD_STYLE_TYPE.PARAGRAPH)
+    base.paragraph_format.left_indent = Twips(720)
+    list_number_2 = document.styles["List Number 2"]
+    list_number_2.base_style = base
+    numbering = document.part.numbering_part.element
+    num_id = list_number_2.element.xpath("./w:pPr/w:numPr/w:numId/@w:val")[0]
+    abstract_id = numbering.xpath(
+        f'./w:num[@w:numId="{num_id}"]/w:abstractNumId/@w:val'
+    )[0]
+    for ind in numbering.xpath(
+        f'./w:abstractNum[@w:abstractNumId="{abstract_id}"]/w:lvl/w:pPr/w:ind'
+    ):
+        ind.getparent().remove(ind)
+
+    document.add_paragraph("outer", style="List Bullet")
+    document.add_paragraph("by style", style="List Number 2")
+    document.add_paragraph("back", style="List Bullet")
+    # "List Number" is numbered at the "List Bullet" indentation.
+    by_paragraph = document.add_paragraph("by paragraph", style="List Number")
+    by_paragraph._p.get_or_add_pPr().get_or_add_ind().set(qn("w:start"), "720")
+
+    doc = _convert_docx(document, tmp_path)
+    items = _list_items_by_text(doc)
+
+    outer = items["outer"].parent
+    assert items["back"].parent == outer
+    assert items["by style"].parent.resolve(doc).parent == outer
+    assert items["by paragraph"].parent.resolve(doc).parent == outer

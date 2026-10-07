@@ -176,9 +176,24 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 f"  3. Or use a different model that exists in your artifacts_path"
             )
 
+        # Some converted checkpoints omit lm_head because it is tied to the token
+        # embeddings, but mlx-vlm may miss a nested tie_word_embeddings setting and
+        # instantiate a separate head. Load those checkpoints non-strictly, then
+        # switch the language model to its embedding-backed output projection.
+        tied_word_embeddings = bool(
+            self.model_config
+            and self.model_config.extra_config.get("mlx_tied_word_embeddings", False)
+        )
+
         # Load the model
         start_time = time.monotonic()
-        self.vlm_model, self.processor = load(artifacts_path)
+        self.vlm_model, self.processor = load(
+            artifacts_path, strict=not tied_word_embeddings
+        )
+        if tied_word_embeddings:
+            language_model = self.vlm_model.language_model
+            language_model.args.tie_word_embeddings = True
+            del language_model.lm_head
         self.config = load_config(artifacts_path)
         load_time = time.monotonic() - start_time
 
@@ -253,15 +268,27 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 num_tokens = 0
                 stop_reason = "unspecified"
 
+                generation_kwargs: dict[str, Any] = {
+                    "max_tokens": input_data.max_new_tokens,
+                    "verbose": False,
+                    "temp": input_data.temperature,
+                }
+                if self.options.repetition_penalty is not None:
+                    generation_kwargs["repetition_penalty"] = (
+                        self.options.repetition_penalty
+                    )
+                if self.options.repetition_context_size is not None:
+                    generation_kwargs["repetition_context_size"] = (
+                        self.options.repetition_context_size
+                    )
+
                 # Use stream_generate for proper stop string handling
                 for token in self.stream_generate(
                     self.vlm_model,
                     self.processor,
                     formatted_prompt,
                     [image],  # MLX stream_generate expects list of images
-                    max_tokens=input_data.max_new_tokens,
-                    verbose=False,
-                    temp=input_data.temperature,
+                    **generation_kwargs,
                 ):
                     output_text += token.text
                     num_tokens += 1
