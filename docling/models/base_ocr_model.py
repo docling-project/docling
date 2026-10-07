@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import ClassVar
 
 import numpy as np
-from docling_core.types.doc import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel, Size
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfCellRenderingMode,
@@ -29,6 +29,7 @@ from docling.datamodel.settings import settings
 from docling.datamodel.spatial import BoundingBoxSpatialIndex
 from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
+from docling.models.utils.text_quality import rate_text_quality
 from docling.utils.ocr_language import (
     OcrLanguage,
     OcrLanguageResolver,
@@ -328,7 +329,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 ocr_rects.append(cluster_bbox)
                 continue
 
-            # Of the rest, only the clusters without any programmatic text need OCR.
+            # Of the rest, only the clusters without any programmatic text need OCR,
+            # or clusters whose extracted text is corrupt/garbled (e.g. broken font CMap).
             if use_backend_queries:
                 has_text = backend.has_content_in(
                     bbox=cluster_bbox, chars=True, shapes=False, bitmaps=False
@@ -339,6 +341,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
             if not has_text:
                 ocr_rects.append(cluster_bbox)
+            elif cluster.label not in (DocItemLabel.CODE, DocItemLabel.FORMULA):
+                cluster_text = backend.get_text_in_rect(cluster_bbox)
+                if cluster_text and rate_text_quality(cluster_text) < 0.5:
+                    ocr_rects.append(cluster_bbox)
 
         # Deduplicate the surviving cluster bboxes.
         _, ocr_rects = self._deduplicate_rects(
@@ -499,11 +505,19 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # The prioritized cells are always kept
         # the secondary cells are added only where they don't overlap a prioritized cell.
         if priority == _MergeCellsPriority.PDF_FIRST:
-            prioritized_cells, secondary_cells = visible_cells, ocr_cells
+            clean_pdf_cells = [
+                c for c in visible_cells if rate_text_quality(c.text) >= 0.5
+            ]
+            corrupt_pdf_cells = [
+                c for c in visible_cells if rate_text_quality(c.text) < 0.5
+            ]
+            merged_cells = self._merge_cells_by_priority(clean_pdf_cells, ocr_cells)
+            if corrupt_pdf_cells:
+                merged_cells = self._merge_cells_by_priority(
+                    merged_cells, corrupt_pdf_cells
+                )
         else:
-            prioritized_cells, secondary_cells = ocr_cells, visible_cells
-
-        merged_cells = self._merge_cells_by_priority(prioritized_cells, secondary_cells)
+            merged_cells = self._merge_cells_by_priority(ocr_cells, visible_cells)
 
         # Put the invisible cells back
         if invisible_cells:
