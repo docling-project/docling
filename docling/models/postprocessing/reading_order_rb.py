@@ -7,14 +7,22 @@ import math
 import re
 from dataclasses import dataclass, field
 from itertools import islice, takewhile
-from typing import TYPE_CHECKING, ClassVar, Dict, Iterable, List, Literal, Set, Tuple
+from typing import ClassVar, Dict, Iterable, List, Literal, Set, Tuple
 
 from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import RefItem
 from docling_core.types.doc.labels import DocItemLabel
 
-if TYPE_CHECKING:
+_RTREE_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
     from rtree import index as rtree_index
+except ImportError as e:  # pragma: no cover - import-time guard
+    _RTREE_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'rtree' package is required for rule-based reading order. "
+    "Install it with `pip install 'docling-slim[convert-core]'`."
+)
 
 _log = logging.getLogger(__name__)
 
@@ -760,11 +768,9 @@ class ReadingOrderPredictor:
             state.up_map[i] = []
             state.dn_map[i] = []
 
-        # Build R-tree spatial index. rtree ships with the convert-core extra;
-        # import it lazily so docling-slim installs without it can import
-        # DocumentConverter.
-        from rtree import index as rtree_index
-
+        # Build R-tree spatial index
+        if _RTREE_IMPORT_ERROR is not None:
+            raise ImportError(_INSTALL_HINT) from _RTREE_IMPORT_ERROR
         spatial_idx = rtree_index.Index()
         for i, pelem in enumerate(page_elems):
             spatial_idx.insert(i, (pelem.l, pelem.b, pelem.r, pelem.t))

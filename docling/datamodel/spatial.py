@@ -5,6 +5,17 @@ from collections.abc import Iterable
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 
+_RTREE_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from rtree import index
+except ImportError as e:  # pragma: no cover - import-time guard
+    _RTREE_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'rtree' package is required for spatial indexing. "
+    "Install it with `pip install 'docling-slim[convert-core]'`."
+)
+
 SpatialBounds = tuple[float, float, float, float]
 
 
@@ -40,10 +51,8 @@ def ordered_bounding_box(bbox: BoundingBox) -> BoundingBox:
 
 class BoundingBoxSpatialIndex:
     def __init__(self) -> None:
-        # rtree ships with the convert-core extra; import it lazily so that
-        # docling-slim installs without it can still import DocumentConverter.
-        from rtree import index
-
+        if _RTREE_IMPORT_ERROR is not None:
+            raise ImportError(_INSTALL_HINT) from _RTREE_IMPORT_ERROR
         properties = index.Property()
         properties.dimension = 2
         self._index = index.Index(properties=properties)
