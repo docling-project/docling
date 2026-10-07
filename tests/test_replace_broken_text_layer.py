@@ -18,6 +18,8 @@ from PIL import Image, ImageDraw, ImageFont
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
+    OcrAutoOptions,
+    OcrOptions,
     PdfPipelineOptions,
     TesseractCliOcrOptions,
 )
@@ -66,8 +68,11 @@ def _page_pdf(path: Path, text_layer: str) -> Path:
     return path
 
 
-def _convert(path: Path, *, replace: bool) -> ConversionResult:
-    ocr = TesseractCliOcrOptions(lang=["eng"], replace_broken_text_layer=replace)
+def _convert(
+    path: Path, *, replace: bool, ocr: OcrOptions | None = None
+) -> ConversionResult:
+    if ocr is None:
+        ocr = TesseractCliOcrOptions(lang=["eng"], replace_broken_text_layer=replace)
     options = PdfPipelineOptions(do_ocr=True, do_table_structure=False, ocr_options=ocr)
     converter = DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
@@ -97,3 +102,14 @@ def test_good_text_layer_is_kept(tmp_path: Path) -> None:
 
     assert result.confidence.pages[1].parse_score == 1.0
     assert layer in result.document.export_to_markdown()
+
+
+def test_auto_ocr_engine_replaces_the_broken_layer(tmp_path: Path) -> None:
+    """The engine OcrAutoOptions selects gets the option too."""
+    ocr = OcrAutoOptions(replace_broken_text_layer=True)
+    result = _convert(
+        _page_pdf(tmp_path / "broken.pdf", _BROKEN_LAYER), replace=True, ocr=ocr
+    )
+
+    assert result.confidence.pages[1].parse_score == 0.0
+    assert _BROKEN_LAYER[:5] not in result.document.export_to_markdown()
