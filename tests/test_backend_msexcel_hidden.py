@@ -181,3 +181,39 @@ def test_hidden_dimensions_with_a_table_offset() -> None:
     assert table.prov[0].bbox.as_tuple() == (5, 4, 9, 7)
     assert "secret" not in doc.export_to_markdown()
     assert "Old item" not in doc.export_to_markdown()
+
+
+def test_empty_hidden_cells_do_not_create_text_or_remove_visible_blanks() -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Item", "Internal", "Quantity"])
+    sheet.append(["Visible item", None, None])
+    sheet.append(["Other item", "private", 2])
+    sheet.column_dimensions["B"].hidden = True
+
+    doc = _convert(workbook)
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (3, 2)
+    assert [
+        (cell.start_row_offset_idx, cell.start_col_offset_idx, cell.text)
+        for cell in table.data.table_cells
+    ] == [
+        (0, 0, "Item"),
+        (0, 1, "Quantity"),
+        (1, 0, "Visible item"),
+        (1, 1, ""),
+        (2, 0, "Other item"),
+        (2, 1, "2"),
+    ]
+    assert [
+        (item.text, item.prov[0].bbox.as_tuple())
+        for item in doc.texts
+        if item.content_layer == ContentLayer.INVISIBLE
+    ] == [
+        ("Internal", (1, 0, 2, 1)),
+        ("private", (1, 2, 2, 3)),
+    ]
+    assert "Internal" not in doc.export_to_markdown()
+    assert "private" not in doc.export_to_markdown()
