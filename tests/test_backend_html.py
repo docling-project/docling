@@ -31,7 +31,7 @@ from docling.backend.utils.image_resource_loader import (
     validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -1908,6 +1908,47 @@ def test_valid_local_paths_still_work():
     resolved = html_doc._resolve_relative_path("example_image_01.png")
     assert "tests/data/html" in resolved
     assert "example_image_01.png" in resolved
+
+
+def test_link_and_image_outside_base_directory_keep_conversion(tmp_path: Path):
+    """A link or an image that points outside the base directory is not loaded.
+
+    Site-root ("/about") and parent ("../index.html") locations are common in
+    saved web pages. With local fetch on, they must not fail the conversion
+    of the whole document.
+    """
+    html_path = tmp_path / "site" / "page.html"
+    html_path.parent.mkdir()
+    html_path.write_text(
+        "<html><body>"
+        '<p>Go <a href="/about">about</a> or <a href="../index.html">home</a>.</p>'
+        '<img src="../logo.png" alt="logo">'
+        '<img src="/img/banner.png" alt="banner">'
+        "<p>End</p>"
+        "</body></html>",
+        encoding="utf-8",
+    )
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(
+                backend_options=HTMLBackendOptions(
+                    enable_local_fetch=True, fetch_images=True
+                )
+            )
+        }
+    )
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        result = converter.convert(html_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    doc = result.document
+    assert doc.texts[-1].text == "End"
+    links = {t.text: t.hyperlink for t in doc.texts if t.hyperlink is not None}
+    assert Path(str(links["about"])).as_posix() == "/about"
+    assert Path(str(links["home"])).as_posix() == "../index.html"
+    assert len(doc.pictures) == 2
+    assert all(pic.image is None for pic in doc.pictures)
 
 
 def test_html_newline_handling():
