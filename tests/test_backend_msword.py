@@ -2226,3 +2226,79 @@ def test_footnotes_and_endnotes_are_not_dropped():
     assert len(footnote_items) == 2, (
         "expected exactly one real footnote and one real endnote, no placeholders"
     )
+
+
+def _inject_into_document_xml(
+    doc: Document, transformations: list[tuple[bytes, bytes]]
+):
+    import zipfile
+    from io import BytesIO
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    with zipfile.ZipFile(buf) as src:
+        entries = {name: src.read(name) for name in src.namelist()}
+    doc_xml = entries["word/document.xml"]
+    for old, new in transformations:
+        doc_xml = doc_xml.replace(old, new, 1)
+    entries["word/document.xml"] = doc_xml
+    out = BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as dst:
+        for name, data in entries.items():
+            dst.writestr(name, data)
+    out.seek(0)
+    return out
+
+
+def test_docx_xml_comments_and_processing_instructions():
+    """XML comments and processing instructions must not crash or drop table text.
+
+    Regression test for #4583: docx4j and other generators insert XML comments
+    or processing instructions in document.xml (e.g. right after <w:body>, in
+    paragraphs, runs, table rows, and cells). Because lxml comments and PIs do
+    not have string tags, QName or tag attribute operations failed with
+    ValueError or TypeError, aborting conversion or dropping table cells.
+    """
+    document = Document()
+    document.add_paragraph("Intro paragraph before table.")
+    table = document.add_table(rows=2, cols=2)
+    table.cell(0, 0).text = "Cell (0,0)"
+    table.cell(0, 1).text = "Cell (0,1)"
+    table.cell(1, 0).text = "Cell (1,0)"
+    table.cell(1, 1).text = "Cell (1,1)"
+    document.add_paragraph("Outro paragraph after table.")
+
+    stream_buf = _inject_into_document_xml(
+        document,
+        [
+            (
+                b"<w:body>",
+                b"<w:body><!-- Created by docx4j 8.2.8 --><?custom-pi key='val'?>",
+            ),
+            (b"<w:p>", b"<w:p><!-- comment at start of paragraph -->"),
+            (b"<w:r>", b"<w:r><!-- comment inside run -->"),
+            (b"<w:tr>", b"<w:tr><!-- comment inside table row -->"),
+            (b"<w:tc>", b"<w:tc><!-- comment inside table cell -->"),
+        ],
+    )
+
+    stream = DocumentStream(name="comments_test.docx", stream=stream_buf)
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(stream, raises_on_error=True)
+
+    text = result.document.export_to_markdown()
+    assert "Intro paragraph before table." in text
+    assert "Outro paragraph after table." in text
+    assert "Cell (0,0)" in text
+    assert "Cell (0,1)" in text
+    assert "Cell (1,0)" in text
+    assert "Cell (1,1)" in text
+    assert len(result.document.tables) == 1
+    table_cells_text = [c.text for c in result.document.tables[0].data.table_cells]
+    assert table_cells_text == [
+        "Cell (0,0)",
+        "Cell (0,1)",
+        "Cell (1,0)",
+        "Cell (1,1)",
+    ]

@@ -1131,6 +1131,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     ) -> tuple[DoclingDocument, list[RefItem]]:
         added_elements = []
         for element in body:
+            if not isinstance(element.tag, str):
+                continue
             tag_name = etree.QName(element).localname
             # Check for Inline Images (blip elements)
             _raw_drawing_blip = self.blip_xpath_expr(element)
@@ -1143,7 +1145,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # (they will be properly extracted by _handle_textbox_content instead)
             def _in_textbox(elem):
                 return any(
-                    etree.QName(anc).localname in ["txbxContent", "textbox"]
+                    isinstance(anc.tag, str)
+                    and etree.QName(anc).localname in ["txbxContent", "textbox"]
                     for anc in elem.iterancestors()
                 )
 
@@ -2105,6 +2108,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         def _get_children_recursive(node):
             for child in node:
+                if not isinstance(child.tag, str):
+                    continue
                 tag_name = etree.QName(child).localname
                 if tag_name in {"smartTag", "customXml", "ins", "fldSimple"}:
                     yield from _get_children_recursive(child)
@@ -2112,6 +2117,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     yield child
 
         for child in _get_children_recursive(paragraph._p):
+            if not isinstance(child.tag, str):
+                continue
             tag_name = etree.QName(child).localname
 
             if tag_name == "sdt":
@@ -2309,7 +2316,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parent = paragraph_element.getparent()
             # Get all paragraph siblings
             paragraphs = [
-                p for p in parent.getchildren() if etree.QName(p).localname == "p"
+                p
+                for p in parent.getchildren()
+                if isinstance(p.tag, str) and etree.QName(p).localname == "p"
             ]
             # Find index of current paragraph within its siblings
             try:
@@ -2433,6 +2442,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if element in processed_paragraphs:
                 continue
 
+            if not isinstance(element.tag, str):
+                continue
+
             tag_name = etree.QName(element).localname
             processed_paragraphs.add(element)
 
@@ -2445,7 +2457,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Find the containing textbox or shape element
                 container_id = None
                 for ancestor in element.iterancestors():
-                    if any(ns in ancestor.tag for ns in ["textbox", "shape", "txbx"]):
+                    if isinstance(ancestor.tag, str) and any(
+                        ns in ancestor.tag for ns in ["textbox", "shape", "txbx"]
+                    ):
                         container_id = ancestor
                         break
 
@@ -2564,13 +2578,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         direct_omaths = [
             child
             for child in element
-            if "oMath" in child.tag and "oMathPara" not in child.tag
+            if isinstance(child.tag, str)
+            and "oMath" in child.tag
+            and "oMathPara" not in child.tag
         ]
 
         if direct_omaths:
             # Iterate direct children to preserve sibling order and avoid
             # processing nested oMath descendants of an already-converted node.
             for child in element:
+                if not isinstance(child.tag, str):
+                    continue
                 if "oMath" in child.tag and "oMathPara" not in child.tag:
                     latex_equation = str(oMath2Latex(child)).strip()
                     if len(latex_equation) > 0:
@@ -2583,6 +2601,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     # Collect text from non-math children (e.g. <w:r> runs)
                     for t_elem in child.iter():
+                        if not isinstance(t_elem.tag, str):
+                            continue
                         t_tag = etree.QName(t_elem).localname
                         if t_tag == "t" and "math" not in t_elem.tag:
                             if isinstance(t_elem.text, str):
@@ -2592,6 +2612,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Original deep-iteration fallback for nested oMath (e.g.
             # inside oMathPara or other wrapper elements).
             for subt in element.iter():
+                if not isinstance(subt.tag, str):
+                    continue
                 tag_name = etree.QName(subt).localname
                 if tag_name == "t" and "math" not in subt.tag:
                     if isinstance(subt.text, str):
@@ -3459,6 +3481,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         cells: list[BaseOxmlElement] = []
         for child in row_element:
+            if not isinstance(child.tag, str):
+                continue
             tag_name = etree.QName(child).localname
             if tag_name == "tc":
                 cells.append(child)
@@ -3613,6 +3637,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
 
         for item in element:
+            if not isinstance(item.tag, str):
+                continue
             if self.blip_xpath_expr(item):
                 return True
             if item.findall(".//w:drawing", namespaces=_OOXML_NAMESPACES):
@@ -3650,6 +3676,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # no other content
         allowed_tags = {"p", "tcPr"}  # paragraph or table-cell properties
         for child in tc:
+            if not isinstance(child.tag, str):
+                continue
             tag = child.tag.split("}")[-1]
             if tag not in allowed_tags:
                 return True
@@ -3794,10 +3822,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                     parent_elem = elements
                     while parent_elem is not None:
-                        tag = etree.QName(parent_elem).localname
-                        if tag in element_tag:
-                            new_r._r.append(deepcopy(parent_elem))
-                            break
+                        if isinstance(parent_elem.tag, str):
+                            tag = etree.QName(parent_elem).localname
+                            if tag in element_tag:
+                                new_r._r.append(deepcopy(parent_elem))
+                                break
                         parent_elem = parent_elem.getparent()
 
                     if parent_elem is None:
@@ -4019,6 +4048,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         plot_area = chart_root.find(".//c:plotArea", namespaces=_OOXML_NAMESPACES)
         if plot_area is not None:
             for child in plot_area:
+                if not isinstance(child.tag, str):
+                    continue
                 label = _CHART_TAGNAME_TO_CLASSIFICATION.get(
                     etree.QName(child).localname
                 )
