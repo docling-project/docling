@@ -3202,6 +3202,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         enumerated=is_ordered,
                         marker=marker,
                     )
+                    if list_item is None and any(
+                        not self._has_list_ancestor(elem, li)
+                        for elem in li.find_all(["table", "img"])
+                    ):
+                        # An item without text still holds its table or image
+                        list_item = doc.add_list_item(
+                            text="",
+                            enumerated=is_ordered,
+                            marker=marker,
+                            parent=list_group,
+                            content_layer=self.content_layer,
+                            prov=self._make_text_prov(text="", tag=li),
+                        )
 
                 # Increment counter only when a list item is actually added
                 if list_item:

@@ -145,6 +145,12 @@
       },
       {
         "$ref": "#/texts/1312"
+      },
+      {
+        "$ref": "#/texts/1376"
+      },
+      {
+        "$ref": "#/texts/1378"
       }
     ],
     "content_layer": "body",
@@ -6192,7 +6198,14 @@
       "parent": {
         "$ref": "#/groups/188"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/1375"
+        },
+        {
+          "$ref": "#/texts/1377"
+        }
+      ],
       "content_layer": "furniture",
       "name": "list",
       "label": "list"
@@ -26526,6 +26539,68 @@
       "hyperlink": "//en.m.wikipedia.org/w/index.php?title=Duck&mobileaction=toggle_view_mobile",
       "enumerated": false,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1375",
+      "parent": {
+        "$ref": "#/groups/192"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/25"
+        }
+      ],
+      "content_layer": "furniture",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1376",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "caption",
+      "prov": [],
+      "orig": "Wikimedia Foundation",
+      "text": "Wikimedia Foundation",
+      "hyperlink": "https://wikimediafoundation.org/"
+    },
+    {
+      "self_ref": "#/texts/1377",
+      "parent": {
+        "$ref": "#/groups/192"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/26"
+        }
+      ],
+      "content_layer": "furniture",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1378",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "caption",
+      "prov": [],
+      "orig": "Powered by MediaWiki",
+      "text": "Powered by MediaWiki",
+      "hyperlink": "https://www.mediawiki.org/"
     }
   ],
   "pictures": [
@@ -26941,6 +27016,42 @@
       "captions": [
         {
           "$ref": "#/texts/1312"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/25",
+      "parent": {
+        "$ref": "#/texts/1375"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/1376"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/26",
+      "parent": {
+        "$ref": "#/texts/1377"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/1378"
         }
       ],
       "references": [],
