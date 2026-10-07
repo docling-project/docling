@@ -2205,6 +2205,7 @@ format-markdown = [
 ]
 format-office = [
     { name = "openpyxl" },
+    { name = "pylatexenc" },
     { name = "python-docx" },
     { name = "python-pptx" },
 ]
@@ -2222,6 +2223,7 @@ format-pdf-pypdfium2 = [
     { name = "pypdfium2" },
 ]
 format-pptx = [
+    { name = "pylatexenc" },
     { name = "python-pptx" },
 ]
 format-video = [
@@ -2471,6 +2473,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
     { name = "pylatexenc", marker = "extra == 'format-latex'", specifier = ">=2.10,<3.0" },
+    { name = "pylatexenc", marker = "extra == 'format-pptx'", specifier = ">=2.10,<3.0" },
     { name = "pypdfium2", marker = "extra == 'format-pdf-pypdfium2'", specifier = ">=4.30.0,!=4.30.1,<6.0.0" },
     { name = "python-docx", marker = "extra == 'format-docx'", specifier = ">=1.2.0,<2.0.0" },
     { name = "python-dotenv", marker = "extra == 'cli'", specifier = "~=1.0" },
