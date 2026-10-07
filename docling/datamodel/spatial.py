@@ -4,7 +4,6 @@
 from collections.abc import Iterable
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
-from rtree import index
 
 SpatialBounds = tuple[float, float, float, float]
 
@@ -41,6 +40,10 @@ def ordered_bounding_box(bbox: BoundingBox) -> BoundingBox:
 
 class BoundingBoxSpatialIndex:
     def __init__(self) -> None:
+        # rtree ships with the convert-core extra; import it lazily so that
+        # docling-slim installs without it can still import DocumentConverter.
+        from rtree import index
+
         properties = index.Property()
         properties.dimension = 2
         self._index = index.Index(properties=properties)

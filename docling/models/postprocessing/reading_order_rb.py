@@ -7,12 +7,14 @@ import math
 import re
 from dataclasses import dataclass, field
 from itertools import islice, takewhile
-from typing import ClassVar, Dict, Iterable, List, Literal, Set, Tuple
+from typing import TYPE_CHECKING, ClassVar, Dict, Iterable, List, Literal, Set, Tuple
 
 from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import RefItem
 from docling_core.types.doc.labels import DocItemLabel
-from rtree import index as rtree_index
+
+if TYPE_CHECKING:
+    from rtree import index as rtree_index
 
 _log = logging.getLogger(__name__)
 
@@ -758,7 +760,11 @@ class ReadingOrderPredictor:
             state.up_map[i] = []
             state.dn_map[i] = []
 
-        # Build R-tree spatial index
+        # Build R-tree spatial index. rtree ships with the convert-core extra;
+        # import it lazily so docling-slim installs without it can import
+        # DocumentConverter.
+        from rtree import index as rtree_index
+
         spatial_idx = rtree_index.Index()
         for i, pelem in enumerate(page_elems):
             spatial_idx.insert(i, (pelem.l, pelem.b, pelem.r, pelem.t))
@@ -836,7 +842,7 @@ class ReadingOrderPredictor:
 
     def _has_sequence_interruption(
         self,
-        spatial_idx: rtree_index.Index,
+        spatial_idx: "rtree_index.Index",
         page_elems: List[ReadingOrderNode],
         i: int,
         j: int,
