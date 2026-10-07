@@ -46,7 +46,6 @@ from docling.models.stages.form_field.keying import (
     Label,
     assign,
     is_skipped,
-    paints_value,
     regions,
 )
 from docling.models.stages.form_field.keying.rules import THIN
@@ -340,8 +339,8 @@ def _consumed_clusters(
     Returns the clusters whose every printable cell became a key, which leave
     the body, then the clusters only partly used, with the cells that became
     keys: those cells leave the cluster and the rest stays in the body. In a
-    cluster that gives a key, a cell that merely repeats a filled value (see
-    keying.paints_value) counts as used too, so no paragraph is left holding
+    cluster that gives a key, a cell recorded as a painted value during input
+    preparation counts as used too, so no paragraph is left holding
     only the values of the fields its captions keyed.
     """
     assert page.size is not None and page.predictions.layout is not None
@@ -361,12 +360,7 @@ def _consumed_clusters(
         cells = cells | {
             cell.index
             for cell in cluster.cells
-            if cell.text.strip()
-            and paints_value(
-                cell.rect.to_bounding_box().to_top_left_origin(page.size.height),
-                cell.text.strip(),
-                assignment.values,
-            )
+            if (cluster_id, cell.index) in assignment.painted_cells
         }
         if cells >= _printable(cluster):
             dropped.add(cluster_id)

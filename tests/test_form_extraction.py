@@ -901,3 +901,91 @@ def test_inline_host_is_not_dropped_as_rendered_duplicate() -> None:
     assert region.source_container_id == host.id
     assert [value.text for value in region.items[0].values] == ["Amount 12"]
     assert host in page.predictions.layout.clusters
+
+
+@pytest.mark.parametrize("boundary", ["ordinary", "zero_area", "table_scope"])
+@pytest.mark.parametrize("abstain", [False, True])
+def test_painted_cells_survive_candidate_filters_and_abstention(
+    boundary: str, abstain: bool, monkeypatch
+) -> None:
+    # Recognition must cover cells cleanup can read even when candidate filters
+    # reject them. Painted cells must not become atoms shared with captions.
+    caption = _text_cluster(1, BoundingBox(l=10, t=10, r=28, b=14), "Full name:")
+    painted = _text_cluster(
+        2,
+        BoundingBox(l=31, t=31, r=31 if boundary == "zero_area" else 50, b=34),
+        " Paris ",
+    )
+    painted.cells[0].index = 2
+    caption.cells += painted.cells
+    caption.bbox = BoundingBox.enclosing_bbox([caption.bbox, painted.bbox])
+    clusters = [caption]
+    if boundary == "table_scope":
+        clusters.append(
+            Cluster(
+                id=3,
+                label=DocItemLabel.TABLE,
+                bbox=BoundingBox(l=30, t=30, r=70, b=35),
+            )
+        )
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(
+        widgets=[
+            _widget(0, BoundingBox(l=30, t=9.5, r=70, b=14.5), "John Smith"),
+            _widget(1, BoundingBox(l=30, t=30, r=70, b=35), "Paris"),
+        ]
+    )
+    page.predictions.layout = LayoutPrediction(clusters=clusters)
+    if abstain:
+        monkeypatch.setattr(
+            "docling.models.stages.form_field.keying.inputs.MAX_LABELS", 0
+        )
+        monkeypatch.setattr(
+            "docling.models.stages.form_field.keying.solver.MAX_LABELS", 0
+        )
+
+    assignment = form_field_model._assign(page)
+
+    assert assignment.painted_cells == {(caption.id, 2)}
+    assert all(label.text == "Full name:" for label in assignment.labels)
+    assert set().union(*assignment.sources.values()) == {(caption.id, 0)}
+    assert [value.native.index for value in assignment.values] == [0, 1]
+    assert (assignment.solver_status == "optimal") is not abstain
+    list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
+    assert (caption in page.predictions.layout.clusters) is abstain
+    assert [
+        (item.key_text, [value.text for value in item.values])
+        for region in page.predictions.field_regions
+        for item in region.items
+    ] == [("" if abstain else "Full name:", ["John Smith"]), ("", ["Paris"])]
+
+
+def test_painted_values_in_a_paragraph_without_keys_stay_in_the_body() -> None:
+    # Step A preserves the current cleanup scope: only key-supplying clusters
+    # lose individual painted cells. The value-only paragraph still keeps them.
+    caption = _text_cluster(1, BoundingBox(l=10, t=10, r=28, b=14), "Full name:")
+    painted = _text_cluster(2, BoundingBox(l=31, t=10, r=50, b=14), "John Smith")
+    note = _text_cluster(
+        3, BoundingBox(l=31, t=70, r=90, b=74), "See example.org for details"
+    )
+    note.cells[0].index = 3
+    painted.cells += note.cells
+    painted.bbox = BoundingBox.enclosing_bbox([painted.bbox, note.bbox])
+    page = Page(page_no=1, size=Size(width=100, height=100))
+    page.parsed_page = MagicMock(
+        widgets=[_widget(0, BoundingBox(l=30, t=9.5, r=70, b=14.5), "John Smith")]
+    )
+    page.predictions.layout = LayoutPrediction(clusters=[caption, painted])
+    original_cells, original_box = list(painted.cells), painted.bbox
+
+    doc = _materialize(page)
+
+    assert page.predictions.layout.clusters == [painted]
+    assert painted.cells == original_cells
+    assert painted.bbox == original_box
+    assert [
+        item.text for item in doc.texts if item.label == DocItemLabel.FIELD_KEY
+    ] == ["Full name:"]
+    assert "John Smith See example.org for details" in [item.text for item in doc.texts]
+    assert doc.export_to_markdown().count("John Smith") == 2
+    doc.validate_document()

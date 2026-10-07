@@ -230,7 +230,9 @@ def assign(
     detected tables. Nothing passed in is modified.
     """
     found = regions(clusters)
-    values, labels, h, sources = inputs(widgets, found, table_cells, page_height)
+    values, labels, h, sources, painted_cells = inputs(
+        widgets, found, table_cells, page_height
+    )
 
     def keyed_in_tables() -> tuple[list[Candidate], dict[int, TableSlot]]:
         return table_fields(
@@ -239,6 +241,7 @@ def assign(
 
     assignment = _solve(values, labels, h, keyed_in_tables)
     assignment.sources = sources
+    assignment.painted_cells = painted_cells
     return assignment
 
 

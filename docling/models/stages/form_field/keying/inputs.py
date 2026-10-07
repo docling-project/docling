@@ -100,8 +100,14 @@ def inputs(
     found: list[Cluster],
     table_cells: dict[int, list[TableCell]],
     page_height: float,
-) -> tuple[list[Value], list[Label], float, dict[int, set[tuple[int, int]]]]:
-    """Values, labels, the median text height, and where each text atom came from."""
+) -> tuple[
+    list[Value],
+    list[Label],
+    float,
+    dict[int, set[tuple[int, int]]],
+    set[tuple[int, int]],
+]:
+    """Values, labels, median text height, atom sources, and painted source cells."""
     values = []
     for native in widgets:
         bbox = native.rect.to_bounding_box().to_top_left_origin(page_height)
@@ -114,6 +120,7 @@ def inputs(
     sources: dict[int, set[tuple[int, int]]] = defaultdict(set)
     labels: dict[tuple[frozenset[int], Scope], Label] = {}
     heights = []
+    painted_cells: set[tuple[int, int]] = set()
     for region in found:
         if region.label in NOT_LABELS:
             continue
@@ -121,12 +128,15 @@ def inputs(
         for cell in region.cells:
             text = cell.text.strip()
             box = cell.rect.to_bounding_box().to_top_left_origin(page_height)
-            if not text or box.area() <= 0:
+            if not text:
+                continue
+            # Cleanup also reads cells excluded by candidate area or table scope.
+            if paints_value(box, text, values):
+                painted_cells.add((region.id, cell.index))
+            if box.area() <= 0 or (region.id, cell.index) in painted_cells:
                 continue
             scope = scope_of(box, found, table_cells)
             if not scope.eligible:
-                continue
-            if paints_value(box, text, values):
                 continue
             atom = atoms.setdefault(
                 (cell.index, tuple(box.as_tuple()), text), len(atoms)
@@ -152,7 +162,7 @@ def inputs(
     if len(labels) > MAX_LABELS:
         # Joining captions compares every pair of blocks; a page this large
         # abstains in assign() anyway.
-        return values, list(labels.values()), h, sources
+        return values, list(labels.values()), h, sources, painted_cells
     # Rebuild whole captions the layout split into pieces: first the pieces of
     # one text line, then the lines of one caption. Joined captions compete
     # with their pieces; they never replace them.
@@ -161,7 +171,7 @@ def inputs(
     )
     for label in [*blocks, *stacks(blocks, values, h)]:
         labels.setdefault((label.atoms, label.scope), label)
-    return values, list(labels.values()), h, sources
+    return values, list(labels.values()), h, sources, painted_cells
 
 
 def joined(parts: list[Label]) -> Label:

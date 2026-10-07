@@ -11,7 +11,6 @@ files, keeps no state and does not modify its inputs.
 """
 
 from docling.models.stages.form_field.keying.inputs import (
-    paints_value,
     regions,
     scope_of,
 )
@@ -35,7 +34,6 @@ __all__ = [
     "Scope",
     "assign",
     "is_skipped",
-    "paints_value",
     "regions",
     "scope_of",
 ]

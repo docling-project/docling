@@ -109,3 +109,5 @@ class Assignment:
     # Text atom -> the (cluster id, cell index) pairs it was read from; more
     # than one cluster when the layout put the cell in two clusters.
     sources: dict[int, set[tuple[int, int]]] = field(default_factory=dict)
+    # Source cells recognized as painted widget values, separate from label atoms.
+    painted_cells: set[tuple[int, int]] = field(default_factory=set)
