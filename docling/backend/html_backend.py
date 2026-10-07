@@ -124,6 +124,16 @@ def _warn_headers_without_origin() -> None:
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
 
+
+def _resolve_line_breaks(text: str) -> str:
+    """Replace the sentinels of <br> tags with a line break.
+
+    For text that is one paragraph (heading, caption, list item): consecutive <br>
+    tags give one line break.
+    """
+    return re.sub(rf" *{_BR_SENTINEL}[ {_BR_SENTINEL}]*", "\n", text).strip()
+
+
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
 _MHTML_SYNTHETIC_BASE = "thismessage:/"
@@ -384,7 +394,7 @@ class AnnotatedTextList(list):
             current_code = c if c else current_code
 
         return AnnotatedText(
-            text=current_text.strip(),
+            text=_resolve_line_breaks(current_text),
             hyperlink=current_h,
             formatting=current_f,
             code=current_code,
@@ -2871,9 +2881,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             tag, ignore_list=True, find_parent_annotation=True
         )
         min_parts = parts.simplify_text_elements()
-        item_text = re.sub(
-            r"\s+|\n+", " ", "".join([el.text for el in min_parts])
-        ).strip()
+        item_text = _resolve_line_breaks(
+            re.sub(r"\s+|\n+", " ", "".join([el.text for el in min_parts]))
+        )
 
         if not item_text:
             return None
@@ -2895,7 +2905,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             with self._use_inline_group(min_parts, doc):
                 compacted_parts = self._compact_adjacent_single_char_parts(min_parts)
                 for annotated_text, source_tag_ids in compacted_parts:
-                    text_part = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+                    text_part = _resolve_line_breaks(
+                        re.sub(r"\s+|\n+", " ", annotated_text.text)
+                    )
+                    if not text_part:
+                        # The part only held <br> tags
+                        continue
                     clean_text = HTMLDocumentBackend._clean_unicode(text_part)
 
                     # Apply extra formatting if provided
@@ -2940,7 +2955,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         else:
             # Simple content - single text element
             annotated_text = min_parts[0]
-            text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+            text = _resolve_line_breaks(re.sub(r"\s+|\n+", " ", annotated_text.text))
             clean_text = HTMLDocumentBackend._clean_unicode(text)
             prov = self._make_text_prov(
                 text=clean_text,
@@ -3460,7 +3475,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
-                    text_orig = annotated_text.text.strip()
+                    # In preformatted text, each <br> is a newline
+                    text_orig = re.sub(
+                        rf" ?{_BR_SENTINEL} ?", "\n", annotated_text.text
+                    ).strip()
+                    if not text_orig:
+                        continue
                     text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
                     prov = self._make_prov(
                         text=text_clean,
@@ -3883,7 +3903,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ) -> str:
         def _extract(node: PageElement) -> list[str]:
             if isinstance(node, NavigableString):
-                return [str(node)]
+                return [str(node).replace(_BR_SENTINEL, "\n")]
             if isinstance(node, Tag):
                 if id(node) in excluded_obj_ids:
                     return []
