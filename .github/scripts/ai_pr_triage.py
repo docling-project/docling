@@ -453,6 +453,25 @@ def git(git_dir: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(["git", "-C", str(git_dir), *args], capture_output=True)
 
 
+def fetch_pr_commits(git_dir: Path, pr_number: int, merge_base: str) -> bool:
+    """Fetch the merge base and the PR head without blobs and without checkout.
+
+    `git show` then loads each blob on demand, so the job never downloads the
+    full test data. Nothing from the PR is checked out or run.
+    """
+    fetch = git(
+        git_dir,
+        "fetch",
+        "--no-tags",
+        "--depth=1",
+        "--filter=blob:none",
+        "origin",
+        merge_base,
+        f"pull/{pr_number}/head",
+    )
+    return fetch.returncode == 0
+
+
 def read_blob(git_dir: Path, commit: str, path: str) -> bytes | None:
     result = git(git_dir, "show", f"{commit}:{path}")
     return result.stdout if result.returncode == 0 else None
@@ -555,19 +574,7 @@ def summarize_groundtruth(
     changed = [item for item in files if is_groundtruth_path(item["filename"])]
     if not changed:
         return ""
-    # Only trees are fetched. `git show` loads each blob on demand, so the job
-    # never downloads the full test data. Nothing from the PR is checked out.
-    fetch = git(
-        git_dir,
-        "fetch",
-        "--no-tags",
-        "--depth=1",
-        "--filter=blob:none",
-        "origin",
-        merge_base,
-        f"pull/{pr_number}/head",
-    )
-    if fetch.returncode != 0:
+    if not fetch_pr_commits(git_dir, pr_number, merge_base):
         return "Could not fetch the PR commits to compare the reference data."
     changes = []
     for item in changed[:MAX_GROUNDTRUTH_FILES]:
