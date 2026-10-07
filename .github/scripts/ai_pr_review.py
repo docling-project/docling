@@ -31,9 +31,9 @@ from ai_pr_triage import (
     build_diff,
     extract_answer,
     fetch_pr_commits,
-    matches_any,
     gh_api,
     gh_write,
+    matches_any,
     pr_files,
     read_blob,
     sanitize_text,
@@ -83,7 +83,7 @@ def right_side_lines(patch: str | None) -> list[int]:
         if header:
             current = int(header.group(1))
             continue
-        if line.startswith("-") or line.startswith("\\"):
+        if line.startswith(("-", "\\")):
             continue
         lines.append(current)
         current += 1
