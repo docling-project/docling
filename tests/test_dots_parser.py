@@ -4,11 +4,15 @@
 """Tests for dots.ocr / dots.mocr JSON layout parser."""
 
 import json
+import sys
+from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
+    DoclingDocument,
+    InlineGroup,
     RichTableCell,
     Script,
     Size,
@@ -21,6 +25,116 @@ from docling.utils.dots_utils import _clean_json, parse_dots_json
 def page_size() -> Size:
     """Standard page size for tests: 500x700 points."""
     return Size(width=500.0, height=700.0)
+
+
+@pytest.mark.parametrize(
+    "category",
+    [
+        "Text",
+        "Title",
+        "Section-header",
+        "List-item",
+        "Caption",
+        "Footnote",
+        "Page-header",
+        "Page-footer",
+    ],
+)
+def test_markdown_emphasis_roundtrip(category: str, page_size: Size, tmp_path: Path):
+    text = "Mostly **one** important *factor* with __bold__ and _italic_ and ***both***"
+    if category == "Section-header":
+        text = "### " + text
+    data = [{"bbox": [10, 20, 300, 50], "category": category, "text": text}]
+    doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+    assert any(isinstance(group, InlineGroup) for group in doc.groups)
+    owner = next(item for item in doc.texts if item.prov)
+    assert owner.prov[0].bbox.l == 10
+    if category == "Section-header":
+        assert owner.level == 2
+    if category in {"Title", "Section-header", "List-item"}:
+        assert owner.orig == text
+
+    archive = tmp_path / "emphasis.dclx"
+    doc.save_as_doclang_archive(archive)
+    imported = DoclingDocument.load_from_doclang_archive(archive)
+    # Core exports styled heading children but currently flattens them on import.
+    documents = [doc] if category in {"Title", "Section-header"} else [doc, imported]
+    for mapped in documents:
+        styled = {
+            item.text: (item.formatting.bold, item.formatting.italic)
+            for item in mapped.texts
+            if item.formatting
+        }
+        assert styled == {
+            "one": (True, False),
+            "factor": (False, True),
+            "bold": (True, False),
+            "italic": (False, True),
+            "both": (True, True),
+        }
+        assert all(
+            "*" not in item.text and "_" not in item.text for item in mapped.texts
+        )
+        assert "<bold>one</bold>" in mapped.export_to_doclang()
+
+
+def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
+    text = (
+        r"**Bold $x_1 * y_2 < 2$** and *italic* H<sub>2</sub>O "
+        r"`**code**` <code>_literal_</code> and \*escaped\* snake_case"
+    )
+    data = [
+        {"bbox": [10, 20, 300, 50], "category": "Text", "text": text},
+        {"bbox": [10, 60, 300, 90], "category": "Formula", "text": r"x_1 * y_2 * z_3"},
+        {
+            "bbox": [10, 100, 300, 130],
+            "category": "Text",
+            "text": "```python\n'**literal**'\n```",
+        },
+    ]
+    doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+    assert any(
+        item.text == "Bold $x_1 * y_2 < 2$" and item.formatting.bold
+        for item in doc.texts
+    )
+    assert any(
+        item.text == "2" and item.formatting.script == Script.SUB for item in doc.texts
+    )
+    assert any("*escaped* snake_case" in item.text for item in doc.texts)
+    assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == [
+        "**code**",
+        "_literal_",
+        "'**literal**'",
+    ]
+    assert (
+        next(item.text for item in doc.texts if item.label == DocItemLabel.FORMULA)
+        == r"x_1 * y_2 * z_3"
+    )
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "snake_case and a_b_c",
+        r"\*literal\*",
+        "unmatched **bold",
+        "$x_1 * y_2 * z_3$",
+        "______",
+    ],
+)
+def test_literal_markers_stay_literal(text: str, page_size: Size):
+    data = [{"bbox": [10, 20, 300, 50], "category": "Text", "text": text}]
+    doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == text
+    assert doc.texts[0].formatting is None
+
+
+def test_missing_markdown_dependency_has_install_hint(page_size: Size, monkeypatch):
+    monkeypatch.setitem(sys.modules, "marko", None)
+    data = [{"bbox": [10, 20, 300, 50], "category": "Text", "text": "**bold**"}]
+    with pytest.raises(ImportError, match="format-markdown"):
+        parse_dots_json(json.dumps(data), page_size, page_no=1)
 
 
 class TestParseSingleTextElement:

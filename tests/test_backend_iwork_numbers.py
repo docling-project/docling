@@ -13,6 +13,10 @@ stores its content as ``Index/*.iwa``, while ``numbers_iwork09`` uses the iWork
 '09 ``index.xml`` layout. Both hold the same two-sheet checking register, so the
 two readers can be checked against each other.
 
+``numbers_iwork09_charts.numbers`` is ``testNumbersCharts.numbers`` from the same
+corpus and under the same license: iWork '09 output holding three charts of
+different kinds, plotted in both directions. Only its charts are pinned.
+
 See https://github.com/apache/tika (``tika-parser-apple-module`` test resources).
 
 The cell buffers in :func:`test_version_5_cell_storage_is_decoded` were captured
@@ -20,10 +24,12 @@ from Numbers documents saved by releases newer than either fixture, whose cells
 use a storage layout the fixtures never exercise.
 """
 
+import logging
 import zipfile
 from io import BytesIO
 from pathlib import Path
 
+import defusedxml.ElementTree as ET
 import pytest
 from docling_core.types.doc import (
     ContentLayer,
@@ -34,8 +40,14 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
+from PIL import Image, ImageDraw
 
-from docling.backend.iwork import cells
+import docling.backend.iwork_backend as iwork_backend
+from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
+from docling.backend.iwork import cells, numbers_xml
+from docling.backend.iwork.chart_image import PALETTE
+from docling.backend.iwork.content import Chart, ChartKind, ChartSeries
+from docling.backend.iwork.legacy import SF_NAMESPACE, SFA_NAMESPACE
 from docling.backend.iwork.numbers_iwa import render
 from docling.backend.iwork_backend import IWorkNumbersDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
@@ -51,9 +63,10 @@ from .verify_utils import verify_document, verify_export
 SOURCES = Path("./tests/data/numbers/sources")
 NUMBERS_2013 = SOURCES / "numbers_2013.numbers"
 NUMBERS_IWORK09 = SOURCES / "numbers_iwork09.numbers"
+NUMBERS_IWORK09_CHARTS = SOURCES / "numbers_iwork09_charts.numbers"
 GROUNDTRUTH = Path("./tests/data/numbers/groundtruth")
 
-# Every fixture, each of which converts and so has a stored groundtruth.
+# The fixtures whose whole conversion is pinned by a stored groundtruth.
 CONVERTIBLE = [NUMBERS_2013, NUMBERS_IWORK09]
 
 BOTH_GENERATIONS = pytest.mark.parametrize(
@@ -361,14 +374,13 @@ def _chart_grid(picture: PictureItem) -> list[list[str]]:
 
 @BOTH_GENERATIONS
 def test_charts_carry_the_data_they_plot(source: Path):
-    """Numbers renders no image for a chart, so what a reader can be given is the
+    """Numbers keeps no image of a chart, so what a reader is always given is the
     data it draws. Both generations cache that beside the chart — one in the chart
     archive, one in a property list of its own — and the summary table on the same
     sheet is what says whether it was read correctly.
 
-    The two orient it differently, so the values are what is compared rather than
-    the grid: see
-    :func:`test_the_two_generations_orient_the_chart_differently`.
+    How the values are laid out is pinned separately, by
+    :func:`test_both_generations_orient_the_chart_the_same_way`.
     """
     doc = _backend(source).convert()
     pictures = list(doc.pictures)
@@ -391,48 +403,99 @@ def test_charts_carry_the_data_they_plot(source: Path):
     }
 
 
-def test_the_two_generations_orient_the_chart_differently():
-    """A 2013+ chart records which way round its data is plotted and an iWork '09
-    one does not, so the same chart comes out transposed between them.
-
-    The modern file says the rows of its grid are the series, which is what the
-    shared reader honours; the '09 share has no such flag, only a list of series
-    and a list of categories. Both carry the same numbers, which is what
-    :func:`test_charts_carry_the_data_they_plot` holds them to.
-    """
+def test_both_generations_orient_the_chart_the_same_way():
+    """Both generations record which way round a chart's data is plotted: a 2013+
+    chart in its series direction, an iWork '09 one in ``sf:chart-direction``.
+    The pie plots its rows as series in both, so the same chart comes out the
+    same way round from either reader: a wedge per row, as Numbers draws it."""
     modern = _chart_grid(next(iter(_backend(NUMBERS_2013).convert().pictures)))
     legacy = _chart_grid(next(iter(_backend(NUMBERS_IWORK09).convert().pictures)))
 
     # Series run across the header, categories down the first column.
-    assert modern[0] == ["", "Home", "Food", "Gas", "Credit Card", "Entertainment"]
-    assert legacy[0] == ["", "Amount"]
-    assert [row[0] for row in legacy[1:]] == [
-        "Home",
-        "Food",
-        "Gas",
-        "Credit Card",
-        "Entertainment",
+    assert modern == legacy
+    assert legacy == [
+        ["", "Home", "Food", "Gas", "Credit Card", "Entertainment"],
+        ["Amount", "-872.4", "-226", "-137.5", "-1095", "-245"],
     ]
 
 
-def test_a_chart_is_classified_by_its_kind():
-    """A 2013+ chart says what kind it is in the enum every iWork app shares, so
-    the summary pie is classified as one. iWork '09 numbers the kinds its own way
-    and that numbering has not been established against real documents, so a
-    chart from one is left as a chart of unspecified kind."""
-    modern = next(iter(_backend(NUMBERS_2013).convert().pictures))
-    legacy = next(iter(_backend(NUMBERS_IWORK09).convert().pictures))
+@BOTH_GENERATIONS
+def test_a_chart_is_classified_by_its_kind(source: Path):
+    """The summary chart is a pie in both fixtures, which each generation says in
+    a numbering of its own: ``TSCH.ChartType`` in a 2013+ document, and the
+    order of Keynote '09's scripting dictionary in an iWork '09 one."""
+    picture = next(iter(_backend(source).convert().pictures))
 
-    assert modern.meta is not None and modern.meta.classification is not None
+    assert picture.meta is not None and picture.meta.classification is not None
     assert (
-        modern.meta.classification.predictions[0].class_name
+        picture.meta.classification.predictions[0].class_name
         == PictureClassificationLabel.PIE_CHART
     )
-    assert legacy.meta is not None and legacy.meta.classification is not None
-    assert (
-        legacy.meta.classification.predictions[0].class_name
-        == PictureClassificationLabel.OTHER_CHART
+
+
+def _legacy_charts(path: Path) -> list[Chart]:
+    """Read the charts of an iWork '09 document, sheet by sheet, top to bottom."""
+    with zipfile.ZipFile(path) as archive:
+        sheets = numbers_xml.read_content(
+            archive, "index.xml", 300 * 1024 * 1024, 100 * 1024 * 1024, "test"
+        )
+    return [placed.chart for sheet in sheets for placed in sheet.charts]
+
+
+def test_iwork09_chart_kinds_follow_the_keynote_09_scripting_dictionary():
+    """``sf:chart-type`` is the position of the kind in Keynote '09's ``add
+    chart`` command. Each of these three charts confirms it independently: the
+    pie by the thumbnail Numbers saved and by its 2013 twin, the 3D area by the
+    thumbnail and its ``SFC3DAreaChartScaleProperty`` style, and the 3D column by
+    its ``SFC3DColumnChartScaleProperty`` style."""
+    charts = _legacy_charts(NUMBERS_IWORK09_CHARTS)
+
+    assert [(chart.title, chart.kind, chart.stacked) for chart in charts] == [
+        ("Expenditure by Category", ChartKind.PIE, False),
+        ("Currency Chart name", ChartKind.AREA, False),
+        ("Chart 2", ChartKind.COLUMN, False),
+    ]
+
+
+def test_iwork09_charts_are_read_in_the_direction_they_plot():
+    """``sf:chart-direction`` 0 plots each row as a series and 1 each column.
+    The 3D area chart says 1 and Numbers draws it with a legend entry for each of
+    its four columns; the column chart says 0, so its two regions are the series
+    and the years the categories."""
+    _, area, columns = _legacy_charts(NUMBERS_IWORK09_CHARTS)
+
+    assert len(area.series) == 4
+    assert len(area.categories) == 9
+    assert area.categories[1:3] == ("average pay", "maximum wage")
+    assert [series.values[1:3] for series in area.series] == [
+        (None, None),
+        (0.5, None),
+        (0.1, 0.6),
+        (None, None),
+    ]
+
+    assert columns.categories == ("2007", "2008", "2009", "2010")
+    assert columns.series == (
+        ChartSeries("Region 1", (17.0, 26.0, 53.0, 96.0)),
+        ChartSeries("Region 2", (55.0, 43.0, 70.0, 58.0)),
     )
+
+
+@pytest.mark.parametrize(
+    "chart_type", ['sf:chart-type="18"', ""], ids=["unknown", "unsaid"]
+)
+def test_an_unknown_iwork09_chart_kind_is_not_guessed(chart_type: str):
+    """Kinds outside the scripting dictionary, such as the mixed and two-axis
+    charts, and a chart that does not say, are left unspecified."""
+    info = ET.fromstring(
+        f'<sf:chart-info xmlns:sf="{SF_NAMESPACE}" xmlns:sfa="{SFA_NAMESPACE}" '
+        f'{chart_type}><sf:chart-row_names><sf:string sfa:string="a"/>'
+        "</sf:chart-row_names></sf:chart-info>"
+    )
+    placed = numbers_xml.read_chart(info, {})
+
+    assert placed is not None
+    assert placed.chart.kind == ChartKind.OTHER
 
 
 def test_a_chart_is_captioned_with_its_title():
@@ -509,6 +572,143 @@ def test_a_comment_records_who_left_it_and_when():
 
     assert modern[0].startswith("[author: Author, time: 2016-05-04T13:08:26")
     assert legacy[0].startswith("Try adding your own account transactions")
+
+
+def _fake_converter(received: list[bytes]):
+    """Stand in for LibreOffice, drawing a black box on a white page."""
+
+    def converter(input_path: Path, output_path: Path) -> None:
+        received.append(Path(input_path).read_bytes())
+        page = Image.new("RGB", (300, 200), "white")
+        ImageDraw.Draw(page).rectangle((50, 40, 149, 119), fill="black")
+        page.save(output_path, "PDF", resolution=72)
+
+    return converter
+
+
+def _rebuilt_kinds(received: list[bytes]) -> list[str]:
+    """The DrawingML chart type each rebuilt chart was written as."""
+    kinds = []
+    for document in received:
+        with zipfile.ZipFile(BytesIO(document)) as package:
+            space = ET.fromstring(package.read("word/charts/chart1.xml"))
+        (plot,) = space.iter(
+            "{http://schemas.openxmlformats.org/drawingml/2006/chart}plotArea"
+        )
+        kinds.extend(child.tag.split("}")[1] for child in plot if "Chart" in child.tag)
+    return kinds
+
+
+@pytest.mark.parametrize(
+    "source", [NUMBERS_2013, NUMBERS_IWORK09_CHARTS], ids=["iwa", "iwork09"]
+)
+def test_chart_images_are_not_rendered_by_default(source: Path):
+    """Rendering needs LibreOffice and enlarges the output, so it is opt-in."""
+    doc = _backend(source).convert()
+    assert all(picture.image is None for picture in doc.pictures)
+
+
+@pytest.mark.parametrize(
+    ("source", "kinds"),
+    [
+        (NUMBERS_2013, ["pieChart"]),
+        (NUMBERS_IWORK09_CHARTS, ["pieChart", "areaChart", "barChart"]),
+    ],
+    ids=["iwa", "iwork09"],
+)
+def test_every_chart_on_a_sheet_is_drawn_when_asked(
+    source: Path, kinds: list[str], monkeypatch: pytest.MonkeyPatch
+):
+    """The route after LibreOffice, without LibreOffice: each chart is rebuilt
+    as the kind of Office chart it is, and whatever PDF comes back is cropped to
+    what was drawn and attached to the chart's picture, beside its data."""
+    received: list[bytes] = []
+    monkeypatch.setattr(
+        iwork_backend, "get_docx_to_pdf_converter", lambda: _fake_converter(received)
+    )
+
+    doc = _backend(source, IWorkBackendOptions(render_chart_images=True)).convert()
+
+    assert _rebuilt_kinds(received) == kinds
+    for picture in doc.pictures:
+        image = picture.get_image(doc)
+        assert image is not None
+        assert image.width < 600 and image.height < 400, "the page should be cropped"
+        assert picture.meta is not None and picture.meta.tabular_chart is not None
+
+
+def test_a_chart_that_cannot_be_redrawn_stays_a_picture_with_its_data(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A chart of a kind an Office chart cannot stand in for is left undrawn
+    rather than drawn as something it is not, and keeps its place, its
+    classification and its data."""
+    received: list[bytes] = []
+    monkeypatch.setattr(
+        iwork_backend, "get_docx_to_pdf_converter", lambda: _fake_converter(received)
+    )
+    monkeypatch.setattr(numbers_xml, "LEGACY_CHART_TYPES", {})
+
+    doc = _backend(
+        NUMBERS_IWORK09_CHARTS, IWorkBackendOptions(render_chart_images=True)
+    ).convert()
+
+    assert received == []
+    pictures = list(doc.pictures)
+    assert len(pictures) == 3
+    for picture in pictures:
+        assert picture.image is None
+        assert picture.prov
+        assert picture.meta is not None and picture.meta.classification is not None
+        assert (
+            picture.meta.classification.predictions[0].class_name
+            == PictureClassificationLabel.OTHER_CHART
+        )
+        assert picture.meta.tabular_chart is not None
+
+
+def test_rendering_without_libreoffice_keeps_the_data(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """Asking for images on a machine that cannot draw them warns once and
+    leaves the chart's classification and data in place."""
+    monkeypatch.setattr(iwork_backend, "get_docx_to_pdf_converter", lambda: None)
+
+    with caplog.at_level(logging.WARNING):
+        doc = _backend(
+            NUMBERS_IWORK09_CHARTS, IWorkBackendOptions(render_chart_images=True)
+        ).convert()
+
+    assert caplog.text.count("LibreOffice is required") == 1
+    for picture in doc.pictures:
+        assert picture.image is None
+        assert picture.meta is not None and picture.meta.tabular_chart is not None
+
+
+@pytest.mark.parametrize(
+    "source", [NUMBERS_2013, NUMBERS_IWORK09], ids=["iwa", "iwork09"]
+)
+def test_a_chart_is_rendered_through_libreoffice(source: Path):
+    """The whole route, where LibreOffice is installed, for the same pie read
+    from either generation. Its output is not byte-stable across versions, so
+    rather than pixels, what is checked is that there is a picture and that its
+    wedges were filled in."""
+    # The backend's own check, which unlike running `soffice -h` does not open a
+    # help window and wait on Windows.
+    if get_docx_to_pdf_converter() is None:
+        pytest.skip("LibreOffice is not installed — chart rendering cannot be tested")
+
+    doc = _backend(source, IWorkBackendOptions(render_chart_images=True)).convert()
+
+    picture = next(iter(doc.pictures))
+    image = picture.get_image(doc)
+    assert image is not None, "the chart picture should carry a rendered image"
+    assert image.width > 50 and image.height > 50
+    colours = image.convert("RGB").getcolors(image.width * image.height) or []
+    first_wedge = tuple(bytes.fromhex(PALETTE[0]))
+    assert any(colour == first_wedge for _, colour in colours), (
+        "the wedges should be filled in"
+    )
 
 
 @pytest.mark.parametrize("source", CONVERTIBLE, ids=lambda path: path.name)

@@ -19,12 +19,15 @@ For more information about Standard Ebooks visit: https://standardebooks.org/abo
 
 import logging
 import zipfile
+from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import TextItem
+from PIL import Image
 
 from docling.backend.epub_backend import EpubDocumentBackend
+from docling.datamodel.backend_options import EpubBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -32,7 +35,7 @@ from docling.datamodel.document import (
     DoclingDocument,
     InputDocument,
 )
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, EpubFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -463,3 +466,49 @@ def test_epub_internal_links_are_fixed_for_every_content_document_extension(
     ]
 
     assert hyperlinks == ["#note2", absolute, "#note3", "#note4", "#note1"]
+
+
+def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
+    tmp_path: Path,
+):
+    """Every image src of a content document is resolved inside the archive.
+
+    The src is a URL relative to its content document. Single quotes are as
+    legal as double quotes, and a src escapes a space as "%20" while the
+    archive stores the literal file name. A src that is not rewritten stays
+    relative to the merged document at the archive root, so "../Images/..."
+    leaves the extraction directory and its image is lost.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+    png = buf.getvalue()
+
+    bodies = [
+        "<p>Cover.</p>"
+        '<img src="../Images/cover%20art.png" alt="cover"/>'
+        "<img src='../Images/map.png' alt='map'/>"
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "images.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=bodies,
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        z.writestr("OEBPS/Images/cover art.png", png)
+        z.writestr("OEBPS/Images/map.png", png)
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    doc = converter.convert(epub_path, raises_on_error=True).document
+
+    assert len(doc.pictures) == 2
+    assert all(pic.image is not None for pic in doc.pictures)

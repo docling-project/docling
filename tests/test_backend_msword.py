@@ -549,6 +549,45 @@ def test_add_header_footer_first_page_and_regular(documents):
     )
 
 
+def test_add_header_footer_even_pages(tmp_path):
+    """Even-page headers/footers are extracted when evenAndOddHeaders is enabled.
+
+    Regression test: only the default (odd page) header/footer was visited, so the
+    text of the even-page header/footer was silently dropped. When the setting is
+    off, the even parts are unused by Word and must not be emitted.
+    """
+    from docx import Document
+
+    def _build(path, even_and_odd: bool):
+        d = Document()
+        d.settings.odd_and_even_pages_header_footer = even_and_odd
+        s = d.sections[0]
+        s.header.paragraphs[0].text = "HEADER_DEFAULT_ODD"
+        s.footer.paragraphs[0].text = "FOOTER_DEFAULT_ODD"
+        s.even_page_header.paragraphs[0].text = "HEADER_EVEN"
+        s.even_page_footer.paragraphs[0].text = "FOOTER_EVEN"
+        d.add_paragraph("Body paragraph")
+        d.save(path)
+
+    enabled = tmp_path / "even_headers_enabled.docx"
+    _build(enabled, True)
+    header_texts, footer_texts = _header_footer_texts(
+        get_converter().convert(enabled).document
+    )
+    assert "HEADER_DEFAULT_ODD" in header_texts
+    assert "HEADER_EVEN" in header_texts, "even-page header was dropped"
+    assert "FOOTER_DEFAULT_ODD" in footer_texts
+    assert "FOOTER_EVEN" in footer_texts, "even-page footer was dropped"
+
+    disabled = tmp_path / "even_headers_disabled.docx"
+    _build(disabled, False)
+    header_texts, footer_texts = _header_footer_texts(
+        get_converter().convert(disabled).document
+    )
+    assert header_texts == ["HEADER_DEFAULT_ODD"]
+    assert footer_texts == ["FOOTER_DEFAULT_ODD"]
+
+
 def test_handle_pictures(documents):
     """Test the function _handle_pictures."""
 
@@ -1472,6 +1511,35 @@ def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     assert hyperlinks == []
 
 
+@pytest.mark.parametrize("wrapper", ["ins", "smartTag", "customXml", "fldSimple"])
+def test_hyperlink_keeps_runs_nested_in_a_wrapper(tmp_path, wrapper):
+    """Runs inside a hyperlink can sit in the same wrappers as in a paragraph,
+    e.g. a tracked insertion made inside the link text. python-docx's
+    ``Hyperlink.text`` only joins the direct ``w:r`` children, so the nested
+    text used to be dropped.
+    """
+
+    doc = Document()
+    para = doc.add_paragraph("See ")
+    r_id = doc.part.relate_to("https://example.com/", RT.HYPERLINK, is_external=True)
+    hyperlink = etree.SubElement(para._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), r_id)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "the "
+    wrapped = etree.SubElement(hyperlink, qn(f"w:{wrapper}"))
+    run = etree.SubElement(wrapped, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "docs"
+
+    result = _convert_built(doc, tmp_path)
+
+    links = [
+        (item.text, str(item.hyperlink))
+        for item, _ in result.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+    assert links == [("the docs", "https://example.com/")]
+
+
 def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     """A whitespace-only trailing run must not overwrite the paragraph's formatting.
 
@@ -1991,7 +2059,16 @@ def _docx_with_fragment_only_rel():
     from io import BytesIO
 
     doc = Document()
-    doc.add_paragraph("Hello, world!")
+    paragraph = doc.add_paragraph("Before ")
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), "rId999")
+    run = OxmlElement("w:r")
+    text = OxmlElement("w:t")
+    text.text = "internal link"
+    run.append(text)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+    paragraph.add_run(" after")
 
     buf = BytesIO()
     doc.save(buf)
@@ -2032,12 +2109,14 @@ def test_fragment_only_rel_does_not_crash_backend():
     )
     converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
     result = converter.convert(stream, raises_on_error=True)
-    texts = [
-        item.text
+    text_items = [
+        item
         for item, _ in result.document.iterate_items()
         if isinstance(item, TextItem)
     ]
-    assert any("Hello, world!" in t for t in texts)
+    assert len(text_items) == 1
+    assert text_items[0].text == "Before internal link after"
+    assert text_items[0].hyperlink is None
 
 
 def _docx_with_notes():

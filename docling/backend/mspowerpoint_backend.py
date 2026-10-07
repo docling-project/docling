@@ -46,6 +46,8 @@ from docling.backend.docx.drawingml.utils import (
     crop_whitespace,
     get_docx_to_pdf_converter,
 )
+from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -61,6 +63,7 @@ try:  # pragma: no cover - import-time guard
     from pptx.exc import InvalidXmlError
     from pptx.oxml.ns import qn
     from pptx.oxml.text import CT_TextLineBreak
+    from pptx.shapes.picture import Picture
 
     _PPTX_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -95,6 +98,15 @@ _IMAGE_RENDER_HINT = (
     "image data."
 )
 
+_MAX_CHART_TABLE_CELLS: Final = 100_000
+"""Backstop on the total cells emitted for one chart's reconstructed data table.
+
+Charts whose declared category range far exceeds their plotted data are trimmed
+to populated rows first; this cap only binds genuinely huge charts. 100k cells
+still admit e.g. a 10k-point, 5-series chart while keeping any single chart's
+markdown output to a few megabytes.
+"""
+
 # Windows metafile signatures. A placeable WMF opens with the Aldus magic and an
 # EMF carries " EMF" in the dSignature field of its EMR_HEADER, 40 bytes in.
 # These are the two Pillow itself identifies, so a bare WMF never reaches here.
@@ -109,6 +121,63 @@ _EMF_SIGNATURE_OFFSET: Final = 40
 _MC_ALTERNATE_CONTENT: Final = (
     "{http://schemas.openxmlformats.org/markup-compatibility/2006}AlternateContent"
 )
+_MATH_NAMESPACE: Final = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+_DRAWING_2010_NAMESPACE: Final = "http://schemas.microsoft.com/office/drawing/2010/main"
+_MC_NAMESPACE: Final = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+
+def _iter_paragraph_elements(element: etree._Element) -> Iterator[etree._Element]:
+    """Read text and OMML in order, selecting one markup-compatibility branch."""
+    for child in element:
+        if child.tag == _MC_ALTERNATE_CONTENT:
+            branch = child.find(f"{{{_MC_NAMESPACE}}}Fallback")
+            for choice in child.findall(f"{{{_MC_NAMESPACE}}}Choice"):
+                required = choice.get("Requires", "").split()
+                if required and all(
+                    choice.nsmap.get(prefix)
+                    in {_MATH_NAMESPACE, _DRAWING_2010_NAMESPACE}
+                    for prefix in required
+                ):
+                    branch = choice
+                    break
+            if branch is not None:
+                yield from _iter_paragraph_elements(branch)
+        elif child.tag in {
+            f"{{{_DRAWING_2010_NAMESPACE}}}m",
+            f"{{{_MATH_NAMESPACE}}}oMathPara",
+        }:
+            yield from _iter_paragraph_elements(child)
+        elif child.tag in {
+            qn("a:r"),
+            qn("a:br"),
+            qn("a:fld"),
+            f"{{{_MATH_NAMESPACE}}}oMath",
+        }:
+            yield child
+
+
+def _paragraph_fragments(element: etree._Element) -> list[tuple[DocItemLabel, str]]:
+    """Coalesce adjacent text runs while keeping equations as separate fragments."""
+    fragments: list[tuple[DocItemLabel, str]] = []
+    text = ""
+    for child in _iter_paragraph_elements(element):
+        if child.tag == f"{{{_MATH_NAMESPACE}}}oMath":
+            if text:
+                fragments.append((DocItemLabel.TEXT, text))
+                text = ""
+            equation = str(oMath2Latex(child)).strip()
+            if equation:
+                fragments.append((DocItemLabel.FORMULA, equation))
+        elif isinstance(child, CT_TextLineBreak):
+            text += " "
+        else:
+            run_text = child.find(qn("a:t"))
+            if run_text is not None:
+                text += run_text.text or ""
+    if text:
+        fragments.append((DocItemLabel.TEXT, text))
+    return fragments
+
 
 _SAFE_XML_PARSER: Final = etree.XMLParser(
     resolve_entities=False,
@@ -154,6 +223,33 @@ def _is_metafile(image_bytes: bytes) -> bool:
     return image_bytes[:4] == _WMF_PLACEABLE_MAGIC or (
         image_bytes[_EMF_SIGNATURE_OFFSET : _EMF_SIGNATURE_OFFSET + 4] == _EMF_SIGNATURE
     )
+
+
+def _last_populated_row(
+    categories: list[str], columns: list[tuple[str, list[str]]], num_data_rows: int
+) -> int:
+    """Return the index of the last data row carrying any chart data.
+
+    A row is populated when its category label or at least one series value is
+    non-empty. The scan runs from the end so declared-but-empty trailing ranges
+    (e.g. whole-column references such as ``$A$2:$A$1048576``) collapse without
+    walking the empty region more than once. Interior gaps are kept: only
+    trailing empty rows are trimmed.
+
+    Args:
+        categories: Category labels, one per data row (may be shorter or longer
+            than ``num_data_rows``).
+        columns: ``(series name, values)`` pairs, one per chart series.
+        num_data_rows: Untrimmed data-row count.
+
+    Returns:
+        The last populated row index, or -1 when no row carries data.
+    """
+    for row in range(num_data_rows - 1, -1, -1):
+        category = categories[row] if row < len(categories) else ""
+        if category or any(row < len(values) and values[row] for _, values in columns):
+            return row
+    return -1
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
@@ -791,13 +887,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             is_a_list, bullet_type = self._is_list_item(paragraph)
             p = paragraph._element
 
-            # Convert line breaks to spaces and accumulate text
-            p_text = ""
-            for e in p.content_children:
-                if isinstance(e, CT_TextLineBreak):
-                    p_text += " "
-                else:
-                    p_text += e.text
+            fragments = _paragraph_fragments(p)
+            p_text = "".join(text for _, text in fragments)
+            has_equations = any(label == DocItemLabel.FORMULA for label, _ in fragments)
 
             prov = self._generate_prov(shape, slide_ind, p_text, slide_size)
 
@@ -836,9 +928,20 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     marker=enum_marker,
                     enumerated=enumerated,
                     parent=current.group,
-                    text=p_text,
+                    text="" if has_equations else p_text,
                     prov=prov,
                 )
+                if has_equations:
+                    inline_group = doc.add_inline_group(parent=current.last_item)
+                    for label, text in fragments:
+                        doc.add_text(
+                            label=label,
+                            parent=inline_group,
+                            text=text,
+                            prov=self._generate_prov(
+                                shape, slide_ind, text, slide_size
+                            ),
+                        )
             else:  # is paragraph not a list item
                 open_lists.clear()
                 # Assign proper label to the text, depending if it's a Title or Section Header
@@ -853,13 +956,38 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         # It's a title
                         doc_label = DocItemLabel.TITLE
 
-                # output accumulated inline text:
-                doc.add_text(
-                    label=doc_label,
-                    parent=parent_slide,
-                    text=p_text,
-                    prov=prov,
-                )
+                if has_equations:
+                    has_text = any(
+                        label != DocItemLabel.FORMULA and text.strip()
+                        for label, text in fragments
+                    )
+                    fragment_parent = parent_slide
+                    if has_text and doc_label == DocItemLabel.TITLE:
+                        fragment_parent = doc.add_text(
+                            label=doc_label, parent=parent_slide, text="", prov=prov
+                        )
+                    parent = (
+                        doc.add_inline_group(parent=fragment_parent)
+                        if has_text
+                        else fragment_parent
+                    )
+                    for label, text in fragments:
+                        if text.strip():
+                            doc.add_text(
+                                label=label,
+                                parent=parent,
+                                text=text,
+                                prov=self._generate_prov(
+                                    shape, slide_ind, text, slide_size
+                                ),
+                            )
+                else:
+                    doc.add_text(
+                        label=doc_label,
+                        parent=parent_slide,
+                        text=p_text,
+                        prov=prov,
+                    )
         return
 
     def _rasterize_metafile(self, image_bytes: bytes) -> Optional[Image.Image]:
@@ -932,7 +1060,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Open it with PIL
         image_ref: Optional[ImageRef] = None
         try:
-            pil_image = Image.open(BytesIO(image_bytes))
+            pil_image = normalize_image_for_png(Image.open(BytesIO(image_bytes)))
             image_ref = ImageRef.from_pil(image=pil_image, dpi=im_dpi)
         except (UnidentifiedImageError, OSError, ValueError) as e:
             if not _is_metafile(image_bytes):
@@ -1104,11 +1232,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         labels on the plot (``plot.categories``) — no workbook reference
         resolution is needed.
 
+        The declared category range can far exceed the plotted data (e.g. a
+        chart referencing whole Excel columns declares ~1M categories for a
+        handful of points), so trailing rows whose category label and every
+        series value are empty are trimmed and the table is sized by populated
+        data instead. As a backstop for genuinely huge charts, the emitted
+        table is additionally capped at ``_MAX_CHART_TABLE_CELLS`` cells.
+
         Args:
             chart: A python-pptx ``Chart`` object.
 
         Returns:
-            A TableData, or None if the chart exposes no usable series.
+            A TableData, or None if the chart exposes no usable series or no
+            populated data row.
         """
         series_list = list(chart.series)
         if not series_list:
@@ -1129,8 +1265,25 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if num_data_rows == 0:
             return None
 
-        num_rows = num_data_rows + 1
+        # Trim trailing rows that carry no data at all; interior gaps are kept.
+        num_data_rows = _last_populated_row(categories, columns, num_data_rows) + 1
+        if num_data_rows == 0:
+            return None
+
         num_cols = 1 + len(columns)
+        if num_data_rows * num_cols > _MAX_CHART_TABLE_CELLS:
+            capped_rows = max(1, _MAX_CHART_TABLE_CELLS // num_cols)
+            _log.warning(
+                "Truncating chart data table from %d to %d data rows: "
+                "%d cells would exceed the %d-cell cap.",
+                num_data_rows,
+                capped_rows,
+                num_data_rows * num_cols,
+                _MAX_CHART_TABLE_CELLS,
+            )
+            num_data_rows = capped_rows
+
+        num_rows = num_data_rows + 1
         cells: list[TableCell] = []
 
         header_labels = [""] + [name for name, _ in columns]
@@ -1498,8 +1651,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_chart:
                     self._handle_chart(shape, parent_slide, slide_ind, doc, slide_size)
-                if _safe_shape_type(shape) == MSO_SHAPE_TYPE.PICTURE:
-                    # Handle Pictures
+                if isinstance(shape, Picture):
+                    # Handle Pictures, including those inserted into a picture placeholder
                     self._handle_pictures(
                         shape, parent_slide, slide_ind, doc, slide_size
                     )
@@ -1508,10 +1661,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     return
                 if shape.text is None:
                     return
-                if len(shape.text.strip()) == 0:
-                    return
                 if not shape.has_text_frame:
                     _log.warning("Warning: shape has text but not text_frame")
+                    return
+                if not shape.text.strip() and not any(
+                    _paragraph_fragments(paragraph._element)
+                    for paragraph in shape.text_frame.paragraphs
+                ):
                     return
                 # Handle other text elements, including lists (bullet lists, numbered
                 # lists)

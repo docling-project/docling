@@ -251,31 +251,23 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             return html_content
 
         # Get the directory of the current content file
-        content_dir = Path(content_file_path).parent
+        content_dir = posixpath.dirname(content_file_path)
 
-        def replace_image_src(match):
-            src = match.group(1)
+        def replace_image_src(match: re.Match[str]) -> str:
+            src = match.group(2)
 
             # Skip data URIs and absolute URLs
             if src.startswith(("data:", "http://", "https://", "/")):
                 return match.group(0)
 
-            # Resolve relative path and make it relative to temp_dir
-            if content_dir:
-                image_path = content_dir / src
-            else:
-                image_path = Path(src)
+            # src is a URL; decode percent-escapes to get the archive entry name.
+            image_path = posixpath.normpath(posixpath.join(content_dir, unquote(src)))
+            return 'src="{}"'.format(image_path.replace('"', "&quot;"))
 
-            # Normalize the path
-            try:
-                # Return the modified src attribute with path relative to temp_dir
-                return f'src="{image_path}"'
-            except Exception as e:
-                _log.warning(f"Failed to resolve image path {src}: {e}")
-                return match.group(0)
-
-        # Pattern to match src attributes in img tags
-        pattern = r'src="([^"]+)"'
+        # Group 1: the opening quote (" or '). Group 2: the value, up to the
+        # matching closing quote. The lookbehind skips attributes that only end
+        # in "src", such as data-src.
+        pattern = r"""(?<![\w-])src=(["'])((?:(?!\1).)+)\1"""
         return re.sub(pattern, replace_image_src, html_content)
 
     def _fix_internal_links(self, html_content: str) -> str:

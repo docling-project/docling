@@ -3,6 +3,12 @@
 This file provides guidance to AI coding agents when working with code in this
 repository.
 
+## Communication
+
+Use ASD-STE100 Simplified Technical English when you communicate with the user.
+Use short sentences, active voice, and consistent terms. Keep code identifiers,
+API names, and quoted source text exact. State the result and any limits clearly.
+
 ## Project overview
 
 Docling is a Python SDK and CLI for converting PDFs, Office files, HTML,
@@ -26,6 +32,9 @@ scripts/                 # project maintenance scripts
 - **Development skills** (for contributors working *on* Docling) live in
   [`.agents/skills/`](.agents/skills/) at the repo root, e.g. `dignified-python`
   and `building-pydantic-ai-agents`.
+  Select the applicable skills from the
+  [task routes](.agents/skills/skill-router.json). For PR reviews and re-reviews,
+  use [review](.agents/skills/review/SKILL.md) before you assess the changes.
 - **Usage skills** (for agents *using* Docling to convert documents) are shipped
   inside the package at
   [`docling/.agents/skills/docling/`](docling/.agents/skills/docling/SKILL.md).
