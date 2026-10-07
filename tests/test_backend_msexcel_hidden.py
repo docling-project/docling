@@ -149,3 +149,35 @@ def test_hidden_section_label_and_merged_rows() -> None:
     ]
     assert table.data.table_cells[2].row_span == 1
     assert table.prov[0].bbox.as_tuple() == (0, 1, 2, 4)
+
+
+def test_hidden_dimensions_with_a_table_offset() -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    for row, values in enumerate(
+        [
+            ["Name", "Internal 1", "Internal 2", "Value"],
+            ["Old item", "secret", "secret", 10],
+            ["Current item", "secret", "secret", 20],
+        ],
+        start=5,
+    ):
+        for column, value in enumerate(values, start=6):
+            sheet.cell(row=row, column=column, value=value)
+    sheet.column_dimensions.group("A", "B", hidden=True)
+    sheet.column_dimensions.group("G", "H", hidden=True)
+    sheet.row_dimensions[6].hidden = True
+
+    doc = _convert(workbook)
+
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (2, 2)
+    assert [cell.text for cell in table.data.table_cells] == [
+        "Name",
+        "Value",
+        "Current item",
+        "20",
+    ]
+    assert table.prov[0].bbox.as_tuple() == (5, 4, 9, 7)
+    assert "secret" not in doc.export_to_markdown()
+    assert "Old item" not in doc.export_to_markdown()

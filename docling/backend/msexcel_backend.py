@@ -898,16 +898,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 and dimension.hidden
             )
         ]
+        hidden_columns: set[int] = set()
+        for dimension in sheet.column_dimensions.values():
+            if dimension.hidden:
+                first = dimension.min or column_index_from_string(dimension.index)
+                last = dimension.max or column_index_from_string(dimension.index)
+                hidden_columns.update(
+                    range(
+                        max(origin_col + 1, first),
+                        min(origin_col + table.num_cols, last) + 1,
+                    )
+                )
         columns = [
             col
             for col in range(table.num_cols)
-            if not any(
-                dimension.hidden
-                and (dimension.min or column_index_from_string(dimension.index))
-                <= origin_col + col + 1
-                <= (dimension.max or column_index_from_string(dimension.index))
-                for dimension in sheet.column_dimensions.values()
-            )
+            if origin_col + col + 1 not in hidden_columns
         ]
         if len(rows) == table.num_rows and len(columns) == table.num_cols:
             return table
