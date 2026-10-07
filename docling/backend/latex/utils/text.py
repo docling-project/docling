@@ -14,26 +14,31 @@ from docling_core.types.doc.document import (
 )
 
 from docling.backend.latex.constants import (
+    MACROS_ACCENTS,
     MACROS_CITATION,
     MACROS_COLOR_INLINE,
     MACROS_ESCAPED,
     MACROS_IGNORED,
+    MACROS_LETTERS,
     MACROS_SPACING,
     MACROS_STRUCTURAL,
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 
 if TYPE_CHECKING:
     from typing import Any
 
 try:  # pragma: no cover - import-time guard
+    from pylatexenc.latex2text import LatexNodes2Text
     from pylatexenc.latexwalker import (
         LatexCharsNode,
         LatexEnvironmentNode,
         LatexGroupNode,
         LatexMacroNode,
         LatexMathNode,
+        LatexWalker,
     )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
@@ -58,6 +63,66 @@ class TextHelperMixin:
             self, node: Any, following_nodes: Any
         ) -> tuple[str, int]: ...
         def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
+
+    def _char_macro_to_text(self, node: LatexMacroNode) -> str | None:
+        """Return the Unicode text of an accent or letter macro.
+
+        ``\\'e`` gives ``é``, ``\\~n`` gives ``ñ`` and ``\\ss`` gives ``ß``.
+        ``None`` means the node is not one of these: another macro, or a name
+        the document redefines.
+        """
+        name = node.macroname
+        if name in self._custom_macros:
+            return None
+        if name in MACROS_ACCENTS:
+            args = node.nodeargd.argnlist if node.nodeargd else []
+            arg = next((a for a in args if a is not None), None)
+            if self._uses_custom_macro(arg):
+                text = self._accent_custom_macro_arg(name, arg)
+            else:
+                text = LatexNodes2Text().nodelist_to_text([node])
+        elif name in MACROS_LETTERS:
+            text = LatexNodes2Text().nodelist_to_text([node])
+        else:
+            return None
+        # \~{} and \^{} are the usual way to typeset a literal ~ or ^, which
+        # latex2text renders as an empty string.
+        if not text and name in ("~", "^"):
+            return name
+        return text
+
+    def _accent_custom_macro_arg(self, name: str, arg) -> str:
+        """Apply accent ``name`` to an argument that uses document macros.
+
+        latex2text does not know the document's macros and would drop them,
+        so expand them first, one level at a time to follow chains such as
+        ``\\newcommand{\\vowel}{\\letter}``: ``\\'{\\vowel}`` -> ``\\'{\\letter}``
+        -> ``\\'{e}``. An argument that never resolves, e.g. a macro defined
+        in terms of itself, is kept without the accent.
+        """
+        nodes = [arg]
+        text = ""
+        for _ in range(10):
+            text = self._nodes_to_text(nodes)
+            walker = LatexWalker(
+                text, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
+            )
+            nodes, _, _ = walker.get_latex_nodes()
+            if not any(self._uses_custom_macro(n) for n in nodes):
+                base = "".join(n.latex_verbatim() for n in nodes)
+                return LatexNodes2Text().latex_to_text(f"\\{name}{{{base}}}")
+        return text
+
+    def _uses_custom_macro(self, node) -> bool:
+        """Whether ``node`` or anything nested in it is a document macro."""
+        if isinstance(node, LatexMacroNode):
+            if node.macroname in self._custom_macros:
+                return True
+            args = node.nodeargd.argnlist if node.nodeargd else []
+            return any(self._uses_custom_macro(a) for a in args if a is not None)
+        if isinstance(node, LatexGroupNode):
+            return any(self._uses_custom_macro(n) for n in node.nodelist or [])
+        return False
 
     def _process_chars_node(
         self,
@@ -120,6 +185,9 @@ class TextHelperMixin:
     def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
         """Return ``(text, consumed_following)`` for a single macro node."""
         consumed = 0
+        char_text = self._char_macro_to_text(node)
+        if char_text is not None:
+            return (char_text, consumed)
         if node.macroname in (MACROS_TEXT_FORMATTING | MACROS_TEXT_STYLE):
             text = self._extract_macro_arg(node)
             return (text or "", consumed)
