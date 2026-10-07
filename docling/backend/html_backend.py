@@ -1925,6 +1925,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         children = table_cell.find_all(recursive=True)  # all descendants of type Tag
         has_input = any(child.name == "input" for child in children)
+        has_image = any(child.name == "img" for child in children)
         has_custom_checkbox = any(
             self._is_custom_checkbox_tag(child) for child in children
         )
@@ -1965,6 +1966,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     or bool(anno.hyperlink)
                     or anno.code
                     or has_input
+                    or has_image
                     or has_custom_checkbox
                 )
 
