@@ -257,6 +257,36 @@ def test_table_cell_text_separates_inline_text_from_block():
     )
 
 
+def test_table_cell_text_skips_html_comments():
+    # Comments in a cell, such as the placeholders that Vue renders or the
+    # conditional comments of Outlook, used to be included in TableCell.text.
+    src = (
+        b"<table><tr><th>Plan</th><th>Price</th></tr>"
+        b"<tr><td><span>Basic</span><!--v-if--></td>"
+        b"<td><!--[--><span>$10</span><!--]--></td></tr>"
+        b"<tr><td>Pro <!-- TODO: confirm --></td>"
+        b"<td>Configure<!--[if gte vml 1]><v:shape/><![endif]--></td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+    assert [cell.text.strip() for cell in cells] == [
+        "Plan",
+        "Price",
+        "Basic",
+        "$10",
+        "Pro",
+        "Configure",
+    ]
+
+
 @pytest.mark.parametrize(
     "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
 )
