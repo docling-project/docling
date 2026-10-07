@@ -8,8 +8,16 @@ byte (``a`` for alpha) or shifted into the Private Use Area (``U+F061``). The
 `SYMBOL_FONT_TO_UNICODE` table maps the byte to Unicode.
 
 The table is generated from the Adobe Symbol Encoding to Unicode mapping
-(https://unicode.org/Public/MAPPINGS/VENDORS/ADOBE/symbol.txt), without the
-characters that map to the Corporate Use Subarea. Notice of the source file:
+(https://unicode.org/Public/MAPPINGS/VENDORS/ADOBE/symbol.txt), with these
+changes:
+
+- The source also maps the Greek letters Delta, Omega and mu (``0x44``,
+  ``0x57``, ``0x6D``) to signs. The table uses the Greek letters.
+- The serif and sans serif registered, copyright and trade mark signs
+  (``0xD2``-``0xD4``, ``0xE2``-``0xE4``) map to the standard signs, not to the
+  Corporate Use Subarea. Other Corporate Use Subarea characters are not included.
+
+Notice of the source file:
 
      Name:             Adobe Symbol Encoding to Unicode
      Unicode version:  2.0
@@ -109,7 +117,7 @@ SYMBOL_FONT_TO_UNICODE: dict[int, str] = {
     0x6A: "\u03d5",  # GREEK PHI SYMBOL
     0x6B: "\u03ba",  # GREEK SMALL LETTER KAPPA
     0x6C: "\u03bb",  # GREEK SMALL LETTER LAMDA
-    0x6D: "\u00b5",  # MICRO SIGN
+    0x6D: "\u03bc",  # GREEK SMALL LETTER MU
     0x6E: "\u03bd",  # GREEK SMALL LETTER NU
     0x6F: "\u03bf",  # GREEK SMALL LETTER OMICRON
     0x70: "\u03c0",  # GREEK SMALL LETTER PI
@@ -175,6 +183,9 @@ SYMBOL_FONT_TO_UNICODE: dict[int, str] = {
     0xCF: "\u2209",  # NOT AN ELEMENT OF
     0xD0: "\u2220",  # ANGLE
     0xD1: "\u2207",  # NABLA
+    0xD2: "\u00ae",  # REGISTERED SIGN
+    0xD3: "\u00a9",  # COPYRIGHT SIGN
+    0xD4: "\u2122",  # TRADE MARK SIGN
     0xD5: "\u220f",  # N-ARY PRODUCT
     0xD6: "\u221a",  # SQUARE ROOT
     0xD7: "\u22c5",  # DOT OPERATOR
@@ -188,6 +199,9 @@ SYMBOL_FONT_TO_UNICODE: dict[int, str] = {
     0xDF: "\u21d3",  # DOWNWARDS DOUBLE ARROW
     0xE0: "\u25ca",  # LOZENGE
     0xE1: "\u2329",  # LEFT-POINTING ANGLE BRACKET
+    0xE2: "\u00ae",  # REGISTERED SIGN
+    0xE3: "\u00a9",  # COPYRIGHT SIGN
+    0xE4: "\u2122",  # TRADE MARK SIGN
     0xE5: "\u2211",  # N-ARY SUMMATION
     0xF1: "\u232a",  # RIGHT-POINTING ANGLE BRACKET
     0xF2: "\u222b",  # INTEGRAL

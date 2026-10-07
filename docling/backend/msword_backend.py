@@ -4203,7 +4203,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return
             emitted_partnames.add(partname)
 
-            par = [txt for txt in (p.text.strip() for p in part.paragraphs) if txt]
+            # python-docx ``Paragraph.text`` skips ``w:sym``, so check for it too
+            par = [
+                p for p in part.paragraphs if p.text.strip() or p._p.xpath(".//w:sym")
+            ]
             tables = part.tables
             has_blip = self._has_blip(part._element)
             has_txbx = len(txbx_xpath(part._element)) > 0

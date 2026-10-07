@@ -2217,3 +2217,45 @@ def test_symbol_font_glyphs(docx_paths):
     # text in other fonts is unchanged
     assert payloads["T2 Wingdings F0A7"] == "\uf0a7"
     assert payloads["C1 Arial"] == "\N{LATIN SMALL LETTER E WITH ACUTE} a b p"
+
+
+def _append_sym(paragraph, font: str, char: str) -> None:
+    """Append a run with a ``w:sym`` element (Insert > Symbol in Word)."""
+    run = paragraph.add_run()
+    sym = OxmlElement("w:sym")
+    sym.set(qn("w:font"), font)
+    sym.set(qn("w:char"), char)
+    run._r.append(sym)
+
+
+def test_symbol_only_header_footer_is_kept(tmp_path):
+    """A header or footer that holds only w:sym characters is not dropped."""
+    docx_path = tmp_path / "symbol_only_header_footer.docx"
+    document = Document()
+    _append_sym(document.sections[0].header.paragraphs[0], "Symbol", "F0D3")
+    _append_sym(document.sections[0].footer.paragraphs[0], "Wingdings", "F0FC")
+    document.add_paragraph("body text")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    header_texts, footer_texts = _header_footer_texts(doc)
+
+    assert header_texts == ["\N{COPYRIGHT SIGN}"]
+    assert footer_texts == ["\uf0fc"]
+
+
+def test_sym_with_invalid_char_is_skipped(tmp_path):
+    """A w:sym with a missing or invalid w:char is skipped, not an error."""
+    docx_path = tmp_path / "invalid_sym.docx"
+    document = Document()
+    paragraph = document.add_paragraph("a")
+    _append_sym(paragraph, "Symbol", "zz")
+    paragraph.add_run("b")
+    paragraph.add_run()._r.append(OxmlElement("w:sym"))
+    paragraph.add_run("c")
+    document.save(docx_path)
+
+    doc = get_converter().convert(docx_path).document
+    texts = [item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+
+    assert texts == ["abc"]
