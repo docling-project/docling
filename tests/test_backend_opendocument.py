@@ -626,6 +626,67 @@ def test_odt_text_document_nested_lists():
     assert parent_group_3_0_1.parent == item_by_text["numbered list 3"].get_ref()
 
 
+def test_odt_list_item_with_only_an_image_has_no_text(tmp_path: Path):
+    """A list item takes its text from the text runs, as a paragraph does. So an
+    item with only a footnote, or only an image or a chart with no alt text, gets
+    no text. The item keeps its number and its nested list. The footnote body is
+    a footnote item. The image and the chart are the ones of text_document_02.odt."""
+    source = OdfDocument("tests/data/odf/sources/text_document_02.odt")
+    style = Style("list", name="Numbered")
+    style.set_level_style(1, num_format="1", suffix=".")
+    style.set_level_style(2, num_format="1", suffix=")")
+    source.insert_style(style)
+    body = source.body
+    frames = {frame.name: frame.clone for frame in body.get_frames()}
+    body.clear()
+    image, chart, footnote = Paragraph(), Paragraph(), Paragraph()
+    image.append(frames["Image1"])
+    chart.append(frames["Object1"])
+    footnote.append(Note(citation="1", body="Note body."))
+    nested = OdfList(style="Numbered")
+    nested.append(ListItem("Nested one"))
+    odf_list = OdfList(style="Numbered")
+    for children in [
+        [Paragraph("First")],
+        [image],
+        [chart],
+        [footnote],
+        [image.clone, nested],
+        [Paragraph("Last")],
+    ]:
+        item = ListItem()
+        for child in children:
+            item.append(child)
+        odf_list.append(item)
+    body.append(odf_list)
+    path = tmp_path / "list_item_with_only_an_image.odt"
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+    list_items = [
+        item
+        for item, _level in document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [(item.text, item.enumerated, item.marker) for item in list_items] == [
+        ("First", True, "1."),
+        ("", True, "2."),
+        ("", True, "3."),
+        ("", True, "4."),
+        ("", True, "5."),
+        ("Nested one", True, "1)"),
+        ("Last", True, "6."),
+    ]
+    nested_group = list_items[5].parent.resolve(document)
+    assert nested_group.parent == list_items[4].get_ref()
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Note body."]
+
+
 def test_odt_text_document_title_and_subtitle():
     path = Path("tests/data/odf/sources/text_document_01.odt")
 
