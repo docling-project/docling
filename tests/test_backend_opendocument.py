@@ -517,6 +517,44 @@ def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
     assert pictures[0].image is not None
 
 
+@pytest.mark.parametrize("kind", ["odt", "odp", "ods"])
+def test_cmyk_picture_is_kept(tmp_path: Path, kind: str):
+    # PNG can't store CMYK, so the picture must be converted rather than dropped.
+    image_path = tmp_path / "cmyk.jpg"
+    Image.new("CMYK", (200, 100), (0, 255, 255, 0)).save(image_path, format="JPEG")
+
+    doc = OdfDocument(
+        {"odt": "text", "odp": "presentation", "ods": "spreadsheet"}[kind]
+    )
+    body = doc.body
+    body.clear()
+    frame = Frame.image_frame(doc.add_file(str(image_path)), size=("2cm", "1cm"))
+    if kind == "odt":
+        paragraph = Paragraph("")
+        paragraph.append(frame)
+        body.append(paragraph)
+    elif kind == "odp":
+        page = DrawPage("page1")
+        page.append(frame)
+        body.append(page)
+    else:
+        table = Table("Sheet1", width=1, height=1)
+        body.append(table)
+        cell = table.get_cell("A1")
+        cell.append(frame)
+        table.set_cell("A1", cell)
+    path = tmp_path / f"cmyk.{kind}"
+    doc.save(str(path))
+
+    pictures = DocumentConverter().convert(path).document.pictures
+    assert len(pictures) == 1
+    image = pictures[0].image
+    assert image is not None
+    assert image.pil_image is not None
+    assert image.pil_image.size == (200, 100)
+    assert image.pil_image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
+
+
 def test_odt_ordered_nested_list(tmp_path: Path):
     path = tmp_path / "ordered_nested.odt"
     doc = OdfDocument("text")

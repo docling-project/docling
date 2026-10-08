@@ -61,6 +61,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -974,7 +975,7 @@ def _image_ref_from_odf_image(
 
     pil_image = PILImage.open(BytesIO(image_data))
     pil_image.load()
-    return ImageRef.from_pil(image=pil_image, dpi=72)
+    return ImageRef.from_pil(image=normalize_image_for_png(pil_image), dpi=72)
 
 
 def _odf_image_href(image: Any) -> str | None:
