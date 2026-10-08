@@ -20,7 +20,6 @@ from docling_core.types.doc.page import (
     TextCell,
 )
 from PIL import Image, ImageDraw
-from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -373,6 +372,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             draw.rectangle([(x0, y0), (x1, y1)], fill=1)
 
         np_image = np.array(image)
+
+        # Deferred import: scipy only ships with the `convert-core` extra,
+        # and a module-level import here broke every `docling-slim[format-*]`
+        # install without it (issue #4447). Same pattern as #4285/#4286.
+        from scipy.ndimage import binary_dilation, find_objects, label
 
         if dilation_size > 0:
             # Grow the rects by dilation_size / 2 pixels in all directions.

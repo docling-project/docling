@@ -549,6 +549,45 @@ def test_add_header_footer_first_page_and_regular(documents):
     )
 
 
+def test_add_header_footer_even_pages(tmp_path):
+    """Even-page headers/footers are extracted when evenAndOddHeaders is enabled.
+
+    Regression test: only the default (odd page) header/footer was visited, so the
+    text of the even-page header/footer was silently dropped. When the setting is
+    off, the even parts are unused by Word and must not be emitted.
+    """
+    from docx import Document
+
+    def _build(path, even_and_odd: bool):
+        d = Document()
+        d.settings.odd_and_even_pages_header_footer = even_and_odd
+        s = d.sections[0]
+        s.header.paragraphs[0].text = "HEADER_DEFAULT_ODD"
+        s.footer.paragraphs[0].text = "FOOTER_DEFAULT_ODD"
+        s.even_page_header.paragraphs[0].text = "HEADER_EVEN"
+        s.even_page_footer.paragraphs[0].text = "FOOTER_EVEN"
+        d.add_paragraph("Body paragraph")
+        d.save(path)
+
+    enabled = tmp_path / "even_headers_enabled.docx"
+    _build(enabled, True)
+    header_texts, footer_texts = _header_footer_texts(
+        get_converter().convert(enabled).document
+    )
+    assert "HEADER_DEFAULT_ODD" in header_texts
+    assert "HEADER_EVEN" in header_texts, "even-page header was dropped"
+    assert "FOOTER_DEFAULT_ODD" in footer_texts
+    assert "FOOTER_EVEN" in footer_texts, "even-page footer was dropped"
+
+    disabled = tmp_path / "even_headers_disabled.docx"
+    _build(disabled, False)
+    header_texts, footer_texts = _header_footer_texts(
+        get_converter().convert(disabled).document
+    )
+    assert header_texts == ["HEADER_DEFAULT_ODD"]
+    assert footer_texts == ["FOOTER_DEFAULT_ODD"]
+
+
 def test_handle_pictures(documents):
     """Test the function _handle_pictures."""
 
@@ -2070,13 +2109,14 @@ def test_fragment_only_rel_does_not_crash_backend():
     )
     converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
     result = converter.convert(stream, raises_on_error=True)
-    texts = [
-        item.text
+    text_items = [
+        item
         for item, _ in result.document.iterate_items()
         if isinstance(item, TextItem)
     ]
-    assert "Before internal link after" in "".join(texts)
-    assert all(item.hyperlink is None for item in result.document.texts)
+    assert len(text_items) == 1
+    assert text_items[0].text == "Before internal link after"
+    assert text_items[0].hyperlink is None
 
 
 def _docx_with_notes():

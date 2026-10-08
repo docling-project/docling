@@ -31,6 +31,9 @@ Below you can find a listing of all supported input and output formats.
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 | AFP | IBM Advanced Function Presentation / MO:DCA |
 
+PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
+LaTeX formula items. Equations mixed with text or list content retain their order.
+
 Schema-specific support:
 
 | Format | Description |

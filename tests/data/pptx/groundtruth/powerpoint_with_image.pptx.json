@@ -65,26 +65,12 @@
           "$ref": "#/pictures/1"
         },
         {
-          "$ref": "#/groups/2"
+          "$ref": "#/texts/4"
         }
       ],
       "content_layer": "body",
       "name": "slide-1",
       "label": "chapter"
-    },
-    {
-      "self_ref": "#/groups/2",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/4"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
     }
   ],
   "texts": [
@@ -199,11 +185,11 @@
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "paragraph",
       "prov": [
         {
           "page_no": 2,
@@ -221,9 +207,7 @@
         }
       ],
       "orig": "This is a picture inserted through a layout’s picture placeholder",
-      "text": "This is a picture inserted through a layout’s picture placeholder",
-      "enumerated": false,
-      "marker": ""
+      "text": "This is a picture inserted through a layout’s picture placeholder"
     }
   ],
   "pictures": [

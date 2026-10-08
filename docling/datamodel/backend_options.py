@@ -394,10 +394,10 @@ class IWorkBackendOptions(BaseBackendOptions):
         Field(
             description=(
                 "Whether to render an image for each chart in a Keynote "
-                "presentation and attach it to the chart PictureItem. Keynote "
-                "stores no picture of a chart and LibreOffice cannot read one "
-                "out of a .key, so the chart is rebuilt from the data read out "
-                "of the presentation as a single-chart Office document and "
+                "presentation or a Numbers spreadsheet and attach it to the "
+                "chart PictureItem. Neither app stores a picture of a chart, so "
+                "the chart is rebuilt from the data read out of the document as "
+                "a single-chart Office document and "
                 "rasterized with LibreOffice, the route the Office backends "
                 "render their charts by. The image has the chart's kind, data "
                 "and title but not its colours or fonts, and a chart with no "

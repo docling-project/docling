@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import re
 import struct
 import warnings
+import zipfile
 import zlib
 from collections.abc import Iterable
 from pathlib import Path
@@ -21,8 +23,10 @@ from docling_core.types.doc import (
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import (
+    _MAX_CHART_TABLE_CELLS,
     MsPowerpointDocumentBackend,
     _is_metafile,
+    _last_populated_row,
 )
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
@@ -399,6 +403,156 @@ def test_chart_image_not_rendered_by_default():
         assert picture.image is None, (
             "chart picture should have no image when render_chart_images is off"
         )
+
+
+def _build_inflated_ptcount_pptx(path: Path, declared: int) -> None:
+    """Build a one-slide deck whose 3-point chart declares ``declared`` categories.
+
+    Mirrors what Excel writes for charts referencing whole columns
+    (``$A$2:$A$1048576``): python-pptx then reports ``declared`` categories
+    while the series hold 3 values. See
+    https://github.com/docling-project/docling/issues/4607.
+    """
+    from pptx import Presentation
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    data = CategoryChartData()
+    data.categories = ["Jan", "Feb", "Mar"]
+    data.add_series("Price", (10.0, 11.5, 12.25))
+    slide.shapes.add_chart(
+        XL_CHART_TYPE.COLUMN_CLUSTERED,
+        Inches(1),
+        Inches(1.5),
+        Inches(8),
+        Inches(5),
+        data,
+    )
+
+    tmp = path.with_suffix(".build.pptx")
+    prs.save(tmp)
+    with zipfile.ZipFile(tmp) as zin:
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                blob = zin.read(item.filename)
+                if re.fullmatch(r"ppt/charts/chart\d+\.xml", item.filename):
+                    xml = blob.decode("utf8")
+                    xml = re.sub(
+                        r'(<c:cat>.*?<c:ptCount val=")\d+(")',
+                        rf"\g<1>{declared}\g<2>",
+                        xml,
+                        flags=re.S,
+                    )
+                    xml = re.sub(
+                        r"(<c:cat>.*?<c:f>[^<]*\$A\$2:\$A\$)\d+(</c:f>)",
+                        rf"\g<1>{declared + 1}\g<2>",
+                        xml,
+                        flags=re.S,
+                    )
+                    blob = xml.encode("utf8")
+                zout.writestr(item, blob)
+    tmp.unlink()
+
+
+def _backend_under_test() -> MsPowerpointDocumentBackend:
+    """Return a backend instance for direct ``_chart_to_table_data`` calls."""
+    in_doc = InputDocument(
+        path_or_stream=CHART_PPTX,
+        format=InputFormat.PPTX,
+        backend=MsPowerpointDocumentBackend,
+    )
+    assert in_doc.valid
+    return in_doc._backend
+
+
+def test_chart_with_inflated_category_range_trims_trailing_empty_rows(tmp_path):
+    """A chart whose declared range exceeds its data is trimmed to populated rows.
+
+    Regression test for https://github.com/docling-project/docling/issues/4607:
+    Excel writes whole-column references (``$A$2:$A$1048576``) for such charts,
+    so python-pptx reports thousands of categories for a 3-point chart. The
+    reconstructed table must be sized by populated data (4 rows: 1 header + 3
+    data), not by the declared range.
+    """
+    pptx_path = tmp_path / "chart_inflated_range.pptx"
+    _build_inflated_ptcount_pptx(pptx_path, declared=5000)
+
+    doc = convert_with_pptx_backend(pptx_path)
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1
+
+    tabular_chart = pictures[0].meta.tabular_chart
+    assert tabular_chart is not None
+    chart_data = tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (4, 2)
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert grid[(1, 0)] == "Jan"
+    assert grid[(1, 1)] == "10"
+    assert grid[(3, 0)] == "Mar"
+    assert grid[(3, 1)] == "12.25"
+
+
+def test_last_populated_row_trims_only_trailing_empty_rows():
+    """Only trailing all-empty rows are trimmed; interior gaps are kept."""
+    columns = [("s1", ["1", "", "3", ""]), ("s2", ["", "", "", ""])]
+    # Row 3 is all-empty; the boundary sits at row 2 ("3" in s1).
+    assert _last_populated_row(["a", "b", "c", ""], columns, 4) == 2
+    # An interior empty row does not move the boundary.
+    assert _last_populated_row(["a", "", "c", ""], columns, 4) == 2
+    # A row is populated by its category label alone.
+    assert _last_populated_row(["a", "b", "c", "d"], [("s1", [])], 4) == 3
+    # Nothing populated.
+    assert _last_populated_row(["", ""], [("s1", ["", ""])], 2) == -1
+    # Ragged: indexes past a column's length count as empty for that column.
+    assert _last_populated_row([], [("s1", ["", "", "9"])], 3) == 2
+
+
+def test_chart_with_no_populated_data_returns_no_table():
+    """A chart whose declared range holds no data at all yields no table."""
+    chart = SimpleNamespace(
+        series=[SimpleNamespace(name="s1", values=[])],
+        plots=[SimpleNamespace(categories=["", "", ""])],
+    )
+    assert _backend_under_test()._chart_to_table_data(chart) is None
+
+
+def test_chart_data_table_capped_at_max_cells(caplog):
+    """Genuinely huge charts are truncated at the cell cap with a warning.
+
+    A stub chart with 60k populated points in 2 series would emit 180k cells;
+    the table is cut to ``_MAX_CHART_TABLE_CELLS`` cells instead of ballooning.
+    """
+    n_points = 60_000
+    chart = SimpleNamespace(
+        series=[
+            SimpleNamespace(name="s1", values=[float(i) for i in range(n_points)]),
+            SimpleNamespace(name="s2", values=[float(i) for i in range(n_points)]),
+        ],
+        plots=[SimpleNamespace(categories=[f"c{i}" for i in range(n_points)])],
+    )
+
+    with caplog.at_level(
+        logging.WARNING, logger="docling.backend.mspowerpoint_backend"
+    ):
+        table_data = _backend_under_test()._chart_to_table_data(chart)
+
+    assert table_data is not None
+    assert table_data.num_cols == 3
+    capped_rows = _MAX_CHART_TABLE_CELLS // 3
+    assert table_data.num_rows == capped_rows + 1
+    assert "cell cap" in caplog.text
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in table_data.table_cells
+    }
+    assert grid[(1, 0)] == "c0"
+    assert grid[(capped_rows, 0)] == f"c{capped_rows - 1}"
 
 
 def test_chart_enrichment_skips_image_when_pages_empty():
@@ -1147,3 +1301,56 @@ def test_pptx_picture_in_placeholder(tmp_path: Path):
     assert picture.image.mimetype == "image/png"
     assert picture.image.size.width == 200.0
     assert picture.image.size.height == 100.0
+
+
+@pytest.mark.parametrize(
+    ("layout_marker", "override_layer", "expected"),
+    [
+        ("buNone", None, "Item one\n\nItem two"),
+        ("buAutoNum", None, "1. Item one\n2. Item two"),
+        (None, None, "- Item one\n- Item two"),
+        ("buNone", "shape", "- Item one\n- Item two"),
+        ("buNone", "paragraph", "- Item one\n- Item two"),
+    ],
+)
+def test_pptx_layout_list_marker_precedence(
+    tmp_path: Path,
+    layout_marker: str | None,
+    override_layer: str | None,
+    expected: str,
+) -> None:
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+
+    presentation = Presentation()
+    layout = presentation.slide_layouts[1]
+    layout_body = layout.placeholders[1]
+    layout_style = layout_body._element.find(".//" + qn("a:lstStyle"))
+    assert layout_style is not None
+    if layout_marker is not None:
+        level = layout_style.makeelement(qn("a:lvl1pPr"))
+        attrs = {"type": "arabicPeriod"} if layout_marker == "buAutoNum" else {}
+        level.append(level.makeelement(qn("a:" + layout_marker), attrs))
+        layout_style.append(level)
+
+    slide = presentation.slides.add_slide(layout)
+    slide.shapes.title.text = "Agenda"
+    body = slide.placeholders[1]
+    body.text_frame.text = "Item one"
+    body.text_frame.add_paragraph().text = "Item two"
+    if override_layer == "shape":
+        style = body._element.find(".//" + qn("a:lstStyle"))
+        assert style is not None
+        level = style.makeelement(qn("a:lvl1pPr"))
+        level.append(level.makeelement(qn("a:buChar"), {"char": "•"}))
+        style.append(level)
+    elif override_layer == "paragraph":
+        for paragraph in body.text_frame.paragraphs:
+            properties = paragraph._p.get_or_add_pPr()
+            properties.append(properties.makeelement(qn("a:buChar"), {"char": "•"}))
+
+    path = tmp_path / "layout_bullets.pptx"
+    presentation.save(path)
+    document = get_converter().convert(path).document
+
+    assert document.export_to_markdown() == "# Agenda\n\n" + expected

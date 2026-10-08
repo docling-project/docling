@@ -25,6 +25,7 @@ from docling.backend.latex.constants import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from typing import Any
 
 try:  # pragma: no cover - import-time guard
@@ -34,9 +35,22 @@ try:  # pragma: no cover - import-time guard
         LatexGroupNode,
         LatexMacroNode,
         LatexMathNode,
+        LatexSpecialsNode,
     )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
+
+
+def iter_child_nodelists(node: Any) -> Iterator[list]:
+    """Yield the node lists of ``node`` and of its group arguments."""
+    if isinstance(node, (LatexGroupNode, LatexEnvironmentNode, LatexMathNode)):
+        if node.nodelist is not None:
+            yield node.nodelist
+    if isinstance(node, (LatexMacroNode, LatexEnvironmentNode, LatexSpecialsNode)):
+        if node.nodeargd and node.nodeargd.argnlist:
+            for arg in node.nodeargd.argnlist:
+                if isinstance(arg, LatexGroupNode) and arg.nodelist is not None:
+                    yield arg.nodelist
 
 
 class TextHelperMixin:
@@ -117,6 +131,14 @@ class TextHelperMixin:
             return re.sub(r"\A(?:[ \t]*\r?\n)+", "", match.group(1)).rstrip()
         return latex_str
 
+    def _item_term(self, node: LatexMacroNode) -> str:
+        """Return the text of the ``\\item[...]`` term, or ``""`` if it has none."""
+        if node.nodeargd and node.nodeargd.argnlist:
+            arg = node.nodeargd.argnlist[0]
+            if isinstance(arg, LatexGroupNode):
+                return self._nodes_to_text(arg.nodelist).strip()
+        return ""
+
     def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
         """Return ``(text, consumed_following)`` for a single macro node."""
         consumed = 0
@@ -126,7 +148,7 @@ class TextHelperMixin:
         if node.macroname in MACROS_COLOR_INLINE:
             if node.nodeargd and node.nodeargd.argnlist:
                 text_arg = node.nodeargd.argnlist[-1]
-                if text_arg is not None and hasattr(text_arg, "nodelist"):
+                if isinstance(text_arg, LatexGroupNode):
                     return (self._nodes_to_text(text_arg.nodelist), consumed)
             return ("", consumed)
         if node.macroname in MACROS_CITATION:
@@ -136,18 +158,8 @@ class TextHelperMixin:
         if node.macroname in ["~"]:
             return (" ", consumed)
         if node.macroname == "item":
-            if node.nodeargd and node.nodeargd.argnlist:
-                arg = node.nodeargd.argnlist[0]
-                if arg:
-                    if hasattr(arg, "nodelist"):
-                        opt_text = self._nodes_to_text(arg.nodelist)
-                        if not opt_text:
-                            opt_text = arg.latex_verbatim().strip("[] ")
-                    else:
-                        opt_text = arg.latex_verbatim().strip("[] ")
-                    if opt_text:
-                        return (f"{opt_text}: ", consumed)
-            return ("", consumed)
+            term = self._item_term(node)
+            return (f"{term}: " if term else "", consumed)
         if node.macroname in MACROS_ESCAPED:
             return (node.macroname, consumed)
         if node.macroname in self._custom_macros:
@@ -163,7 +175,7 @@ class TextHelperMixin:
         if node.nodeargd and node.nodeargd.argnlist:
             for arg in node.nodeargd.argnlist:
                 if arg is not None:
-                    if hasattr(arg, "nodelist"):
+                    if isinstance(arg, LatexGroupNode):
                         text = self._nodes_to_text(arg.nodelist)
                         if text:
                             arg_parts.append(text)

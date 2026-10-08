@@ -54,6 +54,7 @@ from docling.backend.docx.drawingml.utils import (
     crop_whitespace,
     get_docx_to_pdf_converter,
 )
+from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -1537,11 +1538,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
             # Skip images PIL can already handle — openpyxl already added those.
             try:
-                pil_probe = PILImage.open(BytesIO(image_bytes))
+                pil_probe = normalize_image_for_png(PILImage.open(BytesIO(image_bytes)))
                 probe_buf = BytesIO()
                 pil_probe.save(probe_buf, format="PNG")
                 continue  # PIL succeeded; openpyxl took care of this one
-            except (UnidentifiedImageError, OSError):
+            except (UnidentifiedImageError, OSError, ValueError):
                 pass
 
             pil_image = self._convert_emf_to_pil(image_bytes)
@@ -1590,7 +1591,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 try:
                     image: Image = cast(Image, item)
                     ref = image.ref
-                    pil_image = (
+                    pil_image = normalize_image_for_png(
                         ref if isinstance(ref, PILImage.Image) else PILImage.open(ref)
                     )
                     doc.add_picture(

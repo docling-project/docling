@@ -130,6 +130,37 @@ def test_single_cell_per_line_table_is_not_truncated() -> None:
     assert [item.text for item in doc.texts] == []
 
 
+def test_escaped_pipe_stays_inside_its_cell() -> None:
+    # A backslash-escaped pipe is cell content: Asciidoctor partitions cells on
+    # unescaped pipes only and drops the backslash from the output. Splitting on
+    # every "|" cut the cell at the escaped pipe, left the backslash in the text
+    # and gave the row more columns than the header.
+    src = (
+        b"|===\n|Option |Values\n"
+        b"|--format |json\\|yaml\n"
+        b"|--level |debug\\|info\\|warn\n|===\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="escaped-pipe.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (3, 2)
+    assert [cell.text for cell in table.data.table_cells] == [
+        "Option",
+        "Values",
+        "--format",
+        "json|yaml",
+        "--level",
+        "debug|info|warn",
+    ]
+
+
 def test_source_listing_block_becomes_code_item() -> None:
     # "[source,python] / ---- / ... / ----" is a listing block: it must become a
     # code item carrying the declared language, not a paragraph with the block
