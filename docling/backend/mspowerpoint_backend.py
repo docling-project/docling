@@ -18,6 +18,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    GroupItem,
     GroupLabel,
     ImageRef,
     ListGroup,
@@ -1706,7 +1707,29 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 slide, slide_ind, author_map, doc, parent_slide
             )
 
+            if slide._element.get("show") in ("0", "false"):
+                self._hide_slide(doc, parent_slide)
+
         return doc
+
+    @staticmethod
+    def _hide_slide(doc: DoclingDocument, parent_slide: GroupItem) -> None:
+        """Move the content of a hidden slide to the invisible layer.
+
+        PowerPoint does not present a slide marked ``show="0"`` (Hide Slide), so
+        it is kept like a hidden Excel sheet: available, but out of the default
+        exports. Speaker notes and comments keep the notes layer.
+        """
+        items = [
+            item
+            for item, _ in doc.iterate_items(
+                root=parent_slide,
+                with_groups=True,
+                included_content_layers={ContentLayer.BODY},
+            )
+        ]
+        for item in items:
+            item.content_layer = ContentLayer.INVISIBLE
 
     def _build_comment_author_map(
         self, pptx_obj: presentation.Presentation
