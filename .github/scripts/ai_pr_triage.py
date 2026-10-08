@@ -591,7 +591,7 @@ def summarize_groundtruth(
             else read_blob(git_dir, merge_base, old_path)
         )
         new = None if item["status"] == "removed" else read_blob(git_dir, head, path)
-        changes.append(summarize_file(path, old, new))
+        changes.append(summarize_file(path, old, new, status=item["status"]))
     markdown = render_markdown(changes)
     if len(changed) > MAX_GROUNDTRUTH_FILES:
         markdown += (
