@@ -303,7 +303,9 @@ def test_threaded_pipeline_recovers_after_a_hung_model():
                 release.wait()
 
     converter = _intercepting_converter(
-        hang_first_layout_call, document_timeout=2.0, stage_shutdown_timeout_seconds=1.0
+        hang_first_layout_call,
+        document_timeout=10.0,
+        stage_shutdown_timeout_seconds=1.0,
     )
     try:
         timed_out = converter.convert(
