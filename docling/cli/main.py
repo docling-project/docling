@@ -1793,6 +1793,12 @@ def convert(  # noqa: C901
             allowed_formats=from_formats,
             format_options=format_options,
         )
+        for format_option in doc_converter.format_to_options.values():
+            if format_option.pipeline_options is not None:
+                format_option.pipeline_options.allow_external_plugins = (
+                    allow_external_plugins
+                )
+
         start_time = time.time()
 
         _log.info(f"paths: {input_doc_paths}")
