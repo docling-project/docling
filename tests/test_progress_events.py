@@ -305,6 +305,51 @@ def test_printer_draws_progress_bars_on_a_terminal(
     assert all((orange in line) is colored for line in screen[1:3])
 
 
+def test_printer_keeps_one_bar_per_concurrent_document(monkeypatch):
+    monkeypatch.setattr(settings.perf, "doc_batch_size", 2)
+    monkeypatch.setattr(settings.perf, "doc_batch_concurrency", 2)
+    stream = StringIO()
+    printer = ProgressPrinter(total_documents=2, stream=stream)
+
+    def pages(index: int, name: str, done: int, total: int) -> PageCompletedProgress:
+        return PageCompletedProgress(
+            document_index=index,
+            document_name=name,
+            page_no=done,
+            success=True,
+            completed_pages=done,
+            total_pages=total,
+        )
+
+    def finished(index: int, name: str) -> DocumentCompletedProgress:
+        return DocumentCompletedProgress(
+            document_index=index, document_name=name, status=ConversionStatus.SUCCESS
+        )
+
+    # Events of two documents interleave, as with doc_batch_concurrency > 1.
+    for event in [
+        DocumentStartedProgress(document_index=1, document_name="a.pdf"),
+        DocumentStartedProgress(document_index=2, document_name="b.pdf"),
+        pages(1, "a.pdf", 1, 3),
+        pages(2, "b.pdf", 1, 2),
+        pages(1, "a.pdf", 2, 3),
+        pages(2, "b.pdf", 2, 2),
+        finished(2, "b.pdf"),
+        pages(1, "a.pdf", 3, 3),
+        finished(1, "a.pdf"),
+    ]:
+        printer(event)
+
+    assert stream.getvalue().splitlines() == [
+        "[1/2] Converting a.pdf",
+        "[2/2] Converting b.pdf",
+        "  [2] pages 2/2",
+        "Finished b.pdf: success",
+        "  [1] pages 3/3",
+        "Finished a.pdf: success",
+    ]
+
+
 def test_show_progress_prints_without_a_callback(capsys):
     DocumentConverter(show_progress=True).convert(_md("doc.md"))
 

@@ -505,6 +505,9 @@ for result in DocumentConverter(progress_callback=printer).convert_all(sources):
     ...
 ```
 
+With `settings.perf.doc_batch_concurrency > 1`, each document keeps its own
+bar and the labels carry the document index, for example `[2] pages 9/9`.
+
 On the command line the same output is on by default when stderr is a
 terminal. `--no-progress` or `--quiet` turns it off, and `--progress` turns it
 on for pipes and log files.
