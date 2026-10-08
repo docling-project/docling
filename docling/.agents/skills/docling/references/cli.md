@@ -106,6 +106,13 @@ docling report.pdf --enrich-picture-classes --output /tmp/
 docling report.pdf --enrich-picture-description --output /tmp/
 ```
 
+## Third-party plugins
+
+Run `docling convert --show-external-plugins` to list installed OCR, layout,
+table structure, and picture-description engines with their distribution names.
+This command loads plugin code. To use third-party engines during conversion,
+set `--allow-external-plugins`. `--help` does not discover plugins.
+
 ## Common situations
 
 | Situation | Handling |
