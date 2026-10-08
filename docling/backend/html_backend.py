@@ -63,6 +63,7 @@ from typing_extensions import Self, override
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.table_spans import (
     MAX_COLSPAN,
@@ -5311,7 +5312,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     image = Image.open(BytesIO(image_data))
                     image.load()
                     return ImageRef.from_pil(
-                        image, dpi=int(image.info.get("dpi", (72,))[0])
+                        normalize_image_for_png(image),
+                        dpi=int(image.info.get("dpi", (72,))[0]),
                     )
                 except (UnidentifiedImageError, OSError, TypeError, ValueError) as exc:
                     warnings.warn(

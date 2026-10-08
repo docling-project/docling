@@ -3,11 +3,14 @@
 
 """Unit tests for the shared image-resource loader and its safety limits."""
 
+import base64
 import socket
 import threading
+from io import BytesIO
 from urllib.parse import quote
 
 import pytest
+from PIL import Image
 
 from docling.backend.utils.image_resource_loader import (
     ImageResourceLoader,
@@ -242,3 +245,24 @@ def test_load_image_data_local_requires_base_path():
     loader = ImageResourceLoader(enable_local_fetch=True)
     with pytest.raises(OperationNotAllowed, match="requires base_path"):
         loader.load_image_data("/some/where/image.png", None)
+
+
+# Carried over from #4681 (@usmanmateen): unit coverage for the OSError
+# truncation path in create_image_ref.
+def _jpeg_data_uri(data: bytes) -> str:
+    return "data:image/jpeg;base64," + base64.b64encode(data).decode()
+
+
+def _jpeg(image: Image.Image) -> bytes:
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+def test_create_image_ref_skips_undecodable_image():
+    # A truncated file only fails when Pillow decodes it, with an OSError.
+    data = _jpeg(Image.new("RGB", (200, 100), "red"))
+    truncated = _jpeg_data_uri(data[: len(data) // 2])
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        assert ImageResourceLoader().create_image_ref(truncated, None) is None
