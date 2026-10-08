@@ -38,8 +38,17 @@ _BROKEN_LAYER = " ".join(
 )
 
 
-def _page_pdf(path: Path, text_layer: str) -> Path:
-    """One page: `_SHOWN` drawn as an image, under a text layer of `text_layer`."""
+def _page_pdf(
+    path: Path,
+    text_layer: str,
+    *,
+    invisible: bool = False,
+    hidden_text: str | None = None,
+) -> Path:
+    """One page: `_SHOWN` drawn as an image, under a text layer of `text_layer`.
+
+    `invisible` draws the layer with no ink; `hidden_text` adds an invisible line.
+    """
     width, height = 400, 200
     image = Image.new("RGB", (width * 3, height * 3), "white")
     font = ImageFont.load_default(size=110)
@@ -52,20 +61,38 @@ def _page_pdf(path: Path, text_layer: str) -> Path:
     picture.set_matrix(pdfium.PdfMatrix().scale(width, height))
     page.insert_obj(picture)
 
+    _add_text(pdf, page, text_layer, y=112, invisible=invisible)
+    if hidden_text is not None:
+        _add_text(pdf, page, hidden_text, y=20, invisible=True)
+    page.gen_content()
+    pdf.save(path)
+    return path
+
+
+def _add_text(
+    pdf: pdfium.PdfDocument,
+    page: pdfium.PdfPage,
+    text_layer: str,
+    *,
+    y: float,
+    invisible: bool,
+) -> None:
     helvetica = pdfium_c.FPDFText_LoadStandardFont(pdf.raw, b"Helvetica")
     text = pdfium_c.FPDFPageObj_CreateTextObj(pdf.raw, helvetica, 9.0)
     utf16 = (text_layer + "\0").encode("utf-16-le")
     pdfium_c.FPDFText_SetText(
         text, ctypes.cast(ctypes.c_char_p(utf16), ctypes.POINTER(pdfium_c.FPDF_WCHAR))
     )
-    # A broken layer still draws the right glyphs; white ink keeps this one from
-    # adding marks of its own to the image the OCR reads.
-    pdfium_c.FPDFPageObj_SetFillColor(text, 255, 255, 255, 255)
-    pdfium_c.FPDFPageObj_Transform(text, 1, 0, 0, 1, 20, 112)
+    if invisible:
+        pdfium_c.FPDFTextObj_SetTextRenderMode(
+            text, pdfium_c.FPDF_TEXTRENDERMODE_INVISIBLE
+        )
+    else:
+        # A broken layer still draws the right glyphs; white ink keeps this one
+        # from adding marks of its own to the image the OCR reads.
+        pdfium_c.FPDFPageObj_SetFillColor(text, 255, 255, 255, 255)
+    pdfium_c.FPDFPageObj_Transform(text, 1, 0, 0, 1, 20, y)
     pdfium_c.FPDFPage_InsertObject(page.raw, text)
-    page.gen_content()
-    pdf.save(path)
-    return path
 
 
 def _convert(
@@ -113,3 +140,34 @@ def test_auto_ocr_engine_replaces_the_broken_layer(tmp_path: Path) -> None:
 
     assert result.confidence.pages[1].parse_score == 0.0
     assert _BROKEN_LAYER[:5] not in result.document.export_to_markdown()
+
+
+def test_invisible_text_does_not_grade_the_layer(tmp_path: Path) -> None:
+    """Only visible text is judged."""
+    pdf = _page_pdf(tmp_path / "hidden.pdf", _BROKEN_LAYER, invisible=True)
+    result = _convert(pdf, replace=True)
+
+    assert result.confidence.pages[1].parse_score == 1.0
+
+
+def test_replaced_page_keeps_its_invisible_text(tmp_path: Path) -> None:
+    hidden = "Accessible summary of the statement"
+    pdf = _page_pdf(tmp_path / "broken.pdf", _BROKEN_LAYER, hidden_text=hidden)
+    ocr = TesseractCliOcrOptions(lang=["eng"], replace_broken_text_layer=True)
+    options = PdfPipelineOptions(
+        do_ocr=True,
+        do_table_structure=False,
+        generate_parsed_pages=True,
+        ocr_options=ocr,
+    )
+    converter = DocumentConverter(
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
+    )
+    result = converter.convert(pdf)
+
+    assert result.confidence.pages[1].parse_score == 0.0
+    parsed = result.pages[0].parsed_page
+    assert parsed is not None
+    texts = [c.text for c in parsed.textline_cells]
+    assert hidden in texts
+    assert not any(_BROKEN_LAYER[:5] in t for t in texts)

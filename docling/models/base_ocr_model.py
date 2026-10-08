@@ -129,14 +129,19 @@ def _segregate_by_visibility(
     visible: list[TextCell] = []
     invisible: list[TextCell] = []
     for cell in cells:
-        if (
-            isinstance(cell, PdfTextCell)
-            and cell.rendering_mode in _INVISIBLE_RENDERING_MODES
-        ):
+        if _is_invisible(cell):
             invisible.append(cell)
         else:
             visible.append(cell)
     return visible, invisible
+
+
+def _is_invisible(cell: TextCell) -> bool:
+    """Whether a PDF cell is drawn with a text rendering mode that paints no ink."""
+    return (
+        isinstance(cell, PdfTextCell)
+        and cell.rendering_mode in _INVISIBLE_RENDERING_MODES
+    )
 
 
 def _ocr_full_page(options: OcrOptions, page: Page) -> bool:
@@ -449,6 +454,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         - If FULL_PAGE, or with `replace_broken_text_layer` the page's parse score is
           graded poor:
           Any existing PDF cells are ignored and only the OCR cells are used.
+          A page replaced for `replace_broken_text_layer` keeps its invisible cells.
         - If LAYOUT_REGIONS or PDF_AWARE_LAYOUT_REGIONS and the priority parameter is None,
           the priority is auto-selected based on the OcrMode:
               - OCR_FIRST when LAYOUT_REGIONS
@@ -460,8 +466,15 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # Combine existing and OCR cells with overlap filtering
         full_page = _ocr_full_page(self.options, page)
+        # A replaced broken text layer keeps its invisible cells, as in the merge
+        keep_invisible = full_page and self.options.mode != OcrMode.FULL_PAGE
         if full_page:
             final_cells = ocr_cells
+            if keep_invisible:
+                _, invisible_cells = _segregate_by_visibility(existing_cells)
+                final_cells = self._merge_cells_by_priority(
+                    final_cells, invisible_cells
+                )
         else:
             if priority is None:
                 priority = (
@@ -492,10 +505,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # In OcrMode.FULL_PAGE, PDF-extracted word/char cells are unreliable. Keep only OCR cells
         if full_page:
             page.parsed_page.word_cells = [
-                c for c in page.parsed_page.word_cells if c.from_ocr
+                c
+                for c in page.parsed_page.word_cells
+                if c.from_ocr or (keep_invisible and _is_invisible(c))
             ]
             page.parsed_page.char_cells = [
-                c for c in page.parsed_page.char_cells if c.from_ocr
+                c
+                for c in page.parsed_page.char_cells
+                if c.from_ocr or (keep_invisible and _is_invisible(c))
             ]
             page.parsed_page.has_words = len(page.parsed_page.word_cells) > 0
             page.parsed_page.has_chars = len(page.parsed_page.char_cells) > 0
