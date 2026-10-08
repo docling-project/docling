@@ -721,7 +721,12 @@ class EmailBackendOptions(BaseBackendOptions):
 
 
 class XBRLBackendOptions(BaseBackendOptions):
-    """Options specific to the XBRL backend."""
+    """Options specific to the XBRL backend.
+
+    Both `enable_local_fetch` and `enable_remote_fetch` default to `False` and
+    must be set explicitly if the XBRL instance document needs to fetch
+    taxonomy elements from a local folder (`taxonomy` field) or remotely.
+    """
 
     kind: Annotated[Literal["xbrl"], Field("xbrl", exclude=True, repr=False)] = "xbrl"
     taxonomy: Annotated[

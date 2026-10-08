@@ -27,7 +27,7 @@ from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from docling_core.types.doc import (
     DoclingDocument,
@@ -45,15 +45,24 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError, OperationNotAllowed
+from docling.exceptions import DocumentLoadError, OperationNotAllowed, SecurityError
+
+if TYPE_CHECKING:
+    from arelle import (
+        Cntlr as _ArelleCntlrModule,
+        PackageManager as _ArellePackageManagerModule,
+    )
 
 _XBRL_AVAILABLE: bool = False
 _XBRL_IMPORT_ERROR: ImportError | None = None
 try:
-    from arelle import Cntlr  # type: ignore
-    from arelle.ModelDocument import Type  # type: ignore
-    from arelle.ModelDtsObject import ModelConcept  # type: ignore
-    from arelle.ModelXbrl import ModelXbrl  # type: ignore
+    from arelle import (
+        Cntlr,
+        PackageManager as _ArellePackageManager,
+    )
+    from arelle.ModelDocument import Type
+    from arelle.ModelDtsObject import ModelConcept
+    from arelle.ModelXbrl import ModelXbrl
 
     from docling.backend.xml.xbrl_web_cache import FetchPolicyWebCache
 
@@ -67,6 +76,46 @@ _log = logging.getLogger(__name__)
 _WEB_CACHE_TIMEOUT: Final[int] = 10
 
 
+def _remove_transient_packages(
+    pkg_mgr: _ArellePackageManagerModule.PackageManager,
+    ids_before: set[str],
+    cntlr: _ArelleCntlrModule.Cntlr,
+) -> None:
+    """Remove filing-specific taxonomy packages added during a single conversion.
+
+    Arelle's ``PackageManager`` is a process-level singleton. Each call to
+    ``modelManager.load(..., taxonomyPackages=[...])`` registers those packages
+    in the singleton. After the ``TemporaryDirectory`` that holds the extracted
+    files is deleted, the registered paths become stale and corrupt the next
+    conversion. This function removes only the packages whose identifiers were
+    not present before this conversion started, then rebuilds the URL remapping
+    table so subsequent conversions begin with a clean state.
+
+    Standard taxonomy packages that were already registered before this
+    conversion (e.g. US-GAAP or IFRS packages cached on disk) are left intact.
+
+    Args:
+        pkg_mgr: The Arelle ``PackageManager`` singleton instance.
+        ids_before: Set of package identifiers that existed before this load.
+        cntlr: The Arelle ``Cntlr`` used for this conversion, needed by
+            ``rebuildRemappings``.
+    """
+    pkg_cfg = pkg_mgr.packagesConfig
+    if not pkg_cfg:
+        return
+    packages: list[dict] = pkg_cfg.get("packages", [])
+    kept = [p for p in packages if p.get("identifier") in ids_before]
+    removed_count = len(packages) - len(kept)
+    if removed_count:
+        packages[:] = kept
+        pkg_mgr.packagesConfigChanged = True
+        pkg_mgr.rebuildRemappings(cntlr)
+        _log.debug(
+            f"Removed {removed_count} transient taxonomy package(s) from"
+            " Arelle PackageManager singleton after conversion."
+        )
+
+
 class XBRLDocumentBackend(DeclarativeDocumentBackend):
     """Backend to parse XBRL (eXtensible Business Reporting Language) documents.
 
@@ -74,8 +123,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
     It is used globally by companies and regulators for exchanging financial
     information in a structured, machine-readable format.
 
-    The backend parses an XBRL instance file given a taxonomy package passed
-    as a backend option.
+    The backend parses an XBRL instance document (`.xml` / `.xbrl`) supplied
+    alongside a taxonomy directory via `XBRLBackendOptions.taxonomy`.
 
     Refer to https://www.xbrl.org for more details on XBRL. In particular, refer to
     https://www.xbrl.org/Specification/taxonomy-package/REC-2016-04-19/taxonomy-package-REC-2016-04-19.html
@@ -127,9 +176,22 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             # leave stale files behind instead of raising.
             with TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
                 tmp_path: Path = Path(tmpdir)
+                arelle_load_path: str
                 zip_paths: list[str] = []
-                if self.options.taxonomy:
-                    taxonomy: Path = self.options.taxonomy.resolve()
+
+                # Plain instance file: materialize to temp dir and (optionally)
+                # copy the separate taxonomy directory alongside it.
+                if isinstance(path_or_stream, BytesIO):
+                    # Preserve the original file extension so Arelle recognizes
+                    # the document type (e.g. .htm for iXBRL, .xml for XBRL).
+                    suffix = self.file.suffix or ".xml"
+                    instance_path: Path = tmp_path / f"instance{suffix}"
+                    instance_path.write_bytes(path_or_stream.getvalue())
+                else:
+                    instance_path = Path(shutil.copy2(path_or_stream, tmp_path))
+
+                if options.taxonomy:
+                    taxonomy: Path = options.taxonomy.resolve()
                     if not taxonomy.is_dir():
                         raise ValueError(
                             "The 'taxonomy' backend option must be a directory"
@@ -148,15 +210,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                         _log.debug(
                             f"Files to be passed as taxonomy packages: {zip_paths}"
                         )
-                if isinstance(path_or_stream, BytesIO):
-                    instance_path: Path = tmp_path / "instance.xml"
-                    instance_path.write_bytes(path_or_stream.getvalue())
-                elif isinstance(path_or_stream, Path):
-                    instance_path = Path(shutil.copy2(path_or_stream, tmp_path))
-                else:
-                    raise TypeError("path_or_stream must be Path or BytesIO")
+                arelle_load_path = str(instance_path)
 
-                # cntlr = Cntlr.Cntlr(logFileName="logToPrint")
                 cntlr = Cntlr.Cntlr()
                 # Apply the fetch options to every document that Arelle resolves.
                 # The copy of the instance and of the taxonomy folder is always
@@ -178,22 +233,42 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                         f"Web Cache for remote taxonomy is: {web_cache.cacheDir}"
                     )
 
-                model = cntlr.modelManager.load(
-                    str(instance_path), taxonomyPackages=zip_paths
-                )
+                pkg_mgr = _ArellePackageManager.getInstance()
+                pkg_cfg = pkg_mgr.packagesConfig or {}
+                pkg_ids_before: set[str] = {
+                    p["identifier"]
+                    for p in pkg_cfg.get("packages", [])
+                    if p.get("identifier")
+                }
+
+                try:
+                    model = cntlr.modelManager.load(
+                        arelle_load_path, taxonomyPackages=zip_paths
+                    )
+                finally:
+                    if zip_paths:
+                        _remove_transient_packages(pkg_mgr, pkg_ids_before, cntlr)
+
                 if web_cache.refused:
                     raise OperationNotAllowed(
                         "XBRL resources refused by the fetch options: "
                         + "; ".join(web_cache.refused)
                     )
+
                 if (
                     not isinstance(model, ModelXbrl)
                     or not model
                     or not model.modelDocument
                 ):
                     raise ValueError("Invalid or unreadable XBRL file")
-                if model.modelDocument.type != Type.INSTANCE:
-                    raise ValueError("Document is not an XBRL instance")
+                if model.modelDocument.type not in (
+                    Type.INSTANCE,
+                    Type.INLINEXBRL,
+                ):
+                    raise ValueError(
+                        "Document is not an XBRL/iXBRL instance"
+                        f" (got type {Type.typeName[model.modelDocument.type]!r})"
+                    )
                 if model.errors:
                     raise ValueError(f"XBRL loaded with errors: {model.errors}")
 
@@ -260,6 +335,95 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                     source_cell_id=src,
                     target_cell_id=tgt,
                 )
+            )
+
+    def _build_presentation_hierarchy(self) -> None:
+        """Populate cells and links from the presentation (parent-child) linkbase.
+
+        When an external taxonomy has not been fetched, ``fromModelObject`` on a
+        relationship may be ``None``; those edges are skipped rather than raising.
+        """
+        assert self.model_xbrl is not None
+        _log.debug("Building presentation linkbase hierarchy...")
+        visited_concepts: set[str] = set()
+        pre_links = self.model_xbrl.relationshipSet(
+            "http://www.xbrl.org/2003/arcrole/parent-child"
+        )
+        for fact in self.model_xbrl.facts:
+            fact_qname = str(fact.qname)
+            if (
+                fact.concept is None
+                or not fact.concept.isNumeric
+                or not fact.localName
+                or not fact.value
+                or fact_qname in visited_concepts
+            ):
+                continue
+
+            visited_concepts.add(fact_qname)
+            if fact_qname in self._fact_cell_ids:
+                concept_cell_id = self._get_hierarchy_cell(fact.concept)
+                for fact_cell_id in self._fact_cell_ids[fact_qname]:
+                    if fact_cell_id != concept_cell_id:
+                        self._add_link(
+                            GraphLinkLabel.TO_CHILD,
+                            concept_cell_id,
+                            fact_cell_id,
+                        )
+
+            current_concept = fact.concept
+            while True:
+                parent = pre_links.toModelObject(current_concept)
+                if not parent:
+                    break
+                parent_concept = parent[0].fromModelObject
+                if parent_concept is None:
+                    # Skip unresolved parent concepts (missing external taxonomy).
+                    break
+                child_cell_id = self._get_hierarchy_cell(current_concept)
+                parent_cell_id = self._get_hierarchy_cell(parent_concept)
+                self._add_link(
+                    GraphLinkLabel.TO_CHILD,
+                    parent_cell_id,
+                    child_cell_id,
+                )
+                parent_qname = str(parent_concept.qname)
+                if parent_qname in visited_concepts:
+                    break
+                visited_concepts.add(parent_qname)
+                current_concept = parent_concept
+
+    def _build_calculation_hierarchy(self) -> None:
+        """Populate cells and links from the calculation (summation-item) linkbase."""
+        assert self.model_xbrl is not None
+        _log.debug("Building calculation linkbase relationships...")
+        calc_links = self.model_xbrl.relationshipSet(
+            "http://www.xbrl.org/2003/arcrole/summation-item"
+        )
+        for link in calc_links.modelRelationships:
+            if link.fromModelObject is None or link.toModelObject is None:
+                continue
+            parent_cell_id = self._get_hierarchy_cell(link.fromModelObject)
+            child_cell_id = self._get_hierarchy_cell(link.toModelObject)
+            self._add_link(
+                GraphLinkLabel.TO_CHILD,
+                parent_cell_id,
+                child_cell_id,
+            )
+            weight_id = self._kv_idx
+            self._cells.append(
+                GraphCell(
+                    label=GraphCellLabel.VALUE,
+                    cell_id=weight_id,
+                    text=f"weight: {link.weight}",
+                    orig="weight",
+                )
+            )
+            self._kv_idx += 1
+            self._add_link(
+                GraphLinkLabel.TO_VALUE,
+                child_cell_id,
+                weight_id,
             )
 
     @override
@@ -418,83 +582,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                     )
                     self._kv_idx += 1
 
-        # 1) presentation linkbase
-        _log.debug("Building presentation linkbase hierarchy...")
-        visited_concepts = set()
-        pre_links = self.model_xbrl.relationshipSet(
-            "http://www.xbrl.org/2003/arcrole/parent-child"
-        )
-        for fact in self.model_xbrl.facts:
-            fact_qname = str(fact.qname)
-            if (
-                fact.concept is None
-                or not fact.concept.isNumeric
-                or not fact.localName
-                or not fact.value
-                or fact_qname in visited_concepts
-            ):
-                continue
-
-            # link fact to its concept
-            visited_concepts.add(fact_qname)
-            if fact_qname in self._fact_cell_ids:
-                concept_cell_id = self._get_hierarchy_cell(fact.concept)
-                for fact_cell_id in self._fact_cell_ids[fact_qname]:
-                    if fact_cell_id != concept_cell_id:
-                        self._add_link(
-                            GraphLinkLabel.TO_CHILD,
-                            concept_cell_id,
-                            fact_cell_id,
-                        )
-
-            # build concept hierarchy
-            current_concept = fact.concept
-            while True:
-                parent = pre_links.toModelObject(current_concept)
-                if not parent:
-                    break
-                parent_concept = parent[0].fromModelObject
-                child_cell_id = self._get_hierarchy_cell(current_concept)
-                parent_cell_id = self._get_hierarchy_cell(parent_concept)
-                self._add_link(
-                    GraphLinkLabel.TO_CHILD,
-                    parent_cell_id,
-                    child_cell_id,
-                )
-                parent_qname = str(parent_concept.qname)
-                if parent_qname in visited_concepts:
-                    break
-                visited_concepts.add(parent_qname)
-                current_concept = parent_concept
-
-        # 2) calculation linkbase
-        _log.debug("Building calculation linkbase relationships...")
-        calc_links = self.model_xbrl.relationshipSet(
-            "http://www.xbrl.org/2003/arcrole/summation-item"
-        )
-        for link in calc_links.modelRelationships:
-            parent_cell_id = self._get_hierarchy_cell(link.fromModelObject)
-            child_cell_id = self._get_hierarchy_cell(link.toModelObject)
-            self._add_link(
-                GraphLinkLabel.TO_CHILD,
-                parent_cell_id,
-                child_cell_id,
-            )
-            weight_id = self._kv_idx
-            self._cells.append(
-                GraphCell(
-                    label=GraphCellLabel.VALUE,
-                    cell_id=weight_id,
-                    text=f"weight: {link.weight}",
-                    orig="weight",
-                )
-            )
-            self._kv_idx += 1
-            self._add_link(
-                GraphLinkLabel.TO_VALUE,
-                child_cell_id,
-                weight_id,
-            )
+        self._build_presentation_hierarchy()
+        self._build_calculation_hierarchy()
 
         doc.name = doc_name
         if self._cells and self._links:
