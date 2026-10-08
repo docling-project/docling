@@ -312,6 +312,7 @@ def test_threaded_pipeline_recovers_after_a_hung_model():
             _SINGLE_FILE, raises_on_error=False, page_range=(1, 1)
         )
         assert timed_out.status != ConversionStatus.SUCCESS
+        assert calls == 1, "first run timed out before it reached the layout call"
 
         result = converter.convert(
             _SINGLE_FILE, raises_on_error=True, page_range=(1, 1)
