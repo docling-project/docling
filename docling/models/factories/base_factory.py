@@ -80,12 +80,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
         return f"No class found with the name {kind!r}, known classes are:\n{msg_str}"
 
-    def register(
-        self,
-        cls: Type[A],
-        plugin_name: str,
-        plugin_module_name: str,
-    ) -> None:
+    def register(self, cls: Type[A], plugin_name: str, plugin_module_name: str) -> None:
         opt_type = cls.get_options_type()
 
         if opt_type in self._classes:
@@ -95,9 +90,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
         self._classes[opt_type] = cls
         self._meta[opt_type] = FactoryMeta(
-            kind=opt_type.kind,
-            plugin_name=plugin_name,
-            module=plugin_module_name,
+            kind=opt_type.kind, plugin_name=plugin_name, module=plugin_module_name
         )
 
     def load_from_plugins(

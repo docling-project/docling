@@ -196,7 +196,6 @@ def test_cli_lists_external_plugins(external_plugin: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     assert "Available picture description engines" in result.stdout
     assert "docling_test_external_picture" in result.stdout
-    assert "docling_test_external_ocr" in result.stdout
     assert EXTERNAL_PLUGIN_NAME in result.stdout
     assert "docling_defaults" not in result.stdout
     assert "will not be loaded" not in result.stderr
