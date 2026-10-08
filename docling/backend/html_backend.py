@@ -231,6 +231,11 @@ _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
     r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
 )
+# A CSS string value of `list-style-type` replaces the rendered bullet or number
+# of a list item, e.g. `<li style="list-style-type: '3. ';">`.
+_LIST_STYLE_STRING_RE: Final = re.compile(
+    r"list-style-type\s*:\s*(?P<quote>['\"])(?P<marker>.*?)(?P=quote)", re.IGNORECASE
+)
 
 
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
@@ -3160,8 +3165,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         start + list_item_counter if start is not None else None
                     )
 
-                # 1) determine the marker using the counter
-                marker: str = (
+                # 1) determine the marker: an explicit marker set on the item
+                # wins, otherwise use the counter
+                marker: str = self._get_list_style_marker(li) or (
                     f"{start + list_item_counter}."
                     if is_ordered and start is not None
                     else ""
@@ -3255,6 +3261,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[self.level + 1] = None
             self.level -= 1
         return added_refs
+
+    @staticmethod
+    def _get_list_style_marker(li: Tag) -> str:
+        """Return the marker that an inline string `list-style-type` sets on `li`.
+
+        Docling's HTML export writes the original marker of a list item this way,
+        so reading it back keeps markers such as `3.` when the HTML is converted
+        again (the Markdown backend does this for files with HTML blocks).
+        """
+        style = li.get("style")
+        if not isinstance(style, str):
+            return ""
+        match = _LIST_STYLE_STRING_RE.search(style)
+        return match.group("marker").strip() if match else ""
 
     @staticmethod
     def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
