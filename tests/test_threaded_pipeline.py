@@ -333,12 +333,12 @@ def test_threaded_pipeline_parallel_conversions_use_separate_model_threads():
 
     converter = _intercepting_converter(meet_in_layout)
     converter.initialize_pipeline(InputFormat.PDF)
-    statuses = []
+    statuses: list[ConversionStatus | None] = [None, None]
 
-    def convert():
-        statuses.append(converter.convert(_SINGLE_FILE, page_range=(1, 1)).status)
+    def convert(slot: int) -> None:
+        statuses[slot] = converter.convert(_SINGLE_FILE, page_range=(1, 1)).status
 
-    workers = [threading.Thread(target=convert) for _ in range(2)]
+    workers = [threading.Thread(target=convert, args=(slot,)) for slot in range(2)]
     for worker in workers:
         worker.start()
     for worker in workers:
