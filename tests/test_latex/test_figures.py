@@ -142,10 +142,7 @@ def test_latex_includegraphics_cmyk_jpeg(tmp_path: Path):
     image = doc.pictures[0].get_image(doc)
     assert image is not None
     assert image.mode == "RGB"
-    pixel = image.getpixel((50, 25))
-    assert isinstance(pixel, tuple)
-    red, green, blue = pixel
-    assert red > 200 and green < 50 and blue < 50
+    assert image.getpixel((50, 25)) == (255, 0, 0)
 
 
 def test_latex_includegraphics_missing_image():
