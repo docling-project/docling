@@ -610,7 +610,20 @@ class EmailBackendOptions(BaseBackendOptions):
 
 
 class XBRLBackendOptions(BaseBackendOptions):
-    """Options specific to the XBRL backend."""
+    """Options specific to the XBRL backend.
+
+    Used for both ``InputFormat.XML_XBRL`` (a plain instance file with a
+    separate taxonomy directory) and ``InputFormat.ZIP_XBRL`` (a self-contained
+    ZIP that bundles the instance and all taxonomy files together).
+
+    For ``ZIP_XBRL`` the ``taxonomy`` field is not required — the ZIP already
+    contains everything.  Both ``enable_local_fetch`` and
+    ``enable_remote_fetch`` default to ``False`` and must be set explicitly,
+    following the same security policy as the rest of the XBRL backend.  For a
+    self-contained ZIP you only need ``enable_local_fetch=True``; set
+    ``enable_remote_fetch=True`` as well only when the ZIP references external
+    taxonomy elements that are not bundled.
+    """
 
     kind: Annotated[Literal["xbrl"], Field("xbrl", exclude=True, repr=False)] = "xbrl"
     taxonomy: Annotated[
@@ -623,6 +636,8 @@ class XBRLBackendOptions(BaseBackendOptions):
                 " Optionally, it can also include taxonomy packages (`.zip`)"
                 " referenced by the reports with absolute URLs and mapped to files"
                 " with a taxonomy catalog (`catalog.xml`) for offline parsing."
+                " Not used when the input is an XBRL ZIP (``InputFormat.ZIP_XBRL``),"
+                " which bundles its own taxonomy."
             )
         ),
     ] = None

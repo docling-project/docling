@@ -810,6 +810,9 @@ class _DocumentConversionInput(BaseModel):
                     "application/octet-stream",
                     "application/xml",
                     "application/xhtml+xml",
+                    # iXBRL files share the .htm/.html extension with plain HTML;
+                    # a content sniff is needed to tell them apart.
+                    "text/html",
                 }
             )
             if needs_content_sniff:
@@ -825,6 +828,10 @@ class _DocumentConversionInput(BaseModel):
                     )
                     if office_mime is not None:
                         mime = office_mime
+                    else:
+                        xbrl_mime = _DocumentConversionInput._detect_xbrl_zip(obj)
+                        if xbrl_mime is not None:
+                            mime = xbrl_mime
 
         elif isinstance(obj, DocumentStream):
             if _DocumentConversionInput._has_doclang_extension(obj.name):
@@ -858,6 +865,12 @@ class _DocumentConversionInput(BaseModel):
                     )
                     if office_mime is not None:
                         mime = office_mime
+                    else:
+                        xbrl_mime = _DocumentConversionInput._detect_xbrl_zip(
+                            obj.stream
+                        )
+                        if xbrl_mime is not None:
+                            mime = xbrl_mime
 
         mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
 
@@ -872,6 +885,13 @@ class _DocumentConversionInput(BaseModel):
         mime = mime or _DocumentConversionInput._detect_latex(content, obj_ext)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
+        # An HTML-typed document may actually be iXBRL.  Upgrade the MIME so
+        # that _guess_from_content can resolve it to XML_XBRL rather than HTML.
+        if mime.lower() == "text/html" and InputFormat.XML_XBRL in (
+            MimeTypeToFormat.get("application/xhtml+xml") or []
+        ):
+            if _DocumentConversionInput._is_ixbrl(content):
+                mime = "application/xhtml+xml"
         formats = MimeTypeToFormat.get(mime, [])
         _log.info(f"detected formats: {formats}")
 
@@ -944,6 +964,77 @@ class _DocumentConversionInput(BaseModel):
         return None
 
     @staticmethod
+    def _detect_xbrl_zip(source: Union[Path, BytesIO]) -> Optional[str]:
+        """Detect an XBRL ZIP by inspecting its members.
+
+        An XBRL ZIP contains either a traditional XBRL instance document
+        (``.xml`` or ``.xbrl`` file with an XBRL namespace declaration) or an
+        inline XBRL (iXBRL) document (``.htm``/``.html``/``.xhtml`` with an
+        ``ix:`` namespace).  Taxonomy linkbase files (``_cal.xml``,
+        ``_def.xml``, ``_lab.xml``, ``_pre.xml``) and schema files (``.xsd``)
+        are not instances and are skipped.  At least one ``.xsd`` file must be
+        present to distinguish a proper XBRL package from an arbitrary ZIP.
+        """
+        _INSTANCE_XML_SUFFIXES = (".xml", ".xbrl")
+        _IXBRL_SUFFIXES = (".htm", ".html", ".xhtml")
+        _TAXONOMY_LINKBASE_SUFFIXES = ("_cal.xml", "_def.xml", "_lab.xml", "_pre.xml")
+        _XBRL_NS = b"http://www.xbrl.org/2003/instance"
+        _IXBRL_MARKERS = (
+            b"xmlns:ix=",
+            b"xmlns:ix =",
+            b"<ix:",
+            b"http://www.xbrl.org/2013/inlineXBRL",
+        )
+        try:
+            with zipfile.ZipFile(source) as zf:
+                names = zf.namelist()
+                has_xsd = any(n.lower().endswith(".xsd") for n in names)
+                if not has_xsd:
+                    return None
+                for name in names:
+                    name_lower = name.lower()
+                    if any(
+                        name_lower.endswith(suf) for suf in _TAXONOMY_LINKBASE_SUFFIXES
+                    ):
+                        continue
+                    if any(name_lower.endswith(suf) for suf in _IXBRL_SUFFIXES):
+                        with zf.open(name) as f:
+                            head = f.read(4096)
+                        if any(marker in head for marker in _IXBRL_MARKERS):
+                            return FormatToMimeType[InputFormat.ZIP_XBRL][0]
+                    elif any(
+                        name_lower.endswith(suf) for suf in _INSTANCE_XML_SUFFIXES
+                    ):
+                        with zf.open(name) as f:
+                            head = f.read(512)
+                        if _XBRL_NS in head:
+                            return FormatToMimeType[InputFormat.ZIP_XBRL][0]
+        except (zipfile.BadZipFile, OSError):
+            pass
+        finally:
+            if isinstance(source, BytesIO):
+                source.seek(0)
+        return None
+
+    @staticmethod
+    def _is_ixbrl(content: bytes) -> bool:
+        """Return whether ``content`` contains inline XBRL (iXBRL) markers.
+
+        Checks the first 4 KB for namespace declarations or element prefixes
+        that are exclusive to iXBRL documents.
+        """
+        head = content[:4096]
+        return any(
+            marker in head
+            for marker in (
+                b"xmlns:ix=",
+                b"xmlns:ix =",
+                b"<ix:",
+                b"http://www.xbrl.org/2013/inlineXBRL",
+            )
+        )
+
+    @staticmethod
     def _has_doclang_root_element(content_str: str) -> bool:
         """Return whether XML content starts with a DocLang root element."""
         content_str = re.sub(r"<!--(.*?)-->", "", content_str, flags=re.DOTALL)
@@ -970,10 +1061,16 @@ class _DocumentConversionInput(BaseModel):
             # the outcome -- while a strict decode would abort the whole batch.
             content_str = content.decode("utf-8", errors="replace")
 
-            if (
-                InputFormat.XML_XBRL in formats
-                and "http://www.xbrl.org/2003/instance" in content_str
-                and "<xbrl" in content_str.lower()
+            if InputFormat.XML_XBRL in formats and (
+                (
+                    # Traditional XBRL: root element is <xbrl> with the 2003 namespace.
+                    "http://www.xbrl.org/2003/instance" in content_str
+                    and "<xbrl" in content_str.lower()
+                )
+                or (
+                    # Inline XBRL (iXBRL): HTML document with ix: namespace markers.
+                    _DocumentConversionInput._is_ixbrl(content)
+                )
             ):
                 return InputFormat.XML_XBRL
 

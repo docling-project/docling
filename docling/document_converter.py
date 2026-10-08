@@ -272,6 +272,14 @@ class XBRLFormatOption(FormatOption):
     backend_options: XBRLBackendOptions | None = None
 
 
+class XBRLZipFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
+    backend_options: XBRLBackendOptions = Field(
+        default_factory=lambda: XBRLBackendOptions(enable_local_fetch=True)
+    )
+
+
 class ImageFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = ImageDocumentBackend
@@ -438,6 +446,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
         InputFormat.DCLX: DclxFormatOption(),
         InputFormat.XML_XBRL: XBRLFormatOption(),
+        InputFormat.ZIP_XBRL: XBRLZipFormatOption(),
         InputFormat.METS_GBS: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
         ),
