@@ -9,6 +9,7 @@ import tempfile
 import time
 import warnings
 from collections.abc import Iterable
+from contextlib import nullcontext
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
@@ -47,6 +48,7 @@ from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import SecretStr, TypeAdapter, ValidationError
 from rich.console import Console
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from docling.cli.export_utils import (
     _export_flags_from_formats,
@@ -1824,29 +1826,34 @@ def convert(  # noqa: C901
         start_time = time.time()
 
         _log.info(f"paths: {input_doc_paths}")
-        conv_results = doc_converter.convert_all(
-            input_doc_paths,
-            headers=parsed_headers,
-            raises_on_error=abort_on_error,
-            page_range=parsed_page_range,
-        )
+        # Log records go through tqdm while the bars are shown, so they print
+        # above the bars instead of tearing them.
+        with logging_redirect_tqdm() if progress else nullcontext():
+            conv_results = doc_converter.convert_all(
+                input_doc_paths,
+                headers=parsed_headers,
+                raises_on_error=abort_on_error,
+                page_range=parsed_page_range,
+            )
 
-        export_output_dir = output_file.parent if output_file is not None else output
-        export_output_dir.mkdir(parents=True, exist_ok=True)
-        export_documents(
-            conv_results,
-            output_dir=export_output_dir,
-            **export_flags,
-            show_layout=show_layout,
-            print_timings=profiling,
-            export_timings=save_profiling,
-            image_export_mode=image_export_mode,
-            chunker_type=chunker_type,
-            chunk_max_tokens=chunk_max_tokens,
-            chunk_tokenizer=chunk_tokenizer,
-            debug_vlm_native_output=debug_vlm_native_output,
-            output_file=output_file,
-        )
+            export_output_dir = (
+                output_file.parent if output_file is not None else output
+            )
+            export_output_dir.mkdir(parents=True, exist_ok=True)
+            export_documents(
+                conv_results,
+                output_dir=export_output_dir,
+                **export_flags,
+                show_layout=show_layout,
+                print_timings=profiling,
+                export_timings=save_profiling,
+                image_export_mode=image_export_mode,
+                chunker_type=chunker_type,
+                chunk_max_tokens=chunk_max_tokens,
+                chunk_tokenizer=chunk_tokenizer,
+                debug_vlm_native_output=debug_vlm_native_output,
+                output_file=output_file,
+            )
 
         end_time = time.time() - start_time
 

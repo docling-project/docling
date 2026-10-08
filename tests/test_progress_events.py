@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import logging
 import threading
 from collections.abc import Iterable
 from io import BytesIO, StringIO
@@ -372,6 +373,85 @@ def test_cli_progress_is_on_by_request_and_off_for_pipes(tmp_path):
     assert "Finished doc.md: success" in requested.output
     # CliRunner output is not a terminal, like a pipe or an AI agent.
     assert "Converting doc.md" not in default.output
+
+
+def _let_cli_configure_logging(monkeypatch) -> None:
+    """Drop pytest's root handlers, so the CLI's `logging.basicConfig` installs
+    its stderr handler as it does outside pytest. Must run in the test body:
+    pytest adds its handlers when the test call starts."""
+    monkeypatch.setattr(logging.root, "handlers", [])
+    monkeypatch.setattr(logging.root, "level", logging.root.level)
+
+
+def test_cli_keeps_log_lines_with_progress_and_verbose(tmp_path, monkeypatch):
+    _let_cli_configure_logging(monkeypatch)
+    source = tmp_path / "doc.md"
+    source.write_text("# Title\n\nSome text.", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        app,
+        [str(source), "--from", "md", "--progress", "-v", "--output", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0
+    assert "[1/1] Converting doc.md" in result.output
+    assert "Processing document doc.md" in result.output
+    assert "Finished doc.md: success" in result.output
+
+
+def test_cli_prints_log_lines_above_the_bars(tmp_path, monkeypatch):
+    _let_cli_configure_logging(monkeypatch)
+    monkeypatch.setattr(ProgressPrinter, "is_terminal", staticmethod(lambda _: True))
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            self.progress_printer: Optional[ProgressPrinter] = None
+
+        def convert_all(self, input_doc_paths, **kwargs):
+            printer = self.progress_printer
+            assert printer is not None
+            name = "doc.pdf"
+            printer(DocumentStartedProgress(document_index=1, document_name=name))
+            for done in (1, 2):
+                printer(
+                    PageCompletedProgress(
+                        document_index=1,
+                        document_name=name,
+                        page_no=done,
+                        success=True,
+                        completed_pages=done,
+                        total_pages=2,
+                    )
+                )
+                if done == 1:
+                    logging.getLogger("docling.test").warning("loading the model")
+            printer(
+                DocumentCompletedProgress(
+                    document_index=1,
+                    document_name=name,
+                    status=ConversionStatus.SUCCESS,
+                )
+            )
+            yield from ()
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = tmp_path / "doc.md"
+    source.write_text("# Title", encoding="utf-8")
+
+    result = CliRunner().invoke(app, [str(source), "--output", str(tmp_path)])
+
+    assert result.exit_code == 0
+    # Each carriage return starts over a terminal line: the log record must
+    # start its own one instead of being glued to the end of the bar.
+    segments = result.output.replace("\n", "\r").split("\r")
+    log = [segment for segment in segments if "loading the model" in segment]
+    assert len(log) == 1
+    assert "pages" not in log[0]
+    # The bar is drawn again below the log line and ends full.
+    after = result.output.split("loading the model", 1)[1]
+    assert "  pages: 100%" in after
 
 
 def test_native_pdf_pages_are_reported_for_the_selected_range():

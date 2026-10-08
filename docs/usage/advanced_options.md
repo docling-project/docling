@@ -510,7 +510,10 @@ bar and the labels carry the document index, for example `[2] pages 9/9`.
 
 On the command line the same output is on by default when stderr is a
 terminal. `--no-progress` or `--quiet` turns it off, and `--progress` turns it
-on for pipes and log files.
+on for pipes and log files. While the bars are shown, the CLI prints its log
+lines above them. If your own program logs to the terminal while
+`show_progress=True` draws bars, wrap the conversion in
+`tqdm.contrib.logging.logging_redirect_tqdm()` for the same effect.
 
 ### Your own progress callback
 
