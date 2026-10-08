@@ -2288,6 +2288,7 @@ def test_html_line_break_outside_paragraphs():
         b"<tr><td>A</td><td>B</td></tr></table>"
         b"<figure><img src='a.png'><figcaption>Figure<br>line</figcaption></figure>"
         b"<pre>Code<br>line</pre>"
+        b"<pre><b>bold</b><br><i>code</i></pre>"
         b"<ul><li><input type='checkbox' checked>Task<br>line</li></ul>"
         b"</body></html>"
     )
@@ -2311,6 +2312,8 @@ def test_html_line_break_outside_paragraphs():
         "Caption\nline",
         "Figure\nline",
         "Code\nline",
+        "bold",
+        "code",
         "Task line",
     ]
     assert not any(_BR_SENTINEL in item.orig for item in doc.texts)
