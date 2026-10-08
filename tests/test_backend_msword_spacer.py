@@ -120,6 +120,7 @@ def test_spacers_before_a_resumed_list_item_in_a_table_cell_keep_the_table(tmp_p
         table_cell.start_row_offset_idx for table_cell in table_item.data.table_cells
     }
     assert rows == {0, 1, 2}
+    assert any(item.text == "after the table" for item in converted.texts)
     items = {item.text: item for item in converted.texts if isinstance(item, ListItem)}
     markers = [items[text].marker for text in ("first", "second", "third")]
     assert markers == ["1.", "2.", "3."]

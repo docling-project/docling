@@ -1081,6 +1081,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         try:
             doc.delete_items(node_items=list(self._deferred_empty_paragraphs.values()))
         except ValueError as err:
+            # delete_items raises ValueError when it cannot find an item in the
+            # document tree; keep the paragraphs rather than fail the conversion
             _log.warning(f"Kept the empty paragraphs before resumed list items: {err}")
 
     def _clear_list_group_cache(self) -> None:
