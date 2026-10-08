@@ -205,3 +205,40 @@ def test_threaded_pipeline_stage_shutdown_timeout():
         release.set()
         if stage._thread is not None:
             stage._thread.join(timeout=5.0)
+
+
+def test_threaded_pipeline_runs_models_on_the_same_thread_across_documents():
+    """Regression test for #2788."""
+    layout_threads: set[threading.Thread] = set()
+
+    class RecordingPipeline(StandardPdfPipeline):
+        def _init_models(self) -> None:
+            super()._init_models()
+            layout = self.layout_model
+
+            def recorded_layout(conv_res, pages):
+                layout_threads.add(threading.current_thread())
+                return layout(conv_res, pages)
+
+            self.layout_model = recorded_layout
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=RecordingPipeline,
+                backend=ThreadedDoclingParseDocumentBackend,
+                pipeline_options=ThreadedPdfPipelineOptions(
+                    do_table_structure=False,
+                    do_ocr=False,
+                ),
+            )
+        }
+    )
+
+    for _ in range(2):
+        result = converter.convert(
+            _SINGLE_FILE, raises_on_error=True, page_range=(1, 2)
+        )
+        assert result.status == ConversionStatus.SUCCESS
+
+    assert len(layout_threads) == 1
