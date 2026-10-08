@@ -362,6 +362,44 @@ doc_converter = DocumentConverter(
 )
 ```
 
+### AsciiDoc comments
+
+AsciiDoc comments carry editorial notes, review remarks and blocks that were
+disabled on purpose, so the backend keeps them in the `notes` content layer
+instead of dropping them. A run of `//` lines is one note and a `////` block is
+another; the line breaks inside each one are kept, because a commented-out block
+is markup rather than prose. Exports leave `notes` out by default, so comments
+reach an export only when you ask for the layer:
+
+```python
+from docling_core.types.doc import ContentLayer
+from docling.document_converter import DocumentConverter
+
+doc = DocumentConverter().convert("manual.adoc").document
+print(doc.export_to_markdown())  # body only, comments left out
+print(doc.export_to_markdown(
+    included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
+))
+```
+
+A `//` line inside a `----` listing or a `....` literal block is code, not a
+comment, and stays in the block. To drop comments entirely rather than keep
+them in `notes`, turn `capture_comments` off:
+
+```python
+from docling.datamodel.backend_options import AsciiDocBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import AsciiDocFormatOption, DocumentConverter
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.ASCIIDOC: AsciiDocFormatOption(
+            backend_options=AsciiDocBackendOptions(capture_comments=False)
+        )
+    }
+)
+```
+
 ### Docling JSON input
 
 A `DoclingDocument` JSON file can be converted again, e.g. to re-export it to

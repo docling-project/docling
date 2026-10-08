@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Final, Optional, Union
 
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -36,7 +37,7 @@ from docling.utils.text_decoding import decode_text
 _log = logging.getLogger(__name__)
 
 # A line starting with // is a comment and never body content. //// opens a
-# delimited comment block: every line up to the matching //// is hidden.
+# delimited comment block: every line up to the matching //// is a comment.
 _LINE_COMMENT_RE = re.compile(r"^//")
 _COMMENT_BLOCK_DELIMITER = "////"
 
@@ -53,6 +54,17 @@ _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|\w+\.)\s+(.*)"
 class _LiteralBlock:
     text: str
     language: str | None = None  # set for [source,lang] listing blocks
+
+
+@dataclass(frozen=True)
+class _CommentBlock:
+    """An AsciiDoc comment, with its // or //// delimiters removed.
+
+    One block per comment: a run of consecutive // lines is one comment, and
+    so is everything between a pair of //// delimiters.
+    """
+
+    text: str
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -212,6 +224,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         list_continuation=list_continuation,
                         parents=parents,
                     )
+                )
+                continue
+
+            if isinstance(block, _CommentBlock):
+                self._add_comment_block(
+                    doc=doc,
+                    block=block,
+                    in_list=in_list,
+                    last_list_item=last_list_item,
+                    parents=parents,
                 )
                 continue
 
@@ -431,12 +453,32 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 return True
         return False
 
+    @staticmethod
+    def _is_line_comment(line: str) -> bool:
+        """Is `line` a // comment line rather than a //// block delimiter?"""
+        return (
+            _LINE_COMMENT_RE.match(line) is not None
+            and line.strip() != _COMMENT_BLOCK_DELIMITER
+        )
+
+    @staticmethod
+    def _make_comment(comment_lines: list[str]) -> _CommentBlock | None:
+        """Build a comment block, or None when the comment carries no text."""
+        text = "\n".join(comment_lines).strip()
+        return _CommentBlock(text=text) if text else None
+
     @classmethod
-    def _iter_blocks(cls, lines: list[str]) -> Iterator[str | _LiteralBlock]:
+    def _iter_blocks(
+        cls, lines: list[str]
+    ) -> Iterator[str | _LiteralBlock | _CommentBlock]:
         block_data: list[str] | None = None
         block_delimiter: str | None = None
         block_language: str | None = None
-        in_comment_block = False
+        comment_data: list[str] | None = None
+        # Content block delimiters still waiting for their closer, innermost
+        # last. The lines between a pair run through this loop like any other,
+        # so a comment inside such a block is a comment and not body text.
+        open_content_blocks: list[str] = []
 
         i = 0
         n = len(lines)
@@ -445,7 +487,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             stripped = line.strip()
 
             if block_data is not None:
-                # Inside a delimited block: only the matching closer ends it.
+                # Inside a verbatim block: only the matching closer ends it,
+                # and a "//" line here is content rather than a comment.
                 if stripped == block_delimiter:
                     yield _LiteralBlock(
                         text="\n".join(block_data), language=block_language
@@ -458,6 +501,36 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
+            # A comment block hides every construct, so it is checked ahead of
+            # the block openers: a "----" between //// delimiters is comment
+            # text, not the start of a listing.
+            if comment_data is not None:
+                if stripped == _COMMENT_BLOCK_DELIMITER:
+                    comment = cls._make_comment(comment_data)
+                    if comment is not None:
+                        yield comment
+                    comment_data = None
+                else:
+                    comment_data.append(line.rstrip("\r\n"))
+                i += 1
+                continue
+
+            if stripped == _COMMENT_BLOCK_DELIMITER:
+                comment_data = []
+                i += 1
+                continue
+
+            if cls._is_line_comment(line):
+                # Consecutive // lines read as one comment, so take the run.
+                comment_lines = []
+                while i < n and cls._is_line_comment(lines[i]):
+                    comment_lines.append(lines[i].rstrip("\r\n")[2:].strip())
+                    i += 1
+                comment = cls._make_comment(comment_lines)
+                if comment is not None:
+                    yield comment
+                continue
+
             if stripped in {"....", "----"}:
                 # "...." is a literal block; "----" a listing block. A
                 # "[source,lang]" attribute consumed just before a "----"
@@ -468,37 +541,23 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
-            if in_comment_block:
-                if stripped == _COMMENT_BLOCK_DELIMITER:
-                    in_comment_block = False
-                i += 1
-                continue
-
-            if stripped == _COMMENT_BLOCK_DELIMITER:
-                in_comment_block = True
-                i += 1
-                continue
-
-            if _LINE_COMMENT_RE.match(line):
+            if open_content_blocks and stripped == open_content_blocks[-1]:
+                # Closer of the innermost content block. Yield a trailing blank
+                # so the following text starts a fresh paragraph.
+                open_content_blocks.pop()
+                yield ""
                 i += 1
                 continue
 
             if stripped in cls._CONTENT_BLOCK_DELIMITERS:
                 if cls._has_matching_closer(lines, i, stripped):
-                    # Consume both delimiters; yield inner lines and a trailing
-                    # blank so the following text starts a fresh paragraph.
-                    i += 1
-                    while i < n and lines[i].strip() != stripped:
-                        yield lines[i]
-                        i += 1
-                    i += 1
-                    yield ""
+                    open_content_blocks.append(stripped)
                 else:
                     # Stray delimiter (no closer): break the paragraph, do not
                     # render as text. The line must be consumed either way;
                     # leaving `i` on it loops over the same line forever.
                     yield ""
-                    i += 1
+                i += 1
                 continue
 
             source_attr = cls._SOURCE_ATTR_RE.match(stripped)
@@ -514,6 +573,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         if block_data is not None:
             yield _LiteralBlock(text="\n".join(block_data), language=block_language)
+        if comment_data is not None:
+            # An unclosed //// comments out the rest of the document, which is
+            # how Asciidoctor reads it.
+            comment = cls._make_comment(comment_data)
+            if comment is not None:
+                yield comment
 
     def _add_picture_item(
         self,
@@ -550,6 +615,31 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             parent=last_list_item if in_list else self._get_current_parent(parents),
         )
         return caption_data, in_list, last_list_item
+
+    def _add_comment_block(
+        self,
+        *,
+        doc: DoclingDocument,
+        block: _CommentBlock,
+        in_list: bool,
+        last_list_item: ListItem | None,
+        parents: dict[int, GroupItem | None],
+    ) -> None:
+        """Add a comment to the notes content layer.
+
+        A comment is markup, not content: it neither ends the list nor the
+        paragraph it sits in, so no accumulator is flushed here. A comment
+        between two lines of one paragraph therefore lands just before that
+        paragraph, since flushing it would split the body text in two.
+        """
+        if not self.options.capture_comments:
+            return
+        doc.add_text(
+            text=block.text,
+            label=DocItemLabel.TEXT,
+            content_layer=ContentLayer.NOTES,
+            parent=(last_list_item if in_list else self._get_current_parent(parents)),
+        )
 
     def _add_literal_block(
         self,
