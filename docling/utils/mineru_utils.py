@@ -27,6 +27,7 @@ from PIL import Image as PILImage
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from docling.utils.otsl import parse_otsl_output
+from docling.utils.vlm_utils import link_adjacent_captions
 
 _log = logging.getLogger(__name__)
 
@@ -112,6 +113,12 @@ _TEXT_LABELS = {
     "text": DocItemLabel.TEXT,
 }
 _CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+_CAPTION_OWNER_LABELS = {
+    "table_caption": {DocItemLabel.TABLE},
+    "image_caption": {DocItemLabel.PICTURE},
+    "code_caption": {DocItemLabel.CODE},
+    "caption": {DocItemLabel.TABLE, DocItemLabel.PICTURE, DocItemLabel.CODE},
+}
 
 
 @dataclass
@@ -362,7 +369,12 @@ def parse_mineru2(
 
     current_list_group = None
     previous_text_item: TextItem | None = None
-    for region in regions:
+    block_starts: list[int] = []
+    caption_owners: dict[int, set[DocItemLabel]] = {}
+    for index, region in enumerate(regions):
+        block_starts.append(len(document.body.children))
+        if region.type in _CAPTION_OWNER_LABELS:
+            caption_owners[index] = _CAPTION_OWNER_LABELS[region.type]
         provenance = _provenance(region, original_page_size, page_no)
         text = (region.content or "").strip()
         if text == "[Non-Text]" and region.type not in {"footer", "header"}:
@@ -428,4 +440,5 @@ def parse_mineru2(
             )
             if region.type == "text":
                 previous_text_item = text_item
+    link_adjacent_captions(document, block_starts, caption_owners)
     return document

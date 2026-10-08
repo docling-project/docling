@@ -56,6 +56,15 @@ def test_parse_empty_cell():
     assert empty[0].text == ""
 
 
+def test_parse_literal_less_than_in_cell_text():
+    text = "<fcel>卖出<fcel><-10%<nl><fcel>A < B<fcel>kept<nl>"
+
+    _, cells, num_rows, num_cols = parse_otsl_output(text)
+
+    assert (num_rows, num_cols) == (2, 2)
+    assert [cell.text for cell in cells] == ["卖出", "<-10%", "A < B", "kept"]
+
+
 def test_parse_colspan():
     """lcel produces colspan=2 on the preceding fcel."""
     text = "<fcel>Merged</fcel><lcel><nl><fcel>A</fcel><fcel>B</fcel><nl>"

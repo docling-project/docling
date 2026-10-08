@@ -93,7 +93,114 @@ def test_latex_description_list():
     doc = backend.convert()
 
     list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
-    assert len(list_items) >= 2
+    assert len(list_items) == 2
+    assert list_items[0].text == "Term1: Definition one"
+    assert list_items[1].text == "Term2: Definition two"
+
+
+def test_latex_description_list_edge_cases():
+    """Test description list with formatted terms, special symbols, and spacing"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\begin{description}
+    \\item[\\textbf{Term}] Bold term definition
+    \\item[--] Dash bullet
+    \\item Plain item
+    \\item[] Empty term definition
+    \\item[Spaced]   Multiple spaces after term
+    \\end{description}
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert [item.text for item in list_items] == [
+        "Term: Bold term definition",
+        "Dash bullet",
+        "Plain item",
+        "Empty term definition",
+        "Spaced: Multiple spaces after term",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("env_name", "items", "expected"),
+    [
+        ("compactitem", "\\item Alpha\n\\item Beta\n", ["Alpha", "Beta"]),
+        (
+            "compactdesc",
+            "\\item[One] Alpha\n\\item[Two] Beta\n",
+            ["One: Alpha", "Two: Beta"],
+        ),
+    ],
+)
+def test_latex_items_outside_list_environments(env_name, items, expected):
+    """Each item starts a new text item, also outside itemize/enumerate/description.
+
+    These environments reach the inline text path as one node list, so the
+    text buffer must be flushed at every item, not only at the end.
+    """
+    latex_content = (
+        "\\documentclass{article}\n"
+        "\\begin{document}\n"
+        f"\\begin{{{env_name}}}\n"
+        f"{items}"
+        f"\\end{{{env_name}}}\n"
+        "\\end{document}\n"
+    ).encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts] == expected
+
+
+def test_latex_item_term_without_text():
+    """An item term that converts to empty text is dropped, not exported as LaTeX"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\begin{itemize}
+    \\item[\\textbullet] Bullet macro
+    \\item[\\quad] Quad marker
+    \\item[\\hspace{1em}] Spaced marker
+    \\end{itemize}
+    \\begin{tabular}{l}
+    \\begin{itemize}\\item[\\textbullet] Cell item\\end{itemize}
+    \\end{tabular}
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert [item.text for item in list_items] == [
+        "Bullet macro",
+        "Quad marker",
+        "Spaced marker",
+    ]
+    assert len(doc.tables) == 1
+    cells = [c.text.strip() for c in doc.tables[0].data.table_cells]
+    assert cells == ["Cell item"]
 
 
 def test_latex_list_nested():

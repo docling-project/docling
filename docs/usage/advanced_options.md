@@ -95,6 +95,11 @@ _Note: This option is only related to the system sending user data to remote ser
 The options in this list require the explicit `enable_remote_services=True` when processing the documents.
 
 - `PictureDescriptionApiOptions`: Using vision models via API calls.
+- `KserveV2OcrOptions`: OCR on a KServe v2 inference server (e.g. Triton).
+- `ApiKserveV2ObjectDetectionEngineOptions`: Object-detection layout models served by a KServe v2 inference server, set as the layout `engine_options`.
+- `ApiKserveV2ImageClassificationEngineOptions`: Picture classification served by a KServe v2 inference server, set as the classifier `engine_options`.
+- `ApiVlmEngineOptions`: VLM stages (VLM conversion, code/formula enrichment, picture description) calling an OpenAI-compatible API, set as the stage `engine_options`.
+- `ApiVlmOptions`: VLM pipeline models calling an OpenAI-compatible API.
 
 
 ## Adjust pipeline features
@@ -144,6 +149,44 @@ doc_converter = DocumentConverter(
         InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
     }
 )
+```
+
+
+### Use visible PDF rules for reading order
+
+For PDFs whose columns or horizontal bands are separated by visible rules, the
+rule-based reading-order stage can use those rules as additional structural
+signals. This is enabled by default. Disable it when needed:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(use_reading_order_separators=False)
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+The option uses visible vector geometry exposed by the PDF backend. Separator
+geometry affects ordering only and is not added to the resulting document.
+
+The same option is available from the CLI. Use `--no-reading-order-separators`
+to disable it. `--output-file` selects an exact destination when converting one
+input to one output format:
+
+```bash
+uv run docling convert --from pdf --to dclx \
+  --output-file ./Elsevier-with-separators.dclx \
+  ./Elsevier.pdf
+
+uv run docling convert --from pdf --to dclx \
+  --no-reading-order-separators \
+  --output-file ./Elsevier-without-separators.dclx \
+  ./Elsevier.pdf
 ```
 
 
@@ -206,15 +249,17 @@ See [PDF heading levels](./heading_levels.md) for the signals, their precedence 
 
 ### Apple iWork options
 
-Pages (`.pages`) and Keynote (`.key`) share their options, since they share
-their container.
+Pages (`.pages`), Numbers (`.numbers`) and Keynote (`.key`) share their
+options, since they share their container.
 
 In a Pages document, headers, footers and footnotes go into the `furniture`
 content layer and comments into `notes`. In a Keynote presentation, each slide
 becomes a chapter group holding what is on it, and the presenter notes and
-comments of that slide go into `notes` under it. Either way those layers stay
-out of the reading order by default; to include them in an export, pass the
-extra layers explicitly (this applies to any `DoclingDocument`, not just these):
+comments of that slide go into `notes` under it. In a Numbers spreadsheet, each
+sheet becomes a page and a sheet group, and the sticky notes on it go into
+`notes`. Either way those layers stay out of the reading order by default; to
+include them in an export, pass the extra layers explicitly (this applies to any
+`DoclingDocument`, not just these):
 
 ```python
 from docling_core.types.doc import ContentLayer
@@ -237,12 +282,18 @@ deck = converter.convert("deck.key").document
 print(deck.export_to_markdown(
     included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
 ))
+
+# Numbers: the sticky notes on each sheet are notes.
+budget = converter.convert("budget.numbers").document
+print(budget.export_to_markdown(
+    included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
+))
 ```
 
-A chart on a Keynote slide becomes a picture classified by its kind, with the
-data it plots in the picture's `meta.tabular_chart` and its title as the
-caption, which is the shape the PowerPoint backend gives a chart. Keynote keeps
-no picture of a chart, so the picture itself is empty unless you opt into
+A chart on a Keynote slide or a Numbers sheet becomes a picture classified by
+its kind, with the data it plots in the picture's `meta.tabular_chart` and its
+title as the caption, which is the shape the PowerPoint backend gives a chart. Neither app keeps
+a picture of a chart, so the picture itself is empty unless you opt into
 `render_chart_images`. That rebuilds each chart from its data as an Office chart
 and draws it with LibreOffice, so it needs a LibreOffice installation. The image
 has the chart's kind, data and title but not its colours or fonts, and a mixed,
@@ -266,11 +317,30 @@ for picture in deck.pictures:
         print(picture.caption_text(deck), picture.meta.tabular_chart.chart_data)
 ```
 
-Charts are read from Keynote 6 and later; a chart in an iWork '09 presentation
-is not read.
+The same option draws the charts of a Numbers spreadsheet, passed through
+`IWorkNumbersFormatOption` instead. Charts are read from Keynote 6 and later, and
+from Numbers documents of either generation; a chart in an iWork '09
+presentation is not read.
+
+`sheet_names` converts only the sheets it names, and `page_range` narrows the
+selection further, since each sheet is a page:
+
+```python
+from docling.datamodel.backend_options import IWorkBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, IWorkNumbersFormatOption
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(
+            backend_options=IWorkBackendOptions(sheet_names=["Summary", "Q1"])
+        )
+    }
+)
+```
 
 The container is untrusted input, so size limits apply. They can be tuned with
-`IWorkBackendOptions`, which both formats take:
+`IWorkBackendOptions`, which all three formats take:
 
 ```python
 from docling.datamodel.backend_options import IWorkBackendOptions
@@ -278,6 +348,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.document_converter import (
     DocumentConverter,
     IWorkKeynoteFormatOption,
+    IWorkNumbersFormatOption,
     IWorkPagesFormatOption,
 )
 
@@ -285,10 +356,90 @@ limits = IWorkBackendOptions(max_total_bytes=50 * 1024 * 1024)
 doc_converter = DocumentConverter(
     format_options={
         InputFormat.IWORK_PAGES: IWorkPagesFormatOption(backend_options=limits),
+        InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(backend_options=limits),
         InputFormat.IWORK_KEYNOTE: IWorkKeynoteFormatOption(backend_options=limits),
     }
 )
 ```
+
+### Docling JSON input
+
+A `DoclingDocument` JSON file can be converted again, e.g. to re-export it to
+another format. Image references in that JSON which point at local files (bare
+paths, relative paths or `file:` URIs, for pictures, tables and page images
+alike) are ignored by default and a warning is logged: the images are dropped
+from the loaded document, together with their size and resolution. Embedded
+`data:` images and `http(s)` URLs are kept.
+
+This also applies to a document saved with `ImageRefMode.REFERENCED`, whose
+images are separate files. To load those images again from a JSON file you
+trust, enable local fetching on the backend options:
+
+```python
+from docling.datamodel.backend_options import DeclarativeBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, DoclingJSONFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.JSON_DOCLING: DoclingJSONFormatOption(
+            backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+        )
+    }
+)
+doc = converter.convert("saved_document.json").document
+```
+
+Relative image paths are resolved against the current working directory. The
+`docling` CLI has no option for this and always ignores local image references
+in JSON input; save the document with `ImageRefMode.EMBEDDED` if it has to go
+through the CLI again with its images.
+
+### Fetch HTML images from remote hosts
+
+The HTML backend only downloads images referenced by a page when you opt in with
+`fetch_images=True` and `enable_remote_fetch=True` (the CLI equivalent is
+`--html-image-fetch remote`). Downloads connect only to public, globally
+routable addresses: every address of a host is checked, every redirect is
+checked again before it is followed (up to `max_redirects`), and downloads stop
+at `max_remote_image_bytes`. When `render_page=True`, the browser requests
+remote resources through the same download path, and navigating the page away
+from the source document is refused.
+
+`headers` adds HTTP headers, such as credentials, to these downloads. They are
+sent only to the origin of the source document and dropped on redirects to
+other origins. To send them to other hosts, such as a CDN, list the allowed
+origins in `headers_allowed_origins` (this replaces the default, so include the
+source origin too if it needs the headers). For a local file or a stream
+without a remote `source_uri`, headers are only sent when
+`headers_allowed_origins` is set.
+
+```python
+from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, HTMLFormatOption
+
+html_options = HTMLBackendOptions(
+    fetch_images=True,
+    enable_remote_fetch=True,
+    headers={"Authorization": "Bearer TOKEN"},
+    headers_allowed_origins=["https://example.com", "https://cdn.example.com"],
+)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.HTML: HTMLFormatOption(backend_options=html_options)
+    }
+)
+result = converter.convert("https://example.com/page.html")
+```
+
+On the CLI, pass `--html-image-headers` with a JSON object and repeat
+`--html-image-headers-origin` for each allowed origin.
+
+When a proxy is configured through the `HTTP_PROXY` / `HTTPS_PROXY`
+environment variables, downloads go through the proxy and Docling does not check
+the destination addresses; the proxy is then responsible for restricting which
+destinations it connects to.
 
 ## Impose limits on the document size
 

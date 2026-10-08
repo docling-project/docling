@@ -134,6 +134,32 @@ More examples on how to connect with the remote inference services can be found 
 
 - [vlm_pipeline_api_model.py](./../examples/vlm_pipeline_api_model.py)
 
+## Native dots inline formatting
+
+Native dots.ocr and dots.mocr JSON text can contain Markdown bold and italic
+markers. Docling maps this emphasis and inline HTML to styled text spans. Mixed
+text uses inline groups. Titles, heading levels, list items, and text block labels
+are preserved. Formula blocks, inline math, and code keep their literal content.
+
+Markdown emphasis uses the existing `marko` dependency. For slim installations,
+install it with `pip install 'docling-slim[format-markdown]'`.
+
+## Native MinerU and dots captions
+
+MinerU and dots caption blocks are linked when exactly one immediately adjacent
+native block maps to a compatible table or picture. MinerU's
+`table_caption`, `image_caption`, and `code_caption` labels constrain the owner
+type; generic captions from either model consider all three types. Both preceding
+and following blocks are considered, without geometry or text-based guesses.
+Skipped blocks remain barriers. Captions with no compatible neighbor or two
+compatible neighbors remain standalone text in DocLang. Caption text and its
+own provenance are preserved.
+
+Code captions and captions containing formatted child runs remain standalone:
+the minimum supported Docling Core version cannot faithfully serialize those
+associations in DocLang. A container's existing caption takes precedence;
+additional captions remain standalone because its DocLang head holds one caption.
+
 ## Chandra HTML output
 
 Use `ResponseFormat.CHANDRA_HTML` with `CHANDRA_OCR_LAYOUT_PROMPT` for Chandra's

@@ -15,7 +15,7 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=5120]
   - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.5.5
+    rev: v1.5.6
     hooks:
       - id: insert-license
         name: "Insert license header"
@@ -25,7 +25,7 @@ repos:
           - --detect-license-in-X-top-lines=5
         files: '^(docling|tests|scripts|\.github/scripts|perfs)/.*\.py$'
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.12
+    rev: v0.16.10
     hooks:
       - id: ruff
         name: "Ruff linter"
@@ -37,6 +37,12 @@ repos:
         files: '^(docling|tests|docs/examples|perfs).*\.(py|ipynb)$'
   - repo: local
     hooks:
+      - id: skill-routes
+        name: Skill routing and link integrity
+        entry: python3 .github/scripts/check_skill_routes.py
+        pass_filenames: false
+        language: system
+        files: '^(AGENTS\.md|\.agents/skills/|\.(codex|claude)/skills/|\.github/scripts/check_skill_routes\.py|tests/test_check_skill_routes\.py)'
       - id: ty
         name: ty
         entry: uv run --no-sync ty check
@@ -68,6 +74,6 @@ repos:
         language: system
         files: '^(\.github/dprint\.json|tach\.toml)$'
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.3
+    rev: 0.12.23
     hooks:
       - id: uv-lock

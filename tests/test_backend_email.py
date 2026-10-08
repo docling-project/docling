@@ -130,6 +130,39 @@ This is a second paragraph.
     assert [item.label for item in text_items[1:]] == [DocItemLabel.TEXT] * 5
 
 
+def test_email_backend_keeps_cc_recipients():
+    """Cc recipients are part of who the message was addressed to."""
+    raw_email = b"""From: Alice Example <alice@example.com>
+To: Bob Example <bob@example.com>
+Cc: Carol Example <carol@example.com>, dave@example.com
+Subject: Copied Email
+Date: Tue, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Hello all.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="copied.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    doc = backend.convert()
+    text_items = [item for item in doc.texts if isinstance(item, TextItem)]
+
+    assert [item.text for item in text_items] == [
+        "Copied Email",
+        "From: Alice Example <alice@example.com>",
+        "To: Bob Example <bob@example.com>",
+        "Cc: Carol Example <carol@example.com>, dave@example.com",
+        "Date: 2026-05-20T10:30:00+00:00",
+        "Hello all.",
+    ]
+
+
 def test_email_backend_quotes_display_names_holding_specials():
     """A name holding specials is quoted so the list parses back as itself."""
     raw_email = b"""From: "Doe, John" <john@example.com>

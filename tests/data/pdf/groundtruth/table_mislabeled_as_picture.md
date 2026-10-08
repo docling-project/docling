@@ -4,7 +4,7 @@
 |   They supervise, coach or mentor private practitioners who take legal aid cases |
 |   They conduct or organize training sessions for staff lawyers/paralegals |
 |   They conduct or organize training sessions for all providers of legal aid, including both staff and private lawyers/paralegals |
-|   Other (Please specify) ______________________________________________________ |
+|   Other (Please specify)______________________________________________________ |
 |   Not applicable, there is no institutional legal aid provider |
 
 23. If your country has an institutional legal aid provider (e.g. public defender), what is the maximum caseload per lawyer at one time?
@@ -21,26 +21,20 @@
 
 
 
-
-
-No
+ No
 
 25. If your country has an institutional legal aid provider (e.g. public defender), does it have specialized providers and/or units for representing child victims, child witnesses or suspected and accused children?
 2.   Yes, at the national (federal) level
 
 
 
-
-
-Yes, at regional (district) level
+ Yes, at regional (district) level
 
 -   Yes, at the local (municipal) level
 
 
 
-
-
-No
+ No
 
 26. If your country allows legal aid services through university-based student law clinics, are there national guidelines on how students are supervised in providing legal aid services? (Please select all that apply)
 2.   Yes, there are specific guidelines for non-lawyers providing legal aid services
@@ -62,7 +56,7 @@ No
 |   They can conduct mediation |
 |   They are authorized to provide only those services that a faculty member or practic- ing lawyer supervises |
 |   Don't know |
-|   Other (Please specify) ______________________________________________________ |
+|   Other (Please specify)______________________________________________________ |
 
 (Please select all that apply)
 

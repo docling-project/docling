@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import re
 from datetime import datetime
+from email.header import decode_header, make_header
 from email.message import EmailMessage
 from email.utils import format_datetime, formataddr
 from io import BytesIO
@@ -119,13 +120,34 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         raise TypeError(f"Unsupported input type: {type(self.path_or_stream)}")
 
     @staticmethod
+    def _decode_rfc2047(value: str) -> str:
+        """Decode any RFC 2047 encoded-words in a header string.
+
+        Args:
+            value: Raw header string, possibly containing RFC 2047 encoded-words.
+
+        Returns:
+            Decoded string, or *value* unchanged if decoding raises.
+        """
+        try:
+            return str(make_header(decode_header(value)))
+        except Exception:
+            return value
+
+    @staticmethod
     def _header_safe(value: str) -> str:
         """Collapse a header value to a single line of single-spaced text.
 
-        ``.msg`` header assembly needs single-line values, and a decoded RFC 2047
+        `.msg` header assembly needs single-line values, and a decoded RFC 2047
         encoded-word must not stand up a forged header in the rendered document.
-        ``str.split()`` covers every character ``str.splitlines()`` breaks on, and
+        `str.split()` covers every character `str.splitlines()` breaks on, and
         collapsing runs also unfolds a folded header to one space.
+
+        Args:
+            value: Header string to sanitize.
+
+        Returns:
+            Single-line, single-spaced string.
         """
         return " ".join(value.split())
 
@@ -152,7 +174,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             email_message["From"] = EmailDocumentBackend._header_safe(message.sender)
 
         # Preserve the To/Cc/Bcc split from the recipient rows so downstream
-        # rendering (which shows only "To") matches the .eml behavior.
+        # rendering (which shows "To" and "Cc") matches the .eml behavior.
         grouped: dict[str, list[str]] = {}
         for recipient in message.recipients:
             formatted = formataddr(
@@ -231,7 +253,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         formatted = []
         for name, email in addresses:
-            name = self._header_safe(name)
+            name = self._header_safe(self._decode_rfc2047(name))
             if name:
                 formatted.append(f"{self._quote_display_name(name)} <{email}>")
             else:
@@ -340,6 +362,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         )
         from_text = self._format_addresses(self.mail.from_, fallback="")
         to_text = self._format_addresses(self.mail.to, fallback="")
+        cc_text = self._format_addresses(self.mail.cc, fallback="")
         date_text = self._get_date_text()
         body_paragraphs = self._get_body_paragraphs()
 
@@ -349,6 +372,8 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             doc.add_text(label=DocItemLabel.TEXT, text=f"From: {from_text}")
         if to_text:
             doc.add_text(label=DocItemLabel.TEXT, text=f"To: {to_text}")
+        if cc_text:
+            doc.add_text(label=DocItemLabel.TEXT, text=f"Cc: {cc_text}")
         if date_text:
             doc.add_text(label=DocItemLabel.TEXT, text=f"Date: {date_text}")
         for body_paragraph in body_paragraphs:

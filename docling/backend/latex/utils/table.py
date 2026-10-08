@@ -12,6 +12,7 @@ from docling.backend.latex.constants import (
     TABLE_MACROS_IGNORE,
     TABLE_MACROS_RULE,
 )
+from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 
 if TYPE_CHECKING:
     from typing import Any
@@ -21,6 +22,7 @@ try:  # pragma: no cover - import-time guard
         LatexCharsNode,
         LatexEnvironmentNode,
         LatexMacroNode,
+        LatexSpecialsNode,
         LatexWalker,
         LatexWalkerParseError,
     )
@@ -46,7 +48,7 @@ class TableHelperMixin:
             finish_row_fn()
 
         elif n.macroname == "multicolumn":
-            if hasattr(n, "pos") and n.pos is not None:
+            if n.pos is not None:
                 remaining = source_latex[n.pos :]
                 args = parse_brace_args_fn(remaining)
                 if len(args) >= 3:
@@ -57,7 +59,11 @@ class TableHelperMixin:
                     content_text = args[2]
                     if content_text:
                         try:
-                            w = LatexWalker(content_text, tolerant_parsing=True)
+                            w = LatexWalker(
+                                content_text,
+                                tolerant_parsing=True,
+                                latex_context=LATEX_CONTEXT_DB,
+                            )
                             parsed, _, _ = w.get_latex_nodes()
                             current_cell_nodes.extend(parsed)
                         except LatexWalkerParseError:
@@ -71,7 +77,7 @@ class TableHelperMixin:
                 current_cell_nodes.append(n)
 
         elif n.macroname == "multirow":
-            if hasattr(n, "pos") and n.pos is not None:
+            if n.pos is not None:
                 remaining = source_latex[n.pos :]
                 args = parse_brace_args_fn(remaining)
                 if len(args) >= 3:
@@ -82,7 +88,11 @@ class TableHelperMixin:
                     content_text = args[2]
                     if content_text:
                         try:
-                            w = LatexWalker(content_text, tolerant_parsing=True)
+                            w = LatexWalker(
+                                content_text,
+                                tolerant_parsing=True,
+                                latex_context=LATEX_CONTEXT_DB,
+                            )
                             parsed, _, _ = w.get_latex_nodes()
                             current_cell_nodes.extend(parsed)
                         except LatexWalkerParseError:
@@ -107,8 +117,9 @@ class TableHelperMixin:
             current_cell_nodes.append(n)
 
     def _parse_table(self, node: LatexEnvironmentNode) -> TableData | None:
-        rows = []
-        current_row = []
+        # None marks a column that a \multicolumn cell before it covers.
+        rows: list[list[tuple[TableCell, int, int] | None]] = []
+        current_row: list[tuple[TableCell, int, int] | None] = []
         current_cell_nodes: list = []
 
         source_latex = node.latex_verbatim()
@@ -141,21 +152,11 @@ class TableHelperMixin:
                 start_col_offset_idx=0,
                 end_col_offset_idx=0,
             )
-            cell._col_span = col_span  # type: ignore[attr-defined]
-            cell._row_span = row_span  # type: ignore[attr-defined]
-            current_row.append(cell)
+            current_row.append((cell, col_span, row_span))
             current_cell_nodes.clear()
 
             for _ in range(col_span - 1):
-                placeholder = TableCell(
-                    text="",
-                    start_row_offset_idx=0,
-                    end_row_offset_idx=0,
-                    start_col_offset_idx=0,
-                    end_col_offset_idx=0,
-                )
-                placeholder._is_placeholder = True  # type: ignore[attr-defined]
-                current_row.append(placeholder)
+                current_row.append(None)
 
         def finish_row():
             if current_cell_nodes:
@@ -189,7 +190,7 @@ class TableHelperMixin:
                 else:
                     current_cell_nodes.append(n)
             else:
-                if hasattr(n, "specials_chars") and n.specials_chars == "&":
+                if isinstance(n, LatexSpecialsNode) and n.specials_chars == "&":
                     finish_cell()
                 else:
                     current_cell_nodes.append(n)
@@ -206,9 +207,10 @@ class TableHelperMixin:
         for i, row in enumerate(rows):
             for j in range(num_cols):
                 if j < len(row):
-                    cell = row[j]
-                    if getattr(cell, "_is_placeholder", False):
+                    entry = row[j]
+                    if entry is None:
                         continue
+                    cell, col_span, row_span = entry
                 else:
                     cell = TableCell(
                         text="",
@@ -217,12 +219,11 @@ class TableHelperMixin:
                         start_col_offset_idx=0,
                         end_col_offset_idx=0,
                     )
+                    col_span, row_span = 1, 1
 
                 cell.start_row_offset_idx = i
                 cell.start_col_offset_idx = j
 
-                col_span = getattr(cell, "_col_span", 1)
-                row_span = getattr(cell, "_row_span", 1)
                 cell.end_row_offset_idx = i + row_span
                 cell.end_col_offset_idx = j + col_span
 

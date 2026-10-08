@@ -50,6 +50,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
+    KserveV2OcrOptions,
     LayoutPostprocessorOptions,
     ThreadedPdfPipelineOptions,
 )
@@ -589,7 +590,6 @@ class StandardPdfPipeline(ConvertPipeline):
         super().__init__(pipeline_options)
         self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
         self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
-        self._page_sizes_by_no: dict[int, Size] = {}
 
         # initialise heavy models once
         self._init_models()
@@ -610,6 +610,9 @@ class StandardPdfPipeline(ConvertPipeline):
                 images_scale=self.pipeline_options.images_scale,
                 skip_cell_extraction=resolve_skip_cell_extraction(
                     self.pipeline_options
+                ),
+                capture_reading_order_separators=(
+                    self.pipeline_options.use_reading_order_separators
                 ),
             )
         )
@@ -646,7 +649,11 @@ class StandardPdfPipeline(ConvertPipeline):
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
-        self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.reading_order_model = ReadingOrderModel(
+            options=ReadingOrderOptions(
+                use_page_separators=self.pipeline_options.use_reading_order_separators
+            )
+        )
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
         )
@@ -689,11 +696,19 @@ class StandardPdfPipeline(ConvertPipeline):
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
+        # Only engines that call a remote service take this flag; other OCR
+        # engines, including external plugins, keep the base constructor.
+        extra: dict[str, bool] = {}
+        if isinstance(self.pipeline_options.ocr_options, KserveV2OcrOptions):
+            extra["enable_remote_services"] = (
+                self.pipeline_options.enable_remote_services
+            )
         return factory.create_instance(
             options=self.pipeline_options.ocr_options,
             enabled=self.pipeline_options.do_ocr,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            **extra,
         )
 
     def _release_page_resources(self, item: ThreadedItem) -> None:
@@ -799,7 +814,6 @@ class StandardPdfPipeline(ConvertPipeline):
         The thread continues running until the blocking call completes, potentially holding
         resources (e.g., pypdfium2_lock).
         """
-        self._page_sizes_by_no = {}
         run_id = next(self._run_seq)
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
         backend = conv_res.input._backend
@@ -848,7 +862,7 @@ class StandardPdfPipeline(ConvertPipeline):
                     page._backend = page_backend
                     try:
                         page.size = page_backend.get_size()
-                        self._page_sizes_by_no[page.page_no] = page.size
+                        conv_res._page_sizes_by_no[page.page_no] = page.size
                     except Exception:
                         if page_backend.is_valid():
                             page_backend.unload()
@@ -1153,7 +1167,7 @@ class StandardPdfPipeline(ConvertPipeline):
             return
 
         for page_no in sorted(missing_page_nos):
-            size = self._page_sizes_by_no.get(page_no, Size(width=0.0, height=0.0))
+            size = conv_res._page_sizes_by_no.get(page_no, Size(width=0.0, height=0.0))
 
             # Add the failed page to the document's pages dict
             conv_res.document.pages[page_no] = PageItem(
@@ -1181,7 +1195,6 @@ class StandardPdfPipeline(ConvertPipeline):
         return conv_res.status
 
     def _unload(self, conv_res: ConversionResult) -> None:
-        self._page_sizes_by_no = {}
         for p in conv_res.pages:
             if p._backend is not None:
                 p._backend.unload()

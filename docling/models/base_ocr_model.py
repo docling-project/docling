@@ -20,7 +20,6 @@ from docling_core.types.doc.page import (
     TextCell,
 )
 from PIL import Image, ImageDraw
-from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -37,6 +36,17 @@ from docling.utils.ocr_language import (
 )
 
 _log = logging.getLogger(__name__)
+
+_SCIPY_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from scipy.ndimage import binary_dilation, find_objects, label
+except ImportError as e:  # pragma: no cover - import-time guard
+    _SCIPY_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'scipy' package is required for OCR bitmap-area detection. "
+    "Install it with `pip install 'docling-slim[convert-core]'`."
+)
 
 
 def _empty_segmented_page(page: Page) -> SegmentedPdfPage:
@@ -373,6 +383,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             draw.rectangle([(x0, y0), (x1, y1)], fill=1)
 
         np_image = np.array(image)
+
+        if _SCIPY_IMPORT_ERROR is not None:
+            raise ImportError(_INSTALL_HINT) from _SCIPY_IMPORT_ERROR
 
         if dilation_size > 0:
             # Grow the rects by dilation_size / 2 pixels in all directions.

@@ -4,7 +4,7 @@
   "name": "unit_test_formatting",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 4350524979083842953,
+    "binary_hash": 6219626331935447569,
     "filename": "unit_test_formatting.docx"
   },
   "furniture": {
@@ -57,13 +57,28 @@
         "$ref": "#/groups/5"
       },
       {
+        "$ref": "#/texts/32"
+      },
+      {
+        "$ref": "#/texts/33"
+      },
+      {
+        "$ref": "#/texts/34"
+      },
+      {
+        "$ref": "#/texts/35"
+      },
+      {
         "$ref": "#/groups/6"
       },
       {
         "$ref": "#/groups/7"
       },
       {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/8"
+      },
+      {
+        "$ref": "#/groups/10"
       }
     ],
     "content_layer": "body",
@@ -194,11 +209,17 @@
       "children": [
         {
           "$ref": "#/texts/29"
+        },
+        {
+          "$ref": "#/texts/30"
+        },
+        {
+          "$ref": "#/texts/31"
         }
       ],
-      "content_layer": "furniture",
-      "name": "page header",
-      "label": "section"
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
     },
     {
       "self_ref": "#/groups/6",
@@ -207,11 +228,11 @@
       },
       "children": [
         {
-          "$ref": "#/texts/30"
+          "$ref": "#/texts/36"
         }
       ],
       "content_layer": "furniture",
-      "name": "page footer",
+      "name": "page header",
       "label": "section"
     },
     {
@@ -221,10 +242,24 @@
       },
       "children": [
         {
-          "$ref": "#/groups/8"
+          "$ref": "#/texts/37"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "page footer",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/9"
         },
         {
-          "$ref": "#/texts/34"
+          "$ref": "#/texts/41"
         }
       ],
       "content_layer": "furniture",
@@ -232,19 +267,19 @@
       "label": "section"
     },
     {
-      "self_ref": "#/groups/8",
+      "self_ref": "#/groups/9",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
       },
       "children": [
         {
-          "$ref": "#/texts/31"
+          "$ref": "#/texts/38"
         },
         {
-          "$ref": "#/texts/32"
+          "$ref": "#/texts/39"
         },
         {
-          "$ref": "#/texts/33"
+          "$ref": "#/texts/40"
         }
       ],
       "content_layer": "furniture",
@@ -252,22 +287,22 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/9",
+      "self_ref": "#/groups/10",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/35"
+          "$ref": "#/texts/42"
         },
         {
-          "$ref": "#/texts/36"
+          "$ref": "#/texts/43"
         },
         {
           "$ref": "#/pictures/0"
         },
         {
-          "$ref": "#/texts/37"
+          "$ref": "#/texts/44"
         }
       ],
       "content_layer": "furniture",
@@ -772,15 +807,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The second page of the document with same header and footer",
-      "text": "The second page of the document with same header and footer",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/27",
@@ -803,6 +831,125 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
+      "orig": "Indexation",
+      "text": "Indexation",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This text carries a",
+      "text": "This text carries a",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "complex-script bold",
+      "text": "complex-script bold",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "property in OOXML but it should not be bold.",
+      "text": "property in OOXML but it should not be bold.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The second page of the document with same header and footer",
+      "text": "The second page of the document with same header and footer",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/35",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
       "orig": "The third page of the document with different header and footer",
       "text": "The third page of the document with different header and footer",
       "formatting": {
@@ -814,9 +961,9 @@
       }
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/36",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "furniture",
@@ -833,9 +980,9 @@
       }
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/37",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "furniture",
@@ -852,9 +999,9 @@
       }
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/38",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "furniture",
@@ -871,9 +1018,9 @@
       }
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/39",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "furniture",
@@ -890,9 +1037,9 @@
       }
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/40",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "furniture",
@@ -909,9 +1056,9 @@
       }
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/41",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "furniture",
@@ -928,9 +1075,9 @@
       }
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/42",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "furniture",
@@ -947,9 +1094,9 @@
       }
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/43",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "furniture",
@@ -966,9 +1113,9 @@
       }
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "furniture",
@@ -989,7 +1136,7 @@
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "furniture",

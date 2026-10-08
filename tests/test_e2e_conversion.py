@@ -18,7 +18,10 @@ from .verify_utils import check_conversion_result_v2
 GENERATE_V2 = GEN_TEST_DATA
 pytestmark = pytest.mark.ml_pdf_model
 
-SKIP_DOCTAGS_COMPARISON = ["2203.01017v2.pdf"]
+SKIP_DOCTAGS_COMPARISON = [
+    "2203.01017v2.pdf",
+    "table_mislabeled_as_picture.pdf",
+]
 
 # PDFs that are tested separately in test_failed_pages.py (intentionally failing pages)
 SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf"]

@@ -20,6 +20,7 @@ from docling_core.types.doc.document import (
 )
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
+from docling.backend.latex.utils.text import iter_child_nodelists
 
 if TYPE_CHECKING:
     from concurrent.futures import Future, ThreadPoolExecutor
@@ -68,18 +69,10 @@ class EnvironmentHandlerMixin:
         for node in nodes:
             if isinstance(node, LatexEnvironmentNode) and node.envname == "document":
                 return node
-            if hasattr(node, "nodelist") and node.nodelist:
-                result = self._find_document_env(node.nodelist, depth + 1)
+            for child_nodes in iter_child_nodelists(node):
+                result = self._find_document_env(child_nodes, depth + 1)
                 if result:
                     return result
-            if hasattr(node, "nodeargd") and node.nodeargd:
-                argnlist = getattr(node.nodeargd, "argnlist", None)
-                if argnlist:
-                    for arg in argnlist:
-                        if hasattr(arg, "nodelist") and arg.nodelist:
-                            result = self._find_document_env(arg.nodelist, depth + 1)
-                            if result:
-                                return result
         return None
 
     def _process_environment(
@@ -138,7 +131,7 @@ class EnvironmentHandlerMixin:
         elif node.envname in ENV_LIST:
             self._process_list(node, doc, parent, formatting, text_label)
 
-        elif node.envname == "tabular":
+        elif node.envname in {"tabular", "tabular*", "tabularx", "longtable"}:
             table_data = self._parse_table(node)
             if table_data:
                 doc.add_table(parent=parent, data=table_data)
@@ -269,19 +262,9 @@ class EnvironmentHandlerMixin:
                 if _TIKZ_END_PATTERN.search(nested_raw) is None:
                     return False
 
-            if hasattr(node, "nodelist") and node.nodelist is not None:
-                if not self._validate_tikz_nodelist(node.nodelist, depth + 1):
+            for child_nodes in iter_child_nodelists(node):
+                if not self._validate_tikz_nodelist(child_nodes, depth + 1):
                     return False
-
-            if hasattr(node, "nodeargd") and node.nodeargd:
-                argnlist = getattr(node.nodeargd, "argnlist", None)
-                if argnlist:
-                    for arg in argnlist:
-                        if hasattr(arg, "nodelist") and arg.nodelist is not None:
-                            if not self._validate_tikz_nodelist(
-                                arg.nodelist, depth + 1
-                            ):
-                                return False
 
         return True
 

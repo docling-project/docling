@@ -10,68 +10,246 @@ base64 and remote download size caps.
 """
 
 import base64
+import contextlib
 import ipaddress
 import logging
 import os
 import re
 import socket
 import warnings
+from collections.abc import Iterable, Iterator
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
-from urllib.parse import urljoin, urlparse
+from typing import Optional, Union
+from urllib.parse import urljoin, urlparse, urlsplit
 
+import certifi
 import requests
+import urllib3
 from docling_core.types.doc.document import ImageRef
 from PIL import Image, UnidentifiedImageError
 from pydantic import ValidationError
+from requests.utils import get_environ_proxies, select_proxy
 
 from docling.exceptions import OperationNotAllowed
 
 _log = logging.getLogger(__name__)
 
 
-def validate_url_safety(url: str) -> None:
-    """Reject URLs that resolve to a non-public IP address.
+_IPAddress = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 
-    Guards against SSRF by requiring the URL's host to resolve to a globally
-    routable address. Private, loopback, link-local, reserved, multicast, and
-    unspecified addresses are refused.
+# NAT64 well-known prefix (RFC 6052): 64:ff9b::/96 embeds an IPv4 address in its
+# low 32 bits.
+_NAT64_PREFIX = ipaddress.ip_network("64:ff9b::/96")
+# Ranges refused explicitly, independently of the ``ipaddress`` tables shipped
+# with the running Python version. 64:ff9b:1::/48 is the local-use NAT64 prefix
+# (RFC 8215), which translates to addresses of the local network.
+_DENIED_NETWORKS = (ipaddress.ip_network("64:ff9b:1::/48"),)
+
+
+def _ip_is_restricted(ip: _IPAddress) -> bool:
+    """Return True if ``ip`` is not a globally routable, public address."""
+    return (
+        not ip.is_global
+        or ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+        or any(ip in network for network in _DENIED_NETWORKS)
+    )
+
+
+def _embedded_ipv4(ip: _IPAddress) -> Optional[ipaddress.IPv4Address]:
+    """Extract an IPv4 address embedded in an IPv6 address, if any.
+
+    Covers IPv4-mapped (``::ffff:a.b.c.d``), 6to4 (``2002::/16``) and NAT64
+    (``64:ff9b::/96``) forms.
+    """
+    if not isinstance(ip, ipaddress.IPv6Address):
+        return None
+    if ip.ipv4_mapped is not None:
+        return ip.ipv4_mapped
+    if ip.sixtofour is not None:
+        return ip.sixtofour
+    if ip in _NAT64_PREFIX:
+        return ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF)
+    return None
+
+
+def _validate_ip(ip: _IPAddress) -> None:
+    """Reject an address that is (or embeds) a non-public IP.
+
+    Raises:
+        ValueError: If ``ip`` -- or an IPv4 address embedded within it -- is a
+            private, loopback, link-local, reserved, multicast or unspecified
+            address, or is otherwise not globally routable.
+    """
+    embedded = _embedded_ipv4(ip)
+    if _ip_is_restricted(ip) or (embedded is not None and _ip_is_restricted(embedded)):
+        raise ValueError(f"Access to restricted IP address not allowed: {ip}")
+
+
+def resolve_public_addresses(host: str) -> list[_IPAddress]:
+    """Resolve ``host`` and return its addresses if all of them are public.
+
+    ``host`` may be an IP literal (IPv6 with or without brackets) or a hostname,
+    which is resolved to every IPv4 and IPv6 address it maps to. All addresses
+    are validated, since a connection may use any of them.
+
+    Raises:
+        ValueError: If the host cannot be resolved, or any of its addresses is
+            not a public, globally routable IP.
+    """
+    host = host.strip("[]")
+    try:
+        ips: list[_IPAddress] = [ipaddress.ip_address(host)]
+    except ValueError:
+        try:
+            infos = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        except (socket.gaierror, socket.herror, UnicodeError) as e:
+            raise ValueError(f"Cannot resolve hostname: {host}") from e
+        ips = []
+        for info in infos:
+            with contextlib.suppress(ValueError):
+                ip = ipaddress.ip_address(info[4][0])
+                if ip not in ips:
+                    ips.append(ip)
+        if not ips:
+            raise ValueError(f"Cannot resolve hostname: {host}")
+
+    for ip in ips:
+        _validate_ip(ip)
+    return ips
+
+
+def validate_url_safety(url: str) -> None:
+    """Reject URLs whose host is not reachable on public addresses only.
+
+    Every address the URL's host resolves to (IPv4 and IPv6) must be globally
+    routable. Private, loopback, link-local, reserved, multicast, and unspecified
+    addresses are refused, as are IPv4 addresses embedded in IPv6 addresses
+    (IPv4-mapped, 6to4 and NAT64 forms) and the local-use NAT64 prefix.
 
     Args:
         url: The URL whose host is validated.
 
     Raises:
         ValueError: If the URL has no hostname, the hostname cannot be
-            resolved, or it resolves to a restricted (non-global) IP address.
+            resolved, or any resolved address is a restricted (non-global) IP.
     """
-    parsed = urlparse(url)
-    hostname = parsed.hostname
-
+    hostname = urlparse(url).hostname
     if not hostname:
         raise ValueError("URL must contain a valid hostname")
+    resolve_public_addresses(hostname)
 
-    try:
-        ip = ipaddress.ip_address(hostname)
-    except ValueError:
-        try:
-            ip_str = socket.gethostbyname(hostname)
-            ip = ipaddress.ip_address(ip_str)
-        except (socket.gaierror, socket.herror) as e:
-            raise ValueError(f"Cannot resolve hostname: {hostname}") from e
 
-    if not (
-        ip.is_global
-        and not (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_reserved
-            or ip.is_multicast
-            or ip.is_unspecified
-        )
-    ):
-        raise ValueError(f"Access to restricted IP address not allowed: {ip}")
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+_TIMEOUT = urllib3.Timeout(connect=5, read=30)
+
+
+@contextlib.contextmanager
+def _open_direct(url: str, headers: dict[str, str]) -> Iterator[urllib3.HTTPResponse]:
+    """Send a GET for ``url`` to one of its host's validated addresses.
+
+    The host is resolved once and the connection pool is bound to a validated
+    address, trying the next one if the connection cannot be established. The
+    original hostname is sent in the ``Host`` header and, for https, used for
+    SNI and certificate verification.
+    """
+    parts = urlsplit(url)
+    hostname = parts.hostname
+    if not hostname:
+        raise ValueError("URL must contain a valid hostname")
+    default_port = _DEFAULT_PORTS[parts.scheme]
+    port = parts.port or default_port
+    host_header = f"[{hostname}]" if ":" in hostname else hostname
+    if port != default_port:
+        host_header += f":{port}"
+    target = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
+
+    errors: list[urllib3.exceptions.HTTPError] = []
+    for ip in resolve_public_addresses(hostname):
+        pool: urllib3.HTTPConnectionPool
+        if parts.scheme == "https":
+            pool = urllib3.HTTPSConnectionPool(
+                str(ip),
+                port,
+                timeout=_TIMEOUT,
+                retries=False,
+                cert_reqs="CERT_REQUIRED",
+                # Same CA bundle lookup as requests.
+                ca_certs=os.environ.get("REQUESTS_CA_BUNDLE")
+                or os.environ.get("CURL_CA_BUNDLE")
+                or certifi.where(),
+                server_hostname=hostname,
+                assert_hostname=hostname,
+            )
+        else:
+            pool = urllib3.HTTPConnectionPool(
+                str(ip), port, timeout=_TIMEOUT, retries=False
+            )
+        with pool:
+            try:
+                response = pool.urlopen(
+                    "GET",
+                    target,
+                    headers={"Host": host_header, **headers},
+                    redirect=False,
+                    preload_content=False,
+                )
+            except (
+                urllib3.exceptions.NewConnectionError,
+                urllib3.exceptions.ConnectTimeoutError,
+            ) as e:
+                errors.append(e)
+                continue
+            with response:
+                yield response
+            return
+    raise errors[-1]
+
+
+@contextlib.contextmanager
+def _open_with_proxy(
+    url: str, headers: dict[str, str]
+) -> Iterator[urllib3.HTTPResponse]:
+    """Send a GET for ``url`` through the proxy configured in the environment."""
+    with requests.get(
+        url,
+        headers=headers,
+        stream=True,
+        timeout=(5, 30),
+        allow_redirects=False,
+    ) as response:
+        yield response.raw
+
+
+def url_origin(url: str) -> Optional[tuple[str, str, Optional[int]]]:
+    """Return the ``(scheme, host, port)`` origin of a URL, or None.
+
+    Ports default to the well-known port for the scheme so that, e.g.,
+    ``http://h/`` and ``http://h:80/`` share an origin. Returns None when the
+    value has no scheme/host (e.g. a local path), which callers treat as "no
+    allowlisted origin".
+    """
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.hostname:
+        return None
+    default_ports = {"http": 80, "https": 443, "ftp": 21}
+    port = parsed.port or default_ports.get(parsed.scheme.lower())
+    return (parsed.scheme.lower(), parsed.hostname.lower(), port)
+
+
+@dataclass(frozen=True)
+class RemoteResource:
+    """A remote resource downloaded by :meth:`ImageResourceLoader.fetch_remote`."""
+
+    status_code: int
+    headers: dict[str, str]
+    content: bytes
 
 
 class ImageResourceLoader:
@@ -91,6 +269,7 @@ class ImageResourceLoader:
         max_remote_image_bytes: int = 20 * 1024 * 1024,
         max_redirects: int = 5,
         headers: Optional[dict[str, str]] = None,
+        header_origins: Iterable[str] = (),
     ) -> None:
         self.enable_local_fetch = enable_local_fetch
         self.enable_remote_fetch = enable_remote_fetch
@@ -98,6 +277,12 @@ class ImageResourceLoader:
         self.max_remote_image_bytes = max_remote_image_bytes
         self.max_redirects = max_redirects
         self.headers = headers
+        # Only requests to these origins carry the configured `headers`.
+        self.header_origins = {
+            origin
+            for origin in (url_origin(value) for value in header_origins)
+            if origin is not None
+        }
 
     @staticmethod
     def is_remote_url(value: str) -> bool:
@@ -165,7 +350,8 @@ class ImageResourceLoader:
                 img = Image.open(BytesIO(img_data))
                 return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
         except (
-            requests.HTTPError,
+            requests.RequestException,
+            urllib3.exceptions.HTTPError,
             ValidationError,
             UnidentifiedImageError,
             OperationNotAllowed,
@@ -182,6 +368,81 @@ class ImageResourceLoader:
             self.resolve_relative_path(src, base_path), base_path
         )
 
+    def fetch_remote(self, url: str) -> RemoteResource:
+        """Download a remote http(s) resource, following redirects.
+
+        Every hop is resolved once, all its addresses are validated with
+        :func:`resolve_public_addresses`, and the connection is opened to one of
+        the validated addresses (see :func:`_open_direct`). Configured headers
+        are sent only to the allowed origins, hop by hop. The download is capped
+        at ``max_remote_image_bytes``.
+
+        When a proxy is configured for the URL (e.g. with the ``HTTP_PROXY`` /
+        ``HTTPS_PROXY`` environment variables), the request goes through the
+        proxy, which then connects to the destination and is responsible for
+        filtering it.
+
+        Raises:
+            OperationNotAllowed: If remote fetch is disabled.
+            ValueError: If a hop is not an http(s) URL on a public address, there
+                are too many redirects, the server returns an error status, or
+                the resource exceeds the size limit.
+            requests.RequestException, urllib3.exceptions.HTTPError: On
+                connection or transfer errors.
+        """
+        if not self.enable_remote_fetch:
+            raise OperationNotAllowed(
+                "Fetching remote resources is only allowed when set explicitly. "
+                "Set options.enable_remote_fetch=True."
+            )
+
+        for _ in range(self.max_redirects + 1):
+            if urlsplit(url).scheme not in _DEFAULT_PORTS:
+                raise ValueError(f"Only http(s) URLs can be fetched: {url}")
+            headers = self._request_headers(url)
+            if select_proxy(url, get_environ_proxies(url)):
+                opened = _open_with_proxy(url, headers)
+            else:
+                opened = _open_direct(url, headers)
+            with opened as response:
+                location = response.get_redirect_location()
+                if location:
+                    url = urljoin(url, location)
+                    continue
+                if response.status >= 400:
+                    raise ValueError(f"HTTP status {response.status} for {url}")
+                return RemoteResource(
+                    status_code=response.status,
+                    headers=dict(response.headers),
+                    content=self._read_limited(response),
+                )
+        raise ValueError("Exceeded maximum number of redirects")
+
+    def _request_headers(self, url: str) -> dict[str, str]:
+        """Return the configured headers if ``url`` is on an allowed origin."""
+        if self.headers and url_origin(url) in self.header_origins:
+            return dict(self.headers)
+        return {}
+
+    def _read_limited(self, response: urllib3.HTTPResponse) -> bytes:
+        max_size = self.max_remote_image_bytes
+        content_length = response.headers.get("content-length")
+        if (
+            content_length
+            and content_length.isdigit()
+            and int(content_length) > max_size
+        ):
+            raise ValueError(f"Resource size exceeds limit: {content_length} bytes")
+
+        chunks = []
+        total_size = 0
+        for chunk in response.stream(8192, decode_content=True):
+            total_size += len(chunk)
+            if total_size > max_size:
+                raise ValueError("Downloaded data exceeds size limit")
+            chunks.append(chunk)
+        return b"".join(chunks)
+
     def load_image_data(
         self, src_loc: str, base_path: Optional[str]
     ) -> Optional[bytes]:
@@ -190,59 +451,7 @@ class ImageResourceLoader:
             return None
 
         if ImageResourceLoader.is_remote_url(src_loc):
-            if not self.enable_remote_fetch:
-                raise OperationNotAllowed(
-                    "Fetching remote resources is only allowed when set explicitly. "
-                    "Set options.enable_remote_fetch=True."
-                )
-
-            validate_url_safety(src_loc)
-
-            max_size = self.max_remote_image_bytes
-            headers = {"Range": f"bytes=0-{max_size - 1}"}
-
-            # Merge custom headers from options if provided
-            if self.headers:
-                headers.update(self.headers)
-
-            # Create session with redirect limit
-            session = requests.Session()
-            session.max_redirects = self.max_redirects
-
-            # Hook to validate each redirect target
-            def _check_redirect_safety(response, *args, **kwargs):
-                """Validate each redirect target before following it."""
-                if response.is_redirect or response.is_permanent_redirect:
-                    redirect_url = response.headers.get("location")
-                    if redirect_url:
-                        # Handle relative redirects
-                        if not redirect_url.startswith(("http://", "https://")):
-                            redirect_url = urljoin(response.url, redirect_url)
-
-                        # Validate the redirect target
-                        validate_url_safety(redirect_url)
-
-            session.hooks["response"].append(_check_redirect_safety)
-
-            response = session.get(
-                src_loc, stream=True, headers=headers, timeout=(5, 30)
-            )
-            response.raise_for_status()
-
-            content_length = response.headers.get("content-length")
-            if content_length and int(content_length) > max_size:
-                raise ValueError(f"Resource size exceeds limit: {content_length} bytes")
-
-            chunks = []
-            total_size = 0
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    total_size += len(chunk)
-                    if total_size > max_size:
-                        raise ValueError("Downloaded data exceeds size limit")
-                    chunks.append(chunk)
-
-            return b"".join(chunks)
+            return self.fetch_remote(src_loc).content
         elif src_loc.startswith("data:"):
             encoded_data = re.sub(r"^data:image/.+;base64,", "", src_loc)
             decoded_data = base64.b64decode(encoded_data)
