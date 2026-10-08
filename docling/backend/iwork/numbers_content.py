@@ -4,7 +4,7 @@
 """The content a Numbers document holds, however its container spells it.
 
 Both container generations describe the same things — sheets of positioned
-tables, charts, pictures and notes — so they are modelled once here and read
+tables, charts, pictures and comments — so they are modelled once here and read
 into that model by :mod:`docling.backend.iwork.numbers_iwa` and
 :mod:`docling.backend.iwork.numbers_xml`. Turning the result into a
 :class:`~docling_core.types.doc.DoclingDocument` is the backend's job, which is

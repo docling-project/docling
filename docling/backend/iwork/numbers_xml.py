@@ -89,8 +89,8 @@ SF_DRAWABLES = f"{{{SF_NAMESPACE}}}drawables"
 SHEET_DRAWABLES = f"{LS_PAGE_INFO}/{SF_LAYERS}/{SF_LAYER}/{SF_DRAWABLES}"
 """Path from a workspace to the lists of what its sheet draws.
 
-A picture is read only from these lists, as on a Keynote '09 slide. The
-renditions an image keeps below it are not read as pictures of their own.
+A picture is read only from these lists, as on a Keynote '09 slide.
+Renditions that an image keeps below it are not read as pictures of their own.
 """
 
 SF_ATTR_HEADER_COLS = f"{{{SF_NAMESPACE}}}num-header-columns"
