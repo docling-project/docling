@@ -83,9 +83,7 @@ def summarize_file(
         return FileChange(path, ChangeKind.REMOVED)
     if old is None or new is None:
         missing = [
-            name
-            for name, blob in (("base", old), ("head", new))
-            if blob is None
+            name for name, blob in (("base", old), ("head", new)) if blob is None
         ]
         return FileChange(
             path,
