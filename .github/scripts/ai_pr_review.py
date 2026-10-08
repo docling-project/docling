@@ -25,6 +25,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from ai_pr_event import is_maintainer_activity
 from ai_pr_triage import (
     DIFF_EXCLUDED_PATHS,
     TriageContext,
@@ -276,11 +277,34 @@ def previous_review_text(repo: str, pr_number: int) -> str:
     return "\n".join(parts)[:MAX_PREVIOUS_REVIEW_CHARS]
 
 
-def prepare(repo: str, context_dir: Path, git_dir: Path) -> bool:
+def maintainer_is_involved(repo: str, pr_number: int, pr_author: str) -> bool:
+    """True when a maintainer already commented on or reviewed the PR."""
+    sources = (
+        f"repos/{repo}/issues/{pr_number}/comments?per_page=100",
+        f"repos/{repo}/pulls/{pr_number}/reviews?per_page=100",
+        f"repos/{repo}/pulls/{pr_number}/comments?per_page=100",
+    )
+    return any(
+        is_maintainer_activity(item, pr_author)
+        for source in sources
+        for item in gh_api(source, paginate=True)
+    )
+
+
+def prepare(repo: str, context_dir: Path, git_dir: Path, force: bool) -> bool:
+    """Write the review inputs. Return False when no review should run.
+
+    Without ``force`` (a push), the review is skipped after a maintainer got
+    involved and for a commit that the AI already reviewed. ``force`` (the
+    ``/ai review`` command) always runs a full review of the current commit.
+    """
     context = TriageContext.from_dict(
         json.loads((context_dir / "context.json").read_text("utf-8"))
     )
     pr = context.pr
+    if not force and maintainer_is_involved(repo, pr.number, pr.author):
+        print("A maintainer is involved. Use the /ai review command for a review.")
+        return False
     files = pr_files(repo, pr.number)
     if not is_reviewable(files):
         print("The PR is too large or has no source changes. No AI review.")
@@ -291,7 +315,7 @@ def prepare(repo: str, context_dir: Path, git_dir: Path) -> bool:
     anchors = {item["filename"]: right_side_lines(item.get("patch")) for item in files}
     (review_dir / "anchors.json").write_text(json.dumps(anchors), encoding="utf-8")
 
-    reviewed = last_reviewed_sha(repo, pr.number)
+    reviewed = None if force else last_reviewed_sha(repo, pr.number)
     if reviewed == pr.head_sha:
         print("The AI already reviewed this commit.")
         return False
@@ -391,6 +415,9 @@ def main(argv: list[str] | None = None) -> int:
     prep.add_argument("--repo", required=True)
     prep.add_argument("--context-dir", type=Path, required=True)
     prep.add_argument("--git-dir", type=Path, default=Path.cwd())
+    prep.add_argument(
+        "--force", action="store_true", help="Full review (the /ai review command)."
+    )
 
     gate = sub.add_parser("gate")
     gate.add_argument("--triage-result", type=Path, required=True)
@@ -408,7 +435,7 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "prepare":
-        run_review = prepare(args.repo, args.context_dir, args.git_dir)
+        run_review = prepare(args.repo, args.context_dir, args.git_dir, args.force)
         github_output = os.environ.get("GITHUB_OUTPUT")
         if github_output:
             with Path(github_output).open("a", encoding="utf-8") as handle:

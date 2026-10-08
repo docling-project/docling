@@ -14,20 +14,79 @@ name: "AI PR Triage"
 # The workflow is a review aid, not a gate. Every step uses continue-on-error,
 # and long steps have a timeout below the job timeout, so a problem shows as a
 # warning annotation and never as a failed check on the PR.
+#
+# Maintainers can comment `/ai review` (or `/ai`) for a new full review and
+# `/ai triage` to run the triage again. After a maintainer comments on or
+# reviews a PR, pushes run only the triage, not the review.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  # Other comments must not cancel a running triage, so they get their own group.
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}-${{
+    (github.event_name == 'pull_request_target' ||
+    (startsWith(github.event.comment.body, '/ai') &&
+    contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)))
+    && 'pr' || github.run_id }}
   cancel-in-progress: true
 
 permissions: {}
 
 jobs:
+  context:
+    # Cheap filter first: most comments are not /ai commands from maintainers.
+    # ai_pr_event.py validates the event again.
+    if: >-
+      github.event_name == 'pull_request_target' ||
+      (github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/ai') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      pr: ${{ steps.resolve.outputs.pr }}
+      run: ${{ steps.resolve.outputs.run }}
+      force_review: ${{ steps.resolve.outputs.force_review }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        continue-on-error: true
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Resolve the PR and the mode
+        id: resolve
+        continue-on-error: true
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 .github/scripts/ai_pr_event.py \
+            --event-name "${EVENT_NAME}" --event-path "${GITHUB_EVENT_PATH}"
+
+      - name: Confirm the command
+        if: github.event_name == 'issue_comment' && steps.resolve.outputs.run == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          gh api --method POST "repos/${REPO}/issues/comments/${COMMENT_ID}/reactions" \
+            -f content=eyes > /dev/null
+
   reset-labels:
     # A new push makes the previous verdict stale.
-    if: github.event.action == 'synchronize'
+    if: github.event_name == 'pull_request_target' && github.event.action == 'synchronize'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     continue-on-error: true
@@ -46,9 +105,8 @@ jobs:
           done
 
   prepare:
-    if: >-
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.user.type != 'Bot'
+    needs: context
+    if: needs.context.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
@@ -75,7 +133,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ needs.context.outputs.pr }}
         run: |
           python3 .github/scripts/ai_pr_triage.py prepare \
             --repo "${REPO}" --pr "${PR_NUMBER}" \
@@ -89,10 +147,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          FORCE: ${{ needs.context.outputs.force_review == 'true' && '--force' || '' }}
         run: |
           python3 .github/scripts/ai_pr_review.py prepare \
             --repo "${REPO}" \
-            --context-dir "${RUNNER_TEMP}/ai-triage" --git-dir "${GITHUB_WORKSPACE}"
+            --context-dir "${RUNNER_TEMP}/ai-triage" --git-dir "${GITHUB_WORKSPACE}" ${FORCE}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         continue-on-error: true
@@ -166,7 +225,7 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: [prepare, analyze]
+    needs: [context, prepare, analyze]
     # run_llm is set only when the prepare step succeeded.
     if: always() && needs.prepare.outputs.run_llm != ''
     runs-on: ubuntu-latest
@@ -202,7 +261,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ needs.context.outputs.pr }}
         run: |
           python3 .github/scripts/ai_pr_triage.py publish \
             --repo "${REPO}" --pr "${PR_NUMBER}" \
@@ -211,7 +270,7 @@ jobs:
 
   review:
     # Runs after the triage, so it can skip PRs rated as duplicates.
-    needs: [prepare, analyze]
+    needs: [context, prepare, analyze]
     if: >-
       always() &&
       needs.prepare.result == 'success' &&
@@ -245,8 +304,13 @@ jobs:
       - name: Skip duplicates
         continue-on-error: true
         id: gate
+        env:
+          FORCE_REVIEW: ${{ needs.context.outputs.force_review }}
         run: |
-          if python3 .github/scripts/ai_pr_review.py gate \
+          if [ "${FORCE_REVIEW}" = "true" ]; then
+            echo "A maintainer asked for this review with /ai review."
+            echo "run=true" >> "${GITHUB_OUTPUT}"
+          elif python3 .github/scripts/ai_pr_review.py gate \
               --triage-result "${RUNNER_TEMP}/ai-triage-result/result.json"; then
             echo "run=true" >> "${GITHUB_OUTPUT}"
           else
@@ -295,7 +359,7 @@ jobs:
           retention-days: 7
 
   publish-review:
-    needs: [prepare, review]
+    needs: [context, prepare, review]
     if: always() && needs.review.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -332,7 +396,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ needs.context.outputs.pr }}
         run: |
           python3 .github/scripts/ai_pr_review.py publish \
             --repo "${REPO}" --pr "${PR_NUMBER}" \
