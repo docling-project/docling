@@ -287,6 +287,38 @@ def test_table_cell_text_skips_html_comments():
     ]
 
 
+def test_table_cell_keeps_image_next_to_plain_text():
+    # A cell with one plain text run was parsed as a plain TableCell, so an image
+    # in the same cell was dropped. With a link, formatting or a second text run
+    # in the cell, the image was kept.
+    src = (
+        b"<table>"
+        b"<tr><td><p>Chart</p><img src='chart.png'></td><td>A</td></tr>"
+        b"<tr><td><ul><li><img src='icon.png'></li><li>Item</li></ul></td>"
+        b"<td>B</td></tr>"
+        b"</table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+    assert [cell.text.strip() for cell in cells] == ["Chart", "A", "Item", "B"]
+    assert len(doc.pictures) == 2
+    for picture, cell in zip(doc.pictures, (cells[0], cells[2])):
+        # The picture is part of the content of its cell
+        assert isinstance(cell, RichTableCell)
+        ancestor = picture.parent
+        while ancestor is not None and ancestor != cell.ref:
+            ancestor = ancestor.resolve(doc).parent
+        assert ancestor == cell.ref
+
+
 @pytest.mark.parametrize(
     "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
 )
