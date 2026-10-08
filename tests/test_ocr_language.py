@@ -456,6 +456,7 @@ def _capture_ocr_options(monkeypatch, extra_args: list[str], tmp_path: Path):
 
     class _FakeDocumentConverter:
         def __init__(self, *, allowed_formats, format_options):
+            self.format_to_options = format_options
             pdf_option = format_options[InputFormat.PDF]
             captured["ocr_options"] = pdf_option.pipeline_options.ocr_options
 

@@ -1793,6 +1793,7 @@ def convert(  # noqa: C901
             allowed_formats=from_formats,
             format_options=format_options,
         )
+        # Default formats also need the CLI policy before pipelines are initialized.
         for format_option in doc_converter.format_to_options.values():
             if format_option.pipeline_options is not None:
                 format_option.pipeline_options.allow_external_plugins = (
