@@ -150,6 +150,7 @@ try:
     from docling.models.factories import (
         get_layout_factory,
         get_ocr_factory,
+        get_picture_description_factory,
         get_table_structure_factory,
     )
 
@@ -158,7 +159,7 @@ except ImportError:
     _local_model_stack_available = False
 
 if TYPE_CHECKING:
-    from docling.models.factories.base_factory import BaseFactory
+    from docling.models.factories.base_factory import FactoryMeta
 
 
 def _first_error_message(err: ValidationError) -> str:
@@ -441,18 +442,23 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-def show_external_plugins_callback(value: bool):
+def show_external_plugins_callback(value: bool) -> None:
     if value:
         ocr_factory_all = get_ocr_factory(allow_external_plugins=True)
         layout_factory_all = get_layout_factory(allow_external_plugins=True)
         table_factory_all = get_table_structure_factory(allow_external_plugins=True)
+        picture_description_factory_all = get_picture_description_factory(
+            allow_external_plugins=True
+        )
 
-        def print_external_plugins(factory: BaseFactory, factory_name: str):
+        def print_external_plugins(
+            metadata: Iterable[FactoryMeta], factory_name: str
+        ) -> None:
             table = rich.table.Table(title=f"Available {factory_name} engines")
             table.add_column("Name", justify="right")
             table.add_column("Plugin")
             table.add_column("Package")
-            for meta in factory.registered_meta.values():
+            for meta in metadata:
                 if not meta.module.startswith("docling."):
                     table.add_row(
                         f"[bold]{meta.kind}[/bold]",
@@ -461,9 +467,13 @@ def show_external_plugins_callback(value: bool):
                     )
             rich.print(table)
 
-        print_external_plugins(ocr_factory_all, "OCR")
-        print_external_plugins(layout_factory_all, "layout")
-        print_external_plugins(table_factory_all, "table")
+        print_external_plugins(ocr_factory_all.registered_meta.values(), "OCR")
+        print_external_plugins(layout_factory_all.registered_meta.values(), "layout")
+        print_external_plugins(table_factory_all.registered_meta.values(), "table")
+        print_external_plugins(
+            picture_description_factory_all.registered_meta.values(),
+            "picture description",
+        )
 
         raise typer.Exit()
 

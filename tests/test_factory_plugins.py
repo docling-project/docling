@@ -18,7 +18,7 @@ EXTERNAL_PLUGIN_SOURCE = """
 from pathlib import Path
 from typing import ClassVar, Literal
 
-from docling.datamodel.pipeline_options import OcrOptions
+from docling.datamodel.pipeline_options import OcrOptions, PictureDescriptionBaseOptions
 
 Path(__file__).with_suffix(".loaded").write_text("imported", encoding="utf-8")
 
@@ -35,6 +35,20 @@ class ExternalOcrModel:
 
 def ocr_engines() -> dict[str, list[type[ExternalOcrModel]]]:
     return {"ocr_engines": [ExternalOcrModel]}
+
+
+class ExternalPictureOptions(PictureDescriptionBaseOptions):
+    kind: ClassVar[Literal["docling_test_external_picture"]] = "docling_test_external_picture"
+
+
+class ExternalPictureModel:
+    @classmethod
+    def get_options_type(cls) -> type[ExternalPictureOptions]:
+        return ExternalPictureOptions
+
+
+def picture_description() -> dict[str, list[type[ExternalPictureModel]]]:
+    return {"picture_description": [ExternalPictureModel]}
 """
 
 
@@ -66,6 +80,18 @@ def _load_ocr_factory(allow_external_plugins: bool) -> OcrFactory:
     factory = OcrFactory()
     factory.load_from_plugins(allow_external_plugins=allow_external_plugins)
     return factory
+
+
+def _run_cli(
+    arguments: list[str], plugin_path: Path
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-m", "docling.cli.main", *arguments],
+        env={**os.environ, "PYTHONPATH": str(plugin_path), "COLUMNS": "200"},
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
 
 
 @pytest.mark.usefixtures("external_plugin")
@@ -112,13 +138,7 @@ def test_cli_plugin_discovery(
     if "--help" not in arguments:
         arguments = [*arguments, str(source), "--output", str(output)]
 
-    result = subprocess.run(
-        [sys.executable, "-m", "docling.cli.main", *arguments],
-        env={**os.environ, "PYTHONPATH": str(external_plugin)},
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
+    result = _run_cli(arguments, external_plugin)
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert ("will not be loaded" in result.stderr) is warning_expected
@@ -127,3 +147,15 @@ def test_cli_plugin_discovery(
     )
     if "--help" not in arguments:
         assert "Plugin discovery" in (output / "input.md").read_text(encoding="utf-8")
+
+
+def test_cli_lists_picture_description_plugins(external_plugin: Path) -> None:
+    result = _run_cli(["convert", "--show-external-plugins"], external_plugin)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Available picture description engines" in result.stdout
+    assert "docling_test_external_picture" in result.stdout
+    assert "docling_test_external_ocr" in result.stdout
+    assert EXTERNAL_PLUGIN_NAME in result.stdout
+    assert "docling_defaults" not in result.stdout
+    assert "will not be loaded" not in result.stderr
