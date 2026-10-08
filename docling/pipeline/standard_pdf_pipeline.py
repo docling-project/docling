@@ -24,7 +24,11 @@ import threading
 import time
 import warnings
 from collections import defaultdict, deque
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import (
+    Future,
+    ThreadPoolExecutor,
+    TimeoutError as FuturesTimeoutError,
+)
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable, Sequence, cast
@@ -249,6 +253,7 @@ class ThreadedPipelineStage:
         self.name = name
         self.model = model
         self._model_executor = model_executor
+        self._model_call: Future[list[Page]] | None = None
         self.batch_size = batch_size
         self.batch_timeout = batch_timeout
         self.shutdown_timeout = shutdown_timeout
@@ -261,12 +266,25 @@ class ThreadedPipelineStage:
             timed_out_run_ids if timed_out_run_ids is not None else set()
         )
 
+    @property
+    def model_call_running(self) -> bool:
+        return self._model_call is not None and not self._model_call.done()
+
     def _run_model(self, conv_res: ConversionResult, pages: list[Page]) -> list[Page]:
         if self._model_executor is None:
             return list(self.model(conv_res, pages))
-        return self._model_executor.submit(
+        self._model_call = self._model_executor.submit(
             lambda: list(self.model(conv_res, pages))
-        ).result()
+        )
+        while True:
+            try:
+                return self._model_call.result(timeout=0.5)
+            except FuturesTimeoutError:
+                if not self._running:
+                    self._model_call.cancel()
+                    raise RuntimeError(
+                        f"Stage {self.name} stopped during its model call"
+                    )
 
     # ---------------------------------------------------------------- wiring
     def add_output_queue(self, q: ThreadedQueue) -> None:
@@ -602,11 +620,9 @@ class StandardPdfPipeline(ConvertPipeline):
         super().__init__(pipeline_options)
         self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
         self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
-        # Long-lived model threads: on Windows, OpenMP workers leak when their thread exits (#2788)
-        self._model_executors = {
-            name: ThreadPoolExecutor(max_workers=1, thread_name_prefix=f"Model-{name}")
-            for name in _MODEL_STAGE_NAMES
-        }
+        # Reused model threads: on Windows, OpenMP workers leak when their thread exits (#2788)
+        self._idle_model_threads: list[dict[str, ThreadPoolExecutor]] = []
+        self._model_threads_lock = threading.Lock()
 
         # initialise heavy models once
         self._init_models()
@@ -744,7 +760,32 @@ class StandardPdfPipeline(ConvertPipeline):
     # Build - thread pipeline
     # ────────────────────────────────────────────────────────────────────────
 
-    def _create_run_ctx(self) -> RunContext:
+    def _borrow_model_threads(self) -> dict[str, ThreadPoolExecutor]:
+        """Take an idle set of model threads, one per model stage, or create one."""
+        with self._model_threads_lock:
+            if self._idle_model_threads:
+                return self._idle_model_threads.pop()
+        return {
+            name: ThreadPoolExecutor(max_workers=1, thread_name_prefix=f"Model-{name}")
+            for name in _MODEL_STAGE_NAMES
+        }
+
+    def _return_model_threads(
+        self,
+        model_threads: dict[str, ThreadPoolExecutor],
+        stages: list[ThreadedPipelineStage],
+    ) -> None:
+        """Keep the set for the next run, unless a model call is still running (hung model)."""
+        if any(stage.model_call_running for stage in stages):
+            for executor in model_threads.values():
+                executor.shutdown(wait=False, cancel_futures=True)
+            return
+        with self._model_threads_lock:
+            self._idle_model_threads.append(model_threads)
+
+    def _create_run_ctx(
+        self, model_threads: dict[str, ThreadPoolExecutor]
+    ) -> RunContext:
         opts = self.pipeline_options
         timed_out_run_ids: set[int] = set()
         preprocess = PreprocessThreadedStage(
@@ -762,7 +803,7 @@ class StandardPdfPipeline(ConvertPipeline):
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
-            model_executor=self._model_executors["ocr"],
+            model_executor=model_threads["ocr"],
         )
         layout = ThreadedPipelineStage(
             name="layout",
@@ -772,7 +813,7 @@ class StandardPdfPipeline(ConvertPipeline):
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
-            model_executor=self._model_executors["layout"],
+            model_executor=model_threads["layout"],
         )
         layout_postprocess = ThreadedPipelineStage(
             name="layout_postprocess",
@@ -782,7 +823,7 @@ class StandardPdfPipeline(ConvertPipeline):
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
-            model_executor=self._model_executors["layout_postprocess"],
+            model_executor=model_threads["layout_postprocess"],
         )
         table = ThreadedPipelineStage(
             name="table",
@@ -792,7 +833,7 @@ class StandardPdfPipeline(ConvertPipeline):
             queue_max_size=opts.queue_max_size,
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             timed_out_run_ids=timed_out_run_ids,
-            model_executor=self._model_executors["table"],
+            model_executor=model_threads["table"],
         )
         assemble = ThreadedPipelineStage(
             name="assemble",
@@ -803,7 +844,7 @@ class StandardPdfPipeline(ConvertPipeline):
             shutdown_timeout=opts.stage_shutdown_timeout_seconds,
             postprocess=self._release_page_resources,
             timed_out_run_ids=timed_out_run_ids,
-            model_executor=self._model_executors["assemble"],
+            model_executor=model_threads["assemble"],
         )
 
         # wire stages
@@ -858,7 +899,8 @@ class StandardPdfPipeline(ConvertPipeline):
             page_by_no[page_no] = page
 
         total_pages: int = len(expected_page_nos)
-        ctx: RunContext = self._create_run_ctx()
+        model_threads = self._borrow_model_threads()
+        ctx: RunContext = self._create_run_ctx(model_threads)
         for st in ctx.stages:
             st.start()
 
@@ -995,6 +1037,7 @@ class StandardPdfPipeline(ConvertPipeline):
         finally:
             for st in ctx.stages:
                 st.stop()
+            self._return_model_threads(model_threads, ctx.stages)
             ctx.output_queue.close()
             shutdown_timeout = self.pipeline_options.stage_shutdown_timeout_seconds
             producer_thread.join(timeout=shutdown_timeout)
