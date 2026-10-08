@@ -1132,6 +1132,30 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         added_elements = []
         for element in body:
             tag_name = etree.QName(element).localname
+
+            # Handle body-level mc:AlternateContent (markup compatibility).
+            # Resolve to the supported Choice branch (first Choice, else
+            # Fallback) and walk its children. Walking both branches would
+            # duplicate content, so exactly one branch is chosen.
+            if (
+                tag_name == "AlternateContent"
+                and element.tag == f"{_MC_NS_CLARK}AlternateContent"
+            ):
+                chosen_branch = None
+                for branch in element:
+                    if branch.tag == f"{_MC_NS_CLARK}Choice":
+                        chosen_branch = branch
+                        break
+                if chosen_branch is None:
+                    for branch in element:
+                        if branch.tag == f"{_MC_NS_CLARK}Fallback":
+                            chosen_branch = branch
+                            break
+                if chosen_branch is not None:
+                    _, ae = self._walk_linear(chosen_branch, doc)
+                    added_elements.extend(ae)
+                continue
+
             # Check for Inline Images (blip elements)
             _raw_drawing_blip = self.blip_xpath_expr(element)
             _raw_drawingml_els = element.findall(
