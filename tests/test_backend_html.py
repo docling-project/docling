@@ -652,6 +652,13 @@ def test_ordered_lists():
             "1. 1st item\n2. 2nd item",
         )
     )
+    test_set.append(
+        (
+            # start is U+00B2 SUPERSCRIPT TWO: numeric, but not a decimal digit
+            b'<html><body><ol start="\xc2\xb2"><li>1st item</li><li>2nd item</li></ol></body></html>',
+            "1. 1st item\n2. 2nd item",
+        )
+    )
 
     for idx, pair in enumerate(test_set):
         in_doc = InputDocument(

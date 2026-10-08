@@ -3016,7 +3016,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             name = "description list"
         elif is_ordered:
             start_attr = tag.get("start")
-            if isinstance(start_attr, str) and start_attr.isnumeric():
+            if isinstance(start_attr, str) and start_attr.isdecimal():
                 start = int(start_attr)
             name = "ordered list" + (f" start {start}" if start is not None else "")
         else:
