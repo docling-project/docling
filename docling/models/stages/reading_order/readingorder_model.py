@@ -760,7 +760,7 @@ class ReadingOrderModel:
         page_no: int,
         page_height: float,
     ) -> None:
-        """The item's values, then its context as a hint."""
+        """The item's values, then its field hint."""
         for value in item.values:
             self._add_field_value(
                 value,
@@ -769,8 +769,8 @@ class ReadingOrderModel:
                 page_no=page_no,
                 page_height=page_height,
             )
-        if item.context_text:
-            out_doc.add_field_hint(text=item.context_text, parent=parent)
+        if item.hint_text:
+            out_doc.add_field_hint(text=item.hint_text, parent=parent)
 
     def _add_field_value(
         self,

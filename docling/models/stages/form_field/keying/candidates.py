@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Candidate label-value associations and their costs."""
+"""Candidate key-value associations and their costs."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from docling.models.stages.form_field.keying.geometry import (
 from docling.models.stages.form_field.keying.types import (
     WIDGET_COVERAGE,
     Candidate,
-    Label,
+    KeyText,
     Scope,
     Side,
     Value,
@@ -33,12 +33,12 @@ from docling.models.stages.form_field.keying.types import (
 
 
 def local_features(
-    label: Label, members: tuple[int, ...], values: list[Value], h: float
+    key_text: KeyText, members: tuple[int, ...], values: list[Value], h: float
 ) -> dict[str, float]:
     distance, misalignment, obstacles = 0.0, 0.0, 0.0
     for i in members:
         value = values[i]
-        a, b = label.bbox, value.bbox
+        a, b = key_text.bbox, value.bbox
         distance += math.log1p(gap(a, b) / h)
         xover = max(0.0, min(a.r, b.r) - max(a.l, b.l)) / max(
             1e-6, min(a.width, b.width)
@@ -57,27 +57,31 @@ def local_features(
         "distance": distance,
         "alignment": misalignment,
         "obstruction": obstacles,
-        "role": len(members) * role_cost(label, values, h),
-        "fragment": 0.5 * len(members) * label.fragment,
+        "role": len(members) * role_cost(key_text, values, h),
+        "fragment": 0.5 * len(members) * key_text.fragment,
     }
 
 
-def role_cost(label: Label, values: list[Value], h: float) -> float:
-    role = 3.0 * (not lettered(label.text))
+def role_cost(key_text: KeyText, values: list[Value], h: float) -> float:
+    role = 3.0 * (not lettered(key_text.text))
     role += 3.0 * (
-        label.role
+        key_text.layout_label
         in {DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER, DocItemLabel.FOOTNOTE}
     )
     # A short printed component between two text boxes is weak key evidence.
     # The rule uses position and length, never a fixture/token blacklist.
     component = (
-        len(label.text.strip()) <= 3
+        len(key_text.text.strip()) <= 3
         and any(
-            not v.checkbox and v.bbox.r <= label.bbox.l and gap(v.bbox, label.bbox) < h
+            not v.checkbox
+            and v.bbox.r <= key_text.bbox.l
+            and gap(v.bbox, key_text.bbox) < h
             for v in values
         )
         and any(
-            not v.checkbox and v.bbox.l >= label.bbox.r and gap(v.bbox, label.bbox) < h
+            not v.checkbox
+            and v.bbox.l >= key_text.bbox.r
+            and gap(v.bbox, key_text.bbox) < h
             for v in values
         )
     )
@@ -85,26 +89,26 @@ def role_cost(label: Label, values: list[Value], h: float) -> float:
 
 
 def slot_features(
-    label: Label,
+    key_text: KeyText,
     value: Value,
     side: Side,
     alignment: float,
     values: list[Value],
     h: float,
 ) -> dict[str, float]:
-    """Cost of one visible label for one value: cell, then alignment, then distance.
+    """Cost of one candidate key for one value: cell, then alignment, then distance.
 
-    A caption in the value's own printed cell (inside, or touching it above or
-    below) is preferred over an aligned caption along the same line, which is
-    preferred over an aligned caption farther up or down. Captions precede
-    their value in reading order: a caption below costs a little more than one
-    above (in stacked boxes the next box's caption touches from below), and
-    text after the value on its line only captions it when adjacent, as an
-    option caption follows its checkbox; farther right it starts the next cell.
+    A key in the value's own printed cell (inside, or touching it above or
+    below) is preferred over an aligned key along the same line, which is
+    preferred over an aligned key farther up or down. Keys precede
+    their value in reading order: a key below costs a little more than one
+    above (in stacked boxes the next box's key touches from below), and
+    text after the value on its line only keys it when adjacent, as an
+    option key follows its checkbox; farther right it starts the next cell.
     Sharing half of the band counts as aligned; below that, misalignment grows
     to the cost of a cell difference. Proximity only breaks ties.
     """
-    gap_h = gap(label.bbox, value.bbox) / h
+    gap_h = gap(key_text.bbox, value.bbox) / h
     if side == "inside" or (side in ("up", "down") and gap_h <= 0.5):
         cell = 0.0
     else:
@@ -114,29 +118,29 @@ def slot_features(
         "cell": cell + after,
         "misaligned": max(0.0, 1.0 - alignment / 0.5),
         "distance": 0.25 * min(math.log1p(gap_h), 2.0),
-        "role": role_cost(label, values, h),
-        "fragment": 0.5 * label.fragment,
+        "role": role_cost(key_text, values, h),
+        "fragment": 0.5 * key_text.fragment,
     }
 
 
-def blockers(labels: list[Label]) -> Callable[[Label, BoundingBox | None], bool]:
-    """Whether other lettered text lies in a corridor, hiding a label behind it.
+def blockers(key_texts: list[KeyText]) -> Callable[[KeyText, BoundingBox | None], bool]:
+    """Whether other lettered text lies in a corridor, hiding a key behind it.
 
     Only the first text met on each side of a value is a candidate: the value's
     own cell, or the neighbouring cell on that side. Digits, codes and symbols
     are transparent, as are other values: line numbers, arithmetic signs and
-    sibling fields sit between many captions and their values.
+    sibling fields sit between many keys and their values.
     """
     atoms = {
-        next(iter(label.atoms)): label.bbox
-        for label in labels
-        if len(label.atoms) == 1 and lettered(label.text)
+        next(iter(key_text.atoms)): key_text.bbox
+        for key_text in key_texts
+        if len(key_text.atoms) == 1 and lettered(key_text.text)
     }
     ids = np.array(list(atoms), dtype=int)
     boxes = np.array([[b.l, b.t, b.r, b.b] for b in atoms.values()]).reshape(-1, 4)
     widths, heights = boxes[:, 2] - boxes[:, 0], boxes[:, 3] - boxes[:, 1]
 
-    def blocked(label: Label, lane: BoundingBox | None) -> bool:
+    def blocked(key_text: KeyText, lane: BoundingBox | None) -> bool:
         if lane is None or not len(ids):
             return False
         width = np.minimum(boxes[:, 2], lane.r) - np.maximum(boxes[:, 0], lane.l)
@@ -145,7 +149,7 @@ def blockers(labels: list[Label]) -> Callable[[Label, BoundingBox | None], bool]
         # half of the smaller extent along both axes.
         across = (width >= 0.5 * np.minimum(widths, lane.width)) & (width > 0)
         across &= (height >= 0.5 * np.minimum(heights, lane.height)) & (height > 0)
-        return bool(np.any(across & ~np.isin(ids, list(label.atoms))))
+        return bool(np.any(across & ~np.isin(ids, list(key_text.atoms))))
 
     return blocked
 
@@ -155,8 +159,8 @@ def foreign(i: int, lane: BoundingBox | None, side: Side, values: list[Value]) -
 
     Walking up or down a column passes only the value's siblings (a repeated
     column of like fields under its header); another field there is another
-    cell, with its own caption. Rows are different: operand boxes and flags
-    legitimately sit between a line caption and its amount.
+    cell, with its own key. Rows are different: operand boxes and flags
+    legitimately sit between a line key and its amount.
     """
     if lane is None or side not in ("up", "down"):
         return False
@@ -172,35 +176,35 @@ def foreign(i: int, lane: BoundingBox | None, side: Side, values: list[Value]) -
 
 
 def candidates_for(
-    values: list[Value], labels: list[Label], h: float
+    values: list[Value], key_texts: list[KeyText], h: float
 ) -> list[Candidate]:
     candidates: list[Candidate] = []
-    blocked = blockers(labels)
-    for li, label in enumerate(labels):
+    blocked = blockers(key_texts)
+    for li, key_text in enumerate(key_texts):
         eligible = [
             i
             for i, v in enumerate(values)
-            if v.scope.eligible and v.scope == label.scope
+            if v.scope.eligible and v.scope == key_text.scope
         ]
         contained = tuple(
             i
             for i in eligible
-            if values[i].bbox.intersection_over_self(label.bbox) >= WIDGET_COVERAGE
+            if values[i].bbox.intersection_over_self(key_text.bbox) >= WIDGET_COVERAGE
         )
         for i in eligible:
-            facing = side_of(label.bbox, values[i].bbox)
-            if facing is None or not lettered(label.text):
+            facing = side_of(key_text.bbox, values[i].bbox)
+            if facing is None or not lettered(key_text.text):
                 continue
-            lane = corridor(label.bbox, values[i].bbox, facing[0])
-            if blocked(label, lane) or foreign(i, lane, facing[0], values):
+            lane = corridor(key_text.bbox, values[i].bbox, facing[0])
+            if blocked(key_text, lane) or foreign(i, lane, facing[0], values):
                 continue
-            kind = "option_caption" if values[i].checkbox else "field_key"
-            features = slot_features(label, values[i], *facing, values, h)
+            kind = "option_key" if values[i].checkbox else "field_key"
+            features = slot_features(key_text, values[i], *facing, values, h)
             candidates.append(Candidate((i,), li, kind, features, facing[0]))
         clause = tuple(
             i
             for i in contained
-            if i not in answers(contained, label, labels, values, h)
+            if i not in answers(contained, key_text, key_texts, values, h)
         )
         if len(clause) > 1:
             candidates.append(
@@ -208,11 +212,11 @@ def candidates_for(
                     clause,
                     li,
                     "inline_clause",
-                    local_features(label, clause, values, h),
+                    local_features(key_text, clause, values, h),
                 )
             )
-        # A common caption over adjacent components, with no full intervening
-        # caption. Do not make arbitrary runs of checkboxes into one field.
+        # A common key over adjacent components, with no full intervening
+        # key. Do not make arbitrary runs of checkboxes into one field.
         text_values = [i for i in eligible if not values[i].checkbox]
         for start in range(len(text_values)):
             members = [text_values[start]]
@@ -223,35 +227,35 @@ def candidates_for(
                 members.append(nxt)
                 union = BoundingBox.enclosing_bbox([values[i].bbox for i in members])
                 if (
-                    label.bbox.b <= union.t
-                    and union.t - label.bbox.b <= 5 * h
+                    key_text.bbox.b <= union.t
+                    and union.t - key_text.bbox.b <= 5 * h
                     and overlap(
                         BoundingBox(
-                            l=union.l, r=union.r, t=label.bbox.t, b=label.bbox.b
+                            l=union.l, r=union.r, t=key_text.bbox.t, b=key_text.bbox.b
                         ),
-                        label.bbox,
+                        key_text.bbox,
                     )
                     > 0
                 ):
-                    # Any member with its own caption above it is a separate field.
-                    sibling_caption = any(
-                        other.scope == label.scope
-                        and other.atoms.isdisjoint(label.atoms)
+                    # Any member with its own key above it is a separate field.
+                    sibling_key = any(
+                        other.scope == key_text.scope
+                        and other.atoms.isdisjoint(key_text.atoms)
                         and lettered(other.text)
                         and other.bbox.b <= member.t
-                        and other.bbox.t >= label.bbox.t - h
+                        and other.bbox.t >= key_text.bbox.t - h
                         and span_overlap(other.bbox.l, other.bbox.r, member.l, member.r)
                         >= 0.5 * other.bbox.width
-                        for other in labels
+                        for other in key_texts
                         for member in (values[i].bbox for i in members)
                     )
-                    if sibling_caption:
+                    if sibling_key:
                         break
-                    features = local_features(label, tuple(members), values, h)
-                    # The caption describes the composite envelope. Charge its
+                    features = local_features(key_text, tuple(members), values, h)
+                    # The key describes the composite envelope. Charge its
                     # distance once PER VALUE, so a big group is not a free link.
                     features["distance"] = len(members) * math.log1p(
-                        gap(label.bbox, union) / h
+                        gap(key_text.bbox, union) / h
                     )
                     features["alignment"] = 0.0
                     features["group"] = 0.5
@@ -260,7 +264,7 @@ def candidates_for(
                     )
 
     # Shared PDF names are corroboration, not an assertion of field identity.
-    # Also retain contiguous native checkbox runs as alternatives when captions
+    # Also retain contiguous native checkbox runs as alternatives when keys
     # form a repeated, compact arrangement (including a column reset).
     groups: set[tuple[int, ...]] = set()
     names: dict[tuple[Scope, str], list[int]] = defaultdict(list)
@@ -288,33 +292,35 @@ def candidates_for(
     for members in sorted(groups):
         scope = values[members[0]].scope
         union = BoundingBox.enclosing_bbox([values[i].bbox for i in members])
-        for li, label in enumerate(labels):
-            if label.scope != scope or not any(c.isalpha() for c in label.text):
+        for li, key_text in enumerate(key_texts):
+            if key_text.scope != scope or not any(c.isalpha() for c in key_text.text):
                 continue
             # Common prompts sit above the group or alongside its first option;
-            # individual short option captions are not plausible common prompts.
+            # individual short option keys are not plausible common prompts.
             first_box = values[members[0]].bbox
-            above = label.bbox.b <= union.t - 0.2 * h
-            beside = label.bbox.r <= first_box.l - h and label.bbox.t <= first_box.b
-            if not (above or beside) or gap(label.bbox, first_box) > 10 * h:
+            above = key_text.bbox.b <= union.t - 0.2 * h
+            beside = (
+                key_text.bbox.r <= first_box.l - h and key_text.bbox.t <= first_box.b
+            )
+            if not (above or beside) or gap(key_text.bbox, first_box) > 10 * h:
                 continue
-            if len(label.text.split()) < 2:
+            if len(key_text.text.split()) < 2:
                 continue
             features = {
-                "question_distance": math.log1p(gap(label.bbox, union) / h),
-                "question_prior": -2.5,
-                "fragment": 0.5 * label.fragment,
+                "prompt_distance": math.log1p(gap(key_text.bbox, union) / h),
+                "prompt_prior": -2.5,
+                "fragment": 0.5 * key_text.fragment,
             }
             candidates.append(Candidate(members, li, "choice_group", features))
-    # Within a caption, the whole text is the key, not one of its lines: a
-    # line seen from the same side as its whole stacked caption pays extra.
+    # Within a key, the whole text is the key, not one of its lines: a
+    # line seen from the same side as its whole stacked key pays extra.
     whole: dict[tuple[tuple[int, ...], Side], list[frozenset[int]]] = defaultdict(list)
     for c in candidates:
-        if c.side is not None and labels[c.label].stack:
-            whole[c.members, c.side].append(labels[c.label].atoms)
+        if c.side is not None and key_texts[c.key].stack:
+            whole[c.members, c.side].append(key_texts[c.key].atoms)
     for c in candidates:
         if c.side is not None and any(
-            labels[c.label].atoms < atoms for atoms in whole[c.members, c.side]
+            key_texts[c.key].atoms < atoms for atoms in whole[c.members, c.side]
         ):
             c.features["partial"] = 0.5
     return candidates
@@ -322,16 +328,16 @@ def candidates_for(
 
 def answers(
     members: tuple[int, ...],
-    clause: Label,
-    labels: list[Label],
+    clause: KeyText,
+    key_texts: list[KeyText],
     values: list[Value],
     h: float,
 ) -> set[int]:
     """Checkboxes in a clause that are options of it, not blanks within it.
 
-    An option has its own caption: a separate piece of the clause's text on its
+    An option has its own key: a separate piece of the clause's text on its
     line, beside it within a text line. Two or more such checkboxes answer the
-    clause ("Business income [ ] Yes [ ] No"), so each keeps its own caption. A
+    clause ("Business income [ ] Yes [ ] No"), so each keeps its own key. A
     single checkbox, or a clause printed as one piece of text, stays a blank of
     the clause ("check here [ ] and enter the amount").
     """
@@ -341,25 +347,25 @@ def answers(
             continue
         box = values[i].bbox
         if any(
-            len(label.atoms) == 1
-            and label.atoms < clause.atoms
-            and lettered(label.text)
-            and span_overlap(label.bbox.t, label.bbox.b, box.t, box.b)
-            >= 0.5 * min(label.bbox.height, box.height)
-            and (label.bbox.r <= box.l or label.bbox.l >= box.r)
-            and gap(label.bbox, box) <= h
-            for label in labels
+            len(key_text.atoms) == 1
+            and key_text.atoms < clause.atoms
+            and lettered(key_text.text)
+            and span_overlap(key_text.bbox.t, key_text.bbox.b, box.t, box.b)
+            >= 0.5 * min(key_text.bbox.height, box.height)
+            and (key_text.bbox.r <= box.l or key_text.bbox.l >= box.r)
+            and gap(key_text.bbox, box) <= h
+            for key_text in key_texts
         ):
             found.add(i)
     return found if len(found) > 1 else set()
 
 
 def siblings(a: Value, b: Value, side: Side) -> bool:
-    """Same kind and size, aligned along the line a shared caption runs along.
+    """Same kind and size, aligned along the line a shared key runs along.
 
-    A row caption keys every like-sized value of its row, a column caption
+    A row key keys every like-sized value of its row, a column key
     every like-sized value of its column. Operand boxes of a different size in
-    the same row (multipliers, rates) do not inherit the row caption.
+    the same row (multipliers, rates) do not inherit the row key.
     """
     if side == "inside" or a.checkbox != b.checkbox:
         return False

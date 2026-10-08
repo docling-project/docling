@@ -48,7 +48,7 @@ def widget(
     )
 
 
-def label(index: int, text: str, bbox: BoundingBox) -> Cluster:
+def key_text(index: int, text: str, bbox: BoundingBox) -> Cluster:
     return Cluster(
         id=index,
         label=DocItemLabel.TEXT,
@@ -71,10 +71,10 @@ def table(bbox: BoundingBox) -> Cluster:
 
 def snapshot(
     widgets: list[PdfWidget],
-    labels: list[Cluster],
+    key_texts: list[Cluster],
     tables: dict[int, list[TableCell]] | None = None,
 ) -> KeyingPage:
-    return KeyingPage(widgets, labels, tables or {})
+    return KeyingPage(widgets, key_texts, tables or {})
 
 
 def keyed(page: KeyingPage) -> Assignment:
@@ -88,7 +88,7 @@ def chosen(page: KeyingPage) -> tuple[list[int], list[tuple[str, list[int], str]
         (
             result.candidates[c].kind,
             [result.values[i].native.index for i in result.candidates[c].members],
-            result.labels[result.candidates[c].label].text,
+            result.key_texts[result.candidates[c].key].text,
         )
         for c in result.selected
     ]
@@ -119,9 +119,9 @@ def test_table_exception_requires_one_cell_and_never_uses_other_cell_header():
         [widget(0, box(82, 80, 98, 95)), widget(1, box(110, 150, 170, 170))],
         [
             table_region,
-            label(1, "Local name", box(10, 82, 65, 92)),
-            label(2, "Other cell", box(101, 81, 165, 91)),
-            label(3, "Outside table", box(80, 25, 180, 35)),
+            key_text(1, "Local name", box(10, 82, 65, 92)),
+            key_text(2, "Other cell", box(101, 81, 165, 91)),
+            key_text(3, "Outside table", box(80, 25, 180, 35)),
         ],
         {100: cells},
     )
@@ -141,7 +141,7 @@ def test_table_exception_requires_one_cell_and_never_uses_other_cell_header():
     )
 
     # A detected table with no usable cells stays excluded, even with an
-    # attractive nearby label. Removing detection restores ordinary pairing.
+    # attractive nearby key. Removing detection restores ordinary pairing.
     page.tables = {}
     assert chosen(page)[1] == []
     page.layout.remove(table_region)
@@ -157,10 +157,10 @@ def test_column_reset_and_candidate_enumeration_preserve_native_order():
             widget(3, box(200, 80, 210, 90), checkbox=True),
         ],
         [
-            label(1, "English", box(25, 40, 90, 50)),
-            label(2, "Spanish", box(25, 80, 90, 90)),
-            label(3, "French", box(215, 40, 280, 50)),
-            label(4, "Arabic", box(215, 80, 280, 90)),
+            key_text(1, "English", box(25, 40, 90, 50)),
+            key_text(2, "Spanish", box(25, 80, 90, 90)),
+            key_text(3, "French", box(215, 40, 280, 50)),
+            key_text(4, "Arabic", box(215, 80, 280, 90)),
         ],
     )
     order, fields = chosen(page)
@@ -175,7 +175,7 @@ def test_column_reset_and_candidate_enumeration_preserve_native_order():
     assert chosen(page) == (order, fields)
 
 
-def test_shared_question_keeps_captions_and_interleaved_native_values():
+def test_shared_prompt_keeps_keys_and_interleaved_native_values():
     page = snapshot(
         [
             widget(0, box(10, 50, 20, 60), checkbox=True, name="same native field"),
@@ -183,17 +183,17 @@ def test_shared_question_keeps_captions_and_interleaved_native_values():
             widget(2, box(10, 90, 20, 100), checkbox=True, name="same native field"),
         ],
         [
-            label(1, "Preferred language", box(10, 15, 140, 25)),
-            label(2, "English", box(25, 50, 90, 60)),
-            label(3, "French", box(25, 90, 90, 100)),
-            label(4, "Your name", box(220, 103, 290, 113)),
+            key_text(1, "Preferred language", box(10, 15, 140, 25)),
+            key_text(2, "English", box(25, 50, 90, 60)),
+            key_text(3, "French", box(25, 90, 90, 100)),
+            key_text(4, "Your name", box(220, 103, 290, 113)),
         ],
     )
     order, fields = chosen(page)
     assert order == [0, 1, 2]
     assert ("choice_group", [0, 2], "Preferred language") in fields
-    assert ("option_caption", [0], "English") in fields
-    assert ("option_caption", [2], "French") in fields
+    assert ("option_key", [0], "English") in fields
+    assert ("option_key", [2], "French") in fields
     assert ("field_key", [1], "Your name") in fields
 
 
@@ -213,7 +213,7 @@ def test_inline_checkbox_and_date_share_clause_without_duplicate_ownership(
         ],
         # Both clause controls have 80% coverage despite protruding below the
         # text bounds. The neighboring control has only 10% and must not join.
-        [label(1, text, positioned(5, 55, 250, 68))],
+        [key_text(1, text, positioned(5, 55, 250, 68))],
     )
     page.height = 400 * scale + offset
     order, fields = chosen(page)
@@ -221,11 +221,11 @@ def test_inline_checkbox_and_date_share_clause_without_duplicate_ownership(
     assert fields == [("inline_clause", [7, 2], text)]
 
 
-def test_option_checkboxes_inside_a_sentence_keep_their_own_captions():
+def test_option_checkboxes_inside_a_sentence_keep_their_own_keys():
     # "(a) Business income [ ] Yes [ ] No": the layout returns the line as one
-    # block, but each checkbox has its own option caption printed right after
+    # block, but each checkbox has its own option key printed right after
     # it. Options answer the sentence; they are not blanks within it, so each
-    # takes its caption instead of the whole line.
+    # takes its key instead of the whole line.
     cells = [
         ("(a) Business income", box(10, 50, 110, 58)),
         ("Yes", box(132, 50, 150, 58)),
@@ -254,8 +254,8 @@ def test_option_checkboxes_inside_a_sentence_keep_their_own_captions():
         [row],
     )
     _, fields = chosen(page)
-    assert ("option_caption", [0], "Yes") in fields
-    assert ("option_caption", [1], "No") in fields
+    assert ("option_key", [0], "Yes") in fields
+    assert ("option_key", [1], "No") in fields
 
 
 def test_shared_business_number_is_not_split_at_printed_component():
@@ -265,15 +265,15 @@ def test_shared_business_number_is_not_split_at_printed_component():
             widget(1, box(168, 70, 230, 85)),
         ],
         [
-            label(1, "Business Number", box(40, 40, 140, 50)),
-            label(2, "RT", box(152, 72, 166, 82)),
+            key_text(1, "Business Number", box(40, 40, 140, 50)),
+            key_text(2, "RT", box(152, 72, 166, 82)),
         ],
     )
     _, fields = chosen(page)
     assert fields == [("composite_field", [0, 1], "Business Number")]
 
 
-def test_row_caption_and_column_header_never_key_a_value_in_a_detected_table():
+def test_row_and_column_headers_never_key_a_value_in_a_detected_table():
     def cell(row: int, column: int, text: str, bbox: BoundingBox, header=False):
         return TableCell(
             bbox=bbox,
@@ -308,7 +308,7 @@ def test_row_caption_and_column_header_never_key_a_value_in_a_detected_table():
         {100: cells},
     )
     result = keyed(page)
-    # "Financial services" (row caption) and "From head office" (column header)
+    # "Financial services" (row header) and "From head office" (column header)
     # sit in other cells: the table already carries that association.
     assert result.selected == []
     # Each value still gets the cell of its line code: a code has no letters,
@@ -349,11 +349,11 @@ def ruled(page: KeyingPage, *lines: tuple[str, float, float, float]) -> KeyingPa
     return replace(page, rules=boxes)
 
 
-def test_printed_cell_moves_a_box_to_the_caption_printed_over_it():
+def test_printed_cell_moves_a_box_to_the_key_printed_over_it():
     # "Name:" and its box share one printed cell, but the detected grid puts
-    # the caption in its own row, and a title cell whose box runs down beside
-    # it takes the box. The printed cell holds the caption: the box goes to
-    # the caption's cell, keyed by it.
+    # the key in its own row, and a title cell whose box runs down beside
+    # it takes the box. The printed cell holds the key: the box goes to
+    # the key's cell, keyed by it.
     page = snapshot(
         [widget(0, box(5, 29, 95, 39))],
         [table(box(0, 0, 200, 100))],
@@ -371,7 +371,7 @@ def test_printed_cell_moves_a_box_to_the_caption_printed_over_it():
     def placed(result):
         (slot,) = result.slots.values()
         (key,) = (
-            result.labels[c.label].text
+            result.key_texts[c.key].text
             for c in (result.candidates[i] for i in result.selected)
             if c.kind == "table_cell"
         )
@@ -418,14 +418,14 @@ def test_value_in_a_printed_column_the_grid_lost_gets_no_cell():
     assert keyed(printed).slots == {}
 
 
-def test_row_caption_is_shared_by_like_sized_values_but_not_operand_boxes():
+def test_row_key_is_shared_by_like_sized_values_but_not_operand_boxes():
     page = snapshot(
         [
             widget(0, box(100, 60, 160, 72)),
             widget(1, box(170, 60, 190, 72)),
             widget(2, box(200, 60, 260, 72)),
         ],
-        [label(1, "Line 5 total", box(10, 61, 80, 71))],
+        [key_text(1, "Line 5 total", box(10, 61, 80, 71))],
     )
     _, fields = chosen(page)
     assert sorted(fields) == [
@@ -434,7 +434,7 @@ def test_row_caption_is_shared_by_like_sized_values_but_not_operand_boxes():
     ]
 
 
-def test_caption_split_per_line_is_joined_but_option_lines_are_not():
+def test_key_split_per_line_is_joined_but_option_lines_are_not():
     page = snapshot(
         [
             widget(0, box(150, 72, 220, 84)),
@@ -442,11 +442,11 @@ def test_caption_split_per_line_is_joined_but_option_lines_are_not():
             widget(2, box(12, 231, 20, 239), checkbox=True),
         ],
         [
-            label(1, "Intangible personal", box(10, 60, 100, 68)),
-            label(2, "property and services", box(10, 69, 110, 77)),
-            label(3, "financial services", box(10, 78, 95, 86)),
-            label(4, "a Parent group", box(10, 220, 90, 230)),
-            label(5, "b Brother group", box(10, 230, 95, 240)),
+            key_text(1, "Intangible personal", box(10, 60, 100, 68)),
+            key_text(2, "property and services", box(10, 69, 110, 77)),
+            key_text(3, "financial services", box(10, 78, 95, 86)),
+            key_text(4, "a Parent group", box(10, 220, 90, 230)),
+            key_text(5, "b Brother group", box(10, 230, 95, 240)),
         ],
     )
     _, fields = chosen(page)
@@ -455,8 +455,8 @@ def test_caption_split_per_line_is_joined_but_option_lines_are_not():
         [0],
         "Intangible personal property and services financial services",
     ) in fields
-    assert ("option_caption", [1], "a Parent group") in fields
-    assert ("option_caption", [2], "b Brother group") in fields
+    assert ("option_key", [1], "a Parent group") in fields
+    assert ("option_key", [2], "b Brother group") in fields
 
 
 def test_line_split_into_pieces_is_joined_but_neighbouring_cells_are_not():
@@ -467,11 +467,11 @@ def test_line_split_into_pieces_is_joined_but_neighbouring_cells_are_not():
             widget(2, box(66, 131, 86, 143)),
         ],
         [
-            label(1, "Manitoba", box(10, 61, 45, 69)),
-            label(2, "tax (line 23)", box(47, 61, 100, 69)),
-            # Sub-captions over their own boxes: separate cells, never one line.
-            label(3, "GIORNO", box(40, 122, 62, 130)),
-            label(4, "MESE", box(66, 122, 84, 130)),
+            key_text(1, "Manitoba", box(10, 61, 45, 69)),
+            key_text(2, "tax (line 23)", box(47, 61, 100, 69)),
+            # Sub-keys over their own boxes: separate cells, never one line.
+            key_text(3, "GIORNO", box(40, 122, 62, 130)),
+            key_text(4, "MESE", box(66, 122, 84, 130)),
         ],
     )
     _, fields = chosen(page)
@@ -481,8 +481,8 @@ def test_line_split_into_pieces_is_joined_but_neighbouring_cells_are_not():
 
 
 def test_close_call_follows_the_side_of_aligned_sibling_options():
-    # The first option has a slightly closer caption on its left, but its
-    # sibling options below all read their captions on the right.
+    # The first option has a slightly closer key on its left, but its
+    # sibling options below all read their keys on the right.
     page = snapshot(
         [
             widget(0, box(100, 50, 108, 58), checkbox=True),
@@ -490,81 +490,81 @@ def test_close_call_follows_the_side_of_aligned_sibling_options():
             widget(2, box(100, 90, 108, 98), checkbox=True),
         ],
         [
-            label(1, "Applicant", box(50, 50, 98, 58)),
-            label(2, "Type 1A", box(114, 50, 150, 58)),
-            label(3, "Type 1B", box(114, 70, 150, 78)),
-            label(4, "Type 2", box(114, 90, 150, 98)),
+            key_text(1, "Applicant", box(50, 50, 98, 58)),
+            key_text(2, "Type 1A", box(114, 50, 150, 58)),
+            key_text(3, "Type 1B", box(114, 70, 150, 78)),
+            key_text(4, "Type 2", box(114, 90, 150, 98)),
         ],
     )
     _, fields = chosen(page)
-    assert ("option_caption", [0], "Type 1A") in fields
-    assert ("option_caption", [1], "Type 1B") in fields
-    assert ("option_caption", [2], "Type 2") in fields
+    assert ("option_key", [0], "Type 1A") in fields
+    assert ("option_key", [1], "Type 1B") in fields
+    assert ("option_key", [2], "Type 2") in fields
 
 
 def test_layout_child_repeated_at_top_level_is_not_consumed_twice():
-    caption = label(1, "Name", box(10, 60, 45, 70))
+    key = key_text(1, "Name", box(10, 60, 45, 70))
     container = Cluster(
-        id=2, label=DocItemLabel.FORM, bbox=box(0, 40, 200, 100), children=[caption]
+        id=2, label=DocItemLabel.FORM, bbox=box(0, 40, 200, 100), children=[key]
     )
     # The second box is not a like-sized sibling, so it may only take "Name"
-    # if the repeated child produced a second copy of the caption.
+    # if the repeated child produced a second copy of the key.
     page = snapshot(
         [widget(0, box(50, 60, 80, 70)), widget(1, box(90, 60, 160, 70))],
-        [caption, container],
+        [key, container],
     )
     _, fields = chosen(page)
     assert fields == [("field_key", [0], "Name")]
 
 
-def test_option_run_after_a_question_reads_captions_on_the_right():
-    # "Sexo: (o) M (o) F": each caption sits nearer the option before it, but
+def test_option_run_after_a_prompt_reads_keys_on_the_right():
+    # "Sexo: (o) M (o) F": each key sits nearer the option before it, but
     # more than a text line away. Texts at both ends of the run leave one
-    # over; the inner caption leans on the option before it, so the first text
-    # is the question and every option takes the caption after it.
+    # over; the inner key leans on the option before it, so the first text
+    # is the shared prompt and every option takes the key after it.
     page = snapshot(
         [
             widget(0, box(74, 50, 82, 58), checkbox=True),
             widget(1, box(112, 50, 120, 58), checkbox=True),
         ],
         [
-            label(1, "Sexo:", box(40, 50, 72, 58)),
-            label(2, "M", box(91, 50, 99, 58)),
-            label(3, "F", box(129, 50, 137, 58)),
+            key_text(1, "Sexo:", box(40, 50, 72, 58)),
+            key_text(2, "M", box(91, 50, 99, 58)),
+            key_text(3, "F", box(129, 50, 137, 58)),
         ],
     )
     _, fields = chosen(page)
-    assert ("option_caption", [0], "M") in fields
-    assert ("option_caption", [1], "F") in fields
+    assert ("option_key", [0], "M") in fields
+    assert ("option_key", [1], "F") in fields
 
 
-def test_run_starting_with_a_caption_reads_captions_on_the_left():
+def test_run_starting_with_a_key_reads_keys_on_the_left():
     # "Jua (o) Ii (o)": nothing after the last option, so each option takes the
-    # caption before it, even where the next caption is as close.
+    # key before it, even where the next key is as close.
     page = snapshot(
         [
             widget(0, box(62, 50, 70, 58), checkbox=True),
             widget(1, box(88, 50, 96, 58), checkbox=True),
         ],
         [
-            label(1, "Jua", box(40, 50, 60, 58)),
-            label(2, "Ii", box(72, 50, 80, 58)),
+            key_text(1, "Jua", box(40, 50, 60, 58)),
+            key_text(2, "Ii", box(72, 50, 80, 58)),
         ],
     )
     _, fields = chosen(page)
-    assert ("option_caption", [0], "Jua") in fields
-    assert ("option_caption", [1], "Ii") in fields
+    assert ("option_key", [0], "Jua") in fields
+    assert ("option_key", [1], "Ii") in fields
 
 
-def test_text_boxes_between_captions_keep_their_leading_captions():
-    # "Name [__] Date [__] Place": the inner caption leans on the box after
-    # it, so the trailing text starts the next field and captions come first.
+def test_text_boxes_between_keys_keep_their_leading_keys():
+    # "Name [__] Date [__] Place": the inner key leans on the box after
+    # it, so the trailing text starts the next field and keys come first.
     page = snapshot(
         [widget(0, box(42, 50, 100, 58)), widget(1, box(127, 50, 180, 58))],
         [
-            label(1, "Name", box(10, 50, 40, 58)),
-            label(2, "Date", box(105, 50, 125, 58)),
-            label(3, "Place", box(185, 50, 210, 58)),
+            key_text(1, "Name", box(10, 50, 40, 58)),
+            key_text(2, "Date", box(105, 50, 125, 58)),
+            key_text(3, "Place", box(185, 50, 210, 58)),
         ],
     )
     _, fields = chosen(page)
@@ -572,14 +572,14 @@ def test_text_boxes_between_captions_keep_their_leading_captions():
     assert ("field_key", [1], "Date") in fields
 
 
-def test_stacked_boxes_read_the_caption_above_when_the_next_one_touches_below():
-    # Caption above each box; the next box's caption touches the first box
-    # from below. The column run starts with a caption: captions are above.
+def test_stacked_boxes_read_the_key_above_when_the_next_one_touches_below():
+    # Key above each box; the next box's key touches the first box
+    # from below. The column run starts with a key: keys are above.
     page = snapshot(
         [widget(0, box(20, 24, 120, 38)), widget(1, box(20, 54, 120, 68))],
         [
-            label(1, "Name", box(20, 10, 50, 18)),
-            label(2, "Address", box(20, 40, 60, 48)),
+            key_text(1, "Name", box(20, 10, 50, 18)),
+            key_text(2, "Address", box(20, 40, 60, 48)),
         ],
     )
     _, fields = chosen(page)
@@ -587,9 +587,9 @@ def test_stacked_boxes_read_the_caption_above_when_the_next_one_touches_below():
     assert ("field_key", [1], "Address") in fields
 
 
-def test_repeated_options_read_their_captions_from_one_side():
-    # The first option has the list's question right above it, in its own
-    # cell; the identical options below all read their captions on the
+def test_repeated_options_read_their_keys_from_one_side():
+    # The first option has the list's shared prompt right above it, in its own
+    # cell; the identical options below all read their keys on the
     # right. The structure reads one side: the first option follows the rest.
     page = snapshot(
         [
@@ -598,28 +598,28 @@ def test_repeated_options_read_their_captions_from_one_side():
             widget(2, box(100, 90, 108, 98), checkbox=True),
         ],
         [
-            label(1, "Types:", box(100, 40, 140, 48)),
-            label(2, "Type 1A", box(114, 50, 150, 58)),
-            label(3, "Type 1B", box(114, 70, 150, 78)),
-            label(4, "Type 2", box(114, 90, 150, 98)),
+            key_text(1, "Types:", box(100, 40, 140, 48)),
+            key_text(2, "Type 1A", box(114, 50, 150, 58)),
+            key_text(3, "Type 1B", box(114, 70, 150, 78)),
+            key_text(4, "Type 2", box(114, 90, 150, 98)),
         ],
     )
     _, fields = chosen(page)
-    assert ("option_caption", [0], "Type 1A") in fields
-    assert ("option_caption", [1], "Type 1B") in fields
-    assert ("option_caption", [2], "Type 2") in fields
+    assert ("option_key", [0], "Type 1A") in fields
+    assert ("option_key", [1], "Type 1B") in fields
+    assert ("option_key", [2], "Type 2") in fields
 
 
-def test_caption_touching_both_boxes_does_not_decide_a_run():
-    # Captions below their boxes, each touching the next box too: a text that
-    # touches both neighbours says nothing about which it captions, so the run
-    # decides nothing and each box keeps the caption right under it.
+def test_key_touching_both_boxes_does_not_decide_a_run():
+    # Keys below their boxes, each touching the next box too: a text that
+    # touches both neighbours says nothing about which it keys, so the run
+    # decides nothing and each box keeps the key right under it.
     page = snapshot(
         [widget(0, box(20, 16, 120, 30)), widget(1, box(20, 40, 120, 54))],
         [
-            label(1, "Application", box(20, 0, 80, 8)),
-            label(2, "UFID", box(20, 32, 40, 40)),
-            label(3, "Last Name", box(20, 56, 60, 64)),
+            key_text(1, "Application", box(20, 0, 80, 8)),
+            key_text(2, "UFID", box(20, 32, 40, 40)),
+            key_text(3, "Last Name", box(20, 56, 60, 64)),
         ],
     )
     _, fields = chosen(page)

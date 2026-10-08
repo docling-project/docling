@@ -37,42 +37,44 @@ def lettered(text: str) -> bool:
     return any(c.isalpha() for c in text)
 
 
-def side_of(label: BoundingBox, value: BoundingBox) -> tuple[Side, float] | None:
-    """Side from which a label faces a value, and how well it is aligned.
+def side_of(key_text: BoundingBox, value: BoundingBox) -> tuple[Side, float] | None:
+    """Side from which a key faces a value, and how well it is aligned.
 
-    Left/right labels share the value's row band; up/down labels its column
+    Left/right keys share the value's row band; up/down keys its column
     band. Alignment is the shared fraction of the smaller perpendicular extent.
-    Purely diagonal labels return None: only group candidates use them.
+    Purely diagonal keys return None: only group candidates use them.
     """
-    if overlap(label, value) >= 0.5 * min(label.area(), value.area()):
+    if overlap(key_text, value) >= 0.5 * min(key_text.area(), value.area()):
         return "inside", 1.0
-    rows = span_overlap(label.t, label.b, value.t, value.b)
-    columns = span_overlap(label.l, label.r, value.l, value.r)
+    rows = span_overlap(key_text.t, key_text.b, value.t, value.b)
+    columns = span_overlap(key_text.l, key_text.r, value.l, value.r)
     if rows > 0 and columns > 0:
-        # A partial overlap, typically a caption straddling the value's top
+        # A partial overlap, typically a key straddling the value's top
         # edge inside the same printed box: use the axis it sticks out along.
-        vertical = rows / label.height <= columns / label.width
+        vertical = rows / key_text.height <= columns / key_text.width
     else:
         vertical = columns > 0
     if vertical:
-        up = label.t + label.b < value.t + value.b
-        return ("up" if up else "down"), columns / min(label.width, value.width)
+        up = key_text.t + key_text.b < value.t + value.b
+        return ("up" if up else "down"), columns / min(key_text.width, value.width)
     if rows > 0:
-        left = label.l + label.r < value.l + value.r
-        return ("left" if left else "right"), rows / min(label.height, value.height)
+        left = key_text.l + key_text.r < value.l + value.r
+        return ("left" if left else "right"), rows / min(key_text.height, value.height)
     return None
 
 
-def corridor(label: BoundingBox, value: BoundingBox, side: Side) -> BoundingBox | None:
-    """Space between a facing label and its value, within their shared band."""
+def corridor(
+    key_text: BoundingBox, value: BoundingBox, side: Side
+) -> BoundingBox | None:
+    """Space between a facing key and its value, within their shared band."""
     if side == "left":
-        box = (label.r, max(label.t, value.t), value.l, min(label.b, value.b))
+        box = (key_text.r, max(key_text.t, value.t), value.l, min(key_text.b, value.b))
     elif side == "right":
-        box = (value.r, max(label.t, value.t), label.l, min(label.b, value.b))
+        box = (value.r, max(key_text.t, value.t), key_text.l, min(key_text.b, value.b))
     elif side == "up":
-        box = (max(label.l, value.l), label.b, min(label.r, value.r), value.t)
+        box = (max(key_text.l, value.l), key_text.b, min(key_text.r, value.r), value.t)
     elif side == "down":
-        box = (max(label.l, value.l), value.b, min(label.r, value.r), label.t)
+        box = (max(key_text.l, value.l), value.b, min(key_text.r, value.r), key_text.t)
     else:
         return None
     left, top, right, bottom = box

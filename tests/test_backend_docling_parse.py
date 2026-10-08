@@ -898,7 +898,7 @@ def test_widgets_move_with_the_text_when_the_crop_box_is_offset(
 ) -> None:
     backend_cls = ThreadedDoclingParseDocumentBackend
     # Text cells are relative to the visible page (crop box); widget rectangles
-    # must be too, or they sit off their captions when the crop box does not
+    # must be too, or they sit off their field keys when the crop box does not
     # start at the PDF origin.
     source = Path("tests/data/pdf/sources/acroform_sample.pdf")
     shifted = tmp_path / "shifted_crop.pdf"

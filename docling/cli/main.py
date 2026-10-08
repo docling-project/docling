@@ -955,7 +955,7 @@ def convert(  # noqa: C901
             ...,
             help=(
                 "If enabled, native PDF form widgets (AcroForm) become fillable field "
-                "values keyed to their printed captions. Standard and legacy pipelines "
+                "values with field keys from printed text. Standard and legacy pipelines "
                 "with the docling-parse backend only."
             ),
         ),

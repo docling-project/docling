@@ -61,7 +61,7 @@ Useful `PdfPipelineOptions` / base fields:
 |---|---|
 | `do_ocr` | Run OCR (default engine EasyOCR) |
 | `do_table_structure` | Detect table structure |
-| `extract_form_fields` | Convert docling-parse PDF widgets (AcroForm) into fillable fields keyed to their printed captions |
+| `extract_form_fields` | Convert docling-parse PDF widgets (AcroForm) into fillable fields with keys from printed text |
 | `do_code_enrichment` / `do_formula_enrichment` | Enrich code / formulas |
 | `code_formula_options` | Code/formula model, crop margin (`expansion_factor`), and stopping repeated output (`stop_on_repetition`, on by default) |
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
@@ -73,10 +73,12 @@ Useful `PdfPipelineOptions` / base fields:
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
 
-`extract_form_fields=True` keys each widget to the printed caption the page
-geometry assigns to it (the caption in or beside its cell, or an inlining
-paragraph); a widget in a detected table goes into its table cell, keyed only by
-text in that same cell; PDF field
+`extract_form_fields=True` associates each widget with a field key from printed
+text, using page geometry. The key can be text in or beside its cell, or a
+paragraph that contains the widget. Checkbox and radio option text becomes an
+option key; a shared prompt stays as ordinary text. Additional context becomes
+a field hint. A widget in a detected table goes into its table cell, with a key
+only from text in that same cell. PDF field
 names are not used as keys, and PDF-specific widget metadata is not stored in
 the `DoclingDocument`. Use `generate_parsed_pages=True` to retain raw widgets
 on parsed pages when needed. Backends without page-local widgets produce no

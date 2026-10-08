@@ -111,14 +111,21 @@ one can adjust the conversion pipeline and features.
 
 Set `PdfPipelineOptions(extract_form_fields=True)` (CLI: `--extract-form-fields`)
 to convert native PDF widgets (AcroForm) into format-neutral `FieldItem` objects
-with fillable `FieldValueItem` children. Each field is keyed to the printed
-caption that the page geometry assigns to it: the caption inside or beside its
-cell, or a whole paragraph that inlines the widget. A widget inside a detected
-table goes into its table cell instead (a rich table cell holding the field),
-keyed only by text printed in that same cell: the table's row and column
-headers already name it. A caption that becomes a key leaves the body text.
-Keys are chosen from layout geometry only; PDF field names are not used as
-keys.
+with fillable `FieldValueItem` children. Each field key comes from printed text
+associated with its widget by page geometry. The key can be text inside or
+beside the widget's cell, or a paragraph that contains the widget. Checkbox and
+radio option text becomes an option key. A shared prompt introduces several
+options and stays as ordinary text. Additional context becomes a field hint.
+A widget inside a detected table goes into its table cell instead (a rich table
+cell holding the field). Its key comes only from text printed in that same
+cell; the table's row and column headers already carry the association.
+Text used as a field key leaves the body text. PDF field names are not used
+as keys.
+
+Here, **key** means text that names one or more field values, and **hint** means
+extra context. **Layout label** means an element class (`DocItemLabel`).
+**Caption** means a document caption associated with a picture, table, code
+block, or form; it does not mean a field key or hint.
 
 The docling-parse backend supplies the widgets. Scanned or flattened forms,
 backends without page widgets and full-page OCR produce no field items; table

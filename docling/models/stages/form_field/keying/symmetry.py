@@ -22,12 +22,12 @@ from docling.models.stages.form_field.keying.candidates import siblings
 from docling.models.stages.form_field.keying.geometry import gap, lettered, overlap
 from docling.models.stages.form_field.keying.types import (
     Candidate,
-    Label,
+    KeyText,
     Side,
     Value,
 )
 
-# Above the usual gap between a caption before and one after a value (a cell
+# Above the usual gap between a key before and one after a value (a cell
 # difference, 1) and below leaving a value blank (3): a decided run turns
 # close calls, and never forces a value to stay unkeyed.
 SEQUENCE_COST = 1.5
@@ -53,14 +53,14 @@ class Reach:
 
 def reaches(
     candidates: list[Candidate],
-    labels: list[Label],
+    key_texts: list[KeyText],
     values: list[Value],
     null_cost: float,
 ) -> dict[tuple[int, Side], Reach]:
-    """What every value sees on each side, from its plausible single captions.
+    """What every value sees on each side, from its plausible single keys.
 
     Text too costly to key a value on its own (a page header, a code) is not a
-    caption, so it never shapes a run or a structure.
+    key, so it never shapes a run or a structure.
     """
     atoms: dict[tuple[int, Side], set[int]] = defaultdict(set)
     gaps: dict[tuple[int, Side], float] = {}
@@ -73,9 +73,9 @@ def reaches(
         ):
             continue
         key = (c.members[0], c.side)
-        label = labels[c.label]
-        atoms[key] |= label.atoms
-        distance = gap(label.bbox, values[c.members[0]].bbox)
+        key_text = key_texts[c.key]
+        atoms[key] |= key_text.atoms
+        distance = gap(key_text.bbox, values[c.members[0]].bbox)
         gaps[key] = min(gaps.get(key, distance), distance)
     return {key: Reach(frozenset(atoms[key]), gaps[key]) for key in atoms}
 
@@ -141,18 +141,18 @@ def neighbours(values: list[Value], axis: Axis) -> dict[int, int]:
 
 
 def _texts_between(
-    a: Value, b: Value, axis: Axis, labels: list[Label]
+    a: Value, b: Value, axis: Axis, key_texts: list[KeyText]
 ) -> frozenset[int]:
     """Lettered text atoms whose centre lies in the corridor between a and b."""
     corridor = _between(a.bbox, b.bbox, axis)
     found = set()
-    for label in labels:
-        if len(label.atoms) != 1 or not lettered(label.text):
+    for key_text in key_texts:
+        if len(key_text.atoms) != 1 or not lettered(key_text.text):
             continue
-        x = (label.bbox.l + label.bbox.r) / 2
-        y = (label.bbox.t + label.bbox.b) / 2
+        x = (key_text.bbox.l + key_text.bbox.r) / 2
+        y = (key_text.bbox.t + key_text.bbox.b) / 2
         if corridor.l <= x <= corridor.r and corridor.t <= y <= corridor.b:
-            found |= label.atoms
+            found |= key_text.atoms
     return frozenset(found)
 
 
@@ -163,16 +163,16 @@ def _leftover(
     values: list[Value],
     h: float,
 ) -> Side | None:
-    """The caption side of a run with text at both ends, when two signs agree.
+    """The key side of a run with text at both ends, when two signs agree.
 
-    One text is left over: a question before the fields, or the start of the
+    One text is left over: a shared prompt before the fields, or the start of the
     next field after them. Neither sign alone settles it, so both must agree:
-    the inner texts all sitting nearer the field before them (captions after)
-    or after them (captions before), and the layout convention of the fields.
-    Along a row, options read the caption after them and text boxes the one
-    before; down a column, text boxes read the caption above and options have
+    the inner texts all sitting nearer the field before them (keys after)
+    or after them (keys before), and the layout convention of the fields.
+    Along a row, options read the key after them and text boxes the one
+    before; down a column, text boxes read the key above and options have
     no convention. An inner text within half a text line of both its fields
-    touches both, and says nothing about which one it captions.
+    touches both, and says nothing about which one it keys.
     """
     after, before = FACING[axis]
     pairs = list(pairwise(run))
@@ -197,24 +197,24 @@ def _leftover(
 
 def sequences(
     values: list[Value],
-    labels: list[Label],
+    key_texts: list[KeyText],
     candidates: list[Candidate],
     null_cost: float,
     h: float,
 ) -> dict[int, Side]:
-    """The side each value of a decided alternating run reads its caption from.
+    """The side each value of a decided alternating run reads its key from.
 
     A run is a line of like fields with exactly one text between each two: the
-    text after one field is the text before the next. It is a caption line
-    only when every field's best caption lies along it: the run settles which
-    text of the line each field reads, never which axis (an option caption
-    beside a checkbox in a column, or a line caption far to the left of an
-    amount, pairs the field across the run). The ends fix the pairing: a caption before
-    the first field and none after the last means captions before (left,
-    above); the reverse means captions after. With text at both ends one text
+    text after one field is the text before the next. It is a key line
+    only when every field's best key lies along it: the run settles which
+    text of the line each field reads, never which axis (an option key
+    beside a checkbox in a column, or a line key far to the left of an
+    amount, pairs the field across the run). The ends fix the pairing: a key before
+    the first field and none after the last means keys before (left,
+    above); the reverse means keys after. With text at both ends one text
     is left over (see _leftover).
     """
-    reach = reaches(candidates, labels, values, null_cost)
+    reach = reaches(candidates, key_texts, values, null_cost)
     best: dict[int, float] = {}
     best_on: dict[tuple[int, Side], float] = {}
     for c in candidates:
@@ -233,7 +233,7 @@ def sequences(
             if forward is None or backward is None:
                 continue
             shared = forward.atoms & backward.atoms
-            between = _texts_between(values[i], values[j], axis, labels)
+            between = _texts_between(values[i], values[j], axis, key_texts)
             if shared and between <= shared:
                 links[i] = j
         for first in sorted(set(links) - set(links.values())):
@@ -263,7 +263,7 @@ def sequences(
 
 
 def mark_sequences(candidates: list[Candidate], sides: dict[int, Side]) -> None:
-    """Charge every association of a run's value but its caption on the run's side."""
+    """Charge every association of a run's value but its key on the run's side."""
     for c in candidates:
         if c.kind == "choice_group":
             continue
@@ -278,17 +278,17 @@ def mark_sequences(candidates: list[Candidate], sides: dict[int, Side]) -> None:
 
 def structures(
     values: list[Value],
-    labels: list[Label],
+    key_texts: list[KeyText],
     candidates: list[Candidate],
     null_cost: float,
 ) -> list[list[int]]:
     """Groups of at least three like fields repeated along rows and columns.
 
     Two neighbouring like fields belong together when the only text between
-    them is what they themselves see (their own captions): a third text in
+    them is what they themselves see (their own keys): a third text in
     between starts another part of the form.
     """
-    reach = reaches(candidates, labels, values, null_cost)
+    reach = reaches(candidates, key_texts, values, null_cost)
     parent = list(range(len(values)))
 
     def root(i: int) -> int:
@@ -304,7 +304,7 @@ def structures(
                 own |= reach[i, after].atoms
             if (j, before) in reach:
                 own |= reach[j, before].atoms
-            if _texts_between(values[i], values[j], axis, labels) <= own:
+            if _texts_between(values[i], values[j], axis, key_texts) <= own:
                 parent[root(i)] = root(j)
     groups: dict[int, list[int]] = defaultdict(list)
     for i, v in enumerate(values):

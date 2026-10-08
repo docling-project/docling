@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Keys read from detected table cells, and grid context."""
+"""Field keys from detected table cells, and hints for value grids."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from docling.models.stages.form_field.keying.geometry import (
 from docling.models.stages.form_field.keying.rules import printed_cell, rules_of
 from docling.models.stages.form_field.keying.types import (
     Candidate,
-    Label,
+    KeyText,
     Scope,
     TableSlot,
     Value,
@@ -33,16 +33,16 @@ def table_fields(
     rule_boxes: list[BoundingBox],
     page_height: float,
     values: list[Value],
-    labels: list[Label],
+    key_texts: list[KeyText],
 ) -> tuple[list[Candidate], dict[int, TableSlot]]:
     """The grid cell of each value inside a detected table, and its key.
 
-    A value is keyed only by lettered text of its own cell. A row caption or a
+    A value is keyed only by lettered text of its own cell. A row or
     column header elsewhere in the table never keys a value: the table's
     headers already carry that association. Cell text is used whole; codes
     and units without letters never key a value, and neither does cell text
     that repeats the value itself (a filled field rendered into the page).
-    Appends the cell labels it uses to ``labels``.
+    Appends the cell key texts it uses to ``key_texts``.
 
     A value inside one detected cell sits in that cell. Otherwise it sits in
     the row and column whose bands it overlaps most; a band is the extent of
@@ -57,7 +57,7 @@ def table_fields(
     printed table. When rules close a printed cell around the value and that
     cell holds detected text, the value belongs with that text: if the bands
     point elsewhere, the value moves to the cell of the text in its printed
-    cell (a caption before a code), and its key follows. When the printed cell
+    cell (a key before a code), and its key follows. When the printed cell
     holds no text and misses the band of the value's column, the detected grid
     lost that column: the value gets no cell. Without a closed printed cell the
     bands decide.
@@ -113,12 +113,12 @@ def table_fields(
 
         indices: dict[int, int] = {}
 
-        def label_of(k: int) -> int:
+        def key_of(k: int) -> int:
             if k not in indices:
                 cell, box = cells[k]
-                indices[k] = len(labels)
-                labels.append(
-                    Label(
+                indices[k] = len(key_texts)
+                key_texts.append(
+                    KeyText(
                         " ".join(cell.text.split()),
                         box,
                         frozenset(),
@@ -195,28 +195,28 @@ def table_fields(
                     (column, column + 1)
                     if spans is None
                     else (spans.start_col_offset_idx, spans.end_col_offset_idx),
-                    None if own is None else label_of(own),
+                    None if own is None else key_of(own),
                 )
                 if own is not None:
-                    fields.append(Candidate((i,), label_of(own), "table_cell", {}))
+                    fields.append(Candidate((i,), key_of(own), "table_cell", {}))
     return fields, slots
 
 
-def add_context(
+def add_hints(
     chosen: list[Candidate],
     proposed: list[Candidate],
     values: list[Value],
     null_cost: float,
 ) -> None:
-    """Keep the aligned caption across the other axis as context in value grids.
+    """Keep an aligned header across the other axis as a field hint in value grids.
 
     A value with like-sized siblings in both its row and its column sits in a
-    grid: its key is one axis' caption, and the cheapest aligned caption along
+    grid: its field key comes from one axis, and the cheapest aligned text along
     the other axis (a column header over a row-keyed amount) is kept as
-    context. A header heads a line of values, so a sibling along that line
-    must see it too; the caption of the previous option in a list does not
+    a hint. A header heads a line of values, so a sibling along that line
+    must see it too; the key of the previous option in a list does not
     qualify, nor does text too costly to key a value on its own (page
-    headers). Context is informative only; it never changes the key.
+    headers). A hint is informative only; it never changes the key.
     """
     grid = {
         i
@@ -237,9 +237,9 @@ def add_context(
             and o.side in sides
             and not o.features.get("misaligned")
             and o.cost < null_cost
-            and o.label != c.label
+            and o.key != c.key
             and any(
-                other.label == o.label
+                other.key == o.key
                 and other.side == o.side
                 and other.members != c.members
                 and siblings(values[other.members[0]], value, o.side)
@@ -247,4 +247,4 @@ def add_context(
             )
         ]
         if options:
-            c.context = min(options, key=lambda o: (o.cost, o.label)).label
+            c.hint = min(options, key=lambda o: (o.cost, o.key)).key

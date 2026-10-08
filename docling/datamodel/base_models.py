@@ -438,17 +438,16 @@ class FieldValuePrediction(BaseModel):
 
 
 class FieldItemPrediction(BaseModel):
-    # A keyed item groups one or more values under one key: the printed caption
-    # the keying chose (a caption, a table cell, or a whole paragraph that
-    # inlines the widgets). key_bbox is the prov of the key. Keyless items
-    # (key_text == "") carry a single value and reproduce the flat field_item
-    # shape. context_text is a secondary, location-less caption emitted as a
-    # hint: outside detected tables, the caption along the other axis of a
-    # grid of like values. Items in a table cell never carry one.
+    # A keyed item groups one or more values under one field key chosen from
+    # printed text beside a widget, in its table cell, or in a paragraph that
+    # contains it. key_bbox is the provenance of the key. Keyless items carry
+    # a single value. hint_text is extra context emitted as a field hint:
+    # outside detected tables, an aligned header along the other axis of a
+    # grid of like values. Items in a table cell never carry a hint.
     key_text: str = ""
     key_bbox: BoundingBox | None = None
     values: list[FieldValuePrediction] = []
-    context_text: str = ""
+    hint_text: str = ""
 
 
 class FieldRegionPrediction(BaseModel):

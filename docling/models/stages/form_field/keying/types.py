@@ -56,12 +56,16 @@ class Value:
 
 
 @dataclass
-class Label:
+class KeyText:
+    """Printed text considered as a field key or hint."""
+
     text: str
     bbox: BoundingBox
     atoms: frozenset[int]
     scope: Scope
-    role: DocItemLabel | None  # Layout label of the source block; None for table cells.
+    layout_label: (
+        DocItemLabel | None
+    )  # Layout label of the source block; None for table cells.
     fragment: bool = False
     stack: bool = False  # Joined from vertically adjacent layout blocks.
 
@@ -69,18 +73,18 @@ class Label:
 @dataclass
 class Candidate:
     members: tuple[int, ...]  # Positions in the supplied value list, not y order.
-    label: int
+    key: int  # Index into Assignment.key_texts.
     kind: Literal[
         "field_key",
-        "option_caption",
+        "option_key",
         "composite_field",
         "inline_clause",
         "choice_group",
         "table_cell",
     ]
     features: dict[str, float]
-    side: Side | None = None  # For single-value captions: where the label faces it.
-    context: int | None = None  # A secondary label, e.g. a table column header.
+    side: Side | None = None  # For single-value keys: where the key faces it.
+    hint: int | None = None  # Index of extra context, e.g. a column header.
 
     @property
     def cost(self) -> float:
@@ -94,13 +98,13 @@ class TableSlot:
     table: int  # Layout id of the table region.
     rows: tuple[int, int]  # Start and end row offsets of the cell.
     columns: tuple[int, int]  # Start and end column offsets of the cell.
-    key: int | None = None  # Label of lettered text in the same cell, if any.
+    key: int | None = None  # Index of lettered key text in the same cell, if any.
 
 
 @dataclass
 class Assignment:
     values: list[Value]
-    labels: list[Label]
+    key_texts: list[KeyText]
     candidates: list[Candidate]
     selected: list[int]
     solver_status: str
@@ -109,5 +113,5 @@ class Assignment:
     # Text atom -> the (cluster id, cell index) pairs it was read from; more
     # than one cluster when the layout put the cell in two clusters.
     sources: dict[int, set[tuple[int, int]]] = field(default_factory=dict)
-    # Source cells recognized as painted widget values, separate from label atoms.
+    # Source cells recognized as painted widget values, separate from key atoms.
     painted_cells: set[tuple[int, int]] = field(default_factory=set)

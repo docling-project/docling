@@ -1,22 +1,21 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Native AcroForm widgets keyed to their printed captions.
+"""Field keys and hints for native AcroForm widget values.
 
 The stage runs after table structure. For every page with widgets it passes
 the widgets, layout clusters and detected table cells to ``keying.assign``,
-which chooses the caption of each value, and turns the result into
-``FieldRegionPrediction``s: one item per association, with the caption as key.
+which chooses the key of each value, and turns the result into
+``FieldRegionPrediction``s: one item per key-value association.
 Outside detected tables, a value in a grid of like values also keeps the
-caption along its other axis as context. Items are placed as the original
-stage placed its values: a paragraph that inlines all of an item's widgets
+aligned header along its other axis as a field hint. Items are placed as the
+original stage placed its values: a paragraph that inlines all of an item's widgets
 hosts the item in place, otherwise the enclosing FORM region does, otherwise a
 page-wide region. A value in a cell of a detected table goes into that cell
 instead (``page.predictions.table_fields``), keyed only by text printed in the
-same cell and without context: the table's headers already carry the
-association. Caption text
-that became a key leaves the body, also when it shares a text block with
-text that did not, and text blocks that merely re-render a filled value are
+same cell and without hints: the table's headers already carry the
+association. Text used as a field key leaves the body, also when it shares a
+text block with text that did not, and text blocks that merely re-render a filled value are
 dropped. A page whose keying fails keeps its values, without keys.
 """
 
@@ -43,7 +42,7 @@ from docling.models.stages.form_field.keying import (
     PUSHBUTTON_FLAG,
     WIDGET_COVERAGE,
     Assignment,
-    Label,
+    KeyText,
     assign,
     is_skipped,
     regions,
@@ -70,7 +69,7 @@ class _Unit:
 
     item: FieldItemPrediction
     positions: list[int]  # indices into Assignment.values
-    consumed: Label | None  # label whose text leaves the body
+    consumed: KeyText | None  # key whose text leaves the body
 
 
 @dataclass
@@ -152,24 +151,23 @@ def _build_units(
     units: list[_Unit] = []
     owned: set[int] = set()
     for candidate in (assignment.candidates[i] for i in assignment.selected):
-        # A group question stays as ordinary text: each option keeps its own
-        # caption as key.
+        # A shared prompt stays as ordinary text; each option keeps its own key.
         if candidate.kind == "choice_group":
             continue
-        label = assignment.labels[candidate.label]
+        key_text = assignment.key_texts[candidate.key]
         units.append(
             _Unit(
                 FieldItemPrediction(
-                    key_text=label.text,
-                    key_bbox=label.bbox,
+                    key_text=key_text.text,
+                    key_bbox=key_text.bbox,
                     values=[values[m] for m in candidate.members],
-                    context_text=""
-                    if candidate.context is None
-                    else assignment.labels[candidate.context].text,
+                    hint_text=""
+                    if candidate.hint is None
+                    else assignment.key_texts[candidate.hint].text,
                 ),
                 list(candidate.members),
-                # Table-cell labels have no atoms: the table keeps its text.
-                label if label.atoms else None,
+                # Table-cell keys have no atoms: the table keeps its text.
+                key_text if key_text.atoms else None,
             )
         )
         owned.update(candidate.members)
@@ -188,7 +186,7 @@ def _cell_units(
 
     The table's own row and column headers carry the association there, and
     keying.tables keys such a value only by text of its own cell, so the item
-    keeps its key and drops any context. Returns the cells, then the units
+    keeps its key and drops any hint. Returns the cells, then the units
     placed as before.
     """
     cells: dict[tuple[int, tuple[int, int], tuple[int, int]], list[_Unit]] = (
@@ -202,7 +200,7 @@ def _cell_units(
             continue
         (slot,) = slots
         assert slot is not None
-        unit.item = unit.item.model_copy(update={"context_text": ""})
+        unit.item = unit.item.model_copy(update={"hint_text": ""})
         cells[slot.table, slot.rows, slot.columns].append(unit)
     placed = [
         TableFieldPrediction(
@@ -341,7 +339,7 @@ def _consumed_clusters(
     keys: those cells leave the cluster and the rest stays in the body. In a
     cluster that gives a key, a cell recorded as a painted value during input
     preparation counts as used too, so no paragraph is left holding
-    only the values of the fields its captions keyed.
+    only the values of those fields.
     """
     assert page.size is not None and page.predictions.layout is not None
     clusters = _walk(page.predictions.layout.clusters)
@@ -560,7 +558,7 @@ class PdfFormFieldModel(BasePageModel):
         matches a value from being deleted. A paragraph that hosts a field
         item in place (``keep``) is the item's key, not a duplicate.
 
-        A value the layout model glued onto a neighbouring label (a substring
+        A value the layout model glued onto a neighbouring key (a substring
         of a larger line, not an equal twin) is left in place: cutting it out
         of the line risks removing printed text.
         """

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Values and labels of one page: widgets, text atoms and rebuilt captions."""
+"""Values and candidate keys of one page: widgets, text atoms and joined key text."""
 
 from __future__ import annotations
 
@@ -20,17 +20,17 @@ from docling.models.stages.form_field.keying.geometry import (
     span_overlap,
 )
 from docling.models.stages.form_field.keying.types import (
-    Label,
+    KeyText,
     Scope,
     Value,
     is_skipped,
 )
 
-# Pages with more text atoms than this skip caption joining and abstain from
+# Pages with more text atoms than this skip key joining and abstain from
 # free-form keying.
-MAX_LABELS = 3000
-# Layout regions whose cells never become labels.
-NOT_LABELS = {
+MAX_KEY_TEXTS = 3000
+# Layout regions whose cells never become keys.
+NOT_KEYS = {
     DocItemLabel.FORM,
     DocItemLabel.KEY_VALUE_REGION,
     DocItemLabel.TABLE,
@@ -86,7 +86,7 @@ def paints_value(box: BoundingBox, text: str, values: list[Value]) -> bool:
     """Whether the text is a filled value its widget paints into the page.
 
     Such text sits inside the widget's box and equals the widget's value; it
-    is the value itself, never a caption.
+    is the value itself, never a key.
     """
     return any(
         contains(v.bbox, box)
@@ -102,12 +102,12 @@ def inputs(
     page_height: float,
 ) -> tuple[
     list[Value],
-    list[Label],
+    list[KeyText],
     float,
     dict[int, set[tuple[int, int]]],
     set[tuple[int, int]],
 ]:
-    """Values, labels, median text height, atom sources, and painted source cells."""
+    """Values, key texts, median text height, atom sources, and painted source cells."""
     values = []
     for native in widgets:
         bbox = native.rect.to_bounding_box().to_top_left_origin(page_height)
@@ -118,11 +118,11 @@ def inputs(
     # Atom identity is source-backed and shared by all overlapping span choices.
     atoms: dict[tuple, int] = {}
     sources: dict[int, set[tuple[int, int]]] = defaultdict(set)
-    labels: dict[tuple[frozenset[int], Scope], Label] = {}
+    key_texts: dict[tuple[frozenset[int], Scope], KeyText] = {}
     heights = []
     painted_cells: set[tuple[int, int]] = set()
     for region in found:
-        if region.label in NOT_LABELS:
+        if region.label in NOT_KEYS:
             continue
         by_scope: dict[Scope, list[tuple[int, str, BoundingBox]]] = defaultdict(list)
         for cell in region.cells:
@@ -150,7 +150,7 @@ def inputs(
                 bbox = BoundingBox.enclosing_bbox([c[2] for c in bundle])
                 if scope_of(bbox, found, table_cells) != scope:
                     continue
-                labels[ids, scope] = Label(
+                key_texts[ids, scope] = KeyText(
                     " ".join(c[1] for c in bundle),
                     bbox,
                     ids,
@@ -159,28 +159,30 @@ def inputs(
                     len(bundle) < len(cells),
                 )
     h = statistics.median(heights) if heights else 1.0
-    if len(labels) > MAX_LABELS:
-        # Joining captions compares every pair of blocks; a page this large
+    if len(key_texts) > MAX_KEY_TEXTS:
+        # Joining keys compares every pair of blocks; a page this large
         # abstains in assign() anyway.
-        return values, list(labels.values()), h, sources, painted_cells
-    # Rebuild whole captions the layout split into pieces: first the pieces of
-    # one text line, then the lines of one caption. Joined captions compete
+        return values, list(key_texts.values()), h, sources, painted_cells
+    # Rebuild whole keys the layout split into pieces: first the pieces of
+    # one text line, then the lines of one key. Joined keys compete
     # with their pieces; they never replace them.
     blocks = lines(
-        [label for label in labels.values() if not label.fragment], values, h
+        [key_text for key_text in key_texts.values() if not key_text.fragment],
+        values,
+        h,
     )
-    for label in [*blocks, *stacks(blocks, values, h)]:
-        labels.setdefault((label.atoms, label.scope), label)
-    return values, list(labels.values()), h, sources, painted_cells
+    for key_text in [*blocks, *stacks(blocks, values, h)]:
+        key_texts.setdefault((key_text.atoms, key_text.scope), key_text)
+    return values, list(key_texts.values()), h, sources, painted_cells
 
 
-def joined(parts: list[Label]) -> Label:
-    return Label(
+def joined(parts: list[KeyText]) -> KeyText:
+    return KeyText(
         " ".join(part.text for part in parts),
         BoundingBox.enclosing_bbox([part.bbox for part in parts]),
         frozenset().union(*(part.atoms for part in parts)),
         parts[0].scope,
-        parts[0].role,
+        parts[0].layout_label,
         stack=True,
     )
 
@@ -189,19 +191,19 @@ def nested(a: frozenset[int], b: frozenset[int]) -> bool:
     return a <= b or b <= a
 
 
-def lines(blocks: list[Label], values: list[Value], h: float) -> list[Label]:
+def lines(blocks: list[KeyText], values: list[Value], h: float) -> list[KeyText]:
     """Text lines the layout split into side-by-side blocks, joined back.
 
     Two blocks of one line join when they are each other's nearest neighbour,
     have the same height, are under a text line apart and have no value
     between them. Pieces of one line share the lines just above and below it;
-    blocks with different neighbouring lines, or that each caption their own
-    value directly above or below (sub-captions over separate boxes), are
+    blocks with different neighbouring lines, or that each key their own
+    value directly above or below (sub-keys over separate boxes), are
     separate cells and stay apart. Returns the blocks with every joined run
     replaced by its line.
     """
 
-    def boxes_at(b: Label) -> frozenset[int]:
+    def boxes_at(b: KeyText) -> frozenset[int]:
         return frozenset(
             i
             for i, v in enumerate(values)
@@ -211,7 +213,7 @@ def lines(blocks: list[Label], values: list[Value], h: float) -> list[Label]:
             and gap(b.bbox, v.bbox) <= h
         )
 
-    def around(b: Label) -> frozenset[int]:
+    def around(b: KeyText) -> frozenset[int]:
         return frozenset(
             k
             for k, other in enumerate(blocks)
@@ -261,18 +263,18 @@ def lines(blocks: list[Label], values: list[Value], h: float) -> list[Label]:
     return result
 
 
-def stacks(blocks: list[Label], values: list[Value], h: float) -> list[Label]:
-    """Captions the layout split into one block per line, joined back.
+def stacks(blocks: list[KeyText], values: list[Value], h: float) -> list[KeyText]:
+    """Keys the layout split into one block per line, joined back.
 
     Two single-line blocks of the same line height (one font size, so never a
-    heading over a caption) join when they are each other's only neighbour
+    heading over a key) join when they are each other's only neighbour
     across a gap of under three quarters of a text line, share a left edge or
     a centre, and the upper block aligns with no value the lower one misses: a
-    caption ends at its value's row, so a line below a caption that already
-    sits beside its value starts another caption. A heading over several
-    sub-captions has several
+    key ends at its value's row, so a line below a key that already
+    sits beside its value starts another key. A heading over several
+    sub-keys has several
     neighbours and never joins one of them; a line with a value inside it is an
-    inline caption of its own. A caption merely touching its value's edge
+    inline key of its own. A key merely touching its value's edge
     still joins. Chains stop at four blocks.
     """
     joinable = [
@@ -280,7 +282,7 @@ def stacks(blocks: list[Label], values: list[Value], h: float) -> list[Label]:
         for b in blocks
         if lettered(b.text)
         and b.bbox.height <= 1.5 * h
-        and b.role
+        and b.layout_label
         not in {
             DocItemLabel.SECTION_HEADER,
             DocItemLabel.PAGE_HEADER,
@@ -337,12 +339,12 @@ def stacks(blocks: list[Label], values: list[Value], h: float) -> list[Label]:
             and rows[i] <= rows[j]
         ):
             below[i] = j
-    captions = []
+    keys = []
     for start in range(len(joinable)):
         chain = [joinable[start]]
         index = start
         while index in below and len(chain) < 4:
             index = below[index]
             chain.append(joinable[index])
-            captions.append(joined(chain))
-    return captions
+            keys.append(joined(chain))
+    return keys

@@ -329,7 +329,7 @@ def test_suppresses_rendered_duplicate_of_filled_widget() -> None:
     assert inside not in remaining  # contained duplicate dropped
     assert outside in remaining  # coincidental match kept
     assert form.children == []  # child ref pruned so assembly stays consistent
-    # A printed number is never a caption: the value stays keyless.
+    # A printed number is never a key: the value stays keyless.
     assert page.predictions.field_regions[0].items[0].key_text == ""
 
 
@@ -338,21 +338,19 @@ def _checkbox_cluster(cluster_id: int, bbox: BoundingBox) -> Cluster:
     return Cluster(id=cluster_id, label=DocItemLabel.CHECKBOX_SELECTED, bbox=bbox)
 
 
-def test_checkbox_widget_keys_its_option_caption_and_lets_as_override_classifier() -> (
-    None
-):
-    # A /Btn widget with its printed option caption to its right. The layout
+def test_checkbox_widget_keys_its_option_key_and_lets_as_override_classifier() -> None:
+    # A /Btn widget with its printed option key to its right. The layout
     # model also detected the box as CHECKBOX_SELECTED (a mark glyph), but /AS
-    # ("/Off") -- not the classifier -- decides the state. The caption becomes
+    # ("/Off") -- not the classifier -- decides the state. The key becomes
     # the key and leaves the body; the value keeps the widget's own rect.
     widget_bbox = BoundingBox(l=10, t=10, r=18, b=18)
-    caption_bbox = BoundingBox(l=22, t=10, r=80, b=18)
-    caption = _text_cluster(2, caption_bbox, "Married filing jointly")
+    key_bbox = BoundingBox(l=22, t=10, r=80, b=18)
+    key = _text_cluster(2, key_bbox, "Married filing jointly")
     glyph = _checkbox_cluster(3, BoundingBox(l=9, t=9, r=19, b=19))
     widget = _widget(0, widget_bbox, "/Off", field_type="/Btn", appearance_state="/Off")
     page = Page(page_no=1, size=Size(width=100, height=100))
     page.parsed_page = MagicMock(widgets=[widget])
-    page.predictions.layout = LayoutPrediction(clusters=[caption, glyph])
+    page.predictions.layout = LayoutPrediction(clusters=[key, glyph])
     conv_res = _conversion_result(page)
 
     list(PdfFormFieldModel(enabled=True)(conv_res, [page]))
@@ -361,12 +359,12 @@ def test_checkbox_widget_keys_its_option_caption_and_lets_as_override_classifier
     (item,) = region.items
     (value,) = item.values
     assert item.key_text == "Married filing jointly"
-    assert item.key_bbox == caption_bbox
+    assert item.key_bbox == key_bbox
     assert value.text == ""
     assert value.checkbox == "unselected"  # from /AS, overriding the classifier
     assert value.bbox == widget_bbox
-    assert caption not in page.predictions.layout.clusters  # promoted to a key
-    assert glyph in page.predictions.layout.clusters  # the mark is no caption
+    assert key not in page.predictions.layout.clusters  # promoted to a key
+    assert glyph in page.predictions.layout.clusters  # the mark is no key
 
 
 def test_pipeline_materializes_format_neutral_fields() -> None:
@@ -374,11 +372,11 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
 
     assert result.pages[0].assembled is not None
     # The layout detector merges the three checkbox lines and the note below
-    # them into one text cluster, but each checkbox has its own caption printed
+    # them into one text cluster, but each checkbox has its own key printed
     # beside it: they are options,
-    # not blanks of one sentence, so each keeps its own caption. The text field
-    # binds its detached "Full name:" label. All four land in the page-wide
-    # region; the captions leave the merged paragraph, and its last line, which
+    # not blanks of one sentence, so each keeps its own key. The text field
+    # binds its detached "Full name:" key. All four land in the page-wide
+    # region; the keys leave the merged paragraph, and its last line, which
     # keys nothing, stays in the body.
     assert [
         region.source_container_id
@@ -450,7 +448,7 @@ def test_pipeline_materializes_format_neutral_fields() -> None:
     assert disabled.document.field_items == []
     # The hosting paragraph is not dropped -- it is reinterpreted as a field_item
     # at materialization. The only cluster extraction removes is the "Full name:"
-    # label promoted out of the body to become the text field's bound key.
+    # key promoted out of the body to become the text field's bound key.
     enabled_clusters = result.pages[0].predictions.layout.clusters
     disabled_clusters = disabled.pages[0].predictions.layout.clusters
     enabled_ids = {cluster.id for cluster in enabled_clusters}
@@ -586,6 +584,45 @@ def _materialize(page: Page) -> DoclingDocument:
     return ReadingOrderModel(ReadingOrderOptions())(conv_res)
 
 
+def test_value_grid_materializes_column_headers_as_field_hints() -> None:
+    page = Page(page_no=1, size=Size(width=300, height=100))
+    boxes = [
+        BoundingBox(l=x, t=y, r=x + 60, b=y + 12) for y in (30, 65) for x in (100, 200)
+    ]
+    page.parsed_page = MagicMock(
+        widgets=[_widget(i, bbox, str(i + 1)) for i, bbox in enumerate(boxes)]
+    )
+    page.predictions.layout = LayoutPrediction(
+        clusters=[
+            _text_cluster(1, BoundingBox(l=10, t=31, r=80, b=41), "Revenue"),
+            _text_cluster(2, BoundingBox(l=10, t=66, r=80, b=76), "Expenses"),
+            _text_cluster(3, BoundingBox(l=100, t=5, r=160, b=15), "This year"),
+            _text_cluster(4, BoundingBox(l=200, t=5, r=260, b=15), "Last year"),
+        ]
+    )
+
+    doc = _materialize(page)
+
+    assert [
+        [(child.resolve(doc).label, child.resolve(doc).text) for child in item.children]
+        for item in doc.field_items
+    ] == [
+        [
+            (DocItemLabel.FIELD_KEY, key),
+            (DocItemLabel.FIELD_VALUE, str(i + 1)),
+            (DocItemLabel.FIELD_HINT, hint),
+        ]
+        for i, (key, hint) in enumerate(
+            [
+                ("Revenue", "This year"),
+                ("Revenue", "Last year"),
+                ("Expenses", "This year"),
+                ("Expenses", "Last year"),
+            ]
+        )
+    ]
+
+
 def _cell_region(doc: DoclingDocument, row: int, col: int) -> NodeItem:
     """The item a rich cell of the document's only table points to."""
     (table,) = doc.tables
@@ -599,7 +636,7 @@ def _cell_region(doc: DoclingDocument, row: int, col: int) -> NodeItem:
 
 
 def test_widget_in_table_goes_into_its_cell_with_value_only(caplog) -> None:
-    # The row caption keys the value in another column and the header names
+    # The row header names the value in another column and the header names
     # the column: the table already says both, so the empty cell TableFormer
     # did not list becomes a rich cell holding only the value.
     page, table = _table_page(with_structure=True)
@@ -611,7 +648,7 @@ def test_widget_in_table_goes_into_its_cell_with_value_only(caplog) -> None:
     assert page.predictions.field_regions == []
     (cell_fields,) = page.predictions.table_fields
     assert cell_fields.table_id == table.id
-    assert [(i.key_text, i.context_text) for i in cell_fields.items] == [("", "")]
+    assert [(i.key_text, i.hint_text) for i in cell_fields.items] == [("", "")]
     # The table keeps its cells: nothing is promoted out of the layout.
     assert [cluster.id for cluster in page.predictions.layout.clusters] == [1]
 
@@ -661,7 +698,7 @@ def test_text_in_the_widgets_own_cell_stays_in_the_rich_cell(
 def test_widget_between_columns_of_an_incomplete_grid_stays_out_of_the_table() -> None:
     # A three-column grid whose middle column has no text has no band there:
     # a widget in that column, overlapping neither neighbour's band, has no
-    # reliable cell and stays after the table, without a key: the row caption
+    # reliable cell and stays after the table, without a key: the row header
     # sits in another cell and never keys it.
     def cell(text, bbox, row, col):
         return TableCell(
@@ -711,7 +748,7 @@ def test_widget_between_columns_of_an_incomplete_grid_stays_out_of_the_table() -
 
 def test_widget_in_table_without_structure_stays_keyless() -> None:
     # Table keys come from TableFormer cells: without table structure the
-    # widget keeps its value and no free-form caption crosses into the table.
+    # widget keeps its value and no free-form key crosses into the table.
     page, _ = _table_page(with_structure=False)
 
     list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
@@ -719,18 +756,18 @@ def test_widget_in_table_without_structure_stays_keyless() -> None:
     (region,) = page.predictions.field_regions
     (item,) = region.items
     assert item.key_text == ""
-    assert item.context_text == ""
+    assert item.hint_text == ""
     assert [value.text for value in item.values] == ["1,000"]
 
 
 def test_keying_failure_keeps_values_without_keys(caplog, monkeypatch) -> None:
     # The page must not fail when the keying raises: its values come through
-    # unkeyed and the caption stays in the body.
+    # unkeyed and the key stays in the body.
     def failing(*args, **kwargs):
         raise RuntimeError("keying failed")
 
     monkeypatch.setattr(form_field_model, "assign", failing)
-    caption = _text_cluster(2, BoundingBox(l=22, t=10, r=80, b=18), "Full name")
+    key = _text_cluster(2, BoundingBox(l=22, t=10, r=80, b=18), "Full name")
     form = Cluster(
         id=1, label=DocItemLabel.FORM, bbox=BoundingBox(l=0, t=0, r=100, b=60)
     )
@@ -740,7 +777,7 @@ def test_keying_failure_keeps_values_without_keys(caplog, monkeypatch) -> None:
     ]
     page = Page(page_no=1, size=Size(width=100, height=100))
     page.parsed_page = MagicMock(widgets=widgets)
-    page.predictions.layout = LayoutPrediction(clusters=[form, caption])
+    page.predictions.layout = LayoutPrediction(clusters=[form, key])
 
     with caplog.at_level("WARNING"):
         list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
@@ -752,11 +789,11 @@ def test_keying_failure_keeps_values_without_keys(caplog, monkeypatch) -> None:
         ("", "Ada"),
         ("", "Lovelace"),
     ]
-    assert caption in page.predictions.layout.clusters
+    assert key in page.predictions.layout.clusters
 
 
 def _options_page() -> tuple[Page, Cluster]:
-    """Three checkboxes with their option captions, then a note, in one cluster.
+    """Three checkboxes with their option keys, then a note, in one cluster.
 
     acroform_sample.pdf at a quarter of its size: the layout model merges the
     four text lines into one text cluster.
@@ -803,11 +840,11 @@ def _options_page() -> tuple[Page, Cluster]:
     return page, paragraph
 
 
-def test_captions_used_as_keys_leave_a_partly_used_paragraph() -> None:
-    # Each checkbox keys its own option caption, but the note is no caption, so
-    # the paragraph is only partly used: the captions leave it, and the note
+def test_option_keys_leave_a_partly_used_paragraph() -> None:
+    # Each checkbox uses its own option key, but the note is no key, so
+    # the paragraph is only partly used: the keys leave it, and the note
     # stays in the body with a box fitted to it, instead of the whole paragraph
-    # repeating the captions after the fields.
+    # repeating the keys after the fields.
     page, paragraph = _options_page()
 
     list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
@@ -822,9 +859,9 @@ def test_captions_used_as_keys_leave_a_partly_used_paragraph() -> None:
     assert paragraph.bbox == BoundingBox(l=18, t=55, r=54.5, b=57.75)
 
 
-def test_filled_values_do_not_remain_as_a_paragraph_after_their_captions() -> None:
+def test_filled_values_do_not_remain_as_a_paragraph_after_their_keys() -> None:
     # A filled form: the page paints each widget's value, and the layout model
-    # merges two caption-and-value lines into one text cluster. Both captions
+    # merges two key-and-value lines into one text cluster. Both keys
     # become keys and the painted values are the fields' own values, so
     # nothing of the cluster is left for the body.
     def cell(index: int, text: str, bbox: BoundingBox) -> TextCell:
@@ -866,7 +903,7 @@ def test_filled_values_do_not_remain_as_a_paragraph_after_their_captions() -> No
 
 
 def test_failed_commit_restores_a_trimmed_paragraph(caplog, monkeypatch) -> None:
-    # Writing the plan fails after the captions left the paragraph: the page
+    # Writing the plan fails after the keys left the paragraph: the page
     # is left unchanged, so the paragraph gets its cells and box back.
     page, paragraph = _options_page()
     cells, bbox = list(paragraph.cells), paragraph.bbox
@@ -909,17 +946,17 @@ def test_painted_cells_survive_candidate_filters_and_abstention(
     boundary: str, abstain: bool, monkeypatch
 ) -> None:
     # Recognition must cover cells cleanup can read even when candidate filters
-    # reject them. Painted cells must not become atoms shared with captions.
-    caption = _text_cluster(1, BoundingBox(l=10, t=10, r=28, b=14), "Full name:")
+    # reject them. Painted cells must not become atoms shared with keys.
+    key = _text_cluster(1, BoundingBox(l=10, t=10, r=28, b=14), "Full name:")
     painted = _text_cluster(
         2,
         BoundingBox(l=31, t=31, r=31 if boundary == "zero_area" else 50, b=34),
         " Paris ",
     )
     painted.cells[0].index = 2
-    caption.cells += painted.cells
-    caption.bbox = BoundingBox.enclosing_bbox([caption.bbox, painted.bbox])
-    clusters = [caption]
+    key.cells += painted.cells
+    key.bbox = BoundingBox.enclosing_bbox([key.bbox, painted.bbox])
+    clusters = [key]
     if boundary == "table_scope":
         clusters.append(
             Cluster(
@@ -938,21 +975,21 @@ def test_painted_cells_survive_candidate_filters_and_abstention(
     page.predictions.layout = LayoutPrediction(clusters=clusters)
     if abstain:
         monkeypatch.setattr(
-            "docling.models.stages.form_field.keying.inputs.MAX_LABELS", 0
+            "docling.models.stages.form_field.keying.inputs.MAX_KEY_TEXTS", 0
         )
         monkeypatch.setattr(
-            "docling.models.stages.form_field.keying.solver.MAX_LABELS", 0
+            "docling.models.stages.form_field.keying.solver.MAX_KEY_TEXTS", 0
         )
 
     assignment = form_field_model._assign(page)
 
-    assert assignment.painted_cells == {(caption.id, 2)}
-    assert all(label.text == "Full name:" for label in assignment.labels)
-    assert set().union(*assignment.sources.values()) == {(caption.id, 0)}
+    assert assignment.painted_cells == {(key.id, 2)}
+    assert all(key_text.text == "Full name:" for key_text in assignment.key_texts)
+    assert set().union(*assignment.sources.values()) == {(key.id, 0)}
     assert [value.native.index for value in assignment.values] == [0, 1]
     assert (assignment.solver_status == "optimal") is not abstain
     list(PdfFormFieldModel(enabled=True)(_conversion_result(page), [page]))
-    assert (caption in page.predictions.layout.clusters) is abstain
+    assert (key in page.predictions.layout.clusters) is abstain
     assert [
         (item.key_text, [value.text for value in item.values])
         for region in page.predictions.field_regions
@@ -963,7 +1000,7 @@ def test_painted_cells_survive_candidate_filters_and_abstention(
 def test_painted_values_in_a_paragraph_without_keys_stay_in_the_body() -> None:
     # Step A preserves the current cleanup scope: only key-supplying clusters
     # lose individual painted cells. The value-only paragraph still keeps them.
-    caption = _text_cluster(1, BoundingBox(l=10, t=10, r=28, b=14), "Full name:")
+    key = _text_cluster(1, BoundingBox(l=10, t=10, r=28, b=14), "Full name:")
     painted = _text_cluster(2, BoundingBox(l=31, t=10, r=50, b=14), "John Smith")
     note = _text_cluster(
         3, BoundingBox(l=31, t=70, r=90, b=74), "See example.org for details"
@@ -975,7 +1012,7 @@ def test_painted_values_in_a_paragraph_without_keys_stay_in_the_body() -> None:
     page.parsed_page = MagicMock(
         widgets=[_widget(0, BoundingBox(l=30, t=9.5, r=70, b=14.5), "John Smith")]
     )
-    page.predictions.layout = LayoutPrediction(clusters=[caption, painted])
+    page.predictions.layout = LayoutPrediction(clusters=[key, painted])
     original_cells, original_box = list(painted.cells), painted.bbox
 
     doc = _materialize(page)
