@@ -3,8 +3,9 @@
 
 """In-process progress events emitted while documents are converted.
 
-Pass a `ProgressCallback` to `DocumentConverter(progress_callback=...)` to
-receive them. The names differ from `docling.datamodel.service.callbacks`,
+Pass a `ProgressCallback` to `DocumentConverter.convert(progress_callback=...)`
+(or `convert_all`) to receive the events of that call, or to the
+`DocumentConverter` constructor to receive the events of every call. The names differ from `docling.datamodel.service.callbacks`,
 which describes the batch-level webhook of the HTTP service.
 """
 

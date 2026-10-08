@@ -511,9 +511,12 @@ on for pipes and log files.
 
 ### Your own progress callback
 
-Pass a `progress_callback` to `DocumentConverter` to drive your own progress
-bar or forward the events elsewhere. The callback receives one event object at
-a time (see `docling.datamodel.progress`):
+Pass a `progress_callback` to drive your own progress bar or forward the
+events elsewhere. Given to `convert`, `convert_all` or `convert_string`, it
+receives the events of that call only, so one converter can serve several
+callers, such as the tasks of a service. Given to the `DocumentConverter`
+constructor, it receives the events of every call. The callback receives one
+event object at a time (see `docling.datamodel.progress`):
 
 | Event | When |
 | --- | --- |
@@ -536,8 +539,8 @@ def forward(event: ConversionProgressEvent) -> None:
     print(event.model_dump_json())  # or push it to a queue or websocket
 
 
-converter = DocumentConverter(progress_callback=forward)
-result = converter.convert("report.pdf")
+converter = DocumentConverter()
+result = converter.convert("report.pdf", progress_callback=forward)
 ```
 
 ```text

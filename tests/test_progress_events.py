@@ -185,6 +185,32 @@ def test_enrichment_items_are_counted_per_step_and_reach_the_total():
     assert by_label["_ParagraphModel"] == [(0, 4), (2, 4), (4, 4)]
 
 
+def test_each_call_routes_its_events_to_its_own_callback():
+    shared = _Recorder()
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD], progress_callback=shared
+    )
+    first, second = _Recorder(), _Recorder()
+
+    converter.convert(_md("same.md"), progress_callback=first)
+    list(
+        converter.convert_all(
+            [_md("same.md"), _md("other.md")], progress_callback=second
+        )
+    )
+
+    def documents(recorder: _Recorder) -> list[tuple[int, str]]:
+        return [
+            (ev.document_index, ev.document_name)
+            for ev in recorder.of(DocumentStartedProgress)
+        ]
+
+    assert documents(first) == [(1, "same.md")]
+    assert documents(second) == [(1, "same.md"), (2, "other.md")]
+    # The converter-level callback still sees every call.
+    assert documents(shared) == documents(first) + documents(second)
+
+
 def test_failing_document_still_gets_a_terminal_event():
     recorder = _Recorder()
     converter = _converter_with(_FailingMarkdownPipeline, recorder)

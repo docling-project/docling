@@ -473,8 +473,10 @@ class DocumentConverter:
             progress_callback: Optional callable that receives progress events
                 (see `docling.datamodel.progress`) while documents convert:
                 document start and end for every input, pipeline phases, and
-                page and enrichment-item counts where they apply. Exceptions it
-                raises are logged and ignored. With
+                page and enrichment-item counts where they apply. It receives
+                the events of every call; `convert` and `convert_all` also take
+                a callback for one call. Exceptions it raises are logged and
+                ignored. With
                 `settings.perf.doc_batch_concurrency > 1` it is called from
                 several threads at once and must be thread-safe.
             show_progress: Print progress to stderr with the built-in
@@ -587,6 +589,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> ConversionResult:
         """Convert one document fetched from a file path, URL, or DocumentStream.
 
@@ -605,6 +608,10 @@ class DocumentConverter:
                 Documents exceeding this number will not be converted.
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
+            progress_callback: Optional callable that receives the progress
+                events of this call only, on top of the converter-level
+                `progress_callback`. Use it when one converter serves several
+                callers, e.g. the tasks of a service.
 
         Returns:
             The conversion result, which contains a `DoclingDocument` in the `document`
@@ -640,6 +647,7 @@ class DocumentConverter:
             max_file_size=max_file_size,
             headers=headers,
             page_range=page_range,
+            progress_callback=progress_callback,
         )
         return next(all_res)
 
@@ -654,6 +662,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> Iterator[ConversionResult]:
         """Convert multiple documents from file paths, URLs, or DocumentStreams.
 
@@ -669,6 +678,10 @@ class DocumentConverter:
             max_file_size: Maximum file size in bytes. Documents exceeding this
                 limit will be skipped.
             page_range: Range of pages to convert in each document.
+            progress_callback: Optional callable that receives the progress
+                events of this call only, on top of the converter-level
+                `progress_callback`. Use it when one converter serves several
+                callers, e.g. the tasks of a service.
 
         Yields:
             The conversion results, each containing a `DoclingDocument` in the
@@ -700,7 +713,11 @@ class DocumentConverter:
         conv_input = _DocumentConversionInput(
             path_or_stream_iterator=source, limits=limits, headers=headers
         )
-        conv_res_iter = self._convert(conv_input, raises_on_error=raises_on_error)
+        conv_res_iter = self._convert(
+            conv_input,
+            raises_on_error=raises_on_error,
+            progress_callback=progress_callback,
+        )
 
         had_result = False
         for conv_res in conv_res_iter:
@@ -736,6 +753,7 @@ class DocumentConverter:
         content: str,
         format: InputFormat,
         name: Optional[str] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> ConversionResult:
         """Convert a document given as a string using the specified format.
 
@@ -749,6 +767,10 @@ class DocumentConverter:
             name: The filename to associate with the document. If not provided, a
                 timestamp-based name is generated. The appropriate file extension is
                 appended if missing.
+            progress_callback: Optional callable that receives the progress
+                events of this call only, on top of the converter-level
+                `progress_callback`. Use it when one converter serves several
+                callers, e.g. the tasks of a service.
 
         Returns:
             The conversion result, which contains a `DoclingDocument` in the `document`
@@ -785,7 +807,7 @@ class DocumentConverter:
             buff = BytesIO(content.encode("utf-8"))
             doc_stream = DocumentStream(name=name, stream=buff)
 
-            return self.convert(doc_stream)
+            return self.convert(doc_stream, progress_callback=progress_callback)
         elif format == InputFormat.HTML:
             if not name.endswith(".html"):
                 name += ".html"
@@ -793,7 +815,7 @@ class DocumentConverter:
             buff = BytesIO(content.encode("utf-8"))
             doc_stream = DocumentStream(name=name, stream=buff)
 
-            return self.convert(doc_stream)
+            return self.convert(doc_stream, progress_callback=progress_callback)
         elif format == InputFormat.XML_DOCLANG:
             if not name.endswith((".dclg", ".dclg.xml")):
                 name += ".dclg.xml"
@@ -801,12 +823,15 @@ class DocumentConverter:
             buff = BytesIO(content.encode("utf-8"))
             doc_stream = DocumentStream(name=name, stream=buff)
 
-            return self.convert(doc_stream)
+            return self.convert(doc_stream, progress_callback=progress_callback)
         else:
             raise ValueError(f"format {format} is not supported in `convert_string`")
 
     def _convert(
-        self, conv_input: _DocumentConversionInput, raises_on_error: bool
+        self,
+        conv_input: _DocumentConversionInput,
+        raises_on_error: bool,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> Iterator[ConversionResult]:
         start_time = time.monotonic()
 
@@ -816,7 +841,9 @@ class DocumentConverter:
         ):
             _log.info("Going to convert document batch...")
             process_func = partial(
-                self._process_indexed_document, raises_on_error=raises_on_error
+                self._process_indexed_document,
+                raises_on_error=raises_on_error,
+                progress_callback=progress_callback,
             )
 
             if (
@@ -873,12 +900,19 @@ class DocumentConverter:
             return self.initialized_pipelines[cache_key]
 
     def _process_indexed_document(
-        self, indexed_doc: tuple[int, InputDocument], raises_on_error: bool
+        self,
+        indexed_doc: tuple[int, InputDocument],
+        raises_on_error: bool,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> ConversionResult:
         document_index, in_doc = indexed_doc
         callbacks = [
             callback
-            for callback in (self.progress_callback, self.progress_printer)
+            for callback in (
+                self.progress_callback,
+                self.progress_printer,
+                progress_callback,
+            )
             if callback is not None
         ]
         progress = ProgressReporter(callbacks, in_doc.file.name, document_index)
