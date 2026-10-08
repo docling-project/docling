@@ -819,19 +819,7 @@ class _DocumentConversionInput(BaseModel):
                 with obj.open("rb") as f:
                     content = f.read(1024)
             if mime is not None and mime.lower() == "application/zip":
-                named = _ZIP_SUFFIX_MIMETYPES.get(obj.suffix.lower())
-                if named is not None:
-                    mime = named
-                else:
-                    office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
-                        obj
-                    )
-                    if office_mime is not None:
-                        mime = office_mime
-                    else:
-                        xbrl_mime = _DocumentConversionInput._detect_xbrl_zip(obj)
-                        if xbrl_mime is not None:
-                            mime = xbrl_mime
+                mime = _DocumentConversionInput._detect_zip_mime(obj, obj.name) or mime
 
         elif isinstance(obj, DocumentStream):
             if _DocumentConversionInput._has_doclang_extension(obj.name):
@@ -849,28 +837,10 @@ class _DocumentConversionInput(BaseModel):
             if mime is None:
                 mime = _DocumentConversionInput._mime_from_extension(obj_ext.lower())
             if mime is not None and mime.lower() == "application/zip":
-                named = next(
-                    (
-                        named
-                        for suffix, named in _ZIP_SUFFIX_MIMETYPES.items()
-                        if obj.name.lower().endswith(suffix)
-                    ),
-                    None,
+                mime = (
+                    _DocumentConversionInput._detect_zip_mime(obj.stream, obj.name)
+                    or mime
                 )
-                if named is not None:
-                    mime = named
-                else:
-                    office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
-                        obj.stream
-                    )
-                    if office_mime is not None:
-                        mime = office_mime
-                    else:
-                        xbrl_mime = _DocumentConversionInput._detect_xbrl_zip(
-                            obj.stream
-                        )
-                        if xbrl_mime is not None:
-                            mime = xbrl_mime
 
         mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
 
@@ -937,10 +907,19 @@ class _DocumentConversionInput(BaseModel):
     def _detect_office_mime_from_zip(
         source: Union[Path, BytesIO],
     ) -> Optional[str]:
-        """Detect Office Open XML format by inspecting ZIP archive contents.
+        """Detect Office Open XML or ODF format by inspecting ZIP archive contents.
 
-        Useful when the filename has no extension (e.g. pre-signed URLs)
-        and filetype only reports ``application/zip``.
+        Useful when the filename has no extension (e.g. pre-signed URLs) and
+        filetype only reports ``application/zip``.  Checks member-list entries
+        only; no file content is read from the archive.
+
+        Args:
+            source: The ZIP file to inspect, as a path or an in-memory stream.
+                BytesIO streams are rewound to position 0 after the call.
+
+        Returns:
+            The resolved MIME type string, or None if no known Office/ODF
+            structure is found.
         """
         try:
             with zipfile.ZipFile(source) as zf:
@@ -968,12 +947,18 @@ class _DocumentConversionInput(BaseModel):
         """Detect an XBRL ZIP by inspecting its members.
 
         An XBRL ZIP contains either a traditional XBRL instance document
-        (``.xml`` or ``.xbrl`` file with an XBRL namespace declaration) or an
-        inline XBRL (iXBRL) document (``.htm``/``.html``/``.xhtml`` with an
-        ``ix:`` namespace).  Taxonomy linkbase files (``_cal.xml``,
-        ``_def.xml``, ``_lab.xml``, ``_pre.xml``) and schema files (``.xsd``)
-        are not instances and are skipped.  At least one ``.xsd`` file must be
-        present to distinguish a proper XBRL package from an arbitrary ZIP.
+        (``.xml`` / ``.xbrl`` with the XBRL 2003 instance namespace) or an
+        inline XBRL (iXBRL) document (``.htm`` / ``.html`` / ``.xhtml`` with
+        ``ix:`` namespace markers).  Taxonomy linkbase files and ``.xsd``
+        schemas are skipped as candidate instances.  At least one ``.xsd`` must
+        be present to distinguish a proper XBRL package from an arbitrary ZIP.
+
+        Args:
+            source: The ZIP file to inspect, as a path or an in-memory stream.
+                BytesIO streams are rewound to position 0 after the call.
+
+        Returns:
+            The XBRL ZIP MIME type string, or None if no XBRL instance is found.
         """
         _INSTANCE_XML_SUFFIXES = (".xml", ".xbrl")
         _IXBRL_SUFFIXES = (".htm", ".html", ".xhtml")
@@ -1017,11 +1002,55 @@ class _DocumentConversionInput(BaseModel):
         return None
 
     @staticmethod
+    def _detect_zip_mime(source: Union[Path, BytesIO], filename: str) -> Optional[str]:
+        """Resolve the true MIME type of a ZIP-typed file.
+
+        Tries three probes in order and returns on the first match:
+
+        1. A known ZIP-container extension (``.docx``, ``.xlsx``, ``.pptx``,
+           ``.pages``, etc.) matched against ``filename``.
+        2. Office Open XML / ODF structural markers inside the archive
+           (``word/document.xml``, ``xl/workbook.xml``, …).
+        3. XBRL instance document markers inside the archive
+           (``.xsd`` presence plus XBRL namespace or ``ix:`` prefixes).
+
+        Args:
+            source: The ZIP file to inspect, as a path or an in-memory stream.
+            filename: The original filename (with extension) used for the
+                suffix-based probe.
+
+        Returns:
+            The resolved MIME type string, or None when none of the probes
+            match (the caller should keep the file typed as ``application/zip``).
+        """
+        name_lower = filename.lower()
+        named = next(
+            (
+                mime
+                for ext, mime in _ZIP_SUFFIX_MIMETYPES.items()
+                if name_lower.endswith(ext)
+            ),
+            None,
+        )
+        if named is not None:
+            return named
+        office = _DocumentConversionInput._detect_office_mime_from_zip(source)
+        if office is not None:
+            return office
+        return _DocumentConversionInput._detect_xbrl_zip(source)
+
+    @staticmethod
     def _is_ixbrl(content: bytes) -> bool:
-        """Return whether ``content`` contains inline XBRL (iXBRL) markers.
+        """Return whether content contains inline XBRL (iXBRL) markers.
 
         Checks the first 4 KB for namespace declarations or element prefixes
         that are exclusive to iXBRL documents.
+
+        Args:
+            content: Raw bytes to inspect (only the first 4 096 bytes are read).
+
+        Returns:
+            True if any iXBRL marker is found, False otherwise.
         """
         head = content[:4096]
         return any(
