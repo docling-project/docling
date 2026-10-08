@@ -38,6 +38,7 @@ from docling.backend.latex.constants import (
 from docling.backend.latex.utils.encoding import decode_latex_content
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 from docling.backend.latex.utils.text import iter_child_nodelists
+from docling.backend.utils.image import normalize_image_for_png
 
 if TYPE_CHECKING:
     from typing import Any
@@ -374,7 +375,9 @@ class MacroHandlerMixin:
                                 _log.debug(
                                     f"Loaded image {img_path}: {pil_image.size}, DPI={dpi}"
                                 )
-                            image = ImageRef.from_pil(image=pil_image, dpi=int(dpi))
+                            image = ImageRef.from_pil(
+                                image=normalize_image_for_png(pil_image), dpi=int(dpi)
+                            )
                 except Exception as e:
                     _log.debug(f"Could not load image {img_path}: {e}")
 
