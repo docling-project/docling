@@ -164,6 +164,31 @@ def test_comments_extraction(documents) -> None:
         )
 
 
+def test_comment_on_empty_cell_outside_data_is_kept(tmp_path: Path) -> None:
+    """A note on an empty cell beyond the data region is still extracted."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["name", "value"])
+    sheet.append(["a", 1])
+    sheet["A1"].comment = Comment("note on the header", "Ann")
+    sheet["D5"].comment = Comment("fill this in", "Bob")
+    file_path = tmp_path / "empty-cell-comment.xlsx"
+    workbook.save(file_path)
+
+    doc = DocumentConverter(allowed_formats=[InputFormat.XLSX]).convert(file_path)
+    comments = [
+        item.text
+        for item in doc.document.texts
+        if item.content_layer == ContentLayer.NOTES
+    ]
+
+    assert comments == [
+        "[author: Ann]: note on the header",
+        "[author: Bob]: fill this in",
+    ]
+    assert len(doc.document.tables) == 1
+
+
 def test_comment_cell_coordinates(documents) -> None:
     """Test that comment names include cell coordinates."""
     from docling_core.types.doc import GroupItem
@@ -902,7 +927,8 @@ def test_sparse_merged_anchor_and_comment_only_cell_tables(tmp_path: Path) -> No
         ),
         ((0, 4999), 1, 2, [(0, 0, "far", 1, 1), (0, 1, "far2", 1, 1)]),
     ]
-    assert comment_map == {}  # comment-only cell outside any table is dropped
+    # The comment-only cell is outside the value bounds, and its comment is kept.
+    assert comment_map == {(1, 2): [("Codex", "only a note", None)]}
 
 
 def test_missing_merge_anchor_inside_table_keeps_span(tmp_path: Path) -> None:
