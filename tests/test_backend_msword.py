@@ -2298,3 +2298,42 @@ def test_body_level_alternate_content_paragraphs_are_not_dropped():
     assert "CHOICE_BRANCH_ACTIVE" in all_text
     assert "FALLBACK_LEGACY_BRANCH_IGNORED" not in all_text
     assert "Paragraph after" in all_text
+
+
+def test_body_level_alternate_content_fallback_only():
+    """When body-level mc:AlternateContent has no Choice, the Fallback branch is walked."""
+    import io as _io
+
+    MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    XML_NS = "http://www.w3.org/XML/1998/namespace"
+
+    doc = Document()
+    body = doc.element.body
+    sectPr = body.find(f"{{{W_NS}}}sectPr")
+
+    ac = etree.Element(f"{{{MC_NS}}}AlternateContent")
+    fallback = etree.SubElement(ac, f"{{{MC_NS}}}Fallback")
+    p_fb = etree.SubElement(fallback, f"{{{W_NS}}}p")
+    r_f = etree.SubElement(p_fb, f"{{{W_NS}}}r")
+    t_f = etree.SubElement(r_f, f"{{{W_NS}}}t")
+    t_f.text = "ONLY_FALLBACK_BRANCH"
+    t_f.set(f"{{{XML_NS}}}space", "preserve")
+
+    if sectPr is not None:
+        sectPr.addprevious(ac)
+    else:
+        body.append(ac)
+
+    stream = _io.BytesIO()
+    doc.save(stream)
+    stream.seek(0)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(
+        DocumentStream(name="alternate_fallback.docx", stream=stream),
+        raises_on_error=True,
+    )
+
+    all_text = "\n".join(t.text for t in result.document.texts)
+    assert "ONLY_FALLBACK_BRANCH" in all_text
