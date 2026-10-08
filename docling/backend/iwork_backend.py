@@ -1060,9 +1060,9 @@ def _hyperlink(address: str | None) -> AnyUrl | Path | None:
 class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
     """Extract sheets and tables from Apple Numbers documents of either generation.
 
-    Each sheet becomes a page and a sheet group. Tables and charts on it become
-    table and picture items in the order they are laid out down the page, and
-    each sticky note becomes a comment in the notes layer.
+    Each sheet becomes a page and a sheet group. Tables, charts and pictures on
+    it become table and picture items in the order they are laid out down the
+    page, and each sticky note becomes a comment in the notes layer.
 
     Known limitations:
         * Cell values are read, but the number format beside them is not, so a
@@ -1083,7 +1083,10 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         * Only sheet-level comments — the ones Numbers calls sticky notes — are
           read. A comment attached to a cell is stored beside the table rather
           than on the sheet and is not.
-        * Images and shapes are not extracted.
+        * A picture is placed where the sheet puts it, but its caption, its
+          cropping and its accessibility description are not read. A picture in
+          a group takes the frame of the group.
+        * Shapes and text boxes are not extracted.
         * Password-protected documents cannot be read.
         * ``.numbers`` bundles saved as a *directory* package rather than a
           single file are not recognised; the converter cannot address a
@@ -1203,12 +1206,14 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 name=sheet.name or f"Sheet {index}",
             )
 
-            # Tables and charts share the sheet canvas, so they are laid out in
-            # one pass down the page rather than one kind after the other.
-            drawn: list[numbers_content.Table | numbers_content.PlacedChart] = [
-                *sheet.tables,
-                *sheet.charts,
-            ]
+            # Tables, charts and pictures share the sheet canvas, so they are
+            # laid out in one pass down the page rather than one kind after the
+            # other.
+            drawn: list[
+                numbers_content.Table
+                | numbers_content.PlacedChart
+                | numbers_content.PlacedPicture
+            ] = [*sheet.tables, *sheet.charts, *sheet.pictures]
             for drawable in sorted(drawn, key=numbers_content.sheet_order):
                 if isinstance(drawable, numbers_content.Table):
                     _add_sheet_table(doc, drawable, parent=group, page_no=index)
@@ -1223,6 +1228,13 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             if render_chart is not None
                             else None
                         ),
+                    )
+                elif isinstance(drawable, numbers_content.PlacedPicture):
+                    _add_picture(
+                        doc,
+                        drawable.picture,
+                        parent=group,
+                        prov=_sheet_prov(drawable.geometry, index),
                     )
 
             for position, comment in enumerate(sheet.comments, start=1):
@@ -1331,7 +1343,7 @@ def _sheet_extent(sheet: numbers_content.Sheet) -> tuple[float, float]:
     """Return how far a sheet's contents reach, in points from its top left."""
     width = 0.0
     height = 0.0
-    for drawable in (*sheet.tables, *sheet.charts, *sheet.comments):
+    for drawable in (*sheet.tables, *sheet.charts, *sheet.pictures, *sheet.comments):
         if drawable.geometry is None:
             continue
         width = max(width, drawable.geometry.left + drawable.geometry.width)

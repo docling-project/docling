@@ -4,11 +4,12 @@
 """Reader for the object graph of a Numbers 3+ (2013 onwards) document.
 
 The route through the graph is short: ``TN.DocumentArchive`` lists the sheets,
-each ``TN.SheetArchive`` lists what is drawn on it, and every drawable is a
-table, a chart or a sticky note. Tables themselves are the same ``TST`` archives
-Pages embeds, so :mod:`docling.backend.iwork.tables` reads them; what is added
-here is everything around them — the sheets, the frames that position them, and
-the values a spreadsheet cell holds that a Pages cell never does.
+each ``TN.SheetArchive`` lists what is drawn on it, and every drawable read is a
+table, a chart, a picture or a sticky note. Tables themselves are the same
+``TST`` archives Pages embeds, so :mod:`docling.backend.iwork.tables` reads them;
+what is added here is everything around them — the sheets, the frames that
+position them, and the values a spreadsheet cell holds that a Pages cell never
+does.
 
 Only the message and field numbers are format knowledge; the container layer
 lives in :mod:`docling.backend.iwork.iwa`.
@@ -20,7 +21,7 @@ import zipfile
 from datetime import datetime
 
 from docling.backend.iwork import archives, cells
-from docling.backend.iwork.archives import drawable_geometry, read_objects
+from docling.backend.iwork.archives import IWAReader, drawable_geometry, read_objects
 from docling.backend.iwork.charts import TSCH_CHART_DRAWABLE, iwa_chart
 from docling.backend.iwork.content import Geometry
 from docling.backend.iwork.iwa import IWAObject
@@ -29,6 +30,7 @@ from docling.backend.iwork.numbers_content import (
     Cell,
     Comment,
     PlacedChart,
+    PlacedPicture,
     Sheet,
     Table,
     format_bool,
@@ -57,6 +59,12 @@ TN_COMMENT_INFO = 2014
 
 Numbers calls these sticky notes. A comment anchored to a cell is stored in a
 list beside the table instead, and is not read.
+"""
+
+PICTURE_DRAWABLES = frozenset({archives.TSD_IMAGE, archives.TSD_GROUP})
+"""Message types of the drawables a sheet's pictures are read from.
+
+A group is read for the pictures in it, as Pages and Keynote read one.
 """
 
 TSK_ANNOTATION = 3056
@@ -143,22 +151,27 @@ def read_content(
             "password-protected."
         )
 
+    # The image data is read through the reader Pages and Keynote share.
+    reader = IWAReader(archive, objects)
     sheets: list[Sheet] = []
     for reference in archives.safe_fields(document.payload).get(
         DOCUMENT_SHEETS_FIELD, []
     ):
         sheet = resolve(reference, objects, TN_SHEET_ARCHIVE)
         if sheet is not None:
-            sheets.append(read_sheet(sheet, objects))
+            sheets.append(read_sheet(sheet, objects, reader))
     return sheets
 
 
-def read_sheet(sheet: IWAObject, objects: dict[int, IWAObject]) -> Sheet:
-    """Read one sheet's name and the tables, charts and notes drawn on it."""
+def read_sheet(
+    sheet: IWAObject, objects: dict[int, IWAObject], reader: IWAReader
+) -> Sheet:
+    """Read one sheet's name and the tables, charts, pictures and notes on it."""
     fields = archives.safe_fields(sheet.payload)
 
     sheet_tables: list[Table] = []
     charts: list[PlacedChart] = []
+    pictures: list[PlacedPicture] = []
     comments: list[Comment] = []
     for reference in fields.get(SHEET_DRAWABLES_FIELD, []):
         drawable = dereference(reference, objects)
@@ -172,6 +185,8 @@ def read_sheet(sheet: IWAObject, objects: dict[int, IWAObject]) -> Sheet:
             chart = read_chart(drawable, objects)
             if chart is not None:
                 charts.append(chart)
+        elif drawable.message_type in PICTURE_DRAWABLES:
+            pictures.extend(read_pictures(drawable, reader))
         elif drawable.message_type == TN_COMMENT_INFO:
             comment = read_comment(drawable, objects)
             if comment is not None:
@@ -179,11 +194,13 @@ def read_sheet(sheet: IWAObject, objects: dict[int, IWAObject]) -> Sheet:
 
     sheet_tables.sort(key=sheet_order)
     charts.sort(key=sheet_order)
+    pictures.sort(key=sheet_order)
     comments.sort(key=sheet_order)
     return Sheet(
         name=text_of(fields.get(SHEET_NAME_FIELD, [None])[0]) or "",
         tables=sheet_tables,
         charts=charts,
+        pictures=pictures,
         comments=comments,
     )
 
@@ -317,6 +334,27 @@ def read_chart(
             archives.safe_fields(drawable.payload).get(INFO_SUPER_FIELD, [None])[0]
         ),
     )
+
+
+def read_pictures(drawable: IWAObject, reader: IWAReader) -> list[PlacedPicture]:
+    """Read the pictures one drawable places on its sheet, and where it sits.
+
+    Args:
+        drawable: A ``TSD.ImageArchive``, or a ``TSD.GroupArchive`` that may hold
+            one.
+        reader: The shared reader, which finds each picture's bytes.
+
+    Returns:
+        One entry per picture. A picture whose bytes are not in the container
+        is still returned, so that it keeps its place on the sheet.
+    """
+    geometry = drawable_frame(
+        archives.safe_fields(drawable.payload).get(INFO_SUPER_FIELD, [None])[0]
+    )
+    return [
+        PlacedPicture(picture=picture, geometry=geometry)
+        for picture in reader.pictures(drawable.identifier)
+    ]
 
 
 def read_comment(info: IWAObject, objects: dict[int, IWAObject]) -> Comment | None:

@@ -29,6 +29,7 @@ from docling.backend.iwork.legacy import (
     SF_CELL_TEXT,
     SF_DATASOURCE,
     SF_GRID,
+    SF_MEDIA_ELEMENTS,
     SF_NAMESPACE,
     SF_PARAGRAPH,
     SF_TABULAR_MODEL,
@@ -39,6 +40,7 @@ from docling.backend.iwork.legacy import (
     float_attr,
     int_attr,
     legacy_geometry,
+    legacy_picture,
     parse_index,
 )
 from docling.backend.iwork.numbers_content import (
@@ -46,6 +48,7 @@ from docling.backend.iwork.numbers_content import (
     Cell,
     Comment,
     PlacedChart,
+    PlacedPicture,
     Sheet,
     Table,
     format_bool,
@@ -63,6 +66,7 @@ LS_NAMESPACE = "http://developer.apple.com/namespaces/ls"
 
 LS_WORKSPACE = f"{{{LS_NAMESPACE}}}workspace"
 LS_ATTR_WORKSPACE_NAME = f"{{{LS_NAMESPACE}}}workspace-name"
+LS_PAGE_INFO = f"{{{LS_NAMESPACE}}}page-info"
 
 SF_TABULAR_INFO = f"{{{SF_NAMESPACE}}}tabular-info"
 SF_ROWS = f"{{{SF_NAMESPACE}}}rows"
@@ -78,6 +82,16 @@ SF_CHART_COLUMN_NAMES = f"{{{SF_NAMESPACE}}}chart-column_names"
 SF_CHART_ROW_NAMES = f"{{{SF_NAMESPACE}}}chart-row_names"
 SF_ENTITY_ID = f"{{{SF_NAMESPACE}}}entity-id"
 SF_STICKY_NOTE = f"{{{SF_NAMESPACE}}}sticky-note"
+SF_LAYERS = f"{{{SF_NAMESPACE}}}layers"
+SF_LAYER = f"{{{SF_NAMESPACE}}}layer"
+SF_DRAWABLES = f"{{{SF_NAMESPACE}}}drawables"
+
+SHEET_DRAWABLES = f"{LS_PAGE_INFO}/{SF_LAYERS}/{SF_LAYER}/{SF_DRAWABLES}"
+"""Path from a workspace to the lists of what its sheet draws.
+
+A picture is read only from these lists, as on a Keynote '09 slide. The
+renditions an image keeps below it are not read as pictures of their own.
+"""
 
 SF_ATTR_HEADER_COLS = f"{{{SF_NAMESPACE}}}num-header-columns"
 SF_ATTR_CELL_COUNT = f"{{{SF_NAMESPACE}}}nc"
@@ -144,7 +158,8 @@ def read_content(
     """Read the sheets of an iWork '09 document out of its ``index.xml``.
 
     Args:
-        archive: The open ``.numbers`` container, which also holds the chart data.
+        archive: The open ``.numbers`` container, which also holds the chart data
+            and the image data.
         member: The name of its index member.
         max_total_bytes: The largest index this is willing to decompress to.
         max_file_bytes: The largest chart share this is willing to read.
@@ -171,6 +186,12 @@ def read_content(
             for info in workspace.iter(SF_CHART_INFO)
             if (chart := read_chart(info, shares)) is not None
         ]
+        pictures = [
+            picture
+            for drawables in workspace.iterfind(SHEET_DRAWABLES)
+            for drawable in drawables
+            if (picture := read_picture(drawable, archive)) is not None
+        ]
         comments = [
             comment
             for note in workspace.iter(SF_STICKY_NOTE)
@@ -178,12 +199,14 @@ def read_content(
         ]
         tables.sort(key=sheet_order)
         charts.sort(key=sheet_order)
+        pictures.sort(key=sheet_order)
         comments.sort(key=sheet_order)
         sheets.append(
             Sheet(
                 name=workspace.get(LS_ATTR_WORKSPACE_NAME) or "",
                 tables=tables,
                 charts=charts,
+                pictures=pictures,
                 comments=comments,
             )
         )
@@ -547,6 +570,25 @@ def strings(container: Element | None) -> list[str]:
     if container is None:
         return []
     return [child.get(SFA_ATTR_TEXT) or "" for child in container]
+
+
+def read_picture(drawable: Element, archive: zipfile.ZipFile) -> PlacedPicture | None:
+    """Build one picture from a drawable of a sheet, and say where it sits.
+
+    Args:
+        drawable: One element of the drawables of the sheet.
+        archive: The open ``.numbers`` container, which holds the image data.
+
+    Returns:
+        The picture and its frame, or None when the drawable is not an
+        ``sf:media`` or ``sf:image`` or names no data.
+    """
+    if drawable.tag not in SF_MEDIA_ELEMENTS:
+        return None
+    picture = legacy_picture(drawable, archive)
+    if picture is None:
+        return None
+    return PlacedPicture(picture=picture, geometry=legacy_geometry(drawable))
 
 
 def read_comment(note: Element) -> Comment | None:
