@@ -50,6 +50,7 @@ from .verify_utils import verify_document, verify_export
 pytest.importorskip("odfdo")
 from odfdo import (
     Bookmark,
+    Cell,
     Document as OdfDocument,
     DrawPage,
     Element,
@@ -61,6 +62,7 @@ from odfdo import (
     ListItem,
     Note,
     Paragraph,
+    Row,
     Section,
     Spacer,
     Span,
@@ -1779,6 +1781,44 @@ def test_ods_sheet_names_filter(tmp_path: Path):
         f"Should have 1 group, got {len(doc_single.groups)}"
     )
     assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
+
+
+def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
+    """Test a sheet that LibreOffice padded towards its full grid.
+
+    LibreOffice pads the sheets it writes, for example every sheet that it
+    converts from XLSX, with repeated empty cells that only carry a style, up to
+    column 16,384. When a column has a style, it also adds empty rows up to row
+    1,048,576. The padding holds no content, but the backend expanded each
+    repetition when it walked the sheet, so the conversion did not finish.
+    """
+    path = tmp_path / "padded.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    sheet = Table("Sheet1")
+    for values in (["Name", "Qty"], ["a", 1], ["b", 2]):
+        row = Row()
+        for value in values:
+            row.append_cell(Cell(value))
+        row.append_cell(Cell(repeated=16382, style="Default"))
+        sheet.append_row(row)
+    padding = Row(repeated=1048573)
+    padding.append_cell(Cell(repeated=16384, style="Default"))
+    sheet.append_row(padding)
+    body.append(sheet)
+    doc.save(str(path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.ODS])
+    tables = list(converter.convert(path).document.tables)
+
+    assert len(tables) == 1
+    assert [[cell.text for cell in row] for row in tables[0].data.grid] == [
+        ["Name", "Qty"],
+        ["a", "1"],
+        ["b", "2"],
+    ]
 
 
 def _build_odt_with_external_image_href(path: Path, href: str) -> Path:
