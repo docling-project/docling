@@ -592,7 +592,7 @@ def test_ordered_lists():
     )
     test_set.append(
         (
-            b'<html><body><ol start="\xc2\xb2"><li>1st item</li><li>2nd item</li></ol></body></html>',
+            b'<html><body><ol start="\xc2\xb2"><li>1st item</li><li>2nd item</li></ol></body></html>',  # ² SUPERSCRIPT TWO
             "1. 1st item\n2. 2nd item",
         )
     )
