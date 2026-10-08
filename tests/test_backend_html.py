@@ -287,6 +287,38 @@ def test_table_cell_text_skips_html_comments():
     ]
 
 
+def test_table_cell_keeps_image_next_to_plain_text():
+    # A cell with one plain text run was parsed as a plain TableCell, so an image
+    # in the same cell was dropped. With a link, formatting or a second text run
+    # in the cell, the image was kept.
+    src = (
+        b"<table>"
+        b"<tr><td><p>Chart</p><img src='chart.png'></td><td>A</td></tr>"
+        b"<tr><td><ul><li><img src='icon.png'></li><li>Item</li></ul></td>"
+        b"<td>B</td></tr>"
+        b"</table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    cells = doc.tables[0].data.table_cells
+    assert [cell.text.strip() for cell in cells] == ["Chart", "A", "Item", "B"]
+    assert len(doc.pictures) == 2
+    for picture, cell in zip(doc.pictures, (cells[0], cells[2])):
+        # The picture is part of the content of its cell
+        assert isinstance(cell, RichTableCell)
+        ancestor = picture.parent
+        while ancestor is not None and ancestor != cell.ref:
+            ancestor = ancestor.resolve(doc).parent
+        assert ancestor == cell.ref
+
+
 @pytest.mark.parametrize(
     "huge", ["100000000", "9" * 5000], ids=["large", "long-digit-string"]
 )
@@ -635,6 +667,58 @@ def test_ordered_lists():
         doc: DoclingDocument = backend.convert()
         assert doc
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
+
+
+@pytest.mark.parametrize(
+    ("items", "expected"),
+    [
+        # A CSS string sets the marker the browser renders for the item
+        (
+            "<li style=\"list-style-type: '3. ';\">three</li>"
+            "<li style='list-style-type: \"4. \"'>four</li>",
+            "3. three\n4. four",
+        ),
+        # Keyword values keep the computed number
+        (
+            '<li style="list-style-type: none;">one</li>'
+            '<li style="list-style-type: lower-alpha">two</li>',
+            "1. one\n2. two",
+        ),
+    ],
+)
+def test_ordered_list_item_marker_from_list_style_string(items: str, expected: str):
+    html = f"<html><body><ol>{items}</ol></body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = in_doc._backend.convert()
+    assert doc.export_to_markdown() == expected
+
+
+def test_list_item_markers_survive_html_export_round_trip():
+    # Docling's HTML export writes the original list item markers as a CSS
+    # string list-style-type. Converting that HTML again must keep them.
+    src = DoclingDocument(name="src")
+    group = src.add_list_group(name="list")
+    for marker, text in [("3.", "three"), ("4.", "four")]:
+        src.add_list_item(text=text, enumerated=True, marker=marker, parent=group)
+
+    html = src.export_to_html().encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="round_trip.html",
+    )
+    doc = in_doc._backend.convert()
+    items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+    assert [(item.marker, item.text) for item in items] == [
+        ("3.", "three"),
+        ("4.", "four"),
+    ]
 
 
 @pytest.mark.parametrize(

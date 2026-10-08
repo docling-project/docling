@@ -50,6 +50,7 @@ from .verify_utils import verify_document, verify_export
 pytest.importorskip("odfdo")
 from odfdo import (
     Bookmark,
+    Cell,
     Document as OdfDocument,
     DrawPage,
     Element,
@@ -61,6 +62,7 @@ from odfdo import (
     ListItem,
     Note,
     Paragraph,
+    Row,
     Section,
     Spacer,
     Span,
@@ -515,6 +517,44 @@ def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
     pictures = [item for item in child_items if isinstance(item, PictureItem)]
     assert len(pictures) == 1
     assert pictures[0].image is not None
+
+
+@pytest.mark.parametrize("kind", ["odt", "odp", "ods"])
+def test_cmyk_picture_is_kept(tmp_path: Path, kind: str):
+    # PNG can't store CMYK, so the picture must be converted rather than dropped.
+    image_path = tmp_path / "cmyk.jpg"
+    Image.new("CMYK", (200, 100), (0, 255, 255, 0)).save(image_path, format="JPEG")
+
+    doc = OdfDocument(
+        {"odt": "text", "odp": "presentation", "ods": "spreadsheet"}[kind]
+    )
+    body = doc.body
+    body.clear()
+    frame = Frame.image_frame(doc.add_file(str(image_path)), size=("2cm", "1cm"))
+    if kind == "odt":
+        paragraph = Paragraph("")
+        paragraph.append(frame)
+        body.append(paragraph)
+    elif kind == "odp":
+        page = DrawPage("page1")
+        page.append(frame)
+        body.append(page)
+    else:
+        table = Table("Sheet1", width=1, height=1)
+        body.append(table)
+        cell = table.get_cell("A1")
+        cell.append(frame)
+        table.set_cell("A1", cell)
+    path = tmp_path / f"cmyk.{kind}"
+    doc.save(str(path))
+
+    pictures = DocumentConverter().convert(path).document.pictures
+    assert len(pictures) == 1
+    image = pictures[0].image
+    assert image is not None
+    assert image.pil_image is not None
+    assert image.pil_image.size == (200, 100)
+    assert image.pil_image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
 
 
 def test_odt_ordered_nested_list(tmp_path: Path):
@@ -1741,6 +1781,44 @@ def test_ods_sheet_names_filter(tmp_path: Path):
         f"Should have 1 group, got {len(doc_single.groups)}"
     )
     assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
+
+
+def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
+    """Test a sheet that LibreOffice padded towards its full grid.
+
+    LibreOffice pads the sheets it writes, for example every sheet that it
+    converts from XLSX, with repeated empty cells that only carry a style, up to
+    column 16,384. When a column has a style, it also adds empty rows up to row
+    1,048,576. The padding holds no content, but the backend expanded each
+    repetition when it walked the sheet, so the conversion did not finish.
+    """
+    path = tmp_path / "padded.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    sheet = Table("Sheet1")
+    for values in (["Name", "Qty"], ["a", 1], ["b", 2]):
+        row = Row()
+        for value in values:
+            row.append_cell(Cell(value))
+        row.append_cell(Cell(repeated=16382, style="Default"))
+        sheet.append_row(row)
+    padding = Row(repeated=1048573)
+    padding.append_cell(Cell(repeated=16384, style="Default"))
+    sheet.append_row(padding)
+    body.append(sheet)
+    doc.save(str(path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.ODS])
+    tables = list(converter.convert(path).document.tables)
+
+    assert len(tables) == 1
+    assert [[cell.text for cell in row] for row in tables[0].data.grid] == [
+        ["Name", "Qty"],
+        ["a", "1"],
+        ["b", "2"],
+    ]
 
 
 def _build_odt_with_external_image_href(path: Path, href: str) -> Path:

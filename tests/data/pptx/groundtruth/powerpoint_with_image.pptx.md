@@ -10,4 +10,4 @@ Image linked to file
 
 <!-- image -->
 
-- This is a picture inserted through a layout’s picture placeholder
+This is a picture inserted through a layout’s picture placeholder

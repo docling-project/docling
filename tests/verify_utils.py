@@ -519,7 +519,9 @@ def check_conversion_result_v2(
         # Replicates DoclingDocument.save_as_json's serialization (the platform
         # newline its write_text emits is the reason this helper pins LF).
         document_json = json.dumps(
-            doc_pred.export_to_dict(coord_precision=COORD_PREC, confid_precision=CONFID_PREC),
+            doc_pred.export_to_dict(
+                coord_precision=COORD_PREC, confid_precision=CONFID_PREC
+            ),
             ensure_ascii=False,
             indent=indent,
         )

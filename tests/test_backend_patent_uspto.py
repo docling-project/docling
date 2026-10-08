@@ -90,7 +90,9 @@ def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:
     write_ground_truth(
         GT_PATH / f"{file_stem}.json",
         json.dumps(
-            doc.export_to_dict(coord_precision=COORD_PREC, confid_precision=CONFID_PREC),
+            doc.export_to_dict(
+                coord_precision=COORD_PREC, confid_precision=CONFID_PREC
+            ),
             ensure_ascii=False,
             indent=2,
         ),

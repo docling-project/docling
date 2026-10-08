@@ -32,7 +32,7 @@ class MathHandlerMixin:
         text_buffer: List[str],
         flush_fn: Callable[[], None],
     ):
-        is_display = getattr(node, "displaytype", None) == "display"
+        is_display = node.displaytype == "display"
 
         if not is_display:
             math_verbatim = node.latex_verbatim()

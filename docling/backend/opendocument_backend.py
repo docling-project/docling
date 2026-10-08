@@ -61,6 +61,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -974,7 +975,7 @@ def _image_ref_from_odf_image(
 
     pil_image = PILImage.open(BytesIO(image_data))
     pil_image.load()
-    return ImageRef.from_pil(image=pil_image, dpi=72)
+    return ImageRef.from_pil(image=normalize_image_for_png(pil_image), dpi=72)
 
 
 def _odf_image_href(image: Any) -> str | None:
@@ -2077,6 +2078,12 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             if not start_page <= page_no <= end_page:
                 continue
             _log.info(f"Processing sheet {sheet_idx}: {table.name} as page {page_no}")
+
+            # LibreOffice pads sheets towards its full grid (16,384 columns and
+            # 1,048,576 rows) with repeated empty cells and rows that only carry a
+            # style. odfdo expands each repetition when it traverses the sheet, so
+            # remove the trailing padding first. Cells with content are kept.
+            table.rstrip(aggressive=True)
 
             # Add page for this sheet
             page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
