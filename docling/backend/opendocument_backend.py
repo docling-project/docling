@@ -2296,26 +2296,21 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     ) -> None:
         """Find and extract images from an ODS sheet."""
         try:
-            # Get all images in the table
-            images = table.get_images()
+            # Pictures anchored to a cell are added with that cell. The ones
+            # anchored to the sheet itself are in <table:shapes>.
+            images = table.get_elements("table:shapes//draw:image")
             for img in images:
                 try:
-                    # Get the image data
-                    image_data = img.get_data()
-                    if image_data:
-                        # Convert to PIL Image
-                        from io import BytesIO
-
-                        pil_image = PILImage.open(BytesIO(image_data))
-
-                        # Try to get position information
-                        # ODF images are typically anchored to cells
+                    image_ref = _image_ref_from_odf_image(
+                        self.odf_obj, img, image_loader=self._image_loader
+                    )
+                    if image_ref is not None:
                         # For now, use a default position
                         anchor = (0, 0, 1, 1)
 
                         doc.add_picture(
                             parent=parent,
-                            image=ImageRef.from_pil(image=pil_image, dpi=72),
+                            image=image_ref,
                             caption=None,
                             prov=ProvenanceItem(
                                 page_no=page_no,
