@@ -41,7 +41,13 @@ def test_convert_valid():
     assert len(relevant_paths) > 0
 
     yaml_filter = ["inline_and_formatting", "mixed_without_h1"]
-    json_filter = ["escaped_characters", "line_breaks", "signature_stamp_01"]
+    json_filter = [
+        "escaped_characters",
+        "line_breaks",
+        "list_item_blocks",
+        "list_item_blocks_html",
+        "signature_stamp_01",
+    ]
 
     for in_path in relevant_paths:
         md_gt_path = md_path / "groundtruth" / f"{in_path.name}.md"
@@ -779,7 +785,18 @@ def test_list_item_paragraph_survives_an_html_block():
     )
     doc = _convert_markdown(markdown, MarkdownBackendOptions())
 
-    assert "Use the key from the dashboard." in doc.export_to_markdown()
+    # An HTML block routes the document through the HTML backend, which folds
+    # the item's paragraphs into the item text instead of keeping them as children.
+    item = next(
+        t
+        for t in doc.texts
+        if isinstance(t, ListItem) and t.text.startswith("Set the API key.")
+    )
+    held = [item.text] + [ref.resolve(doc).text for ref in item.children]
+    assert any("Use the key from the dashboard." in text for text in held)
+    for group in doc.groups:
+        if isinstance(group, ListGroup):
+            assert all(isinstance(ref.resolve(doc), ListItem) for ref in group.children)
 
 
 def test_convert_line_break_next_to_code_span():

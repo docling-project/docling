@@ -877,7 +877,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     and list_last_item_by_ref.get(parent_item.self_ref, None)
                 ):
                     _log.debug(
-                        "walking into new List hanging from item of parent list %s",
+                        "redirecting child of ListItem into the item itself (parent list %s)",
                         parent_item.self_ref,
                     )
                     parent_item = list_last_item_by_ref[parent_item.self_ref]
