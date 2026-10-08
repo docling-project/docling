@@ -515,6 +515,7 @@ def test_ods_sheet_anchored_picture_is_kept(tmp_path: Path):
     pictures = DocumentConverter().convert(path).document.pictures
     # One picture from the cell and one from the sheet, neither of them twice
     assert len(pictures) == 2
+    assert all(p.image is not None for p in pictures)
 
 
 def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
