@@ -38,3 +38,10 @@ item-0 at level 0: unspecified: group _root_
       item-37 at level 3: list: group list
         item-38 at level 4: list_item: Second item
       item-39 at level 3: text: After.
+    item-40 at level 2: section_header: List items without text
+      item-41 at level 3: list: group ordered list
+        item-42 at level 4: list_item: 
+          item-43 at level 5: table with [1x2]
+        item-44 at level 4: list_item: 
+          item-45 at level 5: picture
+        item-46 at level 4: list_item: Third item

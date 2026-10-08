@@ -292,8 +292,8 @@ print(budget.export_to_markdown(
 
 A chart on a Keynote slide or a Numbers sheet becomes a picture classified by
 its kind, with the data it plots in the picture's `meta.tabular_chart` and its
-title as the caption, which is the shape the PowerPoint backend gives a chart. Keynote keeps
-no picture of a chart, so the picture itself is empty unless you opt into
+title as the caption, which is the shape the PowerPoint backend gives a chart. Neither app keeps
+a picture of a chart, so the picture itself is empty unless you opt into
 `render_chart_images`. That rebuilds each chart from its data as an Office chart
 and draws it with LibreOffice, so it needs a LibreOffice installation. The image
 has the chart's kind, data and title but not its colours or fonts, and a mixed,
@@ -317,9 +317,10 @@ for picture in deck.pictures:
         print(picture.caption_text(deck), picture.meta.tabular_chart.chart_data)
 ```
 
-Charts are read from Keynote 6 and later; a chart in an iWork '09 presentation
-is not read. `render_chart_images` draws Keynote charts only — a Numbers chart
-carries its data and its classification, but no image.
+The same option draws the charts of a Numbers spreadsheet, passed through
+`IWorkNumbersFormatOption` instead. Charts are read from Keynote 6 and later, and
+from Numbers documents of either generation; a chart in an iWork '09
+presentation is not read.
 
 `sheet_names` converts only the sheets it names, and `page_range` narrows the
 selection further, since each sheet is a page:

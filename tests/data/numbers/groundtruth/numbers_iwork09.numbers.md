@@ -2,15 +2,11 @@ Expenditure by Category
 
 <!-- image -->
 
-Other chart
+Pie chart
 
-|               |   Amount |
-|---------------|----------|
-| Home          |   -872.4 |
-| Food          |     -226 |
-| Gas           |   -137.5 |
-| Credit Card   |    -1095 |
-| Entertainment |     -245 |
+|        |   Home |   Food |    Gas |   Credit Card |   Entertainment |
+|--------|--------|--------|--------|---------------|-----------------|
+| Amount | -872.4 |   -226 | -137.5 |         -1095 |            -245 |
 
 Account Categories
 
