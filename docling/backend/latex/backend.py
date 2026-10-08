@@ -72,6 +72,13 @@ class LatexDocumentBackend(
             options = LatexBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options = LatexBackendOptions.model_validate(self.options)
+        # Directory that relative \input, \include and \includegraphics paths
+        # resolve against. A stream has none unless source_uri gives it.
+        self._source_dir: Path | None = None
+        if isinstance(self.path_or_stream, Path):
+            self._source_dir = self.path_or_stream.parent
+        elif self.options.source_uri is not None:
+            self._source_dir = Path(self.options.source_uri).parent
         self.labels: dict[str, bool] = {}
         self._custom_macros: dict[str, str] = {}
         self._custom_macro_num_args: dict[str, int] = {}

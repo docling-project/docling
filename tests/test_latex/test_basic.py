@@ -11,7 +11,7 @@ from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, LatexFormatOption
 
 from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
@@ -354,6 +354,75 @@ def test_latex_input_file_in_main_file_encoding(tmp_path, encoding, inputenc):
     assert "Résumé of the thesis." in md
     assert "Méthode" in md
     assert "The chapter body." in md
+
+
+def _write_paper_with_includes(directory: Path) -> Path:
+    """Write a main.tex that pulls in a sibling .tex file and a figure."""
+    from PIL import Image as PILImage
+
+    (directory / "intro.tex").write_text("\\section{Introduction}\nIncluded text.\n")
+    PILImage.new("RGB", (20, 10), "blue").save(directory / "fig.png")
+    main_file = directory / "main.tex"
+    main_file.write_text(
+        "\\documentclass{article}\n\\begin{document}\nMain text.\n"
+        "\\input{intro}\n\\includegraphics{fig.png}\n\\end{document}\n"
+    )
+    return main_file
+
+
+@pytest.mark.parametrize("relative", [False, True])
+def test_latex_str_source_resolves_included_files(tmp_path, monkeypatch, relative):
+    """A str source resolves \\input and \\includegraphics like a Path source."""
+    main_file = _write_paper_with_includes(tmp_path)
+    if relative:
+        monkeypatch.chdir(tmp_path)
+        source = "main.tex"
+    else:
+        source = str(main_file)
+
+    doc = get_latex_converter().convert(source).document
+
+    assert "Included text." in doc.export_to_markdown()
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+
+
+def test_latex_stream_resolves_included_files_with_source_uri(tmp_path):
+    """A stream resolves relative files against source_uri when it is given."""
+    main_file = _write_paper_with_includes(tmp_path)
+    stream = BytesIO(main_file.read_bytes())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="main.tex",
+    )
+
+    doc = LatexDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=stream,
+        options=LatexBackendOptions(source_uri=main_file),
+    ).convert()
+
+    assert "Included text." in doc.export_to_markdown()
+    assert doc.pictures[0].image is not None
+
+
+def test_latex_format_option_source_uri_only_for_local_str():
+    """Only a local str source gets a source_uri; a URL has no local directory."""
+    option = LatexFormatOption()
+
+    local = option.backend_options_for_input("paper/main.tex")
+    assert local is not None
+    assert local.source_uri == Path("paper/main.tex")
+    assert option.backend_options_for_input("https://example.com/main.tex") is None
+    assert option.backend_options_for_input(Path("paper/main.tex")) is None
+
+    custom = LatexFormatOption(backend_options=LatexBackendOptions(parse_timeout=5))
+    options = custom.backend_options_for_input("paper/main.tex")
+    assert options is not None
+    assert options.parse_timeout == 5
+    assert options.source_uri == Path("paper/main.tex")
 
 
 def test_latex_author_date():

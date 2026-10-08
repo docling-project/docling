@@ -45,7 +45,7 @@ class EnvironmentHandlerMixin:
     if TYPE_CHECKING:
         options: BaseBackendOptions
         latex_preamble: str
-        path_or_stream: Any
+        _source_dir: Path | None
         _tectonic_engine: TectonicEngine | None
         _tikz_executor: ThreadPoolExecutor | None
         _tikz_futures: list[Future[Any]]
@@ -213,9 +213,7 @@ class EnvironmentHandlerMixin:
                         set_code_fallback()
 
                 preamble = self.latex_preamble
-                source_root = None
-                if isinstance(self.path_or_stream, Path):
-                    source_root = self.path_or_stream.parent
+                source_root = self._source_dir
                 if self._tikz_executor:
                     future = self._tikz_executor.submit(
                         render_task,
