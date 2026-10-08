@@ -103,6 +103,12 @@ def test_e2e_conversions():
             )
         )
 
+    # Orientation detection must not change the upright page
+    configs.append((RapidOcrOptions(detect_orientation=True), False))
+    configs.append(
+        (RapidOcrOptions(detect_orientation=True, mode=OcrMode.FULL_PAGE), False)
+    )
+
     # only works on mac
     if "darwin" == sys.platform:
         configs.append((OcrMacOptions(), True))

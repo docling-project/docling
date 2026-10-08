@@ -6,11 +6,12 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Type, get_args
+from typing import TYPE_CHECKING, Any, Type, get_args
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
+from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -26,6 +27,10 @@ from docling.exceptions import (
     RapidOcrModelSizeNotSupportedError,
 )
 from docling.models.base_ocr_model import BaseOcrModel
+from docling.models.stages.ocr.tesseract_utils import (
+    parse_tesseract_orientation,
+    tesseract_box_to_bounding_rectangle,
+)
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.ocr_language import (
     OcrLanguage,
@@ -480,6 +485,8 @@ class RapidOcrModel(BaseOcrModel):
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
         self._native_codes: list[str] = []
+        # Tesseract OSD reader, only set when `detect_orientation` is on
+        self._osd_reader: Any = None
 
         if self.enabled:
             try:
@@ -667,6 +674,9 @@ class RapidOcrModel(BaseOcrModel):
                 params=params,
             )
 
+            if self.options.detect_orientation:
+                self._osd_reader = _create_osd_reader()
+
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         return _ppocr_supported_languages(_rapidocr_vocabulary(self.options.backend))
 
@@ -764,6 +774,12 @@ class RapidOcrModel(BaseOcrModel):
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
                         )
+                        orientation = self._detect_orientation(high_res_image)
+                        if orientation != 0:
+                            high_res_image = high_res_image.rotate(
+                                -orientation, expand=True
+                            )
+                        im_size = high_res_image.size
                         im = numpy.array(high_res_image)
                         result = self.reader(
                             im,
@@ -789,20 +805,8 @@ class RapidOcrModel(BaseOcrModel):
                                     orig=line[1],
                                     confidence=line[2],
                                     from_ocr=True,
-                                    rect=BoundingRectangle.from_bounding_box(
-                                        BoundingBox.from_tuple(
-                                            coord=(
-                                                (line[0][0][0] / self.scale)
-                                                + ocr_rect.l,
-                                                (line[0][0][1] / self.scale)
-                                                + ocr_rect.t,
-                                                (line[0][2][0] / self.scale)
-                                                + ocr_rect.l,
-                                                (line[0][2][1] / self.scale)
-                                                + ocr_rect.t,
-                                            ),
-                                            origin=CoordOrigin.TOPLEFT,
-                                        )
+                                    rect=self._line_rect(
+                                        line[0], ocr_rect, orientation, im_size
                                     ),
                                 )
                                 for ix, line in enumerate(result)
@@ -818,6 +822,61 @@ class RapidOcrModel(BaseOcrModel):
 
                 yield page
 
+    def _detect_orientation(self, image: Image.Image) -> int:
+        """The turn that makes the region upright, in the convention of the Tesseract engines.
+
+        0 when `detect_orientation` is off, when OSD finds too little text, or when its
+        confidence is below `orientation_min_confidence`.
+        """
+        if self._osd_reader is None:
+            return 0
+        self._osd_reader.SetImage(image)
+        osd = self._osd_reader.DetectOrientationScript()
+        if osd is None or osd["orient_conf"] < self.options.orientation_min_confidence:
+            return 0
+        return parse_tesseract_orientation(osd["orient_deg"])
+
+    def _line_rect(
+        self,
+        points: list[list[float]],
+        ocr_rect: BoundingBox,
+        orientation: int,
+        im_size: tuple[int, int],
+    ) -> BoundingRectangle:
+        """Map a line read on the (possibly turned) region image back onto the page."""
+        # Corners 0 and 2 of RapidOCR's quadrilateral span the line box
+        box = BoundingBox.from_tuple(
+            coord=(points[0][0], points[0][1], points[2][0], points[2][1]),
+            origin=CoordOrigin.TOPLEFT,
+        )
+        return tesseract_box_to_bounding_rectangle(
+            box,
+            original_offset=ocr_rect,
+            scale=self.scale,
+            orientation=orientation,
+            im_size=im_size,
+        )
+
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:
         return RapidOcrOptions
+
+
+def _create_osd_reader() -> Any:
+    """A tesserocr reader that only runs orientation and script detection."""
+    try:
+        import tesserocr
+    except ImportError:
+        raise ImportError(
+            "RapidOCR `detect_orientation` uses Tesseract's orientation detection. "
+            "Please install tesserocr via `pip install tesserocr`, or turn "
+            "`detect_orientation` off."
+        )
+    _, codes = tesserocr.get_languages()
+    if "osd" not in codes:
+        raise ImportError(
+            "RapidOCR `detect_orientation` needs the Tesseract 'osd' traineddata. "
+            "Install it (e.g. the tesseract-ocr-osd package) and make sure the "
+            "TESSDATA_PREFIX envvar points to its directory."
+        )
+    return tesserocr.PyTessBaseAPI(lang="osd", psm=tesserocr.PSM.OSD_ONLY)

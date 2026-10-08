@@ -419,6 +419,27 @@ class RapidOcrOptions(OcrOptions):
             description="Enable text direction classification stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
+    detect_orientation: Annotated[
+        bool,
+        Field(
+            description=(
+                "Detect the orientation of each OCR region with Tesseract OSD and turn the region upright "
+                "before recognition, as the Tesseract engines do. Unlike `use_cls`, which flips single text "
+                "lines by 180 degrees, this also handles pages turned by 90 or 270 degrees. Requires "
+                "`tesserocr` and the `osd` traineddata."
+            )
+        ),
+    ] = False
+    orientation_min_confidence: Annotated[
+        float,
+        Field(
+            description=(
+                "Lowest Tesseract OSD orientation confidence that turns a region. A region with a lower "
+                "confidence is recognized as it is. Only used with `detect_orientation`."
+            ),
+            ge=0.0,
+        ),
+    ] = 5.0
     use_rec: Annotated[
         bool | None,
         Field(

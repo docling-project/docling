@@ -231,6 +231,26 @@ to every `--rapidocr-backend-lang` pair given (or to the default pair, if none a
 docling-tools models download rapidocr --rapidocr-backend-lang onnxruntime:en --rapidocr-model-size tiny
 ```
 
+### RapidOCR page orientation
+
+RapidOCR's line classifier (`use_cls`) only flips single text lines by 180 degrees. A scanned page
+that is turned by 90 or 270 degrees, or upside down with `use_cls` off, is read as garbage. With
+`detect_orientation`, docling runs Tesseract's orientation detection (OSD) on each OCR region and
+turns the region upright before RapidOCR reads it, as the Tesseract engines do. The text boxes are
+mapped back onto the page.
+
+```python
+from docling.datamodel.pipeline_options import RapidOcrOptions
+
+options = RapidOcrOptions(detect_orientation=True)
+```
+
+This needs the `tesserocr` extra and the `osd` traineddata.
+
+OSD can give a wrong orientation when a region has little text. A region is only turned when the
+OSD confidence is at least `orientation_min_confidence` (default `5.0`). A page with only one or two
+lines of text often scores lower than that and is read as it is; lower the value for such pages.
+
 
 ## EasyOCR
 
