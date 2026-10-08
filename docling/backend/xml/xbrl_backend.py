@@ -45,7 +45,7 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError, OperationNotAllowed
+from docling.exceptions import DocumentLoadError, OperationNotAllowed, SecurityError
 
 _XBRL_AVAILABLE: bool = False
 _XBRL_IMPORT_ERROR: ImportError | None = None
@@ -234,12 +234,40 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                         entry_name = _find_instance_entry(zf)
                         # Extract any taxonomy package ZIPs nested inside the
                         # outer ZIP so Arelle can use them for catalog mapping.
-                        for member in zf.namelist():
-                            if member.lower().endswith(".zip") and member != entry_name:
-                                pkg_dir.mkdir(exist_ok=True)
-                                pkg_on_disk = pkg_dir / Path(member).name
-                                pkg_on_disk.write_bytes(zf.read(member))
-                                zip_paths.append(str(pkg_on_disk))
+                        pkg_members_seen = 0
+                        total_pkg_bytes = 0
+                        for info in zf.infolist():
+                            member = info.filename
+                            if (
+                                not member.lower().endswith(".zip")
+                                or member == entry_name
+                            ):
+                                continue
+                            # Reject oversized members before decompression.
+                            if info.file_size > options.max_file_bytes:
+                                raise SecurityError(
+                                    f"Taxonomy package member too large to extract: {member!r}"
+                                )
+                            total_pkg_bytes += info.file_size
+                            if total_pkg_bytes > options.max_total_bytes:
+                                raise SecurityError(
+                                    "Taxonomy packages exceed total extraction size limit"
+                                )
+                            pkg_members_seen += 1
+                            if pkg_members_seen > options.max_member_count:
+                                raise SecurityError(
+                                    "Too many taxonomy package members in XBRL ZIP"
+                                )
+                            # Flatten to bare filename and confirm the resolved
+                            # destination stays inside pkg_dir (zip-slip guard).
+                            pkg_dir.mkdir(exist_ok=True)
+                            pkg_on_disk = (pkg_dir / Path(member).name).resolve()
+                            if not pkg_on_disk.is_relative_to(pkg_dir.resolve()):
+                                raise SecurityError(
+                                    f"ZIP slip attempt in taxonomy package: {member!r}"
+                                )
+                            pkg_on_disk.write_bytes(zf.read(member))
+                            zip_paths.append(str(pkg_on_disk))
                     if zip_paths:
                         _log.debug(f"Taxonomy packages extracted from ZIP: {zip_paths}")
                     arelle_load_path = str(zip_on_disk) + "/" + entry_name

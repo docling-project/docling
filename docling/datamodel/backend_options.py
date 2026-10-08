@@ -641,6 +641,34 @@ class XBRLBackendOptions(BaseBackendOptions):
             )
         ),
     ] = None
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum uncompressed size in bytes for any single taxonomy package"
+                " member extracted from the XBRL ZIP archive."
+            )
+        ),
+    ] = 64 * 1024 * 1024  # 64 MiB
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum cumulative uncompressed size in bytes of all taxonomy"
+                " package members extracted from the XBRL ZIP archive during"
+                " processing."
+            )
+        ),
+    ] = 256 * 1024 * 1024  # 256 MiB
+    max_member_count: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum number of taxonomy package ZIP members to extract from"
+                " the XBRL ZIP archive."
+            )
+        ),
+    ] = 100
 
 
 class EbcdicFieldType(str, Enum):
