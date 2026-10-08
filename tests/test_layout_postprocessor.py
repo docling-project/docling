@@ -176,14 +176,6 @@ def test_nested_same_label_clusters_resolve_before_cell_assignment() -> None:
 
 
 def test_same_label_overlap_pass_keeps_different_labels_separate() -> None:
-    cells = [
-        _text_cell(
-            0,
-            BoundingBox(l=10.0, t=10.0, r=90.0, b=90.0),
-            text="Some text",
-        ),
-    ]
-
     section_header = _cluster(
         0,
         BoundingBox(l=0.0, t=0.0, r=100.0, b=100.0),
@@ -197,7 +189,7 @@ def test_same_label_overlap_pass_keeps_different_labels_separate() -> None:
         confidence=0.530,
     )
 
-    page = _PageStub(cells)
+    page = _PageStub([])
     postprocessor = LayoutPostprocessor(
         page,
         [section_header, text_cluster],
