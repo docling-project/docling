@@ -1,0 +1,2 @@
+{"id":"05918e36-ccd8-4b2c-91bc-a3fe374692f0","fileUri":"file:///Users/ceb/git/docling/docling/datamodel/backend_options.py","repoName":"docling-project/docling","branchName":"fix/docx-outline","toolName":"apply_diff","startLine":506,"endLine":511,"taskId":null,"createdAt":1791197425937}
+{"id":"24d4c6c9-9469-464f-abb1-213cc6958949","fileUri":"file:///Users/ceb/git/docling/tests/test_backend_msword_outline.py","repoName":"docling-project/docling","branchName":"fix/docx-outline","toolName":"apply_diff","startLine":205,"endLine":229,"taskId":null,"createdAt":1791197207237}
