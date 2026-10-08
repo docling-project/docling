@@ -183,18 +183,23 @@ def _ppocr_supported_languages(vocabulary: frozenset[str]) -> OcrLanguageSupport
 def _installed_ppocrv6_codes() -> frozenset[str]:
     """The PP-OCRv6 recognition languages, read from the installed rapidocr.
 
-    `PP_OCRV6_LANGS` is not part of rapidocr's public API, so a version that
-    moves it has to say so rather than leave docling guessing at the vocabulary.
+    Asks `list_supported_langs`, which every rapidocr in the supported range
+    provides; the `PP_OCRV6_LANGS` constant it replaces was removed in 3.10.0.
+    A version that moves it has to say so rather than leave docling guessing
+    at the vocabulary.
     """
+    from rapidocr.utils.typings import OCRVersion, TaskType
+
     try:
-        from rapidocr.utils.model_resolver import PP_OCRV6_LANGS
+        from rapidocr.utils.model_resolver import list_supported_langs
     except ImportError as err:
         raise ImportError(
             f"The installed rapidocr ({safe_version('rapidocr')}) does not expose "
-            "PP_OCRV6_LANGS, which docling needs to resolve PP-OCR recognizers. "
-            "Install a version in the supported range: rapidocr>=3.9.1,<4.0.0."
+            "list_supported_langs, which docling needs to resolve PP-OCR "
+            "recognizers. Install a version in the supported range: "
+            "rapidocr>=3.9.1,<4.0.0."
         ) from err
-    return frozenset(PP_OCRV6_LANGS)
+    return frozenset(list_supported_langs(TaskType.REC, OCRVersion.PPOCRV6))
 
 
 @lru_cache(maxsize=len(_RAPIDOCR_BACKENDS))
