@@ -86,6 +86,7 @@ from docling.backend.iwork.content import (
 )
 from docling.backend.iwork.iwa import is_encrypted
 from docling.backend.iwork.keynote_content import Presentation, Slide
+from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -791,7 +792,7 @@ def _add_picture(
     if picture.data is not None:
         try:
             with Image.open(BytesIO(picture.data)) as opened:
-                image = ImageRef.from_pil(image=opened.convert("RGB"), dpi=72)
+                image = ImageRef.from_pil(image=normalize_image_for_png(opened), dpi=72)
         except (OSError, ValueError) as exc:
             # Pages stores whatever the author placed, including formats Pillow
             # has no decoder for. The picture still belongs in the flow.
