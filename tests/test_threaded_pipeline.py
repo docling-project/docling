@@ -343,6 +343,7 @@ def test_threaded_pipeline_parallel_conversions_use_separate_model_threads():
         worker.start()
     for worker in workers:
         worker.join(timeout=120)
+        assert not worker.is_alive(), f"{worker.name} did not finish within 120 s"
     assert statuses == [ConversionStatus.SUCCESS] * 2
     assert len(layout_threads) == 2
 
