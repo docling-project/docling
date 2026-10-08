@@ -3,7 +3,7 @@
 
 import logging
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from io import BytesIO
 from pathlib import Path
 
@@ -1039,12 +1039,82 @@ def test_format_excel_value_matches_excel_display() -> None:
     assert (
         _format_excel_value(
             datetime(2024, 1, 2, 0, 0),
-            "yyyy\\-mm\\-dd\\ h:mm:ss",
+            "yyyy\\-mm\\-dd\\ hh:mm:ss",
         )
         == "2024-01-02 00:00:00"
     )
     assert _format_excel_value(12.5, "General") == "12.5"
     assert _format_excel_value(1, "\\1\\.0#") == "1"
+
+
+@pytest.mark.parametrize(
+    "value,number_format,expected",
+    [
+        (datetime(2025, 2, 1), "mm-dd-yy", "2025-02-01"),
+        (datetime(2025, 2, 1, 13, 30), "m/d/yy h:mm", "2025-02-01 13:30:00"),
+        (time(0, 7, 45), "mm:ss", "07:45"),
+        (time(13, 30), "h:mm AM/PM", "1:30 PM"),
+        (time(0, 7), "hh:mm AM/PM", "12:07 AM"),
+        (time(13, 30), "h:mm", "13:30"),
+        (datetime(2025, 2, 1), "d-mmm-yy", "1-Feb-25"),
+        (datetime(2025, 2, 1), '"Due "mmm d', "Due Feb 1"),
+        (datetime(2025, 2, 1), '"Due; "mmm d', "Due; Feb 1"),
+        (datetime(2025, 2, 1), "yyyy-mm-dd", "2025-02-01"),
+        (12.5, "[$$-409]#,##0.00", "$12.50"),
+        (-5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
+        (-5, '"$"#,##0.00;[Red]"$"-#,##0.00', "$-5.00"),
+        (-5, '"$"#,##0.00', "-$5.00"),
+        (0.125, "0%", "13%"),
+        (-0.125, "0%", "-13%"),
+        (0.0125, "0.00%", "1.25%"),
+        (12.5, '"$"#,##0', "$13"),
+        (-12.5, '"$"#,##0', "-$13"),
+        (1234.565, '"$"#,##0.00', "$1,234.57"),
+        (0, '"$"0;("$"0);"-"', "-"),
+        (0, '"$"0;("$"0);', ""),
+        (12.5, '0.00"$"', "12.50$"),
+        # Unsupported formats retain the value instead of dropping format semantics.
+        (timedelta(days=1, hours=2, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
+        (datetime(2025, 2, 1), "[$-409]mmmm d, yyyy", "2025-02-01 00:00:00"),
+        (0.125, "[>=1]0%;0.0%", "0.125"),
+        (12.5, '"$"0.##', "12.5"),
+        (12.5, '"$0"0.00', "12.5"),
+    ],
+)
+def test_excel_review_number_format_regressions(value, number_format, expected) -> None:
+    assert _format_excel_value(value, number_format) == expected
+
+
+def test_xlsx_review_formats_survive_document_conversion(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    rows = [
+        ("Date", datetime(2025, 2, 1), "mm-dd-yy", "2025-02-01"),
+        ("Minutes", time(0, 7, 45), "mm:ss", "07:45"),
+        ("Afternoon", time(13, 30), "h:mm AM/PM", "1:30 PM"),
+        ("Due", datetime(2025, 2, 1), '"Due "mmm d', "Due Feb 1"),
+        ("Negative", -5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
+        ("Percent", 0.125, "0%", "13%"),
+        ("Currency", 12.5, "[$$-409]#,##0", "$13"),
+        ("Duration", timedelta(hours=26, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
+    ]
+    sheet.append(["Format", "Value"])
+    for row_index, (label, value, number_format, _) in enumerate(rows, start=2):
+        sheet.cell(row_index, 1, label)
+        sheet.cell(row_index, 2, value).number_format = number_format
+    path = tmp_path / "review_number_formats.xlsx"
+    workbook.save(path)
+
+    document = get_converter().convert(path).document
+    table = document.tables[0].data
+    assert [
+        (cell.start_row_offset_idx, cell.text)
+        for cell in table.table_cells
+        if cell.start_col_offset_idx == 1
+    ] == [
+        (0, "Value"),
+        *[(index, expected) for index, (_, _, _, expected) in enumerate(rows, start=1)],
+    ]
 
 
 def test_xlsx_keeps_excel_number_formats(tmp_path: Path) -> None:

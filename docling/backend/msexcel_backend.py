@@ -11,6 +11,7 @@ import shutil
 import warnings
 from copy import deepcopy
 from datetime import date, datetime, time, timezone
+from decimal import ROUND_HALF_UP, Decimal, localcontext
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -120,9 +121,9 @@ _CHART_RENDER_HINT = (
 # PictureItem with. Chart types not listed fall back to OTHER_CHART.
 _GENERAL_NUMBER_FORMATS: Final[frozenset[str]] = frozenset({"general", "@", ""})
 _EXCEL_DATE_TOKEN_RE: Final[re.Pattern[str]] = re.compile(
-    r"yyyy|yy|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s|am/pm"
+    r'"[^"]*"|\\.|am/pm|yyyy|yy|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s|[ :/.,-]',
+    re.IGNORECASE,
 )
-_CURRENCY_NUMBER_RE: Final[re.Pattern[str]] = re.compile(r"[0#.,]+")
 
 
 def _displayed_cell_text(cell: Cell | MergedCell) -> str:
@@ -135,17 +136,7 @@ def _displayed_cell_text(cell: Cell | MergedCell) -> str:
     value = cell.value
     if value is None:
         return ""
-    number_format = getattr(cell, "number_format", None) or "General"
-    return _format_excel_value(value, number_format)
-
-
-def _plain_excel_format(number_format: str) -> str:
-    """Strip locale, color, quotes, and escape slashes from a number format."""
-    primary = number_format.split(";")[0]
-    primary = re.sub(r"\[[^\]]*\]", "", primary)
-    primary = primary.replace('"', "")
-    primary = re.sub(r"\\(.)", r"\1", primary)
-    return primary.strip()
+    return _format_excel_value(value, cell.number_format)
 
 
 def _format_excel_value(value: Any, number_format: str) -> str:
@@ -155,106 +146,148 @@ def _format_excel_value(value: Any, number_format: str) -> str:
     if isinstance(value, str):
         return value
 
-    normalized = _plain_excel_format(number_format)
-    if normalized.lower() in _GENERAL_NUMBER_FORMATS:
+    if number_format.lower() in _GENERAL_NUMBER_FORMATS:
         return str(value)
-
-    date_like = isinstance(value, (datetime, date, time)) or (
-        isinstance(value, (int, float)) and is_date_format(normalized)
-    )
-    if date_like:
-        return _format_excel_date(value, normalized)
+    if isinstance(value, (datetime, date, time)):
+        return _format_excel_date(value, number_format)
     if isinstance(value, (int, float)):
-        if "%" in normalized:
-            return _format_excel_percent(float(value), normalized)
-        if "$" in normalized:
-            return _format_excel_currency(float(value), normalized)
+        if is_date_format(number_format):
+            # Workbooks are loaded by openpyxl with their own date epoch. Do not
+            # reinterpret a remaining numeric value with an assumed 1900 epoch.
+            return str(value)
+        return _format_excel_number(value, number_format)
     return str(value)
 
 
-def _format_excel_percent(value: float, fmt: str) -> str:
-    """Format a fraction as a percentage, matching ``0%`` / ``0.00%``."""
-    match = re.search(r"\.([0#]+)%", fmt)
-    decimals = len(match.group(1)) if match else 0
-    scaled = value * 100.0
-    if decimals == 0:
-        body = str(round(scaled))
-    else:
-        body = f"{scaled:.{decimals}f}"
-    return f"{body}%"
-
-
-def _format_excel_currency(value: float, fmt: str) -> str:
-    """Format a number with a ``$`` currency marker and its decimal pattern."""
-    match = _CURRENCY_NUMBER_RE.search(fmt.replace("?", ""))
-    if match is None:
+def _format_excel_number(value: int | float, fmt: str) -> str:
+    """Apply simple currency/percent sections, with Excel's rounding rule."""
+    # Conditions, unsupported locale markers, optional decimals and scaling
+    # must not be silently removed and mistaken for a supported number format.
+    without_colors = re.sub(
+        r"\[(?:Black|Blue|Cyan|Green|Magenta|Red|White|Yellow)\]",
+        "",
+        fmt,
+        flags=re.IGNORECASE,
+    )
+    currency_format = re.sub(r"\[\$\$-[0-9a-fA-F]+\]", '"$"', without_colors)
+    if "[" in currency_format or r"\;" in currency_format:
         return str(value)
-    numeric = match.group(0)
-    decimals = len(numeric.split(".", 1)[1].replace(",", "")) if "." in numeric else 0
-    if "," in numeric:
-        body = f"{value:,.{decimals}f}"
-    else:
-        body = f"{value:.{decimals}f}"
-    if fmt.strip().endswith("$"):
-        return f"{body}$"
-    return f"${body}"
-
-
-def _excel_date_format_to_strftime(fmt: str) -> str:
-    """Translate a simple Excel date/time format into strftime tokens.
-
-    ``mm`` after ``h`` is minutes; remaining ``mm`` / ``m`` tokens are months.
-    """
-    lowered = fmt.lower()
-    lowered = re.sub(r"(?<=h:)mm", "\x01", lowered)
-    lowered = re.sub(r"(?<=h:)m(?!m)", "\x01", lowered)
-
-    def replace_token(match: re.Match[str]) -> str:
-        token = match.group(0)
-        mapping = {
-            "yyyy": "%Y",
-            "yy": "%y",
-            "mmmm": "%B",
-            "mmm": "%b",
-            "mm": "%m",
-            "m": "%m",
-            "dddd": "%A",
-            "ddd": "%a",
-            "dd": "%d",
-            "d": "%d",
-            "hh": "%H",
-            "h": "%H",
-            "ss": "%S",
-            "s": "%S",
-            "am/pm": "%p",
-        }
-        return mapping.get(token, token)
-
-    return _EXCEL_DATE_TOKEN_RE.sub(replace_token, lowered).replace("\x01", "%M")
+    sections = re.split(r';(?=(?:[^"]*"[^"]*")*[^"]*$)', currency_format)
+    if len(sections) > 4:
+        return str(value)
+    section_index = (
+        1
+        if value < 0 and len(sections) > 1
+        else 2
+        if value == 0 and len(sections) > 2
+        else 0
+    )
+    section = sections[section_index]
+    if not section:
+        return ""
+    if re.fullmatch(r'"[^"]*"', section):
+        return section[1:-1]
+    if any(
+        re.search(r"[0#.,%]", literal) for literal in re.findall(r'"([^"]*)"', section)
+    ):
+        return str(value)
+    normalized = re.sub(r"_.", "", section).replace('"', "")
+    normalized = re.sub(r"\\([()$ -])", r"\1", normalized)
+    match = re.fullmatch(
+        r"(?P<prefix>[$( -]*)(?P<number>#,##0|0)(?:\.(?P<decimals>0{1,15}))?(?P<suffix>[$% )-]*)",
+        normalized,
+    )
+    if match is None or normalized.count("%") > 1 or normalized.count("$") > 1:
+        return str(value)
+    if "$" not in normalized and "%" not in normalized:
+        return str(value)
+    amount = Decimal(str(abs(value)))
+    if not amount.is_finite():
+        return str(value)
+    if "%" in normalized:
+        amount *= 100
+    decimals = len(match.group("decimals") or "")
+    # A local context also keeps large finite values from failing quantize.
+    with localcontext() as context:
+        context.prec = max(28, amount.adjusted() + decimals + 2)
+        rounded = amount.quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP)
+    grouping = "," if "," in match.group("number") else ""
+    sign = "-" if value < 0 and section_index == 0 else ""
+    return f"{sign}{match.group('prefix')}{rounded:{grouping}.{decimals}f}{match.group('suffix')}"
 
 
 def _format_excel_date(value: Any, fmt: str) -> str:
-    """Format a date, time, or Excel serial with the cell's date format."""
-    parsed: datetime | date | time | None
-    if isinstance(value, (datetime, date, time)):
-        parsed = value
-    else:
-        try:
-            parsed = from_excel(value)
-        except Exception:
-            return str(value)
-    if isinstance(parsed, datetime):
-        dt = parsed
-    elif isinstance(parsed, date):
-        dt = datetime(parsed.year, parsed.month, parsed.day)
-    elif isinstance(parsed, time):
-        dt = datetime.combine(date(1900, 1, 1), parsed)
-    else:
+    """Render supported date tokens, preserving quoted and escaped literals."""
+    if not isinstance(value, (datetime, date, time)):
         return str(value)
-    try:
-        return dt.strftime(_excel_date_format_to_strftime(fmt))
-    except Exception:
+    if fmt.lower() == "mm-dd-yy" and isinstance(value, date):
+        return value.isoformat().split("T")[0]
+    if fmt.lower() == "m/d/yy h:mm" and isinstance(value, datetime):
+        return value.isoformat(sep=" ")
+    parts = _EXCEL_DATE_TOKEN_RE.findall(fmt)
+    if "".join(parts) != fmt:
         return str(value)
+    tokens = [part.lower() for part in parts if part[0].isalpha()]
+    if isinstance(value, time) and any(
+        token.startswith(("y", "d")) for token in tokens
+    ):
+        return str(value)
+    if not isinstance(value, (datetime, time)) and any(
+        token.startswith(("h", "s", "a")) for token in tokens
+    ):
+        return str(value)
+    twelve_hour = "am/pm" in tokens
+    dt = datetime.combine(date(1900, 1, 1), value) if isinstance(value, time) else value
+    rendered: list[str] = []
+    token_index = 0
+    for part in parts:
+        if part.startswith('"'):
+            rendered.append(part[1:-1])
+        elif part.startswith("\\"):
+            rendered.append(part[1:])
+        elif not part[0].isalpha():
+            rendered.append(part)
+        else:
+            token = tokens[token_index]
+            before = tokens[token_index - 1] if token_index else ""
+            after = tokens[token_index + 1] if token_index + 1 < len(tokens) else ""
+            token_index += 1
+            if token in ("m", "mm", "d", "dd", "h", "hh", "s", "ss"):
+                minute = token in ("m", "mm") and (
+                    before in ("h", "hh") or after in ("s", "ss")
+                )
+                if isinstance(value, time) and token in ("m", "mm") and not minute:
+                    return str(value)
+                if minute or token.startswith(("h", "s")):
+                    if not isinstance(dt, datetime):
+                        return str(value)
+                    number = (
+                        dt.minute
+                        if minute
+                        else dt.second
+                        if token.startswith("s")
+                        else dt.hour
+                    )
+                    if token.startswith("h") and twelve_hour:
+                        number = number % 12 or 12
+                else:
+                    number = dt.day if token.startswith("d") else dt.month
+                rendered.append(str(number).zfill(len(token)))
+            elif token == "am/pm":
+                if not isinstance(dt, datetime):
+                    return str(value)
+                rendered.append("AM" if dt.hour < 12 else "PM")
+            else:
+                directive = {
+                    "yyyy": "%Y",
+                    "yy": "%y",
+                    "mmm": "%b",
+                    "mmmm": "%B",
+                    "ddd": "%a",
+                    "dddd": "%A",
+                }[token]
+                rendered.append(dt.strftime(directive))
+    return "".join(rendered)
 
 
 _CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
