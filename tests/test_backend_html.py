@@ -670,6 +670,58 @@ def test_ordered_lists():
 
 
 @pytest.mark.parametrize(
+    ("items", "expected"),
+    [
+        # A CSS string sets the marker the browser renders for the item
+        (
+            "<li style=\"list-style-type: '3. ';\">three</li>"
+            "<li style='list-style-type: \"4. \"'>four</li>",
+            "3. three\n4. four",
+        ),
+        # Keyword values keep the computed number
+        (
+            '<li style="list-style-type: none;">one</li>'
+            '<li style="list-style-type: lower-alpha">two</li>',
+            "1. one\n2. two",
+        ),
+    ],
+)
+def test_ordered_list_item_marker_from_list_style_string(items: str, expected: str):
+    html = f"<html><body><ol>{items}</ol></body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = in_doc._backend.convert()
+    assert doc.export_to_markdown() == expected
+
+
+def test_list_item_markers_survive_html_export_round_trip():
+    # Docling's HTML export writes the original list item markers as a CSS
+    # string list-style-type. Converting that HTML again must keep them.
+    src = DoclingDocument(name="src")
+    group = src.add_list_group(name="list")
+    for marker, text in [("3.", "three"), ("4.", "four")]:
+        src.add_list_item(text=text, enumerated=True, marker=marker, parent=group)
+
+    html = src.export_to_html().encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="round_trip.html",
+    )
+    doc = in_doc._backend.convert()
+    items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+    assert [(item.marker, item.text) for item in items] == [
+        ("3.", "three"),
+        ("4.", "four"),
+    ]
+
+
+@pytest.mark.parametrize(
     "html,expected",
     [
         pytest.param(
