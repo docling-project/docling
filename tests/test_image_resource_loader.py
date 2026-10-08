@@ -3,11 +3,14 @@
 
 """Unit tests for the shared image-resource loader and its safety limits."""
 
+import base64
 import socket
 import threading
+from io import BytesIO
 from urllib.parse import quote
 
 import pytest
+from PIL import Image
 
 from docling.backend.utils.image_resource_loader import (
     ImageResourceLoader,
@@ -242,3 +245,33 @@ def test_load_image_data_local_requires_base_path():
     loader = ImageResourceLoader(enable_local_fetch=True)
     with pytest.raises(OperationNotAllowed, match="requires base_path"):
         loader.load_image_data("/some/where/image.png", None)
+
+
+def _jpeg_data_uri(data: bytes) -> str:
+    return "data:image/jpeg;base64," + base64.b64encode(data).decode()
+
+
+def _jpeg(image: Image.Image) -> bytes:
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+def test_create_image_ref_converts_cmyk():
+    # PNG can't store CMYK, so the image must be converted rather than raise.
+    cmyk = _jpeg(Image.new("CMYK", (200, 100), (0, 255, 255, 0)))
+    image_ref = ImageResourceLoader().create_image_ref(_jpeg_data_uri(cmyk), None)
+
+    assert image_ref is not None
+    assert image_ref.pil_image is not None
+    assert image_ref.pil_image.size == (200, 100)
+    assert image_ref.pil_image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
+
+
+def test_create_image_ref_skips_undecodable_image():
+    # A truncated file only fails when Pillow decodes it, with an OSError.
+    data = _jpeg(Image.new("RGB", (200, 100), "red"))
+    truncated = _jpeg_data_uri(data[: len(data) // 2])
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        assert ImageResourceLoader().create_image_ref(truncated, None) is None
