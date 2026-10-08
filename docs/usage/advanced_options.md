@@ -520,7 +520,7 @@ a time (see `docling.datamodel.progress`):
 | `DocumentStartedProgress` | An input document is picked up, including inputs that are then skipped. |
 | `PhaseStartedProgress` | The document enters the `initialize` (pipeline set-up, slow only while the models of a new pipeline load), `build`, `assemble` or `enrich` phase. Every format reports them. |
 | `PageCompletedProgress` | A page went through all page-level models, table structure included. PDF and image pipelines only. |
-| `EnrichmentProgress` | Item counts of one enrichment step (picture classification, picture description, chart extraction, code and formula), reported per batch. |
+| `EnrichmentProgress` | Item counts of one enrichment step, reported per batch. `step` is a stable `EnrichmentStep` (`code_formula`, `picture_classification`, `picture_description`, `chart_extraction`, or `other` for enrichment models docling does not know); `label` is a readable name for display. |
 | `DocumentCompletedProgress` | The document finished, with its `ConversionStatus`. Always the last event of a document, also when it failed. |
 
 Every event carries `document_index`, the position of the document in the

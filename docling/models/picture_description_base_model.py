@@ -22,6 +22,7 @@ from docling.datamodel.base_models import ApiImageRequestResult
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
 )
+from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import (
     BaseItemAndImageEnrichmentModel,
     BaseModelWithOptions,
@@ -35,6 +36,7 @@ _USAGE_META_FIELD_NAME = "usage"
 class PictureDescriptionBaseModel(
     BaseItemAndImageEnrichmentModel, BaseModelWithOptions
 ):
+    progress_step = EnrichmentStep.PICTURE_DESCRIPTION
     images_scale: float = 2.0
 
     def __init__(

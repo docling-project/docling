@@ -346,8 +346,9 @@ typed events from
 (with `document_index` in the batch and the final `status`), pipeline phases,
 `PageCompletedProgress` (`completed_pages` / `total_pages`) for PDF and image
 pipelines, and `EnrichmentProgress` (`completed_items` / `total_items` per
-enrichment step). Enrichment runs after the last page, so a page count at
-100% does not mean the document is done. The callback must be thread-safe when
+enrichment step; match on the stable `step`, not on `label`). Enrichment runs
+after the last page, so a page count at 100% does not mean the document is
+done. The callback must be thread-safe when
 `settings.perf.doc_batch_concurrency > 1`.
 
 ## Audio / video (ASR)

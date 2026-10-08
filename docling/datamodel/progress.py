@@ -41,6 +41,27 @@ class ConversionPhase(str, enum.Enum):
     ENRICH = "enrich"
 
 
+class EnrichmentStep(str, enum.Enum):
+    """Stable identifier of an enrichment step, safe to match on.
+
+    Enrichment models that docling does not know about report `OTHER`.
+    """
+
+    CODE_FORMULA = "code_formula"
+    PICTURE_CLASSIFICATION = "picture_classification"
+    PICTURE_DESCRIPTION = "picture_description"
+    CHART_EXTRACTION = "chart_extraction"
+    OTHER = "other"
+
+
+ENRICHMENT_STEP_LABELS: dict[EnrichmentStep, str] = {
+    EnrichmentStep.CODE_FORMULA: "code and formulas",
+    EnrichmentStep.PICTURE_CLASSIFICATION: "picture classification",
+    EnrichmentStep.PICTURE_DESCRIPTION: "picture description",
+    EnrichmentStep.CHART_EXTRACTION: "chart extraction",
+}
+
+
 class BaseConversionProgress(BaseModel):
     """Fields shared by all events.
 
@@ -98,15 +119,16 @@ class EnrichmentProgress(BaseConversionProgress):
     Enrichment runs on the assembled document, after the last page completed.
     Each step that has work to do first reports `completed_items=0` and then
     reports again after every batch, ending with
-    `completed_items == total_items`. `step` is the class name of the
-    enrichment model.
+    `completed_items == total_items`. Match on `step`; `label` is a readable
+    name for display and may change.
     """
 
     kind: Literal[ConversionProgressKind.ENRICHMENT_PROGRESS] = (
         ConversionProgressKind.ENRICHMENT_PROGRESS
     )
 
-    step: str
+    step: EnrichmentStep
+    label: str
     completed_items: int
     total_items: int
 
@@ -206,7 +228,7 @@ class ProgressReporter:
             self.page_completed(page_no, total_pages=total_pages, success=False)
 
     def enrichment_progress(
-        self, step: str, completed_items: int, total_items: int
+        self, step: EnrichmentStep, label: str, completed_items: int, total_items: int
     ) -> None:
         if self.enabled:
             self._emit(
@@ -214,6 +236,7 @@ class ProgressReporter:
                     document_index=self.document_index,
                     document_name=self.document_name,
                     step=step,
+                    label=label,
                     completed_items=completed_items,
                     total_items=total_items,
                 )

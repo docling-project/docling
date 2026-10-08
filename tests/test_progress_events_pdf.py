@@ -12,6 +12,8 @@ from docling.datamodel.progress import (
     ConversionProgressEvent,
     DocumentCompletedProgress,
     DocumentStartedProgress,
+    EnrichmentProgress,
+    EnrichmentStep,
     PageCompletedProgress,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -52,6 +54,23 @@ def test_pdf_pages_are_reported_once_on_the_calling_thread():
     assert recorder.threads == {threading.current_thread().name}
     assert isinstance(recorder.events[0], DocumentStartedProgress)
     assert isinstance(recorder.events[-1], DocumentCompletedProgress)
+
+
+def test_picture_classification_reports_a_stable_step():
+    recorder = _Recorder()
+    options = PdfPipelineOptions(do_picture_classification=True, do_ocr=False)
+    converter = DocumentConverter(
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)},
+        progress_callback=recorder,
+    )
+
+    converter.convert(PDF_9_PAGES, page_range=(1, 4))
+
+    steps = [ev for ev in recorder.events if isinstance(ev, EnrichmentProgress)]
+    assert steps
+    assert {ev.step for ev in steps} == {EnrichmentStep.PICTURE_CLASSIFICATION}
+    assert {ev.label for ev in steps} == {"picture classification"}
+    assert steps[-1].completed_items == steps[-1].total_items
 
 
 def test_pdf_pages_cut_by_the_timeout_are_reported_as_failed():

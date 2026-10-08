@@ -70,7 +70,7 @@ class ProgressPrinter:
                 self._advance("pages", "page", event.completed_pages, event.total_pages)
             elif isinstance(event, EnrichmentProgress):
                 self._advance(
-                    event.step, "item", event.completed_items, event.total_items
+                    event.label, "item", event.completed_items, event.total_items
                 )
             elif isinstance(event, DocumentCompletedProgress):
                 self._close_bar()

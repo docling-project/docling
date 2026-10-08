@@ -30,7 +30,11 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PipelineOptions,
 )
-from docling.datamodel.progress import ConversionPhase, ProgressReporter
+from docling.datamodel.progress import (
+    ENRICHMENT_STEP_LABELS,
+    ConversionPhase,
+    ProgressReporter,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
@@ -186,7 +190,8 @@ class BasePipeline(ABC):
         progress = conv_res._progress
         with TimeRecorder(conv_res, "doc_enrich", scope=ProfilingScope.DOCUMENT):
             for model in self.enrichment_pipe:
-                step = type(model).__name__
+                step = model.progress_step
+                label = ENRICHMENT_STEP_LABELS.get(step, type(model).__name__)
                 # Counted right before the step runs: a step may depend on the
                 # output of an earlier one (chart extraction on classification).
                 total_items = (
@@ -194,7 +199,7 @@ class BasePipeline(ABC):
                 )
                 completed_items = 0
                 if total_items:
-                    progress.enrichment_progress(step, 0, total_items)
+                    progress.enrichment_progress(step, label, 0, total_items)
                 for element_batch in chunkify(
                     _prepare_elements(conv_res, model),
                     model.elements_batch_size,
@@ -207,10 +212,12 @@ class BasePipeline(ABC):
                         completed_items = min(
                             completed_items + len(element_batch), total_items
                         )
-                        progress.enrichment_progress(step, completed_items, total_items)
+                        progress.enrichment_progress(
+                            step, label, completed_items, total_items
+                        )
                 # Items the model could not prepare (e.g. no image) are skipped.
                 if completed_items < total_items:
-                    progress.enrichment_progress(step, total_items, total_items)
+                    progress.enrichment_progress(step, label, total_items, total_items)
 
         return conv_res
 

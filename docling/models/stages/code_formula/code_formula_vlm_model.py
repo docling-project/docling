@@ -27,6 +27,7 @@ from PIL import Image
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.pipeline_options import CodeFormulaVlmOptions
+from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
@@ -68,6 +69,8 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         )
         ```
     """
+
+    progress_step = EnrichmentStep.CODE_FORMULA
 
     elements_batch_size = 5
     images_scale = 1.67  # = 120 dpi, aligned with training data resolution

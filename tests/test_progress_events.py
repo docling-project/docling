@@ -25,6 +25,7 @@ from docling.datamodel.progress import (
     DocumentCompletedProgress,
     DocumentStartedProgress,
     EnrichmentProgress,
+    EnrichmentStep,
     PageCompletedProgress,
     PhaseStartedProgress,
     ProgressCallback,
@@ -172,13 +173,16 @@ def test_enrichment_items_are_counted_per_step_and_reach_the_total():
 
     converter.convert(_md("doc.md", text))
 
-    by_step: dict[str, list[tuple[int, int]]] = {}
-    for ev in recorder.of(EnrichmentProgress):
-        by_step.setdefault(ev.step, []).append((ev.completed_items, ev.total_items))
+    events = recorder.of(EnrichmentProgress)
+    # Models docling does not know report OTHER, labelled with their class name.
+    assert {ev.step for ev in events} == {EnrichmentStep.OTHER}
+    by_label: dict[str, list[tuple[int, int]]] = {}
+    for ev in events:
+        by_label.setdefault(ev.label, []).append((ev.completed_items, ev.total_items))
     # Batches of 2 over the 4 preparable items, then the skipped one closes the step.
-    assert by_step["_TagModel"] == [(0, 5), (2, 5), (4, 5), (5, 5)]
+    assert by_label["_TagModel"] == [(0, 5), (2, 5), (4, 5), (5, 5)]
     # Counted after the first step ran, so only the 4 items it relabelled.
-    assert by_step["_ParagraphModel"] == [(0, 4), (2, 4), (4, 4)]
+    assert by_label["_ParagraphModel"] == [(0, 4), (2, 4), (4, 4)]
 
 
 def test_failing_document_still_gets_a_terminal_event():
