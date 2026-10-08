@@ -218,7 +218,7 @@ The idol of my soul-
 Then blame me not-this burst of grief  
 I cannot now control.
 
-## *To the Hibernia*
+## To the Hibernia
 
 O, speed thee! speed thee! gallant bark,  
 Across the bounding wave;  

@@ -340,30 +340,23 @@ class AnnotatedText(BaseModel):
 
 class AnnotatedTextList(list):
     def to_single_text_element(self) -> AnnotatedText:
-        current_h = None
         current_text = ""
-        current_f = None
         current_code = False
         current_source_tag_id = None
+        # The single element can only keep a formatting or a hyperlink that
+        # applies to all of its text, e.g. not the link of one word in a heading.
+        text_runs = [at for at in self if at.text.strip()]
+        current_f = text_runs[0].formatting if text_runs else None
+        if any(at.formatting != current_f for at in text_runs):
+            current_f = None
+        current_h = text_runs[0].hyperlink if text_runs else None
+        if any(at.hyperlink != current_h for at in text_runs):
+            current_h = None
         for at in self:
             t = at.text
-            h = at.hyperlink
-            f = at.formatting
             c = at.code
             s = at.source_tag_id
             current_text += t.strip() + " "
-            if f is not None and current_f is None:
-                current_f = f
-            elif f is not None and current_f is not None and f != current_f:
-                _log.warning(
-                    f"Clashing formatting: '{f}' and '{current_f}'! Chose '{current_f}'"
-                )
-            if h is not None and current_h is None:
-                current_h = h
-            elif h is not None and current_h is not None and h != current_h:
-                _log.warning(
-                    f"Clashing hyperlinks: '{h}' and '{current_h}'! Chose '{current_h}'"
-                )
             if s is not None and current_source_tag_id is None:
                 current_source_tag_id = s
             elif (

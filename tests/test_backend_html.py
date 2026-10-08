@@ -168,6 +168,58 @@ def test_heading_levels():
     assert found_lvl_1 and found_lvl_2
 
 
+@pytest.mark.parametrize(
+    ("heading", "bold", "hyperlink"),
+    [
+        # Formatting or a link on one word does not apply to the whole heading
+        ("<h2>Section <strong>bold</strong> heading</h2>", False, None),
+        ("<h2><a href='https://example.com/'>Docs</a> and more</h2>", False, None),
+        # Formatting or a link on all of the text is kept
+        ("<h2><strong>All</strong> <strong>bold</strong></h2>", True, None),
+        (
+            "<h2><a href='https://example.com/'>Docs</a></h2>",
+            False,
+            "https://example.com/",
+        ),
+    ],
+)
+def test_heading_keeps_only_formatting_of_all_its_text(
+    heading: str, bold: bool, hyperlink: str | None
+):
+    html = f"<html><body>{heading}<p>text</p></body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = in_doc._backend.convert()
+    headers = [item for item in doc.texts if isinstance(item, SectionHeaderItem)]
+    assert len(headers) == 1
+    header = headers[0]
+    assert bool(header.formatting and header.formatting.bold) is bold
+    assert (str(header.hyperlink) if header.hyperlink else None) == hyperlink
+
+
+def test_caption_with_partial_link_has_no_hyperlink():
+    html = (
+        b"<html><body><figure><img src='a.png' alt=''>"
+        b"<figcaption>Female mallard in <a href='/wiki/Cornwall'>Cornwall</a>,"
+        b" England</figcaption></figure></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = in_doc._backend.convert()
+    captions = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert len(captions) == 1
+    assert captions[0].text.startswith("Female mallard in Cornwall")
+    assert captions[0].hyperlink is None
+
+
 def test_table_header_rowspan_without_body_does_not_crash():
     # A table whose only row is a `th` with rowspan (no body rows to span into)
     # used to raise IndexError: get_html_table_row_col counts no rows for an
