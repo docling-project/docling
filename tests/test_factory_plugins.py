@@ -4,12 +4,15 @@
 import os
 import subprocess
 import sys
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from pathlib import Path
 
 import pytest
 
+from docling.datamodel.pipeline_options import OcrAutoOptions
+from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.factories.ocr_factory import OcrFactory
+from docling.models.stages.ocr.auto_ocr_model import OcrAutoModel
 
 EXTERNAL_PLUGIN_MODULE = "docling_test_external_ocr_plugin"
 EXTERNAL_PLUGIN_NAME = "docling_test_external_ocr"
@@ -120,23 +123,58 @@ def test_external_plugin_loaded_when_allowed():
     )
 
 
+@pytest.mark.usefixtures("external_plugin")
+def test_factory_overrides_preserve_registration_and_provenance() -> None:
+    class CustomFactory(OcrFactory):
+        def register(
+            self, cls: type[BaseOcrModel], plugin_name: str, plugin_module_name: str
+        ) -> None:
+            super().register(cls, plugin_name, plugin_module_name)
+
+        def process_plugin(
+            self,
+            config: Mapping[str, Iterable[type[BaseOcrModel]]],
+            plugin_name: str,
+            plugin_module_name: str,
+        ) -> None:
+            super().process_plugin(config, plugin_name, plugin_module_name)
+
+    factory = CustomFactory()
+    factory.register(OcrAutoModel, "docling_defaults", "manual")
+    factory.load_from_plugins(allow_external_plugins=True)
+
+    meta_by_kind = {meta.kind: meta for meta in factory.registered_meta.values()}
+    assert meta_by_kind[EXTERNAL_PLUGIN_NAME].distribution == (
+        "docling-test-external-ocr-plugin"
+    )
+    assert factory.registered_meta[OcrAutoOptions].module == "manual"
+    assert factory.registered_meta[OcrAutoOptions].distribution is None
+
+
 @pytest.mark.parametrize(
-    "arguments, plugin_loaded, warning_expected",
+    "arguments, source_name, plugin_loaded, warning_expected",
     [
-        (["--help"], False, False),
-        (["convert", "--help", "--allow-external-plugins"], False, False),
-        (["convert"], False, True),
-        (["convert", "--allow-external-plugins"], True, False),
+        (["--help"], "input.md", False, False),
+        (["convert", "--help", "--allow-external-plugins"], "input.md", False, False),
+        (["convert"], "input.md", False, True),
+        (["convert", "--allow-external-plugins"], "input.md", True, False),
+        (["convert", "--allow-external-plugins"], "input.csv", True, False),
     ],
 )
 def test_cli_plugin_discovery(
     external_plugin: Path,
     arguments: list[str],
+    source_name: str,
     plugin_loaded: bool,
     warning_expected: bool,
 ) -> None:
-    source = external_plugin / "input.md"
-    source.write_text("# Plugin discovery\n", encoding="utf-8")
+    source = external_plugin / source_name
+    source.write_text(
+        "title\nPlugin discovery\n"
+        if source.suffix == ".csv"
+        else "# Plugin discovery\n",
+        encoding="utf-8",
+    )
     output = external_plugin / "output"
     if "--help" not in arguments:
         arguments = [*arguments, str(source), "--output", str(output)]

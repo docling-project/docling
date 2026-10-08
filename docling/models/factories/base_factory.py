@@ -85,8 +85,6 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         cls: Type[A],
         plugin_name: str,
         plugin_module_name: str,
-        *,
-        distribution: str | None = None,
     ) -> None:
         opt_type = cls.get_options_type()
 
@@ -100,7 +98,6 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
             kind=opt_type.kind,
             plugin_name=plugin_name,
             module=plugin_module_name,
-            distribution=distribution,
         )
 
     def load_from_plugins(
@@ -140,25 +137,21 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                 logger.info("Loading plugin %r", plugin_name)
 
                 config = attr()
-                self.process_plugin(
-                    config,
-                    plugin_name,
-                    plugin_module_name,
-                    distribution=plugin_distributions[plugin_name],
-                )
+                registered_options = set(self._meta)
+                self.process_plugin(config, plugin_name, plugin_module_name)
+                for options_type in self._meta.keys() - registered_options:
+                    self._meta[options_type].distribution = plugin_distributions[
+                        plugin_name
+                    ]
 
     def process_plugin(
         self,
         config: Mapping[str, Iterable[Type[A]]],
         plugin_name: str,
         plugin_module_name: str,
-        *,
-        distribution: str | None = None,
     ) -> None:
         for item in config[self.plugin_attr_name]:
             try:
-                self.register(
-                    item, plugin_name, plugin_module_name, distribution=distribution
-                )
+                self.register(item, plugin_name, plugin_module_name)
             except ValueError:
                 logger.warning("%r already registered", item)
