@@ -452,7 +452,7 @@ def show_external_plugins_callback(value: bool) -> None:
         )
 
         def print_external_plugins(
-            metadata: Iterable[FactoryMeta], factory_name: str
+            metadata: Iterable["FactoryMeta"], factory_name: str
         ) -> None:
             table = rich.table.Table(title=f"Available {factory_name} engines")
             table.add_column("Name", justify="right")
@@ -463,7 +463,7 @@ def show_external_plugins_callback(value: bool) -> None:
                     table.add_row(
                         f"[bold]{meta.kind}[/bold]",
                         meta.plugin_name,
-                        meta.module.split(".")[0],
+                        meta.distribution or "",
                     )
             rich.print(table)
 
@@ -1793,7 +1793,6 @@ def convert(  # noqa: C901
             allowed_formats=from_formats,
             format_options=format_options,
         )
-
         start_time = time.time()
 
         _log.info(f"paths: {input_doc_paths}")

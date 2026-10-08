@@ -4,6 +4,7 @@
 import enum
 import logging
 from abc import ABCMeta
+from collections.abc import Iterable, Mapping
 from importlib.metadata import entry_points
 from typing import Generic, Optional, Type, TypeVar
 
@@ -23,6 +24,7 @@ class FactoryMeta(BaseModel):
     kind: str
     plugin_name: str
     module: str
+    distribution: str | None = None
 
 
 class BaseFactory(Generic[A], metaclass=ABCMeta):
@@ -52,7 +54,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         return self._classes
 
     @property
-    def registered_meta(self):
+    def registered_meta(self) -> dict[Type[BaseOptions], FactoryMeta]:
         return self._meta
 
     def create_instance(self, options: BaseOptions, **kwargs) -> A:
@@ -78,7 +80,14 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
         return f"No class found with the name {kind!r}, known classes are:\n{msg_str}"
 
-    def register(self, cls: Type[A], plugin_name: str, plugin_module_name: str):
+    def register(
+        self,
+        cls: Type[A],
+        plugin_name: str,
+        plugin_module_name: str,
+        *,
+        distribution: str | None = None,
+    ) -> None:
         opt_type = cls.get_options_type()
 
         if opt_type in self._classes:
@@ -88,15 +97,19 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
         self._classes[opt_type] = cls
         self._meta[opt_type] = FactoryMeta(
-            kind=opt_type.kind, plugin_name=plugin_name, module=plugin_module_name
+            kind=opt_type.kind,
+            plugin_name=plugin_name,
+            module=plugin_module_name,
+            distribution=distribution,
         )
 
     def load_from_plugins(
         self, plugin_name: Optional[str] = None, allow_external_plugins: bool = False
-    ):
+    ) -> None:
         plugin_name = plugin_name or self.plugin_name
 
         plugin_manager = PluginManager(plugin_name)
+        plugin_distributions: dict[str, str | None] = {}
 
         # Decide from the entry point metadata whether a plugin is allowed
         # before importing it, so that disallowed plugin modules are never
@@ -114,6 +127,9 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                 continue
 
             plugin_manager.register(entry_point.load(), name=entry_point.name)
+            plugin_distributions[entry_point.name] = (
+                entry_point.dist.name if entry_point.dist is not None else None
+            )
 
         for plugin_name, plugin_module in plugin_manager.list_name_plugin():
             plugin_module_name = str(plugin_module.__name__)  # type: ignore
@@ -124,11 +140,25 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
                 logger.info("Loading plugin %r", plugin_name)
 
                 config = attr()
-                self.process_plugin(config, plugin_name, plugin_module_name)
+                self.process_plugin(
+                    config,
+                    plugin_name,
+                    plugin_module_name,
+                    distribution=plugin_distributions[plugin_name],
+                )
 
-    def process_plugin(self, config, plugin_name: str, plugin_module_name: str):
+    def process_plugin(
+        self,
+        config: Mapping[str, Iterable[Type[A]]],
+        plugin_name: str,
+        plugin_module_name: str,
+        *,
+        distribution: str | None = None,
+    ) -> None:
         for item in config[self.plugin_attr_name]:
             try:
-                self.register(item, plugin_name, plugin_module_name)
+                self.register(
+                    item, plugin_name, plugin_module_name, distribution=distribution
+                )
             except ValueError:
                 logger.warning("%r already registered", item)

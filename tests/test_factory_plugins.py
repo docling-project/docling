@@ -115,6 +115,9 @@ def test_external_plugin_loaded_when_allowed():
         EXTERNAL_PLUGIN_NAME
     )
     assert meta_by_kind["docling_test_external_ocr"].module == EXTERNAL_PLUGIN_MODULE
+    assert meta_by_kind["docling_test_external_ocr"].distribution == (
+        "docling-test-external-ocr-plugin"
+    )
 
 
 @pytest.mark.parametrize(
@@ -149,7 +152,7 @@ def test_cli_plugin_discovery(
         assert "Plugin discovery" in (output / "input.md").read_text(encoding="utf-8")
 
 
-def test_cli_lists_picture_description_plugins(external_plugin: Path) -> None:
+def test_cli_lists_external_plugins(external_plugin: Path) -> None:
     result = _run_cli(["convert", "--show-external-plugins"], external_plugin)
 
     assert result.returncode == 0, result.stdout + result.stderr
@@ -159,3 +162,5 @@ def test_cli_lists_picture_description_plugins(external_plugin: Path) -> None:
     assert EXTERNAL_PLUGIN_NAME in result.stdout
     assert "docling_defaults" not in result.stdout
     assert "will not be loaded" not in result.stderr
+    assert result.stdout.count("docling-test-external-ocr-plugin") == 2
+    assert EXTERNAL_PLUGIN_MODULE not in result.stdout
