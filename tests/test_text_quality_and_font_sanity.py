@@ -1,18 +1,33 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-from collections.abc import Iterable
-from typing import Optional
+from typing import Iterable, Optional
 
 import pytest
-from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel, Size
-from docling_core.types.doc.page import BoundingRectangle, SegmentedPdfPage, TextCell
+from docling_core.types.doc import (
+    BoundingBox,
+    CoordOrigin,
+    DocItemLabel,
+    Size,
+)
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    SegmentedPdfPage,
+    TextCell,
+)
 from PIL import Image
 
 from docling.backend.pdf_backend import PdfPageBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
-from docling.datamodel.pipeline_options import EasyOcrOptions, OcrMode
+from docling.datamodel.base_models import (
+    Cluster,
+    LayoutPrediction,
+    Page,
+)
+from docling.datamodel.pipeline_options import (
+    EasyOcrOptions,
+    OcrMode,
+)
 from docling.models.base_ocr_model import BaseOcrModel, _MergeCellsPriority
 from docling.models.stages.page_preprocessing.page_preprocessing_model import (
     PagePreprocessingModel,
@@ -55,10 +70,22 @@ def _make_text_cell(
     [
         "",  # Empty string
         "The quick brown fox jumps over the lazy dog.",  # Standard English
+        "AT&T Inc.",  # Ampersand abbreviation
+        "R&D expenses for FY2026",  # Ampersand abbreviation
+        "S&P 500 Index",  # Financial index
+        "x+y=z",  # Math formula
+        "a*b <= 100 and c >= 50",  # Math comparison
+        "Q1 Revenue ($M): $1,250.50 (up +15%)",  # Financial symbols and currency
+        "C++ / C# / Python 3.12 & Rust",  # Programming languages with symbols
+        "\uf002 Jahresumsatz 55 Millionen Euro",  # Slide bullet icon (single PUA)
+        "\uf0b7 Item A \uf0b7 Item B",  # Multiple bullet icons
         "L'extraction d'information n'est pas facile pour les documents complexes.",  # French with apostrophes
         "Die Überprüfung der Jahresabrechnung für Großprojekte ist abgeschlossen.",  # German umlauts
         "Học viện Công nghệ Bưu chính Viễn thông thông báo lịch thi.",  # Vietnamese diacritics
         "अनुक्रमणिका: महाराष्ट्र शासन निर्णय क्रमांक २०२४",  # Devanagari Hindi/Marathi
+        "这是一个中文测试页面。",  # Chinese
+        "مرحبا بكم في هذا المستند.",  # Arabic
+        "Привет мир, тестирование русского текста.",  # Cyrillic Russian
         "Revenue grew by 25.5% to $1.2B in Q3 ($1,200.50 per share).",  # Financial & numbers
         "Chapter 1: An in-depth overview (see Table 2.1 & Section 4).",  # Natural punctuation
     ],
@@ -72,14 +99,14 @@ def test_rate_text_quality_valid_multilingual(valid_text: str):
     "corrupt_text",
     [
         "Corrupted document with \ufffd replacement character",  # Unicode replacement char
-        "Section \ue001 Title with PUA character",  # Private Use Area BMP
-        "Supplementary \U000f0000 PUA Plane 15",  # PUA Plane 15
+        "\ue001\ue002\ue003\ue004\ue005 unmapped font dump",  # PUA unmapped font run
+        "\ue001 \ue002 \ue003 \ue004 unmapped PUA alphabet",  # PUA unmapped font density
         "Text with unprintable \x03 control byte",  # Control character
         "Text with \x1b ANSI escape code",  # Control character
         "Document segment GLYPH<0A12F> broken font",  # Glyph tag
         "/G102/G304/G506 broken encoding",  # Slash-G font token sequence
         "/token1 /token2 /token3 garbage",  # Slash number pattern
-        "d%b&c *f(g+ h^j~k mojibake",  # 8-bit font remapping mojibake
+        "w\\o^r~d m`o#j!i noise",  # Mojibake intra-word noise
     ],
 )
 def test_rate_text_quality_corrupted_patterns(corrupt_text: str):
@@ -165,7 +192,9 @@ def test_merge_ocr_and_pdf_cells_prioritizes_clean_pdf_and_ocr_over_corrupt_pdf(
     )
 
     clean_pdf = _make_text_cell("Annual Report 2024", 0, 70, 100, 90, from_ocr=False)
-    corrupt_pdf = _make_text_cell("d%b&c *f(g+ h^j~k", 0, 10, 100, 30, from_ocr=False)
+    corrupt_pdf = _make_text_cell(
+        "w\\o^r~d m`o#j!i noise", 0, 10, 100, 30, from_ocr=False
+    )
     ocr_cell_clean = _make_text_cell("Financial Summary", 0, 10, 100, 30, from_ocr=True)
 
     merged = model._merge_ocr_and_pdf_cells(
@@ -180,7 +209,7 @@ def test_merge_ocr_and_pdf_cells_prioritizes_clean_pdf_and_ocr_over_corrupt_pdf(
     # OCR text must replace corrupt PDF text
     assert "Financial Summary" in merged_texts
     # Corrupt PDF text must not be present
-    assert "d%b&c *f(g+ h^j~k" not in merged_texts
+    assert "w\\o^r~d m`o#j!i noise" not in merged_texts
 
 
 def test_merge_ocr_and_pdf_cells_fallback_keeps_non_overlapping_corrupt_pdf():
@@ -191,7 +220,9 @@ def test_merge_ocr_and_pdf_cells_fallback_keeps_non_overlapping_corrupt_pdf():
         accelerator_options=AcceleratorOptions(),
     )
 
-    corrupt_pdf = _make_text_cell("d%b&c *f(g+ h^j~k", 0, 10, 100, 30, from_ocr=False)
+    corrupt_pdf = _make_text_cell(
+        "w\\o^r~d m`o#j!i noise", 0, 10, 100, 30, from_ocr=False
+    )
     # OCR produced no cells for this region
     merged = model._merge_ocr_and_pdf_cells(
         ocr_cells=[],
@@ -200,7 +231,7 @@ def test_merge_ocr_and_pdf_cells_fallback_keeps_non_overlapping_corrupt_pdf():
     )
     # Non-overlapping corrupt cell kept as fallback
     assert len(merged) == 1
-    assert merged[0].text == "d%b&c *f(g+ h^j~k"
+    assert merged[0].text == "w\\o^r~d m`o#j!i noise"
 
 
 def test_find_pdf_aware_layout_ocr_rects_includes_corrupt_clusters():
@@ -223,7 +254,9 @@ def test_find_pdf_aware_layout_ocr_rects_includes_corrupt_clusters():
     )
 
     page = Page(page_no=0, size=Size(width=612, height=792))
-    page._backend = DummyPageBackend(text_in_rect="\ue001 \ue002 corrupt PUA cluster")
+    page._backend = DummyPageBackend(
+        text_in_rect="\ue001 \ue002 \ue003 \ue004 corrupt PUA cluster"
+    )
     page.predictions.layout = LayoutPrediction(clusters=[cluster])
 
     ocr_rects = model._find_pdf_aware_layout_ocr_rects(page)
@@ -257,7 +290,9 @@ def test_find_pdf_aware_layout_ocr_rects_skips_clean_clusters_and_code():
     )
 
     page = Page(page_no=0, size=Size(width=612, height=792))
-    page._backend = DummyPageBackend(text_in_rect="Clean English paragraph")
+    page._backend = DummyPageBackend(
+        text_in_rect="Clean English paragraph with AT&T Inc."
+    )
     page.predictions.layout = LayoutPrediction(clusters=[clean_cluster, code_cluster])
 
     ocr_rects = model._find_pdf_aware_layout_ocr_rects(page)
