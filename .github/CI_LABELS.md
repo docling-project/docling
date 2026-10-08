@@ -71,6 +71,20 @@ three more. The list is in `.github/scripts/pr_topic_labels.py`. The workflow
 adds topic labels only on the first triage of a PR, never creates a label, and
 never removes one, so maintainers can correct them.
 
+### `/ai` commands
+
+After a maintainer (`OWNER`, `MEMBER`, or `COLLABORATOR`) comments on or
+reviews a PR, a push runs only the triage, not the AI review. Maintainers can
+ask for more with a PR comment that starts with one of these commands:
+
+- `/ai review` (or `/ai`): a new, full AI review of the current commit. It
+  also runs for a commit that was already reviewed and for a PR rated as a
+  duplicate. The size limits still apply.
+- `/ai triage`: run the triage again.
+
+The bot adds a 👀 reaction to confirm the command. Commands from other users
+are ignored.
+
 The comment also summarizes changed reference data in `tests/data/**/groundtruth/`.
 It separates formatting-only and coordinate-only changes from text, table, and
 structure changes.
