@@ -283,22 +283,6 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
     return list(dict.fromkeys(expanded_formats))
 
 
-if _local_model_stack_available:
-    ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
-    ocr_engines_enum_internal = ocr_factory_internal.get_enum()
-
-    layout_factory_internal = get_layout_factory(allow_external_plugins=False)
-    layout_engines_enum_internal = layout_factory_internal.get_enum()
-
-    table_structure_factory_internal = get_table_structure_factory(
-        allow_external_plugins=False
-    )
-    table_structure_engines_enum_internal = table_structure_factory_internal.get_enum()
-else:
-    ocr_engines_enum_internal = []
-    layout_engines_enum_internal = []
-    table_structure_engines_enum_internal = []
-
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
 
@@ -964,9 +948,8 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                f"The layout engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in layout_engines_enum_internal)}. "
-                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+                "The layout engine to use. Enable --allow-external-plugins to select "
+                "a third-party engine. Use --show-external-plugins to list them."
             ),
         ),
     ] = LayoutObjectDetectionOptions.kind,
@@ -975,9 +958,8 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                f"The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in table_structure_engines_enum_internal)}. "
-                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+                "The table structure engine to use. Enable --allow-external-plugins "
+                "to select a third-party engine. Use --show-external-plugins to list them."
             ),
         ),
     ] = TableStructureOptions.kind,
@@ -986,9 +968,8 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                f"The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in ocr_engines_enum_internal)}. "
-                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+                "The OCR engine to use. Enable --allow-external-plugins to select "
+                "a third-party engine. Use --show-external-plugins to list them."
             ),
         ),
     ] = OcrAutoOptions.kind,
