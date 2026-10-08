@@ -5,6 +5,12 @@ name: "AI PR Triage"
 # changes, and writes a first review with inline comments. No job checks out
 # or runs code from the pull request.
 #
+# Every job checks out `github.sha`: for pull_request_target this is the
+# current head of the base branch, the same commit as this workflow file. Do
+# not use `github.event.pull_request.base.sha`: for a PR opened before a change
+# to these scripts, that older commit does not have the scripts that this
+# workflow calls.
+#
 # The workflow is a review aid, not a gate. Every step uses continue-on-error,
 # and long steps have a timeout below the job timeout, so a problem shows as a
 # warning annotation and never as a failed check on the PR.
@@ -54,11 +60,11 @@ jobs:
       run_llm: ${{ steps.prepare.outputs.run_llm }}
       run_review: ${{ steps.prepare-review.outputs.run_review }}
     steps:
-      # Trusted base commit only. The PR is read through the API and git objects.
+      # Trusted base branch only. The PR is read through the API and git objects.
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         continue-on-error: true
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
@@ -109,7 +115,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         continue-on-error: true
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
@@ -174,7 +180,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         continue-on-error: true
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
           sparse-checkout: .github/scripts
@@ -220,7 +226,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         continue-on-error: true
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
@@ -302,7 +308,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         continue-on-error: true
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
           sparse-checkout: .github/scripts
