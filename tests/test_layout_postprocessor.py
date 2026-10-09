@@ -136,7 +136,7 @@ def test_assign_cells_to_clusters_indexes_passed_clusters() -> None:
     assert [cell.index for cell in assigned[0].cells] == [0]
 
 
-def test_nested_same_label_clusters_resolve_before_cell_assignment() -> None:
+def test_nested_same_label_clusters_resolve_before_bbox_adjustment() -> None:
     cells = [
         _text_cell(
             0,
