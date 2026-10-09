@@ -147,6 +147,18 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     DEFAULT_DILATION_SIZE = 20
 
+    # A rule, an underline or a table border is at least this many times longer than it
+    # is thick; anything stubbier may be part of an outlined glyph. Measured on the test
+    # fixtures: a 0.8pt rule reports 145:1 stroked and 287:1 filled (pypdfium2 inflates
+    # the stroke to 2pt thick), while vector letterforms report 1.3:1 to 6:1 whether
+    # drawn filled or stroked, and a rule merged with the glyph it crosses reports 2.6:1.
+    RULE_LIKE_ASPECT_RATIO = 12.0
+    # A shape no thicker than this many text lines is a band -- a highlight, a table
+    # stripe, a filled cell -- and any text on it accounts for it.
+    THIN_SHAPE_LINE_HEIGHTS = 2.0
+    # A thicker shape is accounted for only when text covers this share of its area.
+    TEXT_BACKED_MIN_COVERAGE = 0.1
+
     # Whether the engine can run several languages at once
     multiple_languages: ClassVar[bool] = False
 
@@ -269,15 +281,120 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         )
         return ocr_rects
 
+    @staticmethod
+    def _boxes_touch(a: BoundingBox, b: BoundingBox) -> bool:
+        """Inclusive overlap test, so a zero-thickness shape segment still matches.
+
+        `BoundingBox.overlaps` is strict and reports False for a degenerate box even
+        against itself, which is precisely what a connected shape box is for a rule.
+        Both boxes must share the top-left origin the shape queries document.
+        """
+        return a.l <= b.r and b.l <= a.r and a.t <= b.b and b.t <= a.b
+
+    @staticmethod
+    def _text_geometry(
+        page: Page,
+    ) -> tuple[list[BoundingBox], BoundingBoxSpatialIndex]:
+        """The page's visible text cell boxes, top-left origin, with a spatial index."""
+        assert page._backend is not None
+        assert page.size is not None
+        cells = page._backend.get_visible_text_cells()
+        if cells is None:
+            cells = page._backend.get_text_cells()
+        boxes = [
+            cell.rect.to_bounding_box().to_top_left_origin(page.size.height)
+            for cell in cells
+        ]
+        index = BoundingBoxSpatialIndex()
+        for i, box in enumerate(boxes):
+            index.insert(i, box)
+        return boxes, index
+
+    @classmethod
+    def _text_accounts_for(
+        cls,
+        probe: BoundingBox,
+        text_boxes: list[BoundingBox],
+        text_index: BoundingBoxSpatialIndex,
+    ) -> bool:
+        """Whether the text cells under `probe` explain the shape it was cut from.
+
+        A band no thicker than a couple of text lines -- a highlight, a table
+        stripe, a filled cell -- is explained by any text on it. A thicker shape
+        is explained only when text covers a fair share of its area: a chart box
+        with one native caption in a corner is not, and the labels drawn as paths
+        inside it still need OCR.
+        """
+        under = [
+            (box, area)
+            for box in (text_boxes[i] for i in text_index.intersection(probe))
+            if (area := box.intersection_area_with(probe)) > 0
+        ]
+        if not under:
+            return False
+        heights = sorted(box.height for box, _ in under)
+        line_height = heights[len(heights) // 2]
+        if min(probe.width, probe.height) <= cls.THIN_SHAPE_LINE_HEIGHTS * line_height:
+            return True
+        covered = sum(area for _, area in under)
+        return covered / probe.area() >= cls.TEXT_BACKED_MIN_COVERAGE
+
+    @staticmethod
+    def _clip_box(box: BoundingBox, clip: BoundingBox) -> BoundingBox:
+        """The part of `box` inside `clip`, for two boxes that `_boxes_touch`.
+
+        Unlike `BoundingBox.get_intersection_bbox`, a degenerate result is kept
+        rather than turned into `None`, so a shape that merely touches the clip
+        edge yields a zero-thickness box that `_is_rule_like` then dismisses.
+        """
+        return BoundingBox(
+            l=max(box.l, clip.l),
+            t=max(box.t, clip.t),
+            r=min(box.r, clip.r),
+            b=min(box.b, clip.b),
+            coord_origin=box.coord_origin,
+        )
+
+    @classmethod
+    def _is_rule_like(cls, bbox: BoundingBox) -> bool:
+        """Whether a shape is a rule, an underline or a table border.
+
+        Decided on the shape's extent alone. A backend's stroked-segment report
+        (`get_shape_lines`) cannot stand in for this: it misses rules drawn as
+        filled rectangles, and it reports letterforms drawn as stroked segments
+        exactly as it reports a rule.
+        """
+        thickness = min(bbox.width, bbox.height)
+        if thickness <= 0:
+            return True  # a degenerate segment is a line by construction
+        return max(bbox.width, bbox.height) / thickness >= cls.RULE_LIKE_ASPECT_RATIO
+
     def _find_pdf_aware_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
         Compute the OCR rects from the layout clusters of a programmatic PDF.
 
         1. Start from the layout clusters.
-        2. Eliminate clusters that intersect exclusively with programmatic text PDF cells
-           The following clusters therefore remain:
-           - Clusters without any overlapping PDF cell.
-           - Clusters with at least one overlapping non-text region (e.g. bitmap, shape).
+        2. Keep the clusters that need OCR:
+           - Clusters overlapping a bitmap (their text may be rasterised).
+           - Clusters without any visible programmatic text (their text may be
+             vector-outlined, or the region may be empty).
+           - Clusters whose text layer does not account for every shape in them,
+             i.e. a shape that is neither a stroked segment nor sitting behind text.
+           A shape alone does not force OCR: rules, underlines and table borders
+           routinely cross clusters of perfectly good programmatic text, and OCR-ing
+           those is both slow and lossier than the text layer (#4174, #4139). But
+           the converse is just as lossy -- a glyph drawn as a filled path is absent
+           from the text layer, so a cluster mixing one with real text still needs
+           OCR (#4209). A shape counts as a rule when its extent says so: long and
+           thin. That holds whether the rule was stroked or filled, and it does not
+           mistake letterforms for rules the way a stroked-segment report does.
+           Whether text accounts for a shape is judged on the part of the shape
+           inside the cluster only: a connected shape may extend well past the
+           cluster, and text under it elsewhere cannot account for what is here.
+           Any text on a band no thicker than a couple of lines accounts for it;
+           a thicker shape needs text over a fair share of its area, since one
+           native caption inside a chart says nothing about the labels drawn as
+           paths in it.
         3. Deduplicate the remaining cluster bboxes.
         """
         if page.predictions.layout is None:
@@ -298,27 +415,24 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         )
         use_backend_queries = backend.has_content_in(bbox=page_bbox) is not None
 
+        # Text cell geometry, read at most once. The spatial-index path needs it for
+        # every cluster; the native-query path only for clusters that carry both text
+        # and shapes, so it is read lazily there.
+        text_boxes: list[BoundingBox] | None = None
         text_index: BoundingBoxSpatialIndex | None = None
         non_text_index: BoundingBoxSpatialIndex | None = None
         if not use_backend_queries:
-            # Index for the text PDF cells
-            text_cells = backend.get_visible_text_cells()
-            if text_cells is None:
-                text_cells = backend.get_text_cells()
+            text_boxes, text_index = self._text_geometry(page)
 
-            text_index = BoundingBoxSpatialIndex()
-            for i, text_cell in enumerate(text_cells):
-                text_index.insert(i, text_cell.rect.to_bounding_box())
-
-            # Index for the non-text PDF cells: bitmaps, and shapes when available
-            non_text_boxes = list(backend.get_bitmap_rects())
-            shape_boxes = backend.get_connected_shape_bounding_boxes()
-            if shape_boxes is not None:
-                non_text_boxes.extend(shape_boxes)
-
+            # Index for the bitmaps. Shapes are deliberately left out (see docstring).
             non_text_index = BoundingBoxSpatialIndex()
-            for i, bbox in enumerate(non_text_boxes):
+            for i, bbox in enumerate(backend.get_bitmap_rects()):
                 non_text_index.insert(i, bbox)
+
+        # Page shape geometry, read at most once and only if some cluster turns out to
+        # carry both text and shapes. Reading it is costly on chart-heavy pages, and
+        # the overwhelming majority of text clusters never need it.
+        shape_boxes: list[BoundingBox] | None = None
 
         # Collect the non-eliminated cluster bboxes
         ocr_rects: list[BoundingBox] = []
@@ -326,16 +440,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             cluster_bbox = cluster.bbox
 
             if use_backend_queries:
-                has_non_text = backend.has_content_in(
-                    bbox=cluster_bbox, chars=False, shapes=True, bitmaps=True
+                has_bitmap = backend.has_content_in(
+                    bbox=cluster_bbox, chars=False, shapes=False, bitmaps=True
                 )
             else:
                 assert non_text_index is not None
-                has_non_text = any(
+                has_bitmap = any(
                     True for _ in non_text_index.intersection(cluster_bbox)
                 )
 
-            if has_non_text:
+            if has_bitmap:
                 ocr_rects.append(cluster_bbox)
                 continue
 
@@ -350,6 +464,42 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
             if not has_text:
                 ocr_rects.append(cluster_bbox)
+                continue
+
+            # The cluster carries programmatic text, but that text layer need not
+            # account for all of it: glyphs drawn as filled paths are invisible to it.
+            # A shape is accounted for when it is a stroked segment, or when text sits
+            # inside it (a highlight, a filled table cell). Anything else may be an
+            # outlined glyph, so the cluster still needs OCR.
+            if (
+                backend.has_content_in(
+                    bbox=cluster_bbox, chars=False, shapes=True, bitmaps=False
+                )
+                is False
+            ):
+                continue  # no shapes here, so the text layer accounts for everything
+
+            if shape_boxes is None:
+                shape_boxes = backend.get_connected_shape_bounding_boxes() or []
+
+            for shape in shape_boxes:
+                if not self._boxes_touch(shape, cluster_bbox):
+                    continue
+                if self._is_rule_like(shape):
+                    continue
+                # Judge only the part of the shape that lies inside the cluster. A
+                # connected shape can reach far beyond it -- an outlined glyph fused
+                # with a page-wide fill, say -- and text under the fill elsewhere on
+                # the page says nothing about the glyph. A sliver of a neighbouring
+                # fill that just crosses the cluster edge is treated like a rule.
+                probe = self._clip_box(shape, cluster_bbox)
+                if self._is_rule_like(probe):
+                    continue
+                if text_boxes is None or text_index is None:
+                    text_boxes, text_index = self._text_geometry(page)
+                if not self._text_accounts_for(probe, text_boxes, text_index):
+                    ocr_rects.append(cluster_bbox)
+                    break
 
         # Deduplicate the surviving cluster bboxes.
         _, ocr_rects = self._deduplicate_rects(
