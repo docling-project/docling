@@ -19,6 +19,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
+from docling.models.utils.text_quality import rate_text_quality
 from docling.utils.profiling import TimeRecorder
 
 
@@ -47,14 +48,6 @@ class PagePreprocessingOptions(BaseModel):
 class PagePreprocessingModel(BasePageModel):
     def __init__(self, options: PagePreprocessingOptions):
         self.options = options
-
-        # Pre-compiled regex patterns for efficiency
-        self.GLYPH_RE = re.compile(r"GLYPH<[0-9A-Fa-f]+>")
-        self.SLASH_G_RE = re.compile(r"(?:/G\d+){2,}")
-        self.FRAG_RE = re.compile(r"\b[A-Za-z](?:/[a-z]{1,3}\.[a-z]{1,3}){2,}\b")
-        self.SLASH_NUMBER_GARBAGE_RE = re.compile(
-            r"(?:/\w+\s*){2,}"
-        )  # Two or more "/token " sequences
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -177,28 +170,4 @@ class PagePreprocessingModel(BasePageModel):
         return page
 
     def rate_text_quality(self, text: str) -> float:
-        # Hard errors: if any of these patterns are found, return 0.0 immediately.
-        blacklist_chars = ["�"]
-        if (
-            any(text.find(c) >= 0 for c in blacklist_chars)
-            or self.GLYPH_RE.search(text)
-            or self.SLASH_G_RE.search(text)
-            or self.SLASH_NUMBER_GARBAGE_RE.match(
-                text
-            )  # Check if text is mostly slash-number pattern
-        ):
-            return 0.0
-
-        penalty = 0.0
-
-        # Apply a penalty only if the fragmented words pattern occurs at least three times.
-        frag_matches = self.FRAG_RE.findall(text)
-        if len(frag_matches) >= 3:
-            penalty += 0.1 * len(frag_matches)
-
-        # Additional heuristic: if the average token length is below 2, add a penalty.
-        # tokens = text.split()
-        # if tokens and (sum(map(len, tokens)) / len(tokens)) < 2:
-        #    penalty += 0.2
-
-        return max(1.0 - penalty, 0.0)
+        return rate_text_quality(text)
