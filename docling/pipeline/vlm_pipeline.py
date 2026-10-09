@@ -55,6 +55,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
+from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import settings
 
 # VlmResponseFormat is actually ResponseFormat from pipeline_options_vlm_model
@@ -108,12 +109,17 @@ class VlmPipeline(PaginatedPipeline):
                     provenance.page_no = page.page_no
 
         original_document, original_pages = conv_res.document, conv_res.pages
+        original_progress = conv_res._progress
         try:
             conv_res.document = document
             conv_res.pages = [page]
+            # The page is reported once its pictures are enriched, so its page
+            # event covers this work; per-page item counts would only add noise.
+            conv_res._progress = ProgressReporter()
             super()._enrich_document(conv_res)
         finally:
             conv_res.document, conv_res.pages = original_document, original_pages
+            conv_res._progress = original_progress
 
     def _initialize_new_runtime_system(
         self, pipeline_options: VlmPipelineOptions

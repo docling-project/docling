@@ -20,7 +20,13 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.progress import PageCompletedProgress, ProgressReporter
+from docling.datamodel.progress import (
+    ConversionProgressEvent,
+    EnrichmentProgress,
+    EnrichmentStep,
+    PageCompletedProgress,
+    ProgressReporter,
+)
 from docling.datamodel.settings import DocumentLimits, settings
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -156,6 +162,7 @@ class _PredictDoctags:
 
 class _CapturePictureCrop:
     elements_batch_size = 1
+    progress_step = EnrichmentStep.OTHER
     expansion_factor = 0.0
     images_scale = 1.5
     prepare_element = BaseItemAndImageEnrichmentModel.prepare_element
@@ -291,6 +298,26 @@ def test_vlm_enriches_picture_crop_before_releasing_page() -> None:
     )
     assert model.image_sizes == [(24, 24), (24, 24)]
     assert 1.5 in tracker.rendered_scales
+
+
+def test_vlm_page_events_cover_the_per_page_picture_enrichment() -> None:
+    events: list[ConversionProgressEvent] = []
+    _run_pipeline(
+        page_nos=[5, 6],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        tag="picture",
+        enrichment_model=_CapturePictureCrop(),
+        progress=ProgressReporter([events.append]),
+    )
+
+    # Pictures are enriched page by page before the page is reported, so the
+    # page count covers that work and no per-page item counts are sent.
+    assert not any(isinstance(ev, EnrichmentProgress) for ev in events)
+    pages = [ev for ev in events if isinstance(ev, PageCompletedProgress)]
+    assert len(pages) == len(events)
+    assert {ev.page_no for ev in pages if ev.success} == {5, 6}
 
 
 def test_vlm_does_not_render_enrichment_scale_without_pictures() -> None:

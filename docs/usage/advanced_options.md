@@ -564,6 +564,9 @@ Things to know:
 - Enrichment runs after the last page, on the whole document, so the page bar
   reaching 100% does not mean the document is done. Watch the
   `EnrichmentProgress` events, or wait for `DocumentCompletedProgress`.
+- The VLM pipeline enriches the pictures of each page before it reports the
+  page, so its page count already covers that work and it sends no
+  `EnrichmentProgress`.
 - Failed pages, and pages cut by `document_timeout`, are reported with
   `success=False`, so `completed_pages` always reaches `total_pages`.
 - Exceptions raised by the callback are logged and ignored.
