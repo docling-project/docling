@@ -177,6 +177,7 @@ class EasyOcrModel(BaseOcrModel):
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
         self._native_codes: List[str] = []
+        self._release_gpu_memory = False
 
         if self.enabled:
             try:
@@ -228,6 +229,15 @@ class EasyOcrModel(BaseOcrModel):
                     download_enabled=download_enabled,
                     verbose=False,
                 )
+            self._release_gpu_memory = self.options.release_gpu_memory and use_gpu
+
+    @staticmethod
+    def _empty_cuda_cache() -> None:
+        # EasyOCR depends on torch. `empty_cache()` does nothing when CUDA is
+        # not initialized, e.g. when EasyOCR runs on MPS.
+        import torch
+
+        torch.cuda.empty_cache()
 
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         r"""Report the native and BCP74 languages without script whenever it is not needed"""
@@ -340,6 +350,8 @@ class EasyOcrModel(BaseOcrModel):
 
                         del high_res_image
                         del im
+                        if self._release_gpu_memory:
+                            self._empty_cuda_cache()
 
                         cells = [
                             TextCell(
