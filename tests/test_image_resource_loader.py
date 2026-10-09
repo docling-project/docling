@@ -361,8 +361,6 @@ def test_data_uri_over_size_limit_is_rejected():
         loader.load_image_data("data:image/png;base64,AAAAAAAAAAAAAAAA", None)
 
 
-# Carried over from #4681 (@usmanmateen): unit coverage for the OSError
-# truncation path in create_image_ref.
 def _jpeg_data_uri(data: bytes) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(data).decode()
 

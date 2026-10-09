@@ -1521,6 +1521,40 @@ def test_local_file_uri_source_resolves_images(tmp_path: Path):
     assert pictures[0].get_image(doc) is not None
 
 
+def test_cmyk_picture_is_kept(tmp_path: Path):
+    # Images in modes that cannot be written as PNG (e.g. CMYK) must still
+    # make it through the conversion as normalized RGB pictures.
+    buffer = BytesIO()
+    Image.new("CMYK", (200, 100), (0, 255, 255, 0)).save(buffer, format="JPEG")
+    (tmp_path / "cmyk.jpg").write_bytes(buffer.getvalue())
+
+    source = tmp_path / "cmyk.html"
+    source.write_text('<html><body><img src="cmyk.jpg"></body></html>')
+
+    backend_options = HTMLBackendOptions(
+        enable_local_fetch=True, fetch_images=True, source_uri=str(source)
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    result = converter.convert(source)
+
+    assert result.status == ConversionStatus.SUCCESS
+    num_pic = 0
+    for element, _ in result.document.iterate_items():
+        if isinstance(element, PictureItem):
+            assert element.image
+            image = element.image.pil_image
+            assert image is not None
+            assert image.size == (200, 100)
+            assert image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
+            num_pic += 1
+    assert num_pic == 1, "The CMYK picture was not kept in the converted file"
+
+
 def test_html_furniture():
     raw_html = (
         b"<html><body><p>Initial content with some <strong>bold text</strong></p>"

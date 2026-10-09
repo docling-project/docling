@@ -370,8 +370,9 @@ class ImageResourceLoader:
             if img_data:
                 img = Image.open(BytesIO(img_data))
                 # Image.open reads only the header: check the size before
-                # ImageRef.from_pil decodes the pixels.
+                # the pixels are decoded.
                 check_image_pixels(img.size, self.max_image_pixels)
+                img.load()
                 return ImageRef.from_pil(
                     normalize_image_for_png(img),
                     dpi=int(img.info.get("dpi", (72,))[0]),
