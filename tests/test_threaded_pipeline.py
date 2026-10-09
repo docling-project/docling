@@ -217,6 +217,49 @@ def test_threaded_pipeline_bounds_pages_in_flight():
     assert 1 <= peak <= 2
 
 
+def test_threaded_pipeline_timeout_while_waiting_for_a_page_slot():
+    """A producer blocked on a full in-flight limit stops when the document times out."""
+    release = threading.Event()
+
+    class HangingLayoutPipeline(StandardPdfPipeline):
+        def _init_models(self) -> None:
+            super()._init_models()
+            layout = self.layout_model
+
+            def hang_then_layout(conv_res, pages):
+                release.wait()
+                return layout(conv_res, pages)
+
+            self.layout_model = hang_then_layout
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=HangingLayoutPipeline,
+                backend=ThreadedDoclingParseDocumentBackend,
+                pipeline_options=ThreadedPdfPipelineOptions(
+                    do_table_structure=False,
+                    do_ocr=False,
+                    max_pages_in_flight=1,
+                    document_timeout=3.0,
+                    stage_shutdown_timeout_seconds=1.0,
+                ),
+            )
+        }
+    )
+    try:
+        result = converter.convert(
+            _SINGLE_FILE, raises_on_error=False, page_range=(1, 3)
+        )
+        assert result.status != ConversionStatus.SUCCESS
+        assert not any(
+            t.name.startswith("PageProducer") and t.is_alive()
+            for t in threading.enumerate()
+        )
+    finally:
+        release.set()
+
+
 def test_threaded_pipeline_stage_shutdown_timeout():
     """A stage stuck in a blocking model call is abandoned after
     `shutdown_timeout`, not the hardcoded 15s the pipeline used to have."""
