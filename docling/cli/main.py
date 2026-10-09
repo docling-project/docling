@@ -262,6 +262,11 @@ def _iter_input_paths_from_directory(
             yield path
 
 
+def _choices_metavar(choices: Iterable[str]) -> str:
+    values = list(choices)
+    return f"[{'|'.join(values)}]" if values else "TEXT"
+
+
 def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
     if from_formats is None:
         return list(InputFormat)
@@ -417,6 +422,7 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
+    context_settings={"help_option_names": ["-h", "--help"]},
     help=(
         "Convert documents with Docling. At default verbosity a per-file "
         "progress line is logged; pass -q/--quiet for fully silent output "
@@ -802,6 +808,7 @@ def convert(  # noqa: C901
     from_formats: list[str] = typer.Option(
         None,
         "--from",
+        metavar=_choices_metavar([*(fmt.value for fmt in InputFormat), "odf"]),
         help="Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all.",
     ),
     to_formats: list[OutputFormat] = typer.Option(
@@ -867,6 +874,7 @@ def convert(  # noqa: C901
         str,
         typer.Option(
             ...,
+            metavar=_choices_metavar(vlm_preset_ids),
             help=f"Choose the VLM preset to use with PDF or image files. Available presets: {', '.join(vlm_preset_ids)}",
         ),
     ] = "granite_docling",
@@ -963,6 +971,7 @@ def convert(  # noqa: C901
         str,
         typer.Option(
             ...,
+            metavar=_choices_metavar(o.value for o in layout_engines_enum_internal),
             help=(
                 f"The layout engine to use. When --allow-external-plugins is *not* set, the available values are: "
                 f"{', '.join(o.value for o in layout_engines_enum_internal)}. "
@@ -974,6 +983,9 @@ def convert(  # noqa: C901
         str,
         typer.Option(
             ...,
+            metavar=_choices_metavar(
+                o.value for o in table_structure_engines_enum_internal
+            ),
             help=(
                 f"The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: "
                 f"{', '.join(o.value for o in table_structure_engines_enum_internal)}. "
@@ -985,6 +997,7 @@ def convert(  # noqa: C901
         str,
         typer.Option(
             ...,
+            metavar=_choices_metavar(o.value for o in ocr_engines_enum_internal),
             help=(
                 f"The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: "
                 f"{', '.join(o.value for o in ocr_engines_enum_internal)}. "
@@ -992,6 +1005,13 @@ def convert(  # noqa: C901
             ),
         ),
     ] = OcrAutoOptions.kind,
+    rapidocr_model_size: Annotated[
+        Literal["tiny", "small", "medium"] | None,
+        typer.Option(
+            "--rapidocr-model-size",
+            help="RapidOCR PP-OCRv6 detection and recognition model size. Defaults to small.",
+        ),
+    ] = None,
     ocr_lang: Annotated[
         str | None,
         typer.Option(
@@ -1457,6 +1477,13 @@ def convert(  # noqa: C901
         else:
             resolved_ocr_mode = ocr_mode
         ocr_kwargs: dict[str, Any] = {"mode": resolved_ocr_mode}
+        if rapidocr_model_size is not None:
+            if ocr_engine != "rapidocr":
+                raise typer.BadParameter(
+                    "requires --ocr-engine rapidocr",
+                    param_hint="--rapidocr-model-size",
+                )
+            ocr_kwargs["model_size"] = rapidocr_model_size
         ocr_lang_list = _split_list(ocr_lang)
         # `_split_list` returns None only when the option was not given, so an
         # explicitly empty value reaches the engine as `lang=[]`: "your default".

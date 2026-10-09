@@ -619,13 +619,13 @@ class RapidOcrModel(BaseOcrModel):
                 # Global settings (these are still correct)
                 "Global.text_score": self.options.text_score,
                 "Global.font_path": font_path,
+                "Global.log_level": "info" if self.options.print_verbose else "warning",
                 # Engine-level ONNXRuntime settings
                 "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
                 "EngineConfig.onnxruntime.use_cuda": use_cuda,
                 "EngineConfig.onnxruntime.cuda_ep_cfg.device_id": gpu_id,
                 # Engine-level OpenVINO settings
                 "EngineConfig.openvino.inference_num_threads": intra_op_num_threads,
-                # "Global.verbose": self.options.print_verbose,
                 # Detection model settings
                 "Det.model_path": det_model_path,
                 "Det.use_cuda": use_cuda,

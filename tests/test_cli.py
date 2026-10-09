@@ -97,6 +97,21 @@ def test_cli_help():
     assert "DOCLING_SERVICE_URL" in result.output
 
 
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["-h"],
+        ["convert", "-h"],
+        ["convert-remote", "-h"],
+    ],
+)
+def test_cli_short_help(args: list[str]) -> None:
+    result = runner.invoke(app, args)
+    assert result.exit_code == 0
+    assert "Usage:" in result.output
+    assert "--help" in result.output
+
+
 def test_cli_convert_help():
     result = runner.invoke(app, ["convert", "--help"], terminal_width=200)
     assert result.exit_code == 0
@@ -124,6 +139,22 @@ def test_cli_convert_help():
     )
     assert separator_option.opts == ["--reading-order-separators"]
     assert separator_option.secondary_opts == ["--no-reading-order-separators"]
+    metavar_by_name = {
+        parameter.name: parameter.metavar for parameter in convert_command.params
+    }
+    for name in (
+        "from_formats",
+        "vlm_model",
+        "layout_engine",
+        "table_structure_engine",
+        "ocr_engine",
+    ):
+        assert metavar_by_name[name].startswith("[")
+    assert "odf" in metavar_by_name["from_formats"]
+    assert "granite_docling" in metavar_by_name["vlm_model"]
+    assert metavar_by_name["ocr_engine"] == (
+        "[auto|easyocr|kserve_v2_ocr|nemotron-ocr|ocrmac|rapidocr|tesserocr|tesseract]"
+    )
 
 
 def test_cli_version():
@@ -1542,6 +1573,28 @@ def test_cli_ocr_engine_can_be_set(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert ocr_options is not None
     assert ocr_options.kind == "easyocr"
+
+
+def test_cli_rapidocr_model_size_selects_tiny(tmp_path, monkeypatch):
+    result, ocr_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--ocr-engine", "rapidocr", "--rapidocr-model-size", "tiny"],
+        tmp_path,
+        "ocr_options",
+    )
+    assert result.exit_code == 0
+    assert ocr_options.model_size == "tiny"
+
+
+def test_cli_rapidocr_model_size_requires_rapidocr(tmp_path, monkeypatch):
+    result, _ = _capture_cli_engine_options(
+        monkeypatch,
+        ["--ocr-engine", "easyocr", "--rapidocr-model-size", "tiny"],
+        tmp_path,
+        "ocr_options",
+    )
+    assert result.exit_code != 0
+    assert "requires --ocr-engine rapidocr" in result.output
 
 
 @pytest.mark.parametrize(
