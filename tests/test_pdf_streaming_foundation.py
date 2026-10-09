@@ -161,6 +161,10 @@ def test_standard_pipeline_bounds_live_streaming_backends() -> None:
         document_timeout=None,
         stage_shutdown_timeout_seconds=1.0,
         generate_parsed_pages=False,
+        max_pages_in_flight=None,
+        ocr_batch_size=4,
+        layout_batch_size=4,
+        table_batch_size=4,
     )
     pipeline._create_run_ctx = MethodType(
         lambda self: _make_run_context(self._release_page_resources), pipeline
@@ -187,6 +191,10 @@ def test_failed_page_sizes_are_kept_per_conversion() -> None:
         document_timeout=None,
         stage_shutdown_timeout_seconds=1.0,
         generate_parsed_pages=False,
+        max_pages_in_flight=None,
+        ocr_batch_size=4,
+        layout_batch_size=4,
+        table_batch_size=4,
     )
     pipeline._create_run_ctx = MethodType(
         lambda self: _make_run_context(self._release_page_resources), pipeline
