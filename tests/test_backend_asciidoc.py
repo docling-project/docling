@@ -377,11 +377,14 @@ def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
 
 def test_text_after_a_nested_list_is_not_part_of_the_list() -> None:
     # Ending a list used to close only its innermost level, so the paragraph
-    # after a nested list was added to the outer list group.
+    # after a nested list was added to the outer list group, and so was the
+    # next list.
     source = b"""* apple
 ** apple pie
 
 After the list.
+
+* mango
 """
     in_doc = InputDocument(
         path_or_stream=BytesIO(source),
@@ -393,7 +396,11 @@ After the list.
 
     paragraph = next(item for item in doc.texts if item.text == "After the list.")
     assert paragraph.parent == doc.body.get_ref()
-    assert doc.export_to_markdown() == "- apple\n    - apple pie\n\nAfter the list."
+    mango = next(item for item in doc.texts if item.text == "mango")
+    assert mango.parent.resolve(doc).parent == doc.body.get_ref()
+    assert doc.export_to_markdown() == (
+        "- apple\n    - apple pie\n\nAfter the list.\n\n- mango"
+    )
 
 
 def test_bullet_items_under_an_ordered_list_are_nested() -> None:
