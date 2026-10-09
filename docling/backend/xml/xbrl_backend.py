@@ -172,16 +172,10 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             if (
-                not self.options.enable_local_fetch
+                in_doc.format != InputFormat.ZIP_XBRL
+                and not self.options.enable_local_fetch
                 and not self.options.enable_remote_fetch
             ):
-                if in_doc.format == InputFormat.ZIP_XBRL:
-                    raise OperationNotAllowed(
-                        "Processing an XBRL ZIP requires local resource fetching."
-                        " Set 'options.enable_local_fetch=True' on"
-                        " XBRLBackendOptions to allow reading the taxonomy files"
-                        " bundled inside the ZIP."
-                    )
                 raise OperationNotAllowed(
                     "Fetching local or remote resources is only allowed when set"
                     " explicitly. Set 'options.enable_local_fetch=True' or"

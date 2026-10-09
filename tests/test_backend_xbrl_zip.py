@@ -40,7 +40,6 @@ from docling.datamodel.document import (
 from docling.document_converter import (
     DocumentConverter,
     XBRLFormatOption,
-    XBRLZipFormatOption,
 )
 
 from .test_data_gen_flag import GEN_TEST_DATA
@@ -54,11 +53,9 @@ _GT_DIR = Path(__file__).parent / "data" / "xbrl_zip" / "groundtruth"
 
 @pytest.fixture(scope="module")
 def documents() -> list[tuple[Path, DoclingDocument]]:
-    # XBRLZipFormatOption sets enable_local_fetch=True by default (the user's
-    # explicit consent is expressed by choosing this format option).
     converter = DocumentConverter(
         allowed_formats=[InputFormat.ZIP_XBRL],
-        format_options={InputFormat.ZIP_XBRL: XBRLZipFormatOption()},
+        format_options={InputFormat.ZIP_XBRL: XBRLFormatOption()},
     )
     results: list[tuple[Path, DoclingDocument]] = []
     for zip_file in sorted(_SOURCES_DIR.glob("*.zip")):
@@ -125,7 +122,7 @@ def test_grve_zip_equals_plain_xml() -> None:
 
     r_zip = DocumentConverter(
         allowed_formats=[InputFormat.ZIP_XBRL],
-        format_options={InputFormat.ZIP_XBRL: XBRLZipFormatOption()},
+        format_options={InputFormat.ZIP_XBRL: XBRLFormatOption()},
     ).convert(_SOURCES_DIR / "grve_10q_htm.zip")
 
     assert r_xml.document.export_to_markdown(compact_tables=True) == (
