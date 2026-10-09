@@ -877,11 +877,8 @@ class _DocumentConversionInput(BaseModel):
         mime = mime or "text/plain"
         # An HTML-typed document may actually be iXBRL.  Upgrade the MIME so
         # that _guess_from_content can resolve it to XML_XBRL rather than HTML.
-        if mime.lower() == "text/html" and InputFormat.XML_XBRL in (
-            MimeTypeToFormat.get("application/xhtml+xml") or []
-        ):
-            if _DocumentConversionInput._is_ixbrl(content):
-                mime = "application/xhtml+xml"
+        if mime.lower() == "text/html" and _DocumentConversionInput._is_ixbrl(content):
+            mime = "application/xhtml+xml"
         formats = MimeTypeToFormat.get(mime, [])
         _log.info(f"detected formats: {formats}")
 
