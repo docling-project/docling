@@ -64,13 +64,32 @@ def is_groundtruth_path(path: str) -> bool:
     )
 
 
-def summarize_file(path: str, old: bytes | None, new: bytes | None) -> FileChange:
-    if old is None and new is None:
-        return FileChange(path, ChangeKind.UNPARSABLE, ["file content is missing"])
-    if old is None:
+def summarize_file(
+    path: str, old: bytes | None, new: bytes | None, *, status: str
+) -> FileChange:
+    """Classify one changed reference file.
+
+    `status` is the file status that GitHub reports. A missing blob is not
+    enough to call a file added or removed: a failed read also gives None,
+    and a modified file must not look like a new one.
+    """
+    if status == "added":
+        if new is None:
+            return FileChange(path, ChangeKind.UNPARSABLE, ["cannot read the file"])
         return FileChange(path, ChangeKind.ADDED)
-    if new is None:
+    if status == "removed":
+        if old is None:
+            return FileChange(path, ChangeKind.UNPARSABLE, ["cannot read the file"])
         return FileChange(path, ChangeKind.REMOVED)
+    if old is None or new is None:
+        missing = [
+            name for name, blob in (("base", old), ("head", new)) if blob is None
+        ]
+        return FileChange(
+            path,
+            ChangeKind.UNPARSABLE,
+            [f"cannot read the {' and '.join(missing)} version"],
+        )
     if path.endswith(".json"):
         return _summarize_json(path, old, new)
     return _summarize_text(path, old, new)
