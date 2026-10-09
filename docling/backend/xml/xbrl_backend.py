@@ -399,7 +399,11 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             )
 
     def _build_presentation_hierarchy(self) -> None:
-        """Populate cells and links from the presentation (parent-child) linkbase."""
+        """Populate cells and links from the presentation (parent-child) linkbase.
+
+        When an external taxonomy has not been fetched, ``fromModelObject`` on a
+        relationship may be ``None``; those edges are skipped rather than raising.
+        """
         _log.debug("Building presentation linkbase hierarchy...")
         visited_concepts: set[str] = set()
         pre_links = self.model_xbrl.relationshipSet(  # type: ignore[union-attr]
