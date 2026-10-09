@@ -27,7 +27,7 @@ from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Final
+from typing import Any, Final
 
 from docling_core.types.doc import (
     DoclingDocument,
@@ -55,7 +55,10 @@ from docling.exceptions import DocumentLoadError, OperationNotAllowed, SecurityE
 _XBRL_AVAILABLE: bool = False
 _XBRL_IMPORT_ERROR: ImportError | None = None
 try:
-    from arelle import Cntlr  # type: ignore
+    from arelle import (
+        Cntlr,  # type: ignore
+        PackageManager as _ArellePackageManager,  # type: ignore
+    )
     from arelle.ModelDocument import Type  # type: ignore
     from arelle.ModelDtsObject import ModelConcept  # type: ignore
     from arelle.ModelXbrl import ModelXbrl  # type: ignore
@@ -68,6 +71,46 @@ _log = logging.getLogger(__name__)
 
 
 _WEB_CACHE_TIMEOUT: Final[int] = 10
+
+
+def _remove_transient_packages(
+    pkg_mgr: Any,
+    ids_before: set[str],
+    cntlr: Any,
+) -> None:
+    """Remove filing-specific taxonomy packages added during a single conversion.
+
+    Arelle's ``PackageManager`` is a process-level singleton. Each call to
+    ``modelManager.load(..., taxonomyPackages=[...])`` registers those packages
+    in the singleton. After the ``TemporaryDirectory`` that holds the extracted
+    files is deleted, the registered paths become stale and corrupt the next
+    conversion. This function removes only the packages whose identifiers were
+    not present before this conversion started, then rebuilds the URL remapping
+    table so subsequent conversions begin with a clean state.
+
+    Standard taxonomy packages that were already registered before this
+    conversion (e.g. US-GAAP or IFRS packages cached on disk) are left intact.
+
+    Args:
+        pkg_mgr: The Arelle ``PackageManager`` singleton instance.
+        ids_before: Set of package identifiers that existed before this load.
+        cntlr: The Arelle ``Cntlr`` used for this conversion, needed by
+            ``rebuildRemappings``.
+    """
+    pkg_cfg = pkg_mgr.packagesConfig
+    if not pkg_cfg:
+        return
+    packages: list[dict] = pkg_cfg.get("packages", [])
+    kept = [p for p in packages if p.get("identifier") in ids_before]
+    removed_count = len(packages) - len(kept)
+    if removed_count:
+        packages[:] = kept
+        pkg_mgr.packagesConfigChanged = True
+        pkg_mgr.rebuildRemappings(cntlr)
+        _log.debug(
+            f"Removed {removed_count} transient taxonomy package(s) from"
+            " Arelle PackageManager singleton after conversion."
+        )
 
 
 def _find_instance_entry(zf: zipfile.ZipFile) -> str:
@@ -299,9 +342,26 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                         f"Web Cache for remote taxonomy is: {cntlr.webCache.cacheDir}"
                     )
 
-                model = cntlr.modelManager.load(
-                    arelle_load_path, taxonomyPackages=zip_paths
-                )
+                # Snapshot the package list so filing-specific packages added
+                # during this load can be removed afterwards. This prevents
+                # stale paths from a deleted TemporaryDirectory from poisoning
+                # subsequent conversions in the same process.
+                pkg_mgr = _ArellePackageManager.getInstance()
+                pkg_cfg = pkg_mgr.packagesConfig or {}
+                pkg_ids_before: set[str] = {
+                    p["identifier"]
+                    for p in pkg_cfg.get("packages", [])
+                    if p.get("identifier")
+                }
+
+                try:
+                    model = cntlr.modelManager.load(
+                        arelle_load_path, taxonomyPackages=zip_paths
+                    )
+                finally:
+                    if zip_paths:
+                        _remove_transient_packages(pkg_mgr, pkg_ids_before, cntlr)
+
                 if (
                     not isinstance(model, ModelXbrl)
                     or not model
