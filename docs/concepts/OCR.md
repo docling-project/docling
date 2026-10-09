@@ -250,8 +250,8 @@ Cyrillic model unnamed. The grouping is in [Native OCR engines](OCR_native.md#ea
 EasyOCR text detection runs on the full OCR crop. Each crop has a different size, so the PyTorch
 caching allocator keeps many large buffers that it cannot reuse. Without a release, the reserved
 GPU memory of one process can grow to 15-20 GB. By default, Docling calls
-`torch.cuda.empty_cache()` after each EasyOCR call on CUDA, which keeps one process at about
-1-2 GB. The extra time per page is small. To keep the cache, set
+`torch.cuda.empty_cache()` on CUDA after the text detection step, before text recognition
+starts. This keeps one process at about 1-2 GB. The extra time per page is small. To keep the cache, set
 `EasyOcrOptions(release_gpu_memory=False)`.
 
 ## Nemotron-OCR

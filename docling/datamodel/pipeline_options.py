@@ -609,7 +609,7 @@ class EasyOcrOptions(OcrOptions):
         bool,
         Field(
             description=(
-                "Release cached CUDA memory (`torch.cuda.empty_cache()`) after each EasyOCR call. "
+                "Release cached CUDA memory (`torch.cuda.empty_cache()`) after the EasyOCR text detection step. "
                 "EasyOCR text detection allocates large buffers whose shape changes with every image. "
                 "The PyTorch caching allocator keeps these buffers, so the reserved GPU memory of one "
                 "process can grow to many GB. Set to False to keep the cache. Has no effect on CPU or MPS."

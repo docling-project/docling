@@ -346,12 +346,20 @@ class EasyOcrModel(BaseOcrModel):
                                     "ignore", message=".*pin_memory.*MPS.*"
                                 )
 
-                            result = self.reader.readtext(im)
+                            if self._release_gpu_memory:
+                                # Same steps as `Reader.readtext()`, but release
+                                # the large detection buffers before the
+                                # recognition step starts.
+                                horizontal_list, free_list = self.reader.detect(im)
+                                self._empty_cuda_cache()
+                                result = self.reader.recognize(
+                                    im, horizontal_list[0], free_list[0]
+                                )
+                            else:
+                                result = self.reader.readtext(im)
 
                         del high_res_image
                         del im
-                        if self._release_gpu_memory:
-                            self._empty_cuda_cache()
 
                         cells = [
                             TextCell(
