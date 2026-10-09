@@ -229,16 +229,12 @@ class EasyOcrModel(BaseOcrModel):
                     download_enabled=download_enabled,
                     verbose=False,
                 )
-            # EasyOCR depends on torch. With `gpu=True`, `easyocr.Reader` selects
-            # CUDA when it is available and MPS otherwise. Release the cache only
-            # when EasyOCR runs on CUDA.
-            import torch
+            if self.options.release_gpu_memory and use_gpu:
+                # `easyocr.Reader(gpu=True)` selects CUDA first, then MPS.
+                # Release the cache only on CUDA.
+                import torch
 
-            self._release_gpu_memory = (
-                self.options.release_gpu_memory
-                and use_gpu
-                and torch.cuda.is_available()
-            )
+                self._release_gpu_memory = torch.cuda.is_available()
 
     @staticmethod
     def _empty_cuda_cache() -> None:
@@ -354,22 +350,14 @@ class EasyOcrModel(BaseOcrModel):
                                 )
 
                             if self._release_gpu_memory:
-                                # Same steps as `Reader.readtext()`, but release
-                                # the large detection buffers before the
-                                # recognition step starts. `reformat_input` is
-                                # the input conversion that `readtext()` uses.
-                                from easyocr.utils import reformat_input
-
-                                img, img_cv_grey = reformat_input(im)
-                                horizontal_list, free_list = self.reader.detect(
-                                    img, reformat=False
-                                )
+                                # Same steps as `Reader.readtext()` (checked
+                                # against EasyOCR 1.7.2), but release the large
+                                # detection buffers before the recognition step
+                                # starts.
+                                horizontal_list, free_list = self.reader.detect(im)
                                 self._empty_cuda_cache()
                                 result = self.reader.recognize(
-                                    img_cv_grey,
-                                    horizontal_list[0],
-                                    free_list[0],
-                                    reformat=False,
+                                    im, horizontal_list[0], free_list[0]
                                 )
                             else:
                                 result = self.reader.readtext(im)
