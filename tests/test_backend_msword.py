@@ -1188,6 +1188,97 @@ def test_list_counter_and_enum_marker(docx_paths):
     assert backend.list_counters[(2, 0)] == 1  # unaffected
 
 
+def test_numbered_heading_syncs_list_counter(docx_paths, monkeypatch):
+    """Heading numbering should be available to custom numbering templates."""
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    doc = DoclingDocument(name="heading-counter-test")
+    backend._add_heading(
+        doc,
+        curr_level=1,
+        text="Chapter",
+        is_numbered_style=True,
+        numid=200,
+        ilevel=0,
+    )
+
+    assert backend.numbered_headers[1] == 1
+    assert backend.list_counters[(200, 0)] == 1
+
+    backend._add_heading(
+        doc,
+        curr_level=1,
+        text="Next chapter",
+        is_numbered_style=True,
+        numid=200,
+        ilevel=0,
+    )
+
+    assert backend.numbered_headers[1] == 2
+    assert backend.list_counters[(200, 0)] == 2
+
+    # A table-title numbering template can refer to the chapter counter
+    # through %1 while using level 6 for its own counter through %7.
+    level = OxmlElement("w:lvl")
+    level.set(qn("w:ilvl"), "6")
+
+    num_fmt = OxmlElement("w:numFmt")
+    num_fmt.set(qn("w:val"), "decimal")
+    level.append(num_fmt)
+
+    lvl_text = OxmlElement("w:lvlText")
+    lvl_text.set(qn("w:val"), "Tabell %1.%7")
+    level.append(lvl_text)
+
+    monkeypatch.setattr(
+        backend,
+        "_get_level_element",
+        lambda numid, ilvl: level,
+    )
+
+    backend._get_list_counter(200, 6)
+    assert backend._build_enum_marker(200, 6) == "Tabell 2.1"
+
+
+def test_custom_caption_numbering_is_added_to_paragraph_text(docx_paths, monkeypatch):
+    """Custom caption numbers should be paragraph text, not list markers."""
+    in_doc = InputDocument(
+        path_or_stream=docx_paths[0],
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    level = OxmlElement("w:lvl")
+    lvl_text = OxmlElement("w:lvlText")
+    lvl_text.set(qn("w:val"), "Tabell %1.%7")
+    level.append(lvl_text)
+
+    monkeypatch.setattr(backend, "_get_level_element", lambda numid, ilevel: level)
+    monkeypatch.setattr(backend, "_get_list_counter", lambda numid, ilevel: 1)
+    monkeypatch.setattr(
+        backend, "_build_enum_marker", lambda numid, ilevel: "Tabell 14.1"
+    )
+
+    paragraph_elements = [("Saker som kan rettsmekles i tingrettene", None, None)]
+
+    assert backend._apply_caption_numbering(
+        paragraph_elements, numid=200, ilevel=6, p_style_id="Caption"
+    )
+    assert paragraph_elements[0][0] == (
+        "Tabell 14.1 Saker som kan rettsmekles i tingrettene"
+    )
+
+    # The caller clears numid/ilevel after applying the caption marker.
+    assert not backend._should_handle_as_list(None, None, "Caption")
+
+
 def test_custom_numbering_format_markers(tmp_path):
     """Test that lvlText templates like 'Proposal %1:' produce correct markers.
 
@@ -1329,7 +1420,7 @@ def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missin
     )
     monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
 
-    def fake_add_heading(doc, level, text, is_numbered_style):
+    def fake_add_heading(doc, level, text, is_numbered_style, numid=None, ilevel=None):
         captured["heading"] = (level, text, is_numbered_style)
         return []
 

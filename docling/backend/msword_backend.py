@@ -1420,46 +1420,88 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return numId, ilvl
 
     def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
-        """Find the level element from the numbering XML for a given numId and ilvl."""
+        """Find a numbering level, following linked numbering styles."""
         try:
             numbering_part = None
+            styles_part = None
             for part in self.docx_obj.part.package.parts:
                 if "numbering" in part.partname:
                     numbering_part = part
-                    break
+                elif part.partname.endswith("/word/styles.xml"):
+                    styles_part = part
 
             if numbering_part is None:
                 return None
 
             numbering_root = numbering_part.element
             namespaces = _OOXML_NAMESPACES
-
             num_element = numbering_root.find(
                 f".//w:num[@w:numId='{numid}']", namespaces=namespaces
             )
             if num_element is None:
                 return None
 
-            abstract_num_id_elem = num_element.find(
-                ".//w:abstractNumId", namespaces=namespaces
-            )
-            if abstract_num_id_elem is None:
-                return None
+            visited_abstract_ids: set[str] = set()
+            for _ in range(self._MAX_STYLE_INHERITANCE_DEPTH):
+                abstract_id_elem = num_element.find(
+                    "w:abstractNumId", namespaces=namespaces
+                )
+                if abstract_id_elem is None:
+                    return None
 
-            abstract_num_id = abstract_num_id_elem.get(self.XML_KEY)
-            if abstract_num_id is None:
-                return None
+                abstract_id = abstract_id_elem.get(self.XML_KEY)
+                if abstract_id is None or abstract_id in visited_abstract_ids:
+                    return None
+                visited_abstract_ids.add(abstract_id)
 
-            abstract_num_element = numbering_root.find(
-                f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']",
-                namespaces=namespaces,
-            )
-            if abstract_num_element is None:
-                return None
+                abstract_element = numbering_root.find(
+                    f".//w:abstractNum[@w:abstractNumId='{abstract_id}']",
+                    namespaces=namespaces,
+                )
+                if abstract_element is None:
+                    return None
 
-            return abstract_num_element.find(
-                f".//w:lvl[@w:ilvl='{ilvl}']", namespaces=namespaces
-            )
+                level_element = abstract_element.find(
+                    f"w:lvl[@w:ilvl='{ilvl}']", namespaces=namespaces
+                )
+                if level_element is not None:
+                    return level_element
+
+                style_link = abstract_element.find(
+                    "w:numStyleLink", namespaces=namespaces
+                )
+                if style_link is None or styles_part is None:
+                    return None
+
+                style_id = style_link.get(self.XML_KEY)
+                if not style_id:
+                    return None
+
+                style_element = styles_part.element.find(
+                    f".//w:style[@w:styleId='{style_id}']",
+                    namespaces=namespaces,
+                )
+                if style_element is None:
+                    return None
+
+                style_num_id = style_element.find(
+                    "w:pPr/w:numPr/w:numId", namespaces=namespaces
+                )
+                if style_num_id is None:
+                    return None
+
+                linked_num_id = style_num_id.get(self.XML_KEY)
+                if not linked_num_id:
+                    return None
+
+                num_element = numbering_root.find(
+                    f".//w:num[@w:numId='{linked_num_id}']",
+                    namespaces=namespaces,
+                )
+                if num_element is None:
+                    return None
+
+            return None
         except Exception as e:
             _log.debug(f"Error finding level element: {e}")
             return None
@@ -1615,6 +1657,73 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _format_enum_counter(counter, self._get_level_num_fmt(numid, lvl))
             )
         return ".".join(parts) + "."
+
+    def _get_caption_numbering_marker(
+        self, numid: int, ilevel: int, p_style_id: str
+    ) -> str | None:
+        """Resolve custom caption numbering that should be part of paragraph text."""
+        if p_style_id in ["Title", "Heading", "Code"] or p_style_id.lower().startswith(
+            ("list", "normal")
+        ):
+            return None
+
+        lvl_element = self._get_level_element(numid, ilevel)
+        lvl_text_element = (
+            lvl_element.find("w:lvlText", namespaces=_OOXML_NAMESPACES)
+            if lvl_element is not None
+            else None
+        )
+        lvl_text = (
+            lvl_text_element.get(self.XML_KEY) if lvl_text_element is not None else None
+        )
+        if not lvl_text:
+            return None
+
+        referenced_levels = [
+            int(match) - 1 for match in re.findall(r"%(\d+)", lvl_text)
+        ]
+        literal_prefix = re.sub(r"%(\d+)", "", lvl_text)
+        if not (
+            any(level < ilevel for level in referenced_levels)
+            and any(char.isalpha() for char in literal_prefix)
+        ):
+            return None
+
+        self._get_list_counter(numid, ilevel)
+        return self._build_enum_marker(numid, ilevel)
+
+    def _apply_caption_numbering(
+        self, paragraph_elements, numid, ilevel, p_style_id
+    ) -> bool:
+        """Add custom caption numbering to its text instead of creating a list."""
+        if numid is None or ilevel is None:
+            return False
+
+        marker = self._get_caption_numbering_marker(numid, ilevel, p_style_id)
+        if not marker:
+            return False
+
+        for index, (run_text, formatting, hyperlink) in enumerate(paragraph_elements):
+            if run_text and run_text.strip():
+                paragraph_elements[index] = (
+                    f"{marker} {run_text}",
+                    formatting,
+                    hyperlink,
+                )
+                break
+
+        return True
+
+    @staticmethod
+    def _should_handle_as_list(
+        numid: int | None, ilevel: int | None, p_style_id: str
+    ) -> bool:
+        """Return whether a paragraph should be processed as a structural list."""
+        return (
+            numid is not None
+            and ilevel is not None
+            and p_style_id not in ["Title", "Heading", "Code"]
+        )
 
     def _has_visible_numbering_format(self, numId: int, ilvl: int) -> bool:
         """Return True when numbering.xml defines a visible marker for numId/ilvl."""
@@ -2692,12 +2801,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if numid == 0:
             numid = None
 
+        if self._apply_caption_numbering(paragraph_elements, numid, ilevel, p_style_id):
+            numid = None
+            ilevel = None
+
         # Handle lists
-        if (
-            numid is not None
-            and ilevel is not None
-            and p_style_id not in ["Title", "Heading", "Code"]
-        ):
+        if self._should_handle_as_list(numid, ilevel, p_style_id):
             # Check if this is actually a numbered list by examining the numFmt
             is_numbered = self._has_visible_numbering_format(numid, ilevel)
             left_indent = self._get_list_left_indent(paragraph, numid, ilevel)
@@ -2783,7 +2892,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # next list item opens fresh under this heading.
             self.level_at_new_list = None
             is_numbered_style = self._is_numbered_heading(paragraph)
-            h1 = self._add_heading(doc, p_level, text, is_numbered_style)
+            h1 = self._add_heading(doc, p_level, text, is_numbered_style, numid, ilevel)
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
@@ -2880,31 +2989,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         else:
             self._end_list_on_body_text(text)
-            level = self._get_level()
-            parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents.get(level - 1),
-                paragraph_elements=paragraph_elements,
+            elem_ref.extend(
+                self._add_body_text_items(
+                    doc=doc,
+                    paragraph_elements=paragraph_elements,
+                    checkbox_label=checkbox_label,
+                    skip_empty_text=skip_empty_text,
+                )
             )
-            for text, format, hyperlink in paragraph_elements:
-                # Clean checkbox symbols from text if this is a checkbox item
-                clean_text = (
-                    self._clean_checkbox_symbols(text) if checkbox_label else text
-                )
-
-                # Skip empty text items
-                if skip_empty_text and (not clean_text or not clean_text.strip()):
-                    continue
-
-                text_item = doc.add_text(
-                    label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
-                    parent=parent,
-                    text=clean_text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(text_item.get_ref())
 
         self._update_history(p_style_id, p_level, numid, ilevel)
 
@@ -2916,12 +3008,47 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return elem_ref
 
+    def _add_body_text_items(
+        self,
+        doc: DoclingDocument,
+        paragraph_elements: list,
+        checkbox_label,
+        skip_empty_text: bool,
+    ) -> list[RefItem]:
+        """Add ordinary paragraph text items under the current parent."""
+        level = self._get_level()
+        parent = self._create_or_reuse_parent(
+            doc=doc,
+            prev_parent=self.parents.get(level - 1),
+            paragraph_elements=paragraph_elements,
+        )
+        elem_ref: list[RefItem] = []
+
+        for text, formatting, hyperlink in paragraph_elements:
+            clean_text = self._clean_checkbox_symbols(text) if checkbox_label else text
+            if skip_empty_text and (not clean_text or not clean_text.strip()):
+                continue
+
+            text_item = doc.add_text(
+                label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
+                parent=parent,
+                text=clean_text,
+                formatting=formatting,
+                hyperlink=hyperlink,
+                content_layer=self.content_layer,
+            )
+            elem_ref.append(text_item.get_ref())
+
+        return elem_ref
+
     def _add_heading(
         self,
         doc: DoclingDocument,
         curr_level: int | None,
         text: str,
         is_numbered_style: bool = False,
+        numid: int | None = None,
+        ilevel: int | None = None,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
         level = self._get_level()
@@ -2977,6 +3104,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 text = f"{self.numbered_headers[previous_level]}.{text}"
                 previous_level -= 1
+
+            # Make the heading counter available to numbering templates that
+            # reference this same numId, such as "Table %1.%7". Preserve deeper
+            # list counters: a heading between list items must not restart them.
+            if numid is not None:
+                heading_ilevel = ilevel if ilevel is not None else 0
+                self.list_counters[(numid, heading_ilevel)] = self.numbered_headers[
+                    add_level
+                ]
+                # A heading may seed a counter used by a later list template
+                # with the same numId (e.g. "Tabell %1.%7"). Don't let the
+                # first list item reset that shared numbering sequence.
+                self.started_numids.add(numid)
 
         hd = doc.add_heading(
             parent=self.parents[parent_level],
