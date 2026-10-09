@@ -32,6 +32,7 @@ from docling_core.types.doc import (
     PictureClassificationPrediction,
     PictureMeta,
     ProvenanceItem,
+    RefItem,
     Size,
     TableCell,
     TableData,
@@ -75,6 +76,8 @@ _OPENPYXL_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from openpyxl import Workbook, load_workbook
     from openpyxl.cell.cell import Cell, MergedCell
+    from openpyxl.chart.data_source import AxDataSource, NumDataSource
+    from openpyxl.chart.series import SeriesLabel
     from openpyxl.chartsheet.chartsheet import Chartsheet
     from openpyxl.drawing.image import Image
     from openpyxl.drawing.spreadsheet_drawing import (
@@ -686,11 +689,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if sheet_group is None:
             return
 
-        def _top_row(ref: Any) -> float:
+        def _top_row(ref: RefItem) -> float:
             item = ref.resolve(doc)
-            if item is None:
+            if not isinstance(item, DocItem):
                 return float("inf")
-            for prov in getattr(item, "prov", []):
+            for prov in item.prov:
                 if prov.page_no == page_no:
                     return prov.bbox.t
             return float("inf")
@@ -1844,15 +1847,17 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return True
 
     @staticmethod
-    def _ref_formula(data_source: Any) -> str | None:
+    def _ref_formula(
+        data_source: AxDataSource | NumDataSource | SeriesLabel | None,
+    ) -> str | None:
         """Return the cell-range formula string from a chart data source.
 
         A chart's series title/categories/values are each a small openpyxl
-        object (SeriesLabel, AxDataSource, NumDataSource) that may hold either a
-        numeric reference (``.numRef``) or a string reference (``.strRef``); both
-        expose the range formula on ``.f`` (e.g. "'Sheet1'!$B$2:$B$7").  These
-        objects don't share a common base exposing both attributes, so we probe
-        each — a narrowly-scoped getattr against a third-party API.
+        object that holds a numeric reference (``.numRef``), a string
+        reference (``.strRef``) or both: ``AxDataSource`` has both,
+        ``NumDataSource`` only ``.numRef`` and ``SeriesLabel`` only
+        ``.strRef``.  Each reference exposes the range formula on ``.f``
+        (e.g. "'Sheet1'!$B$2:$B$7").
 
         Args:
             data_source: A chart data-source object, or None.
@@ -1860,14 +1865,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             The range-formula string, or None if absent.
         """
-        if data_source is None:
-            return None
-        num_ref = getattr(data_source, "numRef", None)
-        if num_ref is not None and num_ref.f:
-            return num_ref.f
-        str_ref = getattr(data_source, "strRef", None)
-        if str_ref is not None and str_ref.f:
-            return str_ref.f
+        if isinstance(data_source, (AxDataSource, NumDataSource)):
+            num_ref = data_source.numRef
+            if num_ref is not None and num_ref.f:
+                return num_ref.f
+        if isinstance(data_source, (AxDataSource, SeriesLabel)):
+            str_ref = data_source.strRef
+            if str_ref is not None and str_ref.f:
+                return str_ref.f
         return None
 
     def _resolve_reference(self, ref: str) -> list[str]:
