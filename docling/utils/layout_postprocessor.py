@@ -271,9 +271,8 @@ class LayoutPostprocessor:
                 break
             prev_count = len(clusters)
 
-            # Resolve same-label overlaps using the current bboxes before the next
-            # cell-based adjustment. On the first iteration the bboxes are the original
-            # model predictions; on later iterations they are already cell-adjusted.
+            # Resolve same-label overlaps before cell-based bbox adjustment.
+            # Repeat each iteration to catch overlaps that persist after adjustment.
             clusters = self._remove_overlapping_clusters(
                 clusters, "regular", same_label_only=True
             )

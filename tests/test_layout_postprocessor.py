@@ -7,7 +7,10 @@ from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
 from docling.datamodel.pipeline_options import LayoutOptions, LayoutPostprocessorOptions
-from docling.utils.layout_postprocessor import LayoutPostprocessor
+from docling.utils.layout_postprocessor import (
+    LayoutPostprocessor,
+    SpatialClusterIndex,
+)
 
 
 def _text_cell(
@@ -189,12 +192,9 @@ def test_same_label_overlap_pass_keeps_different_labels_separate() -> None:
         confidence=0.530,
     )
 
-    page = _PageStub([])
-    postprocessor = LayoutPostprocessor(
-        page,
-        [section_header, text_cluster],
-        LayoutPostprocessorOptions(),
-    )
+    postprocessor = object.__new__(LayoutPostprocessor)
+    postprocessor.regular_clusters = []
+    postprocessor.regular_index = SpatialClusterIndex([section_header, text_cluster])
 
     result = postprocessor._remove_overlapping_clusters(
         [section_header, text_cluster],
