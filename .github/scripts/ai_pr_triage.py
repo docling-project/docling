@@ -137,6 +137,7 @@ class Candidate:
     title: str
     state: str
     url: str
+    author: str = ""
     signals: list[str] = field(default_factory=list)
     shared_files: list[str] = field(default_factory=list)
     overlapping_hunks: int = 0
@@ -542,6 +543,7 @@ def find_candidates(
                 title=str(item.get("title", "")),
                 state=state,
                 url=str(item.get("html_url", "")),
+                author=str((item.get("user") or {}).get("login", "")),
             )
             found[number] = candidate
         if signal not in candidate.signals:

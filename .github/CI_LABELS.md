@@ -53,15 +53,26 @@ sticky comment and sets these labels:
 - `ai:possible-duplicate`: the model rated an open or earlier PR as a duplicate.
   Candidates come from shared issue references and overlapping diff hunks.
 
-- `ai:review-lgtm`: the AI first review found no `blocker` or `major` issue.
-- `ai:review-changes`: the AI first review suggests changes. See its inline
+- `ai:review-lgtm`: the AI first review found no open `blocker`.
+- `ai:review-changes`: the AI first review found a `blocker`. See its inline
   comments.
 
 The first review is a `COMMENT` review with inline comments. It never approves
-or requests changes. It does not run for PRs rated as duplicates, for PRs with
-more than 60 source files or 2000 changed source lines, or for a commit that it
-already reviewed. After a push, it reviews only the new commits, if the history
-was not rewritten.
+or requests changes. It uses the severity terms of the
+[review skill](../.agents/skills/review/SKILL.md): `blocker`, `question`, and
+`suggestion`, and it reports at most 5 findings. A `question` or a
+`suggestion` never sets `ai:review-changes`. The review reads the PR
+discussion, so it does not repeat points that a reviewer already made or that
+the author answered. It reads the source of the installed dependencies (from
+the base branch lock file) before it makes a claim about them.
+
+The review does not run for PRs rated as duplicates of an open PR from another
+author, for PRs with more than 60 source files or 2000 changed source lines,
+or for a commit that it already reviewed. A PR gets at most two automatic
+AI reviews: the first review, and one review of the next push. That review
+covers only the new commits, if the history was not rewritten, and gives the
+status of each earlier finding: `open`, `fixed`, or `answered`. Use
+`/ai review` for more reviews.
 
 The triage also adds topic labels from the existing repository labels, for
 example `bug`, `enhancement`, `docx`, `markdown`, `ocr`, or `table structure`.
