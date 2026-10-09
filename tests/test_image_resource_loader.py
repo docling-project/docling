@@ -247,8 +247,6 @@ def test_load_image_data_local_requires_base_path():
         loader.load_image_data("/some/where/image.png", None)
 
 
-# Carried over from #4681 (@usmanmateen): unit coverage for the OSError
-# truncation path in create_image_ref.
 def _jpeg_data_uri(data: bytes) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(data).decode()
 

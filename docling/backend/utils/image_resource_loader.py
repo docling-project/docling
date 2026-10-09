@@ -349,6 +349,7 @@ class ImageResourceLoader:
             img_data = self.load_image_data(src_url, base_path)
             if img_data:
                 img = Image.open(BytesIO(img_data))
+                img.load()
                 return ImageRef.from_pil(
                     normalize_image_for_png(img),
                     dpi=int(img.info.get("dpi", (72,))[0]),
