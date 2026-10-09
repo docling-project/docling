@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Any, Callable, Final, Iterable, Iterator, Optional, Union
+from typing import Any, Callable, Final, Iterable, Iterator, Literal, Optional, Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -64,6 +64,8 @@ try:  # pragma: no cover - import-time guard
     from pptx.exc import InvalidXmlError
     from pptx.oxml.ns import qn
     from pptx.oxml.text import CT_TextLineBreak
+    from pptx.shapes.autoshape import Shape
+    from pptx.shapes.base import BaseShape
     from pptx.shapes.picture import Picture
 
     _PPTX_AVAILABLE = True
@@ -773,23 +775,26 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             "level": lvl,
         }
 
-    def _get_shape_position(self, shape: object, attr: str) -> Optional[int]:
+    def _get_shape_position(
+        self, shape: BaseShape, attr: Literal["top", "left"]
+    ) -> Optional[int]:
         """Return a shape position attribute as an integer for ordering.
 
         Args:
-            shape: A python-pptx shape object. Position attributes such as
-                ``top`` and ``left`` are accessed via ``getattr``; property
-                getters that raise are silently treated as absent.
-            attr: Name of the position attribute to read, typically ``"top"``
-                or ``"left"``.
+            shape: A python-pptx shape object. Property getters that raise are
+                silently treated as absent.
+            attr: The position attribute to read, ``"top"`` or ``"left"``.
 
         Returns:
             The attribute value cast to ``int``, or ``None`` if the attribute
-            is missing, ``None``-valued, or its getter raises
-            ``AttributeError``, ``ValueError``, or ``TypeError``.
+            is ``None``-valued or its getter raises ``AttributeError``,
+            ``ValueError``, or ``TypeError``.
         """
+        # python-pptx wraps an element without a registered class, such as a
+        # p:contentPart inside a group, in a plain BaseShape whose getters
+        # raise AttributeError.
         try:
-            value = getattr(shape, attr)
+            value = shape.top if attr == "top" else shape.left
         except (AttributeError, ValueError, TypeError):
             return None
 
@@ -798,7 +803,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return int(value)
 
-    def _iter_shapes_by_position(self, shapes: Iterable[object]) -> Iterator[object]:
+    def _iter_shapes_by_position(
+        self, shapes: Iterable[BaseShape]
+    ) -> Iterator[BaseShape]:
         """Iterate shapes in visual top-to-bottom, left-to-right order.
 
         PowerPoint stores shapes in creation/z-order, which can differ from the
@@ -827,7 +834,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         class _ShapeInfo(NamedTuple):
             index: int
-            shape: object
+            shape: BaseShape
             top: int
             left: int
 
@@ -1652,7 +1659,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         shape, parent_slide, slide_ind, doc, slide_size
                     )
                 # If shape doesn't have any text, move on to the next shape
-                if not hasattr(shape, "text"):
+                if not isinstance(shape, Shape):
                     return
                 if shape.text is None:
                     return
