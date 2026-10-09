@@ -15,7 +15,15 @@ from pathlib import Path
 from typing import Optional, Type, Union
 
 from docling_core.types.doc.page import TextCellUnit
-from pydantic import ConfigDict, Field, model_validator, validate_call
+from pydantic import (
+    AnyHttpUrl,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+    validate_call,
+)
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import (
@@ -357,6 +365,31 @@ class LatexFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = LatexDocumentBackend
     backend_options: Optional[LatexBackendOptions] = None
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> LatexBackendOptions | None:
+        """Keep the location of a local ``str`` source.
+
+        A ``str`` source is read into a stream before it reaches the backend,
+        which then cannot resolve ``\\input``, ``\\include`` or
+        ``\\includegraphics`` relative to the document. ``Path`` sources and
+        streams are passed on unchanged, and so are http(s) URLs, the same way
+        ``resolve_source_to_stream`` tells them apart from local paths.
+        """
+        options = self.backend_options
+        if not isinstance(source, str) or (
+            options is not None and options.source_uri is not None
+        ):
+            return options
+        try:
+            TypeAdapter(AnyHttpUrl).validate_python(source)
+        except ValidationError:
+            base = options.model_dump() if options is not None else {}
+            return LatexBackendOptions.model_validate(
+                {**base, "source_uri": Path(source)}
+            )
+        return options
 
 
 class EmailFormatOption(FormatOption):

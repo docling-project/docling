@@ -553,6 +553,14 @@ class LatexBackendOptions(BaseBackendOptions):
     """Options specific to the LaTeX backend."""
 
     kind: Literal["latex"] = Field("latex", exclude=True, repr=False)
+    source_uri: Optional[PurePath] = Field(
+        None,
+        description=(
+            "The local path of the LaTeX document. If provided and the document "
+            "is read from a stream, the backend resolves relative \\input, "
+            "\\include and \\includegraphics paths against its directory."
+        ),
+    )
     parse_timeout: Optional[float] = Field(
         30.0,
         description=(
