@@ -44,6 +44,8 @@ MAX_GROUNDTRUTH_FILES = 80
 MAX_RISK_HINTS = 30
 MAX_BODY_CHARS = 6_000
 MAX_MODEL_TEXT_CHARS = 600
+# Written into untrusted text to stop GitHub from linking or notifying.
+ZERO_WIDTH_SPACE = "\u200b"
 HUNK_SLACK_LINES = 3
 
 # Changes in these paths can alter what CI executes. A match always requires
@@ -271,19 +273,52 @@ def _require_list(data: dict[str, Any], key: str) -> list[Any]:
 
 def _model_text(data: dict[str, Any], key: str) -> str:
     value = data.get(key, "")
-    return sanitize_text(value if isinstance(value, str) else str(value))
+    return clean_text(value if isinstance(value, str) else str(value))
 
 
-def sanitize_text(text: str, limit: int = MAX_MODEL_TEXT_CHARS) -> str:
-    """Make untrusted text safe to embed in one Markdown table cell or bullet."""
+def clean_text(text: str, limit: int = MAX_MODEL_TEXT_CHARS) -> str:
+    """Reduce untrusted text to one line of printable characters.
+
+    This does not escape Markdown. The publish step validates a stored result
+    again, so this must give the same text when it runs twice. Escape with
+    `markdown_text` or `markdown_code` where the text goes into a comment.
+    """
     text = "".join(ch if ch.isprintable() else " " for ch in text)
     text = " ".join(text.split())
-    text = text.replace("<", "&lt;").replace(">", "&gt;").replace("|", "\\|")
-    # Prevent notifications to users and teams.
-    text = re.sub(r"@(?=[\w-])", "@​", text)
     if len(text) > limit:
         text = text[: limit - 1].rstrip() + "…"
     return text
+
+
+def markdown_text(text: str) -> str:
+    """Render untrusted text as literal text in a Markdown line or table cell.
+
+    The model answer can be steered by text in the pull request, and the bot
+    signs the comment. So the text must not add links, images, HTML,
+    headings, lists, code blocks, table cells, or mentions. CommonMark
+    renders a backslash before any ASCII punctuation character as that
+    character, so escaping all of them covers every Markdown construct.
+    """
+    text = clean_text(text, limit=len(text))
+    # GitHub links a bare URL and notifies a mention by itself, also after an
+    # escape, so break them with a zero-width space.
+    text = re.sub(
+        r"(?i)\b(https?|ftps?|mailto|www)(?=[:.])", rf"\1{ZERO_WIDTH_SPACE}", text
+    )
+    text = re.sub(r"@(?=[\w-])", f"@{ZERO_WIDTH_SPACE}", text)
+    return re.sub(r"([!-/:-@\[-`{-~])", r"\\\1", text)
+
+
+def markdown_code(text: str) -> str:
+    """Render untrusted text as one inline code span.
+
+    Markdown has no syntax inside a code span. The fence is longer than any
+    run of backticks in the text, so the text cannot close it.
+    """
+    text = clean_text(text, limit=len(text))
+    fence = "`" * (max((len(run) for run in re.findall(r"`+", text)), default=0) + 1)
+    pad = " " if text.startswith("`") or text.endswith("`") else ""
+    return f"{fence}{pad}{text}{pad}{fence}"
 
 
 def extract_answer(last_message: str) -> Any:
@@ -705,7 +740,7 @@ def render_comment(
             "",
         ]
     elif result.summary:
-        lines += [result.summary, ""]
+        lines += [markdown_text(result.summary), ""]
     if added_topics:
         names = ", ".join(f"`{topic}`" for topic in added_topics)
         lines += [f"Topic labels added: {names}.", ""]
@@ -719,11 +754,11 @@ def render_comment(
     else:
         lines.append("**CI safety: not assessed.**")
     for finding in context.risk.forced:
-        lines.append(f"- `{sanitize_text(finding.path)}`: {finding.reason}")
+        lines.append(f"- {markdown_code(finding.path)}: {finding.reason}")
     if result is not None:
         for concern in result.ci_concerns:
-            path = f"`{concern.path}`: " if concern.path else ""
-            lines.append(f"- {path}{concern.reason}")
+            path = f"{markdown_code(concern.path)}: " if concern.path else ""
+            lines.append(f"- {path}{markdown_text(concern.reason)}")
     lines.append("")
 
     verdicts = {d.pr: d.verdict for d in result.duplicates} if result else {}
@@ -752,7 +787,8 @@ def render_comment(
         lines += ["**Reference data changes**", "", context.groundtruth_markdown, ""]
         if result is not None and result.groundtruth_verdict is not None:
             lines += [
-                f"Assessment: **{result.groundtruth_verdict}**. {result.groundtruth_reason}",
+                f"Assessment: **{result.groundtruth_verdict}**."
+                f" {markdown_text(result.groundtruth_reason)}",
                 "",
             ]
 
@@ -770,7 +806,9 @@ def _candidate_table(
     for candidate in candidates:
         verdict = verdicts.get(candidate.number)
         assessment = (
-            f"{verdict}: {reasons[candidate.number]}" if verdict else "not assessed"
+            f"{verdict}: {markdown_text(reasons[candidate.number])}"
+            if verdict
+            else "not assessed"
         )
         signals = "; ".join(candidate.signals)
         rows.append(

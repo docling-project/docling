@@ -30,14 +30,16 @@ from ai_pr_triage import (
     DIFF_EXCLUDED_PATHS,
     TriageContext,
     build_diff,
+    clean_text,
     extract_answer,
     fetch_pr_commits,
     gh_api,
     gh_write,
+    markdown_code,
+    markdown_text,
     matches_any,
     pr_files,
     read_blob,
-    sanitize_text,
 )
 
 REVIEW_MARKER_PREFIX = "<!-- ai-pr-review sha="
@@ -126,11 +128,18 @@ def is_reviewable(files: list[dict[str, Any]]) -> bool:
 
 def _model_text(data: dict[str, Any], key: str, limit: int) -> str:
     value = data.get(key, "")
-    return sanitize_text(value if isinstance(value, str) else str(value), limit)
+    return clean_text(value if isinstance(value, str) else str(value), limit)
 
 
 def sanitize_markdown(text: str, limit: int = MAX_FINDING_CHARS) -> str:
-    """Keep line breaks and code, but drop HTML, comments, and mentions."""
+    """Keep line breaks and code, but drop HTML, comments, and mentions.
+
+    A finding body keeps its Markdown, so that it can quote code in a fenced
+    block. So it can also contain a link. This is accepted: the body is an
+    inline comment on a changed line, or a list item in the review body. The
+    list item ends before the closing note, and so does a code block that the
+    body leaves open.
+    """
     text = "".join(ch if ch.isprintable() or ch == "\n" else " " for ch in text)
     text = re.sub(r"<(?=[A-Za-z/!?])", "&lt;", text)
     text = re.sub(r"@(?=[\w-])", "@​", text)
@@ -171,7 +180,7 @@ def parse_review_result(data: Any, changed_paths: set[str]) -> ReviewResult:
         )
     findings.sort(key=lambda f: SEVERITIES.index(f.severity))
     return ReviewResult(
-        summary=sanitize_markdown(str(data.get("summary", "")), 1_500),
+        summary=clean_text(str(data.get("summary", "")), 1_500),
         verdict=verdict,
         findings=findings,
     )
@@ -199,7 +208,10 @@ def build_review(
                     "path": finding.path,
                     "line": finding.line,
                     "side": "RIGHT",
-                    "body": f"**{finding.severity}: {finding.title}**\n\n{finding.body}",
+                    "body": (
+                        f"**{finding.severity}: {markdown_text(finding.title)}**"
+                        f"\n\n{finding.body}"
+                    ),
                 }
             )
         else:
@@ -225,14 +237,15 @@ def build_review(
         "",
     ]
     if result.summary:
-        lines += [result.summary, ""]
+        lines += [markdown_text(result.summary), ""]
     if unanchored:
         lines += ["**Findings outside the diff lines**", ""]
         for finding in unanchored:
             body = finding.body.replace("\n", "\n  ")
             lines.append(
-                f"- **{finding.severity}** `{finding.path}:{finding.line}`:"
-                f" **{finding.title}**\n  {body}"
+                f"- **{finding.severity}**"
+                f" {markdown_code(f'{finding.path}:{finding.line}')}:"
+                f" **{markdown_text(finding.title)}**\n  {body}"
             )
         lines.append("")
     lines.append(
@@ -270,7 +283,7 @@ def previous_review_text(repo: str, pr_number: int) -> str:
     )
     parts = [
         f"- `{comment['path']}:{comment.get('line') or comment.get('original_line')}`:"
-        f" {sanitize_text(comment['body'], 400)}"
+        f" {clean_text(comment['body'], 400)}"
         for comment in comments
         if comment["user"]["login"] == "github-actions[bot]"
     ]
