@@ -328,6 +328,14 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                     or not model.modelDocument
                 ):
                     raise ValueError("Invalid or unreadable XBRL file")
+                if model.modelDocument.type == Type.INLINEXBRLDOCUMENTSET:
+                    raise OperationNotAllowed(
+                        "The XBRL ZIP contains an inline XBRL document set"
+                        " (multiple instance documents).  Docling converts one"
+                        " document at a time and cannot merge a multi-document"
+                        " inline XBRL set.  Extract the primary instance document"
+                        " and supply it directly via InputFormat.XML_XBRL."
+                    )
                 if model.modelDocument.type not in (
                     Type.INSTANCE,
                     Type.INLINEXBRL,
