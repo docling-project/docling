@@ -1,3 +1,13 @@
+## [v2.137.0](https://github.com/docling-project/docling/releases/tag/v2.137.0) - 2026-10-09
+
+### Feature
+
+* Adding enrichments after the VLM pipeline ([#4469](https://github.com/docling-project/docling/issues/4469)) ([`45b187e`](https://github.com/docling-project/docling/commit/45b187e7b28c3bca15cd73986c03c40afae3023d))
+
+### Fix
+
+* **ocr:** Read PP-OCRv6 languages through rapidocr's list_supported_langs ([`0e1567b`](https://github.com/docling-project/docling/commit/0e1567bbb8a543b364aec234fc1abe2ff9aff7ba))
+
 ## [v2.136.0](https://github.com/docling-project/docling/releases/tag/v2.136.0) - 2026-10-09
 
 ### Feature
