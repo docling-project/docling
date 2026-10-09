@@ -172,6 +172,10 @@ _OOXML_NAMESPACES: Final[dict[str, str]] = {
     "w14": _W14_NS,
 }
 
+# python-docx reads page and column breaks as "". A form feed marks them instead:
+# it cannot occur in DOCX text, because XML 1.0 does not allow it.
+_BREAK_MARK: Final[str] = "\f"
+
 _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
 """OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
 
@@ -2099,7 +2103,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return None
 
     def _iter_paragraph_content(
-        self, paragraph: Paragraph
+        self, paragraph: Paragraph, mark_breaks: bool = False
     ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
         content: list[tuple[str, Formatting | None, AnyUrl | Path | None]] = []
 
@@ -2167,10 +2171,30 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             elif isinstance(item, Run):
                 content.append(
-                    (item.text, self._get_format_from_run(item, paragraph), None)
+                    (
+                        self._get_run_text(item) if mark_breaks else item.text,
+                        self._get_format_from_run(item, paragraph),
+                        None,
+                    )
                 )
 
         return content
+
+    @staticmethod
+    def _get_run_text(run: Run) -> str:
+        """Return a run's text, with each page or column break as `_BREAK_MARK`.
+
+        The other elements are read like python-docx's `Run.text`.
+        """
+        return "".join(
+            _BREAK_MARK
+            if etree.QName(element).localname == "br"
+            and element.get(f"{{{_W_NS}}}type") in {"page", "column"}
+            else str(element)
+            for element in run._r.xpath(
+                "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab"
+            )
+        )
 
     def _get_paragraph_text(self, paragraph: Paragraph) -> str:
         return "".join(
@@ -2187,6 +2211,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._get_paragraph_text(paragraph).strip() == "":
             return [("", None, None)]
 
+        return self._group_paragraph_content(self._iter_paragraph_content(paragraph))
+
+    @staticmethod
+    def _group_paragraph_content(
+        content: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
+    ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
+        """Group consecutive runs with the same formatting into elements."""
         paragraph_elements: list[
             tuple[str, Formatting | None, AnyUrl | Path | None]
         ] = []
@@ -2194,7 +2225,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         previous_format = None
 
         # Iterate over the runs of the paragraph and group them by format
-        for text, format, hyperlink in self._iter_paragraph_content(paragraph):
+        for text, format, hyperlink in content:
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
             ):
@@ -2219,6 +2250,29 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             paragraph_elements.append((group_text.strip(), previous_format, None))
 
         return paragraph_elements
+
+    def _get_paragraph_segments(
+        self, paragraph: Paragraph
+    ) -> list[list[tuple[str, Formatting | None, AnyUrl | Path | None]]]:
+        """Split the elements of a paragraph at its page and column breaks.
+
+        Each segment becomes separate text items. A paragraph without text, or
+        without such a break, returns its elements unchanged as one segment.
+        """
+        content = self._iter_paragraph_content(paragraph, mark_breaks=True)
+        if self._get_paragraph_text(paragraph).strip() == "" or not any(
+            _BREAK_MARK in text for text, _, _ in content
+        ):
+            return [self._get_paragraph_elements(paragraph)]
+
+        segments: list[list[tuple[str, Formatting | None, AnyUrl | Path | None]]] = [[]]
+        for text, format, hyperlink in content:
+            for index, part in enumerate(text.split(_BREAK_MARK)):
+                if index > 0:
+                    segments.append([])
+                segments[-1].append((part, format, hyperlink))
+        grouped = [self._group_paragraph_content(segment) for segment in segments]
+        return [elements for elements in grouped if elements]
 
     def _has_checkbox(self, element: BaseOxmlElement) -> bool:
         """Check if a paragraph element contains a checkbox.
@@ -2654,6 +2708,47 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else prev_parent
         )
 
+    def _add_paragraph_text_items(
+        self,
+        doc: DoclingDocument,
+        paragraph: Paragraph,
+        checkbox_label: DocItemLabel | None,
+        skip_empty_text: bool,
+    ) -> list[RefItem]:
+        """Add the text items of a regular paragraph, one segment at a time.
+
+        A page or column break starts a new segment, so its text becomes
+        separate items under the same parent.
+        """
+        refs: list[RefItem] = []
+        level = self._get_level()
+        for segment in self._get_paragraph_segments(paragraph):
+            parent = self._create_or_reuse_parent(
+                doc=doc,
+                prev_parent=self.parents.get(level - 1),
+                paragraph_elements=segment,
+            )
+            for text, format, hyperlink in segment:
+                # Clean checkbox symbols from text if this is a checkbox item
+                clean_text = (
+                    self._clean_checkbox_symbols(text) if checkbox_label else text
+                )
+
+                # Skip empty text items
+                if skip_empty_text and (not clean_text or not clean_text.strip()):
+                    continue
+
+                text_item = doc.add_text(
+                    label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
+                    parent=parent,
+                    text=clean_text,
+                    formatting=format,
+                    hyperlink=hyperlink,
+                    content_layer=self.content_layer,
+                )
+                refs.append(text_item.get_ref())
+        return refs
+
     def _handle_text_elements(
         self,
         element: BaseOxmlElement,
@@ -2880,31 +2975,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         else:
             self._end_list_on_body_text(text)
-            level = self._get_level()
-            parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents.get(level - 1),
-                paragraph_elements=paragraph_elements,
+            elem_ref.extend(
+                self._add_paragraph_text_items(
+                    doc, paragraph, checkbox_label, skip_empty_text
+                )
             )
-            for text, format, hyperlink in paragraph_elements:
-                # Clean checkbox symbols from text if this is a checkbox item
-                clean_text = (
-                    self._clean_checkbox_symbols(text) if checkbox_label else text
-                )
-
-                # Skip empty text items
-                if skip_empty_text and (not clean_text or not clean_text.strip()):
-                    continue
-
-                text_item = doc.add_text(
-                    label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
-                    parent=parent,
-                    text=clean_text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(text_item.get_ref())
 
         self._update_history(p_style_id, p_level, numid, ilevel)
 
