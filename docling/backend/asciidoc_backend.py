@@ -296,8 +296,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     indents[level + 1] = item["indent"]
 
                 elif in_list and item["indent"] > indents[level]:
+                    # A nested list belongs to the item above it. As a sibling
+                    # of the items, it is counted as an item of the outer list,
+                    # and the next ordered item is numbered one too high.
                     parents[level + 1] = doc.add_group(
-                        parent=parents[level], name="list", label=GroupLabel.LIST
+                        parent=last_list_item, name="list", label=GroupLabel.LIST
                     )
                     indents[level + 1] = item["indent"]
 

@@ -309,6 +309,33 @@ If the installer fails, check the log file.
     assert "If the installer fails, check the log file." in doc.export_to_markdown()
 
 
+def test_nested_list_belongs_to_the_item_above_it() -> None:
+    # A nested list used to be added next to the items of the outer list
+    # instead of under the item above it. The outer list then counted it as an
+    # item, so "Run the installer" was exported as "3." instead of "2.".
+    source = b""". Download the archive
+.. Pick the file for your platform
+. Run the installer
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="nested-ordered-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    download, pick, run = (item for item in doc.texts if isinstance(item, ListItem))
+    nested_list = pick.parent.resolve(doc)
+    assert nested_list.parent == download.get_ref()
+    assert run.parent == download.parent
+    assert doc.export_to_markdown() == (
+        "1. Download the archive\n"
+        "    1. Pick the file for your platform\n"
+        "2. Run the installer"
+    )
+
+
 def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
     # "**" and "***" mark nested bullet items, the same way ".." does for
     # ordered lists. They used to fall through to paragraph text, which lost the
