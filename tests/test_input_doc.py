@@ -696,7 +696,9 @@ def test_detect_csv_with_non_ascii_utf8():
     dci = _DocumentConversionInput(path_or_stream_iterator=[])
 
     # UTF-8 CSV with non-ASCII characters (é, ñ, 中文)
-    csv_content = b"name,value\nH\xc3\xa9llo,w\xc3\xb3rld\nM\xc3\xa9xico,Espa\xc3\xb1a\n"
+    csv_content = (
+        b"name,value\nH\xc3\xa9llo,w\xc3\xb3rld\nM\xc3\xa9xico,Espa\xc3\xb1a\n"
+    )
     assert dci._detect_csv(csv_content) == "text/csv"
 
     # UTF-8 with semicolon delimiter
@@ -722,7 +724,9 @@ def test_detect_html_xhtml_with_non_ascii():
     assert dci._detect_html_xhtml(html_utf8) == "text/html"
 
     # XHTML with non-ASCII
-    xhtml_utf8 = b'<?xml version="1.0" encoding="UTF-8"?><html><body>H\xc3\xa9llo</body></html>'
+    xhtml_utf8 = (
+        b'<?xml version="1.0" encoding="UTF-8"?><html><body>H\xc3\xa9llo</body></html>'
+    )
     assert dci._detect_html_xhtml(xhtml_utf8) == "application/xhtml+xml"
 
     # Latin-1 HTML with non-ASCII
@@ -735,11 +739,15 @@ def test_detect_latex_with_non_ascii():
     dci = _DocumentConversionInput(path_or_stream_iterator=[])
 
     # UTF-8 LaTeX with non-ASCII
-    latex_utf8 = br"\documentclass{article}\begin{document}H\xc3\xa9llo\end{document}"
+    latex_utf8 = rb"\documentclass{article}\begin{document}H\xc3\xa9llo\end{document}"
     assert dci._detect_latex(latex_utf8, ext=None) == "application/x-latex"
 
     # Latin-1 LaTeX
-    latex_latin1 = br"\documentclass{article}\begin{document}H\xe9llo\end{document}".encode("latin-1")
+    latex_latin1 = (
+        rb"\documentclass{article}\begin{document}H\xe9llo\end{document}".encode(
+            "latin-1"
+        )
+    )
     assert dci._detect_latex(latex_latin1, ext=None) == "application/x-latex"
 
     # With .tex extension
@@ -756,7 +764,10 @@ def test_detect_odf_mimetype_utf8_and_latin1():
             # UTF-8 mimetype
             zf.writestr("mimetype", "application/vnd.oasis.opendocument.text")
             # Minimal content.xml
-            zf.writestr("content.xml", '<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"/>')
+            zf.writestr(
+                "content.xml",
+                '<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"/>',
+            )
         try:
             mime = dci._detect_office_mime_from_zip(tmp.name)
             assert mime == "application/vnd.oasis.opendocument.text"
@@ -768,7 +779,10 @@ def test_detect_odf_mimetype_utf8_and_latin1():
         with zipfile.ZipFile(tmp.name, "w") as zf:
             # Latin-1 mimetype (valid ODF mimetype is ASCII but test robustness)
             zf.writestr("mimetype", "application/vnd.oasis.opendocument.text")
-            zf.writestr("content.xml", '<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"/>')
+            zf.writestr(
+                "content.xml",
+                '<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"/>',
+            )
         try:
             mime = dci._detect_office_mime_from_zip(tmp.name)
             assert mime == "application/vnd.oasis.opendocument.text"
