@@ -348,6 +348,27 @@ def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
     )
 
 
+def test_text_after_a_nested_list_is_not_part_of_the_list() -> None:
+    # Ending a list used to close only its innermost level, so the paragraph
+    # after a nested list was added to the outer list group.
+    source = b"""* apple
+** apple pie
+
+After the list.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="nested-list-end.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    paragraph = next(item for item in doc.texts if item.text == "After the list.")
+    assert paragraph.parent == doc.body.get_ref()
+    assert doc.export_to_markdown() == "- apple\n    - apple pie\n\nAfter the list."
+
+
 def test_literal_block_keeps_its_content_and_following_text() -> None:
     source = b"""= Guide
 
