@@ -362,6 +362,39 @@ doc_converter = DocumentConverter(
 )
 ```
 
+### Word embedded documents
+
+A Word file can embed an Excel workbook, a PowerPoint presentation or another
+Word document as an OLE object. By default, Docling keeps only the preview
+picture of the object. Set `process_embedded_objects` to also convert the
+embedded document:
+
+```python
+from docling.datamodel.backend_options import MsWordBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, WordFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.DOCX: WordFormatOption(
+            backend_options=MsWordBackendOptions(process_embedded_objects=True)
+        )
+    }
+)
+doc = converter.convert("report.docx").document
+for group in doc.groups:
+    if group.name.startswith("embedded: "):
+        print(group.name)  # e.g. "embedded: Microsoft_Excel_Worksheet.xlsx"
+```
+
+Each object becomes a group at the position of the object. The group holds the
+preview picture, followed by the content of the embedded document, for example
+the sheets and tables of a workbook. The embedded document is converted with
+the default options of its backend, so the objects embedded in it are not
+converted. Linked objects, and objects of other types such as a PDF or a text
+file, keep only their preview picture. The `format-xlsx` and `format-pptx`
+extras are necessary to convert embedded workbooks and presentations.
+
 ### Docling JSON input
 
 A `DoclingDocument` JSON file can be converted again, e.g. to re-export it to
