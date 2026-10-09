@@ -9,15 +9,20 @@ and Retrieval (EDGAR) system.
 
 Two ZIP formats are exercised:
 
-- ``grve_10q_htm.zip``: a self-contained ZIP with a traditional XBRL instance
-  (``.xml``) and taxonomy files including a taxonomy package. This is the
-  packaging format that bundles a company-specific taxonomy with its instance.
+- ``grve_10q_htm.zip``: constructed from the files already committed under
+  ``tests/data/xbrl/sources/`` (``grve_10q_htm.xml`` plus the ``grve-taxonomy/``
+  files laid flat at the ZIP root). It exercises the traditional XBRL instance
+  (``.xml``) path through the ZIP backend.
 
-- ``ibm-20260630.zip``: the SEC Edgar XBRL ZIP for IBM's Q2 2026 10-Q filing.
-  It contains an inline XBRL (iXBRL) instance (``.htm``) together with the
-  company taxonomy extension files. The standard us-gaap/dei taxonomy is not
-  bundled, so concept relationships that require it are gracefully skipped in
-  offline mode; numeric facts and the document title are still extracted.
+- ``ibm-20260630.zip``: the exact XBRL ZIP for IBM's Q2 2026 10-Q filing as
+  distributed by SEC EDGAR (accession 0000051143-26-000078). It contains an
+  inline XBRL (iXBRL) instance (``.htm``) together with the company taxonomy
+  extension files. The standard us-gaap/dei taxonomy is not bundled, so concept
+  relationships that require it are gracefully skipped in offline mode; numeric
+  facts and the document title are still extracted.
+
+  Source URL (public domain):
+  https://www.sec.gov/Archives/edgar/data/51143/000005114326000078/0000051143-26-000078-xbrl.zip
 """
 
 import tempfile
