@@ -236,6 +236,34 @@ _FORM_VALUE_ID_RE: Final = re.compile(
 _LIST_STYLE_STRING_RE: Final = re.compile(
     r"list-style-type\s*:\s*(?P<quote>['\"])(?P<marker>.*?)(?P=quote)", re.IGNORECASE
 )
+# The `start` attribute of an `<ol>`, by the HTML rules for parsing integers:
+# leading ASCII whitespace, an optional plus sign, and ASCII digits.
+_OL_START_RE: Final = re.compile(r"[ \t\n\f\r]*\+?(?P<digits>[0-9]+)")
+_OL_START_MAX: Final = 2**31 - 1
+
+
+def _parse_ol_start(value: str) -> Optional[int]:
+    """Parse the `start` attribute of an `<ol>`.
+
+    The value follows the HTML rules for parsing integers: only ASCII digits are
+    accepted and any text after the digits is ignored, e.g. `"3."` gives 3.
+    Negative numbers are not supported as list markers.
+
+    Args:
+        value: The value of the `start` attribute.
+
+    Returns:
+        The start number, or `None` if the value is not a valid start number or
+        exceeds the 32-bit integer range, as in browsers.
+    """
+    match = _OL_START_RE.match(value)
+    if match is None:
+        return None
+    digits = match.group("digits").lstrip("0")
+    if len(digits) > len(str(_OL_START_MAX)):
+        return None
+    start = int(digits or "0")
+    return start if start <= _OL_START_MAX else None
 
 
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
@@ -3016,8 +3044,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             name = "description list"
         elif is_ordered:
             start_attr = tag.get("start")
-            if isinstance(start_attr, str) and start_attr.isdecimal():
-                start = int(start_attr)
+            if isinstance(start_attr, str):
+                start = _parse_ol_start(start_attr)
             name = "ordered list" + (f" start {start}" if start is not None else "")
         else:
             name = "list"
