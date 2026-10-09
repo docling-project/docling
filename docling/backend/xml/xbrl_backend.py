@@ -81,22 +81,15 @@ def _remove_transient_packages(
     ids_before: set[str],
     cntlr: _ArelleCntlrModule.Cntlr,
 ) -> None:
-    """Remove filing-specific taxonomy packages added during a single conversion.
+    """Remove taxonomy packages added during this conversion from the singleton.
 
-    Arelle's ``PackageManager`` is a process-level singleton. Each call to
-    ``modelManager.load(..., taxonomyPackages=[...])`` registers those packages
-    in the singleton. After the ``TemporaryDirectory`` that holds the extracted
-    files is deleted, the registered paths become stale and corrupt the next
-    conversion. This function removes only the packages whose identifiers were
-    not present before this conversion started, then rebuilds the URL remapping
-    table so subsequent conversions begin with a clean state.
-
-    Standard taxonomy packages that were already registered before this
-    conversion (e.g. US-GAAP or IFRS packages cached on disk) are left intact.
+    Removes only packages whose identifiers were not present in ``ids_before``,
+    then rebuilds the URL remapping table.  Standard packages already registered
+    before this conversion (e.g. US-GAAP or IFRS) are left intact.
 
     Args:
         pkg_mgr: The Arelle ``PackageManager`` singleton instance.
-        ids_before: Set of package identifiers that existed before this load.
+        ids_before: Package identifiers that existed before this conversion's load.
         cntlr: The Arelle ``Cntlr`` used for this conversion, needed by
             ``rebuildRemappings``.
     """
@@ -206,10 +199,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                         and item.suffix.lower() == ".zip"
                         and zipfile.is_zipfile(item)
                     ]
-                    if zip_paths:
-                        _log.debug(
-                            f"Files to be passed as taxonomy packages: {zip_paths}"
-                        )
+                if zip_paths:
+                    _log.debug(f"Files to be passed as taxonomy packages: {zip_paths}")
                 arelle_load_path = str(instance_path)
 
                 cntlr = Cntlr.Cntlr()
