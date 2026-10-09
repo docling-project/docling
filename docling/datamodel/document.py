@@ -17,6 +17,7 @@ from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
     Annotated,
+    Final,
     Literal,
     NamedTuple,
     Optional,
@@ -622,6 +623,25 @@ class _DummyBackend(AbstractDocumentBackend):
         return super().unload()
 
 
+IXBRL_MARKERS: Final[tuple[bytes, ...]] = (
+    b"xmlns:ix=",
+    b"xmlns:ix =",
+    b"<ix:",
+    b"http://www.xbrl.org/2013/inlineXBRL",
+)
+"""Byte patterns that identify an inline XBRL (iXBRL) document; checked against the first 4 KB."""
+
+XBRL_TAXONOMY_LINKBASE_SUFFIXES: Final[tuple[str, ...]] = (
+    "_cal.xml",
+    "_def.xml",
+    "_lab.xml",
+    "_pre.xml",
+)
+"""Filename suffixes that identify XBRL taxonomy linkbase files, never a primary instance document."""
+
+XBRL_INSTANCE_NS: Final[bytes] = b"http://www.xbrl.org/2003/instance"
+"""Namespace URI that identifies a traditional XBRL instance document."""
+
 _OFFICE_OPEN_XML_ROOT = "application/vnd.openxmlformats-officedocument"
 
 _ZIP_SUFFIX_MIMETYPES = {
@@ -962,14 +982,6 @@ class _DocumentConversionInput(BaseModel):
         """
         _INSTANCE_XML_SUFFIXES = (".xml", ".xbrl")
         _IXBRL_SUFFIXES = (".htm", ".html", ".xhtml")
-        _TAXONOMY_LINKBASE_SUFFIXES = ("_cal.xml", "_def.xml", "_lab.xml", "_pre.xml")
-        _XBRL_NS = b"http://www.xbrl.org/2003/instance"
-        _IXBRL_MARKERS = (
-            b"xmlns:ix=",
-            b"xmlns:ix =",
-            b"<ix:",
-            b"http://www.xbrl.org/2013/inlineXBRL",
-        )
         try:
             with zipfile.ZipFile(source) as zf:
                 names = zf.namelist()
@@ -979,20 +991,21 @@ class _DocumentConversionInput(BaseModel):
                 for name in names:
                     name_lower = name.lower()
                     if any(
-                        name_lower.endswith(suf) for suf in _TAXONOMY_LINKBASE_SUFFIXES
+                        name_lower.endswith(suf)
+                        for suf in XBRL_TAXONOMY_LINKBASE_SUFFIXES
                     ):
                         continue
                     if any(name_lower.endswith(suf) for suf in _IXBRL_SUFFIXES):
                         with zf.open(name) as f:
                             head = f.read(4096)
-                        if any(marker in head for marker in _IXBRL_MARKERS):
+                        if any(marker in head for marker in IXBRL_MARKERS):
                             return FormatToMimeType[InputFormat.ZIP_XBRL][0]
                     elif any(
                         name_lower.endswith(suf) for suf in _INSTANCE_XML_SUFFIXES
                     ):
                         with zf.open(name) as f:
                             head = f.read(512)
-                        if _XBRL_NS in head:
+                        if XBRL_INSTANCE_NS in head:
                             return FormatToMimeType[InputFormat.ZIP_XBRL][0]
         except (zipfile.BadZipFile, OSError):
             pass
@@ -1053,15 +1066,7 @@ class _DocumentConversionInput(BaseModel):
             True if any iXBRL marker is found, False otherwise.
         """
         head = content[:4096]
-        return any(
-            marker in head
-            for marker in (
-                b"xmlns:ix=",
-                b"xmlns:ix =",
-                b"<ix:",
-                b"http://www.xbrl.org/2013/inlineXBRL",
-            )
-        )
+        return any(marker in head for marker in IXBRL_MARKERS)
 
     @staticmethod
     def _has_doclang_root_element(content_str: str) -> bool:

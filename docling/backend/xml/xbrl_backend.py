@@ -44,7 +44,12 @@ from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import InputDocument
+from docling.datamodel.document import (
+    IXBRL_MARKERS,
+    XBRL_INSTANCE_NS,
+    XBRL_TAXONOMY_LINKBASE_SUFFIXES,
+    InputDocument,
+)
 from docling.exceptions import DocumentLoadError, OperationNotAllowed, SecurityError
 
 _XBRL_AVAILABLE: bool = False
@@ -63,25 +68,6 @@ _log = logging.getLogger(__name__)
 
 
 _WEB_CACHE_TIMEOUT: Final[int] = 10
-
-# Taxonomy linkbase suffixes that are never the primary instance document.
-_TAXONOMY_LINKBASE_SUFFIXES: Final[tuple[str, ...]] = (
-    "_cal.xml",
-    "_def.xml",
-    "_lab.xml",
-    "_pre.xml",
-)
-
-# iXBRL namespace markers; checked against the first 4 KB of candidate files.
-_IXBRL_MARKERS: Final[tuple[bytes, ...]] = (
-    b"xmlns:ix=",
-    b"xmlns:ix =",
-    b"<ix:",
-    b"http://www.xbrl.org/2013/inlineXBRL",
-)
-
-# Namespace URI that identifies a traditional XBRL instance document.
-_XBRL_INSTANCE_NS: Final[bytes] = b"http://www.xbrl.org/2003/instance"
 
 
 def _find_instance_entry(zf: zipfile.ZipFile) -> str:
@@ -107,19 +93,19 @@ def _find_instance_entry(zf: zipfile.ZipFile) -> str:
 
     for name in zf.namelist():
         name_lower = name.lower()
-        if any(name_lower.endswith(suf) for suf in _TAXONOMY_LINKBASE_SUFFIXES):
+        if any(name_lower.endswith(suf) for suf in XBRL_TAXONOMY_LINKBASE_SUFFIXES):
             continue
         if name_lower.endswith(".xsd"):
             continue
         if any(name_lower.endswith(suf) for suf in _IXBRL_SUFFIXES):
             with zf.open(name) as f:
                 head = f.read(4096)
-            if any(marker in head for marker in _IXBRL_MARKERS):
+            if any(marker in head for marker in IXBRL_MARKERS):
                 ixbrl_candidates.append((zf.getinfo(name).file_size, name))
         elif any(name_lower.endswith(suf) for suf in _INSTANCE_XML_SUFFIXES):
             with zf.open(name) as f:
                 head = f.read(512)
-            if _XBRL_INSTANCE_NS in head:
+            if XBRL_INSTANCE_NS in head:
                 xml_candidates.append(name)
 
     # Prefer iXBRL; fall back to traditional XML instance.
