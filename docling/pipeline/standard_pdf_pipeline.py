@@ -606,6 +606,7 @@ class RunContext:
     first_stage: ThreadedPipelineStage
     output_queue: ThreadedQueue
     timed_out_run_ids: set[int] = field(default_factory=set)
+    model_threads: dict[str, ThreadPoolExecutor] | None = None
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -783,11 +784,10 @@ class StandardPdfPipeline(ConvertPipeline):
         with self._model_threads_lock:
             self._idle_model_threads.append(model_threads)
 
-    def _create_run_ctx(
-        self, model_threads: dict[str, ThreadPoolExecutor]
-    ) -> RunContext:
+    def _create_run_ctx(self) -> RunContext:
         opts = self.pipeline_options
         timed_out_run_ids: set[int] = set()
+        model_threads = self._borrow_model_threads()
         preprocess = PreprocessThreadedStage(
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
@@ -862,6 +862,7 @@ class StandardPdfPipeline(ConvertPipeline):
             first_stage=preprocess,
             output_queue=output_q,
             timed_out_run_ids=timed_out_run_ids,
+            model_threads=model_threads,
         )
 
     # --------------------------------------------------------------------- build
@@ -899,8 +900,7 @@ class StandardPdfPipeline(ConvertPipeline):
             page_by_no[page_no] = page
 
         total_pages: int = len(expected_page_nos)
-        model_threads = self._borrow_model_threads()
-        ctx: RunContext = self._create_run_ctx(model_threads)
+        ctx: RunContext = self._create_run_ctx()
         for st in ctx.stages:
             st.start()
 
@@ -1037,7 +1037,8 @@ class StandardPdfPipeline(ConvertPipeline):
         finally:
             for st in ctx.stages:
                 st.stop()
-            self._return_model_threads(model_threads, ctx.stages)
+            if ctx.model_threads is not None:
+                self._return_model_threads(ctx.model_threads, ctx.stages)
             ctx.output_queue.close()
             shutdown_timeout = self.pipeline_options.stage_shutdown_timeout_seconds
             producer_thread.join(timeout=shutdown_timeout)
