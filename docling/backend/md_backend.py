@@ -14,6 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal, cast
 
+import yaml
 from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
@@ -161,6 +162,24 @@ def _only_plain_line_breaks(children: list) -> bool:
     )
 
 
+_FRONTMATTER_PATTERN = re.compile(
+    r"\A---[ \t]*\r?\n(.*?)^(?:---|\.\.\.)[ \t]*(?:\r?\n|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def _strip_frontmatter(text: str) -> str:
+    """Drop a leading YAML frontmatter block (a ``---`` fenced YAML mapping)."""
+    match = _FRONTMATTER_PATTERN.match(text)
+    if match is None:
+        return text
+    try:
+        meta = yaml.safe_load(match.group(1))
+    except yaml.YAMLError:
+        return text
+    return text[match.end() :] if isinstance(meta, dict) else text
+
+
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _apply_formatting(
@@ -273,6 +292,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # output.
         try:
             md_content = decode_text(self.path_or_stream, options.encoding)
+            md_content = _strip_frontmatter(md_content)
             # remove invalid sequences
             # very long sequences of underscores will lead to unnecessary long processing times.
             # In any proper Markdown files, underscores have to be escaped,
