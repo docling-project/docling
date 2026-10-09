@@ -620,8 +620,7 @@ class StandardPdfPipeline(ConvertPipeline):
         super().__init__(pipeline_options)
         self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
         self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
-        # Reused model threads: PyTorch keeps per-thread state that is never freed when the
-        # thread exits (OpenMP workers on Windows, cuDNN plan caches on CUDA; see #2788)
+        # Reused model threads: PyTorch never frees per-thread state when a thread exits (#2788)
         self._idle_model_threads: list[dict[str, ThreadPoolExecutor]] = []
         self._model_threads_lock = threading.Lock()
 
