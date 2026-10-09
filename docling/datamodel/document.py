@@ -1186,8 +1186,7 @@ class _DocumentConversionInput(BaseModel):
               not match any of the format.
         """
         # First try UTF-8 (most common for CSV files, including ASCII subset)
-        # Use "replace" to handle invalid UTF-8 gracefully while preserving
-        # the structure for delimiter detection
+        # Fall back to latin-1 which never fails and preserves byte values
         try:
             content_str = content.decode("utf-8").strip()
         except UnicodeDecodeError:
