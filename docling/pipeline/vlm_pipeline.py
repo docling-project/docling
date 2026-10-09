@@ -84,9 +84,36 @@ class VlmPipeline(PaginatedPipeline):
         else:
             self._initialize_legacy_vlm_models(pipeline_options)
 
-        self.enrichment_pipe: list = [
-            # Other models working on `NodeItem` elements in the DoclingDocument
-        ]
+    def _enrich_document(self, conv_res: ConversionResult) -> ConversionResult:
+        # Picture enrichments run before each page backend is released.
+        return conv_res
+
+    def _enrich_page_document(
+        self, conv_res: ConversionResult, page: Page, document: DoclingDocument
+    ) -> None:
+        if not document.pictures or not self.enrichment_pipe:
+            return
+
+        # Finalized page documents use local page number 1. The enrichment
+        # models index conv_res.pages using provenance page numbers, so expose
+        # the source page number while running the models.
+        page_item = document.pages.pop(1)
+        page_item.page_no = page.page_no
+        document.pages[page.page_no] = page_item
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
+            if isinstance(item, DocItem):
+                for provenance in item.prov:
+                    provenance.page_no = page.page_no
+
+        original_document, original_pages = conv_res.document, conv_res.pages
+        try:
+            conv_res.document = document
+            conv_res.pages = [page]
+            super()._enrich_document(conv_res)
+        finally:
+            conv_res.document, conv_res.pages = original_document, original_pages
 
     def _initialize_new_runtime_system(
         self, pipeline_options: VlmPipelineOptions
@@ -333,9 +360,9 @@ class VlmPipeline(PaginatedPipeline):
             for page in self._apply_on_pages(conv_res, page_batch):
                 if page.size is None:
                     continue
-                page_documents[page.page_no] = self._finalize_page_document(
-                    conv_res, page
-                )
+                document = self._finalize_page_document(conv_res, page)
+                self._enrich_page_document(conv_res, page, document)
+                page_documents[page.page_no] = document
                 processed_page_nos.add(page.page_no)
         finally:
             for page in page_batch:
