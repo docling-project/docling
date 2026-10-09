@@ -4,6 +4,7 @@
 import logging
 import os
 import re
+import threading
 from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
@@ -1577,6 +1578,35 @@ def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     assert formatting["All bold text"].bold is True
     assert formatting["All italic text"].italic is True
     assert formatting["Plain text"].bold is False
+
+
+def test_cyclic_based_on_chain_does_not_hang(tmp_path):
+    """A ``basedOn`` cycle between paragraph styles must not stall the conversion.
+
+    Regression test: the bold lookup in ``_get_format_from_run`` followed
+    ``base_style`` links without a depth cap, so a malformed styles.xml in
+    which style A is based on B and B on A looped forever.
+    """
+    doc = Document()
+    style_a = doc.styles.add_style("Cycle A", WD_STYLE_TYPE.PARAGRAPH)
+    style_b = doc.styles.add_style("Cycle B", WD_STYLE_TYPE.PARAGRAPH)
+    style_a.base_style = style_b
+    style_b.base_style = style_a
+    doc.add_paragraph("Text in a cyclic style", style=style_a)
+    docx_path = tmp_path / "cyclic_styles.docx"
+    doc.save(docx_path)
+
+    # A bounded join turns a hang into a failure instead of a stuck test run.
+    results: list[DoclingDocument] = []
+    worker = threading.Thread(
+        target=lambda: results.append(_convert(docx_path)), daemon=True
+    )
+    worker.start()
+    worker.join(timeout=30)
+
+    assert not worker.is_alive(), "conversion did not finish: style chain loops"
+    assert results, "conversion raised; see the captured thread exception"
+    assert [item.text for item in results[0].texts] == ["Text in a cyclic style"]
 
 
 # ------ Code-block detection tests ------
