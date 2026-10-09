@@ -921,8 +921,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 orig=title_text,
                 content_layer=ContentLayer.FURNITURE,
             )
-        # remove script and style tags
-        for tag in self.soup(["script", "noscript", "style"]):
+        # remove the tags whose content is never rendered: script and style hold
+        # metadata, noscript only applies when scripting is disabled, and the
+        # content of a template is an inert fragment until a script clones it. A
+        # template that declares a shadow root with `shadowrootmode` is the
+        # exception: the parser attaches its content to the host element and
+        # browsers render it. Any other value leaves the template inert, and the
+        # old `shadowroot` attribute is inert in current browsers.
+        for tag in self.soup(["script", "noscript", "style", "template"]):
+            if tag.decomposed:
+                # A template earlier in the list already removed this tag.
+                continue
+            if tag.name == "template" and str(
+                tag.get("shadowrootmode", "")
+            ).lower() in {
+                "open",
+                "closed",
+            }:
+                continue
             tag.decompose()
         # remove any hidden tag
         for tag in self.soup(hidden=True):

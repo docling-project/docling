@@ -58,6 +58,18 @@ def _create_html_converter(backend_options):
     )
 
 
+def _convert_html(raw_html: bytes) -> DoclingDocument:
+    """Helper to convert an HTML byte string with the HTML backend."""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_html))
+    return backend.convert()
+
+
 def test_html_backend_options():
     options = HTMLBackendOptions()
     assert options.kind == "html"
@@ -1133,6 +1145,101 @@ def test_heading_as_list_child_ends_furniture():
         layers = {t.text: t.content_layer for t in doc.texts}
         assert layers["nav junk"] == ContentLayer.FURNITURE
         assert layers["X"] == ContentLayer.BODY
+
+
+@pytest.mark.parametrize(
+    "inert",
+    [
+        "<script>INERTTEXT</script>",
+        "<style>INERTTEXT</style>",
+        "<noscript>INERTTEXT</noscript>",
+        "<template>INERTTEXT</template>",
+        "<template><template>INERTTEXT</template></template>",
+        "<template><template><template>INERTTEXT</template></template></template>",
+        "<noscript><script>INERTTEXT</script></noscript>",
+        '<template id="tpl"><p>INERTTEXT</p><img src="inert.png"/></template>',
+        '<template shadowrootmode="">INERTTEXT</template>',
+        '<template shadowrootmode="foo">INERTTEXT</template>',
+        '<template shadowroot="open">INERTTEXT</template>',
+    ],
+)
+def test_inert_tag_content_is_not_extracted(inert: str):
+    # None of these tags renders its content: <script>/<style> hold metadata,
+    # <noscript> only applies when scripting is disabled, a <template>'s content
+    # is an inert fragment until a script clones it, and a shadow root is
+    # attached only for the values open and closed of shadowrootmode. The old
+    # shadowroot attribute is inert in current browsers.
+    doc = _convert_html(f"<html><body><p>visible</p>{inert}</body></html>".encode())
+    assert [text.text for text in doc.texts] == ["visible"]
+    assert not doc.pictures
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        "<ul><li>visible</li><template><li>INERTTEXT</li></template></ul>",
+        "<ul><li>visible<template><p>INERTTEXT</p></template></li></ul>",
+    ],
+)
+def test_inert_tag_inside_list_is_not_extracted(html: str):
+    # A template also ends up nested in structured content, where its removal
+    # interacts with the list builder.
+    doc = _convert_html(f"<html><body>{html}</body></html>".encode())
+    assert [text.text for text in doc.texts] == ["visible"]
+
+
+def test_inert_tag_inside_table_cell_is_not_extracted():
+    html = (
+        "<table><tbody><tr><td>visible<template><p>INERTTEXT</p>"
+        "</template></td></tr></tbody></table>"
+    )
+    doc = _convert_html(f"<html><body>{html}</body></html>".encode())
+    assert len(doc.tables) == 1
+    markdown = doc.export_to_markdown()
+    assert "visible" in markdown
+    assert "INERTTEXT" not in markdown
+
+
+def test_row_template_in_table_body_is_not_extracted():
+    # A template often holds a row template inside a tbody, as a sibling of the
+    # rows. Its removal must not add a row to the table.
+    html = (
+        "<table><tbody><tr><td>visible</td></tr>"
+        "<template><tr><td>INERTTEXT</td></tr></template></tbody></table>"
+    )
+    doc = _convert_html(f"<html><body>{html}</body></html>".encode())
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 1
+    markdown = doc.export_to_markdown()
+    assert "visible" in markdown
+    assert "INERTTEXT" not in markdown
+
+
+@pytest.mark.parametrize(
+    "template",
+    [
+        '<template shadowrootmode="open"><p>SHADOW</p></template>',
+        '<template shadowrootmode="closed"><p>SHADOW</p></template>',
+        '<template shadowrootmode="OPEN"><p>SHADOW</p></template>',
+    ],
+)
+def test_declarative_shadow_root_template_is_kept(template: str):
+    # A template that declares a shadow root is not inert: the parser attaches
+    # its content to the host element, and browsers render it.
+    raw_html = f"<html><body><div>{template}</div><p>after</p></body></html>".encode()
+    doc = _convert_html(raw_html)
+    assert [text.text for text in doc.texts] == ["SHADOW", "after"]
+
+
+def test_inert_template_inside_shadow_root_template_is_not_extracted():
+    # A kept shadow-root template can hold an inert template. The removal loop
+    # still reaches the nested template.
+    html = (
+        '<div><template shadowrootmode="open"><p>SHADOW</p>'
+        "<template><p>INERTTEXT</p></template></template></div><p>after</p>"
+    )
+    doc = _convert_html(f"<html><body>{html}</body></html>".encode())
+    assert [text.text for text in doc.texts] == ["SHADOW", "after"]
 
 
 def test_unicode_characters():
