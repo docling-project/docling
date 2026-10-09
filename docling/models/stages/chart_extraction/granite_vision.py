@@ -125,7 +125,23 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
         ):
             return False
         main_pred = element.meta.classification.get_main_prediction()
-        return main_pred.class_name in SUPPORTED_CHART_TYPES
+        return main_pred.class_name in SUPPORTED_CHART_TYPES and any(
+            self._needs_prompt(element, prompt)
+            for prompt in self.options.active_prompts()
+        )
+
+    @staticmethod
+    def _needs_prompt(item: PictureItem, prompt: str) -> bool:
+        meta = item.meta
+        if meta is None:
+            return True
+        if prompt == "<chart2csv>":
+            return meta.tabular_chart is None
+        if prompt == "<chart2summary>":
+            return meta.description is None
+        if prompt == "<chart2code>":
+            return meta.code is None
+        return True
 
     def _resolve_runtime_engine_type(self) -> VlmEngineType:
         selected_engine_type = getattr(self.engine, "selected_engine_type", None)
@@ -169,11 +185,22 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
         stop_strings = list(model_spec.stop_strings)
         extra_generation_config = model_spec.get_runtime_input_extra_config(engine_type)
 
-        # Build a flat batch: image x prompt, keeping them in sync
+        # Request only chart fields that the VLM did not already provide.
         batch_inputs: list[VlmEngineInput] = []
-        for image in images:
+        requests: list[tuple[int, str]] = []
+        for img_idx, (item, image) in enumerate(zip(elements, images)):
             for prompt in active_prompts:
-                wire_prompt = _NL_PROMPT_MAP.get(prompt, prompt) if use_nl else prompt
+                if not self._needs_prompt(item, prompt):
+                    continue
+                if (
+                    self.options.output_format
+                    == ChartExtractionOutputFormat.GRANITE_VISION_CHART2CSV
+                ):
+                    wire_prompt = model_spec.prompt
+                else:
+                    wire_prompt = (
+                        _NL_PROMPT_MAP.get(prompt, prompt) if use_nl else prompt
+                    )
                 batch_inputs.append(
                     VlmEngineInput(
                         image=image,
@@ -184,43 +211,39 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
                         extra_generation_config=extra_generation_config,
                     )
                 )
+                requests.append((img_idx, prompt))
+
+        if not batch_inputs:
+            yield from elements
+            return
 
         if self.engine is None:
             raise RuntimeError("Engine not initialized")
 
         outputs = list(self.engine.predict_batch(batch_inputs))
 
-        n_prompts = len(active_prompts)
-        for img_idx, item in enumerate(elements):
-            if not isinstance(item, PictureItem):
-                yield item
-                continue
+        handler = _OUTPUT_FORMAT_HANDLERS.get(self.options.output_format)
+        if handler is None:
+            _log.error(
+                f"No handler registered for output_format "
+                f"{self.options.output_format!r}; skipping chart extraction."
+            )
+            yield from elements
+            return
 
+        for (img_idx, prompt), output in zip(requests, outputs):
+            item = elements[img_idx]
             if item.meta is None or not isinstance(item.meta, PictureMeta):
                 item.meta = PictureMeta()
+            _log.debug(
+                f"chart extraction [{prompt}] image {img_idx}: {output.text[:120]}"
+            )
+            try:
+                handler(prompt, output.text, item)
+            except Exception as exc:
+                _log.error(f"Failed to process [{prompt}] for image {img_idx}: {exc}")
 
-            handler = _OUTPUT_FORMAT_HANDLERS.get(self.options.output_format)
-            if handler is None:
-                _log.error(
-                    f"No handler registered for output_format "
-                    f"{self.options.output_format!r}; skipping image {img_idx}."
-                )
-                yield item
-                continue
-
-            for prompt_idx, prompt in enumerate(active_prompts):
-                result = outputs[img_idx * n_prompts + prompt_idx].text
-                _log.debug(
-                    f"chart extraction [{prompt}] image {img_idx}: {result[:120]}"
-                )
-                try:
-                    handler(prompt, result, item)
-                except Exception as exc:
-                    _log.error(
-                        f"Failed to process [{prompt}] for image {img_idx}: {exc}"
-                    )
-
-            yield item
+        yield from elements
 
     def __del__(self) -> None:
         if self.engine is not None:
@@ -272,6 +295,7 @@ def _handle_granite_vision_charts(prompt: str, result: str, item: PictureItem) -
 
 _OUTPUT_FORMAT_HANDLERS: Dict[ChartExtractionOutputFormat, _ChartOutputHandler] = {
     ChartExtractionOutputFormat.GRANITE_VISION_CHARTS: _handle_granite_vision_charts,
+    ChartExtractionOutputFormat.GRANITE_VISION_CHART2CSV: _handle_granite_vision_charts,
 }
 
 

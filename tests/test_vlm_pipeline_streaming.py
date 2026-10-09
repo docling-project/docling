@@ -4,7 +4,7 @@
 from pathlib import PurePath
 from types import SimpleNamespace
 
-from docling_core.types.doc import Size, TextItem
+from docling_core.types.doc import DoclingDocument, PictureItem, Size, TextItem
 from PIL import Image
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
@@ -22,6 +22,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.progress import PageCompletedProgress, ProgressReporter
 from docling.datamodel.settings import DocumentLimits, settings
+from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
 
@@ -29,6 +30,7 @@ class _Tracker:
     def __init__(self) -> None:
         self.live = 0
         self.high_water = 0
+        self.rendered_scales: list[float] = []
 
 
 class _PageBackend(PdfPageBackend):
@@ -57,7 +59,14 @@ class _PageBackend(PdfPageBackend):
         return []
 
     def get_page_image(self, scale: float = 1, cropbox=None):
-        return Image.new("RGB", (100, 100), (self.page_no, 0, 0))
+        self._tracker.rendered_scales.append(scale)
+        image = Image.new(
+            "RGB", (int(100 * scale), int(100 * scale)), (self.page_no, 0, 0)
+        )
+        if cropbox is not None:
+            bbox = cropbox.to_top_left_origin(page_height=100).scaled(scale)
+            return image.crop(bbox.as_tuple())
+        return image
 
     def get_size(self) -> Size:
         return Size(width=100, height=100)
@@ -145,6 +154,24 @@ class _PredictDoctags:
             yield page
 
 
+class _CapturePictureCrop:
+    elements_batch_size = 1
+    expansion_factor = 0.0
+    images_scale = 1.5
+    prepare_element = BaseItemAndImageEnrichmentModel.prepare_element
+
+    def __init__(self) -> None:
+        self.image_sizes: list[tuple[int, int]] = []
+
+    def is_processable(self, doc, element) -> bool:
+        return isinstance(element, PictureItem)
+
+    def __call__(self, doc, element_batch):
+        for element in element_batch:
+            self.image_sizes.append(element.image.size)
+            yield element
+
+
 def _run_pipeline(
     *,
     page_nos: list[int],
@@ -156,6 +183,9 @@ def _run_pipeline(
     failed_page_nos: set[int] | None = None,
     document_timeout: float | None = None,
     progress: ProgressReporter | None = None,
+    do_chart_extraction: bool = False,
+    enrichment_model: _CapturePictureCrop | None = None,
+    drop_picture_images: bool = False,
 ):
     tracker = _Tracker()
     backend = (
@@ -170,6 +200,9 @@ def _run_pipeline(
         generate_page_images=generate_page_images,
         generate_picture_images=generate_picture_images,
         images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=do_chart_extraction,
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",
@@ -179,6 +212,19 @@ def _run_pipeline(
     )
     pipeline.force_backend_text = force_backend_text
     pipeline.build_pipe = [_PredictDoctags(tag)]
+    pipeline.enrichment_pipe = (
+        [enrichment_model] if enrichment_model is not None else []
+    )
+    if drop_picture_images:
+        finalize = pipeline._finalize_page_document
+
+        def finalize_without_embedded_images(conv_res, page):
+            document = finalize(conv_res, page)
+            for picture in document.pictures:
+                picture.image = None
+            return document
+
+        pipeline._finalize_page_document = finalize_without_embedded_images
     conv_res = SimpleNamespace(
         input=SimpleNamespace(
             _backend=backend,
@@ -187,6 +233,7 @@ def _run_pipeline(
             page_count=9,
         ),
         errors=[],
+        document=DoclingDocument(name=""),
         pages=[],
         status=ConversionStatus.STARTED,
         timings={},
@@ -219,6 +266,47 @@ def test_vlm_streams_out_of_order_pages_and_releases_each_batch(monkeypatch) -> 
         page._backend is None and not page._image_cache for page in conv_res.pages
     )
     assert all(page.image is None for page in conv_res.document.pages.values())
+
+
+def test_vlm_enriches_picture_crop_before_releasing_page() -> None:
+    model = _CapturePictureCrop()
+    conv_res, tracker, _backend = _run_pipeline(
+        page_nos=[5, 6],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        tag="picture",
+        enrichment_model=model,
+        drop_picture_images=True,
+    )
+
+    assert tracker.live == 0
+    assert conv_res.document.pictures
+    assert [picture.prov[0].page_no for picture in conv_res.document.pictures] == [
+        5,
+        6,
+    ]
+    assert all(
+        page._backend is None and not page._image_cache for page in conv_res.pages
+    )
+    assert model.image_sizes == [(24, 24), (24, 24)]
+    assert 1.5 in tracker.rendered_scales
+
+
+def test_vlm_does_not_render_enrichment_scale_without_pictures() -> None:
+    model = _CapturePictureCrop()
+    conv_res, _tracker, backend = _run_pipeline(
+        page_nos=[5],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        enrichment_model=model,
+    )
+
+    assert not conv_res.document.pictures
+    assert model.image_sizes == []
+    assert not conv_res.pages[0]._image_cache
+    assert 1.5 not in backend._tracker.rendered_scales
 
 
 def test_vlm_uses_indexed_loading_for_random_access_backends(monkeypatch) -> None:
@@ -321,6 +409,9 @@ def test_vlm_text_response_keeps_absolute_page_number_after_concatenation() -> N
         generate_page_images=False,
         generate_picture_images=False,
         images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=False,
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",
@@ -372,6 +463,9 @@ def test_chandra_page_assembly_preserves_source_provenance_and_reports_bad_respo
         generate_page_images=True,
         generate_picture_images=False,
         images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=False,
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",

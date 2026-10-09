@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.135.0"  # DO NOT EDIT, updated automatically
+version = "2.137.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -270,7 +270,7 @@ models-vlm-inline = [
   'einops>=0.8.1,<1.0.0',
   'open-clip-torch>=3.2.0,<4.0.0',
   'timm>=1.0.22,<2.0.0',
-  'mlx-vlm>=0.6.17,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'mlx-vlm>=0.7.0,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'qwen-vl-utils>=0.0.11',
   'peft>=0.18.1',
 ]

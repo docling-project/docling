@@ -171,10 +171,61 @@ def test_keyword_part_and_article():
     assert _parse_marker("§ 1.2 Liability").family == "article"
 
 
+def test_keyword_division_and_subdivision():
+    assert _parse_marker("DIVISION I").family == "division"
+    assert _parse_marker("DIVISION A").family == "division"
+    assert _parse_marker("Division 1").family == "division"
+    assert _parse_marker("Division 1 Offences and Penalties").family == "division"
+    assert _parse_marker("SUBDIVISION A").family == "subdivision"
+    assert _parse_marker("Subdivision a").family == "subdivision"
+    # Enumerators may be terminated by separator punctuation, not only whitespace.
+    assert _parse_marker("Division I, General").family == "division"
+    assert _parse_marker("Division A; Scope").family == "division"
+
+    # Division/subdivision outrank article subsections in the default order.
+    levels = _levels(["Division 1 General", "Article 3 Powers"])
+    assert levels == {0: 1, 1: 2}
+
+    # Stripping the leading marker stays in sync for bookmark matching.
+    assert _strip_marker("Division I Powers").strip() == "Powers"
+
+
+def test_chapter_outranks_division_in_default_order():
+    # In codes that use both (e.g. Australian Commonwealth acts), a Chapter contains
+    # Divisions, so chapter must rank above division/subdivision in the default order.
+    levels = _levels(["Chapter 1 A", "Division 1 B", "Subdivision A C"])
+    assert levels == {0: 1, 1: 2, 2: 3}
+
+
+def test_statute_citation_is_not_a_chapter():
+    # Statute citations are not chapters; numbered, Roman and lettered chapters still match.
+    assert _parse_marker("Chapter A-15") is None
+    assert _parse_marker("Chapter B-9") is None
+    assert _parse_marker("Chapter P-6.5") is None
+    assert _parse_marker("Chapter 1").family == "chapter"
+    assert _parse_marker("Chapter 2D").family == "chapter"
+    assert _parse_marker("Chapter I").family == "chapter"
+    assert _parse_marker("Chapter A").family == "chapter"
+    assert _parse_marker("Chapter 1-A").family == "chapter"
+
+    # A citation alone adds no level: Divisions stay directly under the Part.
+    levels = _levels(["Part 1 X", "Chapter A-15", "Division 1 Y"])
+    assert levels == {0: 1, 2: 2}
+
+
 def test_non_marker_text_is_ignored():
     assert _parse_marker("Summary") is None
     assert _parse_marker("Introduction to the topic") is None
     assert _parse_marker("ABSTRACT") is None
+    assert _parse_marker("Division of Property") is None
+    assert _parse_marker("Division of weeks of benefits") is None
+    assert _parse_marker("Division du cong\u00e9") is None
+    assert _parse_marker("Subdivision of land") is None
+    assert _parse_marker("Division Civil Remedies") is None
+    assert _parse_marker("Division d'appel") is None
+    assert _parse_marker("Division l'emploi") is None
+    assert _parse_marker("Division s'applique") is None
+    assert _parse_marker("Division d\u2019appel") is None
     assert _parse_marker("2024 Annual Financial Report") is None
     assert _parse_marker("2024-2025 Budget") is None
     assert _parse_marker("2024\u201325 Outlook") is None
@@ -223,6 +274,16 @@ def test_custom_numbering_scheme_order():
     # Override so Arabic outranks Roman.
     levels = _levels(
         ["I. A", "1. B"],
+        numbering_schemes=["arabic", "roman_u"],
+    )
+    assert levels == {0: 2, 1: 1}
+
+
+def test_omitted_scheme_family_ranks_lowest():
+    # A custom order that omits "division": the heading still parses (family "division")
+    # but, absent from the order, it ranks below any listed family instead of above it.
+    levels = _levels(
+        ["Division 1 Offences", "1. Scope"],
         numbering_schemes=["arabic", "roman_u"],
     )
     assert levels == {0: 2, 1: 1}

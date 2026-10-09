@@ -119,6 +119,32 @@ def test_latex_includegraphics():
         assert "test_image.png" in picture.captions[0].resolve(doc).text
 
 
+def test_latex_includegraphics_cmyk_jpeg(tmp_path: Path):
+    """A CMYK JPEG figure keeps its image; PNG cannot store CMYK."""
+    from PIL import Image as PILImage
+
+    PILImage.new("CMYK", (100, 50), (0, 255, 255, 0)).save(tmp_path / "fig.jpg")
+    tex_file = tmp_path / "test.tex"
+    tex_file.write_bytes(
+        b"\\documentclass{article}\n\\begin{document}\n"
+        b"\\includegraphics{fig.jpg}\n\\end{document}\n"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=tex_file,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=tex_file).convert()
+
+    assert len(doc.pictures) == 1
+    image = doc.pictures[0].get_image(doc)
+    assert image is not None
+    assert image.mode == "RGB"
+    assert image.getpixel((50, 25)) == (255, 0, 0)
+
+
 def test_latex_includegraphics_missing_image():
     """Test includegraphics gracefully handles missing images"""
     latex_content = b"""

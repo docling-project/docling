@@ -60,7 +60,11 @@ class PictureDescriptionBaseModel(
         self.images_scale = options.scale
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
-        return self.enabled and isinstance(element, PictureItem)
+        return (
+            self.enabled
+            and isinstance(element, PictureItem)
+            and (element.meta is None or element.meta.description is None)
+        )
 
     def _annotate_images(
         self, images: Iterable[Image.Image]

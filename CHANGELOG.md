@@ -1,3 +1,37 @@
+## [v2.137.0](https://github.com/docling-project/docling/releases/tag/v2.137.0) - 2026-10-09
+
+### Feature
+
+* Adding enrichments after the VLM pipeline ([#4469](https://github.com/docling-project/docling/issues/4469)) ([`45b187e`](https://github.com/docling-project/docling/commit/45b187e7b28c3bca15cd73986c03c40afae3023d))
+
+### Fix
+
+* **ocr:** Read PP-OCRv6 languages through rapidocr's list_supported_langs ([`0e1567b`](https://github.com/docling-project/docling/commit/0e1567bbb8a543b364aec234fc1abe2ff9aff7ba))
+
+## [v2.136.0](https://github.com/docling-project/docling/releases/tag/v2.136.0) - 2026-10-09
+
+### Feature
+
+* **heading_hierarchy:** Recognize Division/Subdivision heading markers in hierarchy inference ([#4473](https://github.com/docling-project/docling/issues/4473)) ([`8a6155b`](https://github.com/docling-project/docling/commit/8a6155b269b456d849cf3785d820e11ef3050b16))
+* **mlx:** Add repetition penalty options ([#4616](https://github.com/docling-project/docling/issues/4616)) ([`dd7c035`](https://github.com/docling-project/docling/commit/dd7c03577d60867ed345037d51a358c00d6dbed4))
+
+### Fix
+
+* **ocr:** Do not OCR programmatic text because a vector shape crosses it ([#4209](https://github.com/docling-project/docling/issues/4209)) ([`c6ef3c4`](https://github.com/docling-project/docling/commit/c6ef3c413b5bdb98bd2ae81a0a3d62ce711f58ec))
+* **latex:** Resolve \input and \includegraphics for str sources ([#4697](https://github.com/docling-project/docling/issues/4697)) ([`b2a59b9`](https://github.com/docling-project/docling/commit/b2a59b9fa1a31ae6584d4dd18cd0c2bb3ca285b6))
+* **latex:** Keep CMYK JPEG figures ([#4696](https://github.com/docling-project/docling/issues/4696)) ([`9943158`](https://github.com/docling-project/docling/commit/9943158bfc58f7659c6f79557f6d1a65e06a7006))
+* **pptx:** Move hidden slides to the invisible content layer ([#4647](https://github.com/docling-project/docling/issues/4647)) ([`3181d9f`](https://github.com/docling-project/docling/commit/3181d9fcbb8b7568ceba14b7ed5cd21f66b221e7))
+* **odf:** Remove the repeated padding of ODS sheets before converting them ([#4660](https://github.com/docling-project/docling/issues/4660)) ([`3312ed7`](https://github.com/docling-project/docling/commit/3312ed7ded624fe010f5039b0cd235852c09499c))
+* **slim:** Defer the rtree import so DocumentConverter imports without convert-core ([#4637](https://github.com/docling-project/docling/issues/4637)) ([`d9fa989`](https://github.com/docling-project/docling/commit/d9fa989df2a98a8966a92fc30d0e6691d2fb4c29))
+* **xlsx:** Keep CMYK pictures instead of dropping or re-rendering them ([#4664](https://github.com/docling-project/docling/issues/4664)) ([`4854af7`](https://github.com/docling-project/docling/commit/4854af7d760615c6692a7c1a55c5fdc86360aab9))
+* **odf:** Keep CMYK pictures instead of dropping them ([#4666](https://github.com/docling-project/docling/issues/4666)) ([`bb862e2`](https://github.com/docling-project/docling/commit/bb862e277940bd286c125b8e5068264f17755db5))
+* **latex:** Flush text at every \item and drop empty item terms ([#4644](https://github.com/docling-project/docling/issues/4644)) ([`560bb54`](https://github.com/docling-project/docling/commit/560bb54af7c2508a87be30eb64a7c967c1a0b940))
+* **html:** Read list item markers set by a string list-style-type ([#4669](https://github.com/docling-project/docling/issues/4669)) ([`cf51376`](https://github.com/docling-project/docling/commit/cf51376e24696e9603ff45a85358c8950aa928e1))
+* **pptx:** Respect layout bullet styles ([#4581](https://github.com/docling-project/docling/issues/4581)) ([`638c43a`](https://github.com/docling-project/docling/commit/638c43a54d4de7e8c0f4423917b5cb994669953d))
+* **html:** Keep the image of a table cell with one plain text run ([#4638](https://github.com/docling-project/docling/issues/4638)) ([`4f839fe`](https://github.com/docling-project/docling/commit/4f839fea61874711c025d0b5c36714b558bb84df))
+* **odf:** Keep ODT comments out of the body text ([#4436](https://github.com/docling-project/docling/issues/4436)) ([`8aef089`](https://github.com/docling-project/docling/commit/8aef08919d2060c57f3b8b6589e9e308f45e755d))
+* **docx:** Follow-up on dangling fragment hyperlinks ([#4613](https://github.com/docling-project/docling/issues/4613)) ([`9228eca`](https://github.com/docling-project/docling/commit/9228ecadaaf6a83cb2cf3e8982c7dac6bbe0d7ee))
+
 ## [v2.135.0](https://github.com/docling-project/docling/releases/tag/v2.135.0) - 2026-10-07
 
 ### Feature
