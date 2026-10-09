@@ -817,7 +817,7 @@ class _DocumentConversionInput(BaseModel):
             )
             if needs_content_sniff:
                 with obj.open("rb") as f:
-                    content = f.read(1024)
+                    content = f.read(4096)
             if mime is not None and mime.lower() == "application/zip":
                 mime = _DocumentConversionInput._detect_zip_mime(obj, obj.name) or mime
 
