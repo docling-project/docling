@@ -960,8 +960,7 @@ class StandardPdfPipeline(ConvertPipeline):
             )
         timeout_exceeded = False
         producer_error: list[Exception] = []
-        # Without this bound the fast preprocess stage renders pages far ahead of
-        # the model stages, and peak memory grows with the document length.
+        # Keeps preprocessing from rendering pages far ahead of the models (#4705)
         pages_in_flight = threading.Semaphore(self._max_pages_in_flight())
 
         def _acquire_page_slot() -> bool:
