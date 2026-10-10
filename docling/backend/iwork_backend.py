@@ -790,15 +790,6 @@ def _add_picture(
         prov: Where the picture came from, for the backends that know.
     """
     doc.add_picture(image=_picture_image(picture), parent=parent, prov=prov)
-    image: ImageRef | None = None
-    if picture.data is not None:
-        try:
-            with Image.open(BytesIO(picture.data)) as opened:
-                image = ImageRef.from_pil(image=normalize_image_for_png(opened), dpi=72)
-        except (OSError, ValueError) as exc:
-            # Pages stores whatever the author placed, including formats Pillow
-            # has no decoder for. The picture still belongs in the flow.
-            _log.debug("Could not decode iWork image %s: %s", picture.name, exc)
 
 
 def _picture_image(picture: Picture) -> ImageRef | None:
@@ -807,7 +798,7 @@ def _picture_image(picture: Picture) -> ImageRef | None:
         return None
     try:
         with Image.open(BytesIO(picture.data)) as opened:
-            return ImageRef.from_pil(image=opened.convert("RGB"), dpi=72)
+            return ImageRef.from_pil(image=normalize_image_for_png(opened), dpi=72)
     except (OSError, ValueError) as exc:
         # Pages stores whatever the author placed, including formats Pillow
         # has no decoder for. The picture still belongs in the flow.
