@@ -69,7 +69,390 @@ def test_latex_list_enumerate():
     doc = backend.convert()
 
     list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
-    assert len(list_items) >= 2
+    assert [(item.text, item.enumerated) for item in list_items] == [
+        ("Alpha", True),
+        ("Beta", True),
+    ]
+    assert doc.export_to_markdown() == "1. Alpha\n2. Beta"
+
+
+def test_latex_enumerate_numbering_with_nested_content():
+    """Each enumerate item takes one number, whatever it contains.
+
+    Nested lists and further paragraphs of an item are added inside the item,
+    so they do not take a position in the numbering of the outer list.
+    """
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item First
+      \begin{itemize}
+      \item Detail
+      \end{itemize}
+      Rest of the first item.
+    \item Second
+
+    Second paragraph of the second item.
+    \item Third
+      \begin{enumerate}
+      \item Sub one
+      \item Sub two
+      \end{enumerate}
+    \item Fourth
+    \end{enumerate}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    outer_items = [child.resolve(doc) for child in outer.children]
+    assert [(item.label, item.text) for item in outer_items] == [
+        (DocItemLabel.LIST_ITEM, "First"),
+        (DocItemLabel.LIST_ITEM, "Second"),
+        (DocItemLabel.LIST_ITEM, "Third"),
+        (DocItemLabel.LIST_ITEM, "Fourth"),
+    ]
+    assert all(item.enumerated for item in outer_items)
+
+    md = doc.export_to_markdown()
+    assert "\n2. Second" in md
+    assert "\n3. Third\n    1. Sub one\n    2. Sub two\n4. Fourth" in md
+    assert "Rest of the first item." in md
+    assert "Second paragraph of the second item." in md
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        rb"\[x=1\]",
+        rb"\begin{equation}x=1\end{equation}",
+        rb"\href{https://example.com}{a link}",
+        rb"\begin{quote}A quote.\end{quote}",
+    ],
+    ids=["display_math", "equation", "href", "quote"],
+)
+def test_latex_enumerate_item_with_block_content(content: bytes):
+    """Content that flushes the text buffer stays inside its item.
+
+    Added as siblings in the list, the content and the text after it would each
+    take a number, e.g. ``1. First``, the formula, ``3. continuation``,
+    ``4. Second``.
+    """
+    latex_content = (
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item First """
+        + content
+        + rb""" continuation
+    \item Second
+    \end{enumerate}
+    \end{document}
+    """
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    outer_items = [child.resolve(doc) for child in outer.children]
+    assert [(item.label, item.text) for item in outer_items] == [
+        (DocItemLabel.LIST_ITEM, "First"),
+        (DocItemLabel.LIST_ITEM, "Second"),
+    ]
+    assert all(item.enumerated for item in outer_items)
+
+    md = doc.export_to_markdown()
+    assert md.startswith("1. First\n")
+    assert md.endswith("\n2. Second")
+    assert "continuation" in md
+
+
+@pytest.mark.parametrize(
+    ("start", "child_labels"),
+    [
+        (rb"\footnote{A note.}", [DocItemLabel.FOOTNOTE]),
+        (rb"\newline", []),
+    ],
+    ids=["footnote", "newline"],
+)
+def test_latex_enumerate_item_starting_with_footnote_or_newline(
+    start: bytes, child_labels: list[DocItemLabel]
+):
+    """The text after a leading footnote or line break is the text of the item.
+
+    A footnote stays attached to the item; a line break before any content has
+    nothing to break.
+    """
+    latex_content = (
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item """
+        + start
+        + rb""" First
+    \item Second
+    \end{enumerate}
+    \end{document}
+    """
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    outer_items = [child.resolve(doc) for child in outer.children]
+    assert [item.text for item in outer_items] == ["First", "Second"]
+    assert all(item.enumerated for item in outer_items)
+    assert [
+        child.resolve(doc).label for child in outer_items[0].children
+    ] == child_labels
+
+    md = doc.export_to_markdown()
+    assert md.startswith("1. First\n")
+    assert md.endswith("\n2. Second")
+
+
+@pytest.mark.parametrize(
+    "start",
+    [
+        rb"\begin{quote}First\end{quote}",
+        rb"{\begin{quote}First\end{quote}}",
+        rb"\begin{center}First\end{center}",
+    ],
+    ids=["quote", "quote_in_group", "center"],
+)
+def test_latex_enumerate_item_starting_with_nested_text(start: bytes):
+    """Text nested in an environment or group at the start of an item is its text.
+
+    Added as a child of an item without text, it would be exported as ``1. ``
+    followed by ``First`` on its own line, which a CommonMark parser reads as an
+    empty item and a paragraph that takes in ``2. Second``.
+    """
+    latex_content = (
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item """
+        + start
+        + rb"""
+    \item Second
+    \end{enumerate}
+    \end{document}
+    """
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert doc.export_to_markdown() == "1. First\n2. Second"
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        b"\\item\n\nFirst\n\nContinuation",
+        b"\\item \\begin{quote}\n\nFirst\n\nContinuation\\end{quote}",
+        b"\\item {\n\nFirst\n\nContinuation}",
+    ],
+    ids=["paragraphs", "quote", "group"],
+)
+def test_latex_enumerate_item_starting_with_paragraph_break(item: bytes):
+    """The first paragraph after a leading blank line is the text of the item."""
+    latex_content = (
+        b"\\documentclass{article}\n\\begin{document}\n\\begin{enumerate}\n"
+        + item
+        + b"\n\\item Second\n\\end{enumerate}\n\\end{document}\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    first, second = (child.resolve(doc) for child in outer.children)
+    assert (first.text, second.text) == ("First", "Second")
+    assert [child.resolve(doc).text for child in first.children] == ["Continuation"]
+    assert doc.export_to_markdown() == "1. First\nContinuation\n2. Second"
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        rb"\item \[x=1\] First",
+        rb"\item \begin{equation}x=1\end{equation} First",
+    ],
+    ids=["display_math", "equation"],
+)
+def test_latex_enumerate_item_starting_with_formula(item: bytes):
+    """A formula at the start of an item is on the line of the item, with its text.
+
+    As a block child of an item without text, it was exported as ``1. `` followed
+    by the formula on its own line, which a CommonMark parser reads as an empty
+    item; ``2. Second`` then loses its numbering.
+    """
+    latex_content = (
+        b"\\documentclass{article}\n\\begin{document}\n\\begin{enumerate}\n"
+        + item
+        + b"\n\\item Second\n\\end{enumerate}\n\\end{document}\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    first, second = (child.resolve(doc) for child in outer.children)
+    assert (first.text, second.text) == ("", "Second")
+    (line,) = (child.resolve(doc) for child in first.children)
+    assert line.label == GroupLabel.INLINE
+    assert [
+        (child.resolve(doc).label, child.resolve(doc).text) for child in line.children
+    ] == [(DocItemLabel.FORMULA, "x=1"), (DocItemLabel.TEXT, "First")]
+    assert doc.export_to_markdown() == "1. $x=1$ First\n2. Second"
+
+
+@pytest.mark.parametrize(
+    ("item", "children", "expected_md"),
+    [
+        (
+            rb"\item \[x=1\] \begin{itemize}\item In\end{itemize} After",
+            [GroupLabel.INLINE, GroupLabel.LIST, DocItemLabel.TEXT],
+            "1. $x=1$\n    - In\nAfter\n2. Second",
+        ),
+        (
+            rb"\item \[x=1\]\footnote{Note.} First",
+            [GroupLabel.INLINE, DocItemLabel.FOOTNOTE],
+            "1. $x=1$ First\nNote.\n2. Second",
+        ),
+    ],
+    ids=["nested_list", "footnote"],
+)
+def test_latex_enumerate_line_of_item_starting_with_formula(
+    item: bytes, children: list, expected_md: str
+):
+    """The line of an item ends at other content; a footnote does not end it."""
+    latex_content = (
+        b"\\documentclass{article}\n\\begin{document}\n\\begin{enumerate}\n"
+        + item
+        + b"\n\\item Second\n\\end{enumerate}\n\\end{document}\n"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    first = doc.groups[0].children[0].resolve(doc)
+    assert [child.resolve(doc).label for child in first.children] == children
+    assert doc.export_to_markdown() == expected_md
+
+
+def test_latex_enumerate_empty_item_keeps_numbering():
+    """An empty ``\\item`` still takes a number, as in the typeset document."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    \item One
+    \item
+    \item \label{it:three}
+    \item Four
+    \end{enumerate}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    outer = doc.groups[0]
+    outer_items = [child.resolve(doc) for child in outer.children]
+    assert [item.text for item in outer_items] == ["One", "", "", "Four"]
+    assert all(item.enumerated for item in outer_items)
+    assert doc.export_to_markdown().endswith("\n4. Four")
+
+
+@pytest.mark.parametrize(
+    ("leading", "expected_md"),
+    [
+        (rb"% The steps.", "1. One\n2. Two"),
+        (rb"\setlength{\itemsep}{0pt}", "1. One\n2. Two"),
+        (rb"\label{list:steps}", "1. One\n2. Two"),
+        (rb"Stray text.", "1. Stray text.\n2. One\n3. Two"),
+    ],
+    ids=["comment", "setlength", "label", "stray_text"],
+)
+def test_latex_enumerate_content_before_first_item(leading: bytes, expected_md: str):
+    """Content before the first ``\\item`` does not add an item to the list.
+
+    Stray text there, a LaTeX error, is kept as a numbered item.
+    """
+    latex_content = (
+        rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{enumerate}
+    """
+        + leading
+        + rb"""
+    \item One
+    \item Two
+    \end{enumerate}
+    \end{document}
+    """
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert doc.export_to_markdown() == expected_md
 
 
 def test_latex_description_list():

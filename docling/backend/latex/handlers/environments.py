@@ -15,6 +15,7 @@ from docling_core.types.doc.document import (
     DoclingDocument,
     Formatting,
     GroupLabel,
+    ListItem,
     NodeItem,
     PictureMeta,
 )
@@ -33,7 +34,11 @@ if TYPE_CHECKING:
     )
 
 try:  # pragma: no cover - import-time guard
-    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexMacroNode,
+    )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
@@ -62,6 +67,7 @@ class EnvironmentHandlerMixin:
         def _parse_table(self, node: Any) -> Any: ...
         def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str: ...
         def _extract_macro_arg(self, node: Any) -> str: ...
+        def _add_formula(self, doc: Any, parent: Any, text: str) -> None: ...
 
     def _find_document_env(self, nodes, depth: int = 0):
         if nodes is None or depth > 10:
@@ -92,11 +98,11 @@ class EnvironmentHandlerMixin:
 
         elif node.envname.replace("*", "") in ENV_MATH:
             math_text = self._clean_math(node.latex_verbatim(), node.envname)
-            doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
+            self._add_formula(doc, parent, math_text)
 
         elif node.envname == "math":
             math_text = self._clean_math(node.latex_verbatim(), node.envname)
-            doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
+            self._add_formula(doc, parent, math_text)
 
         elif node.envname == "subequations":
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
@@ -289,32 +295,72 @@ class EnvironmentHandlerMixin:
     ):
         list_group = doc.add_group(parent=parent, name="list", label=GroupLabel.LIST)
 
-        items = []
-        current_item: list = []
+        leading: list = []
+        items: list[list] = []
 
         if node.nodelist is not None:
             for n in node.nodelist:
                 if isinstance(n, LatexMacroNode) and n.macroname == "item":
-                    if current_item:
-                        items.append(current_item)
-                    current_item = []
-
-                    if n.nodeargd and n.nodeargd.argnlist:
-                        current_item.append(n)
+                    items.append([n] if n.nodeargd and n.nodeargd.argnlist else [])
+                elif items:
+                    items[-1].append(n)
                 else:
-                    current_item.append(n)
+                    leading.append(n)
 
-        if current_item:
-            items.append(current_item)
+        enumerated = node.envname == "enumerate"
 
+        # Whitespace, comments and macros such as ``\setlength`` before the
+        # first ``\item`` add nothing; stray text there becomes a list item.
+        self._process_nodes(
+            leading, doc, list_group, formatting, text_label=DocItemLabel.LIST_ITEM
+        )
+        for child in list_group.children:
+            stray = child.resolve(doc)
+            if isinstance(stray, ListItem):
+                stray.enumerated = enumerated
+
+        # Every ``\item`` adds a list item, even an empty one, so that the
+        # numbering matches the document.
         for item_nodes in items:
-            self._process_nodes(
-                item_nodes,
-                doc,
-                list_group,
-                formatting,
-                text_label=DocItemLabel.LIST_ITEM,
+            self._process_list_item(
+                item_nodes, doc, list_group, formatting, enumerated=enumerated
             )
+
+    def _process_list_item(
+        self,
+        item_nodes: list,
+        doc: DoclingDocument,
+        list_group: NodeItem,
+        formatting: Formatting | None = None,
+        enumerated: bool = False,
+    ):
+        """Add the content of one ``\\item`` to ``list_group`` as one list item.
+
+        docling-core numbers an item by its position among the children of its
+        list group, so every ``\\item`` must add exactly one child. The content
+        is added inside the list item, as in the other backends: a paragraph
+        break, display math, a link, a quote or a nested list each flush the text
+        buffer and would otherwise add further siblings. The leading text becomes
+        the text of the list item itself.
+        """
+        # A ``\newline`` before any content has nothing to break; it would add
+        # an empty text item ahead of the text of the list item.
+        nodes = []
+        content_seen = False
+        for n in item_nodes:
+            if not content_seen:
+                if isinstance(n, LatexMacroNode) and n.macroname == "newline":
+                    continue
+                content_seen = not (
+                    (isinstance(n, LatexMacroNode) and n.macroname == "item")
+                    or (isinstance(n, LatexCharsNode) and not n.chars.strip())
+                )
+            nodes.append(n)
+
+        list_item = doc.add_list_item(
+            text="", enumerated=enumerated, parent=list_group, formatting=formatting
+        )
+        self._process_nodes(nodes, doc, list_item, formatting)
 
     def _process_bibliography(
         self,
