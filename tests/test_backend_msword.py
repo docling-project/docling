@@ -2119,7 +2119,12 @@ def test_fragment_only_rel_does_not_crash_backend():
     assert text_items[0].hyperlink is None
 
 
-def _docx_with_notes():
+_PLAIN_FOOTNOTE_BODY = (
+    "<w:p><w:r><w:t>Smith, J. (2020). Example Study.</w:t></w:r></w:p>"
+)
+
+
+def _docx_with_notes(footnote_body: str = _PLAIN_FOOTNOTE_BODY):
     """Build a minimal DOCX with a real footnote and endnote, each preceded by
     Word's own separator/continuationSeparator placeholders (present in every
     Word-authored document, holding no user content).
@@ -2128,6 +2133,11 @@ def _docx_with_notes():
     ``footnotes.xml``/``endnotes.xml`` parts, their content-type overrides, and
     the document relationships pointing at them are injected directly, the same
     way a real Word-authored DOCX is structured.
+
+    Args:
+        footnote_body: The XML of the footnote body. Override it to place the
+            footnote text inside markup that ``python-docx`` does not descend
+            into.
     """
     import zipfile
     from io import BytesIO
@@ -2155,7 +2165,7 @@ def _docx_with_notes():
 <w:footnotes xmlns:w="{w_ns}">
   <w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>
   <w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>
-  <w:footnote w:id="2"><w:p><w:r><w:t>Smith, J. (2020). Example Study.</w:t></w:r></w:p></w:footnote>
+  <w:footnote w:id="2">{footnote_body}</w:footnote>
 </w:footnotes>"""
     endnotes_xml = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:endnotes xmlns:w="{w_ns}">
@@ -2226,3 +2236,53 @@ def test_footnotes_and_endnotes_are_not_dropped():
     assert len(footnote_items) == 2, (
         "expected exactly one real footnote and one real endnote, no placeholders"
     )
+
+
+@pytest.mark.parametrize(
+    ("note_body", "expected"),
+    [
+        pytest.param(
+            "<w:p><w:ins w:id='10' w:author='A' w:date='2024-01-02T03:04:05Z'>"
+            "<w:r><w:t>inserted footnote text</w:t></w:r></w:ins></w:p>",
+            "inserted footnote text",
+            id="tracked-insertion",
+        ),
+        pytest.param(
+            "<w:p><w:sdt><w:sdtPr/><w:sdtContent>"
+            "<w:r><w:t>sdt footnote text</w:t></w:r>"
+            "</w:sdtContent></w:sdt></w:p>",
+            "sdt footnote text",
+            id="content-control",
+        ),
+        pytest.param(
+            "<w:tbl><w:tblPr/><w:tblGrid><w:gridCol w:w='2000'/></w:tblGrid>"
+            "<w:tr><w:tc><w:tcPr/><w:p><w:r><w:t>note table cell</w:t></w:r></w:p>"
+            "</w:tc></w:tr></w:tbl>",
+            "note table cell",
+            id="table-body",
+        ),
+    ],
+)
+def test_footnote_body_text_is_not_dropped_outside_plain_paragraphs(
+    note_body: str, expected: str
+):
+    """Footnote text must survive when the note body is not a plain paragraph.
+
+    Regression test: the footnote reader only looked at direct ``<w:p>``
+    children of the note and read them with ``python-docx``'s
+    ``Paragraph.text``, which stops at inline wrappers. A tracked insertion, a
+    content control, or a table body therefore dropped the whole note.
+    """
+    stream = DocumentStream(
+        name="notes.docx", stream=_docx_with_notes(footnote_body=note_body)
+    )
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(
+        stream, raises_on_error=True
+    )
+
+    footnote_items = [
+        item.text
+        for item in result.document.texts
+        if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert expected in footnote_items
