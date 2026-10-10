@@ -499,6 +499,19 @@ class MsWordBackendOptions(BaseBackendOptions):
         ),
     )
 
+    process_embedded_objects: bool = Field(
+        False,
+        description=(
+            "Whether to convert the Word, Excel and PowerPoint documents that are "
+            "embedded as OLE objects. The content of each one is added after the "
+            "preview picture of the object, and both are grouped together. An "
+            "embedded document is converted with the default options of its "
+            "backend, so the objects embedded in it are not converted. Linked "
+            "objects and other embedded objects keep only their preview picture. "
+            "Opt-in (default False)."
+        ),
+    )
+
     use_outline_level_for_headings: Annotated[
         bool,
         Field(
