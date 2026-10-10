@@ -532,6 +532,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._tag_name_by_docling_id_cache: dict[str, str] = {}
         self._generated_html_id_counter: int = 0
         self._render_visibility_cache: dict[int, bool] = {}
+        self._captioned_figure_ids: set[int] = set()
 
         try:
             raw = (
@@ -3336,7 +3337,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             # 3. If no image was produced, manually handle the <figcaption>
             # and link it to the first item (e.g., a table).
-            if not any_image_produced:
+            if not any_image_produced and id(tag) not in self._captioned_figure_ids:
                 caption_tag = tag.find("figcaption", recursive=False)
                 if isinstance(caption_tag, Tag):
                     # Emit the caption as a standalone item under the current parent
@@ -5184,15 +5185,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
             caption_prov_tag = img_tag
 
-        # Only the first image of a figure claims the <figcaption>, so a figure
-        # with several images does not repeat the same caption for each of them.
-        if isinstance(figure, Tag) and figure.find("img") is img_tag:
+        # The first image that produces a picture claims the <figcaption>, so a
+        # figure with several images keeps exactly one caption. Images that are
+        # not rendered (for example a hidden first image) claim nothing.
+        if isinstance(figure, Tag) and id(figure) not in self._captioned_figure_ids:
             caption_tag = figure.find("figcaption", recursive=False)
             if isinstance(caption_tag, Tag):
                 caption = self._extract_text_and_hyperlink_recursively(
                     caption_tag, find_parent_annotation=True
                 )
                 caption_prov_tag = caption_tag
+                self._captioned_figure_ids.add(id(figure))
         if not caption and img_tag.get("alt"):
             caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
             caption_prov_tag = img_tag
