@@ -2226,3 +2226,101 @@ def test_footnotes_and_endnotes_are_not_dropped():
     assert len(footnote_items) == 2, (
         "expected exactly one real footnote and one real endnote, no placeholders"
     )
+
+
+def _docx_with_xml_node(insert):
+    """Build a DOCX with a heading, a two-run paragraph and a 1x2 table, then let
+    ``insert`` add an XML comment or processing instruction to word/document.xml."""
+    import zipfile
+    from io import BytesIO
+
+    doc = Document()
+    doc.add_heading("Title", 1)
+    paragraph = doc.add_paragraph("first run ")
+    paragraph.add_run("second run")
+    table = doc.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "cell A"
+    table.cell(0, 1).text = "cell B"
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    out = BytesIO()
+    with zipfile.ZipFile(buf) as src, zipfile.ZipFile(out, "w") as dst:
+        for info in src.infolist():
+            data = src.read(info.filename)
+            if info.filename == "word/document.xml":
+                changed = insert(data)
+                assert changed != data
+                data = changed
+            dst.writestr(info, data)
+    out.seek(0)
+    return out
+
+
+_COMMENT = b"<!-- Created by docx4j 8.2.8 (Apache licensed) -->"
+
+
+@pytest.mark.parametrize(
+    "insert",
+    [
+        pytest.param(
+            lambda x: x.replace(b"<w:body>", b"<w:body>" + _COMMENT, 1), id="body"
+        ),
+        pytest.param(
+            lambda x: re.sub(rb"(<w:p>|<w:p [^>]*>)", rb"\1" + _COMMENT, x, count=1),
+            id="paragraph",
+        ),
+        pytest.param(lambda x: x.replace(b"<w:r>", b"<w:r>" + _COMMENT, 1), id="run"),
+        pytest.param(
+            lambda x: x.replace(b"<w:tc>", b"<w:tc>" + _COMMENT, 1), id="table-cell"
+        ),
+        pytest.param(
+            lambda x: re.sub(
+                rb"(<w:tr[ >][^>]*>|<w:tr>)", rb"\1" + _COMMENT, x, count=1
+            ),
+            id="table-row",
+        ),
+        pytest.param(
+            lambda x: x.replace(b"<w:body>", b"<w:body><?producer note?>", 1),
+            id="processing-instruction",
+        ),
+    ],
+)
+def test_xml_comments_and_processing_instructions_keep_body_text(insert):
+    """Regression test: an XML comment or processing instruction in the document
+    part (docx4j writes one at the start of the body) used to fail the whole
+    conversion with ``ValueError: Invalid input tag``, or drop the text of the
+    table it was in."""
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(stream, raises_on_error=True)
+    markdown = result.document.export_to_markdown()
+    for text in ("Title", "first run", "second run", "cell A", "cell B"):
+        assert text in markdown
+
+
+def test_xml_comment_text_goes_to_notes():
+    """XML comments in the document part are kept in the NOTES layer, out of the
+    body; processing instructions are dropped."""
+
+    def insert(data):
+        data = data.replace(b"<w:body>", b"<w:body>" + _COMMENT, 1)
+        data = data.replace(b">first run <", b">first <!-- inline -->run <", 1)
+        return data.replace(b"<w:tc>", b"<w:tc><?producer note?>", 1)
+
+    stream = DocumentStream(name="xml_comment.docx", stream=_docx_with_xml_node(insert))
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    doc = converter.convert(stream, raises_on_error=True).document
+
+    notes = [
+        item.text
+        for item, _ in doc.iterate_items(included_content_layers={ContentLayer.NOTES})
+        if isinstance(item, TextItem)
+    ]
+    assert notes == ["Created by docx4j 8.2.8 (Apache licensed)", "inline"]
+    markdown = doc.export_to_markdown()
+    assert "first run second run" in markdown
+    assert "docx4j" not in markdown
+    assert "inline" not in markdown
+    assert "producer" not in markdown
