@@ -2304,6 +2304,19 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = 100
+    max_pages_in_flight: Annotated[
+        int | None,
+        Field(
+            ge=1,
+            description=(
+                "Maximum number of pages of one document that are inside the threaded pipeline at the same time. "
+                "Each page holds its rendered image until the last stage, so this bounds peak memory independently "
+                "of the document length. When not set, twice the largest of `ocr_batch_size`, `layout_batch_size` "
+                "and `table_batch_size` is used, which keeps every stage able to fill a batch. Only used by "
+                "`StandardPdfPipeline` (threaded mode)."
+            ),
+        ),
+    ] = None
     # Shutdown control
     stage_shutdown_timeout_seconds: Annotated[
         float,
