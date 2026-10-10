@@ -270,6 +270,12 @@ class LayoutPostprocessor:
             if prev_count == len(clusters):
                 break
             prev_count = len(clusters)
+
+            # Resolve same-label overlaps before cell-based bbox adjustment.
+            # Repeat each iteration to catch overlaps that persist after adjustment.
+            clusters = self._remove_overlapping_clusters(
+                clusters, "regular", same_label_only=True
+            )
             clusters = self._adjust_cluster_bboxes(clusters)
             clusters = self._remove_overlapping_clusters(clusters, "regular")
 
@@ -554,6 +560,7 @@ class LayoutPostprocessor:
         cluster_type: str,
         overlap_threshold: float = 0.8,
         containment_threshold: float = 0.8,
+        same_label_only: bool = False,
     ) -> list[Cluster]:
         if not clusters:
             return []
@@ -577,9 +584,13 @@ class LayoutPostprocessor:
             candidates.discard(cluster.id)
 
             for other_id in candidates:
+                other = valid_clusters[other_id]
+                if same_label_only and cluster.label != other.label:
+                    continue
+
                 if spatial_index.check_overlap(
                     cluster.bbox,
-                    valid_clusters[other_id].bbox,
+                    other.bbox,
                     overlap_threshold,
                     containment_threshold,
                 ):

@@ -7,7 +7,10 @@ from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
 from docling.datamodel.pipeline_options import LayoutOptions, LayoutPostprocessorOptions
-from docling.utils.layout_postprocessor import LayoutPostprocessor
+from docling.utils.layout_postprocessor import (
+    LayoutPostprocessor,
+    SpatialClusterIndex,
+)
 
 
 def _text_cell(
@@ -131,6 +134,76 @@ def test_assign_cells_to_clusters_indexes_passed_clusters() -> None:
     assigned = postprocessor._assign_cells_to_clusters(current_clusters)
 
     assert [cell.index for cell in assigned[0].cells] == [0]
+
+
+def test_nested_same_label_clusters_resolve_before_bbox_adjustment() -> None:
+    cells = [
+        _text_cell(
+            0,
+            BoundingBox(l=10.0, t=10.0, r=90.0, b=20.0),
+            text="Design Review Summary: Greenhouse Monitoring Dashboard",
+        ),
+        _text_cell(
+            1,
+            # Deliberately extends beyond the outer cluster to model partial overlap.
+            BoundingBox(l=75.0, t=45.0, r=110.0, b=80.0),
+            text="01/01/2025",
+        ),
+    ]
+
+    outer = _cluster(
+        0,
+        BoundingBox(l=0.0, t=0.0, r=100.0, b=100.0),
+        DocItemLabel.SECTION_HEADER,
+        confidence=0.714,
+    )
+    nested = _cluster(
+        1,
+        BoundingBox(l=70.0, t=40.0, r=105.0, b=80.0),
+        DocItemLabel.SECTION_HEADER,
+        confidence=0.530,
+    )
+
+    page = _PageStub(cells)
+    postprocessor = LayoutPostprocessor(
+        page,
+        [outer, nested],
+        LayoutPostprocessorOptions(),
+    )
+
+    result = postprocessor._process_regular_clusters()
+
+    assert len(result) == 1
+    assert result[0].id == outer.id
+    assert [cell.index for cell in result[0].cells] == [0, 1]
+
+
+def test_same_label_overlap_pass_keeps_different_labels_separate() -> None:
+    section_header = _cluster(
+        0,
+        BoundingBox(l=0.0, t=0.0, r=100.0, b=100.0),
+        DocItemLabel.SECTION_HEADER,
+        confidence=0.714,
+    )
+    text_cluster = _cluster(
+        1,
+        BoundingBox(l=0.0, t=0.0, r=100.0, b=100.0),
+        DocItemLabel.TEXT,
+        confidence=0.530,
+    )
+
+    postprocessor = object.__new__(LayoutPostprocessor)
+    postprocessor.regular_clusters = []
+    postprocessor.regular_index = SpatialClusterIndex([section_header, text_cluster])
+
+    result = postprocessor._remove_overlapping_clusters(
+        [section_header, text_cluster],
+        "regular",
+        same_label_only=True,
+    )
+
+    assert len(result) == 2
+    assert {cluster.id for cluster in result} == {section_header.id, text_cluster.id}
 
 
 def test_cross_type_overlaps_removes_picture_coinciding_with_table() -> None:
