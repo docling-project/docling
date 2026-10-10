@@ -4398,6 +4398,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         (present in every Word-authored document, holding no user content) are
         skipped.
 
+        The note body is read with the same paragraph reader the body uses, so
+        text inside an inline wrapper (a tracked insertion, a content control)
+        and text inside a table is kept as well.
+
         Args:
             docx_obj: A docx Document object to be parsed.
             doc: A DoclingDocument object to add the footnotes/endnotes to.
@@ -4425,8 +4429,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     continue
                 texts = [
                     text
-                    for p_elm in note.findall(f"{_W_NS_CLARK}p")
-                    if (text := Paragraph(p_elm, docx_obj).text.strip())
+                    for p_elm in note.findall(f".//{_W_NS_CLARK}p")
+                    if (
+                        text := self._get_paragraph_text(
+                            Paragraph(p_elm, docx_obj)
+                        ).strip()
+                    )
                 ]
                 if not texts:
                     continue
