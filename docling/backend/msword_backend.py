@@ -1393,26 +1393,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         numId: str | None = None
         ilvl: str | None = None
-        depth = 0
-        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
-            style_elem = getattr(style, "element", None)
-            if style_elem is not None:
-                style_numPr = style_elem.find(f".//{_W_NS_CLARK}numPr")
-                if style_numPr is not None:
-                    if numId is None:
-                        numId_elem = style_numPr.find(f"{_W_NS_CLARK}numId")
-                        if numId_elem is not None:
-                            numId = numId_elem.get(self.XML_KEY)
-                    if ilvl is None:
-                        ilvl_elem = style_numPr.find(f"{_W_NS_CLARK}ilvl")
-                        if ilvl_elem is not None:
-                            ilvl = ilvl_elem.get(self.XML_KEY)
+        for chain_style in self._iter_style_chain(style):
+            style_numPr = chain_style.element.find(f".//{_W_NS_CLARK}numPr")
+            if style_numPr is not None:
+                if numId is None:
+                    numId_elem = style_numPr.find(f"{_W_NS_CLARK}numId")
+                    if numId_elem is not None:
+                        numId = numId_elem.get(self.XML_KEY)
+                if ilvl is None:
+                    ilvl_elem = style_numPr.find(f"{_W_NS_CLARK}ilvl")
+                    if ilvl_elem is not None:
+                        ilvl = ilvl_elem.get(self.XML_KEY)
             if numId is not None and ilvl is not None:
                 break
-            # A malformed basedOn chain can hop to a style type that lacks
-            # base_style; getattr keeps the walk safe.
-            style = getattr(style, "base_style", None)
-            depth += 1
 
         # If numId is found but ilvl is not specified, default to level 0
         if numId is not None and ilvl is None:
@@ -1475,7 +1468,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
         return num_fmt_element.get(self.XML_KEY)
 
-    def _iter_style_chain(self, style: BaseStyle | None) -> Iterator[CharacterStyle]:
+    @classmethod
+    def _iter_style_chain(cls, style: BaseStyle | None) -> Iterator[CharacterStyle]:
         """Yield ``style`` and its ``basedOn`` ancestors.
 
         Stops at a style type without ``base_style`` (e.g. a numbering style
@@ -1485,7 +1479,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         depth = 0
         while (
             isinstance(style, CharacterStyle)
-            and depth < self._MAX_STYLE_INHERITANCE_DEPTH
+            and depth < cls._MAX_STYLE_INHERITANCE_DEPTH
         ):
             yield style
             style = style.base_style
@@ -1720,17 +1714,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             True if the style chain marks the paragraph as code.
         """
-        depth = 0
-        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
-            name = (style.name or "").strip().lower()
-            style_id = (style.style_id or "").strip().lower()
+        for chain_style in self._iter_style_chain(style):
+            name = (chain_style.name or "").strip().lower()
+            style_id = (chain_style.style_id or "").strip().lower()
             if name in self._CODE_STYLE_NAMES or style_id in self._CODE_STYLE_IDS:
                 return True
-            # A malformed basedOn chain can hop to a style type (e.g. a
-            # numbering style) that lacks this attribute; getattr keeps
-            # the walk safe.
-            style = getattr(style, "base_style", None)
-            depth += 1
         return False
 
     def _is_in_table_cell(self, paragraph: Paragraph) -> bool:
@@ -1753,18 +1741,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             The lowercased font family name, or "" if none applies.
         """
         default_style = self._default_paragraph_style
-        depth = 0
-        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
-            if default_style is not None and style.element is default_style.element:
+        for chain_style in self._iter_style_chain(style):
+            if (
+                default_style is not None
+                and chain_style.element is default_style.element
+            ):
                 return ""
-            font_name = style.font.name
+            font_name = chain_style.font.name
             if font_name:
                 return font_name.strip().lower()
-            # A malformed basedOn chain can hop to a style type (e.g. a
-            # numbering style) that lacks base_style; getattr keeps the
-            # walk safe.
-            style = getattr(style, "base_style", None)
-            depth += 1
         return ""
 
     def _monospaced_char_counts(
@@ -1896,7 +1881,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         name: str = style.name or ""
         base_style_label: str | None = None
         base_style_name: str | None = None
-        if isinstance(base_style := getattr(style, "base_style", None), ParagraphStyle):
+        if isinstance(base_style := style.base_style, ParagraphStyle):
             base_style_label = base_style.style_id
             base_style_name = base_style.name
 
@@ -2030,18 +2015,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             is_bold = True
                             break
 
-                if (
-                    not is_bold
-                    and paragraph is not None
-                    and paragraph.style is not None
-                ):
-                    current_style = paragraph.style
-                    while current_style is not None:
-                        if current_style.font.bold:
+                if not is_bold and paragraph is not None:
+                    for chain_style in cls._iter_style_chain(paragraph.style):
+                        if chain_style.font.bold:
                             is_bold = True
                             break
-
-                        current_style = getattr(current_style, "base_style", None)
             except Exception:
                 pass
 
