@@ -519,6 +519,9 @@ class Page(BaseModel):
     # conversion results.
     _shape_lines: list[BoundingBox] | None = PrivateAttr(default=None)
     _shape_bounding_boxes: list[BoundingBox] | None = PrivateAttr(default=None)
+    # Quality of the page's PDF text layer, as in its confidence report; read by
+    # the OCR stage to replace a broken text layer (OcrOptions.replace_broken_text_layer).
+    _parse_score: float = PrivateAttr(default=float("nan"))
     _default_image_scale: float = 1.0  # Default image scale for external usage.
     _image_cache: dict[
         float, Image
@@ -626,6 +629,10 @@ class OpenAiApiResponse(BaseModel):
 ScoreValue = float
 
 
+# Scores below this bound are graded QualityGrade.POOR.
+POOR_SCORE_BOUND: float = 0.5
+
+
 class QualityGrade(str, Enum):
     POOR = "poor"
     FAIR = "fair"
@@ -653,7 +660,7 @@ class PageConfidenceScores(BaseModel):
         return v
 
     def _score_to_grade(self, score: ScoreValue) -> QualityGrade:
-        if score < 0.5:
+        if score < POOR_SCORE_BOUND:
             return QualityGrade.POOR
         elif score < 0.8:
             return QualityGrade.FAIR

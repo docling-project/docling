@@ -22,7 +22,7 @@ from docling_core.types.doc.page import (
 from PIL import Image, ImageDraw
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import POOR_SCORE_BOUND, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
@@ -129,14 +129,31 @@ def _segregate_by_visibility(
     visible: list[TextCell] = []
     invisible: list[TextCell] = []
     for cell in cells:
-        if (
-            isinstance(cell, PdfTextCell)
-            and cell.rendering_mode in _INVISIBLE_RENDERING_MODES
-        ):
+        if _is_invisible(cell):
             invisible.append(cell)
         else:
             visible.append(cell)
     return visible, invisible
+
+
+def _is_invisible(cell: TextCell) -> bool:
+    """Whether a PDF cell is drawn with a text rendering mode that paints no ink."""
+    return (
+        isinstance(cell, PdfTextCell)
+        and cell.rendering_mode in _INVISIBLE_RENDERING_MODES
+    )
+
+
+def _ocr_full_page(options: OcrOptions, page: Page) -> bool:
+    """Whether a page is OCR'd in full and its PDF cells dropped.
+
+    True in `OcrMode.FULL_PAGE`, and, with `replace_broken_text_layer`, for a page
+    whose text layer is graded poor. A page without a text layer has no parse score
+    (NaN) and is never poor.
+    """
+    if options.mode == OcrMode.FULL_PAGE:
+        return True
+    return options.replace_broken_text_layer and page._parse_score < POOR_SCORE_BOUND
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
@@ -243,15 +260,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Compute the OCR rects according to the mode
         ocr_rects: list[BoundingBox]
 
-        # Both DEFAULT and PDF_AWARE_LAYOUT_REGIONS make OCR input as layout detections eliminated by PDF cells
-        if (
-            self.options.mode == OcrMode.DEFAULT
-            or self.options.mode == OcrMode.PDF_AWARE_LAYOUT_REGIONS
-        ):
-            ocr_rects = self._find_pdf_aware_layout_ocr_rects(page)
-        elif self.options.mode == OcrMode.LAYOUT_REGIONS:
-            ocr_rects = self._find_layout_ocr_rects(page)
-        elif self.options.mode == OcrMode.FULL_PAGE:
+        if _ocr_full_page(self.options, page):
+            if self.options.mode != OcrMode.FULL_PAGE:
+                _log.info(
+                    "Page %s: parse score %.2f is graded poor;"
+                    " replacing its text layer with full-page OCR",
+                    page.page_no,
+                    page._parse_score,
+                )
             # A big bbox covering the entire page
             ocr_rects = [
                 BoundingBox(
@@ -262,6 +278,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     coord_origin=CoordOrigin.TOPLEFT,
                 )
             ]
+        # Both DEFAULT and PDF_AWARE_LAYOUT_REGIONS make OCR input as layout detections eliminated by PDF cells
+        elif (
+            self.options.mode == OcrMode.DEFAULT
+            or self.options.mode == OcrMode.PDF_AWARE_LAYOUT_REGIONS
+        ):
+            ocr_rects = self._find_pdf_aware_layout_ocr_rects(page)
+        elif self.options.mode == OcrMode.LAYOUT_REGIONS:
+            ocr_rects = self._find_layout_ocr_rects(page)
         return ocr_rects
 
     def _find_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
@@ -577,7 +601,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         r"""
         Post-process the OCR cells and update the page object according to the algorithm:
 
-        - If FULL_PAGE: Any existing PDF cells are ignored and only the OCR cells are used.
+        - If FULL_PAGE, or with `replace_broken_text_layer` the page's parse score is
+          graded poor:
+          Any existing PDF cells are ignored and only the OCR cells are used.
+          A page replaced for `replace_broken_text_layer` keeps its invisible cells.
         - If LAYOUT_REGIONS or PDF_AWARE_LAYOUT_REGIONS and the priority parameter is None,
           the priority is auto-selected based on the OcrMode:
               - OCR_FIRST when LAYOUT_REGIONS
@@ -588,8 +615,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         existing_cells = page.cells
 
         # Combine existing and OCR cells with overlap filtering
-        if self.options.mode == OcrMode.FULL_PAGE:
+        full_page = _ocr_full_page(self.options, page)
+        # A replaced broken text layer keeps its invisible cells, as in the merge
+        keep_invisible = full_page and self.options.mode != OcrMode.FULL_PAGE
+        if full_page:
             final_cells = ocr_cells
+            if keep_invisible:
+                _, invisible_cells = _segregate_by_visibility(existing_cells)
+                final_cells = self._merge_cells_by_priority(
+                    final_cells, invisible_cells
+                )
         else:
             if priority is None:
                 priority = (
@@ -618,12 +653,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page.parsed_page.has_lines = len(final_cells) > 0
 
         # In OcrMode.FULL_PAGE, PDF-extracted word/char cells are unreliable. Keep only OCR cells
-        if self.options.mode == OcrMode.FULL_PAGE:
+        if full_page:
             page.parsed_page.word_cells = [
-                c for c in page.parsed_page.word_cells if c.from_ocr
+                c
+                for c in page.parsed_page.word_cells
+                if c.from_ocr or (keep_invisible and _is_invisible(c))
             ]
             page.parsed_page.char_cells = [
-                c for c in page.parsed_page.char_cells if c.from_ocr
+                c
+                for c in page.parsed_page.char_cells
+                if c.from_ocr or (keep_invisible and _is_invisible(c))
             ]
             page.parsed_page.has_words = len(page.parsed_page.word_cells) > 0
             page.parsed_page.has_chars = len(page.parsed_page.char_cells) > 0

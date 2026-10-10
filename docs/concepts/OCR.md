@@ -151,6 +151,38 @@ Engines that run one language at a time (RapidOCR, Nemotron-OCR) take the **firs
 about the rest. The KServe client also sends only the first entry.
 
 
+## Replace a broken PDF text layer
+
+Some PDFs look correct on screen, but their text copies out as garbage, for example `8VceZWZTReV`
+instead of `Certificate`. This happens when a font does not map its glyphs to real characters. With
+`replace_broken_text_layer`, Docling detects these pages and reads them with OCR instead. Other
+pages keep their PDF text.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(
+    do_ocr=True,
+    ocr_options=RapidOcrOptions(replace_broken_text_layer=True),
+)
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+The option is off by default and works with every OCR engine. Pick an engine and `lang` that can
+read the language of the document. A replaced page keeps its low `parse_score` in the
+[confidence scores](confidence_scores.md), because the score describes the PDF text layer.
+
+```bash
+docling report.pdf --replace-broken-text-layer
+```
+
+
 ## RapidOCR
 
 The engine's own vocabulary, in its own codes, is listed in

@@ -19,7 +19,9 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
+from docling.models.base_ocr_model import _segregate_by_visibility
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_quality import is_broken_text_layer
 
 
 def resolve_skip_cell_extraction(pipeline_options: PdfPipelineOptions) -> bool:
@@ -42,6 +44,8 @@ class PagePreprocessingOptions(BaseModel):
         False  # Skip text cell extraction for VLM-only processing
     )
     capture_reading_order_separators: bool = False
+    # Score a broken text layer as poor, for OcrOptions.replace_broken_text_layer.
+    detect_broken_text_layer: bool = False
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -114,11 +118,21 @@ class PagePreprocessingModel(BasePageModel):
             warnings.filterwarnings(
                 "ignore", "Mean of empty slice", RuntimeWarning, "numpy"
             )
-            conv_res.confidence.pages[page.page_no].parse_score = float(
+            parse_score = float(
                 np.nanquantile(
                     text_scores, q=0.10
                 )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
             )
+
+        # Some broken text layers only show across the whole page, such as an
+        # unmapped font encoding. Judged on visible text, only when the OCR may
+        # replace the layer.
+        if self.options.detect_broken_text_layer and not np.isnan(parse_score):
+            visible_cells, _ = _segregate_by_visibility(page.cells)
+            if is_broken_text_layer("\n".join(c.text for c in visible_cells)):
+                parse_score = 0.0
+        conv_res.confidence.pages[page.page_no].parse_score = parse_score
+        page._parse_score = parse_score
 
         def draw_cell_boxes(
             image: Image,
