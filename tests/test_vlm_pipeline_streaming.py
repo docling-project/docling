@@ -20,6 +20,13 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
+from docling.datamodel.progress import (
+    ConversionProgressEvent,
+    EnrichmentProgress,
+    EnrichmentStep,
+    PageCompletedProgress,
+    ProgressReporter,
+)
 from docling.datamodel.settings import DocumentLimits, settings
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -155,6 +162,7 @@ class _PredictDoctags:
 
 class _CapturePictureCrop:
     elements_batch_size = 1
+    progress_step = EnrichmentStep.OTHER
     expansion_factor = 0.0
     images_scale = 1.5
     prepare_element = BaseItemAndImageEnrichmentModel.prepare_element
@@ -181,6 +189,7 @@ def _run_pipeline(
     random_access: bool = False,
     failed_page_nos: set[int] | None = None,
     document_timeout: float | None = None,
+    progress: ProgressReporter | None = None,
     do_chart_extraction: bool = False,
     enrichment_model: _CapturePictureCrop | None = None,
     drop_picture_images: bool = False,
@@ -235,6 +244,7 @@ def _run_pipeline(
         pages=[],
         status=ConversionStatus.STARTED,
         timings={},
+        _progress=progress or ProgressReporter(),
     )
     pipeline._build_document(conv_res)
     return conv_res, tracker, backend
@@ -288,6 +298,26 @@ def test_vlm_enriches_picture_crop_before_releasing_page() -> None:
     )
     assert model.image_sizes == [(24, 24), (24, 24)]
     assert 1.5 in tracker.rendered_scales
+
+
+def test_vlm_page_events_cover_the_per_page_picture_enrichment() -> None:
+    events: list[ConversionProgressEvent] = []
+    _run_pipeline(
+        page_nos=[5, 6],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        tag="picture",
+        enrichment_model=_CapturePictureCrop(),
+        progress=ProgressReporter([events.append]),
+    )
+
+    # Pictures are enriched page by page before the page is reported, so the
+    # page count covers that work and no per-page item counts are sent.
+    assert not any(isinstance(ev, EnrichmentProgress) for ev in events)
+    pages = [ev for ev in events if isinstance(ev, PageCompletedProgress)]
+    assert len(pages) == len(events)
+    assert {ev.page_no for ev in pages if ev.success} == {5, 6}
 
 
 def test_vlm_does_not_render_enrichment_scale_without_pictures() -> None:
@@ -363,6 +393,33 @@ def test_vlm_timeout_stops_iteration_and_releases_live_pages(monkeypatch) -> Non
     assert conv_res.errors[0].category == FailureCategory.TIMEOUT
     assert conv_res.status == ConversionStatus.PARTIAL_SUCCESS
     assert tracker.live == 0
+
+
+def test_vlm_reports_each_page_once_including_failed_and_timed_out(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings.perf, "page_batch_size", 2)
+    events: list[PageCompletedProgress] = []
+
+    _run_pipeline(
+        page_nos=[9, 5, 7, 6, 8],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        failed_page_nos={5},
+        document_timeout=0.0,
+        progress=ProgressReporter([events.append]),
+    )
+
+    assert {ev.page_no: ev.success for ev in events} == {
+        5: False,
+        9: True,
+        7: True,
+        6: False,
+        8: False,
+    }
+    assert [ev.completed_pages for ev in events] == [1, 2, 3, 4, 5]
+    assert {ev.total_pages for ev in events} == {5}
 
 
 def test_vlm_text_response_keeps_absolute_page_number_after_concatenation() -> None:

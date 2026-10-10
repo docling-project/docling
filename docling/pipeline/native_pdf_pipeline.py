@@ -118,6 +118,11 @@ class NativePdfPipeline(ConvertPipeline):
                 page = self._parse_page(timings, conv_res, page_backend)
                 if page is not None:
                     conv_res.pages.append(page)
+                conv_res._progress.page_completed(
+                    page_backend.page_no,
+                    total_pages=len(expected_page_nos),
+                    success=page is not None,
+                )
                 page_backend.unload()
 
                 timeout = self.pipeline_options.document_timeout
@@ -145,6 +150,9 @@ class NativePdfPipeline(ConvertPipeline):
             # pages are collected first and only then put back in document order
             # for the assembly step.
             conv_res.pages.sort(key=lambda page: page.page_no)
+            conv_res._progress.fail_unfinished_pages(
+                expected_page_nos, total_pages=len(expected_page_nos)
+            )
 
         _log.info(
             "Native build of %s: %d page(s) in %.2fs with %d parser thread(s) "

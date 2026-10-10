@@ -917,9 +917,15 @@ class StandardPdfPipeline(ConvertPipeline):
                     if itm.is_failed or itm.error:
                         error = itm.error or RuntimeError("unknown error")
                         proc.failed_pages.append((itm.page_no, error, itm.failure))
+                        conv_res._progress.page_completed(
+                            itm.page_no, total_pages=total_pages, success=False
+                        )
                     else:
                         assert itm.payload is not None
                         proc.pages.append(itm.payload)
+                        conv_res._progress.page_completed(
+                            itm.page_no, total_pages=total_pages, success=True
+                        )
 
                 # Failure safety - downstream closed early
                 if not out_batch and ctx.output_queue.closed:
@@ -983,6 +989,9 @@ class StandardPdfPipeline(ConvertPipeline):
                     shutdown_timeout,
                 )
 
+        conv_res._progress.fail_unfinished_pages(
+            expected_page_nos, total_pages=total_pages
+        )
         self._integrate_results(conv_res, proc, timeout_exceeded=timeout_exceeded)
         return conv_res
 

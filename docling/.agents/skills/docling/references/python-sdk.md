@@ -337,6 +337,21 @@ for result in converter.convert_all(sources, raises_on_error=False):
   `SKIPPED`, `PENDING`, `STARTED`.
 - `allowed_formats=` restricts which input formats the converter will accept.
 
+### Progress events
+
+`DocumentConverter(show_progress=True)` prints progress bars for pages and
+enrichment to stderr with no extra code. For your own UI, `progress_callback=...`
+(on `convert` / `convert_all` for one call, or on the constructor for all
+calls) receives typed events from
+`docling.datamodel.progress` while documents convert: document start and end
+(with `document_index` in the batch and the final `status`), pipeline phases,
+`PageCompletedProgress` (`completed_pages` / `total_pages`) for PDF and image
+pipelines, and `EnrichmentProgress` (`completed_items` / `total_items` per
+enrichment step; match on the stable `step`, not on `label`). Enrichment runs
+after the last page, so a page count at 100% does not mean the document is
+done. The callback must be thread-safe when
+`settings.perf.doc_batch_concurrency > 1`.
+
 ## Audio / video (ASR)
 
 Docling transcribes audio (and video) into a `DoclingDocument` via an ASR

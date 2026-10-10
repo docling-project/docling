@@ -9,6 +9,7 @@ import tempfile
 import time
 import warnings
 from collections.abc import Iterable
+from contextlib import nullcontext
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
@@ -47,6 +48,7 @@ from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import SecretStr, TypeAdapter, ValidationError
 from rich.console import Console
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from docling.cli.export_utils import (
     _export_flags_from_formats,
@@ -142,6 +144,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.utils.profiling import ProfilingItem
+from docling.utils.progress import ProgressPrinter
 
 # The local model stack (scipy, torch, …) is absent on lightweight installs
 # (docling-slim[service-client] / docling-client).  Guard these imports so the
@@ -1240,6 +1243,14 @@ def convert(  # noqa: C901
             help="If enabled, it saves the profiling summaries to json.",
         ),
     ] = False,
+    progress: Annotated[
+        bool | None,
+        typer.Option(
+            "--progress/--no-progress",
+            help="Show progress bars for pages and enrichment on stderr. On by "
+            "default when stderr is a terminal and --quiet is not given.",
+        ),
+    ] = None,
 ):
     # Heavy backend/converter/pipeline imports are deferred to here so the CLI
     # (and `convert-remote`) stay importable without the local PDF stack
@@ -1296,6 +1307,9 @@ def convert(  # noqa: C901
 
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
+    if progress is None:
+        progress = not quiet and ProgressPrinter.is_terminal(sys.stderr)
+
     if verbose == 0:
         logging.basicConfig(level=logging.WARNING, format=log_format)
         if not quiet:
@@ -1303,8 +1317,12 @@ def convert(  # noqa: C901
             # long-running conversions (e.g. directories of audio files) can see
             # which input is currently in flight. --quiet opts back out for callers
             # (e.g. AI agents) that need fully silent output.
-            logging.getLogger("docling.pipeline.base_pipeline").setLevel(logging.INFO)
-            logging.getLogger("docling.document_converter").setLevel(logging.INFO)
+            # The progress printer shows the same per-file lines, and more.
+            if not progress:
+                logging.getLogger("docling.pipeline.base_pipeline").setLevel(
+                    logging.INFO
+                )
+                logging.getLogger("docling.document_converter").setLevel(logging.INFO)
             # Model download, load and inference are the other long-running steps
             # with no output of their own: without these a multi-gigabyte fetch or
             # a slow first inference looks like the CLI has hung.
@@ -1836,33 +1854,40 @@ def convert(  # noqa: C901
             allowed_formats=from_formats,
             format_options=format_options,
         )
+        if progress:
+            doc_converter.progress_printer = ProgressPrinter(len(input_doc_paths))
 
         start_time = time.time()
 
         _log.info(f"paths: {input_doc_paths}")
-        conv_results = doc_converter.convert_all(
-            input_doc_paths,
-            headers=parsed_headers,
-            raises_on_error=abort_on_error,
-            page_range=parsed_page_range,
-        )
+        # Log records go through tqdm while the bars are shown, so they print
+        # above the bars instead of tearing them.
+        with logging_redirect_tqdm() if progress else nullcontext():
+            conv_results = doc_converter.convert_all(
+                input_doc_paths,
+                headers=parsed_headers,
+                raises_on_error=abort_on_error,
+                page_range=parsed_page_range,
+            )
 
-        export_output_dir = output_file.parent if output_file is not None else output
-        export_output_dir.mkdir(parents=True, exist_ok=True)
-        export_documents(
-            conv_results,
-            output_dir=export_output_dir,
-            **export_flags,
-            show_layout=show_layout,
-            print_timings=profiling,
-            export_timings=save_profiling,
-            image_export_mode=image_export_mode,
-            chunker_type=chunker_type,
-            chunk_max_tokens=chunk_max_tokens,
-            chunk_tokenizer=chunk_tokenizer,
-            debug_vlm_native_output=debug_vlm_native_output,
-            output_file=output_file,
-        )
+            export_output_dir = (
+                output_file.parent if output_file is not None else output
+            )
+            export_output_dir.mkdir(parents=True, exist_ok=True)
+            export_documents(
+                conv_results,
+                output_dir=export_output_dir,
+                **export_flags,
+                show_layout=show_layout,
+                print_timings=profiling,
+                export_timings=save_profiling,
+                image_export_mode=image_export_mode,
+                chunker_type=chunker_type,
+                chunk_max_tokens=chunk_max_tokens,
+                chunk_tokenizer=chunk_tokenizer,
+                debug_vlm_native_output=debug_vlm_native_output,
+                output_file=output_file,
+            )
 
         end_time = time.time() - start_time
 

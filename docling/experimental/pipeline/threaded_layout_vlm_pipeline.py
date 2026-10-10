@@ -361,6 +361,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         )
                         if itm.payload is not None:
                             self._release_page_resources(itm.payload)
+                        conv_res._progress.page_completed(
+                            itm.page_no, total_pages=total_pages, success=False
+                        )
                     else:
                         assert itm.payload is not None
                         page = itm.payload
@@ -369,6 +372,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                             if page_document is not None:
                                 page_documents[page.page_no] = page_document
                             proc.pages.append(page)
+                            conv_res._progress.page_completed(
+                                page.page_no, total_pages=total_pages, success=True
+                            )
                         except Exception as exc:
                             proc.failed_pages.append(
                                 (
@@ -383,6 +389,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                                         page_no=page.page_no,
                                     ),
                                 )
+                            )
+                            conv_res._progress.page_completed(
+                                page.page_no, total_pages=total_pages, success=False
                             )
                         finally:
                             self._release_page_resources(page)
@@ -414,6 +423,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             for page in conv_res.pages:
                 self._release_page_resources(page)
 
+        conv_res._progress.fail_unfinished_pages(
+            expected_page_nos, total_pages=total_pages
+        )
         self._integrate_results(conv_res, proc)
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
             ordered_page_documents = [

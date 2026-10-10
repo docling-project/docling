@@ -22,6 +22,7 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionVlmEngineOptions,
     PipelineOptions,
 )
+from docling.datamodel.progress import ProgressReporter
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.api_image_request import ApiImageRequestResult
@@ -129,6 +130,7 @@ def test_picture_description_batch_size_controls_pipeline_chunking() -> None:
         document=_make_picture_doc(count=5),
         timings={},
         status="success",
+        _progress=ProgressReporter(),
     )
 
     pipeline._enrich_document(conv_res)

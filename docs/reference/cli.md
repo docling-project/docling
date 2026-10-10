@@ -100,6 +100,7 @@ docling convert [OPTIONS] source
 | `--page-batch-size` | `integer` | `4` | Number of pages processed in one batch. Default: 4 |
 | `--profiling` / `--no-profiling` | flag | `false` | If enabled, it summarizes profiling details for all conversion stages. |
 | `--save-profiling` / `--no-save-profiling` | flag | `false` | If enabled, it saves the profiling summaries to json. |
+| `--progress` / `--no-progress` | flag |  | Show progress bars for pages and enrichment on stderr. On by default when stderr is a terminal and --quiet is not given. |
 
 ### `docling convert-remote`
 
