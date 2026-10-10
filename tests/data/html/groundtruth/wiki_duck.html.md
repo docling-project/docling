@@ -321,7 +321,7 @@ Pecten along the bill
 
 <!-- image -->
 
-[Mallard duckling preening](/wiki/Mallard)
+Mallard duckling preening
 
 Ducks eat food sources such as [grasses](/wiki/Poaceae) , aquatic plants, fish, insects, small amphibians, worms, and small [molluscs](/wiki/Mollusc) .
 
