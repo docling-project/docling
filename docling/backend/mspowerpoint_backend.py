@@ -11,6 +11,7 @@ from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any, Callable, Final, Iterable, Iterator, Literal, Optional, Union
+from urllib.parse import urlparse
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -33,9 +34,10 @@ from docling_core.types.doc import (
     TableData,
     TabularChartMetaField,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.document import ContentLayer, Formatting
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -67,6 +69,7 @@ try:  # pragma: no cover - import-time guard
     from pptx.shapes.autoshape import Shape
     from pptx.shapes.base import BaseShape
     from pptx.shapes.picture import Picture
+    from pptx.text.text import _Run
 
     _PPTX_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -159,27 +162,11 @@ def _iter_paragraph_elements(element: etree._Element) -> Iterator[etree._Element
             yield child
 
 
-def _paragraph_fragments(element: etree._Element) -> list[tuple[DocItemLabel, str]]:
-    """Coalesce adjacent text runs while keeping equations as separate fragments."""
-    fragments: list[tuple[DocItemLabel, str]] = []
-    text = ""
-    for child in _iter_paragraph_elements(element):
-        if child.tag == f"{{{_MATH_NAMESPACE}}}oMath":
-            if text:
-                fragments.append((DocItemLabel.TEXT, text))
-                text = ""
-            equation = str(oMath2Latex(child)).strip()
-            if equation:
-                fragments.append((DocItemLabel.FORMULA, equation))
-        elif isinstance(child, CT_TextLineBreak):
-            text += " "
-        else:
-            run_text = child.find(qn("a:t"))
-            if run_text is not None:
-                text += run_text.text or ""
-    if text:
-        fragments.append((DocItemLabel.TEXT, text))
-    return fragments
+# ``(label, text, formatting, hyperlink)``; equations are FORMULA entries with
+# neither formatting nor hyperlink.
+_ParagraphRun = tuple[
+    DocItemLabel, str, Optional[Formatting], Optional[Union[AnyUrl, Path]]
+]
 
 
 _SAFE_XML_PARSER: Final = etree.XMLParser(
@@ -876,6 +863,113 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             for si in sorted(row, key=lambda si: (si.left, si.index)):
                 yield si.shape
 
+    def _get_run_format(self, run: _Run) -> Formatting:
+        """Build a ``Formatting`` (bold, italic, underline) from a run's font."""
+        font = run.font
+        return Formatting(
+            bold=bool(font.bold),
+            italic=bool(font.italic),
+            underline=bool(font.underline),
+        )
+
+    def _get_run_hyperlink_target(self, run: _Run) -> Optional[AnyUrl | Path]:
+        """Resolve a run's hyperlink to a URL or local path, or ``None``."""
+        address = run.hyperlink.address
+        if not address:
+            return None
+        if not urlparse(address).scheme:
+            return Path(address)
+        try:
+            return AnyUrl(address)
+        except ValidationError:
+            _log.warning("Skipping malformed hyperlink address: %r", address)
+            return None
+
+    def _iter_paragraph_runs(self, paragraph) -> list[_ParagraphRun]:
+        """Split a paragraph into ``(label, text, formatting, hyperlink)`` units."""
+        elements: list[_ParagraphRun] = []
+        for e in _iter_paragraph_elements(paragraph._element):
+            if e.tag == f"{{{_MATH_NAMESPACE}}}oMath":
+                equation = str(oMath2Latex(e)).strip()
+                if equation:
+                    elements.append((DocItemLabel.FORMULA, equation, None, None))
+            elif isinstance(e, CT_TextLineBreak):
+                elements.append((DocItemLabel.TEXT, " ", None, None))
+            else:
+                run = _Run(e, paragraph)
+                elements.append(
+                    (
+                        DocItemLabel.TEXT,
+                        run.text,
+                        self._get_run_format(run),
+                        self._get_run_hyperlink_target(run),
+                    )
+                )
+
+        # Merge adjacent text runs that share formatting and hyperlink, so a word
+        # split across runs doesn't get a spurious space between its parts.
+        coalesced: list[_ParagraphRun] = []
+        for label, text, format, hyperlink in elements:
+            if (
+                coalesced
+                and label == DocItemLabel.TEXT
+                and coalesced[-1][0] == DocItemLabel.TEXT
+                and coalesced[-1][2] == format
+                and coalesced[-1][3] == hyperlink
+            ):
+                prev_text = coalesced[-1][1]
+                coalesced[-1] = (label, prev_text + text, format, hyperlink)
+            else:
+                coalesced.append((label, text, format, hyperlink))
+        return coalesced
+
+    def _add_list_item_with_formatting(
+        self,
+        doc: DoclingDocument,
+        elements: list[_ParagraphRun],
+        marker: str,
+        enumerated: bool,
+        parent: ListGroup,
+        shape,
+        slide_ind: int,
+        slide_size,
+    ) -> ListItem:
+        """Add a list item; several runs or an equation go in an inline group."""
+        non_empty = [element for element in elements if element[1]]
+        has_equations = any(label == DocItemLabel.FORMULA for label, *_ in non_empty)
+        if len(non_empty) <= 1 and not has_equations:
+            _, text, format, hyperlink = (
+                non_empty[0] if non_empty else (DocItemLabel.TEXT, "", None, None)
+            )
+            return doc.add_list_item(
+                marker=marker,
+                enumerated=enumerated,
+                parent=parent,
+                text=text,
+                prov=self._generate_prov(shape, slide_ind, text, slide_size),
+                formatting=format,
+                hyperlink=hyperlink,
+            )
+
+        item = doc.add_list_item(
+            marker=marker,
+            enumerated=enumerated,
+            parent=parent,
+            text="",
+            prov=self._generate_prov(shape, slide_ind, "", slide_size),
+        )
+        inline_parent = doc.add_inline_group(parent=item)
+        for label, text, format, hyperlink in non_empty:
+            doc.add_text(
+                label=label,
+                parent=inline_parent,
+                text=text,
+                prov=self._generate_prov(shape, slide_ind, text, slide_size),
+                formatting=format,
+                hyperlink=hyperlink,
+            )
+        return item
+
     def _handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
     ):
@@ -889,11 +983,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             is_a_list, bullet_type = self._is_list_item(paragraph)
             p = paragraph._element
 
-            fragments = _paragraph_fragments(p)
-            p_text = "".join(text for _, text in fragments)
-            has_equations = any(label == DocItemLabel.FORMULA for label, _ in fragments)
-
-            prov = self._generate_prov(shape, slide_ind, p_text, slide_size)
+            paragraph_elements = self._iter_paragraph_runs(paragraph)
+            has_equations = any(
+                label == DocItemLabel.FORMULA for label, *_ in paragraph_elements
+            )
+            p_text = "".join(text for _, text, _, _ in paragraph_elements)
 
             if is_a_list:
                 enum_marker = ""
@@ -926,24 +1020,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     current.counter += 1
                     enum_marker = str(current.counter) + "."
 
-                current.last_item = doc.add_list_item(
+                current.last_item = self._add_list_item_with_formatting(
+                    doc=doc,
+                    elements=paragraph_elements,
                     marker=enum_marker,
                     enumerated=enumerated,
                     parent=current.group,
-                    text="" if has_equations else p_text,
-                    prov=prov,
+                    shape=shape,
+                    slide_ind=slide_ind,
+                    slide_size=slide_size,
                 )
-                if has_equations:
-                    inline_group = doc.add_inline_group(parent=current.last_item)
-                    for label, text in fragments:
-                        doc.add_text(
-                            label=label,
-                            parent=inline_group,
-                            text=text,
-                            prov=self._generate_prov(
-                                shape, slide_ind, text, slide_size
-                            ),
-                        )
             else:  # is paragraph not a list item
                 open_lists.clear()
                 # Assign proper label to the text, depending if it's a Title or Section Header
@@ -959,21 +1045,27 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         doc_label = DocItemLabel.TITLE
 
                 if has_equations:
+                    # Whitespace-only runs are dropped.
                     has_text = any(
                         label != DocItemLabel.FORMULA and text.strip()
-                        for label, text in fragments
+                        for label, text, _, _ in paragraph_elements
                     )
                     fragment_parent = parent_slide
                     if has_text and doc_label == DocItemLabel.TITLE:
                         fragment_parent = doc.add_text(
-                            label=doc_label, parent=parent_slide, text="", prov=prov
+                            label=doc_label,
+                            parent=parent_slide,
+                            text="",
+                            prov=self._generate_prov(
+                                shape, slide_ind, p_text, slide_size
+                            ),
                         )
                     parent = (
                         doc.add_inline_group(parent=fragment_parent)
                         if has_text
                         else fragment_parent
                     )
-                    for label, text in fragments:
+                    for label, text, format, hyperlink in paragraph_elements:
                         if text.strip():
                             doc.add_text(
                                 label=label,
@@ -982,14 +1074,38 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                                 prov=self._generate_prov(
                                     shape, slide_ind, text, slide_size
                                 ),
+                                formatting=format,
+                                hyperlink=hyperlink,
                             )
-                else:
+                elif doc_label == DocItemLabel.TITLE:
+                    # Titles stay a single item; run formatting is not applied.
                     doc.add_text(
                         label=doc_label,
                         parent=parent_slide,
                         text=p_text,
-                        prov=prov,
+                        prov=self._generate_prov(shape, slide_ind, p_text, slide_size),
                     )
+                else:
+                    # One item per run, in an inline group when there are several.
+                    non_empty = [
+                        element for element in paragraph_elements if element[1]
+                    ]
+                    text_parent = (
+                        doc.add_inline_group(parent=parent_slide)
+                        if len(non_empty) > 1
+                        else parent_slide
+                    )
+                    for _, text, format, hyperlink in non_empty:
+                        doc.add_text(
+                            label=doc_label,
+                            parent=text_parent,
+                            text=text,
+                            prov=self._generate_prov(
+                                shape, slide_ind, text, slide_size
+                            ),
+                            formatting=format,
+                            hyperlink=hyperlink,
+                        )
         return
 
     def _rasterize_metafile(self, image_bytes: bytes) -> Optional[Image.Image]:
@@ -1667,8 +1783,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     _log.warning("Warning: shape has text but not text_frame")
                     return
                 if not shape.text.strip() and not any(
-                    _paragraph_fragments(paragraph._element)
+                    text
                     for paragraph in shape.text_frame.paragraphs
+                    for _, text, _, _ in self._iter_paragraph_runs(paragraph)
                 ):
                     return
                 # Handle other text elements, including lists (bullet lists, numbered
