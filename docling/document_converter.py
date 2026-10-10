@@ -12,7 +12,7 @@ from datetime import datetime
 from functools import partial
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Callable, Optional, Type, Union
 
 from docling_core.types.doc.page import TextCellUnit
 from pydantic import (
@@ -105,6 +105,11 @@ from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     NativePdfPipelineOptions,
     PipelineOptions,
+)
+from docling.datamodel.progress_event import (
+    DocumentProgressEvent,
+    ProgressEvent,
+    ProgressEventType,
 )
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
@@ -488,6 +493,7 @@ class DocumentConverter:
         self,
         allowed_formats: Optional[list[InputFormat]] = None,
         format_options: Optional[dict[InputFormat, FormatOption]] = None,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
     ) -> None:
         """Initialize the converter based on format preferences.
 
@@ -495,6 +501,8 @@ class DocumentConverter:
             allowed_formats: List of allowed input formats. By default, any
                 format supported by Docling is allowed.
             format_options: Dictionary of format-specific options.
+            progress_callback: Optional callback invoked with progress events
+                during conversion.
 
         Examples:
             Create a converter with default settings (all formats allowed):
@@ -559,6 +567,9 @@ class DocumentConverter:
         self.initialized_pipelines: dict[
             tuple[Type[BasePipeline], str], BasePipeline
         ] = {}
+        self.progress_callback: Callable[[ProgressEvent], None] | None = (
+            progress_callback
+        )
 
     def _get_initialized_pipelines(
         self,
@@ -915,7 +926,30 @@ class DocumentConverter:
                 pipeline = self._get_pipeline(in_doc.format)
                 if pipeline is not None:
                     pipeline_started = True
-                    conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
+                    page_count = in_doc.page_count or None
+                    if self.progress_callback is not None:
+                        self.progress_callback(
+                            DocumentProgressEvent(
+                                event_type=ProgressEventType.DOCUMENT_START,
+                                document_name=in_doc.file.name,
+                                page_count=page_count,
+                            )
+                        )
+                    try:
+                        conv_res = pipeline.execute(
+                            in_doc,
+                            raises_on_error=raises_on_error,
+                            progress_callback=self.progress_callback,
+                        )
+                    finally:
+                        if self.progress_callback is not None:
+                            self.progress_callback(
+                                DocumentProgressEvent(
+                                    event_type=ProgressEventType.DOCUMENT_COMPLETE,
+                                    document_name=in_doc.file.name,
+                                    page_count=page_count,
+                                )
+                            )
                 else:
                     if raises_on_error:
                         raise ConversionError(

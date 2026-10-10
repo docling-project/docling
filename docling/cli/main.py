@@ -140,6 +140,12 @@ from docling.datamodel.pipeline_options import (
     normalize_pdf_backend,
 )
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
+from docling.datamodel.progress_event import (
+    DocumentProgressEvent,
+    PageProgressEvent,
+    ProgressEvent,
+    ProgressEventType,
+)
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.utils.profiling import ProfilingItem
 
@@ -1240,6 +1246,13 @@ def convert(  # noqa: C901
             help="If enabled, it saves the profiling summaries to json.",
         ),
     ] = False,
+    progress: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, a progress bar is displayed during conversion.",
+        ),
+    ] = False,
 ):
     # Heavy backend/converter/pipeline imports are deferred to here so the CLI
     # (and `convert-remote`) stay importable without the local PDF stack
@@ -1832,9 +1845,40 @@ def convert(  # noqa: C901
             pipeline_options.artifacts_path = artifacts_path
             asr_pipeline_options.artifacts_path = artifacts_path
 
+        # Build progress callback for CLI
+        progress_callback = None
+        if progress:
+
+            def _cli_progress_callback(event: ProgressEvent) -> None:
+                if event.event_type == ProgressEventType.DOCUMENT_START and isinstance(
+                    event, DocumentProgressEvent
+                ):
+                    total = event.page_count
+                    if total:
+                        print(f"Converting {event.document_name} ({total} pages)")
+                    else:
+                        print(f"Converting {event.document_name}")
+                elif event.event_type == ProgressEventType.PAGE_COMPLETE and isinstance(
+                    event, PageProgressEvent
+                ):
+                    print(
+                        f"  Page {event.page_no}/{event.total_pages}",
+                        end="\r",
+                        flush=True,
+                    )
+                elif event.event_type == ProgressEventType.DOCUMENT_COMPLETE:
+                    print()
+
+            progress_callback = _cli_progress_callback
+
+        converter_kwargs: dict[str, Any] = {}
+        if progress_callback is not None:
+            converter_kwargs["progress_callback"] = progress_callback
+
         doc_converter = DocumentConverter(
             allowed_formats=from_formats,
             format_options=format_options,
+            **converter_kwargs,
         )
 
         start_time = time.time()

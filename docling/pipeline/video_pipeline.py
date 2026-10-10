@@ -17,6 +17,7 @@ import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
+from typing import Callable
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -37,6 +38,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VideoPipelineOptions
+from docling.datamodel.progress_event import ProgressEvent
 from docling.pipeline.asr_transcriber import (
     _AsrModelFactory,
     _merge_into_sentences,
@@ -146,7 +148,11 @@ class VideoPipeline(BasePipeline):
             return ConversionStatus.PARTIAL_SUCCESS
         return ConversionStatus.SUCCESS
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         _log.info("Processing video document %s.", conv_res.input.file.name)
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             self._process_video(conv_res)

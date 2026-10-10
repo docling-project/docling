@@ -7,6 +7,7 @@ import time
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -36,6 +37,11 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import NativePdfPipelineOptions
+from docling.datamodel.progress_event import (
+    PageProgressEvent,
+    ProgressEvent,
+    ProgressEventType,
+)
 from docling.pipeline.base_pipeline import (
     ConvertPipeline,
     get_expected_page_nos,
@@ -93,7 +99,11 @@ class NativePdfPipeline(ConvertPipeline):
         self.pipeline_options: NativePdfPipelineOptions = pipeline_options
         self.keep_images = pipeline_options.generate_page_images
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         backend = conv_res.input._backend
         if not isinstance(backend, PdfDocumentBackend):
             raise RuntimeError(
@@ -119,6 +129,15 @@ class NativePdfPipeline(ConvertPipeline):
                 if page is not None:
                     conv_res.pages.append(page)
                 page_backend.unload()
+                self._emit_progress(
+                    progress_callback,
+                    PageProgressEvent(
+                        event_type=ProgressEventType.PAGE_COMPLETE,
+                        document_name=conv_res.input.file.name,
+                        page_no=page_backend.page_no,
+                        total_pages=len(expected_page_nos),
+                    ),
+                )
 
                 timeout = self.pipeline_options.document_timeout
                 elapsed = time.monotonic() - start_time

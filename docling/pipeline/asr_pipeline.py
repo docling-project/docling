@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+from typing import Callable
 
 from docling_core.types.doc import DoclingDocument
 
@@ -10,6 +11,7 @@ from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import AsrPipelineOptions
+from docling.datamodel.progress_event import ProgressEvent
 
 # Re-export moved symbols so existing imports
 # (`from docling.pipeline.asr_pipeline import _NativeWhisperModel`, etc.)
@@ -65,7 +67,11 @@ class AsrPipeline(BasePipeline):
     def get_default_options(cls) -> AsrPipelineOptions:
         return AsrPipelineOptions()
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         _log.info("Transcribing audio document %s.", conv_res.input.file.name)
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             self._model.run(conv_res=conv_res)

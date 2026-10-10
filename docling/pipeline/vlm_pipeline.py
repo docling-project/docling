@@ -7,7 +7,7 @@ import time
 import warnings
 from collections.abc import Generator
 from io import BytesIO
-from typing import cast
+from typing import Callable, cast
 
 from docling_core.transforms.deserializer.doclang import DocLangDocDeserializer
 from docling_core.types.doc import (
@@ -54,6 +54,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InferenceFramework,
     InlineVlmOptions,
     ResponseFormat,
+)
+from docling.datamodel.progress_event import (
+    PageProgressEvent,
+    ProgressEvent,
+    ProgressEventType,
 )
 from docling.datamodel.settings import settings
 
@@ -239,7 +244,11 @@ class VlmPipeline(PaginatedPipeline):
 
         return page
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         if not isinstance(conv_res.input._backend, PdfDocumentBackend):
             raise RuntimeError(
                 f"The selected backend {type(conv_res.input._backend).__name__} for "
@@ -260,6 +269,18 @@ class VlmPipeline(PaginatedPipeline):
         assert isinstance(page_iterator, Generator)
         page_batch: list[Page] = []
         started_at = time.monotonic()
+
+        def _emit_page_events(pages: list[Page]) -> None:
+            for done_page in pages:
+                self._emit_progress(
+                    progress_callback,
+                    PageProgressEvent(
+                        event_type=ProgressEventType.PAGE_COMPLETE,
+                        document_name=conv_res.input.file.name,
+                        page_no=done_page.page_no,
+                        total_pages=len(pages_by_no),
+                    ),
+                )
 
         try:
             for page_backend in page_iterator:
@@ -291,6 +312,7 @@ class VlmPipeline(PaginatedPipeline):
                     page_documents=page_documents,
                     processed_page_nos=processed_page_nos,
                 )
+                _emit_page_events(page_batch)
                 page_batch = []
                 if self._document_timed_out(
                     conv_res=conv_res,
@@ -307,6 +329,7 @@ class VlmPipeline(PaginatedPipeline):
                     page_documents=page_documents,
                     processed_page_nos=processed_page_nos,
                 )
+                _emit_page_events(page_batch)
                 self._document_timed_out(
                     conv_res=conv_res,
                     elapsed=time.monotonic() - started_at,

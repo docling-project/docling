@@ -14,7 +14,7 @@ import itertools
 import logging
 import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
 from docling_core.types.doc.document import DocTagsDocument
@@ -40,6 +40,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InferenceFramework,
     InlineVlmOptions,
 )
+from docling.datamodel.progress_event import ProgressEvent
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_prompts import DOCLING_BASE_PAGE_PROMPT
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
@@ -275,7 +276,11 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             stages=stages, first_stage=layout_stage, output_queue=output_q
         )
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         """Build document using threaded layout+VLM pipeline."""
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
         backend = conv_res.input._backend
