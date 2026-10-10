@@ -2381,6 +2381,52 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     )
 
 
+def test_html_line_break_outside_paragraphs():
+    # A <br> outside a paragraph or a table cell, e.g. in a heading or a list
+    # item, left the internal sentinel (U+E000) in the text. It is now a line
+    # break, as in a paragraph. The text of a checkbox stays on one line.
+    src = (
+        b"<html><body>"
+        b"<h1>Title<br>line</h1>"
+        b"<h2>Heading<br>line</h2>"
+        b"<ul><li>Item<br>line</li><li><b>Bold</b><br><i>italic</i></li></ul>"
+        b"<dl><dt>Term<br>line</dt><dd>Definition<br>line</dd></dl>"
+        b"<table><caption>Caption<br>line</caption>"
+        b"<tr><td>A</td><td>B</td></tr></table>"
+        b"<figure><img src='a.png'><figcaption>Figure<br>line</figcaption></figure>"
+        b"<pre>Code<br>line</pre>"
+        b"<pre><b>bold</b><br><i>code</i></pre>"
+        b"<ul><li><input type='checkbox' checked>Task<br>line</li></ul>"
+        b"</body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert [item.text for item in doc.texts] == [
+        "Title\nline",
+        "Heading\nline",
+        "Item\nline",
+        "",  # the list item with formatting: its text is in the two runs below
+        "Bold",
+        "italic",
+        "Term\nline",
+        "Definition\nline",
+        "Caption\nline",
+        "Figure\nline",
+        "Code\nline",
+        "bold",
+        "code",
+        "Task line",
+    ]
+    assert not any(_BR_SENTINEL in item.orig for item in doc.texts)
+    assert "## Heading line" in doc.export_to_markdown()
+
+
 def test_gfm_task_list_renders_checkbox_with_text():
     # <li><input type=checkbox>text</li> is the canonical GFM task list. The
     # text belongs to the checkbox item; it used to become a separate list
