@@ -219,7 +219,9 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Preprocess images using HF processor
         images = [item.image.convert("RGB") for item in input_batch]
-        inputs = self._processor(images=images, return_tensors="pt").to(self._device)
+        inputs = self._processor(images=images, return_tensors="pt").to(
+            self._device, self._model.dtype
+        )
 
         # Get target sizes for post-processing
         target_sizes = torch.tensor(
