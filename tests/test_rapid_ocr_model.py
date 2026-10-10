@@ -106,3 +106,22 @@ def test_rapidocr_pins_explicit_model_paths(
     assert params["Rec.model_path"] is not None
     assert "Det.lang_type" not in params
     assert "Rec.lang_type" not in params
+
+
+def test_rapidocr_tensorrt_backend_maps_to_engine(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    from rapidocr.utils.typings import EngineType
+
+    from docling.models.stages.ocr.rapid_ocr_model import _backend_to_engine_type
+
+    options = RapidOcrOptions(backend="tensorrt")
+    assert _backend_to_engine_type(options.backend) == EngineType.TENSORRT
+
+    params = _capture_params(
+        monkeypatch, options, tmp_path, resolved_device="cuda:2"
+    )
+    assert params["EngineConfig.tensorrt.device_id"] == 2
+    assert params["Det.engine_type"] == EngineType.TENSORRT
+    assert params["Cls.engine_type"] == EngineType.TENSORRT
+    assert params["Rec.engine_type"] == EngineType.TENSORRT

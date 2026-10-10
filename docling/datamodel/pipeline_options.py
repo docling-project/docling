@@ -343,7 +343,7 @@ class OcrAutoOptions(OcrOptions):
 
 
 # Inference backends RapidOCR supports
-RapidOcrBackend = Literal["onnxruntime", "openvino", "paddle", "torch"]
+RapidOcrBackend = Literal["onnxruntime", "openvino", "paddle", "tensorrt", "torch"]
 
 
 class RapidOcrOptions(OcrOptions):
@@ -380,7 +380,7 @@ class RapidOcrOptions(OcrOptions):
         Field(
             description=(
                 "Inference backend for RapidOCR. Options: `onnxruntime` (default, cross-platform), `openvino` (Intel), "
-                "`paddle` (PaddlePaddle), `torch` (PyTorch). Choose based on your hardware and available libraries. "
+                "`paddle` (PaddlePaddle), `tensorrt` (NVIDIA TensorRT), `torch` (PyTorch). Choose based on your hardware and available libraries. "
                 "Note: for languages outside the PP-OCRv6 set, `torch` is limited to the PP-OCRv4 script models while "
                 "the other backends use the wider PP-OCRv5 set (see `lang`)."
             )

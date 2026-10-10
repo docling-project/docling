@@ -327,6 +327,7 @@ def _backend_to_engine_type(backend: str) -> "EngineType":
         "onnxruntime": EngineType.ONNXRUNTIME,
         "openvino": EngineType.OPENVINO,
         "paddle": EngineType.PADDLE,
+        "tensorrt": EngineType.TENSORRT,
         "torch": EngineType.TORCH,
     }
     if backend not in engine_types:
@@ -652,6 +653,7 @@ class RapidOcrModel(BaseOcrModel):
                 "EngineConfig.paddle.use_cuda": use_cuda,
                 "EngineConfig.paddle.cuda_ep_cfg.device_id": gpu_id,
                 "EngineConfig.torch.use_cuda": use_cuda,
+                "EngineConfig.tensorrt.device_id": gpu_id,
                 "EngineConfig.torch.cuda_ep_cfg.device_id": gpu_id,
             }
 
