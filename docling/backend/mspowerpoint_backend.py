@@ -26,6 +26,7 @@ from docling_core.types.doc import (
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
+    PictureItem,
     PictureMeta,
     ProvenanceItem,
     Size,
@@ -49,6 +50,7 @@ from docling.backend.docx.drawingml.utils import (
 )
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.backend.utils.image import normalize_image_for_png
+from docling.backend.utils.media import MediaKind, set_media_meta
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -66,7 +68,7 @@ try:  # pragma: no cover - import-time guard
     from pptx.oxml.text import CT_TextLineBreak
     from pptx.shapes.autoshape import Shape
     from pptx.shapes.base import BaseShape
-    from pptx.shapes.picture import Picture
+    from pptx.shapes.picture import Movie, Picture
 
     _PPTX_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -127,6 +129,17 @@ _MC_ALTERNATE_CONTENT: Final = (
 _MATH_NAMESPACE: Final = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 _DRAWING_2010_NAMESPACE: Final = "http://schemas.microsoft.com/office/drawing/2010/main"
 _MC_NAMESPACE: Final = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+# The media elements that turn a picture shape into a video or audio shape.
+# ``a:audioCd`` is left out: it names CD tracks, not a file.
+_MEDIA_FILE_KINDS: Final[dict[str, MediaKind]] = {
+    "videoFile": "video",
+    "quickTimeFile": "video",
+    "audioFile": "audio",
+    "wavAudioFile": "audio",
+}
+# PowerPoint 2010 and later also point at the media file from this extension.
+_P14_MEDIA: Final = "{http://schemas.microsoft.com/office/powerpoint/2010/main}media"
 
 
 def _iter_paragraph_elements(element: etree._Element) -> Iterator[etree._Element]:
@@ -1040,7 +1053,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Read the picture out of the package. A shape that slips past other
         # tools' parsers can still fail here, and there is nothing to record.
         try:
-            image = shape.image
+            # A video shows its poster frame where a picture shows its image.
+            image = shape.poster_frame if isinstance(shape, Movie) else shape.image
+            if image is None:
+                raise ValueError("video has no poster frame")
             image_bytes = image.blob
             im_dpi, _ = image.dpi
             prov = self._generate_prov(shape, slide_ind, "", slide_size)
@@ -1083,13 +1099,47 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 # 72 matches the other LibreOffice-rendered images.
                 image_ref = ImageRef.from_pil(image=rasterized, dpi=72)
 
-        doc.add_picture(
+        picture = doc.add_picture(
             parent=parent_slide,
             image=image_ref,
             caption=None,
             prov=prov,
         )
+        self._add_media_meta(shape, picture)
         return
+
+    @staticmethod
+    def _add_media_meta(shape, picture: PictureItem) -> None:
+        """Record the video or audio file that a picture shape plays.
+
+        PowerPoint draws a video or audio object as a picture: its poster frame
+        or a speaker icon. A media element in the shape's ``p:nvPr`` gives the
+        kind, and its relationship (or the ``p14:media`` one) gives the file:
+        a part inside the package, or an external link.
+        """
+        media_files = [
+            element
+            for element in shape._element.xpath("./p:nvPicPr/p:nvPr/a:*")
+            if etree.QName(element).localname in _MEDIA_FILE_KINDS
+        ]
+        if not media_files:
+            return
+        kind = _MEDIA_FILE_KINDS[etree.QName(media_files[0]).localname]
+
+        rels = shape.part.rels
+        r_ids = [
+            r_id
+            for element in (*shape._element.iter(_P14_MEDIA), media_files[0])
+            for attribute in (qn("r:embed"), qn("r:link"))
+            if (r_id := element.get(attribute)) is not None and r_id in rels
+        ]
+        if not r_ids:
+            return
+        rel = rels[r_ids[0]]
+        location = (
+            rel.target_ref if rel.is_external else rel.target_part.partname.membername
+        )
+        set_media_meta(picture, kind, location)
 
     def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Handling tables, images, charts
@@ -1666,8 +1716,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_chart:
                     self._handle_chart(shape, parent_slide, slide_ind, doc, slide_size)
-                if isinstance(shape, Picture):
-                    # Handle Pictures, including those inserted into a picture placeholder
+                if isinstance(shape, (Picture, Movie)):
+                    # Handle Pictures, including those inserted into a picture
+                    # placeholder, and video shapes, shown by their poster frame
                     self._handle_pictures(
                         shape, parent_slide, slide_ind, doc, slide_size
                     )
