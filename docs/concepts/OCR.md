@@ -223,6 +223,12 @@ from docling.datamodel.pipeline_options import RapidOcrOptions
 options = RapidOcrOptions(lang=["en"], model_size="tiny")
 ```
 
+CLI conversion:
+
+```sh
+docling convert --from pdf --to dclx --ocr-engine rapidocr --ocr-lang en --rapidocr-model-size tiny document.pdf
+```
+
 CLI prefetch (for offline/`artifacts_path` use). `--rapidocr-model-size` is a single value applied
 to every `--rapidocr-backend-lang` pair given (or to the default pair, if none are given) -- unlike
 `--rapidocr-backend-lang`, which is repeatable:
