@@ -322,6 +322,11 @@ The same option draws the charts of a Numbers spreadsheet, passed through
 from Numbers documents of either generation; a chart in an iWork '09
 presentation is not read.
 
+A Numbers table cell that is filled with an image becomes a `RichTableCell`. Its
+group holds the cell's text and the picture, as for a picture in a Word table
+cell. The image of a cell is read only from documents that Numbers saved since
+2017.
+
 `sheet_names` converts only the sheets it names, and `page_range` narrows the
 selection further, since each sheet is a page:
 

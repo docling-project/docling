@@ -47,11 +47,16 @@ class Cell(NamedTuple):
     or a number. What the number *means* is the type's business — a date and a
     duration are both spans of seconds, and a boolean is a number that is either
     positive or not — so it is left as read and named by ``type``.
+
+    ``style`` is the key of the cell's own style in the table's style list, which
+    is where an image that fills the cell is named. It is read only from a
+    version 5 cell, because where a version 4 cell keeps it is not known.
     """
 
     type: int
     text: str | None = None
     number: Decimal | float | None = None
+    style: int | None = None
 
 
 TST_TABLE_INFO = 6000
@@ -154,18 +159,21 @@ CELL_FLAG_DOUBLE = 0x2
 
 CELL_FLAG_SECONDS = 0x4
 
+CELL_FLAG_CELL_STYLE = 0x20
+
 CELL_VALUE_WIDTHS = (
     (CELL_FLAG_DECIMAL, 16),
     (CELL_FLAG_DOUBLE, 8),
     (CELL_FLAG_SECONDS, 8),
     (CELL_FLAG_STRING, 4),
     (CELL_FLAG_RICH_TEXT, 4),
+    (CELL_FLAG_CELL_STYLE, 4),
 )
 """The values a version 5 cell may hold, in the order they are laid out.
 
 A decimal, a double and a span of seconds come first, then the keys of the string
-and the rich text a cell may reference. Nothing after the rich text key is wanted,
-so the walk stops there.
+and the rich text a cell may reference, and then the key of the cell's own style.
+Nothing after the style key is wanted, so the walk stops there.
 """
 
 DECIMAL128_BIAS = 6176
@@ -267,6 +275,8 @@ def iwa_current_cell(storage: bytes, start: int, values: CellValues) -> Cell | N
             decoded = decoded._replace(
                 text=values.rich_text.get(read_uint32(storage, offset))
             )
+        elif flag == CELL_FLAG_CELL_STYLE:
+            decoded = decoded._replace(style=read_uint32(storage, offset))
         offset += width
 
     return decoded
