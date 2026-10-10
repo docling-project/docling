@@ -945,6 +945,53 @@ def test_block_sdt_tables_are_extracted():
     assert phase_2_idx < table_idxs[1]
 
 
+def test_table_cell_keeps_text_of_wrapped_runs(tmp_path):
+    """A plain table cell keeps runs nested in inline wrappers.
+
+    Body paragraphs already read the runs inside content controls, simple
+    fields, smart tags and tracked insertions; a plain cell dropped them, so a
+    form filled in with content controls came out with empty answers.
+    """
+    w = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    wrapped_runs = {
+        "Name": (
+            f"<w:sdt {w}><w:sdtPr/><w:sdtContent>"
+            "<w:r><w:t>Jane Doe</w:t></w:r></w:sdtContent></w:sdt>"
+        ),
+        "Customer": (
+            f'<w:fldSimple {w} w:instr=" MERGEFIELD Customer ">'
+            "<w:r><w:t>ACME Corp</w:t></w:r></w:fldSimple>"
+        ),
+        "City": (
+            f'<w:smartTag {w} w:uri="urn:schemas-microsoft-com:office:smarttags" '
+            'w:element="City"><w:r><w:t>Paris</w:t></w:r></w:smartTag>'
+        ),
+        "Amount": (
+            f'<w:ins {w} w:id="1" w:author="Reviewer">'
+            "<w:r><w:t>1200</w:t></w:r></w:ins>"
+        ),
+    }
+
+    document = Document()
+    table = document.add_table(rows=len(wrapped_runs), cols=2)
+    for row_idx, (label, wrapped_run) in enumerate(wrapped_runs.items()):
+        table.cell(row_idx, 0).text = label
+        table.cell(row_idx, 1).paragraphs[0]._p.append(etree.fromstring(wrapped_run))
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Name",
+        "Jane Doe",
+        "Customer",
+        "ACME Corp",
+        "City",
+        "Paris",
+        "Amount",
+        "1200",
+    ]
+
+
 def _table_with_grid_before(
     tmp_path,
     *,
