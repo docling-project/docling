@@ -48,6 +48,7 @@ remove the marker then.
 
 import importlib.util
 import shutil
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -79,6 +80,9 @@ _SKIP_NO_RAPIDOCR = pytest.mark.skipif(
     importlib.util.find_spec("rapidocr_onnxruntime") is None
     and importlib.util.find_spec("rapidocr") is None,
     reason="rapidocr not installed",
+)
+_SKIP_NO_TESSEROCR = pytest.mark.skipif(
+    importlib.util.find_spec("tesserocr") is None, reason="tesserocr not installed"
 )
 _XFAIL_3839 = pytest.mark.xfail(
     reason="docling#3839: rotated-page OCR text is classified as header/footer "
@@ -154,6 +158,25 @@ def test_rotated_page_ocr_text_reaches_default_export(angle, ocr_options_cls):
         f"rotated-page ({angle}°) OCR text is silently dropped from the default "
         f"export (docling#3839) — it lands in a header/footer FURNITURE item"
     )
+
+
+@_SKIP_NO_RAPIDOCR
+@_SKIP_NO_TESSEROCR
+@pytest.mark.parametrize("angle", [90, 180, 270])
+def test_rapidocr_detect_orientation_reads_rotated_text(angle):
+    """With `detect_orientation`, RapidOCR reads every line of a turned page.
+
+    Without it, RapidOCR garbles the 90° page and two of the three lines at 180°.
+    Both content layers are read, so the 180° furniture label (#3839) is not
+    part of this check.
+    """
+    from docling_core.types.doc import ContentLayer
+
+    doc = _convert(_FIXTURES[angle], partial(RapidOcrOptions, detect_orientation=True))
+    text = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert text.count(_MARKER) == 3, f"RapidOCR should read all three lines at {angle}°"
 
 
 if __name__ == "__main__":
