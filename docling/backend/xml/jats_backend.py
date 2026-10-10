@@ -307,7 +307,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             else ""
         )
         for child in list(node):
-            if child.tag not in skip_tags:
+            if child.tag == "break":
+                text += " "
+            elif child.tag == "fn" or (
+                child.tag == "xref" and child.get("ref-type") == "fn"
+            ):
+                pass
+            elif child.tag not in skip_tags:
                 # TODO: apply styling according to child.tag when supported by docling-core
                 text += JatsDocumentBackend._get_text(child, sep)
             if sep:
@@ -501,7 +507,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         title_names: list[str] = ["article-title", "subtitle", "title", "label"]
         titles: list[str] = [
             " ".join(
-                JatsDocumentBackend._normalize_whitespace(elem.text)
+                JatsDocumentBackend._normalize_whitespace(
+                    JatsDocumentBackend._get_text(elem)
+                )
                 for elem in list(title_node)
                 if elem.tag in title_names
             ).strip()
@@ -655,7 +663,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             item_node = node.xpath(item)
             if len(item_node) > 0:
                 citation[item.replace("-", "_")] = (  # type: ignore[literal-required]
-                    JatsDocumentBackend._normalize_whitespace(item_node[0].text)
+                    JatsDocumentBackend._normalize_whitespace(
+                        JatsDocumentBackend._get_text(item_node[0])
+                    )
                 )
 
         # Publication identifier
