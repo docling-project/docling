@@ -64,7 +64,7 @@ from docling.backend.abstract_backend import (
 )
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
-from docling.backend.utils.media import media_kind, set_media_meta
+from docling.backend.utils.media import load_linked_media, media_kind, set_media_meta
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -1899,6 +1899,17 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 )
             self._walk_slide(page, parent=slide_group, doc=doc)
         return doc
+
+    @override
+    def load_media(self, location: str) -> bytes | None:
+        if location in self.odf_obj.get_parts():
+            part = self.odf_obj.get_part(location)
+            if isinstance(part, bytes):
+                return part
+        base_path = (
+            str(self.path_or_stream) if isinstance(self.path_or_stream, Path) else None
+        )
+        return load_linked_media(location, self.options, base_path)
 
     def _walk_slide(
         self, page: DrawPage, parent: NodeItem, doc: DoclingDocument

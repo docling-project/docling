@@ -50,7 +50,7 @@ from docling.backend.docx.drawingml.utils import (
 )
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.backend.utils.image import normalize_image_for_png
-from docling.backend.utils.media import MediaKind, set_media_meta
+from docling.backend.utils.media import MediaKind, load_linked_media, set_media_meta
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
@@ -317,6 +317,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     ) -> None:
         if not _PPTX_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _PPTX_IMPORT_ERROR
+        # Linked media is resolved against the file the user gave, not against
+        # the PPTX that a legacy PPT is converted to.
+        self._base_path: Optional[str] = (
+            str(path_or_stream) if isinstance(path_or_stream, Path) else None
+        )
         if in_doc.format == InputFormat.PPT:
             path_or_stream = convert_to_modern_format(path_or_stream, "ppt", "pptx")
         if options is None:
@@ -398,6 +403,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             )
 
         return doc
+
+    @override
+    def load_media(self, location: str) -> Optional[bytes]:
+        if self.pptx_obj is not None:
+            for part in self.pptx_obj.part.package.iter_parts():
+                if part.partname.membername == location:
+                    return part.blob
+        return load_linked_media(location, self.options, self._base_path)
 
     def _generate_prov(
         self, shape, slide_ind, text="", slide_size=Size(width=1, height=1)
