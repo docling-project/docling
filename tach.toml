@@ -448,7 +448,10 @@ layer = "pipeline"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
+  "docling.exceptions",
+  "docling.pipeline.asr_pipeline",
   "docling.pipeline.base_pipeline",
+  "docling.pipeline.video_pipeline",
   "docling.utils",
 ]
 
