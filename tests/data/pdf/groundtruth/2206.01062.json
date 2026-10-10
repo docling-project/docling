@@ -13074,12 +13074,12 @@
           },
           "charspan": [
             0,
-            337
+            338
           ]
         }
       ],
-      "orig": "[18] Nikolaos Livathinos, Cesar Berrospi, MaksymLysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence, AAAI, pages 1513715145, feb 2021.",
-      "text": "Nikolaos Livathinos, Cesar Berrospi, MaksymLysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence, AAAI, pages 1513715145, feb 2021.",
+      "orig": "[18] Nikolaos Livathinos, Cesar Berrospi, MaksymLysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence, AAAI, pages 15137-15145, feb 2021.",
+      "text": "Nikolaos Livathinos, Cesar Berrospi, MaksymLysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence, AAAI, pages 15137-15145, feb 2021.",
       "enumerated": true,
       "marker": "[18]"
     },
@@ -14080,10 +14080,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 322.41,
-            "t": 545.5,
-            "r": 555.29,
-            "b": 264.33,
+            "l": 322.26,
+            "t": 545.47,
+            "r": 555.37,
+            "b": 264.34,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

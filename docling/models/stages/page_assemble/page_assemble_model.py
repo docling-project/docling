@@ -143,6 +143,8 @@ class PageAssembleModel(BasePageModel):
                     and len(prev_words)
                     and len(line_words)
                     and prev_words[-1].isalnum()
+                    and len(prev_words[-1]) >= 2
+                    and not line_words[0][0].isdigit()
                     and line_words[0].isalnum()
                 ):
                     lines[ix] = prev_line[:-1]

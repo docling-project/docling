@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from statistics import median
@@ -673,16 +674,52 @@ class ReadingOrderModel:
             bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
         continuation_text = merged_elem.text.lstrip()
-        if new_item.text.endswith("\u00ad") or (
-            new_item.text.endswith("-")
-            and continuation_text
-            and continuation_text[0].islower()
-        ):
-            # A soft hyphen or hard-hyphenated lowercase continuation is a split word.
-            new_item.text = new_item.text[:-1] + merged_elem.text
+        if new_item.text.endswith("\u00ad"):
+            new_item.text = new_item.text[:-1] + continuation_text
             new_item.orig = (
-                new_item.orig[:-1] + merged_elem.text
+                new_item.orig[:-1] + continuation_text
             )  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+        elif new_item.text.endswith("-"):
+            prev_words = re.findall(r"\b[\w]+\b", new_item.text)
+            continuation_words = re.findall(r"\b[\w]+\b", continuation_text)
+            hyphen_attached_to_word = (
+                len(new_item.text) > 1 and new_item.text[-2].isalnum()
+            )
+
+            if (
+                hyphen_attached_to_word
+                and len(prev_words) > 0
+                and prev_words[-1].isalnum()
+                and len(prev_words[-1]) >= 2
+                and len(continuation_words) > 0
+                and continuation_words[0].isalnum()
+                and not continuation_words[0][0].isdigit()
+                and continuation_text
+                and continuation_text[0].islower()
+            ):
+                # A hard-hyphenated lowercase continuation is a split word.
+                new_item.text = new_item.text[:-1] + continuation_text
+                new_item.orig = (
+                    new_item.orig[:-1] + continuation_text
+                )  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+            elif (
+                hyphen_attached_to_word
+                and len(prev_words) > 0
+                and (
+                    len(prev_words[-1]) == 1
+                    or (
+                        len(continuation_words) > 0
+                        and continuation_words[0][0].isdigit()
+                    )
+                    or not prev_words[-1].isalnum()
+                )
+            ):
+                # Attached semantic hyphen (e.g. single-letter prefix "n-", digit continuation "6-methyl-5-", or token with non-alphanumeric chars)
+                new_item.text = new_item.text + continuation_text
+                new_item.orig = new_item.orig + continuation_text
+            else:
+                new_item.text += f" {merged_elem.text}"
+                new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
         else:
             new_item.text += f" {merged_elem.text}"
             new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
