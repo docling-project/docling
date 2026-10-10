@@ -1647,6 +1647,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     return None
 
             def handle_shapes(shape, parent_slide, slide_ind, doc, slide_size):
+                if not self._is_hidden_shape(shape):
+                    handle_shape_content(
+                        shape, parent_slide, slide_ind, doc, slide_size
+                    )
+                    return
+                # A hidden shape still goes through the normal handlers, so nothing
+                # is lost; whatever they add for it (and, for a group, for every
+                # shape inside it) is then moved to the invisible layer.
+                known = self._body_item_refs(doc, parent_slide)
+                handle_shape_content(shape, parent_slide, slide_ind, doc, slide_size)
+                self._hide_new_items(doc, parent_slide, known)
+
+            def handle_shape_content(shape, parent_slide, slide_ind, doc, slide_size):
                 handle_groups(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_table:
                     # Handle Tables
@@ -1718,6 +1731,52 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 self._hide_slide(doc, parent_slide)
 
         return doc
+
+    @staticmethod
+    def _is_hidden_shape(shape) -> bool:
+        """Return True if the shape is hidden in PowerPoint's Selection Pane.
+
+        The flag is ``hidden`` on the shape's ``p:cNvPr`` element, which every
+        shape kind carries (text boxes, pictures, groups, graphic frames and
+        connectors).
+        """
+        hidden = shape._element.xpath("./*/p:cNvPr/@hidden")
+        return bool(hidden) and hidden[0] in ("1", "true")
+
+    @staticmethod
+    def _body_item_refs(doc: DoclingDocument, parent_slide: GroupItem) -> set[str]:
+        return {
+            item.self_ref
+            for item, _ in doc.iterate_items(
+                root=parent_slide,
+                with_groups=True,
+                traverse_pictures=True,
+                included_content_layers={ContentLayer.BODY},
+            )
+        }
+
+    @staticmethod
+    def _hide_new_items(
+        doc: DoclingDocument, parent_slide: GroupItem, known: set[str]
+    ) -> None:
+        """Move the body items added since ``known`` was taken to the invisible layer.
+
+        PowerPoint does not present a hidden shape, so its content is treated
+        like the content of a hidden slide: available, but out of the default
+        exports.
+        """
+        items = [
+            item
+            for item, _ in doc.iterate_items(
+                root=parent_slide,
+                with_groups=True,
+                traverse_pictures=True,
+                included_content_layers={ContentLayer.BODY},
+            )
+            if item.self_ref not in known
+        ]
+        for item in items:
+            item.content_layer = ContentLayer.INVISIBLE
 
     @staticmethod
     def _hide_slide(doc: DoclingDocument, parent_slide: GroupItem) -> None:
