@@ -1880,20 +1880,29 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             is_title = self._is_slide_title_element(element, not seen_text_content)
             if has_text:
                 seen_text_content = True
-            if isinstance(element, Frame):
-                self._walk_slide_frame(
-                    element,
-                    parent=parent,
-                    doc=doc,
-                    is_title=is_title,
-                )
-            else:
-                self._walk_textbox_children(
-                    element.children,
-                    parent=parent,
-                    doc=doc,
-                    is_title=is_title,
-                )
+            self._walk_slide_element(element, parent=parent, doc=doc, is_title=is_title)
+
+    def _walk_slide_element(
+        self, element: Any, parent: NodeItem, doc: DoclingDocument, *, is_title: bool
+    ) -> None:
+        if getattr(element, "tag", None) == "draw:g":
+            # Shapes in a group keep their own text; walk them like slide children.
+            for child in element.children:
+                self._walk_slide_element(child, parent=parent, doc=doc, is_title=False)
+        elif isinstance(element, Frame):
+            self._walk_slide_frame(
+                element,
+                parent=parent,
+                doc=doc,
+                is_title=is_title,
+            )
+        else:
+            self._walk_textbox_children(
+                element.children,
+                parent=parent,
+                doc=doc,
+                is_title=is_title,
+            )
 
     @staticmethod
     def _slide_has_visible_title(page: DrawPage) -> bool:
