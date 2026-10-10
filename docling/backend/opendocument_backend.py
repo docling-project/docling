@@ -102,6 +102,13 @@ _ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION = {
     "chart:scatter": PictureClassificationLabel.SCATTER_PLOT,
 }
 
+# A table of contents holds its visible text in the index containers, as
+# ordinary paragraphs. odfdo has no class for these elements, so they are
+# matched by tag.
+_ODF_INDEX_CONTAINER_TAGS = frozenset(
+    {"text:table-of-content", "text:index-body", "text:index-title"}
+)
+
 
 class _OdfComments:
     """ODT comment threads, keyed by the paragraph or heading that holds them."""
@@ -1109,7 +1116,7 @@ def _add_odf_child(
             image_loader=image_loader,
             comments=comments,
         )
-    elif isinstance(element, Section):
+    elif isinstance(element, Section) or element.tag in _ODF_INDEX_CONTAINER_TAGS:
         _add_odf_children(
             doc,
             element.children,
