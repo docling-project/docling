@@ -1,8 +1,8 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: text: 1
 .001
-  item-2 at level 1: text: Thermodynamics of charmed hadron ... r from lattice QCD    
-S.Sharma et al.
+  item-2 at level 1: text: Thermodynamics of charmed hadron ...  from lattice QCD    
+S. Sharma et al.
   item-3 at level 1: title: [
   item-4 at level 1: text: mode = title]Thermodynamics of c ... ross chiral crossover from lattice QCD
   item-5 at level 1: text: [
@@ -66,7 +66,7 @@ S.Sharma et al.
     item-46 at level 2: text: Shown are partial charmed baryon ... present $T_{pc}$ with its uncertainty.
   item-47 at level 1: caption: Image: P_B.pdf
   item-48 at level 1: caption: Image: P_M.pdf
-  item-49 at level 1: text: To investigate the nature of cha ... sure based on Ref.[Mukherjee:2015mxc],
+  item-49 at level 1: text: To investigate the nature of cha ... ure based on Ref. [Mukherjee:2015mxc],
   item-50 at level 1: formula: \begin{align}
 	P_C(T,\vec{\mu})= ... ^C_{q}(T,\vec{\mu}) \, .
 	
