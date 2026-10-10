@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 import importlib.util
+import os
+import tempfile
+import zipfile
 from io import BytesIO
 from pathlib import Path
 
@@ -681,3 +684,107 @@ def test_tiff_two_pages():
     assert page1_rect.l == page2_rect.l == 0
     assert page1_rect.r == page2_rect.r == 612.0
     assert page1_rect.b == page2_rect.b == 792.0
+
+
+# ---------------------------------------------------------------------------
+# Tests for non-ASCII format detection (regression tests for UTF-8/latin-1 fallback)
+# ---------------------------------------------------------------------------
+
+
+def test_detect_csv_with_non_ascii_utf8():
+    """CSV with non-ASCII UTF-8 characters should be detected correctly."""
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    # UTF-8 CSV with non-ASCII characters (é, ñ, 中文)
+    csv_content = (
+        b"name,value\nH\xc3\xa9llo,w\xc3\xb3rld\nM\xc3\xa9xico,Espa\xc3\xb1a\n"
+    )
+    assert dci._detect_csv(csv_content) == "text/csv"
+
+    # UTF-8 with semicolon delimiter
+    csv_content_semicolon = b"name;value\nH\xc3\xa9llo;world\n"
+    assert dci._detect_csv(csv_content_semicolon) == "text/csv"
+
+
+def test_detect_csv_with_non_ascii_latin1():
+    """CSV with latin-1 encoded non-ASCII characters should be detected."""
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    # Latin-1 encoded CSV with non-ASCII (0xE9 = é in latin-1)
+    csv_content = b"name,value\nH\xe9llo,w\xf3rld\n"  # "Héllo,wórld" in latin-1
+    assert dci._detect_csv(csv_content) == "text/csv"
+
+
+def test_detect_html_xhtml_with_non_ascii():
+    """HTML/XHTML with non-ASCII characters should be detected correctly."""
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    # UTF-8 HTML with non-ASCII
+    html_utf8 = b"<html><body>H\xc3\xa9llo w\xc3\xb3rld</body></html>"
+    assert dci._detect_html_xhtml(html_utf8) == "text/html"
+
+    # XHTML with non-ASCII
+    xhtml_utf8 = (
+        b'<?xml version="1.0" encoding="UTF-8"?><html><body>H\xc3\xa9llo</body></html>'
+    )
+    assert dci._detect_html_xhtml(xhtml_utf8) == "application/xhtml+xml"
+
+    # Latin-1 HTML with non-ASCII
+    html_latin1 = b"<html><body>H\xe9llo</body></html>".encode("latin-1")
+    assert dci._detect_html_xhtml(html_latin1) == "text/html"
+
+
+def test_detect_latex_with_non_ascii():
+    """LaTeX with non-ASCII characters should be detected correctly."""
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    # UTF-8 LaTeX with non-ASCII
+    latex_utf8 = rb"\documentclass{article}\begin{document}H\xc3\xa9llo\end{document}"
+    assert dci._detect_latex(latex_utf8, ext=None) == "application/x-latex"
+
+    # Latin-1 LaTeX
+    latex_latin1 = (
+        rb"\documentclass{article}\begin{document}H\xe9llo\end{document}".encode(
+            "latin-1"
+        )
+    )
+    assert dci._detect_latex(latex_latin1, ext=None) == "application/x-latex"
+
+    # With .tex extension
+    assert dci._detect_latex(latex_utf8, ext=".tex") == "application/x-latex"
+
+
+def test_detect_odf_mimetype_utf8_and_latin1():
+    """ODF mimetype detection should handle UTF-8 and latin-1."""
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    # Create a minimal ODT file with UTF-8 mimetype
+    with tempfile.NamedTemporaryFile(suffix=".odt", delete=False) as tmp:
+        with zipfile.ZipFile(tmp.name, "w") as zf:
+            # UTF-8 mimetype
+            zf.writestr("mimetype", "application/vnd.oasis.opendocument.text")
+            # Minimal content.xml
+            zf.writestr(
+                "content.xml",
+                '<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"/>',
+            )
+        try:
+            mime = dci._detect_office_mime_from_zip(tmp.name)
+            assert mime == "application/vnd.oasis.opendocument.text"
+        finally:
+            os.unlink(tmp.name)
+
+    # Test with latin-1 mimetype
+    with tempfile.NamedTemporaryFile(suffix=".odt", delete=False) as tmp:
+        with zipfile.ZipFile(tmp.name, "w") as zf:
+            # Latin-1 mimetype (valid ODF mimetype is ASCII but test robustness)
+            zf.writestr("mimetype", "application/vnd.oasis.opendocument.text")
+            zf.writestr(
+                "content.xml",
+                '<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"/>',
+            )
+        try:
+            mime = dci._detect_office_mime_from_zip(tmp.name)
+            assert mime == "application/vnd.oasis.opendocument.text"
+        finally:
+            os.unlink(tmp.name)

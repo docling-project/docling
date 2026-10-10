@@ -933,7 +933,11 @@ class _DocumentConversionInput(BaseModel):
                 elif "ppt/presentation.xml" in names:
                     return mime_root + ".presentationml.presentation"
                 if "mimetype" in names:
-                    odf_mime = zf.read("mimetype").decode("ascii", errors="ignore")
+                    # ODF mimetype files are ASCII per spec, but be robust
+                    try:
+                        odf_mime = zf.read("mimetype").decode("utf-8")
+                    except UnicodeDecodeError:
+                        odf_mime = zf.read("mimetype").decode("latin-1")
                     if odf_mime.startswith("application/vnd.oasis.opendocument."):
                         return odf_mime.strip()
         except (zipfile.BadZipFile, OSError):
@@ -1109,7 +1113,11 @@ class _DocumentConversionInput(BaseModel):
             The mime type of an XHTML, HTML, or XML file, or None if the content does
               not match any of these formats.
         """
-        content_str = content.decode("ascii", errors="ignore").lower()
+        # Try UTF-8 first (covers ASCII), fall back to latin-1 for robustness
+        try:
+            content_str = content.decode("utf-8").lower()
+        except UnicodeDecodeError:
+            content_str = content.decode("latin-1", errors="ignore").lower()
         # Remove XML comments
         content_str = re.sub(r"<!--(.*?)-->", "", content_str, flags=re.DOTALL)
         content_str = content_str.lstrip()
@@ -1155,7 +1163,11 @@ class _DocumentConversionInput(BaseModel):
         """
         if (ext or "").lower() in FormatToExtensions[InputFormat.MD]:
             return None
-        content_str = content.decode("utf-8", errors="ignore").lstrip("﻿")
+        # Try UTF-8 first, fall back to latin-1 for robustness
+        try:
+            content_str = content.decode("utf-8").lstrip("﻿")
+        except UnicodeDecodeError:
+            content_str = content.decode("latin-1", errors="ignore").lstrip("﻿")
         if re.search(r"^[ \t]*\\document(?:class|style)\b", content_str, re.MULTILINE):
             return FormatToMimeType[InputFormat.LATEX][0]
         return None
@@ -1173,7 +1185,14 @@ class _DocumentConversionInput(BaseModel):
             The mime type of a CSV file, or None if the content does
               not match any of the format.
         """
-        content_str = content.decode("ascii", errors="ignore").strip()
+        # First try UTF-8 (most common for CSV files, including ASCII subset)
+        # Fall back to latin-1 which never fails and preserves byte values
+        try:
+            content_str = content.decode("utf-8").strip()
+        except UnicodeDecodeError:
+            # Fall back to latin-1 which never fails and preserves byte values
+            # This ensures we don't silently drop non-ASCII characters
+            content_str = content.decode("latin-1", errors="ignore").strip()
 
         # Ensure there's at least one newline (CSV is usually multi-line)
         if "\n" not in content_str:
