@@ -359,9 +359,25 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                 dimensions = []
                 if fact.context is not None and fact.context.qnameDims:
                     for dim_qname, dim_value in fact.context.qnameDims.items():
+                        # A typed dimension (xbrldi:typedMember) has no member
+                        # QName by design — arelle leaves memberQname None and
+                        # carries the value on the typedMember element
+                        # instead.  Dereferencing it unconditionally crashed
+                        # every conversion of a valid typed-dimension fact.
+                        # The value is read via getattr(..., "textValue", "")
+                        # because arelle only populates that attribute on
+                        # element-backed typed members; on versions/element
+                        # types where it is absent, direct access would raise
+                        # AttributeError.
+                        if dim_value.memberQname is not None:
+                            member_text = dim_value.memberQname.localName
+                        else:
+                            member_text = str(
+                                getattr(dim_value.typedMember, "textValue", "") or ""
+                            ).strip()
                         dimensions.append(
                             (
-                                f"{dim_qname.localName}: {dim_value.memberQname.localName}",
+                                f"{dim_qname.localName}: {member_text}",
                                 "dimension",
                             )
                         )
