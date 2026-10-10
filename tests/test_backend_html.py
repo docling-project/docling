@@ -664,6 +664,41 @@ def test_ordered_lists():
             "1. 1st item\n2. 2nd item",
         )
     )
+    # A start that is not an HTML integer (superscript two, Roman numeral eight,
+    # Arabic-Indic three, fullwidth nine, empty) or that exceeds the 32-bit range
+    # is ignored, as in browsers. None of these values fails the conversion.
+    for invalid in [
+        "\u00b2",
+        "\u2167",
+        "\u0663",
+        "\uff19",
+        "",
+        "2147483648",
+        "9" * 4300,
+    ]:
+        test_set.append(
+            (
+                f'<html><body><ol start="{invalid}"><li>1st item</li><li>2nd item</li></ol></body></html>'.encode(),
+                "1. 1st item\n2. 2nd item",
+            )
+        )
+    # The HTML rules for parsing integers accept leading whitespace, a plus sign
+    # and leading zeros, and they ignore the text after the digits.
+    for valid, number in [
+        (" 3", 3),
+        ("+3", 3),
+        ("007", 7),
+        ("3 ", 3),
+        ("3.5", 3),
+        ("3abc", 3),
+        ("2147483647", 2147483647),
+    ]:
+        test_set.append(
+            (
+                f'<html><body><ol start="{valid}"><li>1st item</li><li>2nd item</li></ol></body></html>'.encode(),
+                f"{number}. 1st item\n{number + 1}. 2nd item",
+            )
+        )
 
     for idx, pair in enumerate(test_set):
         in_doc = InputDocument(
