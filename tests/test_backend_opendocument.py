@@ -259,6 +259,42 @@ def test_odt_section_preserves_split_list_continuation(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odt_table_of_contents_content(tmp_path: Path):
+    path = tmp_path / "table_of_contents.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    body.append(Paragraph("Intro paragraph."))
+    index = Element.from_tag("text:table-of-content")
+    index_source = Element.from_tag("text:table-of-content-source")
+    index_source.set_attribute("text:outline-level", 10)
+    title_template = Element.from_tag("text:index-title-template")
+    title_template.text = "Index title template"
+    index_source.append(title_template)
+    index.append(index_source)
+    index_body = Element.from_tag("text:index-body")
+    index_title = Element.from_tag("text:index-title")
+    index_title.append(Paragraph("Table of Contents"))
+    index_body.append(index_title)
+    index_body.append(Paragraph("Chapter One"))
+    index_body.append(Paragraph("Section One"))
+    index.append(index_body)
+    body.append(index)
+    body.append(Paragraph("Outro paragraph."))
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert [item.text for item in result.document.texts] == [
+        "Intro paragraph.",
+        "Table of Contents",
+        "Chapter One",
+        "Section One",
+        "Outro paragraph.",
+    ]
+
+
 def test_ods_conversion(ods_path: Path):
     res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(ods_path)
     doc = res.document
