@@ -574,7 +574,13 @@ class ReadingOrderPredictor:
                         and sorted_elements[ind_p1].label == elem.label
                         and (
                             elem.page_no != sorted_elements[ind_p1].page_no
-                            or elem.is_strictly_left_of(sorted_elements[ind_p1])
+                            or (
+                                elem.is_strictly_left_of(sorted_elements[ind_p1])
+                                # Cap the gap so a column gutter isn't mistaken
+                                # for a same-line split.
+                                and (sorted_elements[ind_p1].l - elem.r)
+                                <= abs(elem.t - elem.b) * 2.0
+                            )
                         )
                     ):
                         m1 = re.fullmatch(
