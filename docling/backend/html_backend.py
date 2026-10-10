@@ -5184,7 +5184,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
             caption_prov_tag = img_tag
 
-        if isinstance(figure, Tag):
+        # Only the first image of a figure claims the <figcaption>, so a figure
+        # with several images does not repeat the same caption for each of them.
+        if isinstance(figure, Tag) and figure.find("img") is img_tag:
             caption_tag = figure.find("figcaption", recursive=False)
             if isinstance(caption_tag, Tag):
                 caption = self._extract_text_and_hyperlink_recursively(
