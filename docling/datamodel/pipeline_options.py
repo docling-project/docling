@@ -2103,6 +2103,21 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = True
+    extract_form_fields: Annotated[
+        bool,
+        Field(
+            description=(
+                "Extract native interactive PDF widgets (AcroForm) as format-neutral fillable field values, "
+                "each with a field key from printed text associated by page geometry: text in or beside "
+                "its cell, or a whole paragraph that inlines the widget. A widget in a detected table goes "
+                "into its table cell, keyed only by text printed in that same cell; row and column "
+                "headers are not used as keys or hints. Requires the docling-parse backend, which supplies "
+                "page widgets; table cells need table structure. Raw widget metadata remains available only "
+                "on retained parsed pages. Scanned or flattened forms and backends without page widgets are "
+                "unaffected."
+            )
+        ),
+    ] = False
     do_ocr: Annotated[
         bool,
         Field(

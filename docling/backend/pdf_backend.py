@@ -88,6 +88,17 @@ class PdfPageBackend(ABC):
         """
         return None
 
+    def get_thin_shape_boxes(
+        self, *, max_thickness: float
+    ) -> Optional[list[BoundingBox]]:
+        """Return the boxes of painted shapes no thicker than `max_thickness`.
+
+        Rules drawn as thin filled rectangles, which `get_shape_lines` (strokes
+        only) misses. Boxes use top-left origin. `None` means this backend cannot
+        answer the query at all.
+        """
+        return None
+
     @abstractmethod
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None

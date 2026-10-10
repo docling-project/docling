@@ -494,7 +494,11 @@ def check_conversion_result_v2(
     doc_pred_md = _normalize_newlines(
         doc_result.document.export_to_markdown(compact_tables=True)
     )
-    doc_pred_dt = _normalize_newlines(doc_result.document.export_to_doctags())
+    doc_pred_dt = (
+        _normalize_newlines(doc_result.document.export_to_doctags())
+        if verify_doctags
+        else ""
+    )
 
     pages_path = gt.pages_meta
     json_path = gt.doc_json

@@ -61,6 +61,7 @@ Useful `PdfPipelineOptions` / base fields:
 |---|---|
 | `do_ocr` | Run OCR (default engine EasyOCR) |
 | `do_table_structure` | Detect table structure |
+| `extract_form_fields` | Convert docling-parse PDF widgets (AcroForm) into fillable fields with keys from printed text |
 | `do_code_enrichment` / `do_formula_enrichment` | Enrich code / formulas |
 | `code_formula_options` | Code/formula model, crop margin (`expansion_factor`), and stopping repeated output (`stop_on_repetition`, on by default) |
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
@@ -71,6 +72,18 @@ Useful `PdfPipelineOptions` / base fields:
 | `accelerator_options` | Pick device / thread count |
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
+
+`extract_form_fields=True` associates each widget with a field key from printed
+text, using page geometry. The key can be text in or beside its cell, or a
+paragraph that contains the widget. Checkbox and radio option text becomes an
+option key; a shared prompt stays as ordinary text. Additional context becomes
+a field hint. A widget in a detected table goes into its table cell, with a key
+only from text in that same cell. PDF field
+names are not used as keys, and PDF-specific widget metadata is not stored in
+the `DoclingDocument`. Use `generate_parsed_pages=True` to retain raw widgets
+on parsed pages when needed. Backends without page-local widgets produce no
+fields; table cells need `do_table_structure=True`. Not available in the
+service client, and not supported by the DocTags export.
 
 ### Choosing an OCR engine
 

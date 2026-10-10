@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -427,10 +427,55 @@ class ApiImageStreamingRequestResult:
     logprobs: Any | None = None
 
 
+class FieldValuePrediction(BaseModel):
+    text: str
+    orig: str
+    bbox: BoundingBox
+    # Selection state for a checkbox/radio widget; None for text-like fields.
+    # When set, the value is materialized as an empty field value that nests a
+    # CHECKBOX_SELECTED/UNSELECTED child (state lives on the child, not the text).
+    checkbox: Literal["selected", "unselected"] | None = None
+
+
+class FieldItemPrediction(BaseModel):
+    # A keyed item groups one or more values under one field key chosen from
+    # printed text beside a widget, in its table cell, or in a paragraph that
+    # contains it. key_bbox is the provenance of the key. Keyless items carry
+    # a single value. hint_text is extra context emitted as a field hint:
+    # outside detected tables, an aligned header along the other axis of a
+    # grid of like values. Items in a table cell never carry a hint.
+    key_text: str = ""
+    key_bbox: BoundingBox | None = None
+    values: list[FieldValuePrediction] = []
+    hint_text: str = ""
+
+
+class FieldRegionPrediction(BaseModel):
+    source_container_id: int | None = None
+    bbox: BoundingBox
+    items: list[FieldItemPrediction] = []
+
+
+class TableFieldPrediction(BaseModel):
+    # Field items that live inside one cell of a structured table. The table's
+    # own row and column headers carry the association, so the items only hold
+    # a key printed in that same cell. Offsets follow TableCell's convention.
+    table_id: int  # layout cluster id of the table
+    start_row_offset_idx: int
+    end_row_offset_idx: int
+    start_col_offset_idx: int
+    end_col_offset_idx: int
+    items: list[FieldItemPrediction] = []
+
+
 class ContainerElement(
     BasePageElement
 ):  # Used for Form and Key-Value-Regions, only for typing.
     pass
+
+
+class FieldRegionElement(ContainerElement):
+    items: list[FieldItemPrediction] = []
 
 
 class Table(BasePageElement):
@@ -439,6 +484,9 @@ class Table(BasePageElement):
     num_cols: int = 0
     orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
+    # AcroForm field items placed in this table's cells (see TableFieldPrediction);
+    # attached at page assembly, empty unless form fields are extracted.
+    field_cells: list[TableFieldPrediction] = []
 
 
 class TableStructurePrediction(BaseModel):
@@ -448,6 +496,12 @@ class TableStructurePrediction(BaseModel):
 class TextElement(BasePageElement):
     text: str
     hyperlink: Optional[Union[AnyUrl, Path]] = None
+    # Set when this paragraph inlines AcroForm widgets (e.g. a sentence with an
+    # inline checkbox and a fillable amount). The paragraph then materializes as
+    # a field_item -- its text becomes the key, the widgets its values -- in the
+    # paragraph's own place in the reading order (its list, its container), rather
+    # than being pulled out into a separate field_region.
+    field_item: Optional["FieldItemPrediction"] = None
 
 
 class FigureElement(BasePageElement):
@@ -479,13 +533,17 @@ class EquationPrediction(BaseModel):
 
 class PagePredictions(BaseModel):
     layout: LayoutPrediction | None = None
+    field_regions: list[FieldRegionPrediction] = []
+    table_fields: list[TableFieldPrediction] = []
     tablestructure: TableStructurePrediction | None = None
     figures_classification: FigureClassificationPrediction | None = None
     equations_prediction: EquationPrediction | None = None
     vlm_response: VlmPrediction | None = None
 
 
-PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
+PageElement = Union[
+    TextElement, Table, FigureElement, ContainerElement, FieldRegionElement
+]
 
 
 class AssembledUnit(BaseModel):
