@@ -1117,7 +1117,7 @@ class _DocumentConversionInput(BaseModel):
         try:
             content_str = content.decode("utf-8").lower()
         except UnicodeDecodeError:
-            content_str = content.decode("latin-1").lower()
+            content_str = content.decode("latin-1", errors="ignore").lower()
         # Remove XML comments
         content_str = re.sub(r"<!--(.*?)-->", "", content_str, flags=re.DOTALL)
         content_str = content_str.lstrip()
@@ -1167,7 +1167,7 @@ class _DocumentConversionInput(BaseModel):
         try:
             content_str = content.decode("utf-8").lstrip("﻿")
         except UnicodeDecodeError:
-            content_str = content.decode("latin-1").lstrip("﻿")
+            content_str = content.decode("latin-1", errors="ignore").lstrip("﻿")
         if re.search(r"^[ \t]*\\document(?:class|style)\b", content_str, re.MULTILINE):
             return FormatToMimeType[InputFormat.LATEX][0]
         return None
@@ -1192,7 +1192,7 @@ class _DocumentConversionInput(BaseModel):
         except UnicodeDecodeError:
             # Fall back to latin-1 which never fails and preserves byte values
             # This ensures we don't silently drop non-ASCII characters
-            content_str = content.decode("latin-1").strip()
+            content_str = content.decode("latin-1", errors="ignore").strip()
 
         # Ensure there's at least one newline (CSV is usually multi-line)
         if "\n" not in content_str:
