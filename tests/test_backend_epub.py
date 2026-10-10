@@ -512,3 +512,56 @@ def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
 
     assert len(doc.pictures) == 2
     assert all(pic.image is not None for pic in doc.pictures)
+
+
+def test_epub_image_source_query_and_fragment_are_not_part_of_the_name(
+    tmp_path: Path,
+):
+    """Only the path of an image src names the archive entry.
+
+    A query or fragment is not part of the file name, but an escaped "#" in
+    the path is. A src that decodes to a path outside the archive only drops
+    its own image, with a warning; the rest of the document is kept.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+    png = buf.getvalue()
+
+    bodies = [
+        "<p>Maps.</p>"
+        '<img src="../Images/map.png?v=1" alt="query"/>'
+        '<img src="../Images/map.png#top" alt="fragment"/>'
+        '<img src="../Images/map%231.png" alt="escaped"/>'
+        '<img src="..%2F..%2F..%2Fsecret.png" alt="outside"/>'
+        "<p>End.</p>"
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "images.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=bodies,
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        z.writestr("OEBPS/Images/map.png", png)
+        z.writestr("OEBPS/Images/map#1.png", png)
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        doc = converter.convert(epub_path, raises_on_error=True).document
+
+    assert [pic.image is not None for pic in doc.pictures] == [
+        True,
+        True,
+        True,
+        False,
+    ]
+    assert doc.texts[-1].text == "End."
