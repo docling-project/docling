@@ -6,7 +6,11 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import CodeItem, CodeLanguageLabel, PictureItem
+from docling_core.types.doc import (
+    CodeItem,
+    CodeLanguageLabel,
+    PictureItem,
+)
 from PIL import Image
 
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -24,6 +28,83 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_docitems, verify_document
 
 pytestmark = pytest.mark.cross_platform
+
+
+def test_nested_single_wrapper_emphasis_stays_one_paragraph():
+    # "**bold *italic* end**" is a paragraph with a single StrongEmphasis child
+    # that itself holds several runs. The text items used to be emitted at body
+    # level (three separate paragraphs on export); they belong to one paragraph.
+    source = "**bold *italic* end**"
+    stream = BytesIO(source.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.MD,
+        backend=MarkdownDocumentBackend,
+        filename="nested_emphasis.md",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.body.children) == 1
+    group_ref = doc.body.children[0].cref
+    group = next(g for g in doc.groups if g.self_ref == group_ref)
+    assert group.name == "group"
+
+    exported = doc.export_to_markdown()
+    # The exporter normalizes nested emphasis into sibling formatting spans,
+    # so the round-trip is not byte-identical to the source. Pin the exact
+    # output: it guards both the single-paragraph grouping (no paragraph
+    # break) and the text with its formatting.
+    assert exported == "**bold** ***italic*** **end**"
+
+
+def test_tight_list_item_with_nested_wrapper_keeps_one_item():
+    # "- **a *b* c**" is a list item whose paragraph has a single
+    # StrongEmphasis child holding several runs. Without the nested-runs
+    # check the list item was created lazily, so the inline group landed
+    # directly under the ListGroup and exported with a spurious indent
+    # (rendering as a nested list).
+    source = "- **a *b* c**"
+    stream = BytesIO(source.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.MD,
+        backend=MarkdownDocumentBackend,
+        filename="nested_wrapper_list_item.md",
+    )
+    doc = in_doc._backend.convert()
+
+    # one list group, one (empty) list item, one inline group under the item
+    assert len(doc.texts) == 4
+    list_item = doc.texts[0]
+    assert list_item.text == ""
+    inline_group = doc.groups[-1]
+    assert inline_group.parent.cref == list_item.self_ref
+    assert [t.text for t in doc.texts[1:]] == ["a", "b", "c"]
+
+    exported = doc.export_to_markdown()
+    assert exported == "- **a** ***b*** **c**"
+
+
+def test_link_wrapped_nested_runs_stay_one_paragraph():
+    # "[**a *b* c**](http://x)" nests the runs one level deeper (Link around
+    # StrongEmphasis); a single-level check missed it and split the paragraph.
+    source = "[**a *b* c**](http://x)"
+    stream = BytesIO(source.encode("utf-8"))
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.MD,
+        backend=MarkdownDocumentBackend,
+        filename="nested_wrapper_link.md",
+    )
+    doc = in_doc._backend.convert()
+
+    assert len(doc.body.children) == 1
+    group_ref = doc.body.children[0].cref
+    assert any(g.self_ref == group_ref for g in doc.groups)
+    assert [t.text for t in doc.texts] == ["a", "b", "c"]
+
+    exported = doc.export_to_markdown()
+    assert exported == "[**a**](http://x/) [***b***](http://x/) [**c**](http://x/)"
 
 
 def test_convert_valid():

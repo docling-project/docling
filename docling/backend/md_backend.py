@@ -161,6 +161,36 @@ def _only_plain_line_breaks(children: list) -> bool:
     )
 
 
+def _has_nested_runs(node) -> bool:
+    """Return True when the inline subtree rooted at ``node`` holds more than
+    one run at some nesting level.
+
+    A single inline wrapper still splits into several text items when any
+    container below it has multiple children (e.g. ``**a *b* c**`` or
+    ``[**a *b* c**](url)`` where a Link wraps a StrongEmphasis), so such
+    content needs an inline group regardless of how deep the split sits.
+
+    Args:
+        node: An inline marko node to inspect.
+
+    Returns:
+        True if some nesting level of the subtree fans out into several
+        children, False otherwise.
+    """
+    if not _MARKO_AVAILABLE:
+        return False
+    children = getattr(node, "children", None)
+    if not isinstance(children, list):
+        return False
+    if len(children) > 1:
+        return True
+    return any(
+        _has_nested_runs(child)
+        for child in children
+        if isinstance(child, marko.inline.InlineElement)
+    )
+
+
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _apply_formatting(
@@ -790,8 +820,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             # Skip the inline_group path for items whose children are plain text
             # runs separated by line breaks; the pending-line-break merge paths
             # will produce a single list_item with the correct joined text.
-            if len(non_list_children) > 1 and not _only_plain_line_breaks(
-                non_list_children
+            # A single inline wrapper with nested runs splits into several
+            # text items as well, so the item is created empty up front and
+            # the inline group attaches below it instead of the ListGroup.
+            if (
+                len(non_list_children) > 1
+                and not _only_plain_line_breaks(non_list_children)
+            ) or (
+                len(non_list_children) == 1 and _has_nested_runs(non_list_children[0])
             ):  # inline group will be created further down
                 parent_ref: str | None = parent_item.self_ref if parent_item else None
                 parent_item = self._create_list_item(
@@ -1005,10 +1041,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug("Some other element: %s", type(element).__name__)
 
         element_children = getattr(element, "children", [])
+        # A paragraph whose text runs are wrapped in a single nested inline
+        # element (e.g. "**bold *italic* end**" is one StrongEmphasis child,
+        # "[**a *b* c**](url)" a Link around one) also produces several text
+        # items, so it needs the inline group too.
+        has_nested_inline_runs = len(element_children) == 1 and _has_nested_runs(
+            element_children[0]
+        )
         if (
             isinstance(element, marko.block.Paragraph | marko.block.Heading)
             and len(element_children) > 1
             and not _only_plain_line_breaks(element_children)
+        ) or (
+            isinstance(element, marko.block.Paragraph | marko.block.Heading)
+            and len(element_children) == 1
+            and has_nested_inline_runs
         ):
             parent_item = doc.add_inline_group(parent=parent_item)
 
