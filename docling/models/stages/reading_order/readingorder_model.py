@@ -683,6 +683,13 @@ class ReadingOrderModel:
             new_item.orig = (
                 new_item.orig[:-1] + merged_elem.text
             )  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+        elif (
+            new_item.text.endswith(("\u2013", "\u2014"))
+            and new_item.text[-2:-1].isalnum()
+        ):
+            # A line that breaks after a word-attached en or em dash closes up.
+            new_item.text += merged_elem.text
+            new_item.orig += merged_elem.text
         else:
             new_item.text += f" {merged_elem.text}"
             new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.

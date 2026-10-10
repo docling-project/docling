@@ -407,6 +407,11 @@ class ReadingOrderPredictor:
     _NEAR_VERTICAL_OVERLAP_THRESHOLD_NORM: ClassVar[float] = 0.0025
     _LEFT_EDGE_ALIGNMENT_THRESHOLD_NORM: ClassVar[float] = 0.01
     _INTERRUPTION_QUERY_PADDING: ClassVar[float] = 1.0
+    # Wrapped heading lines: the vertical gap, and the outdent (or center shift for
+    # centered lines) of the continuation line, as fractions of the line height.
+    _HEADING_WRAP_MAX_GAP_RATIO: ClassVar[float] = 0.8
+    _HEADING_WRAP_MIN_GAP_RATIO: ClassVar[float] = -0.2
+    _HEADING_WRAP_MAX_OUTDENT_RATIO: ClassVar[float] = 0.5
 
     def __init__(self):
         self.dilated_page_element = True
@@ -557,7 +562,8 @@ class ReadingOrderPredictor:
             if ind <= curr_ind:
                 continue
 
-            if elem.label in [DocItemLabel.TEXT]:
+            if elem.label in [DocItemLabel.TEXT, DocItemLabel.SECTION_HEADER]:
+                is_heading = elem.label == DocItemLabel.SECTION_HEADER
                 merge_list: List[int] = []
                 check_ind = ind
 
@@ -575,6 +581,13 @@ class ReadingOrderPredictor:
                         and (
                             elem.page_no != sorted_elements[ind_p1].page_no
                             or elem.is_strictly_left_of(sorted_elements[ind_p1])
+                            or (
+                                is_heading
+                                and self._is_wrapped_line_below(
+                                    sorted_elements[check_ind],
+                                    sorted_elements[ind_p1],
+                                )
+                            )
                         )
                     ):
                         m1 = re.fullmatch(
@@ -584,8 +597,15 @@ class ReadingOrderPredictor:
                             r"(\s*[a-zA-Z\u00C0-\u024F])(.+)",
                             sorted_elements[ind_p1].text,
                         )
+                        if is_heading:
+                            joins = m2 is not None and self._continues_heading(
+                                sorted_elements[check_ind].text,
+                                sorted_elements[ind_p1].text,
+                            )
+                        else:
+                            joins = m1 is not None and m2 is not None
 
-                        if m1 and m2:
+                        if joins:
                             merge_list.append(sorted_elements[ind_p1].cid)
                             curr_ind = ind_p1
                             check_ind = ind_p1
@@ -598,6 +618,46 @@ class ReadingOrderPredictor:
                     merges[elem.cid] = merge_list
 
         return merges
+
+    @staticmethod
+    def _continues_heading(text: str, continuation: str) -> bool:
+        """Return True if `continuation` reads as the next line of heading `text`.
+
+        Consecutive headings often look like a wrap, so the text must clearly
+        continue: `text` ends in a comma, hyphen, soft hyphen, en dash or em
+        dash, or it ends in a lowercase letter or digit and `continuation`
+        starts lowercase.
+        """
+        if re.fullmatch(r".+[,\-\u00AD\u2013\u2014]\s*", text):
+            return True
+        return (
+            re.fullmatch(r".+[a-z\d]\s*", text) is not None
+            and continuation.lstrip()[:1].islower()
+        )
+
+    def _is_wrapped_line_below(self, upper: PageElement, lower: PageElement) -> bool:
+        """Return True if `lower` sits directly below `upper` in the same column.
+
+        A wrapped line may be indented (hanging indent). It starts left of the
+        line it continues only when both lines are centered on the same axis.
+        """
+        if upper.page_no != lower.page_no or not upper.overlaps_horizontally(lower):
+            return False
+
+        if upper.coord_origin == CoordOrigin.BOTTOMLEFT:
+            gap = upper.b - lower.t
+        else:
+            gap = lower.t - upper.b
+
+        line_height = min(upper.height, lower.height)
+        tolerance = self._HEADING_WRAP_MAX_OUTDENT_RATIO * line_height
+        center_shift = abs((upper.l + upper.r) - (lower.l + lower.r)) / 2
+        return (
+            self._HEADING_WRAP_MIN_GAP_RATIO * line_height
+            <= gap
+            <= self._HEADING_WRAP_MAX_GAP_RATIO * line_height
+            and (lower.l >= upper.l - tolerance or center_shift <= tolerance)
+        )
 
     def _predict_page(
         self,
