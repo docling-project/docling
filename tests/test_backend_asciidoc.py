@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: MIT
 
 import glob
+import threading
 from io import BytesIO
 from pathlib import Path
 
 from docling_core.types.doc import (
     CodeItem,
     CodeLanguageLabel,
+    ContentLayer,
     DocItemLabel,
+    DoclingDocument,
     ImageRefMode,
     ListItem,
 )
@@ -742,3 +745,154 @@ def test_comment_block_hides_content() -> None:
     texts = [item.text for item, _ in doc.iterate_items()]
     assert not any("hidden" in t for t in texts)
     assert "visible" in texts
+
+
+def _convert_adoc(
+    src: bytes, options: AsciiDocBackendOptions | None = None
+) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="comments.adoc",
+        backend_options=options,
+    )
+    return in_doc._backend.convert()
+
+
+def _notes(doc: DoclingDocument) -> list[str]:
+    return [
+        item.text
+        for item, _ in doc.iterate_items(
+            included_content_layers={ContentLayer.NOTES},
+        )
+    ]
+
+
+def test_comments_are_kept_in_the_notes_layer() -> None:
+    doc = _convert_adoc(b"// a review note\nreal para\n")
+
+    assert _notes(doc) == ["a review note"]
+    assert "real para" in [item.text for item, _ in doc.iterate_items()]
+
+
+def test_comment_run_is_one_note_with_its_lines_kept() -> None:
+    # consecutive // lines are one comment; the line breaks inside it survive
+    doc = _convert_adoc(b"// ask legal about this\n// and check the date\n\nbody\n")
+
+    assert _notes(doc) == ["ask legal about this\nand check the date"]
+
+
+def test_comment_block_is_kept_verbatim_in_the_notes_layer() -> None:
+    # the content of a //// block may be disabled markup, so it is not reflowed
+    doc = _convert_adoc(b"////\n* disabled item\n* another\n////\nvisible\n")
+
+    assert _notes(doc) == ["* disabled item\n* another"]
+    assert "visible" in [item.text for item, _ in doc.iterate_items()]
+
+
+def test_empty_comments_add_no_note() -> None:
+    doc = _convert_adoc(b"//\n//\n\nbody\n")
+
+    assert _notes(doc) == []
+
+
+def test_comments_stay_out_of_default_exports() -> None:
+    # markdown and HTML leave the notes layer out, so #4394's output stands
+    doc = _convert_adoc(b"// a review note\nreal para\n")
+
+    assert doc.export_to_markdown() == "real para"
+    assert "a review note" not in doc.export_to_html()
+    assert "a review note" in doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
+    )
+
+
+def test_capture_comments_disabled_drops_comments() -> None:
+    doc = _convert_adoc(
+        b"// a review note\nreal para\n",
+        AsciiDocBackendOptions(capture_comments=False),
+    )
+
+    assert _notes(doc) == []
+    assert "real para" in [item.text for item, _ in doc.iterate_items()]
+
+
+def test_comment_inside_a_content_block_is_a_note_not_body_text() -> None:
+    # the lines of an example/sidebar/quote/passthrough/open block used to be
+    # passed through unfiltered, so a comment in one leaked as body text
+    for delim in (b"====", b"****", b"____", b"++++", b"--"):
+        src = delim + b"\n// a note inside\ninner text\n" + delim + b"\n"
+        doc = _convert_adoc(src)
+
+        texts = [item.text for item, _ in doc.iterate_items()]
+        assert _notes(doc) == ["a note inside"], f"{delim!r}"
+        assert "inner text" in texts, f"{delim!r}: {texts}"
+        assert not any("a note inside" in t for t in texts), f"{delim!r}: {texts}"
+
+
+def test_comment_block_hides_a_verbatim_delimiter() -> None:
+    # a "----" between //// delimiters is comment text; it used to open a
+    # listing block and leak the commented-out lines as a code item
+    doc = _convert_adoc(b"before\n\n////\n----\nhidden code\n----\n////\n\nafter\n")
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert texts == ["before", "after"], texts
+    assert _notes(doc) == ["----\nhidden code\n----"]
+
+
+def test_comment_does_not_break_the_list_it_sits_in() -> None:
+    doc = _convert_adoc(b"* item one\n// a note on item one\n* item two\n")
+
+    items = [item.text for item, _ in doc.iterate_items() if isinstance(item, ListItem)]
+    assert items == ["item one", "item two"]
+    assert _notes(doc) == ["a note on item one"]
+
+
+def test_comment_markers_inside_a_listing_stay_code() -> None:
+    doc = _convert_adoc(b"----\n// not a comment, this is code\ncode()\n----\n")
+
+    assert _notes(doc) == []
+    codes = [item.text for item, _ in doc.iterate_items() if isinstance(item, CodeItem)]
+    assert codes == ["// not a comment, this is code\ncode()"]
+
+
+def test_unclosed_comment_block_comments_out_the_rest() -> None:
+    doc = _convert_adoc(b"visible before\n\n////\nhidden rest\nmore hidden\n")
+
+    assert [item.text for item, _ in doc.iterate_items()] == ["visible before"]
+    assert _notes(doc) == ["hidden rest\nmore hidden"]
+
+
+def _convert_within(src: bytes, seconds: float = 10.0) -> DoclingDocument:
+    """Convert `src`, failing rather than hanging if the parser never returns.
+
+    The work runs on a daemon thread so a parser stuck in a loop cannot hold up
+    the test session: the deadline turns it into a plain assertion failure and
+    the thread dies with the interpreter.
+    """
+    result: list[DoclingDocument] = []
+    worker = threading.Thread(
+        target=lambda: result.append(_convert_adoc(src)), daemon=True
+    )
+    worker.start()
+    worker.join(seconds)
+    assert not worker.is_alive(), (
+        f"convert() did not return within {seconds}s for {src!r}; "
+        "the parser is looping over one line"
+    )
+    return result[0]
+
+
+def test_unclosed_content_block_delimiter_terminates() -> None:
+    # A content block delimiter with no closer used to leave the line cursor in
+    # place, so _iter_blocks looped over that one line forever and convert()
+    # never returned. The delimiter is markup, so it breaks the paragraph and
+    # the text around it survives.
+    for delim in (b"====", b"****", b"____", b"++++", b"--"):
+        doc = _convert_within(b"before\n" + delim + b"\nafter\n")
+
+        texts = [item.text for item, _ in doc.iterate_items()]
+        assert "before" in texts, f"{delim!r}: {texts}"
+        assert "after" in texts, f"{delim!r}: {texts}"
+        assert not any(delim.decode() in t for t in texts), f"{delim!r}: {texts}"

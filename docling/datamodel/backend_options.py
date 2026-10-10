@@ -80,6 +80,16 @@ class AsciiDocBackendOptions(TextBackendOptions):
             ),
         ),
     ] = None
+    capture_comments: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to keep AsciiDoc comments (`//` lines and `////` blocks) in "
+                "the notes content layer, which exports leave out by default. When "
+                "disabled, comments are dropped."
+            )
+        ),
+    ] = True
 
 
 class HTMLBackendOptions(BaseBackendOptions):
