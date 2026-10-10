@@ -40,8 +40,11 @@ class ListItemMarkerProcessor:
         """Initialize the processor with marker patterns."""
         self._infer_enumerated = infer_enumerated
         # Bullet markers (unordered lists)
+        # NOTE: U+221E INFINITY is a mis-decoded bullet from PDFs (pypdfium gives U+2022,
+        # docling-parse gives U+221E). Treating it as a bullet may strip a leading infinity
+        # from a genuine math list item, but that case is rare compared to the mis-decode.
         self._bullet_patterns = [
-            r"[\u2022\u2023\u25E6\u2043\u204C\u204D\u2219\u25AA\u25AB\u25CF\u25CB]",  # Various bullet symbols
+            r"[\u2022\u2023\u25E6\u2043\u204C\u204D\u2219\u221E\u25AA\u25AB\u25CF\u25CB]",  # Various bullet symbols
             r"[-*+•·‣⁃]",  # noqa: RUF001 - intentional Unicode bullet glyphs
             r"[►▶▸‣➤➢]",  # Arrow-like bullets
             r"[✓✔✗✘]",  # Checkmark bullets
