@@ -625,6 +625,55 @@ def test_text_directly_inside_figure_is_kept(figure: str, expected: list[str]):
     )
 
 
+@pytest.mark.parametrize(
+    "figure",
+    [
+        '<figure><img src="a.png"/><img src="b.png"/><figcaption>cap</figcaption></figure>',
+        '<figure><img src="a.png"/><figcaption>cap</figcaption></figure>',
+        '<figure><img src="a.png" style="display:none"/><img src="b.png"/><figcaption>cap</figcaption></figure>',
+        '<figure><img src="a.png" aria-hidden="true"/><img src="b.png"/><figcaption>cap</figcaption></figure>',
+        '<figure><figcaption><img src="icon.png"/>cap</figcaption><img src="b.png"/></figure>',
+        '<figure><p><img src="a.png"/><img src="b.png"/></p><figcaption>cap</figcaption></figure>',
+    ],
+)
+def test_figure_keeps_one_caption(figure: str):
+    html = f"<html><body><h1>Title</h1>{figure}</body></html>".encode()
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == ["cap"]
+
+
+def test_figure_later_image_falls_back_to_its_alt_text():
+    html = (
+        b"<html><body><h1>Title</h1>"
+        b'<figure><img src="a.png" alt="panel A"/><img src="b.png" alt="panel B"/>'
+        b"<figcaption>cap</figcaption></figure></body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.CAPTION] == [
+        "cap",
+        "panel B",
+    ]
+    assert [c.resolve(doc).text for c in doc.pictures[0].captions] == ["cap"]
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
