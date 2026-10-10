@@ -1024,12 +1024,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             for child in element.children:
                 if (
                     isinstance(element, marko.block.ListItem)
-                    and isinstance(child, marko.block.List)
+                    and (
+                        isinstance(child, marko.block.List)
+                        or (
+                            child is not element.children[0]
+                            and isinstance(element.children[0], marko.block.Paragraph)
+                        )
+                    )
                     and parent_item
                     and list_last_item_by_ref.get(parent_item.self_ref, None)
                 ):
                     _log.debug(
-                        "walking into new List hanging from item of parent list %s",
+                        "redirecting child of ListItem into the item itself (parent list %s)",
                         parent_item.self_ref,
                     )
                     parent_item = list_last_item_by_ref[parent_item.self_ref]
