@@ -1104,6 +1104,25 @@ class IWAReader:
             iwa_storage_text(fields), iwa_storage_runs(fields, self._objects)
         )
 
+    def pictures(self, identifier: int) -> list[Picture]:
+        """Read the pictures one drawable places, looking inside a group.
+
+        This is for an app that reads its other drawables itself. Anything else
+        the drawable holds, such as the text of a shape grouped with a picture,
+        is left out.
+
+        Args:
+            identifier: The drawable to read.
+
+        Returns:
+            The pictures, in the order the group lists them.
+        """
+        return [
+            block
+            for block in self._drawable_blocks(identifier)
+            if isinstance(block, Picture)
+        ]
+
     def _drawable_blocks(self, identifier: int) -> list[Block]:
         """Read whichever kind of drawable ``identifier`` names."""
         if identifier in self._emitted:
