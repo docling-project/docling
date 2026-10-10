@@ -916,15 +916,17 @@ def test_legacy_image_is_read_from_the_container_member(tmp_path: Path):
     assert order.index(doc.pictures[0].self_ref) == 1
 
 
-def test_transparent_image_keeps_its_transparency(tmp_path: Path):
-    """A picture is stored as PNG, so its transparency is kept as in the other
-    backends. Dropping the alpha channel exposed the colour stored under the
-    transparent pixels, which is usually black."""
+def _transparent_png() -> bytes:
+    """A PNG with one opaque blue pixel on a transparent background."""
     image = PILImage.new("RGBA", (4, 4), (0, 0, 0, 0))
     image.putpixel((0, 0), (0, 0, 255, 255))
     buffer = BytesIO()
     image.save(buffer, format="PNG")
+    return buffer.getvalue()
 
+
+def _with_legacy_image(target: Path, png: bytes) -> Path:
+    """Write an iWork '09 Pages container whose body holds just one image."""
     namespace = "http://developer.apple.com/namespaces/sf"
     xml = f"""<?xml version="1.0"?>
     <sf:document xmlns:sf="{namespace}">
@@ -938,11 +940,19 @@ def test_transparent_image_keeps_its_transparency(tmp_path: Path):
         </sf:text-body>
       </sf:text-storage>
     </sf:document>""".encode()
+    return _write_pages(target, {"index.xml": xml, "logo.png": png})
 
-    source = _write_pages(
-        tmp_path / "logo.pages", {"index.xml": xml, "logo.png": buffer.getvalue()}
-    )
-    doc = _backend(source).convert()
+
+@pytest.mark.parametrize(
+    "build",
+    [_with_image_anchored, _with_legacy_image],
+    ids=["pages-5", "pages-09"],
+)
+def test_transparent_image_keeps_its_transparency(tmp_path: Path, build):
+    """A picture is stored as PNG, so its transparency is kept as in the other
+    backends. Dropping the alpha channel exposed the colour stored under the
+    transparent pixels, which is usually black."""
+    doc = _backend(build(tmp_path / "logo.pages", _transparent_png())).convert()
 
     assert len(doc.pictures) == 1
     picture = doc.pictures[0].image
