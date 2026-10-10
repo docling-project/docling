@@ -466,6 +466,24 @@ def test_convert_pipes_in_prose_stay_text():
         assert conv_result.document.tables == []
 
 
+def test_convert_leading_pipe_lines_without_delimiter_row_keep_all_text():
+    """
+    GFM: a table requires a delimiter row immediately after its header.
+    Without one, lines that start with a pipe are ordinary paragraph text,
+    and every line of it must be kept.
+    """
+    cases = [
+        ("| a | b |\n| 1 | 2 |\n| 3 | 4 |\n", "| a | b | | 1 | 2 | | 3 | 4 |"),
+        ("| quoted note\nsecond line\n", "| quoted note second line"),
+    ]
+
+    for markdown, expected in cases:
+        conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+        assert conv_result.status == ConversionStatus.SUCCESS
+        assert conv_result.document.tables == []
+        assert [item.text for item in conv_result.document.texts] == [expected]
+
+
 def test_convert_pipeless_table_does_not_leak_into_later_text():
     """
     Regression guard:
