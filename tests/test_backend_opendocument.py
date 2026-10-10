@@ -945,6 +945,66 @@ def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
             assert FineRef(cref=group.self_ref) in parent.comments
 
 
+def test_odt_annotation_in_picture_paragraph_goes_to_picture(tmp_path: Path):
+    """A comment in a paragraph that makes only pictures is a child of the first
+    picture, not of the root. A paragraph with text keeps the comment on its text
+    item. The paragraphs reuse the chart and the image of text_document_02.odt,
+    where LibreOffice put both in one paragraph."""
+    source = OdfDocument("tests/data/odf/sources/text_document_02.odt")
+    body = source.body
+    frames = {frame.name: frame.clone for frame in body.get_frames()}
+    frames["Image2"] = frames["Image1"].clone
+    frames["Image2"].name = "Image2"
+    body.clear()
+    for names, body_text, text in [
+        (["Object1"], "", "Label the axes."),
+        (["Image1", "Image2"], "", "Crop this."),
+        (["Object1", "Image1"], "", "Both."),
+        (["Object1"], "See the chart.", "Add a source."),
+    ]:
+        paragraph = Element.from_tag(
+            f"<text:p>{body_text}<office:annotation>"
+            "<dc:creator>Ann Reviewer</dc:creator>"
+            f"<text:p>{text}</text:p></office:annotation></text:p>"
+        )
+        for name in names:
+            paragraph.append(frames[name].clone)
+        body.append(paragraph)
+    path = tmp_path / "picture_comment.odt"
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    assert [
+        picture.meta is not None and picture.meta.tabular_chart is not None
+        for picture in document.pictures
+    ] == [True, False, False, True, False, True]
+    assert [
+        (group.parent.cref, group.children[0].resolve(document).text)
+        for group in document.groups
+        if group.label == GroupLabel.COMMENT_SECTION
+    ] == [
+        ("#/pictures/0", "[author: Ann Reviewer]: Label the axes."),
+        ("#/pictures/1", "[author: Ann Reviewer]: Crop this."),
+        ("#/pictures/3", "[author: Ann Reviewer]: Both."),
+        ("#/texts/3", "[author: Ann Reviewer]: Add a source."),
+    ]
+    assert [picture.comments for picture in document.pictures] == [
+        [FineRef(cref="#/groups/0")],
+        [FineRef(cref="#/groups/1")],
+        [],
+        [FineRef(cref="#/groups/2")],
+        [],
+        [],
+    ]
+    assert (document.texts[3].text, document.texts[3].comments) == (
+        "See the chart.",
+        [FineRef(cref="#/groups/3")],
+    )
+
+
 @pytest.mark.parametrize(
     ("kind", "expected_label", "expected_markdown"),
     [

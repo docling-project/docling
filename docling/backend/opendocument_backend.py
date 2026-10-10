@@ -43,6 +43,7 @@ from docling_core.types.doc import (
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
+    PictureItem,
     PictureMeta,
     ProvenanceItem,
     RichTableCell,
@@ -649,16 +650,16 @@ def _add_odf_paragraph(
     image_loader: ImageResourceLoader | None = None,
     comments: _OdfComments | None = None,
 ) -> None:
-    chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
+    charts = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
     images = element.get_images()
-    image_count = _add_odf_images(
+    pictures = _add_odf_images(
         doc,
         images,
         parent,
         content_layer,
         odf_obj,
         image_loader=image_loader,
-        skip_object_replacements=chart_count > 0,
+        skip_object_replacements=bool(charts),
     )
     runs = _odf_text_runs(element, odf_obj)
     text = _odf_text_from_runs(runs)
@@ -667,9 +668,12 @@ def _add_odf_paragraph(
         if stripped_text != text:
             runs = [_OdfTextRun(text=stripped_text)] if stripped_text else []
             text = stripped_text
-    if image_count > 0 and _odf_text_is_generated_image_references(text, images):
-        return
-    if chart_count > 0 and ("ObjectReplacements" in text or not text):
+    if (pictures and _odf_text_is_generated_image_references(text, images)) or (
+        charts and ("ObjectReplacements" in text or not text)
+    ):
+        # The paragraph makes only pictures, so the first one holds its threads.
+        if comments is not None:
+            comments.attach(doc, (charts or pictures)[0], [element])
         return
 
     style_names = _odf_paragraph_style_names(odf_obj, element)
@@ -1036,8 +1040,8 @@ def _add_odf_images(
     *,
     image_loader: ImageResourceLoader | None = None,
     skip_object_replacements: bool = False,
-) -> int:
-    image_count = 0
+) -> list[PictureItem]:
+    pictures: list[PictureItem] = []
     for image in images:
         image_url = _odf_image_href(image)
         if skip_object_replacements and image_url is not None:
@@ -1054,9 +1058,10 @@ def _add_odf_images(
             image_ref = None
         if image_ref is None:
             continue
-        doc.add_picture(parent=parent, image=image_ref, content_layer=content_layer)
-        image_count += 1
-    return image_count
+        pictures.append(
+            doc.add_picture(parent=parent, image=image_ref, content_layer=content_layer)
+        )
+    return pictures
 
 
 def _add_odf_child(
@@ -1120,7 +1125,7 @@ def _add_odf_child(
             comments=comments,
         )
     elif isinstance(element, Frame):
-        chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
+        charts = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
         _add_odf_images(
             doc,
             element.get_images(),
@@ -1128,7 +1133,7 @@ def _add_odf_child(
             content_layer,
             odf_obj,
             image_loader=image_loader,
-            skip_object_replacements=chart_count > 0,
+            skip_object_replacements=bool(charts),
         )
     else:
         get_images = getattr(element, "get_images", None)
@@ -1252,8 +1257,8 @@ def _add_odf_charts(
     parent: NodeItem | None,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
-) -> int:
-    chart_count = 0
+) -> list[PictureItem]:
+    charts: list[PictureItem] = []
     frames = [element] if isinstance(element, Frame) else []
     get_frames = getattr(element, "get_frames", None)
     if callable(get_frames):
@@ -1296,8 +1301,8 @@ def _add_odf_charts(
                 chart_data=chart_data, title=chart_title
             ),
         )
-        chart_count += 1
-    return chart_count
+        charts.append(chart)
+    return charts
 
 
 def _add_odf_list(
@@ -1926,7 +1931,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         *,
         is_title: bool,
     ) -> None:
-        chart_count = _add_odf_charts(
+        charts = _add_odf_charts(
             doc,
             frame,
             parent=parent,
@@ -1950,7 +1955,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             None,
             self.odf_obj,
             image_loader=self._image_loader,
-            skip_object_replacements=chart_count > 0,
+            skip_object_replacements=bool(charts),
         )
 
         for textbox in frame.get_elements("descendant::draw:text-box"):
