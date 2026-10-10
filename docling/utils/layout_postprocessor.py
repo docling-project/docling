@@ -4,6 +4,8 @@
 import logging
 import sys
 from collections import defaultdict
+from itertools import pairwise
+from statistics import median
 
 from docling_core.types.doc import BoundingBox, DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
@@ -232,6 +234,7 @@ class LayoutPostprocessor:
 
         # Conditionally assign cells to clusters
         if not self.options.skip_cell_assignment:
+            clusters = self._remove_redundant_text_clusters(clusters)
             # Initial cell assignment
             clusters = self._assign_cells_to_clusters(clusters)
 
@@ -272,6 +275,9 @@ class LayoutPostprocessor:
             prev_count = len(clusters)
             clusters = self._adjust_cluster_bboxes(clusters)
             clusters = self._remove_overlapping_clusters(clusters, "regular")
+
+        if not self.options.skip_cell_assignment:
+            clusters = self._split_text_clusters_on_paragraph_gaps(clusters)
 
         return clusters
 
@@ -644,6 +650,196 @@ class LayoutPostprocessor:
                 seen_ids.add(cell.index)
                 unique_cells.append(cell)
         return unique_cells
+
+    def _remove_redundant_text_clusters(
+        self,
+        clusters: list[Cluster],
+        min_overlap: float = 0.2,
+        containment_threshold: float = 0.8,
+    ) -> list[Cluster]:
+        """Resolve redundant TEXT predictions before they compete for individual lines.
+
+        A slightly wider, weaker prediction can otherwise take isolated lines
+        from several paragraphs. Once boxes are fitted to those cells, overlap
+        resolution can no longer recover the original paragraph boundaries.
+        Only suppress a prediction when retained, more confident TEXT regions
+        cover all of its cells comparably; unique continuations must survive.
+        """
+        text_clusters = [c for c in clusters if c.label == DocItemLabel.TEXT]
+        if len(text_clusters) < 2:
+            return clusters
+
+        spatial_index = SpatialClusterIndex(clusters)
+        by_id = {c.id: c for c in clusters}
+        overlaps: dict[int, dict[int, float]] = {c.id: {} for c in text_clusters}
+        competing_overlaps: dict[int, float] = {}
+        for cell in self.cells:
+            cell_bbox = cell.rect.to_bounding_box()
+            if not cell.text.strip() or not has_positive_area(cell_bbox):
+                continue
+            for cid in spatial_index.find_candidates(cell_bbox):
+                ratio = cell_bbox.intersection_over_self(
+                    ordered_bounding_box(by_id[cid].bbox)
+                )
+                if ratio > min_overlap:
+                    if by_id[cid].label == DocItemLabel.TEXT:
+                        overlaps[cid][cell.index] = ratio
+                    else:
+                        competing_overlaps[cell.index] = max(
+                            competing_overlaps.get(cell.index, 0.0), ratio
+                        )
+
+        redundant: set[int] = set()
+        retained: set[int] = set()
+        for cluster in sorted(text_clusters, key=lambda c: c.confidence, reverse=True):
+            alternatives = {
+                cid
+                for cid in spatial_index.find_candidates(cluster.bbox) & retained
+                if spatial_index.check_overlap(
+                    cluster.bbox,
+                    by_id[cid].bbox,
+                    containment_threshold,
+                    containment_threshold,
+                )
+            }
+            # Predictions for individual lines do not establish paragraph
+            # boundaries within a compact block, e.g. publication metadata.
+            # Keep its parent unless whitespace separates the physical lines.
+            cell_ids = overlaps[cluster.id].keys()
+            covered = [overlaps[cid].keys() & cell_ids for cid in alternatives]
+            if (
+                len(covered) > 1
+                and all(len(ids) == 1 for ids in covered)
+                and set().union(*covered) == cell_ids
+            ):
+                boxes = sorted(
+                    (
+                        cell.rect.to_bounding_box()
+                        for cell in self.cells
+                        if cell.index in cell_ids
+                    ),
+                    key=lambda box: box.t,
+                )
+                line_height = median(box.height for box in boxes)
+                if (
+                    line_height > 0
+                    and min(box.r for box in boxes) > max(box.l for box in boxes)
+                    and all(
+                        0 <= after.t - before.b < line_height
+                        for before, after in pairwise(boxes)
+                    )
+                ):
+                    retained.add(cluster.id)
+                    continue
+            # Use the overlap-resolution tolerance for cell coverage too. A
+            # narrow fragment must not replace a substantially better fit.
+            if overlaps[cluster.id] and all(
+                any(
+                    overlaps[cid].get(cell_id, 0.0) >= ratio * containment_threshold
+                    # Do not expose a competing heading, list item, etc. to
+                    # cells previously protected by this TEXT prediction.
+                    and overlaps[cid].get(cell_id, 0.0)
+                    > competing_overlaps.get(cell_id, 0.0)
+                    for cid in alternatives
+                )
+                for cell_id, ratio in overlaps[cluster.id].items()
+            ):
+                redundant.add(cluster.id)
+            else:
+                retained.add(cluster.id)
+
+        return [c for c in clusters if c.id not in redundant]
+
+    def _split_text_clusters_on_paragraph_gaps(
+        self, clusters: list[Cluster], min_confidence: float = 0.3
+    ) -> list[Cluster]:
+        """Recover paragraphs corroborated by whitespace and nested predictions.
+
+        A confident parent can survive while a paragraph proposal falls below
+        the confidence threshold. Use that proposal only as boundary evidence:
+        it cannot take cells or change their labels. Require a full line-height
+        of whitespace, and multiple lines per paragraph when not every group
+        has its own prediction. Do not split overlapping lines or columns.
+        """
+        result: list[Cluster] = []
+        next_id = max((c.id for c in self.all_clusters + clusters), default=0) + 1
+        proposals = [
+            c
+            for c in self.regular_clusters
+            if c.label == DocItemLabel.TEXT and c.confidence >= min_confidence
+        ]
+        for cluster in clusters:
+            if (
+                cluster.label != DocItemLabel.TEXT
+                or len(cluster.cells) < 2
+                or cluster.children
+            ):
+                result.append(cluster)
+                continue
+            cells = sorted(cluster.cells, key=lambda c: c.rect.to_bounding_box().t)
+            boxes = [cell.rect.to_bounding_box() for cell in cells]
+            line_height = median(box.height for box in boxes)
+            if line_height <= 0 or any(
+                after.t < before.b for before, after in pairwise(boxes)
+            ):
+                result.append(cluster)
+                continue
+            groups: list[list[TextCell]] = [[cells[0]]]
+            for before, box, cell in zip(boxes, boxes[1:], cells[1:]):
+                if box.t - before.b >= line_height:
+                    groups.append([])
+                groups[-1].append(cell)
+            if len(groups) < 2:
+                result.append(cluster)
+                continue
+
+            group_lefts = [
+                median(c.rect.to_bounding_box().l for c in g) for g in groups
+            ]
+            if max(group_lefts) - min(group_lefts) > line_height:
+                result.append(cluster)
+                continue
+            corroborated = 0
+            for group in groups:
+                group_ids = {cell.index for cell in group}
+                if any(
+                    proposal.id != cluster.id
+                    and ordered_bounding_box(proposal.bbox).intersection_over_self(
+                        cluster.bbox
+                    )
+                    >= 0.8
+                    and all(
+                        cell.rect.to_bounding_box().intersection_over_self(
+                            ordered_bounding_box(proposal.bbox)
+                        )
+                        >= 0.8
+                        for cell in group
+                    )
+                    and all(
+                        cell.rect.to_bounding_box().intersection_over_self(
+                            ordered_bounding_box(proposal.bbox)
+                        )
+                        <= 0.2
+                        for cell in cells
+                        if cell.index not in group_ids
+                    )
+                    for proposal in proposals
+                ):
+                    corroborated += 1
+            if not corroborated or (
+                corroborated < len(groups) and any(len(g) < 2 for g in groups)
+            ):
+                result.append(cluster)
+                continue
+
+            for index, group in enumerate(groups):
+                paragraph = cluster.model_copy(
+                    update={"id": cluster.id if index == 0 else next_id, "cells": group}
+                )
+                if index > 0:
+                    next_id += 1
+                result.extend(self._adjust_cluster_bboxes([paragraph]))
+        return result
 
     def _assign_cells_to_clusters(
         self, clusters: list[Cluster], min_overlap: float = 0.2
