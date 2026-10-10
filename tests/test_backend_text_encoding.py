@@ -130,6 +130,25 @@ def test_utf16_is_decoded_from_its_mark_not_guessed(fmt, suffix, text, tmp_path)
 
 
 @pytest.mark.parametrize("fmt, suffix, text", FORMATS)
+@pytest.mark.parametrize("encoding", ["utf-16-le", "utf-16-be"])
+@pytest.mark.parametrize("content", ["plain ASCII", ACCENTED, "ABCDĀ"])
+def test_bomless_utf16_requires_encoding(
+    fmt, suffix, text, encoding, content, tmp_path
+):
+    raw = text.replace(ACCENTED, content).encode(encoding)
+
+    for error in _both_routes_raise(fmt, suffix, raw, tmp_path):
+        assert "UTF-16" in str(error)
+        assert "`encoding`" in str(error)
+        assert "utf-16-le" in str(error)
+        assert "utf-16-be" in str(error)
+
+    for export in _export_both_routes(fmt, suffix, raw, tmp_path, encoding=encoding):
+        assert content in export
+        assert "\x00" not in export
+
+
+@pytest.mark.parametrize("fmt, suffix, text", FORMATS)
 def test_utf32_is_not_decoded_as_utf16(fmt, suffix, text, tmp_path):
     """The UTF-32 LE mark opens with the UTF-16 LE mark, so order matters.
 
@@ -199,6 +218,49 @@ def test_requested_encoding_is_used_instead_of_guessing(fmt, suffix, text, tmp_p
 
     for export in _export_both_routes(fmt, suffix, raw, tmp_path, encoding="koi8-r"):
         assert CYRILLIC in export
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "cp1252"])
+@pytest.mark.parametrize("text", ["", "Report", ACCENTED])
+def test_text_without_nul_is_unaffected(encoding, text, tmp_path):
+    raw = text.encode(encoding)
+    path = tmp_path / "doc.md"
+    path.write_bytes(raw)
+
+    assert decode_text(BytesIO(raw)) == text
+    assert decode_text(path) == text
+
+
+@pytest.mark.parametrize("raw", [b"\x00", b"Report\x00 caf\xc3\xa9", b"caf\xe9\x00"])
+def test_undeclared_nul_bytes_require_encoding(raw, tmp_path):
+    path = tmp_path / "doc.md"
+    path.write_bytes(raw)
+
+    for source in (BytesIO(raw), path):
+        with pytest.raises(DocumentLoadError, match=r"NUL bytes.*`encoding`"):
+            decode_text(source)
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "cp1252", "utf-8-sig"])
+def test_declared_encoding_takes_precedence_over_nul_bytes(encoding, tmp_path):
+    text = "R\x00e\x00p\x00o\x00r\x00t\x00"
+    raw = text.encode(encoding)
+    path = tmp_path / "doc.md"
+    path.write_bytes(raw)
+
+    assert decode_text(BytesIO(raw), encoding=encoding) == text
+    assert decode_text(path, encoding=encoding) == text
+
+
+@pytest.mark.parametrize("encoding", ["utf-8-sig", "utf-16", "utf-32"])
+def test_bom_takes_precedence_over_nul_bytes(encoding, tmp_path):
+    text = "R\x00e\x00p\x00o\x00r\x00t\x00"
+    raw = text.encode(encoding)
+    path = tmp_path / "doc.md"
+    path.write_bytes(raw)
+
+    assert decode_text(BytesIO(raw)) == text
+    assert decode_text(path) == text
 
 
 def test_requested_encoding_that_cannot_decode_says_so(tmp_path):
