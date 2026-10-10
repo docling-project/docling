@@ -1345,6 +1345,42 @@ def test_pptx_hidden_slide_goes_to_invisible_layer(tmp_path: Path):
     ]
 
 
+def test_pptx_hidden_shape_goes_to_invisible_layer(tmp_path: Path):
+    """A shape hidden in PowerPoint (``p:cNvPr/@hidden="1"``) on a shown slide
+    is left out of the default export.
+
+    Its content stays available in ``ContentLayer.INVISIBLE``, like a hidden
+    slide.
+    """
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.shapes.add_textbox(Inches(1), Inches(1), Inches(6), Inches(1)).text_frame.text = (
+        "Shown shape text"
+    )
+    hidden = slide.shapes.add_textbox(Inches(1), Inches(3), Inches(6), Inches(1))
+    hidden.text_frame.text = "Hidden shape text"
+    hidden._element.nvSpPr.cNvPr.set("hidden", "1")
+
+    pptx_path = tmp_path / "hidden_shape.pptx"
+    prs.save(pptx_path)
+
+    doc = convert_with_pptx_backend(pptx_path)
+
+    def texts(layer: ContentLayer) -> list[str]:
+        return [
+            item.text
+            for item, _ in doc.iterate_items(included_content_layers={layer})
+            if isinstance(item, TextItem)
+        ]
+
+    assert "Hidden shape text" not in doc.export_to_markdown()
+    assert "Shown shape text" in doc.export_to_markdown()
+    assert texts(ContentLayer.INVISIBLE) == ["Hidden shape text"]
+
+
 @pytest.mark.parametrize(
     ("layout_marker", "override_layer", "expected"),
     [

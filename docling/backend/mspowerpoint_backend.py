@@ -1687,7 +1687,25 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             # Loop through each shape in the slide
             for shape in self._iter_shapes_by_position(slide.shapes):
-                handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
+                if self._is_hidden_shape(shape):
+                    # Like a hidden slide, keep the content but move it to
+                    # the invisible layer instead of the body layer.
+                    seen = {
+                        id(item)
+                        for item, _ in doc.iterate_items(
+                            root=parent_slide, with_groups=True
+                        )
+                    }
+                    handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
+                    for item, _ in doc.iterate_items(
+                        root=parent_slide,
+                        with_groups=True,
+                        included_content_layers={ContentLayer.BODY},
+                    ):
+                        if id(item) not in seen:
+                            item.content_layer = ContentLayer.INVISIBLE
+                else:
+                    handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
 
             # Handle notes slide
             if slide.has_notes_slide:
@@ -1718,6 +1736,15 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 self._hide_slide(doc, parent_slide)
 
         return doc
+
+    def _is_hidden_shape(self, shape) -> bool:
+        """Whether a shape is hidden in PowerPoint (Selection Pane > Hide).
+
+        A shape whose ``p:cNvPr`` carries ``hidden="1"`` is never presented,
+        so its content belongs on the invisible layer, like a hidden slide.
+        """
+        cNvPr = shape._element.find(".//p:cNvPr", namespaces=self.NAMESPACES)
+        return cNvPr is not None and cNvPr.get("hidden") == "1"
 
     @staticmethod
     def _hide_slide(doc: DoclingDocument, parent_slide: GroupItem) -> None:
