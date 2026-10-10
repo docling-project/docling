@@ -1123,6 +1123,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.last_list_group_numid = saved_last_list_group_numid
             self.last_list_group_parent = saved_last_list_group_parent
 
+    @staticmethod
+    def _resolve_alternate_content_branch(element):
+        """Return the child <mc:Choice> (falling back to <mc:Fallback>) to walk
+        for a body-level mc:AlternateContent, or None if neither is present."""
+        choice_tag = f"{_MC_NS_CLARK}Choice"
+        fallback_tag = f"{_MC_NS_CLARK}Fallback"
+        for branch in element:
+            if branch.tag == choice_tag:
+                return branch
+        for branch in element:
+            if branch.tag == fallback_tag:
+                return branch
+        return None
+
     def _walk_linear(
         self,
         body: BaseOxmlElement,
@@ -1132,6 +1146,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         added_elements = []
         for element in body:
             tag_name = etree.QName(element).localname
+
+            # Handle body-level mc:AlternateContent (markup compatibility).
+            # Resolve to the supported Choice branch (first Choice, else
+            # Fallback) and walk its children. Walking both branches would
+            # duplicate content, so exactly one branch is chosen.
+            if (
+                tag_name == "AlternateContent"
+                and element.tag == f"{_MC_NS_CLARK}AlternateContent"
+            ):
+                chosen_branch = self._resolve_alternate_content_branch(element)
+                if chosen_branch is not None:
+                    _, ae = self._walk_linear(chosen_branch, doc)
+                    added_elements.extend(ae)
+                continue
+
             # Check for Inline Images (blip elements)
             _raw_drawing_blip = self.blip_xpath_expr(element)
             _raw_drawingml_els = element.findall(

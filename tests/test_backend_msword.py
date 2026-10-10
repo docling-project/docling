@@ -2226,3 +2226,114 @@ def test_footnotes_and_endnotes_are_not_dropped():
     assert len(footnote_items) == 2, (
         "expected exactly one real footnote and one real endnote, no placeholders"
     )
+
+
+def test_body_level_alternate_content_paragraphs_are_not_dropped():
+    """Body-level mc:AlternateContent must resolve to its Choice branch.
+
+    Regression test for issue #4611: when ``mc:AlternateContent`` is a direct
+    child of ``w:body``, the body walk used to ignore it entirely, silently
+    dropping every paragraph in the supported ``mc:Choice`` branch. We now
+    resolve to the first Choice (or Fallback) and walk its children exactly
+    once, so Choice content appears and Fallback content is not duplicated.
+    """
+    import io as _io
+
+    MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    XML_NS = "http://www.w3.org/XML/1998/namespace"
+
+    doc = Document()
+    body = doc.element.body
+    sectPr = body.find(f"{{{W_NS}}}sectPr")
+
+    def _make_paragraph(text):
+        p = etree.Element(f"{{{W_NS}}}p")
+        r = etree.SubElement(p, f"{{{W_NS}}}r")
+        t = etree.SubElement(r, f"{{{W_NS}}}t")
+        t.text = text
+        t.set(f"{{{XML_NS}}}space", "preserve")
+        if sectPr is not None:
+            sectPr.addprevious(p)
+        else:
+            body.append(p)
+        return p
+
+    _make_paragraph("Paragraph before")
+
+    # Build a body-level mc:AlternateContent with Choice + Fallback.
+    ac = etree.Element(f"{{{MC_NS}}}AlternateContent")
+    choice = etree.SubElement(ac, f"{{{MC_NS}}}Choice")
+    choice.set("Requires", "w14")
+    p_choice = etree.SubElement(choice, f"{{{W_NS}}}p")
+    r_c = etree.SubElement(p_choice, f"{{{W_NS}}}r")
+    t_c = etree.SubElement(r_c, f"{{{W_NS}}}t")
+    t_c.text = "CHOICE_BRANCH_ACTIVE"
+
+    fallback = etree.SubElement(ac, f"{{{MC_NS}}}Fallback")
+    p_fb = etree.SubElement(fallback, f"{{{W_NS}}}p")
+    r_f = etree.SubElement(p_fb, f"{{{W_NS}}}r")
+    t_f = etree.SubElement(r_f, f"{{{W_NS}}}t")
+    t_f.text = "FALLBACK_LEGACY_BRANCH_IGNORED"
+
+    if sectPr is not None:
+        sectPr.addprevious(ac)
+    else:
+        body.append(ac)
+
+    _make_paragraph("Paragraph after")
+
+    stream = _io.BytesIO()
+    doc.save(stream)
+    stream.seek(0)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(
+        DocumentStream(name="alternate.docx", stream=stream),
+        raises_on_error=True,
+    )
+
+    all_text = "\n".join(t.text for t in result.document.texts)
+    assert "Paragraph before" in all_text
+    assert "CHOICE_BRANCH_ACTIVE" in all_text
+    assert "FALLBACK_LEGACY_BRANCH_IGNORED" not in all_text
+    assert "Paragraph after" in all_text
+
+
+def test_body_level_alternate_content_fallback_only():
+    """When body-level mc:AlternateContent has no Choice, the Fallback branch is walked."""
+    import io as _io
+
+    MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    XML_NS = "http://www.w3.org/XML/1998/namespace"
+
+    doc = Document()
+    body = doc.element.body
+    sectPr = body.find(f"{{{W_NS}}}sectPr")
+
+    ac = etree.Element(f"{{{MC_NS}}}AlternateContent")
+    fallback = etree.SubElement(ac, f"{{{MC_NS}}}Fallback")
+    p_fb = etree.SubElement(fallback, f"{{{W_NS}}}p")
+    r_f = etree.SubElement(p_fb, f"{{{W_NS}}}r")
+    t_f = etree.SubElement(r_f, f"{{{W_NS}}}t")
+    t_f.text = "ONLY_FALLBACK_BRANCH"
+    t_f.set(f"{{{XML_NS}}}space", "preserve")
+
+    if sectPr is not None:
+        sectPr.addprevious(ac)
+    else:
+        body.append(ac)
+
+    stream = _io.BytesIO()
+    doc.save(stream)
+    stream.seek(0)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    result = converter.convert(
+        DocumentStream(name="alternate_fallback.docx", stream=stream),
+        raises_on_error=True,
+    )
+
+    all_text = "\n".join(t.text for t in result.document.texts)
+    assert "ONLY_FALLBACK_BRANCH" in all_text
