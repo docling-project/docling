@@ -253,9 +253,13 @@ PIXTRAL_12B_MLX = InlineVlmOptions(
     temperature=0.0,
 )
 
+# All specs in this module that set trust_remote_code=True are pinned to a
+# commit SHA. A pin is bumped only after reviewing the remote code at the new
+# commit.
 # Phi4
 PHI4_TRANSFORMERS = InlineVlmOptions(
     repo_id="microsoft/Phi-4-multimodal-instruct",
+    revision="93f923e1a7727d1c4f446756212d9d3e8fcc5d81",
     prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
     trust_remote_code=True,
     response_format=ResponseFormat.MARKDOWN,
