@@ -563,9 +563,36 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             for slc in slices
         ]
 
+        # A component can lie inside the enclosing box of another one, e.g. a block
+        # framed on three sides by other clusters. OCR-ing both boxes would read the
+        # enclosed content twice, so keep only the boxes no other box contains.
+        bounding_boxes = self._drop_contained_rects(bounding_boxes)
+
         # Compute area fraction on page covered by bitmaps
         area_frac = np.sum(np_image > 0) / (size.width * size.height)
         return (area_frac, bounding_boxes)  # fraction covered  # boxes
+
+    @staticmethod
+    def _drop_contained_rects(rects: list[BoundingBox]) -> list[BoundingBox]:
+        """Remove every rect that lies fully inside another rect of the list.
+
+        Rects are visited from the largest to the smallest, so a rect is compared
+        only with the rects already kept. A rect inside a dropped rect is also
+        inside the rect that dropped it. The kept rects stay in the input order.
+        """
+        order = sorted(range(len(rects)), key=lambda i: rects[i].area(), reverse=True)
+        kept: list[int] = []
+        for i in order:
+            box = rects[i]
+            if not any(
+                rects[k].l <= box.l
+                and rects[k].t <= box.t
+                and box.r <= rects[k].r
+                and box.b <= rects[k].b
+                for k in kept
+            ):
+                kept.append(i)
+        return [rects[i] for i in sorted(kept)]
 
     def post_process_cells(
         self,
