@@ -1345,6 +1345,60 @@ def test_pptx_hidden_slide_goes_to_invisible_layer(tmp_path: Path):
     ]
 
 
+def test_pptx_footer_placeholders_go_to_furniture_layer(tmp_path: Path):
+    """Footer, date and slide-number placeholders are slide chrome, not body text."""
+    from lxml import etree
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    ns = (
+        'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+    )
+
+    prs = Presentation()
+    for body, hidden in [("Presented text", False), ("Backup text", True)]:
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+        box.text_frame.text = body
+        for idx, (ph_type, text) in enumerate(
+            [("dt", "10 October 2026"), ("ftr", "Confidential"), ("sldNum", "1")],
+            start=10,
+        ):
+            slide.shapes._spTree.append(
+                etree.fromstring(
+                    f'<p:sp {ns}><p:nvSpPr><p:cNvPr id="{idx}" name="{ph_type}"/>'
+                    "<p:cNvSpPr/><p:nvPr>"
+                    f'<p:ph type="{ph_type}" idx="{idx}"/></p:nvPr></p:nvSpPr>'
+                    f"<p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>{text}</a:t>"
+                    "</a:r></a:p></p:txBody></p:sp>"
+                )
+            )
+        if hidden:
+            slide._element.set("show", "0")
+
+    pptx_path = tmp_path / "footer.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    def texts(layer: ContentLayer) -> list[str]:
+        return [
+            item.text
+            for item, _ in doc.iterate_items(included_content_layers={layer})
+            if isinstance(item, TextItem)
+        ]
+
+    assert doc.export_to_markdown() == "Presented text"
+    assert texts(ContentLayer.FURNITURE) == ["10 October 2026", "Confidential", "1"]
+    assert texts(ContentLayer.INVISIBLE) == [
+        "Backup text",
+        "10 October 2026",
+        "Confidential",
+        "1",
+    ]
+
+
 @pytest.mark.parametrize(
     ("layout_marker", "override_layer", "expected"),
     [

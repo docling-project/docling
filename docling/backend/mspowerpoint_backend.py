@@ -884,6 +884,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         open_lists: list[_OpenList] = []
         doc_label = DocItemLabel.LIST_ITEM
 
+        # Footer, date and slide-number placeholders are slide chrome, like page
+        # headers and footers in a PDF.
+        content_layer = None
+        if shape.is_placeholder and shape.placeholder_format.type in (
+            PP_PLACEHOLDER.FOOTER,
+            PP_PLACEHOLDER.DATE,
+            PP_PLACEHOLDER.SLIDE_NUMBER,
+        ):
+            content_layer = ContentLayer.FURNITURE
+
         # Iterate through paragraphs to build up text
         for paragraph in shape.text_frame.paragraphs:
             is_a_list, bullet_type = self._is_list_item(paragraph)
@@ -905,7 +915,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if not open_lists:
                     open_lists.append(
                         _OpenList(
-                            group=doc.add_list_group(name="list", parent=parent_slide),
+                            group=doc.add_list_group(
+                                name="list",
+                                parent=parent_slide,
+                                content_layer=content_layer,
+                            ),
                             level=level,
                         )
                     )
@@ -913,7 +927,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     open_lists.append(
                         _OpenList(
                             group=doc.add_list_group(
-                                name="list", parent=open_lists[-1].last_item
+                                name="list",
+                                parent=open_lists[-1].last_item,
+                                content_layer=content_layer,
                             ),
                             level=level,
                         )
@@ -932,9 +948,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     parent=current.group,
                     text="" if has_equations else p_text,
                     prov=prov,
+                    content_layer=content_layer,
                 )
                 if has_equations:
-                    inline_group = doc.add_inline_group(parent=current.last_item)
+                    inline_group = doc.add_inline_group(
+                        parent=current.last_item, content_layer=content_layer
+                    )
                     for label, text in fragments:
                         doc.add_text(
                             label=label,
@@ -943,6 +962,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             prov=self._generate_prov(
                                 shape, slide_ind, text, slide_size
                             ),
+                            content_layer=content_layer,
                         )
             else:  # is paragraph not a list item
                 open_lists.clear()
@@ -969,7 +989,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             label=doc_label, parent=parent_slide, text="", prov=prov
                         )
                     parent = (
-                        doc.add_inline_group(parent=fragment_parent)
+                        doc.add_inline_group(
+                            parent=fragment_parent, content_layer=content_layer
+                        )
                         if has_text
                         else fragment_parent
                     )
@@ -982,6 +1004,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                                 prov=self._generate_prov(
                                     shape, slide_ind, text, slide_size
                                 ),
+                                content_layer=content_layer,
                             )
                 else:
                     doc.add_text(
@@ -989,6 +1012,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         parent=parent_slide,
                         text=p_text,
                         prov=prov,
+                        content_layer=content_layer,
                     )
         return
 
@@ -1732,7 +1756,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             for item, _ in doc.iterate_items(
                 root=parent_slide,
                 with_groups=True,
-                included_content_layers={ContentLayer.BODY},
+                included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE},
             )
         ]
         for item in items:
