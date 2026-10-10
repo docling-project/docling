@@ -1188,11 +1188,16 @@ class IWAReader:
         member = self._data_files.get(identifier)
         if member is None:
             return Picture(None, "")
-        try:
-            return Picture(self._archive.read(self._data_prefix + member), member)
-        except KeyError:
-            _log.debug("iWork image data member %s is missing", member)
-            return Picture(None, member)
+        # Apple writes member names in UTF-8 but does not set the flag that says
+        # so, and zipfile then reads a name as code page 437, as the ZIP format
+        # says. A name that is not ASCII is found under that reading.
+        for name in (member, member.encode("utf-8").decode("cp437")):
+            try:
+                return Picture(self._archive.read(self._data_prefix + name), member)
+            except KeyError:
+                continue
+        _log.debug("iWork image data member %s is missing", member)
+        return Picture(None, member)
 
     def _picture(self, image: IWAObject) -> Picture:
         """Read a ``TSD.ImageArchive`` and the container member holding its bytes."""
