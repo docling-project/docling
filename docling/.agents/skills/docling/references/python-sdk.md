@@ -372,6 +372,14 @@ to `200` (set `None` for no limit). When `document_timeout` is set, all FFmpeg
 calls share that budget; running out yields `PARTIAL_SUCCESS` with a `TIMEOUT`
 error (`result.has_timeout_errors()`).
 
+Video and audio on PPTX and ODP slides become pictures whose `meta` has a
+`docling__video` or `docling__audio` field with the path of the media file. Set
+`ConvertPipelineOptions(do_media_conversion=True)` on `PowerpointFormatOption` or
+`OdpFormatOption` to transcribe them too: the transcript (and the frames of a
+video) goes in a group right after the picture. `media_asr_options` picks the
+Whisper model. Linked media files load only with the backend options
+`enable_remote_fetch` / `enable_local_fetch`.
+
 ## Exporting images and tables
 
 To keep and export page/figure images, tell the pipeline to generate them, then

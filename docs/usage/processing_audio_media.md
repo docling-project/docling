@@ -258,6 +258,40 @@ docling --to md --video-sampling-mode scene --video-diarization video.mp4
 
 See the [CLI reference](../reference/cli.md) for the complete flag list.
 
+## Video and audio in slides
+
+PowerPoint (PPTX) and OpenDocument (ODP) slides can play video and audio. By default, Docling keeps each media object as a picture of its poster frame or icon. The `docling__video` or `docling__audio` field of the picture `meta` tells where the media file is: its path inside the presentation package, or the link of a linked file.
+
+Set `do_media_conversion=True` to also convert the media. Docling sends each media file through the ASR pipeline (audio) or the video pipeline (video). The result goes in a group right after the picture: the transcript with its timestamps and, for a video, the sampled frames. These items get the provenance of the picture, so you can see on which slide the media plays.
+
+```python
+from pathlib import Path
+
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import ConvertPipelineOptions
+from docling.document_converter import (
+    DocumentConverter,
+    OdpFormatOption,
+    PowerpointFormatOption,
+)
+
+pipeline_options = ConvertPipelineOptions(do_media_conversion=True)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PPTX: PowerpointFormatOption(pipeline_options=pipeline_options),
+        InputFormat.ODP: OdpFormatOption(pipeline_options=pipeline_options),
+    }
+)
+result = converter.convert(Path("slides.pptx"))
+print(result.document.export_to_markdown())
+```
+
+`media_asr_options` selects the Whisper model (default: `WHISPER_TINY`). Frames are sampled with the default settings of the video pipeline.
+
+Docling loads a linked media file only when the backend options allow it: `enable_remote_fetch=True` for a URL, and `enable_local_fetch=True` for a local file. A local file must be in the folder of the presentation or below it, and the presentation must be given as a `Path`. PowerPoint stores links to local files as absolute paths, so Docling does not load them.
+
+If a media file cannot be converted, the picture stays, the result status is `PARTIAL_SUCCESS`, and the reason is in `ConversionResult.errors`.
+
 ## Choosing an ASR model and backend
 
 Docling ships three interchangeable ASR backends, all installed by the `asr` extra shown above:
