@@ -204,6 +204,9 @@ _IMPLIED_END_TAGS: Final = {
     "tr": ({"tr", "td", "th"}, {"table", "thead", "tbody", "tfoot"}),
 }
 
+# HTML table row-group elements that wrap <tr> children.
+_TABLE_SECTION_TAGS: Final = frozenset({"thead", "tbody", "tfoot"})
+
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
 
 _FORMAT_TAG_MAP: Final = {
@@ -2001,8 +2004,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         num_rows: int,
         num_cols: int,
     ) -> Optional[TableData]:
-        for t in cast(list[Tag], element.find_all(["thead", "tbody"], recursive=False)):
-            t.unwrap()
+        self._unwrap_table_sections(element)
 
         _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
         grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
@@ -3295,9 +3297,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return match.group("marker").strip() if match else ""
 
     @staticmethod
-    def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
-        for t in cast(list[Tag], tag.find_all(["thead", "tbody"], recursive=False)):
+    def _unwrap_table_sections(tag: Tag) -> None:
+        """Lift the rows of a table's row groups into the table itself.
+
+        The HTML table model places tfoot rows after all other row groups,
+        wherever the tfoot element appears in the source (HTML 4 required it
+        before tbody), so tfoot elements move to the end before unwrapping.
+        """
+        for t in cast(list[Tag], tag.find_all("tfoot", recursive=False)):
+            tag.append(t.extract())
+        for t in cast(list[Tag], tag.find_all(_TABLE_SECTION_TAGS, recursive=False)):
             t.unwrap()
+
+    @staticmethod
+    def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
+        HTMLDocumentBackend._unwrap_table_sections(tag)
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
         row_cell_spans: list[list[tuple[int, int]]] = []
