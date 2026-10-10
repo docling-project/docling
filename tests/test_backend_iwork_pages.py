@@ -916,6 +916,52 @@ def test_legacy_image_is_read_from_the_container_member(tmp_path: Path):
     assert order.index(doc.pictures[0].self_ref) == 1
 
 
+def _transparent_png() -> bytes:
+    """A PNG with one opaque blue pixel on a transparent background."""
+    image = PILImage.new("RGBA", (4, 4), (0, 0, 0, 0))
+    image.putpixel((0, 0), (0, 0, 255, 255))
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _with_legacy_image(target: Path, png: bytes) -> Path:
+    """Write an iWork '09 Pages container whose body holds just one image."""
+    namespace = "http://developer.apple.com/namespaces/sf"
+    xml = f"""<?xml version="1.0"?>
+    <sf:document xmlns:sf="{namespace}">
+      <sf:text-storage>
+        <sf:text-body>
+          <sf:media>
+            <sf:content><sf:image-media><sf:filtered-image><sf:unfiltered>
+              <sf:data sf:path="logo.png"/>
+            </sf:unfiltered></sf:filtered-image></sf:image-media></sf:content>
+          </sf:media>
+        </sf:text-body>
+      </sf:text-storage>
+    </sf:document>""".encode()
+    return _write_pages(target, {"index.xml": xml, "logo.png": png})
+
+
+@pytest.mark.parametrize(
+    "build",
+    [_with_image_anchored, _with_legacy_image],
+    ids=["pages-5", "pages-09"],
+)
+def test_transparent_image_keeps_its_transparency(tmp_path: Path, build):
+    """A picture is stored as PNG, so its transparency is kept as in the other
+    backends. Dropping the alpha channel exposed the colour stored under the
+    transparent pixels, which is usually black."""
+    doc = _backend(build(tmp_path / "logo.pages", _transparent_png())).convert()
+
+    assert len(doc.pictures) == 1
+    picture = doc.pictures[0].image
+    assert picture is not None
+    assert picture.pil_image.mode == "RGBA"
+    assert picture.pil_image.getpixel((3, 3)) == (0, 0, 0, 0)
+    assert picture.pil_image.getpixel((0, 0)) == (0, 0, 255, 255)
+
+
 def test_table_is_placed_where_the_document_anchors_it():
     """The fixture anchors its table inline, at a U+FFFC early in the body text.
     Reading the attachment table is what puts it there instead of after
