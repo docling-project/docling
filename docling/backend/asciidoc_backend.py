@@ -191,6 +191,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         caption_data: list[str] = []
         last_list_item: ListItem | None = None
         list_continuation = False
+        # Whether the list group at each level is ordered, for the list being
+        # parsed. Reset when a new list starts, so a level that holds a section
+        # header is never mistaken for a list.
+        list_numbered: dict[int, bool] = {}
 
         parents: dict[int, Union[GroupItem, None]] = {}
         indents: dict[int, Union[GroupItem, None]] = {}
@@ -294,12 +298,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         parent=parents[level], name="list", label=GroupLabel.LIST
                     )
                     indents[level + 1] = item["indent"]
+                    list_numbered = {level + 1: item["numbered"]}
 
                 elif in_list and item["indent"] > indents[level]:
+                    # A nested list belongs to the item above it. As a sibling
+                    # of the items, it is counted as an item of the outer list,
+                    # and the next ordered item is numbered one too high.
                     parents[level + 1] = doc.add_group(
-                        parent=parents[level], name="list", label=GroupLabel.LIST
+                        parent=last_list_item, name="list", label=GroupLabel.LIST
                     )
                     indents[level + 1] = item["indent"]
+                    list_numbered[level + 1] = item["numbered"]
 
                 elif in_list and item["indent"] < indents[level]:
                     while level > 0 and item["indent"] < indents[level]:
@@ -310,6 +319,15 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         parents[level] = None
                         indents[level] = None
                         level -= 1
+
+                self._match_list_kind(
+                    doc=doc,
+                    item=item,
+                    parents=parents,
+                    indents=indents,
+                    list_numbered=list_numbered,
+                    last_list_item=last_list_item,
+                )
 
                 last_list_item = doc.add_list_item(
                     item["text"],
@@ -615,9 +633,49 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         ):
             return in_list, last_list_item, list_continuation
 
+        # Close every level of the list, not only the innermost one. Otherwise
+        # the text after a nested list is added to the outer list group.
         level = cls._get_current_level(parents)
-        parents[level] = None
+        while (
+            isinstance(group := parents[level], GroupItem)
+            and group.label == GroupLabel.LIST
+        ):
+            parents[level] = None
+            level -= 1
         return False, None, False
+
+    @classmethod
+    def _match_list_kind(
+        cls,
+        *,
+        doc: DoclingDocument,
+        item: dict,
+        parents: dict[int, GroupItem | None],
+        indents: dict[int, GroupItem | None],
+        list_numbered: dict[int, bool],
+        last_list_item: ListItem | None,
+    ) -> None:
+        """Keep ordered items and bullet items out of the same list group.
+
+        AsciiDoc nests lists by marker, not by indentation. The item returns to
+        the enclosing list of its own kind at the same indent, or else opens a
+        nested list under the item above it.
+        """
+        level = cls._get_current_level(parents)
+        if list_numbered.get(level) == item["numbered"]:
+            return
+        if (
+            list_numbered.get(level - 1) == item["numbered"]
+            and indents[level - 1] == item["indent"]
+        ):
+            parents[level] = None
+            indents[level] = None
+        else:
+            parents[level + 1] = doc.add_group(
+                parent=last_list_item, name="list", label=GroupLabel.LIST
+            )
+            indents[level + 1] = item["indent"]
+            list_numbered[level + 1] = item["numbered"]
 
     @staticmethod
     def _flush_text_data(

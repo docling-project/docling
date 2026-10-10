@@ -309,6 +309,33 @@ If the installer fails, check the log file.
     assert "If the installer fails, check the log file." in doc.export_to_markdown()
 
 
+def test_nested_list_belongs_to_the_item_above_it() -> None:
+    # A nested list used to be added next to the items of the outer list
+    # instead of under the item above it. The outer list then counted it as an
+    # item, so "Run the installer" was exported as "3." instead of "2.".
+    source = b""". Download the archive
+.. Pick the file for your platform
+. Run the installer
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="nested-ordered-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    download, pick, run = (item for item in doc.texts if isinstance(item, ListItem))
+    nested_list = pick.parent.resolve(doc)
+    assert nested_list.parent == download.get_ref()
+    assert run.parent == download.parent
+    assert doc.export_to_markdown() == (
+        "1. Download the archive\n"
+        "    1. Pick the file for your platform\n"
+        "2. Run the installer"
+    )
+
+
 def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
     # "**" and "***" mark nested bullet items, the same way ".." does for
     # ordered lists. They used to fall through to paragraph text, which lost the
@@ -345,6 +372,84 @@ def test_nested_bullet_list_keeps_items_nested_and_in_order() -> None:
         "        - with cherries\n"
         "    - banana bread\n"
         "- cherry"
+    )
+
+
+def test_text_after_a_nested_list_is_not_part_of_the_list() -> None:
+    # Ending a list used to close only its innermost level, so the paragraph
+    # after a nested list was added to the outer list group, and so was the
+    # next list.
+    source = b"""* apple
+** apple pie
+
+After the list.
+
+* mango
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="nested-list-end.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    paragraph = next(item for item in doc.texts if item.text == "After the list.")
+    assert paragraph.parent == doc.body.get_ref()
+    mango = next(item for item in doc.texts if item.text == "mango")
+    assert mango.parent.resolve(doc).parent == doc.body.get_ref()
+    assert doc.export_to_markdown() == (
+        "- apple\n    - apple pie\n\nAfter the list.\n\n- mango"
+    )
+
+
+def test_bullet_items_under_an_ordered_list_are_nested() -> None:
+    # AsciiDoc nests lists by marker, not by indentation: a "*" item after a
+    # "." item opens a nested bullet list, and the next "." item returns to the
+    # ordered list, also after a deeper "**" item. Both kinds used to share one
+    # list group, so "a" was exported as item "3." and "z" joined the bullets.
+    source = b""". one
+. two
+
+* a
+** b
+
+Separate paragraph.
+
+. x
+* y
+** y2
+. z
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="mixed-list.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    list_items = {item.text: item for item in doc.texts if isinstance(item, ListItem)}
+    assert [text for text, item in list_items.items() if item.enumerated] == [
+        "one",
+        "two",
+        "x",
+        "z",
+    ]
+    assert list_items["x"].parent == list_items["z"].parent
+    assert list_items["y"].parent != list_items["x"].parent
+    assert doc.export_to_markdown() == (
+        "1. one\n"
+        "2. two\n"
+        "    - a\n"
+        "        - b\n"
+        "\n"
+        "Separate paragraph.\n"
+        "\n"
+        "1. x\n"
+        "    - y\n"
+        "        - y2\n"
+        "2. z"
     )
 
 
