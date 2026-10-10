@@ -1409,10 +1409,11 @@ def _add_odf_list(
                 marker=marker,
                 enumerated=current_enumerated,
                 parent=list_group,
-                # Prefer the run-derived text: odfdo's own text_recursive
-                # renders hyperlinked children as "[text](href)" markdown,
-                # which would otherwise leak into the plain item text.
-                text=runs[0].text if runs else text,
+                # Use only the run-derived text: odfdo's own text_recursive
+                # renders hyperlinked children as "[text](href)" markdown, an
+                # image or a chart as "(href)" and a footnote as its citation
+                # and body, which would otherwise leak into the plain item text.
+                text=runs[0].text if runs else "",
                 content_layer=content_layer,
                 formatting=runs[0].formatting if runs else None,
                 hyperlink=runs[0].hyperlink if runs else None,
