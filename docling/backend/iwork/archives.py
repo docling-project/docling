@@ -741,8 +741,8 @@ def iwa_value_list(
     store: dict[int, list[int | bytes]],
     field: int,
     objects: dict[int, IWAObject],
-    decode: Callable[[dict[int, list[int | bytes]], dict[int, IWAObject]], str | None],
-) -> dict[int, str]:
+    decode: Callable[[dict[int, list[int | bytes]], dict[int, IWAObject]], _T | None],
+) -> dict[int, _T]:
     """Read one ``TST.TableDataList``, following any segments it spills into."""
     reference = store.get(field, [None])[0]
     target = read_reference(reference) if isinstance(reference, bytes) else None
@@ -756,7 +756,7 @@ def iwa_value_list(
         if spilled is not None:
             payloads.append(spilled.payload)
 
-    values: dict[int, str] = {}
+    values: dict[int, _T] = {}
     for payload in payloads:
         for entry in safe_fields(payload).get(LIST_ENTRIES_FIELD, []):
             if not isinstance(entry, bytes):
@@ -985,6 +985,7 @@ class IWAReader:
         self._objects = objects
         self._data_prefix = data_prefix
         self._data_files = iwa_data_files(objects)
+        self._data: dict[int, Picture] = {}
         self._emitted: set[int] = set()
 
     def storage_blocks(self, storage: IWAObject) -> list[Block]:
@@ -1164,6 +1165,35 @@ class IWAReader:
 
         return []
 
+    def data_picture(self, identifier: int) -> Picture:
+        """Read the picture one data file holds, for an archive that names it.
+
+        A table cell filled with an image names the data itself rather than
+        through a ``TSD.ImageArchive``. Many cells can name the same data, so
+        each data file is read only once.
+
+        Args:
+            identifier: The data identifier.
+
+        Returns:
+            The picture. Its data is None when the container does not hold the
+            file.
+        """
+        if identifier not in self._data:
+            self._data[identifier] = self._read_data(identifier)
+        return self._data[identifier]
+
+    def _read_data(self, identifier: int) -> Picture:
+        """Read the container member that one data identifier names."""
+        member = self._data_files.get(identifier)
+        if member is None:
+            return Picture(None, "")
+        try:
+            return Picture(self._archive.read(self._data_prefix + member), member)
+        except KeyError:
+            _log.debug("iWork image data member %s is missing", member)
+            return Picture(None, member)
+
     def _picture(self, image: IWAObject) -> Picture:
         """Read a ``TSD.ImageArchive`` and the container member holding its bytes."""
         fields = safe_fields(image.payload)
@@ -1173,16 +1203,14 @@ class IWAReader:
             if not isinstance(reference, bytes):
                 continue
             data_id = read_reference(reference)
-            member = self._data_files.get(data_id) if data_id is not None else None
-            if member is None:
+            if data_id is None:
                 continue
-            named = named or member
-            try:
-                return Picture(self._archive.read(self._data_prefix + member), member)
-            except KeyError:
-                # Pages names every rendition it knows of, including ones it did
-                # not write into this container, so keep trying the rest.
-                _log.debug("iWork image data member %s is missing", member)
+            picture = self.data_picture(data_id)
+            if picture.data is not None:
+                return picture
+            # Pages names every rendition it knows of, including ones it did
+            # not write into this container, so keep trying the rest.
+            named = named or picture.name
         return Picture(None, named)
 
 

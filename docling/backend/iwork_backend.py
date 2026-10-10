@@ -46,6 +46,7 @@ from docling_core.types.doc import (
     PictureClassificationPrediction,
     PictureMeta,
     ProvenanceItem,
+    RichTableCell,
     Size,
     TableCell,
     TableData,
@@ -787,17 +788,21 @@ def _add_picture(
         parent: The node to add it under, or None for the document root.
         prov: Where the picture came from, for the backends that know.
     """
-    image: ImageRef | None = None
-    if picture.data is not None:
-        try:
-            with Image.open(BytesIO(picture.data)) as opened:
-                image = ImageRef.from_pil(image=opened.convert("RGB"), dpi=72)
-        except (OSError, ValueError) as exc:
-            # Pages stores whatever the author placed, including formats Pillow
-            # has no decoder for. The picture still belongs in the flow.
-            _log.debug("Could not decode iWork image %s: %s", picture.name, exc)
+    doc.add_picture(image=_picture_image(picture), parent=parent, prov=prov)
 
-    doc.add_picture(image=image, parent=parent, prov=prov)
+
+def _picture_image(picture: Picture) -> ImageRef | None:
+    """Decode a picture's bytes into an image, or None when they cannot be."""
+    if picture.data is None:
+        return None
+    try:
+        with Image.open(BytesIO(picture.data)) as opened:
+            return ImageRef.from_pil(image=opened.convert("RGB"), dpi=72)
+    except (OSError, ValueError) as exc:
+        # Pages stores whatever the author placed, including formats Pillow
+        # has no decoder for. The picture still belongs in the flow.
+        _log.debug("Could not decode iWork image %s: %s", picture.name, exc)
+        return None
 
 
 def _add_chart(
@@ -1086,6 +1091,11 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         * A picture is placed where the sheet puts it, but its caption, its
           cropping and its accessibility description are not read. A picture in
           a group takes the frame of the group.
+        * A cell filled with an image becomes a rich cell that holds the cell's
+          text and the picture, as in the Word backend. The picture takes the
+          frame of its table. The style of a cell is read only from the cell
+          storage that Numbers writes since 2017, so the picture in a cell of
+          an older document, or of an iWork '09 one, is not read.
         * Shapes and text boxes are not extracted.
         * Password-protected documents cannot be read.
         * ``.numbers`` bundles saved as a *directory* package rather than a
@@ -1191,6 +1201,7 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
         render_chart = _chart_renderer(self.options)
+        images: dict[str, ImageRef | None] = {}
         start_page, end_page = self.page_range
         for index, sheet in enumerate(self._selected_sheets(), start=1):
             # Page numbers are 1-based positions within the selected sheets, so a
@@ -1216,7 +1227,9 @@ class IWorkNumbersDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             ] = [*sheet.tables, *sheet.charts, *sheet.pictures]
             for drawable in sorted(drawn, key=numbers_content.sheet_order):
                 if isinstance(drawable, numbers_content.Table):
-                    _add_sheet_table(doc, drawable, parent=group, page_no=index)
+                    _add_sheet_table(
+                        doc, drawable, parent=group, page_no=index, images=images
+                    )
                 elif isinstance(drawable, numbers_content.PlacedChart):
                     _add_chart(
                         doc,
@@ -1277,24 +1290,23 @@ def _add_sheet_table(
     *,
     parent: NodeItem,
     page_no: int,
+    images: dict[str, ImageRef | None],
 ) -> None:
-    """Attach one Numbers table to the document under its sheet group."""
-    data = TableData(num_rows=table.num_rows, num_cols=table.num_cols, table_cells=[])
-    for cell in table.cells:
-        data.table_cells.append(
-            TableCell(
-                text=cell.text,
-                col_span=cell.col_span,
-                start_row_offset_idx=cell.row,
-                end_row_offset_idx=cell.row + 1,
-                start_col_offset_idx=cell.col,
-                end_col_offset_idx=cell.col + cell.col_span,
-                column_header=cell.row < table.header_rows,
-                row_header=cell.row >= table.header_rows
-                and cell.col < table.header_cols,
-            )
-        )
+    """Attach one Numbers table to the document under its sheet group.
 
+    A cell filled with a picture becomes a rich cell, the way the Word backend
+    reads a picture in a cell: a group under the table holds the cell's text
+    and its picture. Both take the frame of the table, as a picture in a group
+    takes the frame of the group.
+
+    Args:
+        doc: The document being built.
+        table: The table to add.
+        parent: The group of the sheet the table is on.
+        page_no: The sheet's page number, counted from one.
+        images: The images decoded so far, by container member. Many cells can
+            be filled with the same image, and it is decoded only once.
+    """
     prov = _sheet_prov(table.geometry, page_no)
     caption = (
         doc.add_text(
@@ -1308,7 +1320,48 @@ def _add_sheet_table(
         if table.name
         else None
     )
-    doc.add_table(data=data, caption=caption, parent=parent, prov=prov)
+    item = doc.add_table(
+        data=TableData(
+            num_rows=table.num_rows, num_cols=table.num_cols, table_cells=[]
+        ),
+        caption=caption,
+        parent=parent,
+        prov=prov,
+    )
+    for cell in table.cells:
+        table_cell = TableCell(
+            text=cell.text,
+            col_span=cell.col_span,
+            start_row_offset_idx=cell.row,
+            end_row_offset_idx=cell.row + 1,
+            start_col_offset_idx=cell.col,
+            end_col_offset_idx=cell.col + cell.col_span,
+            column_header=cell.row < table.header_rows,
+            row_header=cell.row >= table.header_rows and cell.col < table.header_cols,
+        )
+        if cell.picture is not None:
+            group = doc.add_group(
+                label=GroupLabel.UNSPECIFIED,
+                name=f"rich_cell_group_{len(doc.tables)}_{cell.col}_{cell.row}",
+                parent=item,
+            )
+            if cell.text:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=cell.text,
+                    parent=group,
+                    prov=prov.model_copy(update={"charspan": (0, len(cell.text))}),
+                )
+            if cell.picture.name not in images:
+                images[cell.picture.name] = _picture_image(cell.picture)
+            image = images[cell.picture.name]
+            doc.add_picture(
+                image=image.model_copy() if image is not None else None,
+                parent=group,
+                prov=prov,
+            )
+            table_cell = RichTableCell(**table_cell.model_dump(), ref=group.get_ref())
+        doc.add_table_cell(table_item=item, cell=table_cell)
 
 
 def _add_sheet_comment(
