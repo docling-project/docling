@@ -10,7 +10,7 @@ dereference ``memberQname.localName`` unconditionally, so every conversion
 of a valid typed-dimension fact crashed with
 ``AttributeError: 'NoneType' object has no attribute 'localName'`` (issue #4437).
 
-The fixtures under ``tests/data/xbrl/sources/typed-dimension`` are a
+The fixtures under ``tests/data/xbrl/typed-dimension`` are a
 self-contained, minimal taxonomy: the standard XBRL 2.1 schemas are vendored
 locally so the test does not depend on arelle's bundled web cache or on
 remote schema resolution (which is disabled in CI via
