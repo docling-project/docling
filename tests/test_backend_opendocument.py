@@ -40,7 +40,7 @@ from docling.backend.opendocument_backend import (
     OdsDocumentBackend,
     OdtDocumentBackend,
 )
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
 
@@ -488,6 +488,65 @@ def test_ods_rich_table_cell_defines_data_bounds(tmp_path: Path):
     assert rich_cell == "Rich title"
     assert isinstance(table.data.table_cells[0], RichTableCell)
     assert cell_texts[(0, 1)] == "plain"
+
+
+def test_ods_sheet_anchored_picture_is_kept(tmp_path: Path):
+    # A picture anchored to the sheet is stored in <table:shapes>, not in a cell
+    image_path = tmp_path / "sheet_image.png"
+    Image.new("RGB", (2, 2), "red").save(image_path)
+
+    path = tmp_path / "sheet_image.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    table = Table("Sheet1", width=2, height=2)
+    body.append(table)
+    cell = table.get_cell("B2")
+    cell.append(Frame.image_frame(doc.add_file(str(image_path)), size=("1cm", "1cm")))
+    table.set_cell("B2", cell)
+    shapes = Element.from_tag("table:shapes")
+    shapes.append(
+        Frame.image_frame(
+            doc.add_file(str(image_path)), size=("1cm", "1cm"), position=("1cm", "1cm")
+        )
+    )
+    table.insert(shapes, position=0)
+    doc.save(str(path))
+
+    pictures = DocumentConverter().convert(path).document.pictures
+    # One picture from the cell and one from the sheet, neither of them twice
+    assert len(pictures) == 2
+    assert all(p.image is not None for p in pictures)
+
+
+def test_ods_sheet_anchored_vector_picture_is_skipped(tmp_path: Path):
+    # A vector picture cannot become a bitmap, so it is skipped like a cell picture
+    image_path = tmp_path / "sheet_image.svg"
+    image_path.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2">'
+        '<rect width="2" height="2" fill="red"/></svg>'
+    )
+
+    path = tmp_path / "sheet_image_vector.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    table = Table("Sheet1", width=1, height=1)
+    body.append(table)
+    shapes = Element.from_tag("table:shapes")
+    shapes.append(
+        Frame.image_frame(
+            doc.add_file(str(image_path)), size=("1cm", "1cm"), position=("1cm", "1cm")
+        )
+    )
+    table.insert(shapes, position=0)
+    doc.save(str(path))
+
+    result = DocumentConverter().convert(path)
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.document.pictures == []
 
 
 def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
