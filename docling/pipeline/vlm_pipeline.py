@@ -807,15 +807,14 @@ class VlmPipeline(PaginatedPipeline):
                 element.orig = text
 
         if self.pipeline_options.generate_picture_images and image is not None:
-            assert page.size is not None
             scale = self.pipeline_options.images_scale
             for element, _level in document.iterate_items():
                 if not isinstance(element, PictureItem) or not element.prov:
                     continue
-                crop_bbox = (
-                    element.prov[0]
-                    .bbox.scaled(scale=scale)
-                    .to_top_left_origin(page_height=page.size.height * scale)
+                # Doctags bboxes are in the pixels of the page image, which is
+                # already rendered at images_scale.
+                crop_bbox = element.prov[0].bbox.to_top_left_origin(
+                    page_height=image.height
                 )
                 element.image = ImageRef.from_pil(
                     image.crop(crop_bbox.as_tuple()), dpi=int(72 * scale)
