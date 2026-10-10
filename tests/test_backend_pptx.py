@@ -12,6 +12,14 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
+from docling.datamodel.backend_options import MsPowerpointBackendOptions
+from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
+from docling.datamodel.pipeline_options import ConvertPipelineOptions
+from docling.document_converter import DocumentConverter, PowerpointFormatOption
+from docling.models.base_model import BaseItemAndImageEnrichmentModel
+from docling.pipeline.simple_pipeline import SimplePipeline
 from docling_core.types.doc import (
     ContentLayer,
     GroupItem,
@@ -21,20 +29,12 @@ from docling_core.types.doc import (
     TextItem,
 )
 
-from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import (
     _MAX_CHART_TABLE_CELLS,
     MsPowerpointDocumentBackend,
     _is_metafile,
     _last_populated_row,
 )
-from docling.datamodel.backend_options import MsPowerpointBackendOptions
-from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
-from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
-from docling.datamodel.pipeline_options import ConvertPipelineOptions
-from docling.document_converter import DocumentConverter, PowerpointFormatOption
-from docling.models.base_model import BaseItemAndImageEnrichmentModel
-from docling.pipeline.simple_pipeline import SimplePipeline
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -1357,9 +1357,9 @@ def test_pptx_hidden_shape_goes_to_invisible_layer(tmp_path: Path):
 
     prs = Presentation()
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    slide.shapes.add_textbox(Inches(1), Inches(1), Inches(6), Inches(1)).text_frame.text = (
-        "Shown shape text"
-    )
+    slide.shapes.add_textbox(
+        Inches(1), Inches(1), Inches(6), Inches(1)
+    ).text_frame.text = "Shown shape text"
     hidden = slide.shapes.add_textbox(Inches(1), Inches(3), Inches(6), Inches(1))
     hidden.text_frame.text = "Hidden shape text"
     hidden._element.nvSpPr.cNvPr.set("hidden", "1")

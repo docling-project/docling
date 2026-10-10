@@ -12,6 +12,21 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any, Callable, Final, Iterable, Iterator, Literal, Optional, Union
 
+from docling.backend.abstract_backend import (
+    DeclarativeDocumentBackend,
+    PaginatedDocumentBackend,
+)
+from docling.backend.docx.drawingml.utils import (
+    convert_to_modern_format,
+    crop_whitespace,
+    get_docx_to_pdf_converter,
+)
+from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.utils.image import normalize_image_for_png
+from docling.datamodel.backend_options import MsPowerpointBackendOptions
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
+from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 from docling_core.types.doc import (
     BoundingBox,
     CoordOrigin,
@@ -37,22 +52,6 @@ from docling_core.types.doc.document import ContentLayer
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from typing_extensions import override
-
-from docling.backend.abstract_backend import (
-    DeclarativeDocumentBackend,
-    PaginatedDocumentBackend,
-)
-from docling.backend.docx.drawingml.utils import (
-    convert_to_modern_format,
-    crop_whitespace,
-    get_docx_to_pdf_converter,
-)
-from docling.backend.docx.latex.omml import oMath2Latex
-from docling.backend.utils.image import normalize_image_for_png
-from docling.datamodel.backend_options import MsPowerpointBackendOptions
-from docling.datamodel.base_models import FormatToMimeType, InputFormat
-from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
