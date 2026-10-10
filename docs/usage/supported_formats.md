@@ -34,6 +34,12 @@ Below you can find a listing of all supported input and output formats.
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
+Video and audio on PPTX and ODP slides are kept as pictures of their poster frame
+or icon. The `docling__video` or `docling__audio` field of the picture `meta` gives
+the path of the media file inside the package, or the link of a linked file. To
+transcribe the media, read the file from the package and convert it as an audio or
+video input (see [Processing audio and video](processing_audio_media.md)).
+
 Schema-specific support:
 
 | Format | Description |
