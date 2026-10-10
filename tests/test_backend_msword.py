@@ -22,6 +22,7 @@ from docling_core.types.doc import (
 )
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.text import WD_BREAK
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -2226,3 +2227,61 @@ def test_footnotes_and_endnotes_are_not_dropped():
     assert len(footnote_items) == 2, (
         "expected exactly one real footnote and one real endnote, no placeholders"
     )
+
+
+@pytest.mark.parametrize(
+    ("break_type", "expected"),
+    [
+        (
+            WD_BREAK.LINE,
+            [
+                ("End of chapter one.\nChapter two starts.", False),
+                ("before\nafter", True),
+            ],
+        ),
+        (
+            WD_BREAK.PAGE,
+            [
+                ("End of chapter one.", False),
+                ("Chapter two starts.", False),
+                ("before", True),
+                ("after", True),
+            ],
+        ),
+        (
+            WD_BREAK.COLUMN,
+            [
+                ("End of chapter one.", False),
+                ("Chapter two starts.", False),
+                ("before", True),
+                ("after", True),
+            ],
+        ),
+    ],
+)
+def test_page_and_column_breaks_split_a_paragraph(tmp_path, break_type, expected):
+    """A page or column break splits a paragraph into separate text items.
+
+    A line break stays a newline inside one item. Each part keeps the formatting
+    of its run, and a break inside one run splits that run.
+    """
+    doc = Document()
+    paragraph = doc.add_paragraph("End of chapter one.")
+    paragraph.add_run().add_break(break_type)
+    paragraph.add_run("Chapter two starts.")
+    run = doc.add_paragraph().add_run("before")
+    run.bold = True
+    run.add_break(break_type)
+    run.add_text("after")
+    path = tmp_path / "breaks.docx"
+    doc.save(path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    document = converter.convert(path, raises_on_error=True).document
+
+    texts = [
+        (item.text, bool(item.formatting and item.formatting.bold))
+        for item in document.texts
+    ]
+    assert texts == expected
+    assert len(document.body.children) == len(expected)
