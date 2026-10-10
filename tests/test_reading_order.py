@@ -6,6 +6,7 @@ import logging
 import os
 import random
 import sys
+import time
 from typing import Dict, List
 
 import pytest
@@ -1156,3 +1157,92 @@ def test_upward_walk_stops_on_up_map_cycle() -> None:
     top = ReadingOrderPredictor()._depth_first_search_upwards(0, [False, False], state)
 
     assert top == 1
+
+
+def _thin_rects(count: int, seed: int = 0) -> list[BoundingBox]:
+    """Many tiny thin rectangles, like seats on a venue plan.
+
+    Each is thin enough to become a separator candidate but far too short
+    to ever be accepted, mirroring docling-project/docling#4632.
+    """
+    rng = random.Random(seed)
+    boxes = []
+    for _ in range(count):
+        w = rng.uniform(8, 30)
+        h = rng.uniform(1.0, 3.0)
+        x = rng.uniform(0, _DUMMY_PAGE_SIZE.width - w)
+        y = rng.uniform(150, 650)
+        boxes.append(
+            BoundingBox(
+                l=x,
+                r=x + w,
+                b=y,
+                t=y + h,
+                coord_origin=CoordOrigin.BOTTOMLEFT,
+            )
+        )
+    return boxes
+
+
+def test_build_page_separators_skips_degenerate_candidate_counts() -> None:
+    # https://github.com/docling-project/docling/issues/4632 — a page whose
+    # vector geometry yields tens of thousands of tiny candidates sent the
+    # quadratic candidate merge into an unbounded run. Above the candidate
+    # cap the page is skipped quickly instead.
+    elements = [_text(0, 500, 600, 40, 560), _text(1, 200, 300, 40, 560)]
+    boxes = _thin_rects(6000)
+
+    start = time.monotonic()
+    separators = build_page_separators(
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        page_elements=elements,
+        shape_lines=None,
+        shape_bounding_boxes=boxes,
+    )
+    elapsed = time.monotonic() - start
+
+    assert separators == []
+    assert elapsed < 10
+
+
+def test_build_page_separators_aborts_on_exhausted_time_budget() -> None:
+    # A budget that is already exhausted must skip separator extraction
+    # immediately instead of spending more time on an optional refinement.
+    elements = [_text(0, 500, 600, 40, 560), _text(1, 200, 300, 40, 560)]
+    rule = _hline(40, 560, 400)
+
+    for time_limit_s in (0.0, -5.0):
+        separators = build_page_separators(
+            page_no=0,
+            page_size=_DUMMY_PAGE_SIZE,
+            page_elements=elements,
+            shape_lines=[rule],
+            shape_bounding_boxes=None,
+            time_limit_s=time_limit_s,
+        )
+        assert separators == []
+
+
+def test_build_page_separators_merges_fragments_below_candidate_cap() -> None:
+    # Short fragments must still merge into long rules when the candidate
+    # count stays below the degenerate-geometry cap.
+    elements = [_text(0, 700, 760, 40, 560), _text(1, 40, 100, 40, 560)]
+    lines = []
+    for row in range(5):
+        y = 200 + row * 100
+        x = 40.0
+        while x < 560:
+            lines.append(_hline(x, x + 6, y))
+            x += 6.1
+
+    separators = build_page_separators(
+        page_no=0,
+        page_size=_DUMMY_PAGE_SIZE,
+        page_elements=elements,
+        shape_lines=lines,
+        shape_bounding_boxes=None,
+    )
+
+    assert len(separators) == 5
+    assert all(s.orientation == "horizontal" for s in separators)

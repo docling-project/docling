@@ -5,6 +5,7 @@ import copy
 import logging
 import math
 import re
+import time
 from dataclasses import dataclass, field
 from itertools import islice, takewhile
 from typing import ClassVar, Dict, Iterable, List, Literal, Set, Tuple
@@ -87,6 +88,12 @@ _MIN_VERTICAL_SEPARATOR_LENGTH_NORM = 0.05
 _MAX_FILLED_RULE_THICKNESS = 3.5
 _SEPARATOR_MERGE_TOLERANCE = 1.0
 _AXIS_ALIGNMENT_TOLERANCE = 1.0e-3
+# Upper bound on raw separator candidates per page. Merging is quadratic in
+# the candidate count, and pages whose vector geometry yields tens of
+# thousands of tiny segments (e.g. seat maps drawn as small rectangles) can
+# never produce trustworthy page separators. Above this count the page is
+# skipped: reading order falls back to the pre-separator behavior.
+_MAX_SEPARATOR_CANDIDATES = 5000
 
 
 def _as_bottom_left_box(bbox: BoundingBox, page_size: Size) -> BoundingBox:
@@ -156,12 +163,20 @@ def _separator_is_long_enough(separator: SeparatorElement) -> bool:
 
 def _merge_separator_candidates(
     candidates: list[SeparatorElement],
+    *,
+    deadline: float | None = None,
 ) -> list[SeparatorElement]:
     # A merge widens its target, which can make it mergeable with a separator
     # kept earlier in the pass. Repeat until stable: two zero-height
     # separators left overlapping at the same height would each count as
     # strictly above the other and form a cycle in the ordering graph.
     while True:
+        if deadline is not None and time.monotonic() > deadline:
+            _log.warning(
+                "Aborting separator candidate merge: document time budget "
+                "exhausted. Returning no separators for this page."
+            )
+            return []
         merged = _merge_separator_candidates_once(candidates)
         if len(merged) == len(candidates):
             return merged
@@ -307,10 +322,26 @@ def build_page_separators(
     page_elements: list[PageElement],
     shape_lines: list[BoundingBox] | None,
     shape_bounding_boxes: list[BoundingBox] | None,
+    time_limit_s: float | None = None,
 ) -> list[SeparatorElement]:
-    """Build trustworthy reading-order separators from visible PDF geometry."""
+    """Build trustworthy reading-order separators from visible PDF geometry.
+
+    `time_limit_s` bounds the work spent on separator extraction for this
+    page. When the budget is exhausted (or was already exhausted on entry),
+    no separators are returned and reading order falls back to the
+    pre-separator behavior instead of blocking the conversion.
+    """
     if shape_lines is None and shape_bounding_boxes is None:
         return []
+    if time_limit_s is not None and time_limit_s <= 0:
+        _log.warning(
+            "Skipping page separator extraction on page %s: document time "
+            "budget exhausted.",
+            page_no,
+        )
+        return []
+
+    deadline = time.monotonic() + time_limit_s if time_limit_s is not None else None
 
     bottom_left_elements: list[PageElement] = []
     for element in page_elements:
@@ -333,6 +364,13 @@ def build_page_separators(
         (shape_bounding_boxes or [], True),
     ):
         for bbox in boxes:
+            if deadline is not None and time.monotonic() > deadline:
+                _log.warning(
+                    "Skipping page separator extraction on page %s: document "
+                    "time budget exhausted while collecting candidates.",
+                    page_no,
+                )
+                return []
             candidate = _candidate_separator(
                 bbox,
                 page_no=page_no,
@@ -342,9 +380,21 @@ def build_page_separators(
             if candidate is not None:
                 candidates.append(candidate)
 
+    if len(candidates) > _MAX_SEPARATOR_CANDIDATES:
+        _log.warning(
+            "Skipping page separator extraction on page %s: %d separator "
+            "candidates exceed the limit of %d. Such dense vector geometry "
+            "cannot yield trustworthy page separators; reading order falls "
+            "back to the pre-separator behavior.",
+            page_no,
+            len(candidates),
+            _MAX_SEPARATOR_CANDIDATES,
+        )
+        return []
+
     accepted = [
         separator
-        for separator in _merge_separator_candidates(candidates)
+        for separator in _merge_separator_candidates(candidates, deadline=deadline)
         if _separator_is_long_enough(separator)
         and not _separator_crosses_content(separator, bottom_left_elements)
         and not _separator_is_inside_graphic(separator, bottom_left_elements)
