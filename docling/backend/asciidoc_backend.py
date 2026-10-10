@@ -484,8 +484,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 continue
 
             if stripped in cls._CONTENT_BLOCK_DELIMITERS:
-                has_closer = cls._has_matching_closer(lines, i, stripped)
-                if has_closer:
+                if cls._has_matching_closer(lines, i, stripped):
                     # Consume both delimiters; yield inner lines and a trailing
                     # blank so the following text starts a fresh paragraph.
                     i += 1
@@ -494,8 +493,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         i += 1
                     i += 1
                     yield ""
-                elif stripped == "--":
-                    # Stray "--" (no closer): break the paragraph, do not render as text.
+                else:
+                    # Stray delimiter (no closer): break the paragraph, do not
+                    # render as text. The line must be consumed either way;
+                    # leaving `i` on it loops over the same line forever.
                     yield ""
                     i += 1
                 continue
