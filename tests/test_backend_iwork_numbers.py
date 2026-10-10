@@ -28,6 +28,17 @@ drawable archives, so the picture is real Apple output in either generation.
 The cell buffers in :func:`test_version_5_cell_storage_is_decoded` were captured
 from Numbers documents saved by releases newer than either fixture, whose cells
 use a storage layout the fixtures never exercise.
+
+``numbers_cell_pictures.numbers``, ``numbers_cell_fills.numbers``,
+``numbers_cell_pictures_repeated.numbers`` and
+``numbers_cell_pictures_styled.numbers`` are ``issue-43.numbers``,
+``test-package.numbers``, ``issue-69.numbers`` and ``test-styles.numbers`` from
+the numbers-parser test corpus, licensed under the MIT License (Copyright 2021
+Jon Connell). They are Numbers output that fills table cells with images. Only
+the first two have a stored groundtruth: the photos in the other two would make
+it tens of megabytes.
+
+See https://github.com/masaccio/numbers-parser (``tests/data``).
 """
 
 import logging
@@ -42,8 +53,11 @@ from docling_core.types.doc import (
     ContentLayer,
     GroupItem,
     GroupLabel,
+    NodeItem,
     PictureClassificationLabel,
     PictureItem,
+    RichTableCell,
+    TableCell,
     TableItem,
     TextItem,
 )
@@ -83,13 +97,17 @@ SOURCES = Path("./tests/data/numbers/sources")
 NUMBERS_2013 = SOURCES / "numbers_2013.numbers"
 NUMBERS_IWORK09 = SOURCES / "numbers_iwork09.numbers"
 NUMBERS_IWORK09_CHARTS = SOURCES / "numbers_iwork09_charts.numbers"
+NUMBERS_CELL_PICTURES = SOURCES / "numbers_cell_pictures.numbers"
+NUMBERS_CELL_FILLS = SOURCES / "numbers_cell_fills.numbers"
+NUMBERS_CELL_PICTURES_REPEATED = SOURCES / "numbers_cell_pictures_repeated.numbers"
+NUMBERS_CELL_PICTURES_STYLED = SOURCES / "numbers_cell_pictures_styled.numbers"
 GROUNDTRUTH = Path("./tests/data/numbers/groundtruth")
 
 KEYNOTE_2013 = Path("./tests/data/keynote/sources/keynote_2013.key")
 KEYNOTE_IWORK09 = Path("./tests/data/keynote/sources/keynote_iwork09.key")
 
 # The fixtures whose whole conversion is pinned by a stored groundtruth.
-CONVERTIBLE = [NUMBERS_2013, NUMBERS_IWORK09]
+CONVERTIBLE = [NUMBERS_2013, NUMBERS_IWORK09, NUMBERS_CELL_PICTURES, NUMBERS_CELL_FILLS]
 
 BOTH_GENERATIONS = pytest.mark.parametrize(
     "source", [NUMBERS_2013, NUMBERS_IWORK09], ids=["iwa", "iwork09"]
@@ -850,6 +868,123 @@ def test_a_grouped_picture_takes_the_frame_of_its_group(tmp_path: Path):
     assert (bbox.l, bbox.t, bbox.width, bbox.height) == pytest.approx(_GROUP_FRAME)
     _, top, _, height = _GROUP_FRAME
     assert doc.pages[1].size.height == pytest.approx(top + height)
+
+
+def _cells(table: TableItem) -> dict[tuple[int, int], TableCell]:
+    return {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell
+        for cell in table.data.table_cells
+    }
+
+
+def _cell_items(doc, cell: TableCell) -> list[NodeItem]:
+    """The items that a rich cell holds, in order."""
+    assert isinstance(cell, RichTableCell)
+    group = cell.ref.resolve(doc)
+    return [child.resolve(doc) for child in group.children]
+
+
+def test_a_cell_filled_with_a_picture_becomes_a_rich_cell():
+    """Numbers draws the image that fills a cell behind the text of the cell.
+    The cell becomes a rich cell, as a picture in a Word table cell does. Its
+    group holds the text, if there is text, and then the picture. Both are on
+    the page of the sheet, in the frame of the table."""
+    doc = _backend(NUMBERS_CELL_PICTURES).convert()
+    (table,) = _tables(doc)
+    cells = _cells(table)
+
+    (icon,) = _cell_items(doc, cells[(0, 0)])
+    text, laptop = _cell_items(doc, cells[(0, 1)])
+    assert isinstance(text, TextItem)
+    assert text.text == cells[(0, 1)].text == "text "
+    for picture, size in ((icon, (452, 512)), (laptop, (370, 244))):
+        assert isinstance(picture, PictureItem)
+        assert picture.image is not None
+        assert (picture.image.size.width, picture.image.size.height) == size
+        assert picture.prov[0].page_no == 1
+        assert picture.prov[0].bbox == table.prov[0].bbox
+
+    assert not isinstance(cells[(0, 2)], RichTableCell)
+    assert cells[(0, 2)].text == "no image"
+
+
+def test_a_cell_filled_with_a_colour_holds_no_picture():
+    """A cell can be filled with a colour as well as an image. Only an image
+    fill makes a picture."""
+    doc = _backend(NUMBERS_CELL_FILLS).convert()
+    (table,) = _tables(doc)
+    cells = _cells(table)
+
+    (cat,) = _cell_items(doc, cells[(0, 0)])
+    assert isinstance(cat, PictureItem)
+    assert cat.image is not None
+    assert not isinstance(cells[(1, 1)], RichTableCell)
+    assert cells[(1, 1)].text == "No Dog"
+    assert len(doc.pictures) == 1
+
+
+def test_a_photo_that_fills_every_cell_is_in_every_cell():
+    """All 50 cells of this table are filled with the same photo, and Numbers
+    draws it in each of them."""
+    doc = _backend(NUMBERS_CELL_PICTURES_REPEATED).convert()
+    (table,) = _tables(doc)
+
+    assert len(table.data.table_cells) == 50
+    for cell in table.data.table_cells:
+        (photo,) = _cell_items(doc, cell)
+        assert isinstance(photo, PictureItem)
+        assert photo.image is not None
+        assert (photo.image.size.width, photo.image.size.height) == (940, 940)
+
+
+def test_a_picture_whose_name_is_not_ascii_is_found():
+    """Numbers writes the member names of its container in UTF-8, but does not
+    set the flag that says so. zipfile then reads a name as code page 437, so
+    the name that the document gives must be found under that reading."""
+    with zipfile.ZipFile(NUMBERS_CELL_PICTURES_REPEATED) as archive:
+        (member,) = [
+            info for info in archive.infolist() if info.filename.startswith("Data/")
+        ]
+    assert not member.flag_bits & 0x800
+    assert not member.filename.isascii()
+
+    doc = _backend(NUMBERS_CELL_PICTURES_REPEATED).convert()
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 50
+    assert all(picture.image is not None for picture in pictures)
+
+
+def test_a_picture_in_a_header_cell_keeps_the_header():
+    """On the Headers sheet, Numbers fills cells in a header row, in a header
+    column and in a footer row with a photo. A rich cell keeps the header flags
+    that a plain cell in the same place gets."""
+    doc = _backend(
+        NUMBERS_CELL_PICTURES_STYLED, IWorkBackendOptions(sheet_names=["Headers"])
+    ).convert()
+    (table,) = _tables(doc)
+
+    rich = {
+        key: cell
+        for key, cell in _cells(table).items()
+        if isinstance(cell, RichTableCell)
+    }
+    assert {
+        key: (cell.column_header, cell.row_header) for key, cell in rich.items()
+    } == {
+        (1, 3): (True, False),
+        (1, 4): (True, False),
+        (6, 1): (False, True),
+        (6, 2): (False, True),
+        (9, 3): (False, False),
+        (9, 4): (False, False),
+    }
+    for cell in rich.values():
+        text, photo = _cell_items(doc, cell)
+        assert isinstance(text, TextItem)
+        assert text.text == cell.text
+        assert isinstance(photo, PictureItem)
+        assert photo.image is not None
 
 
 def _fake_converter(received: list[bytes]):
