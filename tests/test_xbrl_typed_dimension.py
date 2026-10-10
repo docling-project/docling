@@ -58,10 +58,13 @@ def test_typed_dimension_fact_converts() -> None:
     ``AttributeError: 'NoneType' object has no attribute 'localName'``
     while rendering the fact's dimension cells.
     """
-    doc, backend = _convert()
+    doc, _ = _convert()
 
-    # The fact itself is still rendered into the key-value cells.
-    cell_texts = [cell.text for cell in backend._cells]
+    # The fact itself is still rendered into the key-value cells of the
+    # public DoclingDocument (not the backend's private storage).
+    cell_texts = [
+        cell.text for kv_item in doc.key_value_items for cell in kv_item.graph.cells
+    ]
     assert "Revenue" in cell_texts
     assert "value: 123" in cell_texts
     assert doc.name == "typed-dimension"

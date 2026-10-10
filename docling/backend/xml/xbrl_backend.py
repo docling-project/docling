@@ -344,6 +344,11 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                         # carries the value on the typedMember element
                         # instead.  Dereferencing it unconditionally crashed
                         # every conversion of a valid typed-dimension fact.
+                        # The value is read via getattr(..., "textValue", "")
+                        # because arelle only populates that attribute on
+                        # element-backed typed members; on versions/element
+                        # types where it is absent, direct access would raise
+                        # AttributeError.
                         if dim_value.memberQname is not None:
                             member_text = dim_value.memberQname.localName
                         else:
