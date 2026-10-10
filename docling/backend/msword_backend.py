@@ -51,6 +51,7 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.docx.symbol_fonts import SYMBOL_FONT_TO_UNICODE
 from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import FormatToMimeType
@@ -241,6 +242,54 @@ _ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
     (4, "IV"),
     (1, "I"),
 )
+
+_RUN_TEXT_XPATH: Final[str] = (
+    "w:br | w:cr | w:noBreakHyphen | w:ptab | w:t | w:tab | w:sym"
+)
+"""Run children that hold text: python-docx ``Run.text`` plus ``w:sym``."""
+
+_SYMBOL_FONT: Final[str] = "Symbol"
+
+
+def _map_symbol_font_char(char: str) -> str:
+    """Map a Symbol font code point to Unicode.
+
+    Word stores the font byte either as is or shifted to ``U+F000``-``U+F0FF``.
+    Characters without a mapping are kept unchanged.
+    """
+    code = ord(char)
+    if 0xF000 <= code <= 0xF0FF:
+        code -= 0xF000
+    return SYMBOL_FONT_TO_UNICODE.get(code, char)
+
+
+def _get_sym_text(sym: BaseOxmlElement) -> str:
+    """Return the character of a ``w:sym`` element (Insert > Symbol in Word)."""
+    try:
+        char = chr(int(sym.get(f"{_W_NS_CLARK}char", ""), 16))
+    except ValueError:
+        return ""
+    if sym.get(f"{_W_NS_CLARK}font") == _SYMBOL_FONT:
+        return _map_symbol_font_char(char)
+    return char
+
+
+def _get_run_text(run: Run) -> str:
+    """Return the text of a run, including its ``w:sym`` characters.
+
+    python-docx ``Run.text`` skips ``w:sym``, so these characters are lost.
+    Text set in the Symbol font is mapped to Unicode.
+    """
+    symbol_font = run.font.name == _SYMBOL_FONT
+    parts: list[str] = []
+    for child in run._r.xpath(_RUN_TEXT_XPATH):
+        if child.tag == f"{_W_NS_CLARK}sym":
+            parts.append(_get_sym_text(child))
+        elif symbol_font and child.tag == f"{_W_NS_CLARK}t":
+            parts.append("".join(map(_map_symbol_font_char, str(child))))
+        else:
+            parts.append(str(child))
+    return "".join(parts)
 
 
 def _int_to_letter_marker(value: int) -> str:
@@ -2156,7 +2205,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 ]
                 content.append(
                     (
-                        "".join(run.text for run in runs),
+                        "".join(_get_run_text(run) for run in runs),
                         (
                             self._get_format_from_run(runs[0], paragraph)
                             if runs
@@ -2167,7 +2216,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             elif isinstance(item, Run):
                 content.append(
-                    (item.text, self._get_format_from_run(item, paragraph), None)
+                    (
+                        _get_run_text(item),
+                        self._get_format_from_run(item, paragraph),
+                        None,
+                    )
                 )
 
         return content
@@ -2582,21 +2635,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                 else:
                     # Collect text from non-math children (e.g. <w:r> runs)
-                    for t_elem in child.iter():
-                        t_tag = etree.QName(t_elem).localname
-                        if t_tag == "t" and "math" not in t_elem.tag:
-                            if isinstance(t_elem.text, str):
-                                only_texts.append(t_elem.text)
-                                texts_and_equations.append(t_elem.text)
+                    for run in child.iter(f"{_W_NS_CLARK}r"):
+                        run_text = _get_run_text(Run(run, None))
+                        only_texts.append(run_text)
+                        texts_and_equations.append(run_text)
         else:
             # Original deep-iteration fallback for nested oMath (e.g.
             # inside oMathPara or other wrapper elements).
             for subt in element.iter():
-                tag_name = etree.QName(subt).localname
-                if tag_name == "t" and "math" not in subt.tag:
-                    if isinstance(subt.text, str):
-                        only_texts.append(subt.text)
-                        texts_and_equations.append(subt.text)
+                if subt.tag == f"{_W_NS_CLARK}r":
+                    run_text = _get_run_text(Run(subt, None))
+                    only_texts.append(run_text)
+                    texts_and_equations.append(run_text)
                 elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
                     latex_equation = str(oMath2Latex(subt)).strip()
                     if len(latex_equation) > 0:
@@ -2787,9 +2837,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
-            if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
-                text
-            ) > 0:
+            if not self._get_paragraph_text(paragraph).strip() and len(text) > 0:
                 # Standalone equation(s) — emit each as a separate formula
                 level = self._get_level()
                 parent = self.parents[level - 1]
@@ -3539,12 +3587,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 cell = _Cell(tc, table)
 
-                # Detect equations in cell text
+                # Detect equations in cell text. python-docx ``_Cell.text`` skips
+                # ``w:sym``, so build the text from the runs like for paragraphs.
+                cell_text = "\n".join(
+                    self._get_paragraph_text(cell_paragraph)
+                    for cell_paragraph in cell.paragraphs
+                )
                 text, equations = self._handle_equations_in_text(
-                    element=cell._element, text=cell.text
+                    element=cell._element, text=cell_text
                 )
                 if len(equations) == 0:
-                    text = cell.text
+                    text = cell_text
                 else:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
@@ -4325,7 +4378,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return
             emitted_partnames.add(partname)
 
-            par = [txt for txt in (p.text.strip() for p in part.paragraphs) if txt]
+            # python-docx ``Paragraph.text`` skips ``w:sym``, so check for it too
+            par = [
+                p for p in part.paragraphs if p.text.strip() or p._p.xpath(".//w:sym")
+            ]
             tables = part.tables
             has_blip = self._has_blip(part._element)
             has_txbx = len(txbx_xpath(part._element)) > 0
