@@ -117,6 +117,7 @@ class InputFormat(str, Enum):
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
+    ZIP_XBRL = "zip_xbrl"
     XML_DOCLANG = "xml_doclang"
     DCLX = "dclx"
     METS_GBS = "mets_gbs"
@@ -161,7 +162,8 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.MHTML: ["mhtml", "mht"],
     InputFormat.XML_JATS: ["xml", "nxml"],
-    InputFormat.XML_XBRL: ["xml", "xbrl"],
+    InputFormat.XML_XBRL: ["xml", "xbrl", "htm", "html", "xhtml"],
+    InputFormat.ZIP_XBRL: ["zip"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.DCLX: ["dclx"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp", "gif"],
@@ -215,6 +217,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.MHTML: ["application/x-mimearchive", "multipart/related"],
     InputFormat.XML_JATS: ["application/xml"],
     InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
+    InputFormat.ZIP_XBRL: ["application/vnd.xbrl+zip"],
     InputFormat.XML_DOCLANG: ["application/xml"],
     InputFormat.IMAGE: [
         "image/png",

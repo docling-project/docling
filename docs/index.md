@@ -53,7 +53,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 
 - 🎬 Parsing of video files (MP4, AVI, MOV, MKV, and WebM) with an ASR transcript and representative keyframes
 - 📄 Parsing of ODF (OpenDocument Format) files for text documents (`.odt`), spreadsheets (`.ods`), and presentations (`.odp`)
-- 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
+- 💼 Parsing of XBRL (eXtensible Business Reporting Language) and iXBRL (Inline eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books
 - 🍎 Parsing of Apple Pages (`.pages`) documents, Numbers (`.numbers`) spreadsheets and Keynote (`.key`) presentations
