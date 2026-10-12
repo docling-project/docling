@@ -16,8 +16,8 @@ import numpy as np
 from packaging import version
 from PIL import Image
 
-from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.backend.image_backend import _to_rgb
+from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.models.utils.generation_utils import GenerationStopper
 
