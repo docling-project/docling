@@ -31,6 +31,10 @@ from docling.backend.managed_pdfium_backend import (
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
+from docling.utils.pdf_metadata import (
+    _PdfDocumentMetadata,
+    extract_metadata_from_pdfium,
+)
 from docling.utils.pdf_outline import _PdfOutlineItem, extract_outline_from_pdfium
 
 
@@ -723,6 +727,12 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
         if self._pdoc is None:
             return []
         return extract_outline_from_pdfium(self._pdoc)
+
+    def get_document_metadata(self) -> _PdfDocumentMetadata:
+        """Read ``/Lang`` and the ``/Info`` dictionary from the pypdfium2 document."""
+        if self._pdoc is None:
+            return _PdfDocumentMetadata()
+        return extract_metadata_from_pdfium(self._pdoc)
 
     def _close_native_document(self) -> None:
         with pypdfium2_lock:

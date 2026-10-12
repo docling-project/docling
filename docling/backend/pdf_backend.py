@@ -15,6 +15,7 @@ from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils.pdf_metadata import _PdfDocumentMetadata
 from docling.utils.pdf_outline import _PdfOutlineItem
 
 
@@ -153,6 +154,15 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         outline. Backends without an embedded outline (e.g. OCR/image) keep the default.
         """
         return []
+
+    def get_document_metadata(self) -> _PdfDocumentMetadata:
+        """Return the PDF's declared language and document properties.
+
+        The default is empty; PDFium-backed backends override this with the catalog ``/Lang``
+        entry and the ``/Info`` or XMP properties. Backends without access to the catalog
+        (e.g. OCR/image) keep the default.
+        """
+        return _PdfDocumentMetadata()
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:

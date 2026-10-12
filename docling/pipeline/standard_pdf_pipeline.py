@@ -86,6 +86,7 @@ from docling.pipeline.base_pipeline import (
     ConvertPipeline,
     get_expected_page_nos,
 )
+from docling.utils.pdf_metadata import attach_document_metadata
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
@@ -823,6 +824,8 @@ class StandardPdfPipeline(ConvertPipeline):
         hh_opts = self.pipeline_options.heading_hierarchy_options
         if hh_opts.enabled and hh_opts.use_bookmarks:
             conv_res._pdf_outline = backend.get_document_outline()
+        if self.pipeline_options.attach_document_metadata:
+            conv_res._pdf_document_metadata = backend.get_document_metadata()
 
         expected_page_nos = self._get_expected_page_nos(conv_res)
         if not expected_page_nos:
@@ -1065,6 +1068,11 @@ class StandardPdfPipeline(ConvertPipeline):
             )
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)
+            if conv_res._pdf_document_metadata is not None:
+                attach_document_metadata(
+                    conv_res.document, conv_res._pdf_document_metadata
+                )
+                conv_res._pdf_document_metadata = None
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
