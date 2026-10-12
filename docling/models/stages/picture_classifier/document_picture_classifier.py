@@ -18,7 +18,6 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
 
-from docling.backend.image_backend import _to_rgb
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.picture_classification_options import (
@@ -30,6 +29,7 @@ from docling.models.inference_engines.image_classification import (
     ImageClassificationEngineInput,
     create_image_classification_engine,
 )
+from docling.models.utils import _to_rgb
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 
 __all__ = [

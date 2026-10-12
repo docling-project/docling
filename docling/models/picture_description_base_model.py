@@ -17,7 +17,6 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import PictureDescriptionData
 from PIL import Image
 
-from docling.backend.image_backend import _to_rgb
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ApiImageRequestResult
 from docling.datamodel.pipeline_options import (
@@ -28,6 +27,7 @@ from docling.models.base_model import (
     BaseModelWithOptions,
     ItemAndImageEnrichmentElement,
 )
+from docling.models.utils import _to_rgb
 
 _USAGE_META_NAMESPACE = "docling"
 _USAGE_META_FIELD_NAME = "usage"
