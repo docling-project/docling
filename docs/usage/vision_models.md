@@ -121,6 +121,42 @@ converter = DocumentConverter(
 doc = converter.convert(source="FILE").document
 ```
 
+### LightOnOCR-3
+
+LightOnOCR-3 has three presets: `lightonocr3_08b`, `lightonocr3_1b`, and
+`lightonocr3_4b`. They use the official
+[LightOnOCR-3 models](https://huggingface.co/lightonai/LightOnOCR-3-1B)
+and require `transformers>=5.5.4` for local inference. The existing `lightonocr`
+preset continues to use LightOnOCR-2-1B.
+
+```bash
+docling contract.pdf --pipeline vlm --vlm-model lightonocr3_08b
+```
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("lightonocr3_1b"),
+)
+```
+
+Pass these options to the `PdfFormatOption` in the example above. The presets
+use the `grounding` prompt. Docling parses the block labels and normalized
+bounding boxes, Markdown text, HTML tables, image descriptions, and chart tables.
+Coordinates belong to blocks; derived text and table cells do not receive
+separate boxes. Continuation blocks keep their base labels without being merged.
+Lists keep their structure, without assigning the block box to individual items.
+Separate captions are not associated with pictures or tables by proximity.
+
+For plain transcription, set `pipeline_options.vlm_options.model_spec.prompt = ""`.
+The parser also accepts that Markdown output, without bounding boxes. Use only
+the empty prompt or `grounding`, as specified in the model cards.
+
+Local inference uses Transformers. No MLX export is configured for these presets.
+An OpenAI-compatible server can also serve the official model repositories;
+configure its URL and engine options as described below.
+
 ### Other models
 
 Other models can be configured by directly providing the Hugging Face `repo_id`, the prompt and a few more options.

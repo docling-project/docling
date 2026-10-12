@@ -51,6 +51,7 @@ docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model lightonocr3_08b --output /tmp/
 docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
