@@ -18,6 +18,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
 
+from docling.backend.image_backend import _to_rgb
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.picture_classification_options import (
@@ -164,9 +165,9 @@ class DocumentPictureClassifier(
 
             raw_image = el.image
             if isinstance(raw_image, Image.Image):
-                raw_image = raw_image.convert("RGB")
+                raw_image = _to_rgb(raw_image)
             elif isinstance(raw_image, np.ndarray):
-                raw_image = Image.fromarray(raw_image).convert("RGB")
+                raw_image = _to_rgb(Image.fromarray(raw_image))
             else:
                 raise TypeError(
                     "Supported input formats are PIL.Image.Image or numpy.ndarray."

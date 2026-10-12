@@ -17,6 +17,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import PictureDescriptionData
 from PIL import Image
 
+from docling.backend.image_backend import _to_rgb
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ApiImageRequestResult
 from docling.datamodel.pipeline_options import (
@@ -103,7 +104,7 @@ class PictureDescriptionBaseModel(
                 describe_image = False
             if describe_image:
                 elements.append(el.item)
-                images.append(el.image.convert("RGB"))
+                images.append(_to_rgb(el.image))
 
         outputs = self._annotate_images(images)
 

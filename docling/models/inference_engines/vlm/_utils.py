@@ -17,6 +17,7 @@ from packaging import version
 from PIL import Image
 
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
+from docling.backend.image_backend import _to_rgb
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.models.utils.generation_utils import GenerationStopper
 
@@ -126,9 +127,8 @@ def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image
         else:
             raise ValueError(f"Unsupported numpy array shape: {image.shape}")
 
-    # Ensure RGB mode (handles RGBA, L, P, etc.)
-    if image.mode != "RGB":
-        image = image.convert("RGB")
+    # Ensure RGB mode, flattening any transparency onto white (handles RGBA, L, P, etc.)
+    image = _to_rgb(image)
 
     return image
 
