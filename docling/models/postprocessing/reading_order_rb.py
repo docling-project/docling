@@ -6,6 +6,7 @@ import logging
 import math
 import re
 from dataclasses import dataclass, field
+from functools import cmp_to_key
 from itertools import islice, takewhile
 from typing import ClassVar, Dict, Iterable, List, Literal, Set, Tuple
 
@@ -1051,8 +1052,19 @@ class ReadingOrderPredictor:
             print(f"{l}\t{str(elem)}")
         """
 
-        # this will invoke __lt__ from PageElements
-        head_page_elems = sorted(head_page_elems)
+        spatial_idx = rtree_index.Index()
+        for i, pelem in enumerate(page_elems):
+            spatial_idx.insert(i, (pelem.l, pelem.b, pelem.r, pelem.t))
+
+        def compare(lhs: PageElement, rhs: PageElement) -> int:
+            if self._is_separated_above(spatial_idx, page_elems, lhs, rhs):
+                return -1
+            if self._is_separated_above(spatial_idx, page_elems, rhs, lhs):
+                return 1
+            # this will invoke __lt__ from PageElements
+            return -1 if lhs < rhs else 1
+
+        head_page_elems = sorted(head_page_elems, key=cmp_to_key(compare))
 
         """
         print("after sorting the heads: ")
@@ -1063,6 +1075,42 @@ class ReadingOrderPredictor:
         state.heads = []
         for item in head_page_elems:
             state.heads.append(state.h2i_map[item.cid])
+
+    @staticmethod
+    def _is_separated_above(
+        spatial_idx: rtree_index.Index,
+        page_elems: List[PageElement],
+        upper: PageElement,
+        lower: PageElement,
+    ) -> bool:
+        """
+        Whether `upper` must be read before `lower` although the two do not
+        share a column: some element lies between them and spans both, so they
+        sit in successive bands of the page rather than in side-by-side columns.
+        """
+        if upper.overlaps_horizontally(lower) or not upper.is_strictly_above(lower):
+            return False
+
+        y_min, y_max = sorted((lower.t, upper.b))
+        query_bbox = (
+            min(upper.l, lower.l),
+            y_min,
+            max(upper.r, lower.r),
+            y_max,
+        )
+        for w in spatial_idx.intersection(query_bbox):
+            pelem_w = page_elems[w]
+            if pelem_w.cid in (upper.cid, lower.cid):
+                continue
+            if (
+                upper.is_strictly_above(pelem_w)
+                and pelem_w.is_strictly_above(lower)
+                and pelem_w.overlaps_horizontally(upper)
+                and pelem_w.overlaps_horizontally(lower)
+            ):
+                return True
+
+        return False
 
     def _sort_ud_maps(
         self, provs: List[ReadingOrderNode], state: _ReadingOrderPredictorState
