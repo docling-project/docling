@@ -680,10 +680,9 @@ def _remove_xml_comment_nodes(docx_obj: DocxDocument) -> list[str]:
     """
     texts: list[str] = []
     for part in docx_obj.part.package.iter_parts():
-        element = getattr(part, "_element", None)
-        if element is None:
+        if not isinstance(part, XmlPart):
             continue
-        for node in list(element.iter(etree.Comment, etree.ProcessingInstruction)):
+        for node in list(part.element.iter(etree.Comment, etree.ProcessingInstruction)):
             parent = node.getparent()
             if parent is None:
                 continue
