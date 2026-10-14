@@ -480,3 +480,75 @@ def test_direct_child_uses_tightest_container() -> None:
     by_id = {cluster.id: cluster for cluster in result}
     assert by_id[1].children == []
     assert [child.id for child in by_id[2].children] == [3]
+
+
+def _text_rows(
+    first_id: int, left: float, top: float, width: float, count: int
+) -> list[Cluster]:
+    """Stack `count` text clusters of 60pt height with a 20pt gap."""
+    return [
+        _cluster(
+            first_id + i,
+            BoundingBox(l=left, t=top + 80 * i, r=left + width, b=top + 80 * i + 60),
+        )
+        for i in range(count)
+    ]
+
+
+def test_oversized_picture_over_body_text_is_dropped() -> None:
+    """A picture spanning most of the page with the body text nested inside it
+    is a mislabelled text panel: the text must come back out (issue #4565)."""
+    # 800x800 on a 1000x1000 page = 64% of the page; six 700x60 text rows
+    # cover 39% of the picture.
+    picture = _cluster(
+        0, BoundingBox(l=100, t=100, r=900, b=900), DocItemLabel.PICTURE, 0.6
+    )
+    rows = _text_rows(1, 150, 150, 700, 6)
+    heading = _cluster(
+        20, BoundingBox(l=150, t=120, r=400, b=140), DocItemLabel.SECTION_HEADER
+    )
+
+    clusters = _postprocessor(picture, heading, *rows).postprocess()
+
+    labels = {cluster.label for cluster in clusters}
+    assert DocItemLabel.PICTURE not in labels
+    assert {cluster.id for cluster in clusters} == {heading.id, *(r.id for r in rows)}
+
+
+def test_figure_with_labels_keeps_its_children() -> None:
+    """A normal figure with a few in-picture labels is left alone: it is small
+    relative to the page and its labels cover little of it."""
+    # 400x400 = 16% of the page.
+    picture = _cluster(
+        0, BoundingBox(l=100, t=100, r=500, b=500), DocItemLabel.PICTURE, 0.9
+    )
+    labels = [
+        _cluster(1 + i, BoundingBox(l=120, t=120 + 40 * i, r=220, b=135 + 40 * i))
+        for i in range(5)
+    ]
+
+    clusters = _postprocessor(picture, *labels).postprocess()
+
+    pictures = [c for c in clusters if c.label == DocItemLabel.PICTURE]
+    assert len(pictures) == 1
+    assert {child.id for child in pictures[0].children} == {c.id for c in labels}
+    assert not [c for c in clusters if c.label == DocItemLabel.TEXT]
+
+
+def test_large_figure_with_sparse_text_is_kept() -> None:
+    """A big figure (above the page-fraction threshold) whose nested text is
+    sparse is still a figure; only text-dense pictures are reclassified."""
+    # 800x800 = 64% of the page, but three short labels cover under 2% of it.
+    picture = _cluster(
+        0, BoundingBox(l=100, t=100, r=900, b=900), DocItemLabel.PICTURE, 0.7
+    )
+    labels = [
+        _cluster(1 + i, BoundingBox(l=150, t=150 + 200 * i, r=350, b=170 + 200 * i))
+        for i in range(3)
+    ]
+
+    clusters = _postprocessor(picture, *labels).postprocess()
+
+    pictures = [c for c in clusters if c.label == DocItemLabel.PICTURE]
+    assert len(pictures) == 1
+    assert len(pictures[0].children) == 3
