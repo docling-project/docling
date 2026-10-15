@@ -816,6 +816,33 @@ def test_figure_later_image_falls_back_to_its_alt_text():
     assert [c.resolve(doc).text for c in doc.pictures[0].captions] == ["cap"]
 
 
+def test_figure_caption_claim_is_reset_between_conversions():
+    # A backend can convert more than once. Every run must claim the figure
+    # captions again, because the claimed figure identities are per-run state.
+    html = (
+        b"<html><body><h1>Title</h1>"
+        b'<figure><img src="a.png" alt="first"/><img src="b.png" alt="second"/>'
+        b"<figcaption>one</figcaption></figure>"
+        b'<figure><img src="c.png" alt="third"/><figcaption>two</figcaption></figure>'
+        b"</body></html>"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+
+    runs: list[list[str]] = []
+    for _ in range(2):
+        doc = backend.convert()
+        runs.append([picture.caption_text(doc) for picture in doc.pictures])
+
+    assert runs == [["one", "second", "two"], ["one", "second", "two"]]
+
+
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 

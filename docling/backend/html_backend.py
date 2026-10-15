@@ -1058,6 +1058,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # reset context
         self.ctx = _Context()
         self._render_visibility_cache.clear()
+        self._captioned_figure_ids.clear()
         self._walk(content, doc)
         return doc
 
