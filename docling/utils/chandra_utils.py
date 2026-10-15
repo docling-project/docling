@@ -412,6 +412,9 @@ class _ChandraDocumentBuilder:
             edges = run.text.strip(" \t")
             run.text = run.text.strip()
             is_text = run.label == DocItemLabel.TEXT
+            if is_text:
+                # Like a browser, drop the spaces around a `<br/>` line break.
+                run.text = re.sub(r" *\n *", "\n", run.text)
             line_break = line_break or (is_text and edges.startswith("\n"))
             if not run.text and run.label not in {
                 DocItemLabel.FIELD_VALUE,
