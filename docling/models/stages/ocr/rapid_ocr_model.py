@@ -61,7 +61,7 @@ _RAPIDOCR_BACKENDS: frozenset[str] = frozenset(get_args(RapidOcrBackend))
 
 # detect_orientation: a line with at least this score is read with confidence, and a
 # region with fewer lines is too small to judge its orientation.
-_CONFIDENT_SCORE = 0.8
+_ORIENTATION_CONFIDENCE_SCORE = 0.8
 _ORIENTATION_MIN_LINES = 3
 
 # A line read by RapidOCR: its box as four corner points, its text and its score
@@ -474,12 +474,16 @@ def _validate_rapidocr_model_size(
 
 def _reads_well(lines: list[_OcrLine]) -> bool:
     """Whether enough lines were found and at least half are read with confidence."""
-    confident = sum(1 for _, _, score in lines if score >= _CONFIDENT_SCORE)
+    confident = sum(
+        1 for _, _, score in lines if score >= _ORIENTATION_CONFIDENCE_SCORE
+    )
     return len(lines) >= _ORIENTATION_MIN_LINES and 2 * confident >= len(lines)
 
 
 def _confident_chars(lines: list[_OcrLine]) -> int:
-    return sum(len(text) for _, text, score in lines if score >= _CONFIDENT_SCORE)
+    return sum(
+        len(text) for _, text, score in lines if score >= _ORIENTATION_CONFIDENCE_SCORE
+    )
 
 
 class RapidOcrModel(BaseOcrModel):
