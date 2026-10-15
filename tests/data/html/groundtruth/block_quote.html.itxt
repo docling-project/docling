@@ -1,0 +1,24 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Judgment
+    item-2 at level 2: text: The provision reads as follows.
+    item-3 at level 2: block_quote: group blockquote
+      item-4 at level 3: text: A person commits an offence if the person:
+      item-5 at level 3: list: group ordered list
+        item-6 at level 4: list_item: does an act; and
+        item-7 at level 4: list_item: intends the result.
+      item-8 at level 3: block_quote: group blockquote
+        item-9 at level 4: text: A nested quotation inside the provision.
+      item-10 at level 3: caption: - Example Act 2017 , section 1
+    item-11 at level 2: text: The court agreed, and quoted the earlier judgment.
+    item-12 at level 2: block_quote: group blockquote
+      item-13 at level 3: text: The words must be read in their context.
+      item-14 at level 3: caption: Lord Reed, Example v Example [2016] UKSC 12, para 30
+    item-15 at level 2: list: group list
+      item-16 at level 3: list_item: First submission:
+        item-17 at level 4: block_quote: group blockquote
+          item-18 at level 5: text: A quote inside a list item.
+      item-19 at level 3: list_item: Second submission.
+    item-20 at level 2: block_quote: group blockquote
+      item-21 at level 3: text: A quote whose relative source cannot be resolved.
+    item-22 at level 2: block_quote: group blockquote
+      item-23 at level 3: text: A quote without source or attribution.
