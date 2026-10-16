@@ -1,0 +1,23 @@
+From: Alice Example <alice@example.com>
+To: Bob Example <bob@example.com>
+Subject: Email with HTML attachment
+Date: Wed, 20 May 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============6542120918356800943=="
+
+--===============6542120918356800943==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Please see the attached quarterly report.
+
+--===============6542120918356800943==
+Content-Type: text/html
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="report.html"
+MIME-Version: 1.0
+
+PGh0bWw+PGJvZHk+PGgxPlF1YXJ0ZXJseSBSZXBvcnQ8L2gxPjxwPlJldmVudWUgcm9zZSB0byAx
+MiBtaWxsaW9uIGRvbGxhcnMuPC9wPjwvYm9keT48L2h0bWw+
+
+--===============6542120918356800943==--
