@@ -186,6 +186,15 @@ def _iter_paragraph_elements(element: etree._Element) -> Iterator[etree._Element
             yield child
 
 
+def _text_frame_text(text: str) -> str:
+    """Return the ``.text`` of a python-pptx text frame with "\\n" line breaks.
+
+    python-pptx gives a line break inside a paragraph (``a:br``) as a vertical
+    tab ("\\v").
+    """
+    return text.replace("\v", "\n").strip()
+
+
 def _paragraph_fragments(element: etree._Element) -> list[tuple[DocItemLabel, str]]:
     """Coalesce adjacent text runs while keeping equations as separate fragments."""
     fragments: list[tuple[DocItemLabel, str]] = []
@@ -1390,8 +1399,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     else:
                         col_span = int(col_span)
 
+                    cell_text = _text_frame_text(cell.text)
                     icell = TableCell(
-                        text=cell.text.strip(),
+                        text=cell_text,
                         row_span=row_span,
                         col_span=col_span,
                         start_row_offset_idx=row_idx,
@@ -1401,7 +1411,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         column_header=row_idx == 0,
                         row_header=False,
                     )
-                    if len(cell.text.strip()) > 0:
+                    if len(cell_text) > 0:
                         tcells.append(icell)
             # Initialize Docling TableData
             data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
@@ -2062,7 +2072,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             if slide.has_notes_slide:
                 notes_slide = slide.notes_slide
                 if notes_slide.notes_text_frame is not None:
-                    notes_text = notes_slide.notes_text_frame.text.strip()
+                    notes_text = _text_frame_text(notes_slide.notes_text_frame.text)
                     if notes_text:
                         bbox = BoundingBox(l=0, t=0, r=0, b=0)
                         prov = ProvenanceItem(
