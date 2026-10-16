@@ -18,10 +18,13 @@ storage a presigned URL points at, so the client's artifact download and its
 SSRF check run against a real endpoint.
 
 Submitting returns ``pending``; each poll advances the task one step along
-``pending -> started -> success``, so the polling loop and the watcher
-genuinely iterate rather than short-circuiting on a canned terminal status.
-Every response is built from this repo's own response models, so the fake
-cannot drift into being a second copy of the API.
+``pending -> started -> <terminal>``, where the terminal status is ``success``
+by default and can be scripted to ``failure`` or ``cancelled``. A cancelled
+task answers ``/v1/result/{task_id}`` with a structured 409
+(``detail.code == "TASK_CANCELLED"``), matching the real service contract, so
+the client's cancellation path runs end to end. Every response is built from
+this repo's own response models, so the fake cannot drift into being a second
+copy of the API.
 """
 
 from __future__ import annotations
@@ -236,6 +239,16 @@ class FakeDoclingServe:
             task = self.tasks.get(task_id)
             if task is None:
                 return JSONResponse({"detail": "task not found"}, status_code=404)
+            if task.status() is ConversionStatus.CANCELLED:
+                return JSONResponse(
+                    {
+                        "detail": {
+                            "code": "TASK_CANCELLED",
+                            "message": "Task was cancelled.",
+                        }
+                    },
+                    status_code=409,
+                )
             return JSONResponse(_as_wire(self._result(task)))
 
         @router.get("/artifacts/{task_id}/{kind}")

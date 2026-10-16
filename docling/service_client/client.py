@@ -100,6 +100,7 @@ from docling.service_client.exceptions import (
     ResultNotReadyError,
     ServiceError,
     ServiceUnavailableError,
+    TaskCancelledError,
     TaskExecutionError,
     TaskNotFoundError,
     TaskTimeoutError,
@@ -750,6 +751,41 @@ class _BaseDoclingServiceClient:
         now = datetime.now(tz=timezone.utc)
         return max(0.0, (retry_at - now).total_seconds())
 
+    def _raise_if_task_cancelled(
+        self,
+        task_id: str,
+        last_status: TaskStatusResponse | None,
+    ) -> None:
+        """Raise when the last known status is already cancelled.
+
+        Called before a result request so a cancelled task fails fast without
+        a result lookup that can only return another cancellation error.
+        """
+        if (
+            last_status is not None
+            and last_status.task_status == ConversionStatus.CANCELLED
+        ):
+            raise TaskCancelledError(f"Task {task_id} was cancelled.", task_id=task_id)
+
+    def _raise_if_cancelled_result(
+        self,
+        task_id: str,
+        response: httpx.Response,
+    ) -> None:
+        """Map only a structured 409 ``detail.code == TASK_CANCELLED`` to a cancel error.
+
+        Any other 409 keeps the existing error mapping in
+        :meth:`_raise_for_generic_http_error`.
+        """
+        if response.status_code != 409:
+            return
+        try:
+            detail = response.json().get("detail")
+        except Exception:
+            return
+        if isinstance(detail, dict) and detail.get("code") == "TASK_CANCELLED":
+            raise TaskCancelledError(f"Task {task_id} was cancelled.", task_id=task_id)
+
     def _raise_for_result_404(
         self,
         task_id: str,
@@ -761,7 +797,11 @@ class _BaseDoclingServiceClient:
             raise TaskNotFoundError(f"Task {task_id} was not found.")
         if detail is not None and detail.startswith("Task result not found"):
             if last_status is not None and is_terminal_task_status(last_status):
-                if last_status.task_status == "failure":
+                if last_status.task_status == ConversionStatus.CANCELLED:
+                    raise TaskCancelledError(
+                        f"Task {task_id} was cancelled.", task_id=task_id
+                    )
+                if last_status.task_status == ConversionStatus.FAILURE:
                     message = last_status.error_message or f"Task {task_id} failed."
                     raise TaskExecutionError(message, failure=last_status.failure)
                 raise ResultExpiredError(f"Result for task {task_id} has expired.")
@@ -1625,6 +1665,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         *,
         error_message: str,
     ) -> httpx.Response:
+        self._raise_if_task_cancelled(task_id, last_status)
         response = self._request_with_retry(
             method="GET",
             path=f"/v1/result/{task_id}",
@@ -1633,6 +1674,8 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             self._raise_for_result_404(
                 task_id=task_id, response=response, last_status=last_status
             )
+        if response.status_code == 409:
+            self._raise_if_cancelled_result(task_id, response)
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, error_message)
         self._raise_if_task_failure_result(response)

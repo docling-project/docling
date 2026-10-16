@@ -29,6 +29,7 @@ from docling.service_client import (
     ConversionError,
     DoclingServiceClient,
     ServiceUnavailableError,
+    TaskCancelledError,
 )
 from docling.service_client.client import ConversionItem, StatusWatcherKind
 from docling.service_client.exceptions import ServiceError, TaskNotFoundError
@@ -284,6 +285,53 @@ def test_task_failure_is_returned_when_raises_on_error_is_false(client, serve):
     result = client.convert(SOURCE, raises_on_error=False)
 
     assert result.status == ConversionStatus.FAILURE
+
+
+def test_cancelled_task_raises_task_cancelled_error_without_result_get(
+    client, serve, service
+):
+    """A task the watcher sees as cancelled fails without a result lookup."""
+    serve.terminal_status = ConversionStatus.CANCELLED
+
+    job = client.submit(SOURCE, target=InBodyTarget())
+
+    with pytest.raises(TaskCancelledError) as excinfo:
+        job.result()
+
+    assert excinfo.value.task_id == job.task_id
+    assert not service.requests_for("GET", r"/v1/result/.*")
+
+
+def test_structured_cancelled_result_409_maps_to_task_cancelled_error(client, service):
+    """A direct result request that returns the structured cancel 409 raises."""
+    service.add_route(
+        "GET",
+        r"/v1/result/.*",
+        lambda request, match: Response(
+            status=409,
+            body={"detail": {"code": "TASK_CANCELLED", "message": "cancelled"}},
+        ),
+    )
+
+    job = client.submit(SOURCE, target=InBodyTarget())
+
+    with pytest.raises(TaskCancelledError):
+        job.result()
+
+
+def test_unrelated_result_409_keeps_existing_service_error(client, service):
+    service.add_route(
+        "GET",
+        r"/v1/result/.*",
+        lambda request, match: Response(
+            status=409, body={"detail": {"code": "SOMETHING_ELSE"}}
+        ),
+    )
+
+    job = client.submit(SOURCE, target=InBodyTarget())
+
+    with pytest.raises(ServiceError):
+        job.result()
 
 
 def test_unknown_task_poll_raises_task_not_found(client, service):

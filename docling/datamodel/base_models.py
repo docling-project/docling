@@ -92,6 +92,7 @@ class ConversionStatus(str, Enum):
     SUCCESS = "success"
     PARTIAL_SUCCESS = "partial_success"
     SKIPPED = "skipped"
+    CANCELLED = "cancelled"
 
 
 class InputFormat(str, Enum):

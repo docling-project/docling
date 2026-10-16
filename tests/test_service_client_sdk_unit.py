@@ -82,11 +82,16 @@ from docling.service_client.exceptions import (
     ResultExpiredError,
     ServiceError,
     ServiceUnavailableError,
+    TaskCancelledError,
     TaskExecutionError,
     UsageLimitExceededError,
 )
 from docling.service_client.job import ConversionJob, _JobHandlers
-from docling.service_client.watchers import AsyncPollingWatcher, PollingWatcher
+from docling.service_client.watchers import (
+    AsyncPollingWatcher,
+    PollingWatcher,
+    is_terminal_task_status,
+)
 
 TEST_BASE_URL = "http://docling-service.invalid"
 
@@ -278,6 +283,217 @@ def test_result_404_after_success_status_raises_result_expired() -> None:
                 response=response,
                 last_status=last_status,
             )
+
+
+def test_result_404_after_cancelled_status_raises_task_cancelled_error() -> None:
+    response = httpx.Response(
+        404,
+        json={"detail": "Task result not found. Please wait for a completion status."},
+    )
+    last_status = _status_response("task-1", "cancelled")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(TaskCancelledError, match="task-1") as excinfo:
+            client._raise_for_result_404(
+                task_id="task-1",
+                response=response,
+                last_status=last_status,
+            )
+
+    assert excinfo.value.task_id == "task-1"
+
+
+def test_cancelled_status_is_terminal() -> None:
+    assert is_terminal_task_status(_status_response("task-1", "cancelled")) is True
+
+
+def test_polling_watcher_stops_after_cancelled_status() -> None:
+    updates = iter(
+        [
+            _status_response("task-1", "pending"),
+            _status_response("task-1", "cancelled"),
+        ]
+    )
+    watcher = PollingWatcher(
+        poll_status=lambda task_id, wait: next(updates),
+        poll_server_wait=0.0,
+        poll_client_interval=0.0,
+        default_timeout=5.0,
+    )
+
+    observed = [update.task_status for update in watcher.iter_updates("task-1")]
+
+    assert observed == ["pending", "cancelled"]
+
+
+def test_polling_watcher_wait_returns_cancelled_status() -> None:
+    watcher = PollingWatcher(
+        poll_status=lambda task_id, wait: _status_response(task_id, "cancelled"),
+        poll_server_wait=0.0,
+        poll_client_interval=0.0,
+        default_timeout=5.0,
+    )
+
+    assert watcher.wait_for_terminal("task-1").task_status == "cancelled"
+
+
+def test_conversion_job_done_is_true_for_cancelled_terminal_status() -> None:
+    job = ConversionJob(
+        task_id="task-1",
+        submitted_at=datetime.now(timezone.utc),
+        handlers=_JobHandlers(
+            poll=lambda task_id, wait: _status_response(task_id, "cancelled"),
+            watch=lambda task_id, timeout: iter(()),
+            wait=lambda task_id, timeout: _status_response(task_id, "cancelled"),
+            fetch_result=lambda task_id, last_status: "done",
+        ),
+    )
+
+    assert job.done is False
+    assert job.poll().task_status == "cancelled"
+    assert job.done is True
+
+
+def test_fetch_result_response_maps_structured_cancelled_409() -> None:
+    response = httpx.Response(
+        409,
+        json={"detail": {"code": "TASK_CANCELLED", "message": "cancelled"}},
+    )
+    calls: list[dict[str, object]] = []
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = MethodType(  # type: ignore[method-assign]
+            lambda self, **kwargs: (calls.append(kwargs), response)[1],
+            client,
+        )
+        with pytest.raises(TaskCancelledError, match="task-1") as excinfo:
+            client._fetch_result_response(
+                task_id="task-1",
+                last_status=None,
+                error_message="fetch failed",
+            )
+
+    assert excinfo.value.task_id == "task-1"
+    assert len(calls) == 1
+
+
+def test_fetch_result_response_keeps_service_error_for_unrelated_409() -> None:
+    response = httpx.Response(409, json={"detail": {"code": "SOMETHING_ELSE"}})
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = MethodType(  # type: ignore[method-assign]
+            lambda self, **kwargs: response,
+            client,
+        )
+        with pytest.raises(ServiceError) as excinfo:
+            client._fetch_result_response(
+                task_id="task-1",
+                last_status=None,
+                error_message="fetch failed",
+            )
+
+    assert not isinstance(excinfo.value, TaskCancelledError)
+
+
+def test_fetch_result_response_skips_get_when_status_known_cancelled() -> None:
+    calls: list[dict[str, object]] = []
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = MethodType(  # type: ignore[method-assign]
+            lambda self, **kwargs: calls.append(kwargs),
+            client,
+        )
+        with pytest.raises(TaskCancelledError):
+            client._fetch_result_response(
+                task_id="task-1",
+                last_status=_status_response("task-1", "cancelled"),
+                error_message="fetch failed",
+            )
+
+    assert calls == []
+
+
+@pytest.mark.anyio
+async def test_async_polling_watcher_stops_after_cancelled_status() -> None:
+    updates = iter(
+        [
+            _status_response("task-1", "started"),
+            _status_response("task-1", "cancelled"),
+        ]
+    )
+
+    async def fake_poll(task_id: str, wait: float) -> TaskStatusResponse:
+        return next(updates)
+
+    watcher = AsyncPollingWatcher(
+        poll_status=fake_poll,
+        poll_server_wait=0.0,
+        poll_client_interval=0.0,
+        default_timeout=5.0,
+    )
+
+    observed = [update.task_status async for update in watcher.iter_updates("task-1")]
+
+    assert observed == ["started", "cancelled"]
+
+
+@pytest.mark.anyio
+async def test_async_polling_watcher_wait_returns_cancelled_status() -> None:
+    async def fake_poll(task_id: str, wait: float) -> TaskStatusResponse:
+        return _status_response(task_id, "cancelled")
+
+    watcher = AsyncPollingWatcher(
+        poll_status=fake_poll,
+        poll_server_wait=0.0,
+        poll_client_interval=0.0,
+        default_timeout=5.0,
+    )
+
+    assert (await watcher.wait_for_terminal("task-1")).task_status == "cancelled"
+
+
+@pytest.mark.anyio
+async def test_async_fetch_result_response_maps_structured_cancelled_409() -> None:
+    class FakeAsyncClient:
+        async def request(self, **kwargs: object) -> httpx.Response:
+            return httpx.Response(
+                409,
+                json={"detail": {"code": "TASK_CANCELLED", "message": "cancelled"}},
+            )
+
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL)
+    with pytest.raises(TaskCancelledError, match="task-1") as excinfo:
+        await client._fetch_result_response(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+            task_id="task-1",
+            last_status=None,
+            error_message="fetch failed",
+        )
+
+    assert excinfo.value.task_id == "task-1"
+
+
+@pytest.mark.anyio
+async def test_async_fetch_result_response_skips_get_when_status_known_cancelled() -> (
+    None
+):
+    calls: list[dict[str, object]] = []
+
+    class FakeAsyncClient:
+        async def request(self, **kwargs: object) -> httpx.Response:
+            calls.append(kwargs)
+            return httpx.Response(200, json={})
+
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL)
+    with pytest.raises(TaskCancelledError):
+        await client._fetch_result_response(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+            task_id="task-1",
+            last_status=_status_response("task-1", "cancelled"),
+            error_message="fetch failed",
+        )
+
+    assert calls == []
 
 
 def test_conversion_job_poll_forwards_wait_and_updates_done() -> None:

@@ -90,6 +90,14 @@ class TaskExecutionError(DoclingServiceClientError):
         self.failure = failure
 
 
+class TaskCancelledError(TaskExecutionError):
+    """Raised when a task was cancelled before it produced a result."""
+
+    def __init__(self, message: str, *, task_id: str) -> None:
+        super().__init__(message)
+        self.task_id = task_id
+
+
 class ArtifactDownloadError(DoclingServiceClientError):
     """Raised when a presigned artifact cannot be downloaded or is too large.
 
