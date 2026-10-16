@@ -2082,6 +2082,32 @@ class HeadingHierarchyOptions(BaseModel):
     ] = 0.8
 
 
+class ScriptPositionOptions(BaseModel):
+    """Options for recovering superscript and subscript text in the PDF pipeline.
+
+    When ``enabled``, characters drawn smaller than their line and raised or lowered against
+    it (footnote markers, "1st", "mc2", "H2O") are marked with ``formatting.script``. A text
+    item holding them becomes an inline group of runs, as the Word backend produces.
+
+    Notes:
+        - Character positions are read with pypdfium2 whichever backend parsed the page; the
+          step is skipped with a warning when pypdfium2 is not installed.
+        - Body text, list items and footnotes are handled; headings, captions, tables, code,
+          formulas and OCR text are left unchanged.
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable recovery of superscript and subscript text for the PDF pipeline. "
+                "When disabled (default), raised and lowered text stays part of its plain "
+                "text item (unchanged behavior)."
+            )
+        ),
+    ] = False
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Configuration options for the PDF document processing pipeline.
 
@@ -2252,6 +2278,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = HeadingHierarchyOptions()
+    script_position_options: Annotated[
+        ScriptPositionOptions,
+        Field(
+            description=(
+                "Configuration for recovering superscript and subscript text, such as "
+                "footnote markers, ordinals and chemical formulas. Disabled by default; when "
+                "enabled, text items holding raised or lowered characters become inline "
+                "groups whose runs carry formatting.script."
+            )
+        ),
+    ] = ScriptPositionOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 
