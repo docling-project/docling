@@ -68,6 +68,7 @@ try:  # pragma: no cover - import-time guard
     from docx.enum.style import WD_STYLE_TYPE
     from docx.opc.constants import RELATIONSHIP_TYPE as DOCX_RT
     from docx.oxml import parse_xml as docx_parse_xml
+    from docx.oxml.ns import qn
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
@@ -649,6 +650,19 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
     return normalized
 
 
+def _normalize_list_style_types(docx_obj: DocxDocument) -> None:
+    """Change the style type ``list`` to ``numbering`` in the styles part.
+
+    ``ST_StyleType`` has no ``list`` value; the numbering style type is
+    ``WD_STYLE_TYPE.LIST`` in python-docx. python-docx raises ``ValueError``
+    when it reads the type ``list``, and it reads the type of every style to
+    find a default style, so one such style fails the whole conversion.
+    """
+    for style in docx_obj.styles.element.findall(qn("w:style")):
+        if style.get(qn("w:type")) == "list":
+            style.set(qn("w:type"), "numbering")
+
+
 class _NestedList(NamedTuple):
     """A list opened under an open list's item for its larger left indentation.
 
@@ -879,6 +893,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self.docx_obj:
             self.valid = True
             self.current_part = self.docx_obj.part
+            _normalize_list_style_types(self.docx_obj)
             self._default_paragraph_style = self.docx_obj.styles.default(
                 WD_STYLE_TYPE.PARAGRAPH
             )
