@@ -502,7 +502,9 @@ class _ChandraDocumentBuilder:
         label: DocItemLabel,
     ) -> None:
         layout_label = node.attrs.get("data-label")
+        owns_prov = False
         if "data-bbox" in node.attrs or layout_label is not None:
+            owns_prov = True
             prov = _Provenance(
                 self._provenance(node),
                 text_owner=layout_label
@@ -585,11 +587,59 @@ class _ChandraDocumentBuilder:
             if re.fullmatch(r"h[1-6]", node.tag) and label == DocItemLabel.TEXT:
                 label = DocItemLabel.SECTION_HEADER
             before = len(self.doc.texts)
-            self.walk(node.children, parent, prov, label)
+            if (
+                owns_prov
+                and prov is not None
+                and prov.item is not None
+                and prov.text_owner
+                and self._block_splits(node.children, prov, label)
+            ):
+                # The block maps to several parts. Keep the block bbox on a
+                # container instead of letting the first part claim it, so the
+                # parts stay linked to their layout block.
+                layer = (
+                    ContentLayer.FURNITURE
+                    if label in {DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER}
+                    else ContentLayer.BODY
+                )
+                container = self.doc.add_text(
+                    label=label,
+                    text="",
+                    parent=parent,
+                    prov=prov.take(),
+                    content_layer=layer,
+                )
+                self.walk(
+                    node.children,
+                    container,
+                    _Provenance(None, text_owner=False),
+                    label,
+                )
+            else:
+                self.walk(node.children, parent, prov, label)
             if re.fullmatch(r"h[1-6]", node.tag):
                 for item in self.doc.texts[before:]:
                     if isinstance(item, SectionHeaderItem):
                         item.level = int(node.tag[1])
+
+    def _block_splits(
+        self,
+        children: list[_Element | str],
+        prov: _Provenance,
+        label: DocItemLabel,
+    ) -> bool:
+        """Whether a labeled block maps to several top-level items.
+
+        A dry run on a scratch document counts the parts the block would
+        produce. The real walk then either keeps the flat output (a single
+        part owns the block bbox, as before) or wraps the parts in a
+        container holding the block bbox.
+        """
+        scratch = DoclingDocument(name="chandra-dry-run")
+        scratch.add_page(page_no=self.page_no, size=self.size)
+        dry_run = _ChandraDocumentBuilder(scratch, self.size, self.page_no)
+        dry_run.walk(children, None, _Provenance(prov.item, prov.text_owner), label)
+        return len(scratch.body.children) > 1
 
     def _list(self, node: _Element, parent: NodeItem | None) -> None:
         group = self.doc.add_list_group(parent=parent)

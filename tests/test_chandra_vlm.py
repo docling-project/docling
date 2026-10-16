@@ -274,18 +274,32 @@ def test_chandra_mixed_structure_and_rich_table_cells():
     assert rich.ref.resolve(doc).parent == first.get_ref()
     assert any(t.label == DocItemLabel.CHECKBOX_SELECTED for t in doc.texts)
     assert any(t.text == "Bold" and t.formatting.bold for t in doc.texts)
-    assert [r.resolve(doc).label for r in doc.body.children] == [
+    # The block splits into several parts, so it gets a container holding the
+    # block bbox with the parts as children (instead of the first part
+    # claiming the whole block bbox and the rest losing it).
+    assert len(doc.body.children) == 1
+    container = doc.body.children[0].resolve(doc)
+    assert isinstance(container, TextItem)
+    assert container.text == ""
+    assert [r.resolve(doc).label for r in container.children] == [
         DocItemLabel.TEXT,
         DocItemLabel.TABLE,
         DocItemLabel.TEXT,
         DocItemLabel.TABLE,
         DocItemLabel.TEXT,
     ]
-    assert doc.texts[0].text == "Before < table"
+    assert doc.texts[0] is container
+    assert doc.texts[1].text == "Before < table"
     assert doc.texts[-1].text == "After"
-    assert doc.texts[0].prov[0].bbox.l == 10.5
+    assert container.prov[0].bbox.l == 10.5
     assert not first.prov
     assert all(not item.prov for item in [*doc.texts[1:], *doc.tables])
+    assert all(
+        t.parent.resolve(doc) is container
+        for t in doc.texts[1:]
+        if t.label == DocItemLabel.TEXT
+        and t.text in {"Before < table", "Between", "After"}
+    )
     assert doc.export_to_doclang().count("<location") == 4
     restored = DoclingDocument.model_validate_json(doc.model_dump_json())
     assert restored.validate_tree(restored.body)
@@ -364,6 +378,110 @@ def test_chandra_labeled_multirun_block_emits_location_once():
     assert footnote.prov
     assert all(not t.prov for t in doc.texts if t is not footnote)
     assert doc.export_to_doclang().count("<location") == 4
+
+
+def _parse_block(content: str, label: str = "Text") -> DoclingDocument:
+    return parse_chandra_html(
+        f"<div data-label='{label}' data-bbox='100 700 500 900'>{content}</div>",
+        Size(width=1000, height=1000),
+        page_no=1,
+    )
+
+
+def _assert_block_container(doc: DoclingDocument):
+    # A multi-part block maps to one container holding the block bbox, with
+    # the parts as children; the parts themselves stay unlocated.
+    assert len(doc.body.children) == 1
+    container = doc.body.children[0].resolve(doc)
+    assert isinstance(container, TextItem)
+    assert container.label == DocItemLabel.TEXT
+    assert container.text == ""
+    assert container.prov
+    assert container.prov[0].bbox.as_tuple() == (100.0, 700.0, 500.0, 900.0)
+    assert doc.validate_tree(doc.body)
+    return container
+
+
+def test_chandra_text_block_with_image_keeps_parts_under_block_bbox():
+    # Case 1: text + <img> with its own bbox + text. The first text part used
+    # to claim the whole block bbox while the last text lost its position.
+    doc = _parse_block(
+        "<p>Approved by Example Ltd.<br/>"
+        "<img alt='Signature' data-bbox='110 760 300 840'/><br/>"
+        "Jane Doe, Manager</p>"
+    )
+    container = _assert_block_container(doc)
+    parts = [r.resolve(doc) for r in container.children]
+    assert [p.text if isinstance(p, TextItem) else "picture" for p in parts] == [
+        "Approved by Example Ltd.",
+        "picture",
+        "Jane Doe, Manager",
+    ]
+    picture = doc.pictures[0]
+    assert picture.prov
+    assert picture.prov[0].bbox.as_tuple() == (110.0, 760.0, 300.0, 840.0)
+    assert all(not t.prov for t in doc.texts if t is not container)
+    assert all(p.parent.resolve(doc) is container for p in parts)
+    assert doc.export_to_doclang().count("<location") == 8
+
+
+def test_chandra_text_block_with_two_paragraphs_keeps_parts_under_block_bbox():
+    # Case 2: two <p>s, no image. The image is not the cause of the split.
+    doc = _parse_block("<p>Approved by Example Ltd.</p><p>Jane Doe, Manager</p>")
+    container = _assert_block_container(doc)
+    parts = [r.resolve(doc) for r in container.children]
+    assert [p.text for p in parts] == [
+        "Approved by Example Ltd.",
+        "Jane Doe, Manager",
+    ]
+    assert all(not p.prov for p in parts)
+    assert doc.export_to_doclang().count("<location") == 4
+
+
+def test_chandra_text_block_with_bboxless_image_keeps_block_bbox_on_container():
+    # Case 3: the <img> has no bbox of its own. It used to take the block
+    # bbox; now the container holds it and the picture stays unlocated.
+    doc = _parse_block("<p><img alt='Signature'/><br/>Jane Doe, Manager</p>")
+    container = _assert_block_container(doc)
+    assert len(doc.pictures) == 1
+    assert not doc.pictures[0].prov
+    assert doc.pictures[0].parent.resolve(doc) is container
+    texts = [t for t in doc.texts if t is not container]
+    assert [t.text for t in texts] == ["Jane Doe, Manager"]
+    assert all(not t.prov for t in texts)
+    assert doc.export_to_doclang().count("<location") == 4
+
+
+def test_chandra_form_block_container_is_unchanged():
+    # Case 4 (comparison): a Form block keeps its FieldRegionItem container.
+    doc = _parse_block(
+        "<p>Approved by Example Ltd.</p><p>Jane Doe, Manager</p>", "Form"
+    )
+    assert len(doc.field_regions) == 1
+    region = doc.field_regions[0]
+    assert region.prov
+    assert region.prov[0].bbox.as_tuple() == (100.0, 700.0, 500.0, 900.0)
+    assert [t.text for t in doc.texts] == [
+        "Approved by Example Ltd.",
+        "Jane Doe, Manager",
+    ]
+    assert all(not t.prov for t in doc.texts)
+    assert all(t.parent.resolve(doc) is region for t in doc.texts)
+    assert doc.validate_tree(doc.body)
+
+
+def test_chandra_single_part_text_block_stays_flat():
+    # A block with a single part does not get a container: the part itself
+    # owns the block bbox, exactly as before.
+    doc = _parse_block("<p>Just one paragraph.</p>")
+    assert len(doc.texts) == 1
+    assert not doc.groups and not doc.pictures
+    text = doc.texts[0]
+    assert text.text == "Just one paragraph."
+    assert text.parent.resolve(doc) is doc.body
+    assert text.prov
+    assert text.prov[0].bbox.as_tuple() == (100.0, 700.0, 500.0, 900.0)
+    assert doc.validate_tree(doc.body)
 
 
 def test_chandra_inline_math_formatting_and_code_whitespace():
