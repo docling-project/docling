@@ -12,16 +12,16 @@ mode = title]Thermodynamics of charmed hadrons across chiral crossover from latt
 
 1]Sipaz Sharma[orcid=0000-0001-6916-2233]  
 sipaz.sharma@tum.de  
-[1]organization=Physik Department, Technische Universitat Munchen,  
- addressline=James-Franck-Strae 1,   
- city=Garchingb.Munchen,  
+[1]organization=Physik Department, Technische Universität München,  
+ addressline=James-Franck-Straße 1,   
+ city=Garchingb.München,  
  postcode=D-85748,   
  country=Germany
 
 [
 
 2]Frithjof Karsch  
-        [2]organization=Fakultat fur Physik, Universitat Bielefeld,  
+        [2]organization=Fakultät für Physik, Universität Bielefeld,  
  	addressline=Universitätsstraße 25,   
  	city=Bielefeld,  
  	postcode=D-33615,   
