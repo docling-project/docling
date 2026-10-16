@@ -1812,6 +1812,43 @@
       "content_layer": "body",
       "name": "list",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/52",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/514"
+        },
+        {
+          "$ref": "#/texts/515"
+        },
+        {
+          "$ref": "#/texts/516"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/53",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/517"
+        },
+        {
+          "$ref": "#/texts/518"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -1841,6 +1878,15 @@
         },
         {
           "$ref": "#/texts/457"
+        },
+        {
+          "$ref": "#/texts/513"
+        },
+        {
+          "$ref": "#/groups/52"
+        },
+        {
+          "$ref": "#/groups/53"
         }
       ],
       "content_layer": "body",
@@ -8635,6 +8681,86 @@
       "text": "ALICE Collaboration, Eur. Phys. J. C. 84, 813 (2024).",
       "enumerated": false,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/513",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "© The Author(s) 2026. Published by Oxford University Press on behalf of the Physical Society of Japan.",
+      "text": "© The Author(s) 2026. Published by Oxford University Press on behalf of the Physical Society of Japan."
+    },
+    {
+      "self_ref": "#/texts/514",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "This is an Open Access article distributed under the terms of the Creative Commons Attribution License (",
+      "text": "This is an Open Access article distributed under the terms of the Creative Commons Attribution License ("
+    },
+    {
+      "self_ref": "#/texts/515",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "https://creativecommons.org/licenses/by/4.0/",
+      "text": "https://creativecommons.org/licenses/by/4.0/",
+      "hyperlink": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "self_ref": "#/texts/516",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "), which permits unrestricted reuse, distribution, and reproduction in any medium, provided the original work is properly cited.",
+      "text": "), which permits unrestricted reuse, distribution, and reproduction in any medium, provided the original work is properly cited."
+    },
+    {
+      "self_ref": "#/texts/517",
+      "parent": {
+        "$ref": "#/groups/53"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "Funded by SCOAP",
+      "text": "Funded by SCOAP"
+    },
+    {
+      "self_ref": "#/texts/518",
+      "parent": {
+        "$ref": "#/groups/53"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "3",
+      "text": "3",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "super"
+      }
     }
   ],
   "pictures": [],

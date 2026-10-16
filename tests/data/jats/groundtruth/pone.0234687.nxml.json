@@ -1887,6 +1887,58 @@
       "content_layer": "body",
       "name": "list",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/31",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/548"
+        },
+        {
+          "$ref": "#/texts/549"
+        },
+        {
+          "$ref": "#/texts/550"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/32",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/551"
+        },
+        {
+          "$ref": "#/texts/552"
+        },
+        {
+          "$ref": "#/texts/553"
+        },
+        {
+          "$ref": "#/texts/554"
+        },
+        {
+          "$ref": "#/texts/555"
+        },
+        {
+          "$ref": "#/texts/556"
+        },
+        {
+          "$ref": "#/texts/557"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -1922,6 +1974,12 @@
         },
         {
           "$ref": "#/texts/471"
+        },
+        {
+          "$ref": "#/groups/31"
+        },
+        {
+          "$ref": "#/groups/32"
         }
       ],
       "content_layer": "body",
@@ -10268,6 +10326,130 @@
       "text": "McConkeyB, AngersD, BenthamM, BoehmM, BrierleyT, CerkowniakD, et al Canadian agricultural greenhouse gas monitoring accounting and reporting system: methodology and greenhouse gas estimates for agricultural land in the LULUCF sector for NIR 2014. 2014.",
       "enumerated": false,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/548",
+      "parent": {
+        "$ref": "#/groups/31"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "This is an open access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the",
+      "text": "This is an open access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the"
+    },
+    {
+      "self_ref": "#/texts/549",
+      "parent": {
+        "$ref": "#/groups/31"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "Creative Commons CC0",
+      "text": "Creative Commons CC0",
+      "hyperlink": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "self_ref": "#/texts/550",
+      "parent": {
+        "$ref": "#/groups/31"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "public domain dedication.",
+      "text": "public domain dedication."
+    },
+    {
+      "self_ref": "#/texts/551",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "HRF Grant number (Finance code) 001, Coordenação de Aperfeiçoamento de Pessoal de Nível Superior - Brazil (CAPES)",
+      "text": "HRF Grant number (Finance code) 001, Coordenação de Aperfeiçoamento de Pessoal de Nível Superior - Brazil (CAPES)"
+    },
+    {
+      "self_ref": "#/texts/552",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "https://www.capes.gov.br",
+      "text": "https://www.capes.gov.br",
+      "hyperlink": "https://www.capes.gov.br/"
+    },
+    {
+      "self_ref": "#/texts/553",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "; Grant number 403754/2016-0, Conselho Nacional de Desenvolvimento Científico e Tecnológico - Brasil (CNPq)",
+      "text": "; Grant number 403754/2016-0, Conselho Nacional de Desenvolvimento Científico e Tecnológico - Brasil (CNPq)"
+    },
+    {
+      "self_ref": "#/texts/554",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "http://www.cnpq.br",
+      "text": "http://www.cnpq.br",
+      "hyperlink": "http://www.cnpq.br/"
+    },
+    {
+      "self_ref": "#/texts/555",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "; Grant number TR 584 2019, Fundação de Amparo à Pesquisa e Inovação do Estado de Santa Catarina (FAPESC)",
+      "text": "; Grant number TR 584 2019, Fundação de Amparo à Pesquisa e Inovação do Estado de Santa Catarina (FAPESC)"
+    },
+    {
+      "self_ref": "#/texts/556",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "http://www.fapesc.sc.gov.br",
+      "text": "http://www.fapesc.sc.gov.br",
+      "hyperlink": "http://www.fapesc.sc.gov.br/"
+    },
+    {
+      "self_ref": "#/texts/557",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": ". The funders had no role in study design, ata collection and analysis, decision to publish, or preparation of the manuscript.",
+      "text": ". The funders had no role in study design, ata collection and analysis, decision to publish, or preparation of the manuscript."
     }
   ],
   "pictures": [

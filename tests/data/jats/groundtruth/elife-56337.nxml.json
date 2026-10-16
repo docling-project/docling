@@ -715,6 +715,26 @@
       "content_layer": "body",
       "name": "list",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/18",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/233"
+        },
+        {
+          "$ref": "#/texts/234"
+        },
+        {
+          "$ref": "#/texts/235"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -762,6 +782,12 @@
         },
         {
           "$ref": "#/texts/176"
+        },
+        {
+          "$ref": "#/groups/18"
+        },
+        {
+          "$ref": "#/texts/236"
         }
       ],
       "content_layer": "body",
@@ -4145,6 +4171,55 @@
       "text": "Zhang Y, Liu T, Meyer CA, Eeckhoute J, Johnson DS, Bernstein BE, Nusbaum C, Myers RM, Brown M, Li W, Liu XS. Model-based analysis of ChIP-Seq (MACS). Genome Biology 9:R137 (2008). DOI: 10.1186/gb-2008-9-9-r137, PMID: 18798982",
       "enumerated": false,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/233",
+      "parent": {
+        "$ref": "#/groups/18"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "This is an open-access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the",
+      "text": "This is an open-access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the"
+    },
+    {
+      "self_ref": "#/texts/234",
+      "parent": {
+        "$ref": "#/groups/18"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "Creative Commons CC0 public domain dedication",
+      "text": "Creative Commons CC0 public domain dedication",
+      "hyperlink": "http://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "self_ref": "#/texts/235",
+      "parent": {
+        "$ref": "#/groups/18"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/236",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "The funders had no role in study design, data collection and interpretation, or the decision to submit the work for publication.",
+      "text": "The funders had no role in study design, data collection and interpretation, or the decision to submit the work for publication."
     }
   ],
   "pictures": [
