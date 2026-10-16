@@ -422,6 +422,17 @@ class RapidOcrOptions(OcrOptions):
             description="Enable text direction classification stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
+    detect_orientation: Annotated[
+        bool,
+        Field(
+            description=(
+                "Read an OCR region again at the other three orientations when fewer than half of its "
+                "lines are read with confidence, and keep the first orientation that reads well. Unlike "
+                "`use_cls`, which flips single text lines by 180 degrees, this also fixes pages turned "
+                "by 90 or 270 degrees."
+            )
+        ),
+    ] = False
     use_rec: Annotated[
         bool | None,
         Field(
