@@ -149,7 +149,14 @@
         }
       ],
       "orig": "Key Benefits:",
-      "text": "Key Benefits:"
+      "text": "Key Benefits:",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/2",
@@ -177,6 +184,13 @@
       ],
       "orig": "Open-source software is cost-effective as it eliminates license fees, reducing overall expenses.",
       "text": "Open-source software is cost-effective as it eliminates license fees, reducing overall expenses.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -206,6 +220,13 @@
       ],
       "orig": "Ehnhances security and transparency by allowing public access to source code",
       "text": "Ehnhances security and transparency by allowing public access to source code",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -235,6 +256,13 @@
       ],
       "orig": "Strong global community improves and maintains open-source projects.",
       "text": "Strong global community improves and maintains open-source projects.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -264,6 +292,13 @@
       ],
       "orig": "Offers flexibility, allowing users to customize and adapt the software",
       "text": "Offers flexibility, allowing users to customize and adapt the software",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -321,7 +356,14 @@
         }
       ],
       "orig": "Considerations When Using Open-Source Software:",
-      "text": "Considerations When Using Open-Source Software:"
+      "text": "Considerations When Using Open-Source Software:",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/8",
@@ -349,6 +391,13 @@
       ],
       "orig": "Open-source projects often rely on community support, which may not be as reliable as dedicated customer service.",
       "text": "Open-source projects often rely on community support, which may not be as reliable as dedicated customer service.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     },
@@ -378,6 +427,13 @@
       ],
       "orig": "Some open-source solutions may require advanced technical expertise for implementation and maintenance.",
       "text": "Some open-source solutions may require advanced technical expertise for implementation and maintenance.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
       "enumerated": false,
       "marker": ""
     }

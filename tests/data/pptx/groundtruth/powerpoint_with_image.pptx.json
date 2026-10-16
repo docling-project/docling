@@ -126,7 +126,14 @@
         }
       ],
       "orig": "Image test",
-      "text": "Image test"
+      "text": "Image test",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/2",
@@ -153,7 +160,14 @@
         }
       ],
       "orig": "Image linked to file",
-      "text": "Image linked to file"
+      "text": "Image linked to file",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/3",
@@ -207,7 +221,14 @@
         }
       ],
       "orig": "This is a picture inserted through a layout’s picture placeholder",
-      "text": "This is a picture inserted through a layout’s picture placeholder"
+      "text": "This is a picture inserted through a layout’s picture placeholder",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     }
   ],
   "pictures": [
