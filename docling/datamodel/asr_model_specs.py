@@ -9,6 +9,11 @@ from pydantic import (
 )
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.asr_presets import (
+    AsrEngineConfig,
+    AsrModelPreset,
+    AsrModelSpec,
+)
 from docling.datamodel.pipeline_options_asr_model import (
     # AsrResponseFormat,
     # ApiAsrOptions,
@@ -698,7 +703,85 @@ WHISPER_LARGE_V3_TURBO_S2T = InlineAsrWhisperS2TOptions(
 # =============================================================================
 
 
+_WHISPER_EXPORTS = {
+    "tiny": "mlx-community/whisper-tiny-mlx",
+    "base": "mlx-community/whisper-base-mlx",
+    "small": "mlx-community/whisper-small-mlx",
+    "medium": "mlx-community/whisper-medium-mlx-8bit",
+    "large": "mlx-community/whisper-large-mlx-8bit",
+    "turbo": "mlx-community/whisper-turbo",
+}
+
+WHISPER_ASR_PRESETS: dict[str, AsrModelPreset] = {
+    size: AsrModelPreset(
+        preset_id=f"whisper_{size}",
+        default_engine_type=InferenceAsrFramework.TRANSFORMERS,
+        model_spec=AsrModelSpec(
+            name=f"Whisper {size}",
+            default_repo_id=(
+                "openai/whisper-large-v3-turbo"
+                if size == "turbo"
+                else f"openai/whisper-{size}"
+            ),
+            supported_engines={
+                InferenceAsrFramework.TRANSFORMERS,
+                InferenceAsrFramework.MLX,
+            },
+            engine_overrides={
+                InferenceAsrFramework.MLX: AsrEngineConfig(repo_id=mlx_repo_id)
+            },
+        ),
+    )
+    for size, mlx_repo_id in _WHISPER_EXPORTS.items()
+}
+
+WHISPER_TINY_TRANSFORMERS = WHISPER_ASR_PRESETS["tiny"].to_options()
+WHISPER_BASE_TRANSFORMERS = WHISPER_ASR_PRESETS["base"].to_options()
+WHISPER_SMALL_TRANSFORMERS = WHISPER_ASR_PRESETS["small"].to_options()
+WHISPER_MEDIUM_TRANSFORMERS = WHISPER_ASR_PRESETS["medium"].to_options()
+WHISPER_LARGE_TRANSFORMERS = WHISPER_ASR_PRESETS["large"].to_options()
+WHISPER_TURBO_TRANSFORMERS = WHISPER_ASR_PRESETS["turbo"].to_options()
+
+GRANITE_4_0_1B_SPEECH_PRESET = AsrModelPreset(
+    preset_id="granite_4_0_1b_speech",
+    default_engine_type=InferenceAsrFramework.TRANSFORMERS,
+    model_spec=AsrModelSpec(
+        name="Granite 4.0 1B Speech",
+        default_repo_id="ibm-granite/granite-4.0-1b-speech",
+        model_family="granite",
+        supported_engines={InferenceAsrFramework.TRANSFORMERS},
+    ),
+)
+PARAKEET_TDT_0_6B_V3_PRESET = AsrModelPreset(
+    preset_id="parakeet_tdt_0_6b_v3",
+    default_engine_type=InferenceAsrFramework.TRANSFORMERS,
+    model_spec=AsrModelSpec(
+        name="Parakeet TDT 0.6B v3",
+        default_repo_id="nvidia/parakeet-tdt-0.6b-v3",
+        model_family="parakeet",
+        supported_engines={InferenceAsrFramework.TRANSFORMERS},
+    ),
+)
+NEMOTRON_3_5_ASR_STREAMING_PRESET = AsrModelPreset(
+    preset_id="nemotron_3_5_asr_streaming_0_6b",
+    default_engine_type=InferenceAsrFramework.TRANSFORMERS,
+    model_spec=AsrModelSpec(
+        name="Nemotron 3.5 ASR Streaming 0.6B",
+        default_repo_id="nvidia/nemotron-3.5-asr-streaming-0.6b",
+        model_family="nemotron",
+        supported_engines={InferenceAsrFramework.TRANSFORMERS},
+    ),
+)
+
+GRANITE_4_0_1B_SPEECH = GRANITE_4_0_1B_SPEECH_PRESET.to_options()
+PARAKEET_TDT_0_6B_V3 = PARAKEET_TDT_0_6B_V3_PRESET.to_options()
+NEMOTRON_3_5_ASR_STREAMING = NEMOTRON_3_5_ASR_STREAMING_PRESET.to_options()
+
+
 class AsrModelType(str, Enum):
+    GRANITE_4_0_1B_SPEECH = "granite_4_0_1b_speech"
+    PARAKEET_TDT_0_6B_V3 = "parakeet_tdt_0_6b_v3"
+    NEMOTRON_3_5_ASR_STREAMING = "nemotron_3_5_asr_streaming"
     # Auto-selecting models (choose best implementation for hardware)
     WHISPER_TINY = "whisper_tiny"
     WHISPER_SMALL = "whisper_small"
@@ -706,6 +789,14 @@ class AsrModelType(str, Enum):
     WHISPER_BASE = "whisper_base"
     WHISPER_LARGE = "whisper_large"
     WHISPER_TURBO = "whisper_turbo"
+
+    # Transformers-format Whisper checkpoints
+    WHISPER_TINY_TRANSFORMERS = "whisper_tiny_transformers"
+    WHISPER_BASE_TRANSFORMERS = "whisper_base_transformers"
+    WHISPER_SMALL_TRANSFORMERS = "whisper_small_transformers"
+    WHISPER_MEDIUM_TRANSFORMERS = "whisper_medium_transformers"
+    WHISPER_LARGE_TRANSFORMERS = "whisper_large_transformers"
+    WHISPER_TURBO_TRANSFORMERS = "whisper_turbo_transformers"
 
     # Explicit MLX models (force MLX implementation)
     WHISPER_TINY_MLX = "whisper_tiny_mlx"

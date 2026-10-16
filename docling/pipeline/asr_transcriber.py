@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import json
 import logging
 import shutil
+import subprocess
 import sys
 import tempfile
 from io import BytesIO
@@ -38,6 +40,7 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
     InlineAsrOptions,
+    InlineAsrTransformersOptions,
     InlineAsrWhisperS2TOptions,
 )
 from docling.exceptions import OperationNotAllowed
@@ -192,6 +195,41 @@ _DISTIL_WHISPER_OPENAI_CHECKPOINTS: dict[str, tuple[str, str]] = {
     "distil-large-v3": ("distil-whisper/distil-large-v3-openai", "model.bin"),
     "distil-large-v3.5": ("distil-whisper/distil-large-v3.5-openai", "model.bin"),
 }
+
+
+def _resolve_asr_artifacts(artifacts_path: Path, repo_id: str) -> Path:
+    """Find a local checkpoint, either directly or under its repo cache folder."""
+    candidates = (
+        artifacts_path,
+        artifacts_path / repo_id.replace("/", "--"),
+    )
+    for candidate in candidates:
+        if (candidate / "config.json").is_file():
+            return candidate
+    raise FileNotFoundError(
+        f"ASR model {repo_id} was not found in {artifacts_path}. "
+        "Expected config.json in that directory or its repo cache folder."
+    )
+
+
+def _audio_duration_seconds(fpath: Path) -> float:
+    """Read audio duration for ASR models that return text without timestamps."""
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "json",
+            str(fpath),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return float(json.loads(result.stdout)["format"]["duration"])
 
 
 class _NativeWhisperModel:
@@ -408,8 +446,18 @@ class _MlxWhisperModel:
             self.model_name = asr_options.repo_id
             _log.info(f"loading _MlxWhisperModel({self.model_name})")
 
-            # MLX Whisper models are loaded differently - they use HuggingFace repos
-            self.model_path = self.model_name
+            self.model_path = (
+                str(_resolve_asr_artifacts(artifacts_path, self.model_name))
+                if artifacts_path is not None
+                else self.model_name
+            )
+            if artifacts_path is not None and not any(
+                (Path(self.model_path) / name).is_file()
+                for name in ("weights.safetensors", "weights.npz")
+            ):
+                raise FileNotFoundError(
+                    f"MLX Whisper weights are missing from {self.model_path}"
+                )
 
             # Store MLX-specific options
             self.language = asr_options.language
@@ -459,7 +507,7 @@ class _MlxWhisperModel:
             return conv_res
 
         except Exception as exc:
-            _log.error(f"MLX Audio transcription has an error: {exc}")
+            _log.error(f"ASR transcription has an error: {exc}")
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
 
@@ -517,6 +565,80 @@ class _MlxWhisperModel:
             convo.append(item)
 
         return convo
+
+
+class _TransformersAsrModel(_MlxWhisperModel):
+    """Transcribe speech with a Transformers ASR pipeline."""
+
+    def __init__(
+        self,
+        enabled: bool,
+        artifacts_path: Path | None,
+        accelerator_options: AcceleratorOptions,
+        asr_options: InlineAsrTransformersOptions,
+    ):
+        self.enabled = enabled
+        if not enabled:
+            return
+        try:
+            from transformers import pipeline
+        except ImportError as exc:
+            raise ImportError(
+                "Transformers ASR requires transformers. Install the "
+                "`feat-asr-transformers` extra."
+            ) from exc
+
+        self.asr_options = asr_options
+        self.device = decide_device(
+            accelerator_options.device,
+            supported_devices=asr_options.supported_devices,
+        )
+        model = (
+            str(_resolve_asr_artifacts(artifacts_path, asr_options.repo_id))
+            if artifacts_path is not None
+            else asr_options.repo_id
+        )
+        pipeline_kwargs = {
+            "task": "automatic-speech-recognition",
+            "model": model,
+            "device": self.device,
+        }
+        if artifacts_path is not None:
+            pipeline_kwargs["model_kwargs"] = {"local_files_only": True}
+        else:
+            pipeline_kwargs["revision"] = asr_options.revision
+        self.asr_pipeline = pipeline(**pipeline_kwargs)
+
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
+        if self.asr_options.model_family == "whisper":
+            generate_kwargs: dict[str, str] = {"task": self.asr_options.task}
+            if self.asr_options.language is not None:
+                generate_kwargs["language"] = self.asr_options.language
+            result = self.asr_pipeline(
+                str(fpath),
+                return_timestamps=True,
+                generate_kwargs=generate_kwargs,
+            )
+            return [
+                _ConversationItem(
+                    start_time=chunk["timestamp"][0],
+                    end_time=chunk["timestamp"][1],
+                    text=chunk["text"].strip(),
+                )
+                for chunk in result["chunks"]
+            ]
+
+        result = self.asr_pipeline(str(fpath))
+        text = result["text"].strip()
+        if not text:
+            return []
+        return [
+            _ConversationItem(
+                start_time=0.0,
+                end_time=_audio_duration_seconds(fpath),
+                text=text,
+            )
+        ]
 
 
 class _WhisperS2TModel:
@@ -929,6 +1051,13 @@ class _AsrModelFactory:
             )
         elif isinstance(asr_options, InlineAsrMlxWhisperOptions):
             return _MlxWhisperModel(
+                enabled=True,
+                artifacts_path=artifacts_path,
+                accelerator_options=accelerator_options,
+                asr_options=asr_options,
+            )
+        elif isinstance(asr_options, InlineAsrTransformersOptions):
+            return _TransformersAsrModel(
                 enabled=True,
                 artifacts_path=artifacts_path,
                 accelerator_options=accelerator_options,

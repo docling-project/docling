@@ -9,6 +9,7 @@ This module defines the option classes that configure how audio is transcribed.
 - ``InlineAsrNativeWhisperOptions``: OpenAI's native ``whisper`` (PyTorch), the
   default backend, supported on CPU and CUDA.
 - ``InlineAsrMlxWhisperOptions``: ``mlx-whisper``, optimized for Apple Silicon.
+- ``InlineAsrTransformersOptions``: Transformers checkpoints for speech models.
 - ``InlineAsrWhisperS2TOptions``: WhisperS2T (CTranslate2), an optional,
   experimental high-throughput backend installed via the ``format-audio`` extra.
 
@@ -53,7 +54,7 @@ class BaseAsrOptions(BaseModel):
 
 class InferenceAsrFramework(str, Enum):
     MLX = "mlx"
-    # TRANSFORMERS = "transformers" # disabled for now
+    TRANSFORMERS = "transformers"
     WHISPER = "whisper"
     WHISPER_S2T = "whisper_s2t"
 
@@ -158,10 +159,7 @@ class InlineAsrOptions(BaseAsrOptions):
     repo_id: Annotated[
         str,
         Field(
-            description=(
-                "HuggingFace model repository ID for the ASR model. Must be a "
-                "Whisper-compatible model for automatic speech recognition."
-            ),
+            description=("Hugging Face model repository ID for the ASR model."),
             examples=["openai/whisper-tiny", "openai/whisper-base"],
         ),
     ]
@@ -314,6 +312,24 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
             )
         ),
     ] = None
+
+
+class InlineAsrTransformersOptions(InlineAsrOptions):
+    """ASR with a Hugging Face Transformers checkpoint."""
+
+    inference_framework: Literal[InferenceAsrFramework.TRANSFORMERS] = (
+        InferenceAsrFramework.TRANSFORMERS
+    )
+    revision: str = "main"
+    model_family: Literal["whisper", "granite", "parakeet", "nemotron"] = "whisper"
+    language: str | None = None
+    task: Literal["transcribe", "translate"] = "transcribe"
+    supported_devices: list[AcceleratorDevice] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ]
 
 
 class InlineAsrMlxWhisperOptions(InlineAsrOptions):

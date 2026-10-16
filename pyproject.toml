@@ -184,6 +184,11 @@ format-audio = [
   'whisper-s2t-reborn>=1.7.1,<2.0.0 ; sys_platform != "darwin" or platform_machine != "arm64"',
 ]
 
+feat-asr-transformers = [
+  'docling-slim[format-audio]',
+  'transformers>=5.16.0,<6.0.0',
+]
+
 # Video pipeline: transcription (format-audio) plus speaker diarization.
 format-video = [
   'docling-slim[format-audio]',

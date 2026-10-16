@@ -379,6 +379,21 @@ result = converter.convert("interview.wav")
 print(result.document.export_to_markdown())   # timestamped transcript
 ```
 
+For a Transformers-format Whisper checkpoint, install
+`docling-slim[feat-asr-transformers]` and select an explicit preset such as
+`asr_model_specs.WHISPER_TINY_TRANSFORMERS`. The presets cover tiny, base,
+small, medium, large, and large-v3-turbo. Set
+`pipeline_options.artifacts_path` to a directory that contains `config.json`
+and the Transformers model files, or to its parent directory with a
+`openai--whisper-tiny` subdirectory. The local directory is used without a
+Hugging Face lookup. For MLX Whisper, use `WHISPER_TINY_MLX` and provide an
+MLX checkpoint with `config.json` and `weights.safetensors` or `weights.npz`.
+
+Other explicit Transformers presets are `GRANITE_4_0_1B_SPEECH`,
+`PARAKEET_TDT_0_6B_V3`, and `NEMOTRON_3_5_ASR_STREAMING`. These models return
+one transcript item that covers the full audio duration. The Transformers
+Whisper presets provide model segment timestamps.
+
 The CLI can also transcribe: `docling interview.wav --to md --output /tmp/`.
 
 Video files (`.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`) use `VideoPipeline` with
