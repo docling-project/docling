@@ -37,11 +37,8 @@ from typing_extensions import Annotated, override
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
-from docling.backend.utils.markdown_html import (
-    MarkdownHTMLDocumentBackend,
-    serialize_markdown_for_html,
-)
 from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     MarkdownBackendOptions,
@@ -107,10 +104,6 @@ _INSTALL_HINT = (
     "The 'marko' package is required to process Markdown files. "
     "Install it with `pip install 'docling-slim[format-markdown]'`."
 )
-
-_MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
-_START_MARKER = f"#_#_{_MARKER_BODY}_START_#_#"
-_STOP_MARKER = f"#_#_{_MARKER_BODY}_STOP_#_#"
 
 
 class _PendingCreationType(str, Enum):
@@ -268,7 +261,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         self._pending_hard_line_break = False
         self._pending_soft_line_break = False
-        self._html_blocks: int = 0
         self._image_loader: ImageResourceLoader | None = None
 
         # A leading BOM is dropped. Kept, it prefixes the first line, so a
@@ -978,21 +970,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._pending_hard_line_break = True
 
         elif isinstance(element, marko.block.HTMLBlock):
-            self._html_blocks += 1
             _log.debug("HTML Block: %s", element)
-            if (
-                len(element.body) > 0
-            ):  # If Marko doesn't return any content for HTML block, skip it
-                html_block = element.body.strip()
-
-                # wrap in markers to enable post-processing in convert()
-                text_to_add = f"{_START_MARKER}{html_block}{_STOP_MARKER}"
-                doc.add_code(
-                    parent=parent_item,
-                    text=text_to_add,
-                    formatting=formatting,
-                    hyperlink=hyperlink,
-                )
+            if html_block := element.body.strip():
+                self._add_html_block(doc, parent_item, html_block)
 
         elif isinstance(element, _gfm_el.Table):
             _log.debug(" - GFM Table")
@@ -1085,6 +1065,38 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         )
         return self._get_image_loader().load_image_ref(dest, base_path)
 
+    def _add_html_block(
+        self, doc: DoclingDocument, parent_item: NodeItem | None, html_block: str
+    ) -> None:
+        """Convert one HTML block with the HTML backend into `parent_item`."""
+        md_options = cast(MarkdownBackendOptions, self.options)
+        html_options = HTMLBackendOptions(
+            enable_local_fetch=md_options.enable_local_fetch,
+            enable_remote_fetch=md_options.enable_remote_fetch,
+            fetch_images=md_options.fetch_images,
+            source_uri=md_options.source_uri,
+            infer_furniture=False,
+            add_title=False,
+        )
+        stream = BytesIO(html_block.encode("utf-8"))
+        in_doc = InputDocument(
+            path_or_stream=stream,
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename=self.file.name,
+            backend_options=html_options,
+        )
+        first_new = len(doc.body.children)
+        HTMLDocumentBackend(
+            in_doc=in_doc, path_or_stream=stream, options=html_options
+        ).convert_into(doc)
+        if parent_item is not None:
+            new_refs = doc.body.children[first_new:]
+            del doc.body.children[first_new:]
+            for ref in new_refs:
+                ref.resolve(doc).parent = parent_item.get_ref()
+            parent_item.children.extend(new_refs)
+
     def is_valid(self) -> bool:
         return self.valid
 
@@ -1129,54 +1141,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 list_item_counter_by_ref={},
                 list_last_item_by_ref={},
             )
-
-            if self._html_blocks > 0:
-                html_backend_cls = MarkdownHTMLDocumentBackend
-                html_payload = serialize_markdown_for_html(
-                    doc, source_hash=self.document_hash
-                )
-                html_str = html_payload.text
-
-                def _restore_original_html(txt, regex):
-                    _txt, count = re.subn(regex, "", txt)
-                    if count != self._html_blocks:
-                        raise RuntimeError(
-                            "An internal error has occurred during Markdown conversion."
-                        )
-                    return _txt
-
-                # restore original HTML by removing previously added markers
-                for regex in [
-                    rf"<pre>\s*<code>\s*{_START_MARKER}",
-                    rf"{_STOP_MARKER}\s*</code>\s*</pre>",
-                ]:
-                    html_str = _restore_original_html(txt=html_str, regex=regex)
-                self._html_blocks = 0
-                # delegate to HTML backend
-                stream = BytesIO(bytes(html_str, encoding="utf-8"))
-                md_options = cast(MarkdownBackendOptions, self.options)
-                html_options = HTMLBackendOptions(
-                    enable_local_fetch=md_options.enable_local_fetch,
-                    enable_remote_fetch=md_options.enable_remote_fetch,
-                    fetch_images=md_options.fetch_images,
-                    source_uri=md_options.source_uri,
-                    infer_furniture=False,
-                    add_title=False,
-                )
-                in_doc = InputDocument(
-                    path_or_stream=stream,
-                    format=InputFormat.HTML,
-                    backend=html_backend_cls,
-                    filename=self.file.name,
-                    backend_options=html_options,
-                )
-                html_backend_obj = html_backend_cls(
-                    in_doc=in_doc,
-                    path_or_stream=stream,
-                    options=html_options,
-                    picture_refs=html_payload.picture_refs,
-                )
-                doc = html_backend_obj.convert()
         else:
             raise RuntimeError(
                 f"Cannot convert md with {self.document_hash} because the backend failed to init."

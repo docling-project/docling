@@ -3,8 +3,8 @@
   "version": "1.10.0",
   "name": "escaped_characters",
   "origin": {
-    "mimetype": "text/html",
-    "binary_hash": 18124772015084648739,
+    "mimetype": "text/markdown",
+    "binary_hash": 14089559831613693230,
     "filename": "escaped_characters.md"
   },
   "furniture": {
@@ -21,19 +21,52 @@
         "$ref": "#/texts/0"
       },
       {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
         "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/texts/6"
       },
       {
+        "$ref": "#/texts/7"
+      },
+      {
         "$ref": "#/texts/8"
+      },
+      {
+        "$ref": "#/texts/9"
       },
       {
         "$ref": "#/texts/10"
       },
       {
+        "$ref": "#/tables/0"
+      },
+      {
+        "$ref": "#/groups/2"
+      },
+      {
         "$ref": "#/texts/14"
+      },
+      {
+        "$ref": "#/texts/15"
+      },
+      {
+        "$ref": "#/texts/16"
+      },
+      {
+        "$ref": "#/texts/17"
       }
     ],
     "content_layer": "body",
@@ -44,7 +77,7 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "$ref": "#/texts/3"
+        "$ref": "#/body"
       },
       "children": [
         {
@@ -52,13 +85,13 @@
         }
       ],
       "content_layer": "body",
-      "name": "ordered list",
+      "name": "list",
       "label": "list"
     },
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/texts/3"
+        "$ref": "#/body"
       },
       "children": [
         {
@@ -72,7 +105,7 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/texts/10"
+        "$ref": "#/body"
       },
       "children": [
         {
@@ -96,11 +129,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/1"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "title",
       "prov": [],
@@ -110,13 +139,9 @@
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/2"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
@@ -127,7 +152,7 @@
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/texts/1"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -141,14 +166,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/groups/0"
-        },
-        {
-          "$ref": "#/groups/1"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "title",
       "prov": [],
@@ -167,7 +185,7 @@
       "orig": "& < > \" '",
       "text": "& < > \" '",
       "enumerated": true,
-      "marker": ""
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/5",
@@ -188,11 +206,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/7"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "title",
       "prov": [],
@@ -202,14 +216,14 @@
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/texts/6"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "code",
       "prov": [],
-      "orig": "& < > \" '",
-      "text": "& < > \" '",
+      "orig": "&amp; &lt; &gt; &quot; &#39;",
+      "text": "&amp; &lt; &gt; &quot; &#39;",
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -220,11 +234,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/9"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "title",
       "prov": [],
@@ -234,14 +244,14 @@
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/texts/8"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "code",
       "prov": [],
-      "orig": "& < > \" '",
-      "text": "& < > \" '",
+      "orig": "&amp; &lt; &gt; &quot; &#39;",
+      "text": "&amp; &lt; &gt; &quot; &#39;",
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -252,14 +262,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/tables/0"
-        },
-        {
-          "$ref": "#/groups/2"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "title",
       "prov": [],
@@ -311,14 +314,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/15"
-        },
-        {
-          "$ref": "#/texts/16"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "title",
       "prov": [],
@@ -328,7 +324,7 @@
     {
       "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -340,13 +336,9 @@
     {
       "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/17"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
@@ -357,7 +349,7 @@
     {
       "self_ref": "#/texts/17",
       "parent": {
-        "$ref": "#/texts/16"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -373,7 +365,7 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "$ref": "#/texts/10"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
