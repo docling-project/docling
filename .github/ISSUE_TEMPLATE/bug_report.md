@@ -16,7 +16,7 @@ assignees: ''
 ...
 
 ### Docling version
-<!-- Copy the output of `docling --version`. -->
+<!-- Copy the output of `docling --version --full`. -->
 ...
 
 ### Python version

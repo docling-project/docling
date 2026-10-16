@@ -12,8 +12,7 @@ def _resolve_version() -> str:
     """Return the installed Docling version, or ``"unknown"``.
 
     ``docling`` is a meta-package that is absent on slim installs, where only
-    ``docling-slim`` is present. This mirrors the fallback that ``docling
-    --version`` applies to :class:`docling.datamodel.document.DoclingVersion`.
+    ``docling-slim`` is present. ``docling --version`` prints this value.
     """
     for name in ("docling", "docling-slim"):
         try:

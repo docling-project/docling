@@ -50,6 +50,7 @@ from pydantic import SecretStr, TypeAdapter, ValidationError
 from rich.console import Console
 from tqdm.contrib.logging import logging_redirect_tqdm
 
+from docling.cli.entrypoint import print_version
 from docling.cli.export_utils import (
     _export_flags_from_formats,
     _is_empty_output,
@@ -117,7 +118,7 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
-from docling.datamodel.document import ConversionResult, DoclingVersion
+from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     BaseLayoutOptions,
@@ -459,21 +460,15 @@ def logo_callback(value: bool):
         raise typer.Exit()
 
 
-def version_callback(value: bool):
-    if value:
-        v = DoclingVersion()
-        docling_version = (
-            v.docling_version
-            if v.docling_version != "unknown"
-            else v.docling_slim_version
-        )
-        print(f"Docling version: {docling_version}")
-        print(f"Docling Core version: {v.docling_core_version}")
-        print(f"Docling IBM Models version: {v.docling_ibm_models_version}")
-        print(f"Docling Parse version: {v.docling_parse_version}")
-        print(f"Python: {v.py_impl_version} ({v.py_lang_version})")
-        print(f"Platform: {v.platform_str}")
+def version_callback(ctx: typer.Context, param: typer.CallbackParam, value: bool):
+    # Click runs the eager callbacks in command-line order, then those of the
+    # eager options that were not given. The second of --version and --full
+    # thus sees both values, whatever their order.
+    ctx.meta[f"docling.cli.{param.name}"] = value
+    if ctx.meta.get("docling.cli.version") and "docling.cli.version_full" in ctx.meta:
+        print_version(full=ctx.meta["docling.cli.version_full"])
         raise typer.Exit()
+    return value
 
 
 def show_external_plugins_callback(value: bool):
@@ -1195,9 +1190,19 @@ def convert(  # noqa: C901
             "--version",
             callback=version_callback,
             is_eager=True,
-            help="Show version information.",
+            help="Show the Docling version. Add --full for all component versions.",
         ),
     ] = None,
+    version_full: Annotated[
+        bool,
+        typer.Option(
+            "--full",
+            callback=version_callback,
+            is_eager=True,
+            help="Use with --version to also show the Docling component, Python, "
+            "and platform versions.",
+        ),
+    ] = False,
     document_timeout: Annotated[
         float | None,
         typer.Option(
@@ -1267,6 +1272,8 @@ def convert(  # noqa: C901
         ),
     ] = None,
 ):
+    if version_full:
+        raise typer.BadParameter("--full requires --version.", param_hint="--full")
     _require_local_model_stack("docling convert")
 
     # Heavy backend/converter/pipeline imports are deferred to here so the CLI

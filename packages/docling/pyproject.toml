@@ -65,7 +65,7 @@ changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
 # package's own scripts, never a dependency's. The referenced modules are
 # provided at runtime by the docling-slim dependency.
 [project.scripts]
-docling = "docling.cli.main:app"
+docling = "docling.cli.entrypoint:main"
 docling-tools = "docling.cli.tools:app"
 
 [tool.uv.sources]

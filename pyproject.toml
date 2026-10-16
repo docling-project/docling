@@ -69,7 +69,7 @@ changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
 
 # CLI scripts (require cli extra: pip install docling-slim[cli])
 [project.scripts]
-docling = "docling.cli.main:app"
+docling = "docling.cli.entrypoint:main"
 docling-tools = "docling.cli.tools:app"
 
 [project.optional-dependencies]
