@@ -3,10 +3,10 @@
 <section_header_level_1><loc_317><loc_82><loc_403><loc_93>2-5 - استاندارد ک الا</section_header_level_1>
 <text><loc_58><loc_96><loc_222><loc_125>شمشه و شمشال توليد شده به روش ريخته گری پيوسته مورد مصرف در فولادهای سازه ای - مطابق آناليز پيوست</text>
 <text><loc_199><loc_128><loc_223><loc_136>20300</text>
-<checkbox_unselected><loc_197><loc_141><loc_208><loc_149>بلی</checkbox_unselected>
-<checkbox_selected><loc_166><loc_141><loc_178><loc_149>خير</checkbox_selected>
+<checkbox_unselected><loc_197><loc_140><loc_225><loc_149>بلی</checkbox_unselected>
+<checkbox_selected><loc_166><loc_141><loc_192><loc_149>خير</checkbox_selected>
 <text><loc_140><loc_154><loc_222><loc_163>سازمان ملی استاندارد ايران</text>
-<checkbox_selected><loc_166><loc_168><loc_208><loc_176>بلی خير</checkbox_selected>
+<checkbox_selected><loc_166><loc_167><loc_208><loc_176>بلی خير</checkbox_selected>
 <unordered_list><list_item><loc_385><loc_96><loc_436><loc_106>نام استاندارد</list_item>
 </unordered_list>
 <text><loc_354><loc_128><loc_436><loc_138>شماره استاندارد ملی</text>

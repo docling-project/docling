@@ -8,12 +8,14 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, DocItemLabel
 from pydantic import AnyUrl, BaseModel, ValidationError
 
 from docling.datamodel.base_models import (
     AssembledUnit,
+    Cluster,
     ContainerElement,
+    FieldRegionElement,
     FigureElement,
     Page,
     PageElement,
@@ -193,6 +195,11 @@ class PageAssembleModel(BasePageModel):
                     elements: List[PageElement] = []
                     headers: List[PageElement] = []
                     body: List[PageElement] = []
+                    field_regions_by_source = {
+                        region.source_container_id: region
+                        for region in page.predictions.field_regions
+                        if region.source_container_id is not None
+                    }
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
@@ -204,6 +211,14 @@ class PageAssembleModel(BasePageModel):
                             ]
                             text = self.sanitize_text(textlines)
                             hyperlink = self._match_hyperlink(cluster.bbox, page)
+                            # A paragraph that inlines AcroForm widgets carries a
+                            # single keyed field item; attach it so it materializes
+                            # as a field_item in place (see TextElement.field_item)
+                            # instead of being pulled into a separate field_region.
+                            inline_region = field_regions_by_source.get(cluster.id)
+                            field_item = None
+                            if inline_region is not None and inline_region.items:
+                                field_item = inline_region.items[0]
                             text_el = TextElement(
                                 label=cluster.label,
                                 id=cluster.id,
@@ -211,6 +226,7 @@ class PageAssembleModel(BasePageModel):
                                 hyperlink=hyperlink,
                                 page_no=page.page_no,
                                 cluster=cluster,
+                                field_item=field_item,
                             )
                             elements.append(text_el)
 
@@ -234,6 +250,19 @@ class PageAssembleModel(BasePageModel):
                                     cluster=cluster,
                                     page_no=page.page_no,
                                 )
+                            # AcroForm values that sit in this table's cells
+                            # materialize inside those cells (see
+                            # TableFieldPrediction). A copy: the table
+                            # structure prediction stays as TableFormer left it.
+                            field_cells = [
+                                cell
+                                for cell in page.predictions.table_fields
+                                if cell.table_id == cluster.id
+                            ]
+                            if field_cells:
+                                tbl = tbl.model_copy(
+                                    update={"field_cells": field_cells}
+                                )
 
                             elements.append(tbl)
                             body.append(tbl)
@@ -255,12 +284,24 @@ class PageAssembleModel(BasePageModel):
                             elements.append(fig)
                             body.append(fig)
                         elif cluster.label in CONTAINER_LABELS:
-                            container_el = ContainerElement(
-                                label=cluster.label,
-                                id=cluster.id,
-                                page_no=page.page_no,
-                                cluster=cluster,
-                            )
+                            field_region = field_regions_by_source.get(cluster.id)
+                            if field_region is None:
+                                container_el = ContainerElement(
+                                    label=cluster.label,
+                                    id=cluster.id,
+                                    page_no=page.page_no,
+                                    cluster=cluster,
+                                )
+                            else:
+                                container_el = FieldRegionElement(
+                                    label=DocItemLabel.FIELD_REGION,
+                                    id=cluster.id,
+                                    page_no=page.page_no,
+                                    cluster=cluster.model_copy(
+                                        update={"bbox": field_region.bbox}
+                                    ),
+                                    items=field_region.items,
+                                )
                             elements.append(container_el)
                             body.append(container_el)
 
