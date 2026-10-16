@@ -53,7 +53,7 @@ from docling_core.types.doc import (
     TabularChartMetaField,
 )
 from docling_core.types.doc.items.group import ListGroup
-from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.items.text import ListItem, TextItem
 from PIL import Image
 from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
@@ -602,6 +602,22 @@ class _ListStack:
         """End the list, so the next item starts a new one."""
         self._groups.clear()
 
+    def _sub_list_parent(self) -> NodeItem | None:
+        """Return the node that the next list group goes under.
+
+        A sub-list belongs to the list item above it, so it goes under the
+        last item of the innermost open group. A list group directly inside a
+        list group is not valid.
+        """
+        if not self._groups:
+            return self._parent
+        group = self._groups[-1]
+        if group.children:
+            last_child = group.children[-1].resolve(self._doc)
+            if isinstance(last_child, ListItem):
+                return last_child
+        return group
+
     def group_for(self, depth: int) -> ListGroup:
         """Return the group a list item at ``depth`` belongs in, opening it if needed.
 
@@ -614,10 +630,7 @@ class _ListStack:
         del self._groups[depth + 1 :]
         while len(self._groups) <= depth:
             self._groups.append(
-                self._doc.add_list_group(
-                    name="list",
-                    parent=self._groups[-1] if self._groups else self._parent,
-                )
+                self._doc.add_list_group(name="list", parent=self._sub_list_parent())
             )
         return self._groups[depth]
 

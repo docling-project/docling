@@ -2081,12 +2081,12 @@ def test_list_returning_to_starting_level_above_zero_keeps_items(documents):
     assert isinstance(group_of_a, ListGroup)
     assert group_of_c.get_ref() == group_of_a.get_ref()
 
-    # The deeper item must nest inside the same list (as a sub-group of the
-    # outer ListGroup), not become a sibling top-level list -- which is what
-    # the bug produced for Item A/Item B.
+    # The deeper item must nest inside the same list (as a sub-group of
+    # Item A), not become a sibling top-level list -- which is what the bug
+    # produced for Item A/Item B.
     group_of_b = list_items[1].parent.resolve(doc)
     assert isinstance(group_of_b, ListGroup)
-    assert group_of_b.parent == group_of_a.get_ref()
+    assert group_of_b.parent == list_items[0].get_ref()
 
     # The markdown must reflect a single nested list, not two separate lists.
     markdown = doc.export_to_markdown()

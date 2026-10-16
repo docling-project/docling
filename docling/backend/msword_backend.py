@@ -25,6 +25,7 @@ from docling_core.types.doc import (
     GroupLabel,
     ImageRef,
     ListGroup,
+    ListItem,
     NodeItem,
     PictureClassificationLabel,
     PictureClassificationMetaField,
@@ -1010,6 +1011,30 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if k >= 0 and v is None:
                 return k
         return 0
+
+    @staticmethod
+    def _sub_list_parent(
+        doc: DoclingDocument, parent: NodeItem | None
+    ) -> NodeItem | None:
+        """Return the node that a new list group goes under.
+
+        A sub-list belongs to the list item above it. So when ``parent`` is a
+        list group whose last child is a list item, the new group goes under
+        that item, as in the HTML, Markdown, PowerPoint and OpenDocument
+        backends. A list group directly inside a list group is not valid.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            parent: The enclosing node of the new list group.
+
+        Returns:
+            The node to add the new list group to.
+        """
+        if isinstance(parent, ListGroup) and parent.children:
+            last_child = parent.children[-1].resolve(doc)
+            if isinstance(last_child, ListItem):
+                return last_child
+        return parent
 
     def _can_reuse_list_group(self, numid: int, parent: NodeItem | None) -> bool:
         """Check if we can reuse the cached list group.
@@ -3451,7 +3476,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             list_gr = self._get_or_create_list_group(
                 doc=doc,
                 numid=numid,
-                parent=self.parents[level - 1],
+                parent=self._sub_list_parent(doc, self.parents[level - 1]),
                 elem_ref=elem_ref,
             )
 
@@ -3471,7 +3496,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             ):
                 list_gr1 = doc.add_list_group(
                     name="list",
-                    parent=self.parents.get(i - 1),
+                    parent=self._sub_list_parent(doc, self.parents.get(i - 1)),
                     content_layer=self.content_layer,
                 )
                 self.parents[i] = list_gr1
@@ -3518,7 +3543,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             list_gr = self._get_or_create_list_group(
                 doc=doc,
                 numid=numid,
-                parent=self.parents.get(use_level - 1),
+                parent=self._sub_list_parent(doc, self.parents.get(use_level - 1)),
                 elem_ref=elem_ref,
             )
 

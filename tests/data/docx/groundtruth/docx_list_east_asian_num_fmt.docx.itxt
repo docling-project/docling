@@ -4,12 +4,12 @@ item-0 at level 0: unspecified: group _root_
       item-3 at level 3: text: Articles and clauses numbered wi ...  9 so the list crosses the 十 boundary.
       item-4 at level 3: list: group list
         item-5 at level 4: list_item: 合同双方应当按照约定履行各自的义务。
-        item-6 at level 4: list: group list
-          item-7 at level 5: list_item: 甲方应当按期支付价款。
-          item-8 at level 5: list_item: 乙方应当按期交付标的物。
-          item-9 at level 5: list: group list
-            item-10 at level 6: list_item: 交付地点为甲方指定的仓库。
-            item-11 at level 6: list_item: 交付时间为合同生效后三十日内。
+          item-6 at level 5: list: group list
+            item-7 at level 6: list_item: 甲方应当按期支付价款。
+            item-8 at level 6: list_item: 乙方应当按期交付标的物。
+              item-9 at level 7: list: group list
+                item-10 at level 8: list_item: 交付地点为甲方指定的仓库。
+                item-11 at level 8: list_item: 交付时间为合同生效后三十日内。
         item-12 at level 4: list_item: 任何一方不得擅自变更或者解除合同。
         item-13 at level 4: list_item: 本合同自双方签字盖章之日起生效。
       item-14 at level 3: section_header: Other formats
