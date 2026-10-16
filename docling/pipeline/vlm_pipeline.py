@@ -536,6 +536,16 @@ class VlmPipeline(PaginatedPipeline):
                 filename=conv_res.input.file.name or "file",
                 page_image=page.image,
             )
+        elif response_format == ResponseFormat.LIGHTONOCR_MARKDOWN:
+            from docling.utils.lightonocr_utils import parse_lightonocr_markdown
+
+            document = parse_lightonocr_markdown(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+            )
         elif response_format == ResponseFormat.MARKDOWN:
             document = self._convert_text_page(
                 conv_res, page, InputFormat.MD, MarkdownDocumentBackend

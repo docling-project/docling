@@ -1628,6 +1628,50 @@ VLM_CONVERT_LIGHTONOCR = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+
+def _lightonocr3_preset(size: str, preset_id: str) -> StageModelPreset:
+    name = f"LightOnOCR-3-{size}"
+    repo_id = f"lightonai/{name}"
+    return StageModelPreset(
+        preset_id=preset_id,
+        name=name,
+        description=f"LightOnOCR-3 OCR with block grounding ({size} parameters)",
+        model_spec=VlmModelSpec(
+            name=name,
+            default_repo_id=repo_id,
+            prompt="grounding",
+            response_format=ResponseFormat.LIGHTONOCR_MARKDOWN,
+            max_new_tokens=4096,
+            engine_overrides={
+                VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                    min_engine_version="5.5.4",
+                    torch_dtype="bfloat16",
+                    extra_config={
+                        "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                        "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                        "extra_generation_config": {"skip_special_tokens": True},
+                    },
+                ),
+            },
+            api_overrides={
+                VlmEngineType.API: ApiModelConfig(
+                    params={"model": repo_id, "max_tokens": 4096}
+                ),
+                VlmEngineType.API_OPENAI: ApiModelConfig(
+                    params={"model": repo_id, "max_tokens": 4096}
+                ),
+            },
+        ),
+        scale=2.0,
+        max_size=1540,
+        default_engine_type=VlmEngineType.AUTO_INLINE,
+    )
+
+
+VLM_CONVERT_LIGHTONOCR_3_08B = _lightonocr3_preset("0.8B", "lightonocr3_08b")
+VLM_CONVERT_LIGHTONOCR_3_1B = _lightonocr3_preset("1B", "lightonocr3_1b")
+VLM_CONVERT_LIGHTONOCR_3_4B = _lightonocr3_preset("4B", "lightonocr3_4b")
+
 # -----------------------------------------------------------------------------
 # PICTURE_DESCRIPTION PRESETS (for image captioning/description)
 # -----------------------------------------------------------------------------
