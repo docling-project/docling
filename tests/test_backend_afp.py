@@ -48,18 +48,26 @@ def _structured_field(
     data: bytes = b"",
     *,
     extension: bytes = b"",
-    padding: int = 0,
+    padding: int | bytes = 0,
 ) -> bytes:
-    """Build one synthetic MO:DCA structured field."""
+    """Build one synthetic MO:DCA structured field.
+
+    An integer `padding` is filled with X'00' bytes; a bytes value is used
+    verbatim and has to carry its own trailing padding-length byte.
+    """
     flags = 0
     extension_data = b""
     if extension:
-        flags |= 0x01
+        flags |= 0x80
         extension_data = bytes((len(extension) + 1,)) + extension
     padding_data = b""
     if padding:
-        flags |= 0x10
-        padding_data = bytes(padding - 1) + bytes((padding,))
+        flags |= 0x08
+        padding_data = (
+            padding
+            if isinstance(padding, bytes)
+            else bytes(padding - 1) + bytes((padding,))
+        )
     payload = extension_data + data + padding_data
     length = 8 + len(payload)  # X'5A' carriage control is not included.
     return (
@@ -213,6 +221,75 @@ def test_afp_structured_field_extension_and_padding_are_removed():
     assert [item.text for item in _backend(data).convert().texts] == ["Extended"]
 
 
+def test_afp_padding_bytes_are_not_emitted_as_text():
+    # Padding content is unconstrained, so it can hold the X'2BD3' prefix that
+    # starts a control sequence. Padding that reaches the PTOCA scanner is
+    # published as document text.
+    padding = _trn("Padding") + b"\x0c"
+    data = b"".join(
+        (
+            _structured_field(BDT),
+            _structured_field(BPG),
+            _structured_field(BPT),
+            _structured_field(PTX, _trn("Text"), padding=padding),
+            _structured_field(EPT),
+            _structured_field(EPG),
+            _structured_field(EDT),
+        )
+    )
+
+    assert [item.text for item in _backend(data).convert().texts] == ["Text"]
+
+
+def test_afp_introducer_extension_bytes_are_not_emitted_as_text():
+    # The extension is reserved, so its bytes can likewise look like a control
+    # sequence. It precedes the data, so it would also come out ahead of it.
+    extension = _trn("Extension")
+    data = b"".join(
+        (
+            _structured_field(BDT),
+            _structured_field(BPG),
+            _structured_field(BPT),
+            _structured_field(PTX, _trn("Text"), extension=extension),
+            _structured_field(EPT),
+            _structured_field(EPG),
+            _structured_field(EDT),
+        )
+    )
+
+    assert [item.text for item in _backend(data).convert().texts] == ["Text"]
+
+
+def test_afp_control_sequence_chain_survives_a_padded_field_boundary():
+    # A chain that continues in the next PTX field reads the bytes that follow
+    # it as the chained sequence, so retained padding breaks the chain itself
+    # rather than only adding text.
+    data = b"".join(
+        (
+            _structured_field(BDT),
+            _structured_field(BPG),
+            _structured_field(BPT),
+            _structured_field(PTX, _trn("First", chain_next=True), padding=b"\x40\x02"),
+            _structured_field(PTX, _trn("Second", chained=True)),
+            _structured_field(EPT),
+            _structured_field(EPG),
+            _structured_field(EDT),
+        )
+    )
+
+    assert [item.text for item in _backend(data).convert().texts] == ["FirstSecond"]
+
+
+@pytest.mark.parametrize("flags", [0x01, 0x10, 0x40])
+def test_reserved_introducer_flags_are_ignored(flags: int):
+    field = bytearray(_structured_field(PTX, b"payload"))
+    field[6] = flags
+
+    parsed = list(_iter_structured_fields(bytes(field)))
+
+    assert parsed[0].data == b"payload"
+
+
 def test_unsupported_afp_image_data_emits_clear_warning():
     data = b"".join(
         (
@@ -272,17 +349,17 @@ def test_structured_field_rejects_invalid_introducers(data: bytes, message: str)
 @pytest.mark.parametrize(
     ("field", "message"),
     [
-        (b"\x5a\x00\x08\xd3\xa8\xa8\x01\x00\x00", "does not contain its length"),
+        (b"\x5a\x00\x08\xd3\xa8\xa8\x80\x00\x00", "does not contain its length"),
         (
-            b"\x5a\x00\x09\xd3\xa8\xa8\x01\x00\x00\x00",
+            b"\x5a\x00\x09\xd3\xa8\xa8\x80\x00\x00\x00",
             "invalid introducer extension length 0",
         ),
         (
-            b"\x5a\x00\x0a\xd3\xa8\xa8\x01\x00\x00\x03\xaa",
+            b"\x5a\x00\x0a\xd3\xa8\xa8\x80\x00\x00\x03\xaa",
             "invalid introducer extension length 3",
         ),
         (
-            b"\x5a\x00\x09\xd3\xa8\xa8\x10\x00\x00\x00",
+            b"\x5a\x00\x09\xd3\xa8\xa8\x08\x00\x00\x00",
             "invalid padding length 0",
         ),
     ],
@@ -296,7 +373,7 @@ def test_structured_field_rejects_invalid_extension_and_padding(
 
 def test_structured_field_accepts_two_byte_padding_length():
     field = bytearray(_structured_field(PTX, b"payload" + b"\x00\x03\x00"))
-    field[6] = 0x10
+    field[6] = 0x08
 
     parsed = list(_iter_structured_fields(bytes(field)))
 
