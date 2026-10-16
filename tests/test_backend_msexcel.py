@@ -3,7 +3,7 @@
 
 import logging
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from io import BytesIO
 from pathlib import Path
 
@@ -22,6 +22,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
+from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
 from openpyxl.worksheet.merge import MergedCellRange
 
@@ -30,6 +31,7 @@ from docling.backend.msexcel_backend import (
     ExcelCell,
     ExcelTable,
     MsExcelDocumentBackend,
+    _format_excel_value,
     _order_comment_thread,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
@@ -448,6 +450,48 @@ def test_chartsheet_data_values(documents) -> None:
             break
 
     assert found_310, "Should find the value 310 (total ducks for 2024) in the document"
+
+
+def test_chart_data_keeps_raw_values_in_formatted_cells(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Sales"
+    sheet.append(["Month", "Revenue"])
+    sheet.append([datetime(2025, 2, 1), 1234.5])
+    sheet.append([datetime(2025, 3, 1), 99.125])
+    for row in (2, 3):
+        sheet.cell(row, 1).number_format = "mmm-yy"
+        sheet.cell(row, 2).number_format = '"$"#,##0.00'
+    chart = BarChart()
+    chart.add_data(
+        Reference(sheet, min_col=2, min_row=1, max_row=3), titles_from_data=True
+    )
+    chart.set_categories(Reference(sheet, min_col=1, min_row=2, max_row=3))
+    sheet.add_chart(chart, "D1")
+    path = tmp_path / "formatted_chart_data.xlsx"
+    workbook.save(path)
+
+    document = get_converter().convert(path).document
+    assert len(document.tables) == 1
+    worksheet_grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in document.tables[0].data.table_cells
+    }
+    assert worksheet_grid[(1, 0)] == "Feb-25"
+    assert worksheet_grid[(1, 1)] == "$1,234.50"
+    assert worksheet_grid[(2, 1)] == "$99.13"
+    assert len(document.pictures) == 1
+    chart_data = document.pictures[0].meta.tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (3, 2)
+    chart_grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert chart_grid[(0, 1)] == "Revenue"
+    assert chart_grid[(1, 0)] == "2025-02-01 00:00:00"
+    assert chart_grid[(2, 0)] == "2025-03-01 00:00:00"
+    assert chart_grid[(1, 1)] == "1234.5"
+    assert chart_grid[(2, 1)] == "99.125"
 
 
 def test_chart_parsing_disabled() -> None:
@@ -1028,6 +1072,139 @@ def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
     assert table.data.num_cols == 1
     assert len(table.data.table_cells) == 1
     assert table.data.table_cells[0].text == "last row"
+
+
+def test_format_excel_value_matches_excel_display() -> None:
+    """Currency, percent, and mmm-yy formats keep the text Excel shows."""
+    assert _format_excel_value(12.5, '"$"#,##0.00') == "$12.50"
+    assert _format_excel_value(0.1, "0%") == "10%"
+    assert _format_excel_value(datetime(2025, 2, 1), "mmm-yy") == "Feb-25"
+    assert (
+        _format_excel_value(
+            datetime(2024, 1, 2, 0, 0),
+            "yyyy\\-mm\\-dd\\ hh:mm:ss",
+        )
+        == "2024-01-02 00:00:00"
+    )
+    assert _format_excel_value(12.5, "General") == "12.5"
+    assert _format_excel_value(1, "\\1\\.0#") == "1"
+
+
+@pytest.mark.parametrize(
+    "value,number_format,expected",
+    [
+        (datetime(2025, 2, 1), "mm-dd-yy", "2025-02-01"),
+        (datetime(2025, 2, 1, 13, 30), "m/d/yy h:mm", "2025-02-01 13:30:00"),
+        (time(0, 7, 45), "mm:ss", "07:45"),
+        (time(13, 30), "h:mm AM/PM", "1:30 PM"),
+        (time(13, 30), "h:mm am/pm", "1:30 pm"),
+        (time(0, 7), "hh:mm am/pm", "12:07 am"),
+        (time(0, 7), "hh:mm AM/PM", "12:07 AM"),
+        (time(13, 30), "h:mm", "13:30"),
+        (datetime(2025, 2, 1), "d-mmm-yy", "1-Feb-25"),
+        (datetime(2025, 2, 1), "mmmmm", "F"),
+        (datetime(2025, 3, 1), "mmmmm d", "M 1"),
+        (datetime(2025, 2, 1), '"mmmmm "mmmmm', "mmmmm F"),
+        (time(13, 30), "mmmmm", "13:30:00"),
+        (datetime(2025, 2, 1), '"Due "mmm d', "Due Feb 1"),
+        (datetime(2025, 2, 1), '"Due; "mmm d', "Due; Feb 1"),
+        (datetime(2025, 2, 1), "yyyy-mm-dd", "2025-02-01"),
+        (12.5, "[$$-409]#,##0.00", "$12.50"),
+        (-5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
+        (-5, '"$"#,##0.00;[Red]"$"-#,##0.00', "$-5.00"),
+        (-5, '"$"#,##0.00', "-$5.00"),
+        (0.125, "0%", "13%"),
+        (-0.125, "0%", "-13%"),
+        (0.0125, "0.00%", "1.25%"),
+        (12.5, '"$"#,##0', "$13"),
+        (-12.5, '"$"#,##0', "-$13"),
+        (1234.565, '"$"#,##0.00', "$1,234.57"),
+        (0, '"$"0;("$"0);"-"', "-"),
+        (0, '"$"0;("$"0);', ""),
+        (12.5, '0.00"$"', "12.50$"),
+        # Unsupported formats retain the value instead of dropping format semantics.
+        (timedelta(days=1, hours=2, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
+        (datetime(2025, 2, 1), "[$-409]mmmm d, yyyy", "2025-02-01 00:00:00"),
+        (0.125, "[>=1]0%;0.0%", "0.125"),
+        (12.5, '"$"0.##', "12.5"),
+        (12.5, '"$0"0.00', "12.5"),
+    ],
+)
+def test_excel_number_format_tokens_and_sections(
+    value, number_format, expected
+) -> None:
+    assert _format_excel_value(value, number_format) == expected
+
+
+def test_xlsx_number_formats_survive_document_conversion(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    rows = [
+        ("Date", datetime(2025, 2, 1), "mm-dd-yy", "2025-02-01"),
+        ("Minutes", time(0, 7, 45), "mm:ss", "07:45"),
+        ("Afternoon", time(13, 30), "h:mm AM/PM", "1:30 PM"),
+        ("Lowercase afternoon", time(13, 30), "h:mm am/pm", "1:30 pm"),
+        ("Month initial", datetime(2025, 2, 1), "mmmmm", "F"),
+        ("Due", datetime(2025, 2, 1), '"Due "mmm d', "Due Feb 1"),
+        ("Negative", -5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
+        ("Percent", 0.125, "0%", "13%"),
+        ("Currency", 12.5, "[$$-409]#,##0", "$13"),
+        ("Duration", timedelta(hours=26, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
+    ]
+    sheet.append(["Format", "Value"])
+    for row_index, (label, value, number_format, _) in enumerate(rows, start=2):
+        sheet.cell(row_index, 1, label)
+        sheet.cell(row_index, 2, value).number_format = number_format
+    path = tmp_path / "number_format_tokens.xlsx"
+    workbook.save(path)
+
+    document = get_converter().convert(path).document
+    table = document.tables[0].data
+    assert [
+        (cell.start_row_offset_idx, cell.text)
+        for cell in table.table_cells
+        if cell.start_col_offset_idx == 1
+    ] == [
+        (0, "Value"),
+        *[(index, expected) for index, (_, _, _, expected) in enumerate(rows, start=1)],
+    ]
+
+
+def test_xlsx_keeps_excel_number_formats(tmp_path: Path) -> None:
+    """Table cell text uses the stored number format, not str(value)."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Order"
+    sheet["A1"] = "Item"
+    sheet["B1"] = "Qty"
+    sheet["C1"] = "Price"
+    sheet["D1"] = "Line total"
+    sheet["A2"] = "Orange juice"
+    sheet["B2"] = 10
+    sheet["C2"] = 12.5
+    sheet["C2"].number_format = '"$"#,##0.00'
+    sheet["D2"] = 125
+    sheet["D2"].number_format = '"$"#,##0.00'
+    sheet["C4"] = "Discount"
+    sheet["D4"] = 0.1
+    sheet["D4"].number_format = "0%"
+    sheet["C5"] = "Order month"
+    sheet["D5"] = datetime(2025, 2, 1)
+    sheet["D5"].number_format = "mmm-yy"
+    file_path = tmp_path / "number_formats.xlsx"
+    workbook.save(file_path)
+
+    converter = get_converter()
+    doc = converter.convert(file_path).document
+    cells = {cell.text for table in doc.tables for cell in table.data.table_cells}
+
+    assert "$12.50" in cells
+    assert "$125.00" in cells
+    assert "10%" in cells
+    assert "Feb-25" in cells
+    assert "12.5" not in cells
+    assert "0.1" not in cells
+    assert "2025-02-01 00:00:00" not in cells
 
 
 def test_emf_images_in_xlsx(libreoffice_available):
