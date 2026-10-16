@@ -1011,6 +1011,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return k
         return 0
 
+    def _clear_parents_from(self, level: int) -> None:
+        """Remove the parents at ``level`` and at all deeper levels."""
+        for key in self.parents:
+            if key >= level:
+                self.parents[key] = None
+
     def _can_reuse_list_group(self, numid: int, parent: NodeItem | None) -> bool:
         """Check if we can reuse the cached list group.
 
@@ -2945,8 +2951,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            # _add_heading clears the parents tail; reset list context so the
-            # next list item opens fresh under this heading.
+            # A heading closes an open list. _add_heading only clears the
+            # parents tail for a lower heading level, so without this the
+            # heading can become a child of the ListGroup.
+            if self.level_at_new_list is not None:
+                self._clear_parents_from(self.level_at_new_list)
+            # Reset list context so the next list item opens fresh under this
+            # heading.
             self.level_at_new_list = None
             is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style, numid, ilevel)
