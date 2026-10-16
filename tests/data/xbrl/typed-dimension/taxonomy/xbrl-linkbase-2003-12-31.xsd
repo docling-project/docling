@@ -1,0 +1,486 @@
+<?xml version="1.0"?>
+<!-- (c) XBRL International.  See www.xbrl.org/legal  
+ 
+This version is non-normative - it should be identical to the normative
+version that is contained in Appendix A of the specification RECOMMENDATION
+with errata corrections to 2008-07-02 except for this comment.
+
+Following the schema maintenance policy of XBRL International, this version's 
+location on the web will be as follows:
+
+1) While it is the most current RECOMMENDED version of the schema and until it is 
+superseded by any additional errata corrections it will reside on the web at
+
+http://www.xbrl.org/2003/xbrl-linkbase-2003-12-31.xsd 
+
+2) It will be archived in perpetuity at 
+
+http://www.xbrl.org/2003/2008-07-02/xbrl-linkbase-2003-12-31.xsd
+
+-->
+<schema targetNamespace="http://www.xbrl.org/2003/linkbase" 
+  xmlns="http://www.w3.org/2001/XMLSchema" 
+  xmlns:link="http://www.xbrl.org/2003/linkbase" 
+  xmlns:xl="http://www.xbrl.org/2003/XLink" 
+  xmlns:xlink="http://www.w3.org/1999/xlink" 
+  elementFormDefault="qualified">
+
+  <annotation>
+    <documentation>
+    XBRL simple and extended link schema constructs
+    </documentation>
+  </annotation>
+
+  <import namespace="http://www.xbrl.org/2003/XLink" 
+    schemaLocation="xl-2003-12-31.xsd"/>
+
+  <import namespace="http://www.w3.org/1999/xlink" 
+    schemaLocation="xlink-2003-12-31.xsd"/>
+    
+  
+  <element name="documentation"
+    type="xl:documentationType"
+    substitutionGroup="xl:documentation">
+    <annotation>
+      <documentation>
+      Concrete element to use for documentation of 
+      extended links and linkbases.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="loc" type="xl:locatorType" substitutionGroup="xl:locator">
+    <annotation>
+      <documentation>
+      Concrete locator element.  The loc element is the 
+      XLink locator element for all extended links in XBRL.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="labelArc" type="xl:arcType" substitutionGroup="xl:arc">
+    <annotation>
+      <documentation>
+      Concrete arc for use in label extended links.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="referenceArc" type="xl:arcType" substitutionGroup="xl:arc">
+    <annotation>
+      <documentation>
+      Concrete arc for use in reference extended links.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="definitionArc" type="xl:arcType" substitutionGroup="xl:arc">
+    <annotation>
+      <documentation>
+      Concrete arc for use in definition extended links.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="presentationArc" substitutionGroup="xl:arc">
+    <complexType>
+      <annotation>
+        <documentation>
+        Extension of the extended link arc type for presentation arcs.
+        Adds a preferredLabel attribute that documents the role attribute
+        value of preferred labels (as they occur in label extended links).
+        </documentation>
+      </annotation>
+      <complexContent>
+        <extension base="xl:arcType">
+          <attribute name="preferredLabel" use="optional">
+            <simpleType>
+              <restriction base="anyURI">
+                <minLength value="1"/>
+              </restriction>
+            </simpleType>
+          </attribute>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="calculationArc" substitutionGroup="xl:arc">
+    <complexType>
+      <annotation>
+        <documentation>
+        Extension of the extended link arc type for calculation arcs.
+        Adds a weight attribute to track weights on contributions to 
+        summations.
+        </documentation>
+      </annotation>
+      <complexContent>
+        <extension base="xl:arcType">
+          <attribute name="weight" type="decimal" use="required"/>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="footnoteArc" type="xl:arcType" substitutionGroup="xl:arc">
+    <annotation>
+      <documentation>
+      Concrete arc for use in footnote extended links.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="label" substitutionGroup="xl:resource">
+    <annotation>
+      <documentation>
+      Definition of the label  resource element.
+      </documentation>
+    </annotation>
+    <complexType mixed="true">
+      <complexContent mixed="true">
+        <extension base="xl:resourceType">
+          <sequence>
+            <any namespace="http://www.w3.org/1999/xhtml" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+          </sequence>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax"/>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="part" type="anySimpleType" abstract="true">
+    <annotation>
+      <documentation>
+      Definition of the reference  part element - for use in reference  resources.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="reference" substitutionGroup="xl:resource">
+    <annotation>
+      <documentation>
+      Definition of the reference  resource element.
+      </documentation>
+    </annotation>
+    <complexType mixed="true">
+      <complexContent mixed="true">
+        <extension base="xl:resourceType">
+          <sequence>
+            <element ref="link:part" minOccurs="0" maxOccurs="unbounded"/>
+          </sequence>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="footnote" substitutionGroup="xl:resource">
+    <annotation>
+      <documentation>
+      Definition of the reference  resource element
+      </documentation>
+    </annotation>
+    <complexType mixed="true">
+      <complexContent mixed="true">
+        <extension base="xl:resourceType">
+          <sequence>
+            <any namespace="http://www.w3.org/1999/xhtml" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+          </sequence>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax"/>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="presentationLink" substitutionGroup="xl:extended">
+    <annotation>
+      <documentation>
+      presentation extended link element definition.
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <restriction base="xl:extendedType">
+          <choice minOccurs="0" maxOccurs="unbounded">
+            <element ref="xl:title"/>
+            <element ref="link:documentation"/>
+            <element ref="link:loc"/>
+            <element ref="link:presentationArc"/>
+          </choice>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax" />
+        </restriction>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="definitionLink" substitutionGroup="xl:extended">
+    <annotation>
+      <documentation>
+      definition extended link element definition
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <restriction base="xl:extendedType">
+          <choice minOccurs="0" maxOccurs="unbounded">
+            <element ref="xl:title"/>
+            <element ref="link:documentation"/>
+            <element ref="link:loc"/>
+            <element ref="link:definitionArc"/>
+          </choice>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax" />
+        </restriction>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="calculationLink" substitutionGroup="xl:extended">
+    <annotation>
+      <documentation>
+      calculation  extended link element definition
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <restriction base="xl:extendedType">
+          <choice minOccurs="0" maxOccurs="unbounded">
+            <element ref="xl:title"/>
+            <element ref="link:documentation"/>
+            <element ref="link:loc"/>
+            <element ref="link:calculationArc"/>
+          </choice>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax" />
+        </restriction>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="labelLink" substitutionGroup="xl:extended">
+    <annotation>
+      <documentation>
+      label extended link element definition
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <restriction base="xl:extendedType">
+          <choice minOccurs="0" maxOccurs="unbounded">
+            <element ref="xl:title"/>
+            <element ref="link:documentation"/>
+            <element ref="link:loc"/>
+            <element ref="link:labelArc"/>
+            <element ref="link:label"/>
+          </choice>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax" />
+        </restriction>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="referenceLink" substitutionGroup="xl:extended">
+    <annotation>
+      <documentation>
+      reference extended link element definition
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <restriction base="xl:extendedType">
+          <choice minOccurs="0" maxOccurs="unbounded">
+            <element ref="xl:title"/>
+            <element ref="link:documentation"/>
+            <element ref="link:loc"/>
+            <element ref="link:referenceArc"/>
+            <element ref="link:reference"/>
+          </choice>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax" />
+        </restriction>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="footnoteLink" substitutionGroup="xl:extended">
+    <annotation>
+      <documentation>
+      footnote extended link element definition
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <restriction base="xl:extendedType">
+          <choice minOccurs="0" maxOccurs="unbounded">
+            <element ref="xl:title"/>
+            <element ref="link:documentation"/>
+            <element ref="link:loc"/>
+            <element ref="link:footnoteArc"/>
+            <element ref="link:footnote"/>
+          </choice>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax" />
+        </restriction>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="linkbase">
+    <annotation>
+      <documentation>
+      Definition of the linkbase element.  Used to 
+      contain a set of zero or more extended link elements.
+      </documentation>
+    </annotation>
+    <complexType>
+      <choice minOccurs="0" maxOccurs="unbounded">
+        <element ref="link:documentation"/>
+        <element ref="link:roleRef"/>
+        <element ref="link:arcroleRef"/>
+        <element ref="xl:extended"/>
+      </choice>
+      <attribute name="id" type="ID" use="optional"/>
+      <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax"/>
+    </complexType>
+  </element>
+
+  <element name="linkbaseRef" substitutionGroup="xl:simple">
+    <annotation>
+      <documentation>
+      Definition of the linkbaseRef element - used 
+      to link to XBRL taxonomy extended links from 
+      taxonomy schema documents and from XBRL
+      instances.
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <restriction base="xl:simpleType">
+          <attribute ref="xlink:arcrole" use="required">
+            <annotation>
+              <documentation>
+              This attribute must have the value:
+              http://www.w3.org/1999/xlink/properties/linkbase
+              </documentation>
+            </annotation>
+          </attribute>
+          <anyAttribute namespace="http://www.w3.org/XML/1998/namespace" processContents="lax" />
+        </restriction>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="schemaRef" type="xl:simpleType" substitutionGroup="xl:simple">
+    <annotation>
+      <documentation>
+      Definition of the schemaRef element - used 
+      to link to XBRL taxonomy schemas from 
+      XBRL instances.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="roleRef" substitutionGroup="xl:simple">
+    <annotation>
+      <documentation>
+      Definition of the roleRef element - used 
+      to link to resolve xlink:role attribute values to 
+      the roleType element declaration.
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <extension base="xl:simpleType">
+          <attribute name="roleURI" type="xl:nonEmptyURI" use="required">
+            <annotation>
+              <documentation>
+                This attribute contains the role name.
+              </documentation>
+            </annotation>
+          </attribute>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="arcroleRef" substitutionGroup="xl:simple">
+    <annotation>
+      <documentation>
+      Definition of the roleRef element - used 
+      to link to resolve xlink:arcrole attribute values to 
+      the arcroleType element declaration.
+      </documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <extension base="xl:simpleType">
+          <attribute name="arcroleURI" type="xl:nonEmptyURI" use="required">
+            <annotation>
+              <documentation>
+                This attribute contains the arc role name.
+              </documentation>
+            </annotation>
+          </attribute>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="definition" type="string">
+    <annotation>
+      <documentation>
+      The element to use for human-readable definition 
+      of custom roles and arc roles.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="usedOn" type="QName">
+    <annotation>
+      <documentation>
+      Definition of the usedOn element - used
+      to identify what elements may use a 
+      taxonomy defined role or arc role value.
+      </documentation>
+    </annotation>
+  </element>
+
+  <element name="roleType">
+    <annotation>
+      <documentation>
+      The roleType element definition - used to define custom
+      role values in XBRL extended links.
+      </documentation>
+    </annotation>
+    <complexType>
+      <sequence>
+        <element ref="link:definition" minOccurs="0"/>
+        <element ref="link:usedOn" maxOccurs="unbounded"/>
+      </sequence>
+      <attribute name="roleURI" type="xl:nonEmptyURI" use="required"/>
+      <attribute name="id" type="ID"/>
+    </complexType>
+  </element>
+
+  <element name="arcroleType">
+    <annotation>
+      <documentation>
+      The  arcroleType element definition - used to define custom
+      arc role values in XBRL extended links.
+      </documentation>
+    </annotation>
+    <complexType>
+      <sequence>
+        <element ref="link:definition" minOccurs="0"/>
+        <element ref="link:usedOn" maxOccurs="unbounded"/>
+      </sequence>
+      <attribute name="arcroleURI" type="xl:nonEmptyURI" use="required"/>
+      <attribute name="id" type="ID"/>
+      <attribute name="cyclesAllowed" use="required">
+        <simpleType>
+          <restriction base="NMTOKEN">
+            <enumeration value="any"/>
+            <enumeration value="undirected"/>
+            <enumeration value="none"/>
+          </restriction>
+        </simpleType>
+      </attribute>
+    </complexType>
+  </element>
+
+</schema>
