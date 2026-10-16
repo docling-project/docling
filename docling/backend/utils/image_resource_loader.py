@@ -32,6 +32,7 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import ValidationError
 from requests.utils import get_environ_proxies, select_proxy
 
+from docling.backend.utils.image import normalize_image_for_png
 from docling.exceptions import OperationNotAllowed
 
 _log = logging.getLogger(__name__)
@@ -348,13 +349,18 @@ class ImageResourceLoader:
             img_data = self.load_image_data(src_url, base_path)
             if img_data:
                 img = Image.open(BytesIO(img_data))
-                return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
+                img.load()
+                return ImageRef.from_pil(
+                    normalize_image_for_png(img),
+                    dpi=int(img.info.get("dpi", (72,))[0]),
+                )
         except (
             requests.RequestException,
             urllib3.exceptions.HTTPError,
             ValidationError,
             UnidentifiedImageError,
             OperationNotAllowed,
+            OSError,
             TypeError,
             ValueError,
         ) as e:
