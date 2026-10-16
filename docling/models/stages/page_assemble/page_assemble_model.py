@@ -121,7 +121,10 @@ class PageAssembleModel(BasePageModel):
         attached to the word it splits; one that follows whitespace is a
         literal character -- a separator dash, a bullet marker, or a wrapped
         hyphen-prefixed token -- so it is kept and its lines are joined like
-        any other line break.
+        any other line break. An attached hyphen is also kept where no
+        hyphenation rule could have placed it: after a single-character token
+        ("n-" / "octanal") or before a continuation opening on a digit
+        ("6-methyl-" / "5-hepten-2-one"). There the hyphen belongs to the word.
 
         The joined text is then normalized: a few typographic characters are
         replaced by ASCII equivalents and ligatures are expanded.
@@ -143,7 +146,9 @@ class PageAssembleModel(BasePageModel):
                     and len(prev_words)
                     and len(line_words)
                     and prev_words[-1].isalnum()
+                    and len(prev_words[-1]) > 1
                     and line_words[0].isalnum()
+                    and not line_words[0][0].isdigit()
                 ):
                     lines[ix] = prev_line[:-1]
                 elif not hyphen_attached_to_word:

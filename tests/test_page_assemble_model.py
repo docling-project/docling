@@ -165,6 +165,24 @@ class TestSanitizeTextHyphenation:
     @pytest.mark.parametrize(
         ("lines", "expected"),
         [
+            # Chemical nomenclature, as reported: the prefix is one character.
+            (
+                ["undecanal or n-", "tridecanal, from each blend"],
+                "undecanal or n-tridecanal, from each blend",
+            ),
+            (["i-", "butyric acid"], "i-butyric acid"),
+            # A locant opens the continuation.
+            (["6-methyl-", "5-hepten-2-one"], "6-methyl-5-hepten-2-one"),
+            (["COVID-", "19 cases"], "COVID-19 cases"),
+        ],
+    )
+    def test_attached_hyphen_belonging_to_word_is_kept(self, model, lines, expected):
+        """A hyphen no hyphenation rule could have placed is part of the word."""
+        assert model.sanitize_text(list(lines)) == expected
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
             # Wrapped CLI flag, as reported: the dash must not be swallowed.
             (
                 ["gsh create_diameter_peer -ip 10.0.8.72 -pn 1 -", "prio 3 -dh mme"],

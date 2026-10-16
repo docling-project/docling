@@ -51,7 +51,7 @@
 <section_header_level_1><loc_447><loc_312><loc_489><loc_327>Zum Schluss: Was wünschen Sie 20 Minuten und 20 Minutes für die Zukunft?</section_header_level_1>
 <text><loc_447><loc_329><loc_489><loc_369>Dass 20 Minuten einen gesellschaftlichen Mehrwert schafft: das Publikum gut informiert und unterhält, inspiriert und die Menschen in der Schweiz zusammenbringt. In diesem Sinn weiterhin viel Erfolg!</text>
 <text><loc_447><loc_371><loc_469><loc_374>DÉSIRÉE POMPER</text>
-<text><loc_265><loc_400><loc_300><loc_463>«In unseren Pausen räumen wird sehr oft 20 Minuten gelesen prüfen wir gerade, o den QR-Code für die lineausgabe an den Wänden aufhängen sollen, damit alle Mitarbeitenden Zugang haben». Anna Hug, nft . Hier ob wir e Onn</text>
+<text><loc_265><loc_400><loc_300><loc_463>«In unseren Pausen räumen wird sehr oft 20 Minuten gelesen prüfen wir gerade, o den QR-Code für die lineausgabe an den Wänden aufhängen sollen, damit alle Mitarbeitenden Zugang haben». Anna Hug, n-ft . Hier ob wir e Onn</text>
 <text><loc_265><loc_465><loc_291><loc_475>Co-Geschäftsleiterin Hug AG</text>
 <picture><loc_293><loc_396><loc_335><loc_480></picture>
 <text><loc_341><loc_400><loc_379><loc_475>«Ein persönlicher Moment mit 20 Minuten bleibt mir ganz besonde in Erinnerung: Diesen Sommer war ich zu Gas bei Chefredaktorin Dési Pomper imLive-Talk, mitten in der Gemüse- und Früchteabteilung unserer Filiale am Limmatplatz.» Mario Irminger, Migros-CEO ers st irée</text>
