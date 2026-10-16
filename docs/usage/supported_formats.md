@@ -31,6 +31,10 @@ Below you can find a listing of all supported input and output formats.
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 | AFP | IBM Advanced Function Presentation / MO:DCA |
 
+For Excel workbooks, hidden rows and columns are omitted from visible tables.
+Their cell text is retained in `ContentLayer.INVISIBLE`, with its original cell
+coordinates. Hidden sheets retain their full tables in the same invisible layer.
+
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
