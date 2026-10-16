@@ -95,6 +95,8 @@ Table 2 Dairy cows’ diets in different scenariosa.
 | NEL, Mcal (kg DM)-1 | 1.96 | 1.69 | 1.63 | 1.44 | 1.81 | 1.78 | 1.74 | 1.8 | 1.8 | 1.7 |
 | MP, g (kg DM)-1 | 111 | 93.6 | 97.6 | 90.0 | 95.0 | 102 | 102 | 97.5 | 102 | 101 |
 
+a AI, artificial insemination; TMR, cows receiving exclusively total mixed ration; TMR75, cows receiving 75% of total mixed ration with pasture; TMR50, cows receiving 50% of total mixed ration with pasture; NE L , net energy for lactation; MP, metabolizable protein.
+
 #### GHG emissions from crop and pasture production
 
 GHG emission factors used for off- and on-farm feed production were based on literature values, and are presented in Table 3. The emission factor used for corn grain is the average of emission factors observed in different levels of synthetic N fertilization [30]. The emission factor used for soybean is based on Brazilian soybean production [31]. The emissions used for corn silage, including feed processing (cutting, crushing and mixing), and annual or perennial grass productions were 3300 and 1500 kg CO 2 e ha -1 , respectively [32]. The DM production (kg ha -1 ) of corn silage and pastures were based on regional and locally recorded data [33–36], assuming that animals are able to consume 70% of pastures during grazing.
@@ -111,6 +113,12 @@ Table 3 GHG emission factors for Off- and On-farm feed production.
 | Annual ryegrassc | 9,500 | 0.226 | kg CO2e (kg DM)-1 | [32,34] |
 | Pearl milletd | 11,000 | 0.195 | kg CO2e (kg DM)-1 | [32,35] |
 | Kikuyu grasse | 9,500 | 0.226 | kg CO2e (kg DM)-1 | [32,36] |
+
+a CO 2 e, carbon dioxide equivalent.
+
+b Emission factor estimated as [kg CO 2 e ha -1 : kg DM ha -1 ].
+
+c,d,e Emission factors estimated as [kg CO 2 e ha -1 : kg DM ha -1 × 0.7], assuming that animals are able to consume 70% of pasture during grazing.
 
 Emissions from on-farm feed production (corn silage and pasture) were estimated using primary and secondary sources based on the actual amount of each input (Table 4). Primary sources were direct and indirect N 2 O-N emissions from organic and synthetic fertilizers and crop/pasture residues, CO 2 -C emissions from lime and urea applications, as well as fuel combustion. The direct N 2 O-N emission factor (kg (kg N input) -1 ) is based on a local study performed previously [37]. For indirect N 2 O-N emissions (kg N 2 O-N (kg NH 3 -N + NO x ) -1 ), as well as CO 2 -C emissions from lime + urea, default values proposed by IPCC [38] were used. For perennial pastures, a C sequestration of 0.57 t ha -1 was used based on a 9-year study conducted in southern Brazil [39]. Due to the use of conventional tillage, no C sequestration was considered for annual pastures. The amount of fuel required was 8.9 (no-tillage) and 14.3 L ha -1 (disking) for annual tropical and temperate pastures, respectively [40]. The CO 2 from fuel combustion was 2.7 kg CO 2 L -1 [41]. Secondary sources of emissions during the production of fuel, machinery, fertilizer, pesticides, seeds and plastic for ensilage were estimated using emission factors described by Rotz et al. [42].
 
@@ -146,6 +154,24 @@ Table 4 GHG emissions from On-farm feed production.
 | kg CO2e ha-1 (emitted—sequestered) | 1833 | 964 | 1130 | -245 |
 | Emission factor, kg CO2e (kg DM)-1i | 0.115 | 0.145 | 0.147 | -0.037 |
 
+a 100% of N requirements for corn silage and 90% for pastures was supplied by stocked manure.
+
+b From IPCC [38].
+
+c From a local study [37].
+
+d From Assessment report 5 (AR5; [27]).
+
+e From [40,41]
+
+f Emissions during the production of fuel, machinery, fertilizer, pesticides, seeds and plastic for ensilage. Estimated as described by Rotz et al. [42].
+
+g Without accounting sequestered CO 2 -C due to no-tillage for perennial pasture.
+
+h From [39].
+
+i Accounting sequestered CO 2 -C due to no-tillage for perennial pasture.
+
 ### Animal husbandry
 
 The CH 4 emissions from enteric fermentation intensity (g (kg ECM) -1 ) was a function of estimated CH 4 yield (g (kg DM intake) -1 ), actual DM intake and ECM. The enteric CH 4 yield was estimated as a function of neutral detergent fiber (NDF) concentration on total DM intake, as proposed by Niu et al. [43], where: CH 4 yield (g (kg DM intake) -1 ) = 13.8 + 0.185 × NDF (% DM intake).
@@ -177,6 +203,14 @@ Table 5 Factors for major resource inputs in farm management.
 | Milking and confinement |  |  |  |
 | Electricity for milking | 0.06 | kWh (kg milk)-1 | [47] |
 | Electricity for lightingd | 75 | kWh cow-1 | [47] |
+
+a mm, machinery mass
+
+b Based on United States data.
+
+c Based on the Brazilian electricity matrix.
+
+d Naturally ventilated barns.
 
 The amount of fuel use for manure handling were estimated taking into consideration the amount of manure produced per cow and the amounts of fuel required for manure handling (L diesel t -1 ) [42]. The amount of manure was estimated from OM excretions (kg cow -1 ), assuming that the manure has 8% ash on DM basis and 60% DM content. The OM excretions were calculated by NDOMI × days in confinement × proportion of daily time that animals stayed on confinement.
 

@@ -40,6 +40,7 @@ from docling_core.types.doc import (
     NodeItem,
     TableCell,
     TableData,
+    TableItem,
     TextItem,
 )
 from docling_core.types.doc.document import Formatting, Script
@@ -787,8 +788,20 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         node: etree._Element,
         formatting: Formatting | None = None,
         hyperlink: AnyUrl | Path | None = None,
+        *,
+        resolve_ext_links: bool = False,
+        paragraph_breaks: bool = False,
     ) -> list[InlineSegment]:
+        """Walk inline content of ``node`` into text and formula segments.
+
+        With ``paragraph_breaks``, a space separates nonempty direct ``p`` children
+        of ``node`` only; recursive calls do not inherit it.
+        """
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
+        if resolve_ext_links and node.tag == "ext-link":
+            ext_link = JatsDocumentBackend._parse_ext_link_href(node.get(_XLINK_HREF))
+            if ext_link is not None:
+                hyperlink = ext_link
         segments: list[InlineSegment] = []
         if node.text:
             text = JatsDocumentBackend._normalize_xml_line_breaks(node.text)
@@ -801,6 +814,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         hyperlink=hyperlink,
                     )
                 )
+        seen_paragraph = False
         for child in node:
             tag = child.tag
             if not isinstance(tag, str) or tag.endswith("}math"):
@@ -817,9 +831,42 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         )
                     )
             else:
-                segments.extend(
-                    JatsDocumentBackend._walk_inline_formula(child, current, hyperlink)
+                child_segments = JatsDocumentBackend._walk_inline_formula(
+                    child,
+                    current,
+                    hyperlink,
+                    resolve_ext_links=resolve_ext_links,
                 )
+                if paragraph_breaks and tag == "p":
+                    nonempty = any(
+                        s.label != DocItemLabel.TEXT or s.text.strip()
+                        for s in child_segments
+                    )
+                    if nonempty:
+                        # An earlier paragraph implies segments is nonempty.
+                        last = segments[-1] if seen_paragraph else None
+                        first = child_segments[0]
+                        if (
+                            last is not None
+                            and not (
+                                last.label == DocItemLabel.TEXT
+                                and last.text[-1:].isspace()
+                            )
+                            and not (
+                                first.label == DocItemLabel.TEXT
+                                and first.text[:1].isspace()
+                            )
+                        ):
+                            segments.append(
+                                InlineSegment(
+                                    label=DocItemLabel.TEXT,
+                                    text=" ",
+                                    formatting=current,
+                                    hyperlink=hyperlink,
+                                )
+                            )
+                        seen_paragraph = True
+                segments.extend(child_segments)
             if child.tail:
                 tail = JatsDocumentBackend._normalize_xml_line_breaks(child.tail)
                 if tail:
@@ -1141,11 +1188,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     def _add_table(
         self, doc: DoclingDocument, parent: NodeItem, table_xml_component: Table
-    ) -> None:
+    ) -> TableItem | None:
         soup = BeautifulSoup(table_xml_component["content"], "html.parser")
         table_tag = soup.find("table")
         if not isinstance(table_tag, Tag):
-            return
+            return None
 
         data = JatsDocumentBackend.parse_table_data(table_tag)
         # TODO: format label vs caption once styling is supported
@@ -1158,9 +1205,51 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             else None
         )
         if data is not None:
-            doc.add_table(data=data, parent=parent, caption=table_caption)
+            return doc.add_table(data=data, parent=parent, caption=table_caption)
 
-        return
+        return None
+
+    @staticmethod
+    def _add_table_footnotes(
+        doc: DoclingDocument, table_item: TableItem, node: etree._Element
+    ) -> None:
+        """Attach each direct ``table-wrap-foot/fn`` as one table FOOTNOTE item."""
+        for fn in node.xpath("table-wrap-foot/fn"):
+            # Coalesce equivalent text runs (e.g. a literal <xref>) first.
+            merged: list[InlineSegment] = []
+            JatsDocumentBackend._extend_segments(
+                merged,
+                JatsDocumentBackend._walk_inline_formula(
+                    fn, resolve_ext_links=True, paragraph_breaks=True
+                ),
+            )
+            segments = JatsDocumentBackend._strip_segments(merged)
+            if not segments:
+                continue
+            # Keep table-note text distinguishable from body text for export
+            # filtering and chunk metadata; formulas retain their own label.
+            segments = [
+                (
+                    replace(segment, label=DocItemLabel.FOOTNOTE)
+                    if segment.label == DocItemLabel.TEXT
+                    else segment
+                )
+                for segment in segments
+            ]
+            # Released core table serializers skip referenced footnote wrappers.
+            # Keep all content in child runs so it is also exported by traversal.
+            footnote = doc.add_text(
+                label=DocItemLabel.FOOTNOTE, text="", parent=table_item
+            )
+            # _emit_inline groups multiple runs; a single run needs the same
+            # inline scope, especially when it is a formula.
+            container = (
+                doc.add_inline_group(parent=footnote)
+                if len(segments) == 1
+                else footnote
+            )
+            JatsDocumentBackend._emit_inline(doc, container, segments)
+            table_item.footnotes.append(footnote.get_ref())
 
     def _add_tables(
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
@@ -1197,9 +1286,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             table["label"] = node.xpath("label")[0].text
 
         try:
-            self._add_table(doc, parent, table)
+            table_item = self._add_table(doc, parent, table)
         except Exception:
             _log.warning(f"Skipping unsupported table in {self.file!s}")
+            return
+
+        if table_item is not None:
+            self._add_table_footnotes(doc, table_item, node)
 
         return
 
