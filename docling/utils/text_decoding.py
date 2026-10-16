@@ -7,11 +7,16 @@ import codecs
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Final, Optional, Union
 
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# The UTF-8 codec that drops a leading byte-order mark. It decodes exactly as
+# ``utf-8`` when no mark is present, so it is the codec to use wherever UTF-8
+# content may or may not carry one.
+UTF8_BOM_ENCODING: Final[str] = "utf-8-sig"
 
 # A byte-order mark states the encoding, so it settles the question before
 # anything is guessed. UTF-32 is tested first because the UTF-32 LE mark starts
@@ -19,7 +24,7 @@ _log = logging.getLogger(__name__)
 _BOM_ENCODINGS: tuple[tuple[bytes, str], ...] = (
     (codecs.BOM_UTF32_LE, "utf-32"),
     (codecs.BOM_UTF32_BE, "utf-32"),
-    (codecs.BOM_UTF8, "utf-8-sig"),
+    (codecs.BOM_UTF8, UTF8_BOM_ENCODING),
     (codecs.BOM_UTF16_LE, "utf-16"),
     (codecs.BOM_UTF16_BE, "utf-16"),
 )
@@ -91,8 +96,41 @@ def _utf8_high_byte_coverage(raw: bytes) -> float:
     return covered / high if high else 0.0
 
 
+def is_utf8(encoding: str) -> bool:
+    """Whether *encoding* names UTF-8, under any of the aliases Python accepts.
+
+    The codec registry folds ``-`` to ``_`` and ignores case, so ``utf-8``,
+    ``utf_8``, ``UTF8`` and ``u8`` all name the same codec. Resolving the name
+    through :func:`codecs.lookup` therefore matches every alias, where a
+    comparison against the spelling as written matches only the ones written
+    out in it. A name that is no codec at all is not UTF-8; it is left for
+    ``decode`` to report as the ``LookupError`` it is.
+    """
+    try:
+        return codecs.lookup(encoding).name == "utf-8"
+    except LookupError:
+        return False
+
+
+def drop_utf8_bom(raw: bytes) -> bytes:
+    """*raw* without its leading UTF-8 byte-order mark, if it has one.
+
+    For content that is validated as bytes rather than decoded, where a mark
+    left in place is rejected as an unexpected character.
+    """
+    return raw.removeprefix(codecs.BOM_UTF8)
+
+
 def _decode_bytes(raw: bytes, encoding: Optional[str] = None) -> str:
     if encoding is not None:
+        # An explicit ``utf-8`` request must still drop a leading byte-order
+        # mark, matching the auto-detect path; otherwise the BOM leaks into the
+        # decoded text (see issue #4846). ``utf-8-sig`` is identical to
+        # ``utf-8`` when no BOM is present, so this only changes behaviour for
+        # UTF-8 content that actually starts with a BOM. Every alias of UTF-8
+        # counts, so ``utf_8`` and ``u8`` behave as ``utf-8`` does.
+        if raw.startswith(codecs.BOM_UTF8) and is_utf8(encoding):
+            encoding = UTF8_BOM_ENCODING
         try:
             return raw.decode(encoding)
         except (UnicodeDecodeError, LookupError) as error:
