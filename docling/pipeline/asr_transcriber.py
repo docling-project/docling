@@ -841,8 +841,9 @@ def _merge_into_sentences(
     """Merge Whisper segments into complete sentences.
 
     Consecutive segments are merged until a sentence-ending punctuation
-    mark (. ? !) is found. The merged item spans the full time range
-    of all contributing segments and concatenates their text.
+    mark (. ? ! or its full-width CJK form) is found. The merged item spans
+    the full time range of all contributing segments and concatenates their
+    text.
 
     This produces one block per sentence, which maps cleanly to one
     speaker per block for diarization.
@@ -875,7 +876,7 @@ def _merge_into_sentences(
                 current.words = (current.words or []) + list(item.words)
 
         # Flush on sentence boundary
-        if current.text.rstrip().endswith((".", "?", "!")):
+        if current.text.rstrip().endswith((".", "?", "!", "。", "？", "！")):  # noqa: RUF001
             merged.append(current)
             current = None
 
