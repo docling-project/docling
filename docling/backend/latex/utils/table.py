@@ -3,9 +3,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, List, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Callable
 
-from docling_core.types.doc.document import TableCell, TableData
+from docling_core.types.doc.document import (
+    DoclingDocument,
+    RichTableCell,
+    TableCell,
+    TableData,
+    TableItem,
+)
 
 from docling.backend.latex.constants import (
     MACROS_ESCAPED,
@@ -13,9 +20,6 @@ from docling.backend.latex.constants import (
     TABLE_MACROS_RULE,
 )
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
-
-if TYPE_CHECKING:
-    from typing import Any
 
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexwalker import (
@@ -30,19 +34,29 @@ except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
 
+@dataclass
+class ParsedTable:
+    data: TableData
+    rich_cells: list[tuple[int, list[Any]]]
+
+
 class TableHelperMixin:
     if TYPE_CHECKING:
 
         def _nodes_to_text(self, nodes: Any) -> str: ...
+        def _contains_math(self, nodes: list) -> bool: ...
+        def _process_nodes(
+            self, nodes: Any, doc: DoclingDocument, parent: Any
+        ) -> None: ...
 
     def _process_table_macro_node(
         self,
         n: LatexMacroNode,
         source_latex: str,
-        current_cell_nodes: List,
+        current_cell_nodes: list[Any],
         finish_cell_fn: Callable[..., None],
         finish_row_fn: Callable[[], None],
-        parse_brace_args_fn: Callable[[str], List[str]],
+        parse_brace_args_fn: Callable[[str], list[str]],
     ):
         if n.macroname == "\\":  # Row break
             finish_row_fn()
@@ -107,6 +121,8 @@ class TableHelperMixin:
 
         elif n.macroname in TABLE_MACROS_RULE:
             pass
+        elif n.macroname == "caption":
+            pass
         elif n.macroname in TABLE_MACROS_IGNORE:
             pass
         elif n.macroname == "&":  # Cell break
@@ -116,11 +132,11 @@ class TableHelperMixin:
         else:
             current_cell_nodes.append(n)
 
-    def _parse_table(self, node: LatexEnvironmentNode) -> TableData | None:
+    def _parse_table(self, node: LatexEnvironmentNode) -> ParsedTable | None:
         # None marks a column that a \multicolumn cell before it covers.
-        rows: list[list[tuple[TableCell, int, int] | None]] = []
-        current_row: list[tuple[TableCell, int, int] | None] = []
-        current_cell_nodes: list = []
+        rows: list[list[tuple[TableCell, int, int, list[Any] | None] | None]] = []
+        current_row: list[tuple[TableCell, int, int, list[Any] | None] | None] = []
+        current_cell_nodes: list[Any] = []
 
         source_latex = node.latex_verbatim()
 
@@ -144,7 +160,16 @@ class TableHelperMixin:
             return args
 
         def finish_cell(col_span: int = 1, row_span: int = 1):
-            text = self._nodes_to_text(current_cell_nodes).strip()
+            rich_nodes = (
+                current_cell_nodes.copy()
+                if self._contains_math(current_cell_nodes)
+                else None
+            )
+            text = (
+                ""
+                if rich_nodes is not None
+                else self._nodes_to_text(current_cell_nodes).strip()
+            )
             cell = TableCell(
                 text=text,
                 start_row_offset_idx=0,
@@ -152,7 +177,7 @@ class TableHelperMixin:
                 start_col_offset_idx=0,
                 end_col_offset_idx=0,
             )
-            current_row.append((cell, col_span, row_span))
+            current_row.append((cell, col_span, row_span, rich_nodes))
             current_cell_nodes.clear()
 
             for _ in range(col_span - 1):
@@ -204,13 +229,14 @@ class TableHelperMixin:
         num_cols = max(len(row) for row in rows) if rows else 0
 
         flat_cells = []
+        rich_cells: list[tuple[int, list[Any]]] = []
         for i, row in enumerate(rows):
             for j in range(num_cols):
                 if j < len(row):
                     entry = row[j]
                     if entry is None:
                         continue
-                    cell, col_span, row_span = entry
+                    cell, col_span, row_span, rich_nodes = entry
                 else:
                     cell = TableCell(
                         text="",
@@ -220,6 +246,7 @@ class TableHelperMixin:
                         end_col_offset_idx=0,
                     )
                     col_span, row_span = 1, 1
+                    rich_nodes = None
 
                 cell.start_row_offset_idx = i
                 cell.start_col_offset_idx = j
@@ -227,6 +254,26 @@ class TableHelperMixin:
                 cell.end_row_offset_idx = i + row_span
                 cell.end_col_offset_idx = j + col_span
 
+                if rich_nodes is not None:
+                    rich_cells.append((len(flat_cells), rich_nodes))
                 flat_cells.append(cell)
 
-        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=flat_cells)
+        return ParsedTable(
+            data=TableData(
+                num_rows=num_rows, num_cols=num_cols, table_cells=flat_cells
+            ),
+            rich_cells=rich_cells,
+        )
+
+    def _add_rich_table_cells(
+        self, parsed: ParsedTable, doc: DoclingDocument, table: TableItem
+    ) -> None:
+        for index, nodes in parsed.rich_cells:
+            cell_group = doc.add_group(parent=table)
+            self._process_nodes(nodes, doc, parent=cell_group)
+            cell = table.data.table_cells[index]
+            table.data.table_cells[index] = RichTableCell(
+                **cell.model_dump(exclude={"text"}),
+                text="",
+                ref=cell_group.get_ref(),
+            )

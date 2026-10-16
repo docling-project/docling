@@ -104,5 +104,4 @@ The table repr ... of tokens, terminated with "NL" token.
   item-89 at level 1: text: We demonstrated that representin ... e languages, has several key benefits.
   item-90 at level 1: text: First and foremost, given the sa ...  trained on HTML (see Table[tab:HPO]).
   item-91 at level 1: text: Secondly, OTSL has more inherent ... on-the-fly during sequence generation.
-  item-92 at level 1: text: splncs04
-  item-93 at level 1: text: papers
+  item-92 at level 1: text: papers

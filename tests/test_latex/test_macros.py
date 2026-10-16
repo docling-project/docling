@@ -6,7 +6,8 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from docling_core.transforms.serializer.latex import LaTeXParams
+from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
@@ -16,6 +17,7 @@ from docling.document_converter import DocumentConverter
 
 from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
+from .latex_serializer import SourceLaTeXDocSerializer, SourceLaTeXInlineSerializer
 
 GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
@@ -39,6 +41,121 @@ def test_latex_unknown_macro_fallback():
 
     md = doc.export_to_markdown()
     assert "Known Content" in md
+
+
+def test_latex_preserves_invisible_source_commands():
+    latex_content = rb"""\documentclass{article}
+\usepackage[utf8]{inputenc}
+\newenvironment{custom}[1]{\textbf{#1}}{\par}
+\newcommand{\myterm}[1]{first #1
+	second}
+\def\legacy{old}
+\begin{document}
+Body text.
+\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    expected = [
+        r"\documentclass{article}",
+        r"\usepackage[utf8]{inputenc}",
+        r"\newenvironment{custom}[1]{\textbf{#1}}{\par}",
+        "\\newcommand{\\myterm}[1]{first #1\n\tsecond}",
+        r"\def\legacy{old}",
+    ]
+    invisible = [
+        item for item in doc.texts if item.content_layer == ContentLayer.INVISIBLE
+    ]
+    assert [item.label for item in invisible] == [DocItemLabel.TEXT] * len(expected)
+    assert [item.text for item in invisible] == expected
+    assert [item.orig for item in invisible] == expected
+    assert all(command in doc.export_to_doclang() for command in expected)
+    restored = DoclingDocument.model_validate_json(doc.model_dump_json())
+    assert [
+        item.text
+        for item in restored.texts
+        if item.content_layer == ContentLayer.INVISIBLE
+    ] == expected
+    assert "Body text." in doc.export_to_markdown()
+    assert all(command not in doc.export_to_markdown() for command in expected)
+
+    parsed_latex = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(
+                layers={ContentLayer.BODY, ContentLayer.INVISIBLE},
+                document_class="",
+                packages=[],
+                include_annotations=False,
+                enable_chart_tables=False,
+            ),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    preamble, body = parsed_latex.split(r"\begin{document}", maxsplit=1)
+    assert [preamble.index(command) for command in expected] == sorted(
+        preamble.index(command) for command in expected
+    )
+    assert all(command not in body for command in expected)
+    assert r"\textbackslash{}newcommand" not in parsed_latex
+    assert "Body text." in body
+
+
+def test_latex_preserves_complete_newtheorem_declarations():
+    declarations = [
+        r"\newtheorem{theorem}{Theorem}",
+        r"\newtheorem{corollary}[theorem]{Corollary}",
+        r"\newtheorem{lemma}{Lemma}[section]",
+        r"\newtheorem*{remark}{Remark}",
+    ]
+    source = (
+        "\\documentclass{article}\n"
+        + "\n".join(declarations)
+        + "\n\\begin{document}\nBody text.\n\\end{document}"
+    ).encode("utf-8")
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    invisible = [
+        item.text for item in doc.texts if item.content_layer == ContentLayer.INVISIBLE
+    ]
+    assert invisible[1:] == declarations
+    assert all(command in doc.export_to_doclang() for command in declarations)
+
+    parsed = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(
+                layers={ContentLayer.BODY, ContentLayer.INVISIBLE},
+                document_class="",
+                packages=[],
+                include_annotations=False,
+                enable_chart_tables=False,
+            ),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    preamble, body = parsed.split(r"\begin{document}", maxsplit=1)
+    assert all(command in preamble for command in declarations)
+    assert all(command not in body for command in declarations)
+    assert "Body text." in body
 
 
 def test_latex_label():
@@ -87,6 +204,27 @@ def test_latex_title_macro():
     assert len(title_items) >= 1
 
 
+def test_latex_title_with_optional_short_title():
+    latex_content = (
+        rb"\documentclass{article}\begin{document}"
+        rb"\title[Short $x$]{Long $y$}\maketitle"
+        rb"\end{document}"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+    titles = [item for item in doc.texts if item.label == DocItemLabel.TITLE]
+    assert len(titles) == 1
+    assert titles[0].children
+    assert "<formula>y</formula>" in doc.export_to_doclang()
+    assert "Short" not in doc.export_to_markdown()
+
+
 def test_latex_heading_levels():
     """Test different heading levels"""
     latex_content = b"""
@@ -110,6 +248,60 @@ def test_latex_heading_levels():
 
     headers = [t for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
     assert len(headers) >= 3
+
+
+def test_latex_section_heading_and_title_keep_inline_formulas():
+    source = rb"""\documentclass{article}
+\title[Short $x$]{From $A_1$ to the $B^2$ case}
+\begin{document}
+\maketitle
+\section[Short $k$]{Dimension $2$ and rank $r$}
+\subsection{The $q$ case}
+\end{document}"""
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    titles = [item for item in doc.texts if item.label == DocItemLabel.TITLE]
+    headings = [item for item in doc.texts if item.label == DocItemLabel.SECTION_HEADER]
+    assert len(titles) == 1
+    assert len(headings) == 2
+    assert titles[0].children
+    assert all(item.children for item in headings)
+    assert [item.level for item in headings] == [1, 2]
+
+    dclg = doc.export_to_doclang()
+    assert "<formula>A_1</formula>" in dclg
+    assert "<formula>B^2</formula>" in dclg
+    assert "<formula>2</formula>" in dclg
+    assert "<formula>r</formula>" in dclg
+    assert "<formula>q</formula>" in dclg
+    assert "Short" not in dclg
+
+    parsed = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(
+                layers={ContentLayer.BODY, ContentLayer.INVISIBLE},
+                document_class="",
+                packages=[],
+                include_annotations=False,
+                enable_chart_tables=False,
+            ),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    assert r"From $A_1$ to the $B^2$ case" in parsed
+    assert r"\section{Dimension $2$ and rank $r$}" in parsed
+    assert r"\subsection{The $q$ case}" in parsed
+    assert r"\$" not in parsed
 
 
 def test_latex_text_formatting():
@@ -154,7 +346,7 @@ C \\emph{em}x and \\textit{it}.
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    assert [t.text for t in doc.texts] == [
+    assert [t.text for t in doc.texts if t.content_layer == ContentLayer.BODY] == [
         "A it text. B bf more.",
         "C emx and it.",
     ]
@@ -655,6 +847,39 @@ def test_latex_bibliography():
 
     md = doc.export_to_markdown()
     assert "References" in md
+    items = [item.text for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+    assert len(items) == 2
+    assert items[0].startswith("[ref1] Author One")
+    assert items[1].startswith("[ref2] Author Two")
+    assert not any(item == "9" for item in items)
+
+
+def test_latex_layout_assignments_and_bibliography_style_are_not_body_text():
+    latex_content = b"""\\documentclass{article}
+\\begin{document}
+Visible text. \\vfuzz=2pt
+\\hfuzz = 1.5pt
+\\bibliographystyle{amsplain}
+\\begin{thebibliography}{10}
+\\bibitem{ref} Author, Title.
+\\end{thebibliography}
+\\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    texts = [item.text for item in doc.texts]
+    assert any("Visible text." in text for text in texts)
+    assert any("[ref] Author, Title." in text for text in texts)
+    assert not any(
+        "=2pt" in text or "1.5pt" in text or "amsplain" in text for text in texts
+    )
 
 
 def test_latex_footnote():
@@ -795,7 +1020,9 @@ def test_latex_nested_formatting_macros():
         )
         doc = backend.convert()
 
-        all_text = " ".join(t.text for t in doc.texts)
+        all_text = " ".join(
+            t.text for t in doc.texts if t.content_layer == ContentLayer.BODY
+        )
         assert expected in all_text, (
             f"[{description}] expected {expected!r} in output, got: {all_text!r}"
         )

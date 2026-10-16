@@ -93,17 +93,27 @@ Due to the ef ... does not drop tokens during inference.
   item-71 at level 1: text: Inspired by [meta_mtp], we inves ... ur MTP implementation in this section.
   item-72 at level 1: text: MTP Modules.
 To be specific, our ... bb{R}^{d}$ with the linear projection:
-  item-73 at level 1: formula: \mathbf{h}_i^{\prime k} = M_k [\ ... MSNorm}(\operatorname{Emb}(t_{i+k}))],
+  item-73 at level 1: formula: \begin{equation}
+    \mathbf{h}_ ... orname{Emb}(t_{i+k}))],
+\end{equation}
   item-74 at level 1: text: where $[\cdot ; \cdot]$ denotes  ... he current depth $\mathbf{h}_{i}^{k}$:
-  item-75 at level 1: formula: \mathbf{h}_{1:T-k}^{k} = \operat ... TRM}_k(\mathbf{h}_{1:T-k}^{\prime k}),
+  item-75 at level 1: formula: \begin{equation}
+    \mathbf{h}_ ... h}_{1:T-k}^{\prime k}),
+\end{equation}
   item-76 at level 1: text: where $T$ represents the input s ... V}$, where $V$ is the vocabulary size:
-  item-77 at level 1: formula: P_{i+k+1}^{k} = \operatorname{OutHead}(\mathbf{h}_{i}^{k}).
+  item-77 at level 1: formula: \begin{equation}
+    P_{i+k+1}^{ ... d}(\mathbf{h}_{i}^{k}).
+\end{equation}
   item-78 at level 1: text: The output head $\operatorname{O ... as we utilize MTP to improve training.
   item-79 at level 1: text: MTP Training Objective.
 For each ... y loss $\mathcal{L}_{\text{MTP}}^{k}$:
-  item-80 at level 1: formula: \mathcal{L}_{\text{MTP}}^{k} = \ ... um_{i=2 + k}^{T + 1} \log P_i^k [t_i],
+  item-80 at level 1: formula: \begin{equation}
+    \mathcal{L} ...  + 1} \log P_i^k [t_i],
+\end{equation}
   item-81 at level 1: text: where $T$ denotes the input sequ ... al training objective for DeepSeek-V3:
-  item-82 at level 1: formula: \mathcal{L}_{\text{MTP}} = \frac ... k=1}^{D} \mathcal{L}_{\text{MTP}}^{k}.
+  item-82 at level 1: formula: \begin{equation}
+    \mathcal{L} ... al{L}_{\text{MTP}}^{k}.
+\end{equation}
   item-83 at level 1: text: MTP in Inference.
 Our MTP strate ... urther improve the generation latency.
   item-84 at level 1: section_header: Infrastructures
@@ -284,12 +294,19 @@ For questions th ... stant to manipulation or exploitation.
 For questions w ... k of reward hacking in specific tasks.
   item-239 at level 1: section_header: Group Relative Policy Optimization
   item-240 at level 1: text: Similar to DeepSeek-V2[dsvii], w ... by maximizing the following objective:
-  item-241 at level 1: formula: \begin{split}
-    \mathcal{J}_{G ...  \pi_{ref}\right)\right) ,
+  item-241 at level 1: formula: \begin{equation}
+\begin{split}
+  ... )\right) ,
 \end{split}
-  item-242 at level 1: formula: \mathbb{D}_{KL}\left(\pi_{\theta ... ref}(o_i|q)}{\pi_{\theta}(o_i|q)} - 1,
+
+\end{equation}
+  item-242 at level 1: formula: \begin{equation}
+    \mathbb{D}_ ... i_{\theta}(o_i|q)} - 1,
+\end{equation}
   item-243 at level 1: text: where $\epsilon$ and $\beta$ are ... ding to the outputs within each group:
-  item-244 at level 1: formula: A_i = \frac{r_i - {\operatorname ... ame{std}(\{r_1, r_2, \cdots, r_G\})}}.
+  item-244 at level 1: formula: \begin{equation}
+    A_i = \frac ...  r_2, \cdots, r_G\})}}.
+\end{equation}
   item-245 at level 1: paragraph: We incorporate prompts from dive ...  where available SFT data are limited.
   item-246 at level 1: section_header: Evaluations
   item-247 at level 1: section_header: Evaluation Settings

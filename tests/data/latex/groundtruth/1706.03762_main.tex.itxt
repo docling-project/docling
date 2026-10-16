@@ -32,7 +32,9 @@ item-0 at level 0: unspecified: group _root_
   item-28 at level 1: section_header: Scaled Dot-Product Attention
   item-29 at level 1: text: We call our particular attention ... n to obtain the weights on the values.
   item-30 at level 1: text: In practice, we compute the atte ...   We compute the matrix of outputs as:
-  item-31 at level 1: formula: \mathrm{Attention}(Q, K, V) = \mathrm{softmax}(\frac{QK^T}{\sqrt{d_k}})V
+  item-31 at level 1: formula: \begin{equation}
+   \mathrm{Atte ... rac{QK^T}{\sqrt{d_k}})V
+\end{equation}
   item-32 at level 1: text: The two most commonly used atten ...  optimized matrix multiplication code.
   item-33 at level 1: text: While for small values of $d_k$  ... where it has extremely small gradients
   item-34 at level 1: footnote: To illustrate why the dot produc ... k_i$, has mean $0$ and variance $d_k$.
@@ -65,7 +67,9 @@ item-0 at level 0: unspecified: group _root_
     item-57 at level 2: list_item: Similarly, self-attention layers ... ions.  See Figure[fig:multi-head-att].
   item-58 at level 1: section_header: Position-wise Feed-Forward Networks
   item-59 at level 1: paragraph: In addition to attention sub-lay ... ons with a ReLU activation in between.
-  item-60 at level 1: formula: \mathrm{FFN}(x)=\max(0, xW_1 + b_1) W_2 + b_2
+  item-60 at level 1: formula: \begin{equation}
+   \mathrm{FFN} ... , xW_1 + b_1) W_2 + b_2
+\end{equation}
   item-61 at level 1: text: While the linear transformations ... ayer has dimensionality $d_{ff}=2048$.
   item-62 at level 1: section_header: Embeddings and Softmax
   item-63 at level 1: text: Similarly to other sequence tran ...  weights by $\sqrt{d_{\text{model}}}$.
@@ -94,7 +98,9 @@ item-0 at level 0: unspecified: group _root_
   item-84 at level 1: text: We trained our models on one mac ...  trained for 300,000 steps (3.5 days).
   item-85 at level 1: section_header: Optimizer
   item-86 at level 1: text: We used the Adam optimizer[kingm ... of training, according to the formula:
-  item-87 at level 1: formula: lrate = d_{\text{model}}^{-0.5}  ... ep\_num} \cdot {warmup\_steps}^{-1.5})
+  item-87 at level 1: formula: \begin{equation}
+lrate = d_{\tex ... {warmup\_steps}^{-1.5})
+\end{equation}
   item-88 at level 1: text: This corresponds to increasing t ... number.  We used $warmup\_steps=4000$.
   item-89 at level 1: section_header: Regularization
   item-90 at level 1: text: We employ three types of regularization during training:
@@ -130,123 +136,82 @@ item-0 at level 0: unspecified: group _root_
   item-120 at level 1: paragraph: We are excited about the future  ... ial is another research goals of ours.
   item-121 at level 1: text: The code we used to train and ev ... //github.com/tensorflow/tensor2tensor.
   item-122 at level 1: text: Acknowledgements We are grateful ... comments, corrections and inspiration.
-  item-123 at level 1: text: plain
-  item-124 at level 1: section_header: References
-  item-125 at level 1: list: group bibliography
-    item-126 at level 2: list_item: 10
-    item-127 at level 2: list_item: layernorm2016
-JimmyLei Ba, Jamie ... arXiv preprint arXiv:1607.06450, 2016.
-    item-128 at level 2: list_item: bahdanau2014neural
-Dzmitry Bahda ...  translate.
+  item-123 at level 1: section_header: References
+  item-124 at level 1: list: group bibliography
+    item-125 at level 2: list_item: [layernorm2016] JimmyLei Ba, Jam ... arXiv preprint arXiv:1607.06450, 2016.
+    item-126 at level 2: list_item: [bahdanau2014neural] Dzmitry Bah ...  translate.
 CoRR, abs/1409.0473, 2014.
-    item-129 at level 2: list_item: DBLP:journals/corr/BritzGLL17
-De ... itectures.
+    item-127 at level 2: list_item: [DBLP:journals/corr/BritzGLL17]  ... itectures.
 CoRR, abs/1703.03906, 2017.
-    item-130 at level 2: list_item: cheng2016long
-Jianpeng Cheng, Li ... arXiv preprint arXiv:1601.06733, 2016.
-    item-131 at level 2: list_item: cho2014learning
-Kyunghyun Cho, B ... ranslation.
+    item-128 at level 2: list_item: [cheng2016long] Jianpeng Cheng,  ... arXiv preprint arXiv:1601.06733, 2016.
+    item-129 at level 2: list_item: [cho2014learning] Kyunghyun Cho, ... ranslation.
 CoRR, abs/1406.1078, 2014.
-    item-132 at level 2: list_item: xception2016
-Francois Chollet.
-X ... arXiv preprint arXiv:1610.02357, 2016.
-    item-133 at level 2: list_item: gruEval14
-Junyoung Chung, Caglar ...   modeling.
+    item-130 at level 2: list_item: [xception2016] Francois Chollet. ... arXiv preprint arXiv:1610.02357, 2016.
+    item-131 at level 2: list_item: [gruEval14] Junyoung Chung, Cagl ... 
+ modeling.
 CoRR, abs/1412.3555, 2014.
-    item-134 at level 2: list_item: dyer-rnng:16
-Chris Dyer, Adhigun ... ork grammars.
+    item-132 at level 2: list_item: [dyer-rnng:16] Chris Dyer, Adhig ... ork grammars.
 In Proc. of NAACL, 2016.
-    item-135 at level 2: list_item: JonasFaceNet2017
-Jonas Gehring,  ... Xiv preprint arXiv:1705.03122v2, 2017.
-    item-136 at level 2: list_item: graves2013generating
-Alex Graves ... 
+    item-133 at level 2: list_item: [JonasFaceNet2017] Jonas Gehring ... Xiv preprint arXiv:1705.03122v2, 2017.
+    item-134 at level 2: list_item: [graves2013generating] Alex Grav ... 
 arXiv preprint arXiv:1308.0850, 2013.
-    item-137 at level 2: list_item: he2016deep
-Kaiming He, Xiangyu Z ... ttern Recognition, pages 770778, 2016.
-    item-138 at level 2: list_item: hochreiter2001gradient
-Sepp Hoch ... arning long-term
-  dependencies, 2001.
-    item-139 at level 2: list_item: hochreiter1997
-Sepp Hochreiter a ... ural computation, 9(8):17351780, 1997.
-    item-140 at level 2: list_item: huang-harper:2009:EMNLP
-Zhongqia ... ssing, pages 832841. ACL, August 2009.
-    item-141 at level 2: list_item: jozefowicz2016exploring
-Rafal Jo ... arXiv preprint arXiv:1602.02410, 2016.
-    item-142 at level 2: list_item: extendedngpu
-ukasz Kaiser and Sa ... on Processing Systems, (NIPS),
-  2016.
-    item-143 at level 2: list_item: neural_gpu
-ukasz Kaiser and Ilya ... earning Representations
+    item-135 at level 2: list_item: [he2016deep] Kaiming He, Xiangyu ... ttern Recognition, pages 770778, 2016.
+    item-136 at level 2: list_item: [hochreiter2001gradient] Sepp Ho ... earning long-term
+ dependencies, 2001.
+    item-137 at level 2: list_item: [hochreiter1997] Sepp Hochreiter ... ural computation, 9(8):17351780, 1997.
+    item-138 at level 2: list_item: [huang-harper:2009:EMNLP] Zhongq ... ssing, pages 832841. ACL, August 2009.
+    item-139 at level 2: list_item: [jozefowicz2016exploring] Rafal  ... arXiv preprint arXiv:1602.02410, 2016.
+    item-140 at level 2: list_item: [extendedngpu] ukasz Kaiser and  ... ion Processing Systems, (NIPS),
+ 2016.
+    item-141 at level 2: list_item: [neural_gpu] ukasz Kaiser and Il ... earning Representations
  (ICLR), 2016.
-    item-144 at level 2: list_item: NalBytenet2017
-Nal Kalchbrenner, ... Xiv preprint arXiv:1610.10099v2, 2017.
-    item-145 at level 2: list_item: structuredAttentionNetworks
-Yoon ... nce on Learning Representations, 2017.
-    item-146 at level 2: list_item: kingma2014adam
-Diederik Kingma a ... tochastic optimization.
+    item-142 at level 2: list_item: [NalBytenet2017] Nal Kalchbrenne ... Xiv preprint arXiv:1610.10099v2, 2017.
+    item-143 at level 2: list_item: [structuredAttentionNetworks] Yo ... nce on Learning Representations, 2017.
+    item-144 at level 2: list_item: [kingma2014adam] Diederik Kingma ... tochastic optimization.
 In ICLR, 2015.
-    item-147 at level 2: list_item: Kuchaiev2017Factorization
-Oleksi ... arXiv preprint arXiv:1703.10722, 2017.
-    item-148 at level 2: list_item: lin2017structured
-Zhouhan Lin, M ... arXiv preprint arXiv:1703.03130, 2017.
-    item-149 at level 2: list_item: multiseq2seq
-Minh-Thang Luong, Q ... arXiv preprint arXiv:1511.06114, 2015.
-    item-150 at level 2: list_item: luong2015effective
-Minh-Thang Lu ... arXiv preprint arXiv:1508.04025, 2015.
-    item-151 at level 2: list_item: marcus1993building
-MitchellP Mar ... ional linguistics, 19(2):313330, 1993.
-    item-152 at level 2: list_item: mcclosky-etAl:2006:NAACL
-David M ... ference, pages 152159. ACL, June 2006.
-    item-153 at level 2: list_item: decomposableAttnModel
-Ankur Pari ...  in Natural Language Processing, 2016.
-    item-154 at level 2: list_item: paulus2017deep
-Romain Paulus, Ca ... arXiv preprint arXiv:1705.04304, 2017.
-    item-155 at level 2: list_item: petrov-EtAl:2006:ACL
-Slav Petrov ... e ACL, pages
-  433440. ACL, July 2006.
-    item-156 at level 2: list_item: press2016using
-Ofir Press and Li ... arXiv preprint arXiv:1608.05859, 2016.
-    item-157 at level 2: list_item: sennrich2015neural
-Rico Sennrich ... arXiv preprint arXiv:1508.07909, 2015.
-    item-158 at level 2: list_item: shazeer2017outrageously
-Noam Sha ... arXiv preprint arXiv:1701.06538, 2017.
-    item-159 at level 2: list_item: srivastava2014dropout
-Nitish Sri ... arning Research, 15(1):19291958, 2014.
-    item-160 at level 2: list_item: sukhbaatar2015
-Sainbayar Sukhbaa ... 402448. Curran Associates, Inc., 2015.
-    item-161 at level 2: list_item: sutskever14
-Ilya Sutskever, Orio ... ssing Systems, pages
-  31043112, 2014.
-    item-162 at level 2: list_item: DBLP:journals/corr/SzegedyVISW15 ... er vision.
+    item-145 at level 2: list_item: [Kuchaiev2017Factorization] Olek ... arXiv preprint arXiv:1703.10722, 2017.
+    item-146 at level 2: list_item: [lin2017structured] Zhouhan Lin, ... arXiv preprint arXiv:1703.03130, 2017.
+    item-147 at level 2: list_item: [multiseq2seq] Minh-Thang Luong, ... arXiv preprint arXiv:1511.06114, 2015.
+    item-148 at level 2: list_item: [luong2015effective] Minh-Thang  ... arXiv preprint arXiv:1508.04025, 2015.
+    item-149 at level 2: list_item: [marcus1993building] MitchellP M ... ional linguistics, 19(2):313330, 1993.
+    item-150 at level 2: list_item: [mcclosky-etAl:2006:NAACL] David ... ference, pages 152159. ACL, June 2006.
+    item-151 at level 2: list_item: [decomposableAttnModel] Ankur Pa ...  in Natural Language Processing, 2016.
+    item-152 at level 2: list_item: [paulus2017deep] Romain Paulus,  ... arXiv preprint arXiv:1705.04304, 2017.
+    item-153 at level 2: list_item: [petrov-EtAl:2006:ACL] Slav Petr ... he ACL, pages
+ 433440. ACL, July 2006.
+    item-154 at level 2: list_item: [press2016using] Ofir Press and  ... arXiv preprint arXiv:1608.05859, 2016.
+    item-155 at level 2: list_item: [sennrich2015neural] Rico Sennri ... arXiv preprint arXiv:1508.07909, 2015.
+    item-156 at level 2: list_item: [shazeer2017outrageously] Noam S ... arXiv preprint arXiv:1701.06538, 2017.
+    item-157 at level 2: list_item: [srivastava2014dropout] Nitish S ... arning Research, 15(1):19291958, 2014.
+    item-158 at level 2: list_item: [sukhbaatar2015] Sainbayar Sukhb ... 402448. Curran Associates, Inc., 2015.
+    item-159 at level 2: list_item: [sutskever14] Ilya Sutskever, Or ... essing Systems, pages
+ 31043112, 2014.
+    item-160 at level 2: list_item: [DBLP:journals/corr/SzegedyVISW1 ... er vision.
 CoRR, abs/1512.00567, 2015.
-    item-163 at level 2: list_item: KVparse15
-Vinyals & Kaiser, Koo, ...  Information Processing Systems, 2015.
-    item-164 at level 2: list_item: wu2016google
-Yonghui Wu, Mike Sc ... arXiv preprint arXiv:1609.08144, 2016.
-    item-165 at level 2: list_item: DBLP:journals/corr/ZhouCWLX16
-Ji ... anslation.
+    item-161 at level 2: list_item: [KVparse15] Vinyals & Kaiser, Ko ...  Information Processing Systems, 2015.
+    item-162 at level 2: list_item: [wu2016google] Yonghui Wu, Mike  ... arXiv preprint arXiv:1609.08144, 2016.
+    item-163 at level 2: list_item: [DBLP:journals/corr/ZhouCWLX16]  ... anslation.
 CoRR, abs/1606.04199, 2016.
-    item-166 at level 2: list_item: zhu-EtAl:2013:ACL
-Muhua Zhu, Yue ... pers), pages 434443. ACL, August 2013.
-  item-167 at level 1: section_header: Attention Visualizations
-  item-168 at level 1: section: group figure
-    item-169 at level 2: picture
-      item-169 at level 3: caption: Image: ./vis/making_more_difficult5_new.pdf
-    item-170 at level 2: text: An example of the attention mech ... different heads. Best viewed in color.
-  item-171 at level 1: caption: Image: ./vis/making_more_difficult5_new.pdf
-  item-172 at level 1: section: group figure
-    item-173 at level 2: picture
-      item-173 at level 3: caption: Image: ./vis/anaphora_resolution_new.pdf
-    item-174 at level 2: picture
-      item-174 at level 3: caption: Image: ./vis/anaphora_resolution2_new.pdf
-    item-175 at level 2: text: Two attention heads, also in lay ... tentions are very sharp for this word.
-  item-176 at level 1: caption: Image: ./vis/anaphora_resolution_new.pdf
-  item-177 at level 1: caption: Image: ./vis/anaphora_resolution2_new.pdf
-  item-178 at level 1: section: group figure
-    item-179 at level 2: picture
-      item-179 at level 3: caption: Image: ./vis/attending_to_head_new.pdf
-    item-180 at level 2: picture
-      item-180 at level 3: caption: Image: ./vis/attending_to_head2_new.pdf
-    item-181 at level 2: text: Many of the attention heads exhi ... ly learned to perform different tasks.
-  item-182 at level 1: caption: Image: ./vis/attending_to_head_new.pdf
-  item-183 at level 1: caption: Image: ./vis/attending_to_head2_new.pdf
+    item-164 at level 2: list_item: [zhu-EtAl:2013:ACL] Muhua Zhu, Y ... pers), pages 434443. ACL, August 2013.
+  item-165 at level 1: section_header: Attention Visualizations
+  item-166 at level 1: section: group figure
+    item-167 at level 2: picture
+      item-167 at level 3: caption: Image: ./vis/making_more_difficult5_new.pdf
+    item-168 at level 2: text: An example of the attention mech ... different heads. Best viewed in color.
+  item-169 at level 1: caption: Image: ./vis/making_more_difficult5_new.pdf
+  item-170 at level 1: section: group figure
+    item-171 at level 2: picture
+      item-171 at level 3: caption: Image: ./vis/anaphora_resolution_new.pdf
+    item-172 at level 2: picture
+      item-172 at level 3: caption: Image: ./vis/anaphora_resolution2_new.pdf
+    item-173 at level 2: text: Two attention heads, also in lay ... tentions are very sharp for this word.
+  item-174 at level 1: caption: Image: ./vis/anaphora_resolution_new.pdf
+  item-175 at level 1: caption: Image: ./vis/anaphora_resolution2_new.pdf
+  item-176 at level 1: section: group figure
+    item-177 at level 2: picture
+      item-177 at level 3: caption: Image: ./vis/attending_to_head_new.pdf
+    item-178 at level 2: picture
+      item-178 at level 3: caption: Image: ./vis/attending_to_head2_new.pdf
+    item-179 at level 2: text: Many of the attention heads exhi ... ly learned to perform different tasks.
+  item-180 at level 1: caption: Image: ./vis/attending_to_head_new.pdf
+  item-181 at level 1: caption: Image: ./vis/attending_to_head2_new.pdf

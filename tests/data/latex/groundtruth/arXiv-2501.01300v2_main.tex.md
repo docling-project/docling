@@ -1,12 +1,7 @@
-1  
-.001
-
 Thermodynamics of charmed hadrons across chiral crossover from lattice QCD      
 S.Sharma et al.
 
-# [
-
-mode = title]Thermodynamics of charmed hadrons across chiral crossover from lattice QCD
+# Thermodynamics of charmed hadrons across chiral crossover from lattice QCD
 
 [
 
@@ -189,7 +184,5 @@ Numerical calculations have also been performed on the
 GPU-cluster at Bielefeld University, Germany. We thank the Bielefeld HPC.NRW team for their support.
 
 All computations in this work were performed using SIMULATeQCD code [HotQCD:2023ghu]. All the HRG calculations were performed using the AnalysisToolbox code developed by the HotQCD Collaboration [Clarke:2023sfy].
-
-cas-model2-names
 
 refs

@@ -5,7 +5,10 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from doclang import validate
+from docling_core.transforms.serializer.doclang import DocLangParams
+from docling_core.transforms.serializer.latex import LaTeXParams
+from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel
 from docling_core.types.doc.document import PictureMeta
 
 from docling.backend.latex_backend import LatexDocumentBackend
@@ -16,6 +19,11 @@ from docling.document_converter import DocumentConverter
 
 from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
+from .latex_serializer import (
+    SourceDocLangSerializer,
+    SourceLaTeXDocSerializer,
+    SourceLaTeXInlineSerializer,
+)
 
 GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
@@ -223,11 +231,135 @@ def test_latex_figure_with_caption():
     figure_groups = [g for g in doc.groups if g.name == "figure"]
     assert len(figure_groups) >= 1
 
-    # Should have picture and caption
-    assert len(doc.pictures) >= 1
-    captions = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
-    # includegraphics creates one caption, and \caption macro creates another
-    assert len(captions) >= 1
+    assert len(doc.pictures) == 1
+    assert [ref.resolve(doc).text for ref in doc.pictures[0].captions] == [
+        "This is a test figure caption"
+    ]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        r"\caption{A $x$ caption}",
+        r"\caption[Short]{A $x$ caption}",
+        r"\caption*{A $x$ caption}",
+    ],
+)
+@pytest.mark.parametrize("caption_first", [False, True])
+def test_latex_figure_caption_keeps_inline_formula(
+    command: str, caption_first: bool, tmp_path: Path
+):
+    figure_content = (
+        f"{command}\n\\includegraphics{{plot.png}}"
+        if caption_first
+        else f"\\includegraphics{{plot.png}}\n{command}"
+    )
+    latex_content = (
+        "\\documentclass{article}\n\\begin{document}\n"
+        f"\\begin{{figure}}\n{figure_content}\n\\end{{figure}}\n"
+        "\\end{document}"
+    ).encode()
+    stream = BytesIO(latex_content)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="caption.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    assert len(doc.pictures) == 1
+    assert len(doc.pictures[0].captions) == 1
+    caption = doc.pictures[0].captions[0].resolve(doc)
+    assert caption.label == DocItemLabel.CAPTION
+    assert caption.text == ""
+    assert [
+        item.text
+        for item, _ in doc.iterate_items(root=caption)
+        if item.label == DocItemLabel.FORMULA
+    ] == ["x"]
+
+    dclg = (
+        SourceDocLangSerializer(
+            doc=doc,
+            params=DocLangParams(
+                layers={
+                    ContentLayer.BODY,
+                    ContentLayer.FURNITURE,
+                    ContentLayer.BACKGROUND,
+                }
+            ),
+        )
+        .serialize()
+        .text
+    )
+    assert "<caption>" in dclg
+    assert "<formula>x</formula>" in dclg
+    assert "Short" not in dclg
+    path = tmp_path / "caption.dclg"
+    path.write_text(dclg, encoding="utf-8")
+    validate(path, allow_empty_namespace=True, xsd_only=True)
+
+    parsed = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(include_annotations=False, enable_chart_tables=False),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    assert r"\caption{A $x$ caption}" in parsed
+
+
+def test_latex_captionof_keeps_inline_formula():
+    source = (
+        rb"\documentclass{article}\begin{document}"
+        rb"\captionof{table}{Result $x$}"
+        rb"\end{document}"
+    )
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="captionof.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+    captions = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert len(captions) == 1
+    assert [
+        item.text
+        for item, _ in doc.iterate_items(root=captions[0])
+        if item.label == DocItemLabel.FORMULA
+    ] == ["x"]
+
+
+def test_latex_label_inside_caption_does_not_split_it():
+    source = (
+        rb"\documentclass{article}\begin{document}"
+        rb"\begin{figure}\includegraphics{plot.png}"
+        rb"\caption{Result\label{fig:result} of $x$}"
+        rb"\end{figure}\end{document}"
+    )
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="caption-label.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream)
+    doc = backend.convert()
+
+    assert backend.labels["fig:result"]
+    assert len(doc.pictures[0].captions) == 1
+    caption = doc.pictures[0].captions[0].resolve(doc)
+    assert [
+        item.text
+        for item, _ in doc.iterate_items(root=caption)
+        if item.label == DocItemLabel.FORMULA
+    ] == ["x"]
 
 
 def test_latex_tikzpicture_atomic_capture():

@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Callable, List, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Callable
 
 from docling_core.types.doc.document import DocItemLabel, DoclingDocument, NodeItem
 
@@ -19,6 +20,11 @@ except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
 
+@dataclass(frozen=True)
+class InlineFormula:
+    text: str
+
+
 class MathHandlerMixin:
     if TYPE_CHECKING:
 
@@ -29,7 +35,7 @@ class MathHandlerMixin:
         node: LatexMathNode,
         doc: DoclingDocument,
         parent: NodeItem | None,
-        text_buffer: List[str],
+        text_buffer: list[str | InlineFormula],
         flush_fn: Callable[[], None],
     ):
         is_display = node.displaytype == "display"
@@ -43,7 +49,9 @@ class MathHandlerMixin:
             math_text = self._clean_math(node.latex_verbatim(), "display")
             doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
         else:
-            text_buffer.append(self._expand_macros(node.latex_verbatim()))
+            math_text = self._clean_math(node.latex_verbatim(), "inline")
+            if math_text:
+                text_buffer.append(InlineFormula(math_text))
 
     def _clean_math(self, latex_str: str, env_name: str) -> str:
         if env_name in ENV_MATH_CLEAN:
@@ -66,4 +74,7 @@ class MathHandlerMixin:
         latex_str = re.sub(r"\\label\{.*?\}", "", latex_str)
         latex_str = self._expand_macros(latex_str)
 
-        return latex_str.strip()
+        latex_str = latex_str.strip()
+        if env_name == "inline":
+            latex_str = re.sub(r"[ \t\r\n]*[\t\r\n][ \t\r\n]*", " ", latex_str)
+        return latex_str

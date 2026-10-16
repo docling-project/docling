@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable
 
 from docling_core.types.doc.document import (
     DocItemLabel,
@@ -23,6 +23,7 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.handlers.math import InlineFormula
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -80,7 +81,7 @@ class TextHelperMixin:
         parent: NodeItem | None,
         formatting: Formatting | None,
         text_label: DocItemLabel | None,
-        text_buffer: List[str],
+        text_buffer: list[str | InlineFormula],
         flush_fn: Callable[[], None],
     ):
         text = node.chars
@@ -113,16 +114,106 @@ class TextHelperMixin:
         parent: NodeItem | None,
         formatting: Formatting | None,
         text_label: DocItemLabel | None,
-        text_buffer: List[str],
+        text_buffer: list[str | InlineFormula],
         flush_fn: Callable[[], None],
     ):
-        if node.nodelist and self._is_text_only_group(node):
+        if (
+            node.nodelist
+            and self._is_text_only_group(node)
+            and self._contains_math(node.nodelist)
+        ):
+            self._append_inline_nodes(
+                node.nodelist,
+                doc,
+                parent,
+                formatting,
+                text_label,
+                text_buffer,
+                flush_fn,
+            )
+        elif node.nodelist and self._is_text_only_group(node):
             group_text = self._nodes_to_text(node.nodelist)
             if group_text:
                 text_buffer.append(group_text)
         elif node.nodelist:
             flush_fn()
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+
+    def _contains_math(self, nodes: list) -> bool:
+        for node in nodes:
+            if isinstance(node, LatexMathNode):
+                return True
+            if isinstance(node, LatexEnvironmentNode) and node.envname == "math":
+                return True
+            if isinstance(node, LatexMacroNode):
+                if node.macroname == "ensuremath":
+                    return True
+                if node.macroname in self._custom_macros:
+                    expansion = self._custom_macros[node.macroname]
+                    if r"\ensuremath" in expansion or "$" in expansion:
+                        return True
+            for children in iter_child_nodelists(node):
+                if self._contains_math(children):
+                    return True
+        return False
+
+    def _append_inline_nodes(
+        self,
+        nodes: list,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        formatting: Formatting | None,
+        text_label: DocItemLabel | None,
+        text_buffer: list[str | InlineFormula],
+        flush_fn: Callable[[], None],
+    ) -> None:
+        for node in nodes:
+            if isinstance(node, LatexCharsNode):
+                self._process_chars_node(
+                    node, doc, parent, formatting, text_label, text_buffer, flush_fn
+                )
+            elif isinstance(node, LatexMathNode):
+                self._process_math_node(node, doc, parent, text_buffer, flush_fn)
+            elif isinstance(node, LatexGroupNode):
+                self._append_inline_nodes(
+                    node.nodelist or [],
+                    doc,
+                    parent,
+                    formatting,
+                    text_label,
+                    text_buffer,
+                    flush_fn,
+                )
+            elif isinstance(node, LatexMacroNode):
+                inline_args = self._inline_math_argument_nodes(node)
+                if inline_args is not None:
+                    self._append_inline_nodes(
+                        inline_args,
+                        doc,
+                        parent,
+                        formatting,
+                        text_label,
+                        text_buffer,
+                        flush_fn,
+                    )
+                else:
+                    self._process_macro_node_inline(
+                        node, doc, parent, formatting, text_label, text_buffer, flush_fn
+                    )
+
+    def _inline_math_argument_nodes(self, node: LatexMacroNode) -> list | None:
+        if node.macroname not in (
+            MACROS_TEXT_FORMATTING | MACROS_TEXT_STYLE | MACROS_COLOR_INLINE
+        ):
+            return None
+        if not node.nodeargd or not node.nodeargd.argnlist:
+            return None
+        argument = node.nodeargd.argnlist[-1]
+        if not isinstance(argument, LatexGroupNode) or not argument.nodelist:
+            return None
+        if self._contains_math(argument.nodelist):
+            return argument.nodelist
+        return None
 
     def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str:
         pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"

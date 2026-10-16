@@ -107,8 +107,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}",
-      "text": "\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}"
+      "orig": "\\begin{equation}\n\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}\n\\end{equation}",
+      "text": "\\begin{equation}\n\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}\n\\end{equation}"
     },
     {
       "self_ref": "#/texts/5",

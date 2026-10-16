@@ -5,7 +5,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
@@ -40,7 +40,12 @@ def test_latex_basic_conversion():
     assert len(doc.texts) > 0
     # Check structure
     headers = [t for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
-    paragraphs = [t for t in doc.texts if t.label != DocItemLabel.SECTION_HEADER]
+    paragraphs = [
+        t
+        for t in doc.texts
+        if t.content_layer == ContentLayer.BODY
+        and t.label != DocItemLabel.SECTION_HEADER
+    ]
 
     assert len(headers) == 1
     assert headers[0].text == "Introduction"
