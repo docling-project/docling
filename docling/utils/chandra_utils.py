@@ -443,6 +443,9 @@ class _ChandraDocumentBuilder:
                 else run.label
             )
             text = run.text.strip()
+            if run.label == DocItemLabel.TEXT:
+                # Like a browser, drop the spaces around a `<br/>` line break.
+                text = re.sub(r" *\n *", "\n", text)
             if (
                 isinstance(parent, ListItem)
                 and not parent.children
