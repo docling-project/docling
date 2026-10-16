@@ -386,17 +386,19 @@ def test_chartsheet(documents) -> None:
     )
     assert picture.caption_text(doc) == "Wild Duck Observations by Year"
 
-    # The two series and their shared categories are rebuilt as a table:
-    #   | <blank> | Freshwater Ducks | Saltwater Ducks |
-    #   | 2019    | 120              | 80              |
+    # The two series and their shared categories are rebuilt as a table, with
+    # the category axis title in the top-left cell:
+    #   | Year | Freshwater Ducks | Saltwater Ducks |
+    #   | 2019 | 120              | 80              |
     #   ...
-    #   | 2024    | 180              | 130             |
+    #   | 2024 | 180              | 130             |
     chart_data = picture.meta.tabular_chart.chart_data
     assert (chart_data.num_rows, chart_data.num_cols) == (7, 3)
     grid = {
         (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
         for cell in chart_data.table_cells
     }
+    assert grid[(0, 0)] == "Year"
     assert grid[(0, 1)] == "Freshwater Ducks"
     assert grid[(0, 2)] == "Saltwater Ducks"
     assert grid[(6, 0)] == "2024"

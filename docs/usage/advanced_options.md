@@ -310,11 +310,11 @@ doc_converter = DocumentConverter(
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
 
-### PowerPoint charts
+### PowerPoint and Excel charts
 
-A chart on a PowerPoint slide becomes a picture classified by its kind, with
-the data it plots in the picture's `meta.tabular_chart` and its title as the
-caption. The first column of the data holds the categories, under the title of
+A chart on a PowerPoint slide or an Excel sheet becomes a picture classified by
+its kind, with the data it plots in the picture's `meta.tabular_chart` and its
+title as the caption. The first column of the data holds the categories, under the title of
 the category axis, and each series gets a column. Dates on the category axis
 are written as ISO 8601 dates, such as `2012-01-01`.
 
@@ -333,7 +333,8 @@ for picture in deck.pictures:
 ```
 
 The picture itself is empty unless you set `render_chart_images=True` in
-`MsPowerpointBackendOptions`. That draws each chart with LibreOffice.
+`MsPowerpointBackendOptions` or `MsExcelBackendOptions`. That draws each chart
+with LibreOffice.
 
 ### Apple iWork options
 

@@ -9,7 +9,7 @@ import re
 import shutil
 import warnings
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
@@ -64,6 +64,7 @@ from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.utils.charts import build_chart_table, datetime_to_iso
 from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
@@ -118,15 +119,6 @@ _IMAGE_RENDER_HINT = (
     "still recorded with their position on the slide without it, but carry no "
     "image data."
 )
-
-_MAX_CHART_TABLE_CELLS: Final = 100_000
-"""Backstop on the total cells emitted for one chart's reconstructed data table.
-
-Charts whose declared category range far exceeds their plotted data are trimmed
-to populated rows first; this cap only binds genuinely huge charts. 100k cells
-still admit e.g. a 10k-point, 5-series chart while keeping any single chart's
-markdown output to a few megabytes.
-"""
 
 _EXCEL_EPOCH: Final = datetime(1899, 12, 30)
 _EXCEL_1904_EPOCH: Final = datetime(1904, 1, 1)
@@ -255,33 +247,6 @@ def _is_metafile(image_bytes: bytes) -> bool:
     )
 
 
-def _last_populated_row(
-    categories: list[str], columns: list[tuple[str, list[str]]], num_data_rows: int
-) -> int:
-    """Return the index of the last data row carrying any chart data.
-
-    A row is populated when its category label or at least one series value is
-    non-empty. The scan runs from the end so declared-but-empty trailing ranges
-    (e.g. whole-column references such as ``$A$2:$A$1048576``) collapse without
-    walking the empty region more than once. Interior gaps are kept: only
-    trailing empty rows are trimmed.
-
-    Args:
-        categories: Category labels, one per data row (may be shorter or longer
-            than ``num_data_rows``).
-        columns: ``(series name, values)`` pairs, one per chart series.
-        num_data_rows: Untrimmed data-row count.
-
-    Returns:
-        The last populated row index, or -1 when no row carries data.
-    """
-    for row in range(num_data_rows - 1, -1, -1):
-        category = categories[row] if row < len(categories) else ""
-        if category or any(row < len(values) and values[row] for _, values in columns):
-            return row
-    return -1
-
-
 def _is_date_format(format_code: str) -> bool:
     """Return True when an Excel number format shows a date.
 
@@ -330,101 +295,7 @@ def _serial_to_iso(text: str, date1904: bool) -> str:
         moment = epoch + timedelta(seconds=round(serial * 86400))
     except OverflowError:
         return text
-    if moment.time() == time(0):
-        return moment.date().isoformat()
-    return moment.isoformat(timespec="seconds")
-
-
-def _build_chart_table(
-    categories: list[str], columns: list[tuple[str, list[str]]], corner: str = ""
-) -> Optional[TableData]:
-    """Build the data table of a chart from its categories and series.
-
-    Layout produced (categories down the first column, one column per series):
-
-        | <corner> | <series 0 name> | <series 1 name> | ...
-        | cat_0    | val_0,0         | val_1,0         | ...
-        | cat_1    | val_0,1         | val_1,1         | ...
-
-    The declared category range can far exceed the plotted data (e.g. a chart
-    referencing whole Excel columns declares ~1M categories for a handful of
-    points), so trailing rows whose category label and every series value are
-    empty are trimmed and the table is sized by populated data instead. As a
-    backstop for genuinely huge charts, the emitted table is additionally capped
-    at ``_MAX_CHART_TABLE_CELLS`` cells.
-
-    Args:
-        categories: Category labels, one per data row.
-        columns: ``(series name, values)`` pairs, one per chart series.
-        corner: Text of the top-left header cell, such as the title of the
-            category axis.
-
-    Returns:
-        A TableData, or None when no data row is populated.
-    """
-    num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
-    if num_data_rows == 0:
-        return None
-
-    # Trim trailing rows that carry no data at all; interior gaps are kept.
-    num_data_rows = _last_populated_row(categories, columns, num_data_rows) + 1
-    if num_data_rows == 0:
-        return None
-
-    num_cols = 1 + len(columns)
-    if num_data_rows * num_cols > _MAX_CHART_TABLE_CELLS:
-        capped_rows = max(1, _MAX_CHART_TABLE_CELLS // num_cols)
-        _log.warning(
-            "Truncating chart data table from %d to %d data rows: "
-            "%d cells would exceed the %d-cell cap.",
-            num_data_rows,
-            capped_rows,
-            num_data_rows * num_cols,
-            _MAX_CHART_TABLE_CELLS,
-        )
-        num_data_rows = capped_rows
-
-    num_rows = num_data_rows + 1
-    cells: list[TableCell] = []
-
-    header_labels = [corner] + [name for name, _ in columns]
-    for col_idx, label in enumerate(header_labels):
-        cells.append(
-            TableCell(
-                text=label,
-                row_span=1,
-                col_span=1,
-                start_row_offset_idx=0,
-                end_row_offset_idx=1,
-                start_col_offset_idx=col_idx,
-                end_col_offset_idx=col_idx + 1,
-                column_header=True,
-                row_header=False,
-            )
-        )
-    for data_row in range(num_data_rows):
-        row_idx = data_row + 1
-        category = categories[data_row] if data_row < len(categories) else ""
-        row_texts = [category] + [
-            (values[data_row] if data_row < len(values) else "")
-            for _, values in columns
-        ]
-        for col_idx, text in enumerate(row_texts):
-            cells.append(
-                TableCell(
-                    text=text,
-                    row_span=1,
-                    col_span=1,
-                    start_row_offset_idx=row_idx,
-                    end_row_offset_idx=row_idx + 1,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + 1,
-                    column_header=False,
-                    row_header=(col_idx == 0),
-                )
-            )
-
-    return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+    return datetime_to_iso(moment)
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
@@ -1635,7 +1506,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         Unlike the Excel backend, python-pptx exposes the plotted numbers
         directly on each series (``series.values``) and the shared category
         labels on the plot (``plot.categories``) — no workbook reference
-        resolution is needed. ``_build_chart_table`` lays the table out.
+        resolution is needed. ``build_chart_table`` lays the table out.
 
         The series of every plot become columns in drawing order, so a
         combination chart keeps its line series next to its column series.
@@ -1673,7 +1544,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         if not columns:
             return None
-        return _build_chart_table(categories, columns, corner)
+        return build_chart_table(categories, columns, corner)
 
     def _handle_chart(self, shape, parent_slide, slide_ind, doc, slide_size):
         """Add a native chart shape as a classified PictureItem with its data.

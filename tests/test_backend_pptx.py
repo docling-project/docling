@@ -22,11 +22,13 @@ from docling_core.types.doc import (
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import (
-    _MAX_CHART_TABLE_CELLS,
     MsPowerpointDocumentBackend,
-    _build_chart_table,
     _is_metafile,
+)
+from docling.backend.utils.charts import (
+    MAX_CHART_TABLE_CELLS,
     _last_populated_row,
+    build_chart_table,
 )
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
@@ -504,27 +506,25 @@ def test_last_populated_row_trims_only_trailing_empty_rows():
 
 def test_chart_with_no_populated_data_returns_no_table():
     """A chart whose declared range holds no data at all yields no table."""
-    assert _build_chart_table(["", "", ""], [("s1", [])]) is None
+    assert build_chart_table(["", "", ""], [("s1", [])]) is None
 
 
 def test_chart_data_table_capped_at_max_cells(caplog):
     """Genuinely huge charts are truncated at the cell cap with a warning.
 
     60k populated points in 2 series would emit 180k cells; the table is cut to
-    ``_MAX_CHART_TABLE_CELLS`` cells instead of ballooning.
+    ``MAX_CHART_TABLE_CELLS`` cells instead of ballooning.
     """
     n_points = 60_000
     values = [str(i) for i in range(n_points)]
     categories = [f"c{i}" for i in range(n_points)]
 
-    with caplog.at_level(
-        logging.WARNING, logger="docling.backend.mspowerpoint_backend"
-    ):
-        table_data = _build_chart_table(categories, [("s1", values), ("s2", values)])
+    with caplog.at_level(logging.WARNING, logger="docling.backend.utils.charts"):
+        table_data = build_chart_table(categories, [("s1", values), ("s2", values)])
 
     assert table_data is not None
     assert table_data.num_cols == 3
-    capped_rows = _MAX_CHART_TABLE_CELLS // 3
+    capped_rows = MAX_CHART_TABLE_CELLS // 3
     assert table_data.num_rows == capped_rows + 1
     assert "cell cap" in caplog.text
     grid = {
