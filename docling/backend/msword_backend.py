@@ -7,7 +7,7 @@ import logging
 import re
 import warnings
 import zipfile
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -822,6 +822,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
         self._empty_docx_template: DocxDocument | None = None
+        # ``basedOn`` chains keyed by style element. Each ``base_style`` hop is
+        # an XPath lookup over the styles part in python-docx, and styles do
+        # not change during conversion.
+        self._style_chain_cache: dict[Any, tuple[CharacterStyle, ...]] = {}
+        self._last_paragraph_content: (
+            tuple[Any, list[tuple[str, Formatting | None, AnyUrl | Path | None]]] | None
+        ) = None
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -1472,7 +1479,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         numId: str | None = None
         ilvl: str | None = None
-        for chain_style in self._iter_style_chain(style):
+        for chain_style in self._get_style_chain(style):
             style_numPr = chain_style.element.find(f".//{_W_NS_CLARK}numPr")
             if style_numPr is not None:
                 if numId is None:
@@ -1606,6 +1613,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             style = style.base_style
             depth += 1
 
+    def _get_style_chain(self, style: BaseStyle | None) -> tuple[CharacterStyle, ...]:
+        """Return ``tuple(_iter_style_chain(style))``, memoized per style."""
+        if style is None:
+            return ()
+        key = style.element
+        chain = self._style_chain_cache.get(key)
+        if chain is None:
+            chain = tuple(self._iter_style_chain(style))
+            self._style_chain_cache[key] = chain
+        return chain
+
     def _get_list_left_indent(self, paragraph: Paragraph, numid: int, ilvl: int) -> int:
         """Return a list paragraph's effective left indentation in twips.
 
@@ -1630,7 +1648,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if left is None:
             left = _left(self._get_level_element(numid, ilvl))
         if left is None:
-            for style in self._iter_style_chain(paragraph.style):
+            for style in self._get_style_chain(paragraph.style):
                 left = _left(style.element)
                 if left is not None:
                     break
@@ -1902,7 +1920,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             True if the style chain marks the paragraph as code.
         """
-        for chain_style in self._iter_style_chain(style):
+        for chain_style in self._get_style_chain(style):
             name = (chain_style.name or "").strip().lower()
             style_id = (chain_style.style_id or "").strip().lower()
             if name in self._CODE_STYLE_NAMES or style_id in self._CODE_STYLE_IDS:
@@ -1929,7 +1947,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             The lowercased font family name, or "" if none applies.
         """
         default_style = self._default_paragraph_style
-        for chain_style in self._iter_style_chain(style):
+        for chain_style in self._get_style_chain(style):
             if (
                 default_style is not None
                 and chain_style.element is default_style.element
@@ -2141,7 +2159,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def _get_format_from_run(
-        cls, run: Run, paragraph: Paragraph | None = None
+        cls,
+        run: Run,
+        paragraph: Paragraph | None = None,
+        style_chain: Sequence[CharacterStyle] | None = None,
     ) -> Formatting | None:
         """Extract a `Formatting` instance from a python-docx `Run`.
 
@@ -2178,6 +2199,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             paragraph: The paragraph that contains `run`. Required for the
                 paragraph-mark and style-chain bold checks; if `None` those
                 two steps are skipped.
+            style_chain: The already-resolved style chain of `paragraph` (its
+                style and ``basedOn`` ancestors). If `None`, it is resolved
+                from `paragraph.style`.
 
         Returns:
             A `Formatting` instance populated from the run's properties, or
@@ -2204,7 +2228,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             break
 
                 if not is_bold and paragraph is not None:
-                    for chain_style in cls._iter_style_chain(paragraph.style):
+                    if style_chain is None:
+                        style_chain = tuple(cls._iter_style_chain(paragraph.style))
+                    for chain_style in style_chain:
                         if chain_style.font.bold:
                             is_bold = True
                             break
@@ -2295,7 +2321,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     namespaces=_OOXML_NAMESPACES,
                 )
                 fmt = (
-                    self._get_format_from_run(Run(runs[0], paragraph), paragraph)
+                    self._get_format_from_run(
+                        Run(runs[0], paragraph),
+                        paragraph,
+                        self._get_style_chain(paragraph.style),
+                    )
                     if runs
                     else None
                 )
@@ -2324,7 +2354,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     (
                         "".join(run.text for run in runs),
                         (
-                            self._get_format_from_run(runs[0], paragraph)
+                            self._get_format_from_run(
+                                runs[0],
+                                paragraph,
+                                self._get_style_chain(paragraph.style),
+                            )
                             if runs
                             else None
                         ),
@@ -2333,24 +2367,48 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             elif isinstance(item, Run):
                 content.append(
-                    (item.text, self._get_format_from_run(item, paragraph), None)
+                    (
+                        item.text,
+                        self._get_format_from_run(
+                            item, paragraph, self._get_style_chain(paragraph.style)
+                        ),
+                        None,
+                    )
                 )
 
         return content
 
+    def _get_paragraph_content(
+        self, paragraph: Paragraph
+    ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
+        """Return ``_iter_paragraph_content(paragraph)``, reusing the last result.
+
+        A paragraph's text and its grouped elements are both read from its
+        content, so remembering the most recent paragraph avoids resolving the
+        formatting of every run several times.
+        """
+        element = paragraph._p
+        if self._last_paragraph_content is not None:
+            last_element, last_content = self._last_paragraph_content
+            if last_element is element:
+                return last_content
+        content = self._iter_paragraph_content(paragraph)
+        self._last_paragraph_content = (element, content)
+        return content
+
     def _get_paragraph_text(self, paragraph: Paragraph) -> str:
         return "".join(
-            text
-            for text, _format, _hyperlink in self._iter_paragraph_content(paragraph)
+            text for text, _format, _hyperlink in self._get_paragraph_content(paragraph)
         )
 
     def _get_paragraph_elements(self, paragraph: Paragraph):
         """
         Extract paragraph elements along with their formatting and hyperlink
         """
+        content = self._get_paragraph_content(paragraph)
 
         # for now retain empty paragraphs for backwards compatibility:
-        if self._get_paragraph_text(paragraph).strip() == "":
+        if "".join(text for text, _format, _hyperlink in content).strip() == "":
             return [("", None, None)]
 
         paragraph_elements: list[
@@ -2360,7 +2418,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         previous_format = None
 
         # Iterate over the runs of the paragraph and group them by format
-        for text, format, hyperlink in self._iter_paragraph_content(paragraph):
+        for text, format, hyperlink in content:
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
             ):
