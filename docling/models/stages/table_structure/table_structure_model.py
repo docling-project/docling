@@ -24,7 +24,11 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 from docling.datamodel.settings import settings
-from docling.models.base_table_model import BaseTableStructureModel
+from docling.models.base_table_model import (
+    BaseTableStructureModel,
+    degenerate_structure_reason,
+    keep_table_text_as_child,
+)
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
@@ -290,6 +294,23 @@ class TableStructureModel(BaseTableStructureModel):
                         .get("prediction", {})
                         .get("rs_seq", [])
                     )
+
+                    reason = degenerate_structure_reason(
+                        otsl_seq, self.tm_config["predict"]["max_steps"]
+                    )
+                    if reason is not None:
+                        _log.warning(
+                            "Discarding the %dx%d structure predicted for table "
+                            "%d on page %d because %s; its text is kept as a "
+                            "single cell.",
+                            num_rows,
+                            num_cols,
+                            table_cluster.id,
+                            page.page_no,
+                            reason,
+                        )
+                        num_rows, num_cols, table_cells = 0, 0, []
+                        keep_table_text_as_child(table_cluster, page)
 
                     tbl = Table(
                         otsl_seq=otsl_seq,
