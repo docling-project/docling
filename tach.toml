@@ -203,6 +203,7 @@ depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
   "docling.exceptions",
+  "docling.models.utils",
   "docling.utils.ocr_language",
 ]
 
