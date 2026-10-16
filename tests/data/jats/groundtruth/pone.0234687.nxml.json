@@ -1731,22 +1731,10 @@
           "$ref": "#/texts/496"
         },
         {
-          "$ref": "#/texts/497"
-        },
-        {
-          "$ref": "#/texts/498"
-        },
-        {
           "$ref": "#/texts/499"
         },
         {
           "$ref": "#/texts/500"
-        },
-        {
-          "$ref": "#/texts/501"
-        },
-        {
-          "$ref": "#/texts/502"
         },
         {
           "$ref": "#/texts/503"
@@ -1789,12 +1777,6 @@
         },
         {
           "$ref": "#/texts/516"
-        },
-        {
-          "$ref": "#/texts/517"
-        },
-        {
-          "$ref": "#/texts/518"
         },
         {
           "$ref": "#/texts/519"
@@ -1882,11 +1864,80 @@
         },
         {
           "$ref": "#/texts/547"
+        },
+        {
+          "$ref": "#/texts/548"
+        },
+        {
+          "$ref": "#/texts/549"
+        },
+        {
+          "$ref": "#/texts/550"
+        },
+        {
+          "$ref": "#/texts/551"
+        },
+        {
+          "$ref": "#/texts/552"
+        },
+        {
+          "$ref": "#/texts/553"
         }
       ],
       "content_layer": "body",
       "name": "list",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/31",
+      "parent": {
+        "$ref": "#/texts/496"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/497"
+        },
+        {
+          "$ref": "#/texts/498"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/32",
+      "parent": {
+        "$ref": "#/texts/500"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/501"
+        },
+        {
+          "$ref": "#/texts/502"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/33",
+      "parent": {
+        "$ref": "#/texts/516"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/517"
+        },
+        {
+          "$ref": "#/texts/518"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -9546,17 +9597,46 @@
       "parent": {
         "$ref": "#/groups/30"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/31"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "FAO. Environmental Performance of Large Ruminant Supply Chains: Guidelines for assessment. Livestock Environmental Assessment and Performance Partnership, editor. Rome, Italy: FAO; 2016 Available: http://www.fao.org/partnerships/leap/resources/guidelines/en/",
-      "text": "FAO. Environmental Performance of Large Ruminant Supply Chains: Guidelines for assessment. Livestock Environmental Assessment and Performance Partnership, editor. Rome, Italy: FAO; 2016 Available: http://www.fao.org/partnerships/leap/resources/guidelines/en/",
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/497",
+      "parent": {
+        "$ref": "#/groups/31"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "FAO. Environmental Performance of Large Ruminant Supply Chains: Guidelines for assessment. Livestock Environmental Assessment and Performance Partnership, editor. Rome, Italy: FAO; 2016 Available:",
+      "text": "FAO. Environmental Performance of Large Ruminant Supply Chains: Guidelines for assessment. Livestock Environmental Assessment and Performance Partnership, editor. Rome, Italy: FAO; 2016 Available:"
+    },
+    {
+      "self_ref": "#/texts/498",
+      "parent": {
+        "$ref": "#/groups/31"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "http://www.fao.org/partnerships/leap/resources/guidelines/en/",
+      "text": "http://www.fao.org/partnerships/leap/resources/guidelines/en/",
+      "hyperlink": "http://www.fao.org/partnerships/leap/resources/guidelines/en/"
+    },
+    {
+      "self_ref": "#/texts/499",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9570,21 +9650,50 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/498",
+      "self_ref": "#/texts/500",
       "parent": {
         "$ref": "#/groups/30"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/32"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "IPCC—Intergovernmental Panel on Climate Change. Climate Change 2014 Synthesis Report (Unedited Version). 2014. Available: ttps://www.ipcc.ch/site/assets/uploads/2018/05/SYR_AR5_FINAL_full_wcover.pdf",
-      "text": "IPCC—Intergovernmental Panel on Climate Change. Climate Change 2014 Synthesis Report (Unedited Version). 2014. Available: ttps://www.ipcc.ch/site/assets/uploads/2018/05/SYR_AR5_FINAL_full_wcover.pdf",
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/499",
+      "self_ref": "#/texts/501",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "IPCC—Intergovernmental Panel on Climate Change. Climate Change 2014 Synthesis Report (Unedited Version). 2014. Available: ttps://",
+      "text": "IPCC—Intergovernmental Panel on Climate Change. Climate Change 2014 Synthesis Report (Unedited Version). 2014. Available: ttps://"
+    },
+    {
+      "self_ref": "#/texts/502",
+      "parent": {
+        "$ref": "#/groups/32"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "www.ipcc.ch/site/assets/uploads/2018/05/SYR_AR5_FINAL_full_wcover.pdf",
+      "text": "www.ipcc.ch/site/assets/uploads/2018/05/SYR_AR5_FINAL_full_wcover.pdf",
+      "hyperlink": "http://www.ipcc.ch/site/assets/uploads/2018/05/SYR_AR5_FINAL_full_wcover.pdf"
+    },
+    {
+      "self_ref": "#/texts/503",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9598,7 +9707,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/500",
+      "self_ref": "#/texts/504",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9612,7 +9721,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/501",
+      "self_ref": "#/texts/505",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9626,7 +9735,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/502",
+      "self_ref": "#/texts/506",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9640,7 +9749,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/503",
+      "self_ref": "#/texts/507",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9654,7 +9763,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/504",
+      "self_ref": "#/texts/508",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9668,7 +9777,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/505",
+      "self_ref": "#/texts/509",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9682,7 +9791,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/506",
+      "self_ref": "#/texts/510",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9696,7 +9805,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/507",
+      "self_ref": "#/texts/511",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9710,7 +9819,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/508",
+      "self_ref": "#/texts/512",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9724,7 +9833,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/509",
+      "self_ref": "#/texts/513",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9738,7 +9847,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/510",
+      "self_ref": "#/texts/514",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9752,7 +9861,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/511",
+      "self_ref": "#/texts/515",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9766,21 +9875,50 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/512",
+      "self_ref": "#/texts/516",
       "parent": {
         "$ref": "#/groups/30"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/33"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Wang M Q. GREET 1.8a Spreadsheet Model. 2007. Available: http://www.transportation.anl.gov/software/GREET/",
-      "text": "Wang M Q. GREET 1.8a Spreadsheet Model. 2007. Available: http://www.transportation.anl.gov/software/GREET/",
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/513",
+      "self_ref": "#/texts/517",
+      "parent": {
+        "$ref": "#/groups/33"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Wang M Q. GREET 1.8a Spreadsheet Model. 2007. Available:",
+      "text": "Wang M Q. GREET 1.8a Spreadsheet Model. 2007. Available:"
+    },
+    {
+      "self_ref": "#/texts/518",
+      "parent": {
+        "$ref": "#/groups/33"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "http://www.transportation.anl.gov/software/GREET/",
+      "text": "http://www.transportation.anl.gov/software/GREET/",
+      "hyperlink": "http://www.transportation.anl.gov/software/GREET/"
+    },
+    {
+      "self_ref": "#/texts/519",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9794,7 +9932,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/514",
+      "self_ref": "#/texts/520",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9808,7 +9946,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/515",
+      "self_ref": "#/texts/521",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9822,7 +9960,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/516",
+      "self_ref": "#/texts/522",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9836,7 +9974,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/517",
+      "self_ref": "#/texts/523",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9850,7 +9988,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/518",
+      "self_ref": "#/texts/524",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9864,7 +10002,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/519",
+      "self_ref": "#/texts/525",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9878,7 +10016,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/520",
+      "self_ref": "#/texts/526",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9892,7 +10030,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/521",
+      "self_ref": "#/texts/527",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9906,7 +10044,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/522",
+      "self_ref": "#/texts/528",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9920,7 +10058,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/523",
+      "self_ref": "#/texts/529",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9934,7 +10072,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/524",
+      "self_ref": "#/texts/530",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9948,7 +10086,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/525",
+      "self_ref": "#/texts/531",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9962,7 +10100,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/526",
+      "self_ref": "#/texts/532",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9976,7 +10114,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/527",
+      "self_ref": "#/texts/533",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -9990,7 +10128,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/528",
+      "self_ref": "#/texts/534",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10004,7 +10142,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/529",
+      "self_ref": "#/texts/535",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10018,7 +10156,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/530",
+      "self_ref": "#/texts/536",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10032,7 +10170,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/531",
+      "self_ref": "#/texts/537",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10046,7 +10184,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/532",
+      "self_ref": "#/texts/538",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10060,7 +10198,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/533",
+      "self_ref": "#/texts/539",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10074,7 +10212,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/534",
+      "self_ref": "#/texts/540",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10088,7 +10226,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/535",
+      "self_ref": "#/texts/541",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10102,7 +10240,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/536",
+      "self_ref": "#/texts/542",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10116,7 +10254,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/537",
+      "self_ref": "#/texts/543",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10130,7 +10268,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/538",
+      "self_ref": "#/texts/544",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10144,7 +10282,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/539",
+      "self_ref": "#/texts/545",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10158,7 +10296,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/540",
+      "self_ref": "#/texts/546",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10172,7 +10310,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/541",
+      "self_ref": "#/texts/547",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10186,7 +10324,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/542",
+      "self_ref": "#/texts/548",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10200,7 +10338,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/543",
+      "self_ref": "#/texts/549",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10214,7 +10352,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/544",
+      "self_ref": "#/texts/550",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10228,7 +10366,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/545",
+      "self_ref": "#/texts/551",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10242,7 +10380,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/546",
+      "self_ref": "#/texts/552",
       "parent": {
         "$ref": "#/groups/30"
       },
@@ -10256,7 +10394,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/547",
+      "self_ref": "#/texts/553",
       "parent": {
         "$ref": "#/groups/30"
       },
