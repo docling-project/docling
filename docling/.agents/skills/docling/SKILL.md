@@ -26,8 +26,10 @@ allowed-tools: Bash(docling:*) Bash(docling-tools:*) Bash(python3:*) Bash(python
 Docling converts documents — PDF, DOCX, PPTX, XLSX, HTML, Markdown, AsciiDoc,
 CSV, images, audio, and XML — into a single unified representation, the
 **`DoclingDocument`**, which you can export as **Markdown** (human-readable) or
-**JSON** (structured, lossless). Reach for Docling whenever you need to
-understand the content of a file you cannot read directly, especially PDFs
+**JSON** (preserves the extracted document structure). JSON preserves the
+conversion result; it does not guarantee fidelity to the source document.
+Reach for Docling whenever you need to understand the content of a file you
+cannot read directly, especially PDFs
 (including scanned ones, via OCR or a vision-language model).
 
 ## The fastest thing that works: the CLI
@@ -75,9 +77,24 @@ You can run the CLI without a persistent install:
 uvx --from docling docling report.pdf --to md --output /tmp/
 ```
 
+## Source fidelity
+
+For ordinary reading, use the lightweight CLI path. When the requested result
+depends on exact numbers, formulas, table relationships, or source quotations,
+or conversion shows suspicious output, read
+[references/quality-verification.md](references/quality-verification.md).
+
+- Conversion success and page coverage are separate from content accuracy.
+  Report the extent of verification, not just the conversion status.
+- Preserve raw output and available provenance before correcting a value or
+  changing reading order. Check the affected source region; do not infer an
+  exponent, sign, or unit from plausibility.
+- Prefer a targeted retry with a concrete hypothesis over rerunning the entire
+  document. Keep unresolved findings qualified.
+
 ## Output conventions
 
-- Always report the conversion status and (for PDFs) the page count.
-- If the user does not specify a format, ask whether they want **Markdown** (readable) or **JSON / DoclingDocument** (structured, lossless).
+- Always report the conversion status and (for PDFs) the processed page range/count, separately from content verification.
+- If the user does not specify a format, ask whether they want **Markdown** (readable) or **JSON / DoclingDocument** (structured).
 - For tables, prefer `export_to_markdown()` / `export_to_dataframe()` on the table item (Python) — see [references/python-sdk.md](references/python-sdk.md).
-- If a converted PDF comes back near-empty, repeated, or full of `�`, the source is likely scanned or complex layout — retry with OCR or `--pipeline vlm` (see [references/cli.md](references/cli.md)).
+- If a converted PDF comes back near-empty, repeated, or full of `�`, compare the source image, native text layer, raw structured output, and export before choosing an OCR or VLM retry. See [references/quality-verification.md](references/quality-verification.md) and [references/cli.md](references/cli.md); a retry is not evidence that the content is correct.

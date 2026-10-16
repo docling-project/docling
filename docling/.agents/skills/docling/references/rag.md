@@ -7,6 +7,16 @@ page numbers) preserved. You can do this directly with the SDK's
 most frameworks there are **ready-made loaders** that wrap convert + chunk so
 you don't write glue code.
 
+## Conditions and quotations
+
+Before indexing content that depends on a complex table or cross-page
+sentence, consult
+[quality-verification.md](quality-verification.md#structure-and-chunks).
+Retain source item references and the headers, footnotes, conditions, and
+negations needed to interpret the content. Context may accompany a chunk
+without becoming an independent source. Keep discontiguous quotations as
+separately located spans; contextualized chunk text is not a verbatim quote.
+
 ## Framework loaders
 
 | Framework | Package | Component |
