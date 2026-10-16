@@ -214,15 +214,31 @@ class TableStructureModelV2(BaseTableStructureModel):
             if has_positive_area(tc_bbox):
                 spatial_index.insert(cell_idx, tc_bbox)
 
+        # Anchor each word to the unique bbox containing its left edge (docling#4762).
+        ordered_bboxes = [ordered_bounding_box(b) for b in bboxes]
+        word_left_owners: dict[int, list[int]] = {
+            cell_idx: [
+                bi
+                for bi, ob in enumerate(ordered_bboxes)
+                if min(ob.l, ob.r) <= min(tc_bbox.l, tc_bbox.r) < max(ob.l, ob.r)
+            ]
+            for cell_idx, tc_bbox in enumerate(cell_bboxes)
+        }
+
         matched_texts: list[str] = []
-        for bbox in bboxes:
-            ordered_bbox = ordered_bounding_box(bbox)
+        for bi, bbox in enumerate(bboxes):
+            ordered_bbox = ordered_bboxes[bi]
             overlapping = []
             for cell_idx in sorted(spatial_index.intersection(ordered_bbox)):
                 tc_bbox = cell_bboxes[cell_idx]
-                if tc_bbox.get_intersection_bbox(ordered_bbox) is not None:
-                    if tc_bbox.intersection_over_self(ordered_bbox) > textcell_overlap:
+                if tc_bbox.get_intersection_bbox(ordered_bbox) is None:
+                    continue
+                owners = word_left_owners.get(cell_idx, [])
+                if len(owners) == 1:
+                    if owners[0] == bi:
                         overlapping.append(text_cells[cell_idx].text.strip())
+                elif tc_bbox.intersection_over_self(ordered_bbox) > textcell_overlap:
+                    overlapping.append(text_cells[cell_idx].text.strip())
             matched_texts.append(" ".join(overlapping))
 
         return matched_texts
