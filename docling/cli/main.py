@@ -979,6 +979,16 @@ def convert(  # noqa: C901
             ),
         ),
     ] = True,
+    document_metadata: Annotated[
+        bool,
+        typer.Option(
+            "--document-metadata/--no-document-metadata",
+            help=(
+                "Record the PDF's declared language (/Lang) and document properties "
+                "(/Info, XMP) on the document body meta."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1566,6 +1576,7 @@ def convert(  # noqa: C901
                 ocr_options=ocr_options,
                 do_table_structure=tables,
                 use_reading_order_separators=reading_order_separators,
+                attach_document_metadata=document_metadata,
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,

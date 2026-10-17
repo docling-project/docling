@@ -77,6 +77,7 @@ from docling.datamodel.base_models import (
 from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
+from docling.utils.pdf_metadata import _PdfDocumentMetadata
 from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
@@ -597,6 +598,9 @@ class ConversionResult(ConversionAssets):
     # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
     # the heading stage resets it to None once consumed.
     _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+    # PDF declared language and document properties, surfaced from the backend while it is
+    # open and attached to the document at assembly. Same transient plumbing as the outline.
+    _pdf_document_metadata: Optional[_PdfDocumentMetadata] = PrivateAttr(default=None)
     # Set by `BasePipeline.execute` for the duration of one conversion.
     _progress: ProgressReporter = PrivateAttr(default_factory=ProgressReporter)
     # Page sizes recorded while the PDF pipeline produces pages, so that pages which

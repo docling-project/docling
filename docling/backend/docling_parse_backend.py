@@ -25,6 +25,10 @@ from docling.datamodel.backend_options import (
     ThreadedDoclingParseBackendOptions,
 )
 from docling.exceptions import DocumentLoadError
+from docling.utils.pdf_metadata import (
+    _PdfDocumentMetadata,
+    extract_metadata_from_docling_parse,
+)
 from docling.utils.pdf_outline import (
     _PdfOutlineItem,
     extract_outline_from_docling_parse,
@@ -360,6 +364,12 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         annotations = self.parser.get_annotations(self.doc_key)
         toc = annotations.table_of_contents if annotations is not None else None
         return extract_outline_from_docling_parse(toc)
+
+    def get_document_metadata(self) -> _PdfDocumentMetadata:
+        """Read ``/Lang`` and the XMP packet from the threaded parser's document annotations."""
+        return extract_metadata_from_docling_parse(
+            self.parser.get_annotations(self.doc_key)
+        )
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(

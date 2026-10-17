@@ -310,6 +310,42 @@ doc_converter = DocumentConverter(
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
 
+### PDF document metadata
+
+A PDF declares its language in the catalog `/Lang` entry and its properties in the
+`/Info` dictionary and the XMP packet. Set `attach_document_metadata=True` to record
+them on `DoclingDocument.body.meta`, the document-level meta slot:
+
+- the language goes to `body.meta.language` as its two-letter primary subtag, with
+  `created_by="pdf:/Lang"`, and the full BCP 47 tag (for example `en-US`) to the custom
+  field `pdf__lang`;
+- each property becomes a custom field named after its XMP qualified name:
+  `dc__title`, `dc__creator`, `pdf__producer`, `xmp__create_date`, `pdfuaid__part`.
+  `/Info` keys are reported under the XMP names ISO 32000-2 pairs them with, so both PDF
+  backends use the same vocabulary. The pypdfium2 backend reads `/Lang` and `/Info`; the
+  docling-parse backend reads `/Lang` and the XMP packet.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(attach_document_metadata=True)
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+doc = doc_converter.convert("document.pdf").document
+print(doc.body.meta.language.code if doc.body.meta and doc.body.meta.language else None)
+print(doc.body.meta.get_custom_part() if doc.body.meta else {})
+```
+
+The CLI flag is `--document-metadata`. The option is off by default because
+docling-core's Markdown and HTML serializers still render body meta fields as content
+([docling-core#745](https://github.com/docling-project/docling-core/issues/745)); the
+JSON export carries them as metadata.
+
 ### PowerPoint charts
 
 A chart on a PowerPoint slide becomes a picture classified by its kind, with
