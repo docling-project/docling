@@ -151,7 +151,7 @@ class InputDocument(BaseModel):
     )
     page_count: int = Field(0, description="Number of pages in the input document.")
 
-    _backend: AbstractDocumentBackend
+    _backend: Optional[AbstractDocumentBackend] = None
     # Reason this input was flagged invalid, if any (transient, not serialized).
     _rejection: Optional[InputRejection] = PrivateAttr(default=None)
 
@@ -202,7 +202,7 @@ class InputDocument(BaseModel):
                 )
 
             # For paginated backends, check if the maximum page count is exceeded.
-            if self.valid and self._backend.is_valid():
+            if self.valid and self._backend is not None and self._backend.is_valid():
                 if self._backend.supports_pagination() and isinstance(
                     self._backend, PaginatedDocumentBackend
                 ):
@@ -337,6 +337,22 @@ class InputDocument(BaseModel):
                 message="The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
             )
+
+    def release(self) -> None:
+        """Release resources held by the input document's backend.
+
+        Call this after conversion and any work that requires the input backend
+        has finished. The backend is unloaded and its reference is cleared;
+        input streams owned by the backend are closed. Input metadata and the
+        converted ``DoclingDocument`` remain available.
+
+        Repeated calls, including on inputs without a backend, are safe. If
+        unloading fails, the exception is propagated and the backend reference
+        is retained so that cleanup can be retried.
+        """
+        if self._backend is not None:
+            self._backend.unload()
+            self._backend = None
 
 
 def get_input_rejection_cause(in_doc: "InputDocument") -> Optional[BaseException]:
