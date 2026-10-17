@@ -430,6 +430,7 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             options = IWorkBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: IWorkBackendOptions = options
+        self.page_range = in_doc.limits.page_range
 
         self._presentation = _open_container(
             path_or_stream, self._read_document, _KEYNOTE_KIND, self.document_hash
@@ -552,7 +553,10 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         size = Size(width=self._presentation.width, height=self._presentation.height)
 
         render_chart = _chart_renderer(self.options)
+        start_page, end_page = self.page_range
         for index, slide in enumerate(self._presentation.slides):
+            if not start_page <= index + 1 <= end_page:
+                continue
             doc.add_page(page_no=index + 1, size=size)
             group = doc.add_group(name=f"slide-{index}", label=GroupLabel.CHAPTER)
             _add_slide(doc, slide, group, index + 1, render_chart)
