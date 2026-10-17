@@ -104,11 +104,22 @@ _ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION = {
     "chart:scatter": PictureClassificationLabel.SCATTER_PLOT,
 }
 
-# A table of contents holds its visible text in the index containers, as
-# ordinary paragraphs. odfdo has no class for these elements, so they are
-# matched by tag.
+# An index holds its visible text in the index containers, as ordinary
+# paragraphs. odfdo has no class for these elements, so they are matched by
+# tag; every index kind (table of contents, alphabetical index, ...) uses the
+# same containers.
 _ODF_INDEX_CONTAINER_TAGS = frozenset(
-    {"text:table-of-content", "text:index-body", "text:index-title"}
+    {
+        "text:table-of-content",
+        "text:alphabetical-index",
+        "text:illustration-index",
+        "text:table-index",
+        "text:object-index",
+        "text:user-index",
+        "text:bibliography",
+        "text:index-body",
+        "text:index-title",
+    }
 )
 
 
