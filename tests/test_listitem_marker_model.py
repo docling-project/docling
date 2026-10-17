@@ -181,3 +181,29 @@ def test_multiline_item_text_is_not_truncated():
     # marker + the separating whitespace + text must account for the whole original.
     for item in items:
         assert item.orig == f"{item.marker} {item.text}"
+
+
+def test_infinity_bullet_from_pdf_is_stripped():
+    """U+221E INFINITY is a mis-decoded bullet from PDFs (see #2592).
+
+    docling-parse emits U+221E where pypdfium gives U+2022 BULLET. The marker
+    must be split off so Markdown does not render "- \\u221e Test Item".
+    """
+    doc = DoclingDocument(name="Infinity bullets")
+    group = doc.add_list_group(name="list")
+    for raw in [
+        "∞ Test Item 1",
+        "∞ Test Item 2",
+    ]:
+        doc.add_list_item(text=raw, parent=group)
+
+    ListItemMarkerProcessor().process_document(doc)
+
+    items = [item for item in doc.texts if isinstance(item, ListItem)]
+
+    assert [item.marker for item in items] == ["∞", "∞"]
+    assert [item.text for item in items] == ["Test Item 1", "Test Item 2"]
+    assert all(not item.enumerated for item in items)
+    # orig keeps the raw PDF text; only marker/text split off the leading marker.
+    assert all(item.orig == f"{item.marker} {item.text}" for item in items)
+    assert "∞" not in doc.export_to_markdown()
