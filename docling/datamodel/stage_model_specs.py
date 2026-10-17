@@ -36,6 +36,7 @@ from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineType,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.models.utils.generation_utils import EmptyPictureRunStopper
 
 if TYPE_CHECKING:
     from docling.datamodel.image_classification_engine_options import (
@@ -950,7 +951,13 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
     "max_new_tokens": 8192,
     "engine_overrides": {
         VlmEngineType.MLX: EngineModelConfig(
-            repo_id="ibm-granite/granite-docling-258M-mlx"
+            repo_id="ibm-granite/granite-docling-258M-mlx",
+            extra_config={
+                "extra_generation_config": {
+                    "retry_repetition_penalty": 1.1,
+                },
+                "custom_stopping_criteria": [EmptyPictureRunStopper],
+            },
         ),
         VlmEngineType.TRANSFORMERS: EngineModelConfig(
             extra_config={
