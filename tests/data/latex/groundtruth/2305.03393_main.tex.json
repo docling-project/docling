@@ -318,9 +318,6 @@
           "$ref": "#/texts/44"
         },
         {
-          "$ref": "#/texts/45"
-        },
-        {
           "$ref": "#/texts/46"
         },
         {
@@ -919,7 +916,7 @@
       "prov": [],
       "orig": "Left-looking cell rule: \nThe left neighbour of an \"L\" cell must be either another \"L\" cell or a \"C\" cell.",
       "text": "Left-looking cell rule: \nThe left neighbour of an \"L\" cell must be either another \"L\" cell or a \"C\" cell.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -933,7 +930,7 @@
       "prov": [],
       "orig": "Up-looking cell rule:\nThe upper neighbour of a \"U\" cell must be either another \"U\" cell or a \"C\" cell.",
       "text": "Up-looking cell rule:\nThe upper neighbour of a \"U\" cell must be either another \"U\" cell or a \"C\" cell.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -941,28 +938,30 @@
       "parent": {
         "$ref": "#/groups/4"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/45"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Cross cell rule:",
       "text": "Cross cell rule:",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
       "self_ref": "#/texts/45",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/texts/44"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [],
       "orig": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell.",
-      "text": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell.",
-      "enumerated": false,
-      "marker": ""
+      "text": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell."
     },
     {
       "self_ref": "#/texts/46",
@@ -975,7 +974,7 @@
       "prov": [],
       "orig": "First row rule:\nOnly \"L\" cells and \"C\" cells are allowed in the first row.",
       "text": "First row rule:\nOnly \"L\" cells and \"C\" cells are allowed in the first row.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -989,7 +988,7 @@
       "prov": [],
       "orig": "First column rule:\nOnly \"U\" cells and \"C\" cells are allowed in the first column.",
       "text": "First column rule:\nOnly \"U\" cells and \"C\" cells are allowed in the first column.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -1003,7 +1002,7 @@
       "prov": [],
       "orig": "Rectangular rule:\nThe table representation is always rectangular - all rows must have an equal number of tokens, terminated with \"NL\" token.",
       "text": "Rectangular rule:\nThe table representation is always rectangular - all rows must have an equal number of tokens, terminated with \"NL\" token.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {

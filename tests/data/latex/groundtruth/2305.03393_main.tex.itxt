@@ -60,7 +60,7 @@ The lef ... either another "L" cell or a "C" cell.
     item-52 at level 2: list_item: Up-looking cell rule:
 The upper  ... either another "U" cell or a "C" cell.
     item-53 at level 2: list_item: Cross cell rule:
-    item-54 at level 2: list_item: The left neighbour of an "X" cel ... ither another "X" cell or an "L" cell.
+      item-54 at level 3: text: The left neighbour of an "X" cel ... ither another "X" cell or an "L" cell.
     item-55 at level 2: list_item: First row rule:
 Only "L" cells and "C" cells are allowed in the first row.
     item-56 at level 2: list_item: First column rule:

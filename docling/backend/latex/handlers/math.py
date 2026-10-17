@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-from docling_core.types.doc.document import DocItemLabel, DoclingDocument, NodeItem
+from docling_core.types.doc.document import DoclingDocument, NodeItem
 
 from docling.backend.latex.constants import ENV_MATH_CLEAN, ENV_MATH_DISPLAY_PREFIXES
 
@@ -23,6 +23,9 @@ class MathHandlerMixin:
     if TYPE_CHECKING:
 
         def _expand_macros(self, latex_str: str) -> str: ...
+        def _add_formula(
+            self, doc: DoclingDocument, parent: NodeItem | None, text: str
+        ) -> None: ...
 
     def _process_math_node(
         self,
@@ -41,7 +44,7 @@ class MathHandlerMixin:
         if is_display:
             flush_fn()
             math_text = self._clean_math(node.latex_verbatim(), "display")
-            doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
+            self._add_formula(doc, parent, math_text)
         else:
             text_buffer.append(self._expand_macros(node.latex_verbatim()))
 
