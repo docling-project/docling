@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "epub_purvis_poetry",
   "origin": {
     "mimetype": "application/epub+zip",
@@ -227,6 +227,21 @@
     {
       "self_ref": "#/groups/9",
       "parent": {
+        "$ref": "#/texts/82"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/83"
+        }
+      ],
+      "content_layer": "body",
+      "name": "blockquote",
+      "label": "block_quote",
+      "captions": []
+    },
+    {
+      "self_ref": "#/groups/10",
+      "parent": {
         "$ref": "#/texts/89"
       },
       "children": [
@@ -251,7 +266,22 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/10",
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/texts/95"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/96"
+        }
+      ],
+      "content_layer": "body",
+      "name": "blockquote",
+      "label": "block_quote",
+      "captions": []
+    },
+    {
+      "self_ref": "#/groups/12",
       "parent": {
         "$ref": "#/texts/104"
       },
@@ -271,7 +301,7 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/11",
+      "self_ref": "#/groups/13",
       "parent": {
         "$ref": "#/texts/122"
       },
@@ -294,7 +324,7 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/12",
+      "self_ref": "#/groups/14",
       "parent": {
         "$ref": "#/texts/122"
       },
@@ -326,7 +356,7 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/13",
+      "self_ref": "#/groups/15",
       "parent": {
         "$ref": "#/texts/122"
       },
@@ -370,7 +400,7 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/14",
+      "self_ref": "#/groups/16",
       "parent": {
         "$ref": "#/texts/122"
       },
@@ -402,7 +432,7 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/15",
+      "self_ref": "#/groups/17",
       "parent": {
         "$ref": "#/texts/122"
       },
@@ -422,7 +452,22 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/16",
+      "self_ref": "#/groups/18",
+      "parent": {
+        "$ref": "#/texts/156"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/157"
+        }
+      ],
+      "content_layer": "body",
+      "name": "blockquote",
+      "label": "block_quote",
+      "captions": []
+    },
+    {
+      "self_ref": "#/groups/19",
       "parent": {
         "$ref": "#/texts/156"
       },
@@ -442,7 +487,7 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/17",
+      "self_ref": "#/groups/20",
       "parent": {
         "$ref": "#/texts/156"
       },
@@ -828,7 +873,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The cold storms of winter shall chill him no more,\nHis woes and his sorrows, his pains are all o'er;\nThe sod of the valley now covers his form,\nHe is safe in his last home, he feels not the storm.",
+      "orig": "The cold storms of winter shall chill him no more,\nHis woes and his sorrows, his pains are all o’er;\nThe sod of the valley now covers his form,\nHe is safe in his last home, he feels not the storm.",
       "text": "The cold storms of winter shall chill him no more,\nHis woes and his sorrows, his pains are all o'er;\nThe sod of the valley now covers his form,\nHe is safe in his last home, he feels not the storm."
     },
     {
@@ -905,7 +950,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Oh! mother, weep not, though our lot be hard,\nAnd we are helpless-God will be our guard:\nFor He our heavenly guardian doth not sleep;\nHe watches o'er us-mother, do not weep.",
+      "orig": "Oh! mother, weep not, though our lot be hard,\nAnd we are helpless﻿—God will be our guard:\nFor He our heavenly guardian doth not sleep;\nHe watches o’er us﻿—mother, do not weep.",
       "text": "Oh! mother, weep not, though our lot be hard,\nAnd we are helpless-God will be our guard:\nFor He our heavenly guardian doth not sleep;\nHe watches o'er us-mother, do not weep."
     },
     {
@@ -917,7 +962,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And grieve not for that dear loved home no more;\nOur sufferings and our wrongs, ah! why deplore?\nFor though we feel the stern oppressor's rod,\nYet he must yield, as well as we, to God.",
+      "orig": "And grieve not for that dear loved home no more;\nOur sufferings and our wrongs, ah! why deplore?\nFor though we feel the stern oppressor’s rod,\nYet he must yield, as well as we, to God.",
       "text": "And grieve not for that dear loved home no more;\nOur sufferings and our wrongs, ah! why deplore?\nFor though we feel the stern oppressor's rod,\nYet he must yield, as well as we, to God."
     },
     {
@@ -929,7 +974,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Torn from our home, our kindred and our friends,\nAnd in a stranger's land our days to end,\nNo heart feels for the poor, the bleeding slave;\nNo arm is stretched to rescue, and to save.",
+      "orig": "Torn from our home, our kindred and our friends,\nAnd in a stranger’s land our days to end,\nNo heart feels for the poor, the bleeding slave;\nNo arm is stretched to rescue, and to save.",
       "text": "Torn from our home, our kindred and our friends,\nAnd in a stranger's land our days to end,\nNo heart feels for the poor, the bleeding slave;\nNo arm is stretched to rescue, and to save."
     },
     {
@@ -941,7 +986,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Oh! ye who boast of Freedom's sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word-\"that all are free\"-\nWhen thousands groan in hopeless",
+      "orig": "Oh! ye who boast of Freedom’s sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word﻿—“that all are free”﻿—\nWhen thousands groan in hopeless",
       "text": "Oh! ye who boast of Freedom's sacred claims,\nDo ye not blush to see our galling chains;\nTo hear that sounding word-\"that all are free\"-\nWhen thousands groan in hopeless"
     },
     {
@@ -984,7 +1029,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Upon your land it is a cruel stain-\nFreedom, what art thou?-nothing but a name.\nNo more, no more! Oh God, this cannot be;\nThou to thy children's aid wilt surely flee:\nIn thine own time deliverance thou wilt give,\nAnd bid us rise from slavery, and live.",
+      "orig": "Upon your land it is a cruel stain﻿—\nFreedom, what art thou?﻿—nothing but a name.\nNo more, no more! Oh God, this cannot be;\nThou to thy children’s aid wilt surely flee:\nIn thine own time deliverance thou wilt give,\nAnd bid us rise from slavery, and live.",
       "text": "Upon your land it is a cruel stain-\nFreedom, what art thou?-nothing but a name.\nNo more, no more! Oh God, this cannot be;\nThou to thy children's aid wilt surely flee:\nIn thine own time deliverance thou wilt give,\nAnd bid us rise from slavery, and live."
     },
     {
@@ -1031,7 +1076,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The friends we've loved, the home we've left,\nWill ofttimes claim a tear;\nAnd though of these we are bereft,\nStill memory makes them dear.",
+      "orig": "The friends we’ve loved, the home we’ve left,\nWill ofttimes claim a tear;\nAnd though of these we are bereft,\nStill memory makes them dear.",
       "text": "The friends we've loved, the home we've left,\nWill ofttimes claim a tear;\nAnd though of these we are bereft,\nStill memory makes them dear."
     },
     {
@@ -1043,7 +1088,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And deep we feel each trifling ill,\nEach sorrow of the soul:\nBut care we for the painful thrill,\nThat o'er some breasts doth roll?",
+      "orig": "And deep we feel each trifling ill,\nEach sorrow of the soul:\nBut care we for the painful thrill,\nThat o’er some breasts doth roll?",
       "text": "And deep we feel each trifling ill,\nEach sorrow of the soul:\nBut care we for the painful thrill,\nThat o'er some breasts doth roll?"
     },
     {
@@ -1055,7 +1100,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Poor Afric's son-ah! he must feel\nHow hard it is to part\nFrom all he lov'd-from all that life\nHad twined around his heart.",
+      "orig": "Poor Afric’s son﻿—ah! he must feel\nHow hard it is to part\nFrom all he lov’d﻿—from all that life\nHad twined around his heart.",
       "text": "Poor Afric's son-ah! he must feel\nHow hard it is to part\nFrom all he lov'd-from all that life\nHad twined around his heart."
     },
     {
@@ -1067,7 +1112,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "His is a sorrow deeper far,\nThan all that we can show;\nHis is a lasting grief, o'er which\nNo healing balm can flow.",
+      "orig": "His is a sorrow deeper far,\nThan all that we can show;\nHis is a lasting grief, o’er which\nNo healing balm can flow.",
       "text": "His is a sorrow deeper far,\nThan all that we can show;\nHis is a lasting grief, o'er which\nNo healing balm can flow."
     },
     {
@@ -1079,7 +1124,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The mother, wife, or child he loved,\nHe ne'er shall see again;\nTo him they're lost-ay, dead indeed:\nWhat for him doth remain?",
+      "orig": "The mother, wife, or child he loved,\nHe ne’er shall see again;\nTo him they’re lost﻿—ay, dead indeed:\nWhat for him doth remain?",
       "text": "The mother, wife, or child he loved,\nHe ne'er shall see again;\nTo him they're lost-ay, dead indeed:\nWhat for him doth remain?"
     },
     {
@@ -1091,7 +1136,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "A feeling of deep wretchedness\nComes o'er his troubled soul;\nThe thoughts of home-of other days,\nIn painful visions roll.",
+      "orig": "A feeling of deep wretchedness\nComes o’er his troubled soul;\nThe thoughts of home﻿—of other days,\nIn painful visions roll.",
       "text": "A feeling of deep wretchedness\nComes o'er his troubled soul;\nThe thoughts of home-of other days,\nIn painful visions roll."
     },
     {
@@ -1103,7 +1148,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "His home-ah! that lov'd name recalls\nAll that was dear to him;\nBut",
+      "orig": "His home﻿—ah! that lov’d name recalls\nAll that was dear to him;\nBut",
       "text": "His home-ah! that lov'd name recalls\nAll that was dear to him;\nBut"
     },
     {
@@ -1134,7 +1179,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "were scenes he'll know no more-\nHe only",
+      "orig": "were scenes he’ll know no more﻿—\nHe only",
       "text": "were scenes he'll know no more-\nHe only"
     },
     {
@@ -1165,7 +1210,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "they've been.",
+      "orig": "they’ve been.",
       "text": "they've been."
     },
     {
@@ -1215,7 +1260,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Yes, free to ask of Him, whate'er\nThe fainting heart alone can cheer;\nTo worship at that holy shrine,\nWhere beams thy Spirit, Lord, divine.",
+      "orig": "Yes, free to ask of Him, whate’er\nThe fainting heart alone can cheer;\nTo worship at that holy shrine,\nWhere beams thy Spirit, Lord, divine.",
       "text": "Yes, free to ask of Him, whate'er\nThe fainting heart alone can cheer;\nTo worship at that holy shrine,\nWhere beams thy Spirit, Lord, divine."
     },
     {
@@ -1227,7 +1272,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And Afric's children they are free,\nTo breathe their vows, their prayers to Thee;\nWith thought of future joy and gain,\nThe slave forgets his grief and pain;",
+      "orig": "And Afric’s children they are free,\nTo breathe their vows, their prayers to Thee;\nWith thought of future joy and gain,\nThe slave forgets his grief and pain;",
       "text": "And Afric's children they are free,\nTo breathe their vows, their prayers to Thee;\nWith thought of future joy and gain,\nThe slave forgets his grief and pain;"
     },
     {
@@ -1239,7 +1284,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Forgets awhile his slavish fear;\nForgets-that fetters bind him here;\nAnd in that sweet communion rest\nHis hopes, his fears-for he is blest.",
+      "orig": "Forgets awhile his slavish fear;\nForgets﻿—that fetters bind him here;\nAnd in that sweet communion rest\nHis hopes, his fears﻿—for he is blest.",
       "text": "Forgets awhile his slavish fear;\nForgets-that fetters bind him here;\nAnd in that sweet communion rest\nHis hopes, his fears-for he is blest."
     },
     {
@@ -1268,7 +1313,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Our sires who once in freedom's cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died-\nOr while the captive is oppressed,\nThink of the wrongs they once redress'd?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive's woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom's side,\nNor dare he own a freeman's pride,\nHis soul is dark, ay dark as night,\nO'er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO'er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne'er be free;\nTo feel that",
+      "orig": "Our sires who once in freedom’s cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died﻿—\nOr while the captive is oppressed,\nThink of the wrongs they once redress’d?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive’s woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom’s side,\nNor dare he own a freeman’s pride,\nHis soul is dark, ay dark as night,\nO’er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO’er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne’er be free;\nTo feel that",
       "text": "Our sires who once in freedom's cause,\nTheir boasted freedom sought and won,\nFor deeds of glory gained applause,\nWhen patriot feelings led them on.\nAnd can their sons now speak with pride,\nOf rights for which they bled and died-\nOr while the captive is oppressed,\nThink of the wrongs they once redress'd?\nOh, surely they have quite forgot,\nThat bondage once had been their lot;\nThe sweets of freedom now they know,\nThey care not for the captive's woe.\nThe poor wronged slave can bear no part\nIn feelings dearest to his heart;\nHe cannot speak on freedom's side,\nNor dare he own a freeman's pride,\nHis soul is dark, ay dark as night,\nO'er which is shed no gleam of light;\nA cloud of error, doubt and fear,\nO'er him is ever hovering near;\nAnd sad and hard his lot must be,\nTo know that he can ne'er be free;\nTo feel that"
     },
     {
@@ -1340,7 +1385,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Farewell!-but thou wilt soon forget\nThe stranger thou hast seen,\nAnd in the gay and busy world,\nForget that I have been.",
+      "orig": "Farewell!﻿—but thou wilt soon forget\nThe stranger thou hast seen,\nAnd in the gay and busy world,\nForget that I have been.",
       "text": "Farewell!-but thou wilt soon forget\nThe stranger thou hast seen,\nAnd in the gay and busy world,\nForget that I have been."
     },
     {
@@ -1352,7 +1397,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And thought of me will scarce intrude,\nWhen other forms are nigh;\nWho, decked in beauty's bright array,\nShall pass before thine eye.",
+      "orig": "And thought of me will scarce intrude,\nWhen other forms are nigh;\nWho, decked in beauty’s bright array,\nShall pass before thine eye.",
       "text": "And thought of me will scarce intrude,\nWhen other forms are nigh;\nWho, decked in beauty's bright array,\nShall pass before thine eye."
     },
     {
@@ -1364,7 +1409,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Another's lips will charm thee then,\nAnother's voice will praise;\nThou wilt forget we e'er have met\nIn past and happy days.",
+      "orig": "Another’s lips will charm thee then,\nAnother’s voice will praise;\nThou wilt forget we e’er have met\nIn past and happy days.",
       "text": "Another's lips will charm thee then,\nAnother's voice will praise;\nThou wilt forget we e'er have met\nIn past and happy days."
     },
     {
@@ -1376,7 +1421,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And thou wilt scarcely deign to think\nOf friendship's early dream,\nOr cast one glance, in after years,\nOn this poor offering.",
+      "orig": "And thou wilt scarcely deign to think\nOf friendship’s early dream,\nOr cast one glance, in after years,\nOn this poor offering.",
       "text": "And thou wilt scarcely deign to think\nOf friendship's early dream,\nOr cast one glance, in after years,\nOn this poor offering."
     },
     {
@@ -1388,7 +1433,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Farewell-farewell!-'twere better far\nThat we had never met,\nThan meeting one brief moment here,\nTo part-and then forget.",
+      "orig": "Farewell﻿—farewell!﻿—’twere better far\nThat we had never met,\nThan meeting one brief moment here,\nTo part﻿—and then forget.",
       "text": "Farewell-farewell!-'twere better far\nThat we had never met,\nThan meeting one brief moment here,\nTo part-and then forget."
     },
     {
@@ -1432,7 +1477,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "There lies the sole remaining hope\nOf all my coming years;\nThe treasure of my widow'd heart,\nThe tie that bound me here.",
+      "orig": "There lies the sole remaining hope\nOf all my coming years;\nThe treasure of my widow’d heart,\nThe tie that bound me here.",
       "text": "There lies the sole remaining hope\nOf all my coming years;\nThe treasure of my widow'd heart,\nThe tie that bound me here."
     },
     {
@@ -1444,7 +1489,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "He was the last-the loveliest,\nAnd can you blame my grief,\nOr chide the falling tears which give\nThis bursting heart relief?",
+      "orig": "He was the last﻿—the loveliest,\nAnd can you blame my grief,\nOr chide the falling tears which give\nThis bursting heart relief?",
       "text": "He was the last-the loveliest,\nAnd can you blame my grief,\nOr chide the falling tears which give\nThis bursting heart relief?"
     },
     {
@@ -1456,7 +1501,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "There's nothing left for me to love\nThis earth holds nothing dear,\nSince",
+      "orig": "There’s nothing left for me to love\nThis earth holds nothing dear,\nSince",
       "text": "There's nothing left for me to love\nThis earth holds nothing dear,\nSince"
     },
     {
@@ -1487,7 +1532,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", my sweet-my gentle one,\nIs now no longer here.",
+      "orig": ", my sweet﻿—my gentle one,\nIs now no longer here.",
       "text": ", my sweet-my gentle one,\nIs now no longer here."
     },
     {
@@ -1511,7 +1556,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Perchance 'twas wrong to love him thus,\nAnd I have been chastised-\nFor He who gave him to my trust,\nHath called him to the skies.",
+      "orig": "Perchance ’twas wrong to love him thus,\nAnd I have been chastised﻿—\nFor He who gave him to my trust,\nHath called him to the skies.",
       "text": "Perchance 'twas wrong to love him thus,\nAnd I have been chastised-\nFor He who gave him to my trust,\nHath called him to the skies."
     },
     {
@@ -1523,7 +1568,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "He was too dear-oh! far too dear,\nThe idol of my soul-\nThen blame me not-this burst of grief\nI cannot now control.",
+      "orig": "He was too dear﻿—oh! far too dear,\nThe idol of my soul﻿—\nThen blame me not﻿—this burst of grief\nI cannot now control.",
       "text": "He was too dear-oh! far too dear,\nThe idol of my soul-\nThen blame me not-this burst of grief\nI cannot now control."
     },
     {
@@ -1564,7 +1609,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "O, speed thee! speed thee! gallant bark,\nAcross the bounding wave;\nThou bearest to old Britain's shores,\nThe Champion of the slave.",
+      "orig": "O, speed thee! speed thee! gallant bark,\nAcross the bounding wave;\nThou bearest to old Britain’s shores,\nThe Champion of the slave.",
       "text": "O, speed thee! speed thee! gallant bark,\nAcross the bounding wave;\nThou bearest to old Britain's shores,\nThe Champion of the slave."
     },
     {
@@ -1576,7 +1621,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Propitious breezes waft thee on,\nSafe o'er Atlantic's sea;\nFor many a heart with fervor sends\nA benizon to thee.",
+      "orig": "Propitious breezes waft thee on,\nSafe o’er Atlantic’s sea;\nFor many a heart with fervor sends\nA benizon to thee.",
       "text": "Propitious breezes waft thee on,\nSafe o'er Atlantic's sea;\nFor many a heart with fervor sends\nA benizon to thee."
     },
     {
@@ -1600,7 +1645,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "He goes to raise the standard high,\nAnd freedom's flag unfurl,\nAnd to proclaim the rallying cry\nOf freedom to the world.",
+      "orig": "He goes to raise the standard high,\nAnd freedom’s flag unfurl,\nAnd to proclaim the rallying cry\nOf freedom to the world.",
       "text": "He goes to raise the standard high,\nAnd freedom's flag unfurl,\nAnd to proclaim the rallying cry\nOf freedom to the world."
     },
     {
@@ -1656,7 +1701,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To see our pathway strewn with flowers,\nWhile 'neath their sunny hue,\nWe fear that many a rankling care\nLies hidden from our view;",
+      "orig": "To see our pathway strewn with flowers,\nWhile ’neath their sunny hue,\nWe fear that many a rankling care\nLies hidden from our view;",
       "text": "To see our pathway strewn with flowers,\nWhile 'neath their sunny hue,\nWe fear that many a rankling care\nLies hidden from our view;"
     },
     {
@@ -1668,7 +1713,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To cull the flowers, to love their bloom,\nA season to enjoy;\nTo mark the blast that rudely comes\nTheir beauties to destroy:-",
+      "orig": "To cull the flowers, to love their bloom,\nA season to enjoy;\nTo mark the blast that rudely comes\nTheir beauties to destroy:﻿—",
       "text": "To cull the flowers, to love their bloom,\nA season to enjoy;\nTo mark the blast that rudely comes\nTheir beauties to destroy:-"
     },
     {
@@ -1692,7 +1737,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To see the cherished things of earth,\nOn which we placed the heart,\nFade, one by one, before our eyes,\nAnd silently depart;-",
+      "orig": "To see the cherished things of earth,\nOn which we placed the heart,\nFade, one by one, before our eyes,\nAnd silently depart;﻿—",
       "text": "To see the cherished things of earth,\nOn which we placed the heart,\nFade, one by one, before our eyes,\nAnd silently depart;-"
     },
     {
@@ -1704,7 +1749,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is our life-and who can tell\nWhat future hours may bring?\nWhat hopes will cheer the panting heart,\nWhile close to earth we cling?",
+      "orig": "This is our life﻿—and who can tell\nWhat future hours may bring?\nWhat hopes will cheer the panting heart,\nWhile close to earth we cling?",
       "text": "This is our life-and who can tell\nWhat future hours may bring?\nWhat hopes will cheer the panting heart,\nWhile close to earth we cling?"
     },
     {
@@ -1716,7 +1761,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The morning of our days are bright,\nAnd could the vision last-\nBut 'tis forbid-oh! changeful life,\nHow soon the dream is past!",
+      "orig": "The morning of our days are bright,\nAnd could the vision last﻿—\nBut ’tis forbid﻿—oh! changeful life,\nHow soon the dream is past!",
       "text": "The morning of our days are bright,\nAnd could the vision last-\nBut 'tis forbid-oh! changeful life,\nHow soon the dream is past!"
     },
     {
@@ -1726,7 +1771,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/83"
+          "$ref": "#/groups/9"
         },
         {
           "$ref": "#/texts/84"
@@ -1754,13 +1799,13 @@
     {
       "self_ref": "#/texts/83",
       "parent": {
-        "$ref": "#/texts/82"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"Friend after friend departs.\"",
+      "orig": "“Friend after friend departs.”",
       "text": "\"Friend after friend departs.\""
     },
     {
@@ -1772,7 +1817,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And they are gone-that little band\nOf friends-the firm and true!\nWe feel the void which absence makes,\nWith joy, and sorrow too.",
+      "orig": "And they are gone﻿—that little band\nOf friends﻿—the firm and true!\nWe feel the void which absence makes,\nWith joy, and sorrow too.",
       "text": "And they are gone-that little band\nOf friends-the firm and true!\nWe feel the void which absence makes,\nWith joy, and sorrow too."
     },
     {
@@ -1796,7 +1841,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We bid God speed their parting steps,\nAnd bless the righteous cause:-\nWhere'er the path of duty points,\nMay duty never pause.",
+      "orig": "We bid God speed their parting steps,\nAnd bless the righteous cause:﻿—\nWhere’er the path of duty points,\nMay duty never pause.",
       "text": "We bid God speed their parting steps,\nAnd bless the righteous cause:-\nWhere'er the path of duty points,\nMay duty never pause."
     },
     {
@@ -1820,7 +1865,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Their works shall live when other deeds,\nWhich ask a nation's fame,\nHave sank beneath Time's whelming wave,\nUnhonored and unnamed.",
+      "orig": "Their works shall live when other deeds,\nWhich ask a nation’s fame,\nHave sank beneath Time’s whelming wave,\nUnhonored and unnamed.",
       "text": "Their works shall live when other deeds,\nWhich ask a nation's fame,\nHave sank beneath Time's whelming wave,\nUnhonored and unnamed."
     },
     {
@@ -1830,7 +1875,7 @@
       },
       "children": [
         {
-          "$ref": "#/groups/9"
+          "$ref": "#/groups/10"
         }
       ],
       "content_layer": "body",
@@ -1843,19 +1888,19 @@
     {
       "self_ref": "#/texts/90",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Oh! speak not of heathenish darkness again,\nNor tell me of lands held in error's dread chain!\nWhere-where is the nation so erring as we,\nWho claim the proud name of the \"",
+      "orig": "Oh! speak not of heathenish darkness again,\nNor tell me of lands held in error’s dread chain!\nWhere﻿—where is the nation so erring as we,\nWho claim the proud name of the “",
       "text": "Oh! speak not of heathenish darkness again,\nNor tell me of lands held in error's dread chain!\nWhere-where is the nation so erring as we,\nWho claim the proud name of the \""
     },
     {
       "self_ref": "#/texts/91",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -1874,19 +1919,19 @@
     {
       "self_ref": "#/texts/92",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"!\nWhat a throb do the lov'd ties of country awake\nIn the heart of the exile!-for time cannot break\nThe sweet vision of home, and all he loved well,\nWhich has thrown o'er his pathway a magical spell.\nCan the name of \"",
+      "orig": "”!\nWhat a throb do the lov’d ties of country awake\nIn the heart of the exile!﻿—for time cannot break\nThe sweet vision of home, and all he loved well,\nWhich has thrown o’er his pathway a magical spell.\nCan the name of “",
       "text": "\"!\nWhat a throb do the lov'd ties of country awake\nIn the heart of the exile!-for time cannot break\nThe sweet vision of home, and all he loved well,\nWhich has thrown o'er his pathway a magical spell.\nCan the name of \""
     },
     {
       "self_ref": "#/texts/93",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -1905,13 +1950,13 @@
     {
       "self_ref": "#/texts/94",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"-the deeds which we sing-\nBe honored-revered-'midst pollution and sin?\nCan the names of our fathers who perished in fight,\nBe hallowed in story, midst slavery's blight?\nWhen America's standard is floating so fair,\nI blush that the impress of falsehood is there;\nThat oppression and mockery dim the high fame,\nThat seeks from all nations a patriot's name.\nSpeak not of \"my country,\" unless she shall be,\nIn truth, the bright home of the \"brave and the free!\"\nTill the dark stain of slavery is washed from her hand,\nA tribute of homage she cannot command.",
+      "orig": "”﻿—the deeds which we sing﻿—\nBe honored﻿—revered﻿—’midst pollution and sin?\nCan the names of our fathers who perished in fight,\nBe hallowed in story, midst slavery’s blight?\nWhen America’s standard is floating so fair,\nI blush that the impress of falsehood is there;\nThat oppression and mockery dim the high fame,\nThat seeks from all nations a patriot’s name.\nSpeak not of “my country,” unless she shall be,\nIn truth, the bright home of the “brave and the free!”\nTill the dark stain of slavery is washed from her hand,\nA tribute of homage she cannot command.",
       "text": "\"-the deeds which we sing-\nBe honored-revered-'midst pollution and sin?\nCan the names of our fathers who perished in fight,\nBe hallowed in story, midst slavery's blight?\nWhen America's standard is floating so fair,\nI blush that the impress of falsehood is there;\nThat oppression and mockery dim the high fame,\nThat seeks from all nations a patriot's name.\nSpeak not of \"my country,\" unless she shall be,\nIn truth, the bright home of the \"brave and the free!\"\nTill the dark stain of slavery is washed from her hand,\nA tribute of homage she cannot command."
     },
     {
@@ -1921,7 +1966,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/96"
+          "$ref": "#/groups/11"
         },
         {
           "$ref": "#/texts/97"
@@ -1943,13 +1988,13 @@
     {
       "self_ref": "#/texts/96",
       "parent": {
-        "$ref": "#/texts/95"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"Blest hours of childhood! then, and then alone,\nDance we the revels gay round pleasure's throne.\"",
+      "orig": "“Blest hours of childhood! then, and then alone,\nDance we the revels gay round pleasure’s throne.”",
       "text": "\"Blest hours of childhood! then, and then alone,\nDance we the revels gay round pleasure's throne.\""
     },
     {
@@ -1961,7 +2006,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Dear cherished hours, how much ye tell\nOf all we've known, and loved so well!\nOn memory's page there is a leaf,\nBearing a trace of pleasures brief;\nOf schoolday mirth, of pastime gay,\nWith which we whiled those hours away.",
+      "orig": "Dear cherished hours, how much ye tell\nOf all we’ve known, and loved so well!\nOn memory’s page there is a leaf,\nBearing a trace of pleasures brief;\nOf schoolday mirth, of pastime gay,\nWith which we whiled those hours away.",
       "text": "Dear cherished hours, how much ye tell\nOf all we've known, and loved so well!\nOn memory's page there is a leaf,\nBearing a trace of pleasures brief;\nOf schoolday mirth, of pastime gay,\nWith which we whiled those hours away."
     },
     {
@@ -1973,7 +2018,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And those we loved in early youth,\nWith all the fervency of truth-\nThey seem to live, and pass us by,\nWith laughing lip and beaming eye.\nEach favorite spot, each winding stream,\nWhere we have watched the bright sunbeam,\nAppears at memory's magic spell-\nAnd joys, to which we bid farewell.",
+      "orig": "And those we loved in early youth,\nWith all the fervency of truth﻿—\nThey seem to live, and pass us by,\nWith laughing lip and beaming eye.\nEach favorite spot, each winding stream,\nWhere we have watched the bright sunbeam,\nAppears at memory’s magic spell﻿—\nAnd joys, to which we bid farewell.",
       "text": "And those we loved in early youth,\nWith all the fervency of truth-\nThey seem to live, and pass us by,\nWith laughing lip and beaming eye.\nEach favorite spot, each winding stream,\nWhere we have watched the bright sunbeam,\nAppears at memory's magic spell-\nAnd joys, to which we bid farewell."
     },
     {
@@ -1985,7 +2030,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "When grief and bliss are in the train\nOf hours we ne'er shall live again;\nWhen sorrow clouds our after years,\nAnd fills our cup with bitter tears;\n'Tis then we wait a sigh to ye\nO by-gone days of memory.",
+      "orig": "When grief and bliss are in the train\nOf hours we ne’er shall live again;\nWhen sorrow clouds our after years,\nAnd fills our cup with bitter tears;\n’Tis then we wait a sigh to ye\nO by-gone days of memory.",
       "text": "When grief and bliss are in the train\nOf hours we ne'er shall live again;\nWhen sorrow clouds our after years,\nAnd fills our cup with bitter tears;\n'Tis then we wait a sigh to ye\nO by-gone days of memory."
     },
     {
@@ -2020,7 +2065,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Oh, woman, woman, in thy brightest hour\nOf conscious worth, of pride, of conscious power,\nOh, nobly dare to act a Christian's part,\nThat well befits a lovely woman's heart!\nDare to be good, as thou canst dare be great;\nDespise the taunts of envy, scorn and hate;\nOur \"skins may differ,\" but from thee we claim\nA sister's privilege, in a sister's name.",
+      "orig": "Oh, woman, woman, in thy brightest hour\nOf conscious worth, of pride, of conscious power,\nOh, nobly dare to act a Christian’s part,\nThat well befits a lovely woman’s heart!\nDare to be good, as thou canst dare be great;\nDespise the taunts of envy, scorn and hate;\nOur “skins may differ,” but from thee we claim\nA sister’s privilege, in a sister’s name.",
       "text": "Oh, woman, woman, in thy brightest hour\nOf conscious worth, of pride, of conscious power,\nOh, nobly dare to act a Christian's part,\nThat well befits a lovely woman's heart!\nDare to be good, as thou canst dare be great;\nDespise the taunts of envy, scorn and hate;\nOur \"skins may differ,\" but from thee we claim\nA sister's privilege, in a sister's name."
     },
     {
@@ -2032,7 +2077,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We are thy sisters-God has truly said,\nThat of one blood, the nations he has made.\nOh, Christian woman, in a Christian land,\nCanst thou unblushing read this great command?\nSuffer the wrongs which wring our inmost heart\nTo draw one throb of pity on thy part;\nOur \"skins may differ,\" but from thee we claim\nA sister's privilege, in a sister's name.",
+      "orig": "We are thy sisters﻿—God has truly said,\nThat of one blood, the nations he has made.\nOh, Christian woman, in a Christian land,\nCanst thou unblushing read this great command?\nSuffer the wrongs which wring our inmost heart\nTo draw one throb of pity on thy part;\nOur “skins may differ,” but from thee we claim\nA sister’s privilege, in a sister’s name.",
       "text": "We are thy sisters-God has truly said,\nThat of one blood, the nations he has made.\nOh, Christian woman, in a Christian land,\nCanst thou unblushing read this great command?\nSuffer the wrongs which wring our inmost heart\nTo draw one throb of pity on thy part;\nOur \"skins may differ,\" but from thee we claim\nA sister's privilege, in a sister's name."
     },
     {
@@ -2044,7 +2089,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Oh, woman!-though upon thy fairer brow\nThe hues of roses and of lilies glow-\nThese soon must wither in their kindred earth,\nFrom whence the fair and dark have equal birth.\nLet a bright halo o'er thy virtues shed\nA lustre, that shall live when thou art dead;\nLet coming ages learn to bless thy name\nUpon the altar of immortal fame.",
+      "orig": "Oh, woman!﻿—though upon thy fairer brow\nThe hues of roses and of lilies glow﻿—\nThese soon must wither in their kindred earth,\nFrom whence the fair and dark have equal birth.\nLet a bright halo o’er thy virtues shed\nA lustre, that shall live when thou art dead;\nLet coming ages learn to bless thy name\nUpon the altar of immortal fame.",
       "text": "Oh, woman!-though upon thy fairer brow\nThe hues of roses and of lilies glow-\nThese soon must wither in their kindred earth,\nFrom whence the fair and dark have equal birth.\nLet a bright halo o'er thy virtues shed\nA lustre, that shall live when thou art dead;\nLet coming ages learn to bless thy name\nUpon the altar of immortal fame."
     },
     {
@@ -2069,7 +2114,7 @@
           "$ref": "#/texts/109"
         },
         {
-          "$ref": "#/groups/10"
+          "$ref": "#/groups/12"
         },
         {
           "$ref": "#/texts/113"
@@ -2097,7 +2142,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The incident which suggested the following lines is this:-A young girl was living with her mother in one of the West Indian Islands, quite unconscious of her being a slave. Her master, on leaving the Island for a permanent residence in Louisiana, cruelly separated the girl from her parent forever.",
+      "orig": "The incident which suggested the following lines is this:﻿—A young girl was living with her mother in one of the West Indian Islands, quite unconscious of her being a slave. Her master, on leaving the Island for a permanent residence in Louisiana, cruelly separated the girl from her parent forever.",
       "text": "The incident which suggested the following lines is this:-A young girl was living with her mother in one of the West Indian Islands, quite unconscious of her being a slave. Her master, on leaving the Island for a permanent residence in Louisiana, cruelly separated the girl from her parent forever."
     },
     {
@@ -2109,7 +2154,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Mother, I leave thee-thou hast been,\nThrough long, long years of pain,\nThe only hope my fond heart knew;\nOr e'er shall know again.",
+      "orig": "Mother, I leave thee﻿—thou hast been,\nThrough long, long years of pain,\nThe only hope my fond heart knew;\nOr e’er shall know again.",
       "text": "Mother, I leave thee-thou hast been,\nThrough long, long years of pain,\nThe only hope my fond heart knew;\nOr e'er shall know again."
     },
     {
@@ -2121,7 +2166,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The sails are set-my master waits\nTo bear me far from thee;\nI linger-can I give thee up,\nAnd cross the fearful sea?",
+      "orig": "The sails are set﻿—my master waits\nTo bear me far from thee;\nI linger﻿—can I give thee up,\nAnd cross the fearful sea?",
       "text": "The sails are set-my master waits\nTo bear me far from thee;\nI linger-can I give thee up,\nAnd cross the fearful sea?"
     },
     {
@@ -2145,13 +2190,13 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The little hut where I have played\nIn childhood's fearless hours-\nThe murmuring stream-the mossy bank,\nWhere I have gathered flowers.",
+      "orig": "The little hut where I have played\nIn childhood’s fearless hours﻿—\nThe murmuring stream﻿—the mossy bank,\nWhere I have gathered flowers.",
       "text": "The little hut where I have played\nIn childhood's fearless hours-\nThe murmuring stream-the mossy bank,\nWhere I have gathered flowers."
     },
     {
       "self_ref": "#/texts/110",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2163,7 +2208,7 @@
     {
       "self_ref": "#/texts/111",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2182,13 +2227,13 @@
     {
       "self_ref": "#/texts/112",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "I was a slave,\nOr that another's will,\nSave thine, could bend my spirit's pride;\nOr bid my lips be still.",
+      "orig": "I was a slave,\nOr that another’s will,\nSave thine, could bend my spirit’s pride;\nOr bid my lips be still.",
       "text": "I was a slave,\nOr that another's will,\nSave thine, could bend my spirit's pride;\nOr bid my lips be still."
     },
     {
@@ -2212,7 +2257,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Thy fond arms press me-and I feel\nThy tears upon my cheek;\nTears are the only language now,\nA mother's love can speak.",
+      "orig": "Thy fond arms press me﻿—and I feel\nThy tears upon my cheek;\nTears are the only language now,\nA mother’s love can speak.",
       "text": "Thy fond arms press me-and I feel\nThy tears upon my cheek;\nTears are the only language now,\nA mother's love can speak."
     },
     {
@@ -2265,7 +2310,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Father, we lift the suppliant eye,\nTo where thou reigns't above;\nWe feel that thou canst not deny\nThe children of thy love.",
+      "orig": "Father, we lift the suppliant eye,\nTo where thou reigns’t above;\nWe feel that thou canst not deny\nThe children of thy love.",
       "text": "Father, we lift the suppliant eye,\nTo where thou reigns't above;\nWe feel that thou canst not deny\nThe children of thy love."
     },
     {
@@ -2301,7 +2346,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We feel the chains that bind us all,\nAnd bend us to man's will;\nBut can they hold our souls enthrall'd,\nOr bid our voice be still?",
+      "orig": "We feel the chains that bind us all,\nAnd bend us to man’s will;\nBut can they hold our souls enthrall’d,\nOr bid our voice be still?",
       "text": "We feel the chains that bind us all,\nAnd bend us to man's will;\nBut can they hold our souls enthrall'd,\nOr bid our voice be still?"
     },
     {
@@ -2313,7 +2358,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "No:-for thy power is all supreme,\nThy word shall yet stand firm;\nAnd master and the slave shall e'en\nTo thee for mercy turn.",
+      "orig": "No:﻿—for thy power is all supreme,\nThy word shall yet stand firm;\nAnd master and the slave shall e’en\nTo thee for mercy turn.",
       "text": "No:-for thy power is all supreme,\nThy word shall yet stand firm;\nAnd master and the slave shall e'en\nTo thee for mercy turn."
     },
     {
@@ -2326,12 +2371,6 @@
           "$ref": "#/pictures/2"
         },
         {
-          "$ref": "#/groups/11"
-        },
-        {
-          "$ref": "#/groups/12"
-        },
-        {
           "$ref": "#/groups/13"
         },
         {
@@ -2339,6 +2378,12 @@
         },
         {
           "$ref": "#/groups/15"
+        },
+        {
+          "$ref": "#/groups/16"
+        },
+        {
+          "$ref": "#/groups/17"
         }
       ],
       "content_layer": "body",
@@ -2363,7 +2408,7 @@
     {
       "self_ref": "#/texts/124",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2382,7 +2427,7 @@
     {
       "self_ref": "#/texts/125",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2394,7 +2439,7 @@
     {
       "self_ref": "#/texts/126",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2407,7 +2452,7 @@
     {
       "self_ref": "#/texts/127",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -2419,7 +2464,7 @@
     {
       "self_ref": "#/texts/128",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -2431,7 +2476,7 @@
     {
       "self_ref": "#/texts/129",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -2444,7 +2489,7 @@
     {
       "self_ref": "#/texts/130",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -2456,7 +2501,7 @@
     {
       "self_ref": "#/texts/131",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -2469,7 +2514,7 @@
     {
       "self_ref": "#/texts/132",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -2481,7 +2526,7 @@
     {
       "self_ref": "#/texts/133",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -2494,7 +2539,7 @@
     {
       "self_ref": "#/texts/134",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -2506,7 +2551,7 @@
     {
       "self_ref": "#/texts/135",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2518,7 +2563,7 @@
     {
       "self_ref": "#/texts/136",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2537,7 +2582,7 @@
     {
       "self_ref": "#/texts/137",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2549,7 +2594,7 @@
     {
       "self_ref": "#/texts/138",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2562,7 +2607,7 @@
     {
       "self_ref": "#/texts/139",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2574,7 +2619,7 @@
     {
       "self_ref": "#/texts/140",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2593,7 +2638,7 @@
     {
       "self_ref": "#/texts/141",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2605,7 +2650,7 @@
     {
       "self_ref": "#/texts/142",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2624,7 +2669,7 @@
     {
       "self_ref": "#/texts/143",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2636,7 +2681,7 @@
     {
       "self_ref": "#/texts/144",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2649,7 +2694,7 @@
     {
       "self_ref": "#/texts/145",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -2661,7 +2706,7 @@
     {
       "self_ref": "#/texts/146",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -2673,7 +2718,7 @@
     {
       "self_ref": "#/texts/147",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -2692,7 +2737,7 @@
     {
       "self_ref": "#/texts/148",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -2704,7 +2749,7 @@
     {
       "self_ref": "#/texts/149",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -2723,7 +2768,7 @@
     {
       "self_ref": "#/texts/150",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -2735,7 +2780,7 @@
     {
       "self_ref": "#/texts/151",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -2748,7 +2793,7 @@
     {
       "self_ref": "#/texts/152",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -2760,7 +2805,7 @@
     {
       "self_ref": "#/texts/153",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -2772,7 +2817,7 @@
     {
       "self_ref": "#/texts/154",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -2785,7 +2830,7 @@
     {
       "self_ref": "#/texts/155",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -2801,16 +2846,16 @@
       },
       "children": [
         {
-          "$ref": "#/texts/157"
+          "$ref": "#/groups/18"
         },
         {
-          "$ref": "#/groups/16"
+          "$ref": "#/groups/19"
         },
         {
           "$ref": "#/texts/161"
         },
         {
-          "$ref": "#/groups/17"
+          "$ref": "#/groups/20"
         }
       ],
       "content_layer": "body",
@@ -2823,7 +2868,7 @@
     {
       "self_ref": "#/texts/157",
       "parent": {
-        "$ref": "#/texts/156"
+        "$ref": "#/groups/18"
       },
       "children": [],
       "content_layer": "body",
@@ -2835,7 +2880,7 @@
     {
       "self_ref": "#/texts/158",
       "parent": {
-        "$ref": "#/groups/16"
+        "$ref": "#/groups/19"
       },
       "children": [],
       "content_layer": "body",
@@ -2847,13 +2892,13 @@
     {
       "self_ref": "#/texts/159",
       "parent": {
-        "$ref": "#/groups/16"
+        "$ref": "#/groups/19"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "can't",
+      "orig": "can’t",
       "text": "can't",
       "formatting": {
         "bold": false,
@@ -2866,7 +2911,7 @@
     {
       "self_ref": "#/texts/160",
       "parent": {
-        "$ref": "#/groups/16"
+        "$ref": "#/groups/19"
       },
       "children": [],
       "content_layer": "body",
@@ -2884,25 +2929,25 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Copyright laws are different all over the world, and the source text or artwork in this ebook may still be copyrighted in other countries. If you're not located in the United States, you must check your local laws before using this ebook. Standard Ebooks makes no representations regarding the copyright status of the source text or artwork in this ebook in any country other than the United States.",
+      "orig": "Copyright laws are different all over the world, and the source text or artwork in this ebook may still be copyrighted in other countries. If you’re not located in the United States, you must check your local laws before using this ebook. Standard Ebooks makes no representations regarding the copyright status of the source text or artwork in this ebook in any country other than the United States.",
       "text": "Copyright laws are different all over the world, and the source text or artwork in this ebook may still be copyrighted in other countries. If you're not located in the United States, you must check your local laws before using this ebook. Standard Ebooks makes no representations regarding the copyright status of the source text or artwork in this ebook in any country other than the United States."
     },
     {
       "self_ref": "#/texts/162",
       "parent": {
-        "$ref": "#/groups/17"
+        "$ref": "#/groups/20"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Non-authorship activities performed on items that are in the public domain-so-called \"sweat of the brow\" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the",
+      "orig": "Non-authorship activities performed on items that are in the public domain﻿—so-called “sweat of the brow” work﻿—don’t create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the",
       "text": "Non-authorship activities performed on items that are in the public domain-so-called \"sweat of the brow\" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the"
     },
     {
       "self_ref": "#/texts/163",
       "parent": {
-        "$ref": "#/groups/17"
+        "$ref": "#/groups/20"
       },
       "children": [],
       "content_layer": "body",
@@ -2915,13 +2960,13 @@
     {
       "self_ref": "#/texts/164",
       "parent": {
-        "$ref": "#/groups/17"
+        "$ref": "#/groups/20"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", thus dedicating to the worldwide public domain all of the work they've done on this ebook, including but not limited to metadata, the titlepage, imprint, colophon, this Uncopyright, and any changes or enhancements to, or markup on, the original text and artwork. This dedication doesn't change the copyright status of the source text or artwork. We make this dedication in the interest of enriching our global cultural heritage, to promote free and libre culture around the world, and to give back to the unrestricted culture that has given all of us so much.",
+      "orig": ", thus dedicating to the worldwide public domain all of the work they’ve done on this ebook, including but not limited to metadata, the titlepage, imprint, colophon, this Uncopyright, and any changes or enhancements to, or markup on, the original text and artwork. This dedication doesn’t change the copyright status of the source text or artwork. We make this dedication in the interest of enriching our global cultural heritage, to promote free and libre culture around the world, and to give back to the unrestricted culture that has given all of us so much.",
       "text": ", thus dedicating to the worldwide public domain all of the work they've done on this ebook, including but not limited to metadata, the titlepage, imprint, colophon, this Uncopyright, and any changes or enhancements to, or markup on, the original text and artwork. This dedication doesn't change the copyright status of the source text or artwork. We make this dedication in the interest of enriching our global cultural heritage, to promote free and libre culture around the world, and to give back to the unrestricted culture that has given all of us so much."
     }
   ],

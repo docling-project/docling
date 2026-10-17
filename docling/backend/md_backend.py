@@ -752,6 +752,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             else:
                 creation_stack.append(_HeadingCreationPayload(level=element.level))
 
+        elif isinstance(element, marko.block.Quote):
+            _log.debug(" - Block quote")
+            parent_item = doc.add_block_quote_group(
+                name="blockquote", parent=parent_item
+            )
+
         elif isinstance(element, marko.block.List):
             has_non_empty_list_items = False
             for child in element.children:
