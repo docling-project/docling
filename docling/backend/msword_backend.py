@@ -1274,9 +1274,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # This must come before the image branches: they are computed with
             # descendant XPaths, so a control holding a picture anywhere inside
             # would match there and its paragraphs would never be walked.
-            elif tag_name == "sdt":
-                sdt_content = element.find(
-                    "./w:sdtContent", namespaces=_OOXML_NAMESPACES
+            # Custom XML markup wraps paragraphs and tables the same way, with no
+            # content element of its own in between.
+            elif tag_name in ("sdt", "customXml"):
+                sdt_content = (
+                    element.find("./w:sdtContent", namespaces=_OOXML_NAMESPACES)
+                    if tag_name == "sdt"
+                    else element
                 )
                 # Recursively walk the SDT content to catch textboxes, tables, and nested structures
                 added_elements.extend(self._walk_optional_container(sdt_content, doc))
@@ -2272,7 +2276,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         def _get_children_recursive(node):
             for child in node:
                 tag_name = etree.QName(child).localname
-                if tag_name in {"smartTag", "customXml", "ins", "fldSimple"}:
+                if tag_name in {
+                    "smartTag",
+                    "customXml",
+                    "ins",
+                    "moveTo",
+                    "fldSimple",
+                    "dir",
+                    "bdo",
+                }:
                     yield from _get_children_recursive(child)
                 else:
                     yield child
