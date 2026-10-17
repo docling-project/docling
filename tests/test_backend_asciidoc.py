@@ -901,6 +901,37 @@ def test_heading_flushes_pending_paragraph() -> None:
     assert paras == {"body": "S1.1", "body2": "S2"}
 
 
+def _convert_source(src: bytes) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="flush.adoc",
+    )
+    return in_doc._backend.convert()
+
+
+def test_list_flushes_pending_paragraph() -> None:
+    # The text before a list was only added at the next blank line, so it
+    # landed inside the list group, after the list items.
+    doc = _convert_source(b"Intro:\n* a\n* b\n")
+
+    intro = next(item for item in doc.texts if item.text == "Intro:")
+    assert intro.parent == doc.body.get_ref()
+    assert doc.export_to_markdown() == "Intro:\n\n- a\n- b"
+
+
+def test_table_flushes_pending_paragraph() -> None:
+    # The text before a delimited table was added after the table.
+    doc = _convert_source(b"Before\n|===\n|a|b\n|===\n")
+
+    assert [item.label for item, _ in doc.iterate_items()] == [
+        DocItemLabel.PARAGRAPH,
+        DocItemLabel.TABLE,
+    ]
+    assert doc.export_to_markdown().startswith("Before\n\n| a ")
+
+
 def test_block_title_without_floating_target_keeps_content() -> None:
     # A block title followed by a paragraph used to absorb every following
     # line as "multiline caption" and drop all of it at EOF.

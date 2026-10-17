@@ -304,6 +304,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 if not in_list:
                     in_list = True
+                    # The list ends the paragraph before it, which would
+                    # otherwise be added later, inside the list.
+                    text_data = self._flush_text_data(
+                        doc=doc, text_data=text_data, parent=parents[level]
+                    )
                     # GroupItem has no caption slot; emit the pending block
                     # title as a bold paragraph immediately before the list.
                     if caption_data:
@@ -373,6 +378,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     in_delimited_table = False
                     table_data = []
                 else:
+                    # The table ends the paragraph before it, which would
+                    # otherwise be added after the table.
+                    text_data = self._flush_text_data(
+                        doc=doc,
+                        text_data=text_data,
+                        parent=self._get_current_parent(parents),
+                    )
                     in_table = True
                     in_delimited_table = True
 
