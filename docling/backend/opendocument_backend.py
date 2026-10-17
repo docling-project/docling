@@ -163,6 +163,12 @@ class _OdfTextRun:
 
 _ODF_HREF_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
+# Shapes of a notes page that show the slide or a field, not the speaker notes:
+# the slide thumbnail, and the slide number, date, header and footer fields.
+_ODP_NOTES_PAGE_FIELD_CLASSES = frozenset(
+    {"page", "page-number", "date-time", "header", "footer"}
+)
+
 
 def _odf_hyperlink_from_href(href: str | None) -> AnyUrl | Path | None:
     if href is None:
@@ -1919,7 +1925,11 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     ) -> None:
         seen_text_content = False
         for element in page.children:
-            if getattr(element, "tag", None) in {"anim:par", "presentation:notes"}:
+            tag = getattr(element, "tag", None)
+            if tag == "presentation:notes":
+                self._walk_slide_notes(element, parent=parent, doc=doc)
+                continue
+            if tag == "anim:par":
                 continue
             has_text = bool(
                 _clean_odf_text_lines(getattr(element, "text_recursive", ""))
@@ -1940,6 +1950,34 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     parent=parent,
                     doc=doc,
                     is_title=is_title,
+                )
+
+    def _walk_slide_notes(
+        self, notes: Element, parent: NodeItem, doc: DoclingDocument
+    ) -> None:
+        """Add the speaker notes of a slide to the notes content layer.
+
+        As in the PowerPoint backend, the notes go under the group of their
+        slide. A notes page also shows a thumbnail of the slide and can show
+        the slide number, date, header and footer, which are not notes.
+        """
+        for element in notes.children:
+            if (
+                element.get_attribute("presentation:class")
+                in _ODP_NOTES_PAGE_FIELD_CLASSES
+            ):
+                continue
+            textboxes = (
+                element.get_elements("descendant::draw:text-box")
+                if isinstance(element, Frame)
+                else [element]
+            )
+            for textbox in textboxes:
+                self._walk_textbox_children(
+                    textbox.children,
+                    parent=parent,
+                    doc=doc,
+                    content_layer=ContentLayer.NOTES,
                 )
 
     @staticmethod
@@ -2015,6 +2053,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         doc: DoclingDocument,
         *,
         is_title: bool = False,
+        content_layer: ContentLayer | None = None,
     ) -> None:
         previous_list_state: _OdfListState | None = None
         for el in elements:
@@ -2024,7 +2063,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     doc,
                     el,
                     parent=parent,
-                    content_layer=None,
+                    content_layer=content_layer,
                     odf_obj=self.odf_obj,
                 )
             elif isinstance(el, Paragraph):
@@ -2034,14 +2073,14 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                     _odf_text_runs(el, self.odf_obj),
                     label=DocItemLabel.TITLE if is_title else DocItemLabel.TEXT,
                     parent=parent,
-                    content_layer=None,
+                    content_layer=content_layer,
                 )
             elif isinstance(el, OdfList):
                 previous_list_state = _add_odf_list(
                     doc,
                     el,
                     parent=parent,
-                    content_layer=None,
+                    content_layer=content_layer,
                     odf_obj=self.odf_obj,
                     enumerated=False,
                     continued_state=previous_list_state,

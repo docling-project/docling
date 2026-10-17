@@ -2105,3 +2105,75 @@ def test_odp_hidden_slide_goes_to_invisible_layer(tmp_path: Path):
     ]
     assert document.export_to_markdown() == "# Visible slide\n\nPresented text"
     assert hidden_texts == ["Hidden slide", "Backup text"]
+
+
+def test_odp_speaker_notes_go_to_notes_layer(tmp_path: Path):
+    """The speaker notes of a slide (``presentation:notes``) are kept.
+
+    As in the PowerPoint backend, they go under the slide group in
+    ``ContentLayer.NOTES``. The slide thumbnail and the slide number and date
+    fields of a notes page are not notes.
+    """
+    field = (
+        '<draw:frame presentation:class="{}"><draw:text-box><text:p>{}</text:p>'
+        "</draw:text-box></draw:frame>"
+    )
+    notes_pages = [
+        "<presentation:notes>"
+        '<draw:page-thumbnail draw:page-number="1" presentation:class="page"/>'
+        '<draw:frame presentation:class="notes"><draw:text-box>'
+        "<text:p>First note.</text:p>"
+        "<text:list><text:list-item><text:p>Point one</text:p></text:list-item>"
+        "<text:list-item><text:p>Point two</text:p></text:list-item></text:list>"
+        "<text:p>Last note.</text:p>"
+        "</draw:text-box></draw:frame>"
+        + field.format("page-number", "1")
+        + "</presentation:notes>",
+        "<presentation:notes>"
+        + field.format("page-number", "2")
+        + field.format("date-time", "17/10/2026")
+        + "</presentation:notes>",
+    ]
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+    for index, notes in enumerate(notes_pages):
+        page = DrawPage(f"page{index + 1}", name=f"Slide {index + 1}")
+        page.append(
+            Frame.text_frame(
+                [f"Slide text {index + 1}"],
+                size=("10cm", "2cm"),
+                position=("1cm", "1cm"),
+            )
+        )
+        page.append(Element.from_tag(notes))
+        body.append(page)
+    path = tmp_path / "notes.odp"
+    doc.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path).document
+    )
+
+    notes_items = [
+        item
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.NOTES}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert [item.text for item in notes_items] == [
+        "First note.",
+        "Point one",
+        "Point two",
+        "Last note.",
+    ]
+    first_slide = document.groups[0]
+    assert all(
+        item.parent == first_slide.get_ref()
+        or item.parent.resolve(document).parent == first_slide.get_ref()
+        for item in notes_items
+    )
+    assert document.export_to_markdown() == (
+        "# Slide 1\n\nSlide text 1\n\n# Slide 2\n\nSlide text 2"
+    )
