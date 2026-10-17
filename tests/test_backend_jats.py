@@ -647,6 +647,32 @@ def test_jats_list_item_label_becomes_marker():
     assert "(a) first" in doc.export_to_markdown()
 
 
+def test_jats_content_after_a_list_stays_out_of_the_list():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Steps</title>
+          <list list-type="bullet">
+            <list-item><p>first</p></list-item>
+            <list-item><p>second</p></list-item>
+          </list>
+          <p>After the list.</p>
+        </sec>
+        """
+    )
+
+    heading = next(item for item in doc.texts if item.text == "Steps")
+    after = next(item for item in doc.texts if item.text == "After the list.")
+    assert after.label == DocItemLabel.TEXT
+    assert after.parent == heading.get_ref()
+    list_group = _list_items(doc)[0].parent.resolve(doc)
+    assert [child.resolve(doc).text for child in list_group.children] == [
+        "first",
+        "second",
+    ]
+    assert "- second\n\nAfter the list." in doc.export_to_markdown()
+
+
 def _inline_group_items(doc: DoclingDocument) -> list[list]:
     """Return the resolved child items of every INLINE group, in document order."""
     return [
