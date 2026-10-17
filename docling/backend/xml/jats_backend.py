@@ -1279,6 +1279,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         for child in list(node):
             stop_walk: bool = False
+            list_group: NodeItem | None = None
 
             # flush pending inline content before a block child in a paragraph
             if node.tag == "p" and child.tag in flush_tags:
@@ -1299,7 +1300,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         text=text, parent=parent, level=self.hlevel
                     )
             elif child.tag == "list":
-                new_parent = doc.add_group(
+                # Only the items of this list go into the group, not the
+                # siblings that follow it.
+                list_group = doc.add_group(
                     label=GroupLabel.LIST, name="list", parent=parent
                 )
             elif child.tag == "list-item":
@@ -1382,7 +1385,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             # step into child
             if not stop_walk:
                 child_segments = self._walk_linear(
-                    doc, new_parent, child, current, current_hyperlink
+                    doc,
+                    list_group if list_group is not None else new_parent,
+                    child,
+                    current,
+                    current_hyperlink,
                 )
                 if not (node.getparent().tag == "p" and node.tag in flush_tags):
                     JatsDocumentBackend._extend_segments(
