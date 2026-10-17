@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 from zipfile import ZipFile
 
 import defusedxml.ElementTree as ET
@@ -260,8 +260,14 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             if src.startswith(("data:", "http://", "https://", "/")):
                 return match.group(0)
 
-            # src is a URL; decode percent-escapes to get the archive entry name.
-            image_path = posixpath.normpath(posixpath.join(content_dir, unquote(src)))
+            # src is a URL; decode percent-escapes of its path, without the
+            # query or fragment, to get the archive entry name.
+            src_path = urlsplit(src).path
+            if not src_path:
+                return match.group(0)
+            image_path = posixpath.normpath(
+                posixpath.join(content_dir, unquote(src_path))
+            )
             return 'src="{}"'.format(image_path.replace('"', "&quot;"))
 
         # Group 1: the opening quote (" or '). Group 2: the value, up to the
