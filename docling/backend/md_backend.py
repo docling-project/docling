@@ -719,6 +719,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if element in visited:
             return
 
+        # The payloads below this size were pushed by enclosing elements.
+        creation_stack_size = len(creation_stack)
+
         # A line break only joins runs of the same paragraph. When no text run
         # follows the break inside it (for example, the paragraph ends in inline
         # HTML or a code span, or the next lines are table rows), the pending
@@ -818,6 +821,23 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.Image):
             _log.debug(" - Image with alt: %s, url: %s", element.title, element.dest)
+
+            # An image without alt text emits no RawText. If it is the content of
+            # a list item or heading, create that item first, with empty text, so
+            # that the picture goes under the list item, as in the HTML backend.
+            if creation_stack and not element.children:
+                parent_item = self._flush_creation_stack(
+                    doc=doc,
+                    creation_stack=creation_stack,
+                    snippet_text="",
+                    parent_item=parent_item,
+                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_start_by_ref=list_start_by_ref,
+                    list_item_counter_by_ref=list_item_counter_by_ref,
+                    list_last_item_by_ref=list_last_item_by_ref,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
 
             fig_caption: TextItem | None = None
             if element.title is not None and element.title != "":
@@ -1053,6 +1073,30 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+
+                # The content of a list item or heading had no text run, e.g.
+                # only inline HTML. Create the item with empty text now, or the
+                # next text run of the document, in a later block, would take it.
+                if len(creation_stack) > creation_stack_size and isinstance(
+                    element,
+                    marko.block.ListItem
+                    | marko.block.Heading
+                    | marko.block.SetextHeading,
+                ):
+                    pending = creation_stack[creation_stack_size:]
+                    del creation_stack[creation_stack_size:]
+                    self._flush_creation_stack(
+                        doc=doc,
+                        creation_stack=pending,
+                        snippet_text="",
+                        parent_item=parent_item,
+                        list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                        list_start_by_ref=list_start_by_ref,
+                        list_item_counter_by_ref=list_item_counter_by_ref,
+                        list_last_item_by_ref=list_last_item_by_ref,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
 
     def _get_image_loader(self) -> ImageResourceLoader:
         """Lazily build the shared image-resource loader.

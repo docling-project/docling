@@ -6,7 +6,13 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import CodeItem, CodeLanguageLabel, PictureItem
+from docling_core.types.doc import (
+    CodeItem,
+    CodeLanguageLabel,
+    DocItemLabel,
+    ListItem,
+    PictureItem,
+)
 from PIL import Image
 
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -134,6 +140,58 @@ def test_convert_list_item_codespan_only():
     pred_md = conv_result.document.export_to_markdown()
     assert "- raw\\_ops.Abort" in pred_md
     assert "- raw\\_ops.Abs" in pred_md
+
+
+def test_list_item_with_only_an_image_keeps_its_place():
+    """An image without alt text emits no text run. Its list item is still
+    created, with the picture under it, so the next item does not take its place.
+    """
+    doc = (
+        get_converter()
+        .convert_string(
+            "1. ![](a.png)\n2. Second step\n3. Third step\n", format=InputFormat.MD
+        )
+        .document
+    )
+
+    items = [item for item in doc.texts if isinstance(item, ListItem)]
+    assert [(item.marker, item.text) for item in items] == [
+        ("1.", ""),
+        ("2.", "Second step"),
+        ("3.", "Third step"),
+    ]
+    assert len({item.parent.cref for item in items}) == 1
+    assert doc.pictures[0].parent == items[0].get_ref()
+
+
+def test_sub_list_of_an_image_only_item_is_not_duplicated():
+    doc = (
+        get_converter()
+        .convert_string("- ![](a.png)\n  - nested\n- next\n", format=InputFormat.MD)
+        .document
+    )
+
+    items = {item.text: item for item in doc.texts if isinstance(item, ListItem)}
+    assert [item.text for item in doc.texts] == ["", "nested", "next"]
+    assert items["nested"].parent.resolve(doc).parent == items[""].get_ref()
+
+
+@pytest.mark.parametrize(
+    "heading",
+    ["# ![](logo.png)", '# <img src="logo.png" width="80">', "![](logo.png)\n==="],
+    ids=["image", "inline-html", "setext-image"],
+)
+def test_heading_without_text_does_not_take_the_next_paragraph(heading: str):
+    doc = (
+        get_converter()
+        .convert_string(f"{heading}\n\nIntro paragraph.\n", format=InputFormat.MD)
+        .document
+    )
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.TITLE, ""),
+        (DocItemLabel.TEXT, "Intro paragraph."),
+    ]
 
 
 def _convert_markdown(
