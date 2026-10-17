@@ -1,0 +1,87 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: 10-Q INTERNATIONAL BUSINESS MACHINES CORPORATION 2026-06-30
+  item-2 at level 1: text: Reconciliations to IBM as Reported:
+  item-3 at level 1: table with [20x15]
+    item-4 at level 2: unspecified: group rich_cell_group_1_0_5
+      item-5 at level 3: text: Other revenue (1)
+    item-6 at level 2: unspecified: group rich_cell_group_1_0_14
+      item-7 at level 3: text: Stock-based compensation (2)
+    item-8 at level 2: unspecified: group rich_cell_group_1_0_16
+      item-9 at level 3: text: Workforce rebalancing charges (2)
+  item-10 at level 1: table with [19x15]
+    item-11 at level 2: unspecified: group rich_cell_group_2_0_5
+      item-12 at level 3: text: Other revenue (1)
+    item-13 at level 2: unspecified: group rich_cell_group_2_0_13
+      item-14 at level 3: text: Stock-based compensation (2)
+    item-15 at level 2: unspecified: group rich_cell_group_2_0_15
+      item-16 at level 3: text: Workforce rebalancing charges (2)
+    item-17 at level 2: unspecified: group rich_cell_group_2_0_16
+      item-18 at level 3: text: Other - divested businesses
+  item-19 at level 1: table with [2x3]
+  item-20 at level 1: text: (1) Includes reductions in reven ... ual Report for additional information.
+  item-21 at level 1: text: (2) Excludes certain acquisition-related charges.
+  item-22 at level 1: table with [11x33]
+    item-23 at level 2: unspecified: group rich_cell_group_1_27_1
+      item-24 at level 3: text: Total
+Segments
+    item-25 at level 2: unspecified: group rich_cell_group_1_0_3
+      item-26 at level 3: text: Depreciation (1) /amortization of non-acquired intangibles
+    item-27 at level 2: unspecified: group rich_cell_group_1_0_8
+      item-28 at level 3: text: Depreciation (1) /amortization of non-acquired intangibles
+  item-29 at level 1: table with [11x33]
+    item-30 at level 2: unspecified: group rich_cell_group_2_27_1
+      item-31 at level 3: text: Total
+Segments
+    item-32 at level 2: unspecified: group rich_cell_group_2_0_3
+      item-33 at level 3: text: Depreciation (1) /amortization of non-acquired intangibles
+    item-34 at level 2: unspecified: group rich_cell_group_2_0_8
+      item-35 at level 3: text: Depreciation (1) /amortization of non-acquired intangibles
+  item-36 at level 1: table with [2x3]
+  item-37 at level 1: text: (1) Where several segments share ... se presented above and segment profit.
+  item-38 at level 1: text: Components of other (income) and expense are as follows:
+  item-39 at level 1: table with [13x27]
+    item-40 at level 2: unspecified: group rich_cell_group_1_0_6
+      item-41 at level 3: text: (Gains)/losses on foreign currency transactions (1)
+    item-42 at level 2: unspecified: group rich_cell_group_1_0_7
+      item-43 at level 3: text: (Gains)/losses on derivative instruments (1)
+    item-44 at level 2: unspecified: group rich_cell_group_1_0_9
+      item-45 at level 3: text: Net (gains)/losses from securities and investment assets (2)
+  item-46 at level 1: table with [2x3]
+  item-47 at level 1: text: (1) The company uses financial h ...  information on foreign exchange risk.
+  item-48 at level 1: text: (2) Includes realized and unreal ... gains)/losses from equity investments.
+  item-49 at level 1: text: Financial Assets and Liabilities Not Measured at Fair Value
+  item-50 at level 1: text: Short-Term Receivables and Payables
+  item-51 at level 1: text: Short-term receivables (excludin ...  which would be classified as Level 2.
+  item-52 at level 1: text: Loans and Long-Term Receivables
+  item-53 at level 1: text: Fair values are based on discoun ... s Level 3 in the fair value hierarchy.
+  item-54 at level 1: text: Long-Term Debt
+  item-55 at level 1: text: The majority of the company's lo ... used to estimate fair value (Level 2).
+  item-56 at level 1: table with [7x15]
+  item-57 at level 1: text: The following table provides the ... any's nonpension postretirement plans.
+  item-58 at level 1: table with [9x27]
+    item-59 at level 2: unspecified: group rich_cell_group_1_0_4
+      item-60 at level 3: text: Interest cost (1)
+    item-61 at level 2: unspecified: group rich_cell_group_1_0_5
+      item-62 at level 3: text: Expected return on plan assets (1)
+    item-63 at level 2: unspecified: group rich_cell_group_1_0_6
+      item-64 at level 3: text: Amortization of prior service costs/(credits) (1)
+    item-65 at level 2: unspecified: group rich_cell_group_1_0_7
+      item-66 at level 3: text: Recognized actuarial losses (1)
+  item-67 at level 1: table with [9x27]
+    item-68 at level 2: unspecified: group rich_cell_group_2_0_4
+      item-69 at level 3: text: Interest cost (1)
+    item-70 at level 2: unspecified: group rich_cell_group_2_0_5
+      item-71 at level 3: text: Expected return on plan assets (1)
+    item-72 at level 2: unspecified: group rich_cell_group_2_0_6
+      item-73 at level 3: text: Amortization of prior service costs/(credits) (1)
+    item-74 at level 2: unspecified: group rich_cell_group_2_0_7
+      item-75 at level 3: text: Recognized actuarial losses (1)
+  item-76 at level 1: table with [2x3]
+  item-77 at level 1: text: (1) These components of net peri ...  in the Consolidated Income Statement.
+  item-78 at level 1: text: The table below includes contributions to the following plans:
+  item-79 at level 1: table with [6x15]
+    item-80 at level 2: unspecified: group rich_cell_group_1_0_4
+      item-81 at level 3: text: Non-U.S. DB and multi-employer plans (1)
+  item-82 at level 1: table with [2x3]
+  item-83 at level 1: text: (1) Amounts reported net of refunds.
+    item-84 at level 1: key_value_region: ignored

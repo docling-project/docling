@@ -12,6 +12,7 @@ ds_convert_models/
 *.dclg
 *.xml
 *.zip
+!tests/data/**/*.zip
 \#*\#
 /.emacs.desktop
 /.emacs.desktop.lock

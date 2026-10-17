@@ -8,7 +8,6 @@ U.S. Securities and Exchange Commission (SEC)'s Electronic Data Gathering, Analy
 and Retrieval (EDGAR) system.
 """
 
-import os
 from pathlib import Path
 
 import pytest
@@ -24,42 +23,44 @@ from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
 
+_SOURCES_DIR = Path(__file__).parent / "data" / "xbrl" / "sources"
+_GT_DIR = Path(__file__).parent / "data" / "xbrl" / "groundtruth"
+
 
 @pytest.fixture(scope="module")
 def xbrl_paths() -> list[tuple[Path, Path]]:
-    directory = Path(os.path.dirname(__file__) + "/data/xbrl/sources/")
     xml_files = sorted(
         [
             item
-            for item in directory.iterdir()
+            for item in _SOURCES_DIR.iterdir()
             if item.is_file() and item.suffix.lower() in {".xml", ".xbrl"}
         ],
         key=lambda p: p.name.lower(),
     )
-    taxonomy_dir = sorted(
+    taxonomy_dirs = sorted(
         [
             item
-            for item in directory.iterdir()
-            if item.is_dir() and str(item).endswith("-taxonomy")
+            for item in _SOURCES_DIR.iterdir()
+            if item.is_dir() and item.name.endswith("-taxonomy")
         ],
         key=lambda p: p.name.lower(),
     )
-    assert len(xml_files) == len(taxonomy_dir), (
+    assert len(xml_files) == len(taxonomy_dirs), (
         "Mismatch in XBRL instance reports and taxonomy directories"
     )
-
-    return list(zip(xml_files, taxonomy_dir))
+    return list(zip(xml_files, taxonomy_dirs))
 
 
 @pytest.fixture(scope="module")
-def documents(xbrl_paths) -> list[tuple[Path, DoclingDocument]]:
-    documents: list[tuple[Path, DoclingDocument]] = []
+def documents(
+    xbrl_paths: list[tuple[Path, Path]],
+) -> list[tuple[Path, DoclingDocument]]:
+    results: list[tuple[Path, DoclingDocument]] = []
     for report, taxonomy in xbrl_paths:
-        gt_path = report.parent.parent / "groundtruth" / report.name
-
+        gt_path = _GT_DIR / report.name
+        # To download external taxonomy files into the web cache, replace with:
+        # XBRLBackendOptions(enable_local_fetch=True, enable_remote_fetch=True, taxonomy=taxonomy)
         backend_options = XBRLBackendOptions(enable_local_fetch=True, taxonomy=taxonomy)
-        # set enable_remote_fetch to download the necessary external taxonomy files in web cache
-        # backend_options = XBRLBackendOptions(enable_local_fetch=True, enable_remote_fetch=True, taxonomy=taxonomy)
         converter = DocumentConverter(
             allowed_formats=[InputFormat.XML_XBRL],
             format_options={
@@ -68,11 +69,9 @@ def documents(xbrl_paths) -> list[tuple[Path, DoclingDocument]]:
         )
         conv_result: ConversionResult = converter.convert(report)
         doc: DoclingDocument = conv_result.document
-
         assert doc, f"Failed to convert document from file {report}"
-        documents.append((gt_path, doc))
-
-    return documents
+        results.append((gt_path, doc))
+    return results
 
 
 def test_e2e_xbrl_conversions(documents):

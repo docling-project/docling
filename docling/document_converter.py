@@ -459,6 +459,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
         InputFormat.DCLX: DclxFormatOption(),
         InputFormat.XML_XBRL: XBRLFormatOption(),
+        InputFormat.ZIP_XBRL: XBRLFormatOption(),
         InputFormat.METS_GBS: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
         ),
