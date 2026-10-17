@@ -923,7 +923,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         max_row, max_col = 0, 0
 
         for cell in sheet._cells.values():
-            if cell.value is not None:
+            # A comment on an empty cell still has to be reached by the scan
+            # that collects comments, which is limited to these bounds.
+            if cell.value is not None or cell.comment is not None:
                 r, c = cell.row, cell.column
                 min_row = r if min_row is None else min(min_row, r)
                 min_col = c if min_col is None else min(min_col, c)

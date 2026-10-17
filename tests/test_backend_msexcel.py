@@ -156,6 +156,31 @@ def test_comments_extraction(documents) -> None:
         )
 
 
+def test_comment_on_empty_cell_outside_data_is_kept(tmp_path: Path) -> None:
+    """A note on an empty cell beyond the data region is still extracted."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["name", "value"])
+    sheet.append(["a", 1])
+    sheet["A1"].comment = Comment("note on the header", "Ann")
+    sheet["D5"].comment = Comment("fill this in", "Bob")
+    file_path = tmp_path / "empty-cell-comment.xlsx"
+    workbook.save(file_path)
+
+    doc = DocumentConverter(allowed_formats=[InputFormat.XLSX]).convert(file_path)
+    comments = [
+        item.text
+        for item in doc.document.texts
+        if item.content_layer == ContentLayer.NOTES
+    ]
+
+    assert comments == [
+        "[author: Ann]: note on the header",
+        "[author: Bob]: fill this in",
+    ]
+    assert len(doc.document.tables) == 1
+
+
 def test_comment_cell_coordinates(documents) -> None:
     """Test that comment names include cell coordinates."""
     from docling_core.types.doc import GroupItem
