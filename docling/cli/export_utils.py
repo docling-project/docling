@@ -32,6 +32,15 @@ def _should_generate_export_images(
     )
 
 
+def _artifacts_dir(output_path: Path) -> Path:
+    """Return the folder for referenced images, relative to *output_path*.
+
+    A relative folder makes docling-core link the images relative to the
+    output file, so the output stays portable.
+    """
+    return Path(f"{output_path.stem}_artifacts")
+
+
 def _export_flags_from_formats(to_formats: list[OutputFormat]) -> dict[str, bool]:
     """Expand requested output formats into the per-format export booleans.
 

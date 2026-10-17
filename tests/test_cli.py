@@ -11,11 +11,12 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 import pytest
 import typer
 from click.utils import strip_ansi
-from docling_core.types.doc import ImageRefMode
+from docling_core.types.doc import DoclingDocument, ImageRefMode
 from docling_core.utils import file as file_utils
 from PIL import Image
 from typer.main import get_command
@@ -519,6 +520,103 @@ def test_cli_html_fetches_local_images_per_input(tmp_path):
     _assert_markdown_embeds_png(output / "second.md", second_png)
 
 
+def _single_image_link(artifacts_dir: Path) -> str:
+    images = list(artifacts_dir.glob("image_*.png"))
+    assert len(images) == 1
+    return f"{artifacts_dir.name}/{images[0].name}"
+
+
+def _uri_as_posix(uri: object) -> str:
+    return unquote(str(uri)).replace("\\", "/")
+
+
+def test_cli_referenced_images_use_relative_links(tmp_path):
+    """Referenced images are linked relative to the output file, not by an
+    absolute path, so the output folder can be moved (#3678)."""
+    red_png = _png_bytes((255, 0, 0))
+    source = _write_html_image_case(tmp_path / "src", "first.html", "First", red_png)
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--to",
+            "html",
+            "--to",
+            "json",
+            "--to",
+            "yaml",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "referenced",
+            "--html-image-fetch",
+            "local",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    link = _single_image_link(output / "first_artifacts")
+    with Image.open(output / link) as saved, Image.open(BytesIO(red_png)) as expected:
+        assert saved.convert("RGB").tobytes() == expected.convert("RGB").tobytes()
+    assert f"![Image]({link})" in (output / "first.md").read_text()
+    html_src = re.search(r'<img src="([^"]+)"', (output / "first.html").read_text())
+    assert html_src is not None
+    assert _uri_as_posix(html_src.group(1)) == link
+    for doc in (
+        DoclingDocument.load_from_json(output / "first.json"),
+        DoclingDocument.load_from_yaml(output / "first.yaml"),
+    ):
+        assert doc.pictures[0].image is not None
+        assert _uri_as_posix(doc.pictures[0].image.uri) == link
+
+
+@pytest.mark.parametrize("absolute", [False, True])
+@pytest.mark.parametrize(
+    ("option", "target", "md_name"),
+    [
+        ("--output", "out/sub", "first.md"),
+        ("--output-file", "out/sub/report.md", "report.md"),
+    ],
+)
+def test_cli_referenced_images_sit_next_to_the_output(
+    tmp_path, monkeypatch, option, target, md_name, absolute
+):
+    """The image folder is a sibling of the output file. A relative output
+    path is not repeated inside the output folder (#3678)."""
+    source = _write_html_image_case(tmp_path / "src", "first.html", "First")
+    monkeypatch.chdir(tmp_path)
+    out_dir = tmp_path / "out" / "sub"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            option,
+            str(tmp_path / target) if absolute else target,
+            "--image-export-mode",
+            "referenced",
+            "--html-image-fetch",
+            "local",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    md_path = out_dir / md_name
+    link = _single_image_link(out_dir / f"{md_path.stem}_artifacts")
+    assert f"![Image]({link})" in md_path.read_text()
+    assert not (out_dir / "out").exists()
+
+
 def test_cli_latex_reads_included_files_next_to_the_source(tmp_path):
     """Files pulled in with \\input are read from the source's own directory."""
     source = tmp_path / "paper"
@@ -841,7 +939,7 @@ def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
     conv_res.status = ConversionStatus.SUCCESS
 
     class DummyDocument:
-        def save_as_markdown(self, *, filename, image_mode):
+        def save_as_markdown(self, *, filename, artifacts_dir, image_mode):
             Path(filename).write_text("")
 
     conv_res.document = DummyDocument()
@@ -893,7 +991,7 @@ def test_export_documents_marks_stat_errors_as_failure(tmp_path, monkeypatch):
     conv_res.status = ConversionStatus.SUCCESS
 
     class DummyDocument:
-        def save_as_markdown(self, *, filename, image_mode):
+        def save_as_markdown(self, *, filename, artifacts_dir, image_mode):
             Path(filename).write_text("ok")
 
     conv_res.document = DummyDocument()

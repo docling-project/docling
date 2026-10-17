@@ -51,6 +51,7 @@ from rich.console import Console
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from docling.cli.export_utils import (
+    _artifacts_dir,
     _export_flags_from_formats,
     _is_empty_output,
     _parse_page_range,
@@ -589,7 +590,9 @@ def export_documents(
                 fname = output_file or output_dir / f"{doc_filename}.json"
                 _log.info(f"writing JSON output to {fname}")
                 conv_res.document.save_as_json(
-                    filename=fname, image_mode=image_export_mode
+                    filename=fname,
+                    artifacts_dir=_artifacts_dir(fname),
+                    image_mode=image_export_mode,
                 )
 
             # Export YAML format:
@@ -597,7 +600,9 @@ def export_documents(
                 fname = output_file or output_dir / f"{doc_filename}.yaml"
                 _log.info(f"writing YAML output to {fname}")
                 conv_res.document.save_as_yaml(
-                    filename=fname, image_mode=image_export_mode
+                    filename=fname,
+                    artifacts_dir=_artifacts_dir(fname),
+                    image_mode=image_export_mode,
                 )
 
             # Export HTML format:
@@ -606,6 +611,7 @@ def export_documents(
                 _log.info(f"writing HTML output to {fname}")
                 conv_res.document.save_as_html(
                     filename=fname,
+                    artifacts_dir=_artifacts_dir(fname),
                     image_mode=image_export_mode,
                     split_page_view=False,
                 )
@@ -632,6 +638,7 @@ def export_documents(
                 else:
                     conv_res.document.save_as_html(
                         filename=fname,
+                        artifacts_dir=_artifacts_dir(fname),
                         image_mode=image_export_mode,
                         split_page_view=True,
                     )
@@ -648,7 +655,9 @@ def export_documents(
                 fname = output_file or output_dir / f"{doc_filename}.md"
                 _log.info(f"writing Markdown output to {fname}")
                 conv_res.document.save_as_markdown(
-                    filename=fname, image_mode=image_export_mode
+                    filename=fname,
+                    artifacts_dir=_artifacts_dir(fname),
+                    image_mode=image_export_mode,
                 )
                 if _is_empty_output(fname):
                     error_message = (
@@ -868,7 +877,7 @@ def convert(  # noqa: C901
         ImageRefMode,
         typer.Option(
             ...,
-            help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
+            help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format to a `<name>_artifacts` folder next to the output file, and the output references it with a relative path.",
         ),
     ] = ImageRefMode.EMBEDDED,
     html_image_fetch: Annotated[
