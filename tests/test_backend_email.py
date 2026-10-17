@@ -472,6 +472,29 @@ Content-Type: text/html; charset="utf-8"
     assert "Fish & chips for a<b, see my_file_name.txt" in doc.export_to_text()
 
 
+def test_email_backend_leaves_image_placeholders_out_of_html_body_text():
+    raw_email = b"""From: Alice Example <alice@example.com>
+Subject: HTML Email
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+
+<html><body><p>Hello</p><img src="cid:logo"><p>Bye</p></body></html>
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="html.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    doc = backend.convert()
+
+    texts = [item.text for item in doc.texts]
+    assert texts[texts.index("Hello") :] == ["Hello", "Bye"]
+    assert "image" not in doc.export_to_markdown()
+
+
 @pytest.mark.parametrize(
     ("mime_charset", "meta", "text"),
     [
