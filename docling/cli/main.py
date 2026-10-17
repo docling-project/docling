@@ -156,6 +156,7 @@ try:
     from docling.models.factories import (
         get_layout_factory,
         get_ocr_factory,
+        get_picture_description_factory,
         get_table_structure_factory,
     )
 
@@ -175,7 +176,7 @@ except ImportError as exc:
     table_structure_engines_enum_internal = []
 
 if TYPE_CHECKING:
-    from docling.models.factories.base_factory import BaseFactory
+    from docling.models.factories.base_factory import FactoryMeta
 
 
 def _first_error_message(err: ValidationError) -> str:
@@ -476,30 +477,39 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-def show_external_plugins_callback(value: bool):
+def show_external_plugins_callback(value: bool) -> None:
     if value:
         _require_local_model_stack("--show-external-plugins")
         ocr_factory_all = get_ocr_factory(allow_external_plugins=True)
         layout_factory_all = get_layout_factory(allow_external_plugins=True)
         table_factory_all = get_table_structure_factory(allow_external_plugins=True)
+        picture_description_factory_all = get_picture_description_factory(
+            allow_external_plugins=True
+        )
 
-        def print_external_plugins(factory: BaseFactory, factory_name: str):
+        def print_external_plugins(
+            metadata: Iterable["FactoryMeta"], factory_name: str
+        ) -> None:
             table = rich.table.Table(title=f"Available {factory_name} engines")
             table.add_column("Name", justify="right")
             table.add_column("Plugin")
             table.add_column("Package")
-            for meta in factory.registered_meta.values():
+            for meta in metadata:
                 if not meta.module.startswith("docling."):
                     table.add_row(
                         f"[bold]{meta.kind}[/bold]",
                         meta.plugin_name,
-                        meta.module.split(".")[0],
+                        meta.distribution or "",
                     )
             rich.print(table)
 
-        print_external_plugins(ocr_factory_all, "OCR")
-        print_external_plugins(layout_factory_all, "layout")
-        print_external_plugins(table_factory_all, "table")
+        print_external_plugins(ocr_factory_all.registered_meta.values(), "OCR")
+        print_external_plugins(layout_factory_all.registered_meta.values(), "layout")
+        print_external_plugins(table_factory_all.registered_meta.values(), "table")
+        print_external_plugins(
+            picture_description_factory_all.registered_meta.values(),
+            "picture description",
+        )
 
         raise typer.Exit()
 
@@ -984,9 +994,8 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                f"The layout engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in layout_engines_enum_internal)}. "
-                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+                "The layout engine to use. Enable --allow-external-plugins to select "
+                "a third-party engine. Use --show-external-plugins to list them."
             ),
         ),
     ] = LayoutObjectDetectionOptions.kind,
@@ -995,9 +1004,8 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                f"The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in table_structure_engines_enum_internal)}. "
-                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+                "The table structure engine to use. Enable --allow-external-plugins "
+                "to select a third-party engine. Use --show-external-plugins to list them."
             ),
         ),
     ] = TableStructureOptions.kind,
@@ -1006,9 +1014,8 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                f"The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in ocr_engines_enum_internal)}. "
-                f"Use the option --show-external-plugins to see the options allowed with external plugins."
+                "The OCR engine to use. Enable --allow-external-plugins to select "
+                "a third-party engine. Use --show-external-plugins to list them."
             ),
         ),
     ] = OcrAutoOptions.kind,
@@ -1298,6 +1305,7 @@ def convert(  # noqa: C901
         PdfFormatOption,
         PowerpointFormatOption,
         WordFormatOption,
+        _get_default_option,
     )
     from docling.pipeline.asr_pipeline import AsrPipeline
     from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
@@ -1866,6 +1874,16 @@ def convert(  # noqa: C901
         if artifacts_path is not None:
             pipeline_options.artifacts_path = artifacts_path
             asr_pipeline_options.artifacts_path = artifacts_path
+
+        # Apply the CLI policy to every allowed format, including defaults.
+        for input_format in from_formats:
+            if input_format not in format_options:
+                format_options[input_format] = _get_default_option(input_format)
+        for format_option in format_options.values():
+            if format_option.pipeline_options is not None:
+                format_option.pipeline_options.allow_external_plugins = (
+                    allow_external_plugins
+                )
 
         doc_converter = DocumentConverter(
             allowed_formats=from_formats,
