@@ -767,8 +767,6 @@ class _BaseDoclingServiceClient:
         task_id: str,
         response: httpx.Response,
     ) -> None:
-        if response.status_code != 409:
-            return
         try:
             payload = response.json()
         except ValueError:
