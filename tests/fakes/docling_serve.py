@@ -17,14 +17,11 @@ the WebSocket watcher is not exercised.
 storage a presigned URL points at, so the client's artifact download and its
 SSRF check run against a real endpoint.
 
-Submitting returns ``pending``; each poll advances the task one step along
-``pending -> started -> <terminal>``, where the terminal status is ``success``
-by default and can be scripted to ``failure`` or ``cancelled``. A cancelled
-task answers ``/v1/result/{task_id}`` with a structured 409
-(``detail.code == "TASK_CANCELLED"``), matching the real service contract, so
-the client's cancellation path runs end to end. Every response is built from
-this repo's own response models, so the fake cannot drift into being a second
-copy of the API.
+Submitting returns ``pending``; each poll advances ``pending -> started ->
+<terminal>``, scriptable to ``failure`` or ``cancelled``. A cancelled task
+answers ``/v1/result/{task_id}`` with the service's structured 409
+(``detail.code == "TASK_CANCELLED"``). Every response is built from this repo's
+own models, so the fake cannot drift into a second copy of the API.
 """
 
 from __future__ import annotations

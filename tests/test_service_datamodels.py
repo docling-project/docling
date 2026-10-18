@@ -467,12 +467,7 @@ def test_task_status_response_accepts_structured_failure() -> None:
     assert response.failure.phase == FailurePhase.ORCHESTRATION
 
 
-def test_conversion_status_exposes_lowercase_cancelled_value() -> None:
-    assert ConversionStatus.CANCELLED == "cancelled"
-    assert ConversionStatus.CANCELLED.value == "cancelled"
-
-
-def test_task_status_response_accepts_cancelled_status() -> None:
+def test_task_status_response_serializes_cancelled_status() -> None:
     response = TaskStatusResponse.model_validate(
         {
             "task_id": "task-1",
@@ -482,6 +477,7 @@ def test_task_status_response_accepts_cancelled_status() -> None:
     )
 
     assert response.task_status is ConversionStatus.CANCELLED
+    assert response.model_dump(mode="json")["task_status"] == "cancelled"
 
 
 def test_confidence_scores_from_flat_scores() -> None:

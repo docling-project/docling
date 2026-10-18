@@ -337,6 +337,71 @@ def test_polling_watcher_wait_returns_cancelled_status() -> None:
     assert watcher.wait_for_terminal("task-1").task_status == "cancelled"
 
 
+def test_websocket_watcher_yields_cancelled_terminal_and_stops(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sent: list[str] = []
+    connect_calls: list[int] = []
+    closed: list[bool] = []
+
+    class FakeWebSocket:
+        def __init__(self) -> None:
+            self._messages = iter(
+                [
+                    WebsocketMessage(
+                        message=MessageKind.CONNECTION,
+                        task=_status_response("task-1", "pending"),
+                    ).model_dump_json(),
+                    WebsocketMessage(
+                        message=MessageKind.UPDATE,
+                        task=_status_response("task-1", "started"),
+                    ).model_dump_json(),
+                    WebsocketMessage(
+                        message=MessageKind.UPDATE,
+                        task=_status_response("task-1", "cancelled"),
+                    ).model_dump_json(),
+                ]
+            )
+
+        def recv(self, timeout: float | None = None) -> str:
+            return next(self._messages)
+
+        def send(self, message: str) -> None:
+            sent.append(message)
+
+    class FakeConnection:
+        def __enter__(self) -> FakeWebSocket:
+            return FakeWebSocket()
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            closed.append(True)
+
+    def fake_connect(*args: object, **kwargs: object) -> FakeConnection:
+        connect_calls.append(1)
+        return FakeConnection()
+
+    monkeypatch.setattr(watchers_module, "connect", fake_connect)
+
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda task_id: f"ws://example.invalid/{task_id}",
+        poll_fallback=None,
+        fallback_to_poll=False,
+        connect_timeout=1.0,
+        default_timeout=10.0,
+    )
+
+    updates = list(watcher.iter_updates(task_id="task-1"))
+
+    assert [update.task_status for update in updates] == [
+        "pending",
+        "started",
+        "cancelled",
+    ]
+    assert sent == ["next"]
+    assert connect_calls == [1]
+    assert closed == [True]
+
+
 def test_conversion_job_done_is_true_for_cancelled_terminal_status() -> None:
     job = ConversionJob(
         task_id="task-1",
@@ -361,10 +426,13 @@ def test_fetch_result_response_maps_structured_cancelled_409() -> None:
     )
     calls: list[dict[str, object]] = []
 
+    def fake_request(self: DoclingServiceClient, **kwargs: object) -> httpx.Response:
+        calls.append(kwargs)
+        return response
+
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         client._request_with_retry = MethodType(  # type: ignore[method-assign]
-            lambda self, **kwargs: (calls.append(kwargs), response)[1],
-            client,
+            fake_request, client
         )
         with pytest.raises(TaskCancelledError, match="task-1") as excinfo:
             client._fetch_result_response(
@@ -395,13 +463,44 @@ def test_fetch_result_response_keeps_service_error_for_unrelated_409() -> None:
     assert not isinstance(excinfo.value, TaskCancelledError)
 
 
+@pytest.mark.parametrize(
+    "response",
+    [
+        httpx.Response(409, json={"detail": ["TASK_CANCELLED"]}),
+        httpx.Response(409, json={"detail": "TASK_CANCELLED"}),
+        httpx.Response(409, json=["TASK_CANCELLED"]),
+        httpx.Response(409, json="TASK_CANCELLED"),
+        httpx.Response(409, content=b"not-json"),
+    ],
+)
+def test_fetch_result_response_keeps_malformed_409_as_service_error(
+    response: httpx.Response,
+) -> None:
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = MethodType(  # type: ignore[method-assign]
+            lambda self, **kwargs: response,
+            client,
+        )
+        with pytest.raises(ServiceError) as excinfo:
+            client._fetch_result_response(
+                task_id="task-1",
+                last_status=None,
+                error_message="fetch failed",
+            )
+
+    assert not isinstance(excinfo.value, TaskCancelledError)
+
+
 def test_fetch_result_response_skips_get_when_status_known_cancelled() -> None:
     calls: list[dict[str, object]] = []
 
+    def fake_request(self: DoclingServiceClient, **kwargs: object) -> httpx.Response:
+        calls.append(kwargs)
+        raise AssertionError("result request must not be sent")
+
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         client._request_with_retry = MethodType(  # type: ignore[method-assign]
-            lambda self, **kwargs: calls.append(kwargs),
-            client,
+            fake_request, client
         )
         with pytest.raises(TaskCancelledError):
             client._fetch_result_response(
@@ -450,6 +549,72 @@ async def test_async_polling_watcher_wait_returns_cancelled_status() -> None:
     )
 
     assert (await watcher.wait_for_terminal("task-1")).task_status == "cancelled"
+
+
+@pytest.mark.anyio
+async def test_async_websocket_watcher_yields_cancelled_terminal_and_stops(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sent: list[str] = []
+    connect_calls: list[int] = []
+    closed: list[bool] = []
+
+    class FakeWebSocket:
+        def __init__(self) -> None:
+            self._messages = iter(
+                [
+                    WebsocketMessage(
+                        message=MessageKind.CONNECTION,
+                        task=_status_response("task-1", "pending"),
+                    ).model_dump_json(),
+                    WebsocketMessage(
+                        message=MessageKind.UPDATE,
+                        task=_status_response("task-1", "started"),
+                    ).model_dump_json(),
+                    WebsocketMessage(
+                        message=MessageKind.UPDATE,
+                        task=_status_response("task-1", "cancelled"),
+                    ).model_dump_json(),
+                ]
+            )
+
+        async def recv(self) -> str:
+            return next(self._messages)
+
+        async def send(self, message: str) -> None:
+            sent.append(message)
+
+    class FakeConnection:
+        async def __aenter__(self) -> FakeWebSocket:
+            return FakeWebSocket()
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            closed.append(True)
+
+    def fake_connect(*args: object, **kwargs: object) -> FakeConnection:
+        connect_calls.append(1)
+        return FakeConnection()
+
+    monkeypatch.setattr(watchers_module, "async_ws_connect", fake_connect)
+
+    watcher = watchers_module.AsyncWebSocketWatcher(
+        ws_url_for_task=lambda task_id: f"ws://example.invalid/{task_id}",
+        poll_fallback=None,
+        fallback_to_poll=False,
+        connect_timeout=1.0,
+        default_timeout=10.0,
+    )
+
+    updates = [update async for update in watcher.iter_updates("task-1")]
+
+    assert [update.task_status for update in updates] == [
+        "pending",
+        "started",
+        "cancelled",
+    ]
+    assert sent == ["next"]
+    assert connect_calls == [1]
+    assert closed == [True]
 
 
 @pytest.mark.anyio

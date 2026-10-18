@@ -290,7 +290,6 @@ def test_task_failure_is_returned_when_raises_on_error_is_false(client, serve):
 def test_cancelled_task_raises_task_cancelled_error_without_result_get(
     client, serve, service
 ):
-    """A task the watcher sees as cancelled fails without a result lookup."""
     serve.terminal_status = ConversionStatus.CANCELLED
 
     job = client.submit(SOURCE, target=InBodyTarget())
@@ -303,7 +302,6 @@ def test_cancelled_task_raises_task_cancelled_error_without_result_get(
 
 
 def test_structured_cancelled_result_409_maps_to_task_cancelled_error(client, service):
-    """A direct result request that returns the structured cancel 409 raises."""
     service.add_route(
         "GET",
         r"/v1/result/.*",

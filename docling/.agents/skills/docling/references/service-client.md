@@ -134,8 +134,7 @@ The client raises typed exceptions from `docling.service_client` — e.g.
 `DoclingServiceClientError` to handle any of them.
 
 `TaskCancelledError` is raised when a task is cancelled before it produces a
-result. It subclasses `TaskExecutionError` and carries the `task_id`, so a
-cancelled task stays distinct from a failed or expired one. Status watchers
-treat `cancelled` as terminal: `watch` yields the cancelled status and stops,
-`wait` returns it, and the result access fails with `TaskCancelledError`
-instead of a result lookup.
+result. It subclasses `TaskExecutionError` and carries the `task_id`, keeping
+cancellation distinct from failure or expiry. Status watchers treat
+`cancelled` as terminal: `watch` yields it and stops, `wait` returns it, and
+result access raises `TaskCancelledError`.
