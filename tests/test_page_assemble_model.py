@@ -308,3 +308,67 @@ class TestMatchHyperlink:
         page.parsed_page = pp
         bbox = BoundingBox(l=10, t=10, r=90, b=20)
         assert PageAssembleModel._match_hyperlink(bbox, page) is None
+
+
+class TestSanitizeTextCjkLineJoin:
+    """Line breaks inside CJK text are not word boundaries (issue #4672)."""
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            # Japanese: kanji / kana on both sides of the break
+            (
+                ["衆議院議員早稲田夕季君提出", "インクルーシブ防災を実現する"],
+                "衆議院議員早稲田夕季君提出インクルーシブ防災を実現する",
+            ),
+            # Chinese
+            (
+                ["我们提出了一种新的文档", "转换方法。"],
+                "我们提出了一种新的文档转换方法。",
+            ),
+            # full-width punctuation ends or starts a line
+            (["避難所における、", "良好な生活環境"], "避難所における、良好な生活環境"),
+            (["政府としては", "「避難所」"], "政府としては「避難所」"),
+            # half-width katakana and an ideograph from Extension B
+            (["ｶﾀｶﾅ", "𠀋"], "ｶﾀｶﾅ𠀋"),
+            # more than two lines
+            (["令和", "元年", "十月"], "令和元年十月"),
+        ],
+    )
+    def test_cjk_lines_join_without_space(self, model, lines, expected):
+        assert model.sanitize_text(lines) == expected
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            # Latin on one side of the break keeps the space
+            (["docling は", "PDF を変換する"], "docling は PDF を変換する"),
+            (["変換ツール", "docling"], "変換ツール docling"),
+            (["Docling", "文書変換"], "Docling 文書変換"),
+            # digits are not CJK
+            (["令和元年", "10月"], "令和元年 10月"),
+            # plain Latin text is unchanged
+            (["hello", "world"], "hello world"),
+        ],
+    )
+    def test_mixed_script_keeps_space(self, model, lines, expected):
+        assert model.sanitize_text(lines) == expected
+
+    def test_korean_keeps_space(self, model):
+        """Korean separates words with spaces; a line break is a word boundary."""
+        assert (
+            model.sanitize_text(["문서 변환", "도구입니다"]) == "문서 변환 도구입니다"
+        )
+
+    def test_korean_with_hanja_keeps_space(self, model):
+        """Hanja inside a Korean cluster are space-separated words too."""
+        assert (
+            model.sanitize_text(["대한민국 憲法", "第一條 대한민국은"])
+            == "대한민국 憲法 第一條 대한민국은"
+        )
+
+    def test_hyphenation_still_applies(self, model):
+        assert model.sanitize_text(["文書 algo-", "rithms"]) == "文書 algorithms"
+
+    def test_empty_line_between_cjk_lines(self, model):
+        assert model.sanitize_text(["日本", "", "語"]) == "日本  語"

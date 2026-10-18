@@ -5,7 +5,7 @@ import logging
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, Final, List, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import BoundingBox
@@ -32,6 +32,33 @@ from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+
+# Scripts written without spaces between words: Han ideographs, kana and
+# CJK / full-width punctuation. A line break between two such characters is
+# not a word boundary, so the lines are joined without a space. Hangul is
+# deliberately absent: Korean separates words with spaces.
+_CJK_NO_SPACE_RE = re.compile(
+    "["
+    "\u2e80-\u2fdf"  # CJK radicals, Kangxi radicals
+    "\u3000-\u303f"  # CJK symbols and punctuation
+    "\u3040-\u309f"  # Hiragana
+    "\u30a0-\u30ff"  # Katakana
+    "\u31c0-\u31ef"  # CJK strokes
+    "\u31f0-\u31ff"  # Katakana phonetic extensions
+    "\u3400-\u4dbf"  # CJK Unified Ideographs Extension A
+    "\u4e00-\u9fff"  # CJK Unified Ideographs
+    "\uf900-\ufaff"  # CJK Compatibility Ideographs
+    "\ufe30-\ufe4f"  # CJK compatibility forms (vertical punctuation)
+    "\uff01-\uff60"  # Full-width ASCII variants and punctuation
+    "\uff61-\uff9f"  # Half-width CJK punctuation and katakana
+    "\U00020000-\U0003134f"  # CJK Unified Ideographs Extensions B-H
+    "]"
+)
+# Lowest code point in _CJK_NO_SPACE_RE: a cheap pre-check for Latin text.
+_CJK_MIN_CHAR: Final = "\u2e80"
+_HANGUL_RE = re.compile(
+    "[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\uac00-\ud7af\ud7b0-\ud7ff]"
+)
 
 # Ligature normalization map.
 # Covers the Unicode Alphabetic Presentation Forms block (U+FB00-U+FB06),
@@ -123,11 +150,22 @@ class PageAssembleModel(BasePageModel):
         hyphen-prefixed token -- so it is kept and its lines are joined like
         any other line break.
 
+        A break between two CJK characters (Han, kana or CJK / full-width
+        punctuation) is not a word boundary either, since those scripts put
+        no spaces between words, so it is closed up as well -- unless the
+        cluster contains Hangul: Korean separates words with spaces, Hanja
+        included.
+
         The joined text is then normalized: a few typographic characters are
         replaced by ASCII equivalents and ligatures are expanded.
         """
         if len(lines) == 0:
             return ""
+
+        # Korean text mixes Hanja into space-separated words, so a cluster
+        # that contains Hangul keeps the space at every line break. Only
+        # checked once a CJK/CJK break is found, so other text pays nothing.
+        has_hangul: Optional[bool] = None
 
         for ix, line in enumerate(lines[1:]):
             prev_line = lines[ix]
@@ -147,6 +185,18 @@ class PageAssembleModel(BasePageModel):
                 ):
                     lines[ix] = prev_line[:-1]
                 elif not hyphen_attached_to_word:
+                    lines[ix] += " "
+            elif (
+                prev_line
+                and line
+                and prev_line[-1] >= _CJK_MIN_CHAR
+                and line[0] >= _CJK_MIN_CHAR
+                and _CJK_NO_SPACE_RE.match(prev_line[-1])
+                and _CJK_NO_SPACE_RE.match(line[0])
+            ):
+                if has_hangul is None:
+                    has_hangul = any(_HANGUL_RE.search(ln) for ln in lines)
+                if has_hangul:
                     lines[ix] += " "
             else:
                 lines[ix] += " "
