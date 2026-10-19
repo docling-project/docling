@@ -612,6 +612,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.HTML, InputFormat.MHTML}
 
+    @classmethod
+    @override
+    def dependencies_available(cls) -> bool:
+        return _BS4_AVAILABLE
+
     @staticmethod
     def _normalize_content_id(value: str) -> str:
         """Normalize a Content-ID value to a canonical ``cid:<id>`` string."""

@@ -1062,15 +1062,18 @@ class _DocumentConversionInput(BaseModel):
         """Choose between the PDF and CV formats for a PDF container.
 
         A .cv file is a valid PDF. It converts from its embedded payload when
-        ``InputFormat.CV`` is allowed, and as an ordinary PDF when only
-        ``InputFormat.PDF`` is allowed. A PDF without a ``.cv`` name is a .cv
-        file when its XMP metadata declares the .cv namespace.
+        ``InputFormat.CV`` is allowed and its backend dependencies are
+        installed. Otherwise it converts as an ordinary PDF. A PDF without a
+        ``.cv`` name is a .cv file when its XMP metadata declares the .cv
+        namespace.
         """
-        if format == InputFormat.CV and InputFormat.CV not in format_options:
+        cv_option = format_options.get(InputFormat.CV)
+        cv_usable = cv_option is not None and cv_option.backend.dependencies_available()
+        if format == InputFormat.CV and not cv_usable:
             return InputFormat.PDF
         if (
             format == InputFormat.PDF
-            and InputFormat.CV in format_options
+            and cv_usable
             and _DocumentConversionInput._has_cv_metadata(obj)
         ):
             return InputFormat.CV

@@ -208,6 +208,18 @@ class CvDocumentBackend(DeclarativeDocumentBackend):
             stream = stream.get_object() if stream is not None else None
             if not isinstance(stream, StreamObject):
                 continue
+            # /Params /Size is the decoded size, which the specification
+            # requires. Checking it first avoids decoding a declared oversized
+            # payload. pypdf also bounds the output of its decoders.
+            params = stream.get("/Params")
+            params = params.get_object() if params is not None else None
+            declared_size = (
+                params.get("/Size") if isinstance(params, DictionaryObject) else None
+            )
+            if declared_size is not None and int(declared_size) > _MAX_PAYLOAD_BYTES:
+                raise DocumentLoadError(
+                    f"The .cv payload {name!r} is larger than {_MAX_PAYLOAD_BYTES} bytes."
+                )
             data = stream.get_data()
             if len(data) > _MAX_PAYLOAD_BYTES:
                 raise DocumentLoadError(
@@ -231,6 +243,14 @@ class CvDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.CV}
+
+    @classmethod
+    def dependencies_available(cls) -> bool:
+        return (
+            _CV_DEPENDENCIES_AVAILABLE
+            and MarkdownDocumentBackend.dependencies_available()
+            and HTMLDocumentBackend.dependencies_available()
+        )
 
     def _convert_markdown(self, markdown: bytes) -> DoclingDocument:
         # The .cv specification requires UTF-8 text payloads.

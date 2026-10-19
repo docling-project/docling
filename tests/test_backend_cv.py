@@ -69,6 +69,21 @@ def test_cv_is_detected_only_when_the_cv_format_is_allowed(
     assert in_doc.format is expected
 
 
+@pytest.mark.parametrize("name", ["marie_curie.cv", "marie_curie.pdf"])
+def test_cv_converts_as_pdf_without_cv_dependencies(name: str, monkeypatch):
+    # A slim install without the format-cv extra keeps converting these files
+    # as PDFs, as it did before the CV format existed.
+    monkeypatch.setattr("docling.backend.cv_backend._CV_DEPENDENCIES_AVAILABLE", False)
+    stream = DocumentStream(name=name, stream=BytesIO(MARKDOWN_CV.read_bytes()))
+    conversion_input = _DocumentConversionInput(path_or_stream_iterator=[stream])
+
+    [in_doc] = conversion_input.docs(
+        {InputFormat.CV: CvFormatOption(), InputFormat.PDF: PdfFormatOption()}
+    )
+
+    assert in_doc.format is InputFormat.PDF
+
+
 def test_pdf_without_cv_metadata_stays_pdf():
     source = Path("./tests/data/pdf/bookmark_sample.pdf")
     conversion_input = _DocumentConversionInput(path_or_stream_iterator=[source])
