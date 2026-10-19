@@ -33,6 +33,7 @@ from docling.backend.afp_backend import AfpDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.boxnote_backend import BoxNoteDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
+from docling.backend.cv_backend import CvDocumentBackend
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
 )
@@ -436,6 +437,13 @@ class AfpFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = AfpDocumentBackend
 
 
+class CvFormatOption(FormatOption):
+    """Format options for .cv resume files, converted from their embedded payload."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = CvDocumentBackend
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
@@ -478,6 +486,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
         InputFormat.AFP: AfpFormatOption(),
+        InputFormat.CV: CvFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

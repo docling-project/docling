@@ -140,6 +140,13 @@ format-web = [
   'docling-slim[format-html,format-markdown]',
 ]
 
+# --- .cv resume files (PDF/A-3u with embedded Markdown or HTML) ---
+format-cv = [
+  'docling-slim[format-web]',
+  'pypdf>=5.0.0,<7.0.0',
+  'defusedxml>=0.7.1,<0.8.0',
+]
+
 # --- Other Formats ---
 format-latex = [
   'pylatexenc>=2.10,<3.0',
@@ -314,7 +321,7 @@ cli = [
 # CONVENIENCE BUNDLES
 # ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-cv,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [

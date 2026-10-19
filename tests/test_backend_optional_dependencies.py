@@ -33,6 +33,7 @@ _TEX_SAMPLE = (
 _JATS_SAMPLE = Path(__file__).parent / "data" / "jats" / "sources" / "pone.0234687.nxml"
 _USPTO_SAMPLE = Path(__file__).parent / "data" / "uspto" / "sources" / "ipg08672134.xml"
 _PDF_SAMPLE = Path(__file__).parent / "data" / "pdf" / "bookmark_sample.pdf"
+_CV_SAMPLE = Path(__file__).parent / "data" / "cv" / "sources" / "marie_curie.cv"
 
 
 def _run_with_blocked_module(
@@ -62,6 +63,7 @@ def _run_with_blocked_module(
         "bs4",
         "pypdfium2",
         "docling_parse",
+        "pypdf",
     ],
 )
 def test_converter_constructs_without_optional_backend_dependency(
@@ -167,6 +169,14 @@ def test_converter_constructs_without_optional_backend_dependency(
             _PDF_SAMPLE,
             "PDF",
             "format-pdf-docling",
+        ),
+        (
+            "pypdf",
+            "docling.backend.cv_backend",
+            "CvDocumentBackend",
+            _CV_SAMPLE,
+            "CV",
+            "format-cv",
         ),
     ],
 )

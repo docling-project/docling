@@ -30,6 +30,7 @@ Below you can find a listing of all supported input and output formats.
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 | AFP | IBM Advanced Function Presentation / MO:DCA |
+| CV | [.cv resume files](https://cvfile.org/spec/) (`.cv`, or a PDF that declares the `cv:` XMP namespace), converted from the embedded Markdown or HTML payload without parsing the PDF pages; requires the `format-cv` extra |
 
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.

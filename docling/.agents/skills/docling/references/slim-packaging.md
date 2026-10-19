@@ -39,6 +39,7 @@ Extras compose — combine them with commas:
 - `format-web` (`format-html`, `format-markdown`)
 - `format-opendocument` (ODT/ODS/ODP)
 - `format-latex`, `format-email`
+- `format-cv` (.cv resume files; pulls in `format-web`)
 - `format-xml-jats`, `format-xml-uspto`, `format-xml-xbrl`
 - `format-html-render` (Playwright for JS-rendered HTML)
 - `format-audio` (ASR), `format-video` (ASR + diarization; needs a C compiler)
@@ -63,8 +64,8 @@ Extras compose — combine them with commas:
 
 **Bundles**
 - `standard` — the default `docling` set: `format-pdf`, `models-local`,
-  `feat-ocr-rapidocr`, `format-office`, `format-web`, `format-latex`,
-  `format-email`, `feat-chunking`, `extract-core`, `service-client`, `cli`.
+  `feat-ocr-rapidocr`, `format-office`, `format-web`, `format-cv`,
+  `format-latex`, `format-email`, `feat-chunking`, `extract-core`, `service-client`, `cli`.
 - `all` — `standard` plus VLM, audio, HTML render, all XML, remote/onnx models,
   and the extra OCR engines. (Excludes `format-video`, which needs a compiler.)
 
