@@ -29,6 +29,7 @@ from docling.models.inference_engines.vlm.base import (
 )
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+from docling.utils.stop_reason import normalize_stop_reason
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -354,7 +355,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 outputs.append(
                     VlmEngineOutput(
                         text=output_text,
-                        stop_reason=stop_reason,
+                        stop_reason=normalize_stop_reason(stop_reason).value,
                         metadata={
                             "generation_time": generation_time,
                             "num_tokens": num_tokens,

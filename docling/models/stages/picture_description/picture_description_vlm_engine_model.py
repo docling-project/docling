@@ -27,6 +27,7 @@ from docling.models.inference_engines.vlm import (
     create_vlm_engine,
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+from docling.utils.stop_reason import normalize_stop_reason
 
 _log = logging.getLogger(__name__)
 
@@ -216,20 +217,4 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
 
 
 def _map_stop_reason(stop_reason: str | VlmStopReason | None) -> VlmStopReason:
-    if isinstance(stop_reason, VlmStopReason):
-        return stop_reason
-    if not stop_reason:
-        return VlmStopReason.UNSPECIFIED
-    try:
-        return VlmStopReason(stop_reason)
-    except ValueError:
-        pass
-    if stop_reason == "content_filter":
-        return VlmStopReason.CONTENT_FILTERED
-    if stop_reason == "length":
-        return VlmStopReason.LENGTH
-    if stop_reason in ("stop", "end_of_sequence"):
-        return VlmStopReason.END_OF_SEQUENCE
-    if stop_reason == "stop_sequence":
-        return VlmStopReason.STOP_SEQUENCE
-    return VlmStopReason.UNSPECIFIED
+    return normalize_stop_reason(stop_reason)

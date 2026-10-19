@@ -40,15 +40,13 @@ from docling.utils.mineru_utils import (
     serialize_mineru2_transcript,
 )
 from docling.utils.profiling import TimeRecorder
+from docling.utils.stop_reason import normalize_stop_reason
 
 _log = logging.getLogger(__name__)
-_VLM_STOP_REASON_VALUES = {reason.value for reason in VlmStopReason}
 
 
 def _prediction_from_engine_output(output: VlmEngineOutput) -> VlmPrediction:
-    stop_reason = VlmStopReason.UNSPECIFIED
-    if output.stop_reason in _VLM_STOP_REASON_VALUES:
-        stop_reason = VlmStopReason(output.stop_reason)
+    stop_reason = normalize_stop_reason(output.stop_reason)
 
     metadata = output.metadata or {}
 

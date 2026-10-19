@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.base_models import VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.datamodel.vlm_engine_options import VllmVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
@@ -25,11 +26,60 @@ from docling.models.inference_engines.vlm.base import (
     VlmEngineType,
 )
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.stop_reason import normalize_stop_reason
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
+
+
+def _engine_output_from_vllm_request(
+    request: Any,
+    *,
+    generation_time: float,
+    model_id: str,
+    batch_size: int,
+) -> VlmEngineOutput:
+    """Turn one vLLM request result into an engine output.
+
+    A request that produced no output at all did not stop because it ran out
+    of tokens: vLLM reports that case as a request failure and leaves the
+    finish reason empty. Report it as an inference error so that the
+    pipelines do not treat the empty page as a truncated but usable result.
+    """
+    completions = request.outputs or []
+    if not completions:
+        return VlmEngineOutput(
+            text="",
+            stop_reason=VlmStopReason.INFERENCE_ERROR.value,
+            metadata={
+                "generation_time": generation_time,
+                "num_tokens": 0,
+                "batch_size": batch_size,
+                "model": model_id,
+            },
+        )
+
+    completion = completions[0]
+    # A vLLM completion reports why it ended in finish_reason (stop, length,
+    # abort). stop_reason holds only the stop string or token id that ended the
+    # generation, and stays None when the sequence reached its own end, so read
+    # finish_reason first and fall back to the OpenAI compatible name stop_reason
+    # for an endpoint that reports the reason under that name instead.
+    stop_reason = getattr(completion, "finish_reason", None)
+    if stop_reason is None:
+        stop_reason = getattr(completion, "stop_reason", None)
+    return VlmEngineOutput(
+        text=completion.text,
+        stop_reason=normalize_stop_reason(stop_reason).value,
+        metadata={
+            "generation_time": generation_time,
+            "num_tokens": len(completion.token_ids),
+            "batch_size": batch_size,
+            "model": model_id,
+        },
+    )
 
 
 class VllmVlmEngine(BaseVlmEngine):
@@ -354,31 +404,16 @@ class VllmVlmEngine(BaseVlmEngine):
         )
 
         # Create output objects
-        results: List[VlmEngineOutput] = []
-        for i, output in enumerate(outputs):
-            text = output.outputs[0].text if output.outputs else ""
-            stop_reason = (
-                "end_of_sequence" if output.outputs[0].stop_reason else "length"
+        model_id = self.model_config.repo_id if self.model_config else "unknown"
+        return [
+            _engine_output_from_vllm_request(
+                output,
+                generation_time=generation_time / len(input_batch),
+                model_id=model_id,
+                batch_size=len(input_batch),
             )
-
-            num_tokens = len(output.outputs[0].token_ids) if output.outputs else 0
-
-            results.append(
-                VlmEngineOutput(
-                    text=text,
-                    stop_reason=stop_reason,
-                    metadata={
-                        "generation_time": generation_time / len(input_batch),
-                        "num_tokens": num_tokens,
-                        "batch_size": len(input_batch),
-                        "model": self.model_config.repo_id
-                        if self.model_config
-                        else "unknown",
-                    },
-                )
-            )
-
-        return results
+            for output in outputs
+        ]
 
     def cleanup(self) -> None:
         """Clean up vLLM resources."""
