@@ -34,6 +34,7 @@ import re
 from typing import TYPE_CHECKING
 from xml.etree import ElementTree
 
+from defusedxml.common import DefusedXmlException
 from defusedxml.ElementTree import fromstring as _defused_fromstring
 from docling_core.types.doc.common.meta import BaseMeta, LanguageMetaField
 from docling_core.types.doc.document import DoclingDocument
@@ -119,12 +120,17 @@ def parse_xmp_properties(xml: str) -> dict[str, str]:
     ``x-default`` entry, else the first. Ordered and unordered arrays (``rdf:Seq``,
     ``rdf:Bag``) are joined with ``", "``. Properties written as attributes of
     ``rdf:Description`` are read too. Properties in other namespaces, and nested structures
-    without a text value, are skipped. An unparsable packet yields no properties.
+    without a text value, are skipped. An unparsable packet yields no properties, and so does
+    one that declares entities or a DTD: ``defusedxml`` refuses those as a defence against entity
+    expansion, and metadata is never worth failing a conversion over.
     """
     try:
         root = _defused_fromstring(xml)
     except ElementTree.ParseError as e:
         _log.debug("XMP packet is not well-formed XML, skipping: %s", e)
+        return {}
+    except DefusedXmlException as e:
+        _log.warning("XMP packet rejected by defusedxml, skipping: %s", e)
         return {}
 
     properties: dict[str, str] = {}
