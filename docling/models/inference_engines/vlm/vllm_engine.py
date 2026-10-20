@@ -64,15 +64,11 @@ def _engine_output_from_vllm_request(
     completion = completions[0]
     # A vLLM completion reports why it ended in finish_reason (stop, length,
     # abort). stop_reason holds only the stop string or token id that ended the
-    # generation, and stays None when the sequence reached its own end, so read
-    # finish_reason first and fall back to the OpenAI compatible name stop_reason
-    # for an endpoint that reports the reason under that name instead.
-    stop_reason = getattr(completion, "finish_reason", None)
-    if stop_reason is None:
-        stop_reason = getattr(completion, "stop_reason", None)
+    # generation, and stays None when the sequence reached its own end, so the
+    # finish reason is the field that tells a complete page from a truncated one.
     return VlmEngineOutput(
         text=completion.text,
-        stop_reason=normalize_stop_reason(stop_reason).value,
+        stop_reason=normalize_stop_reason(completion.finish_reason).value,
         metadata={
             "generation_time": generation_time,
             "num_tokens": len(completion.token_ids),
