@@ -3,6 +3,7 @@
 
 """Tests for PDF document-level metadata: catalog /Lang, /Info and XMP properties."""
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -75,6 +76,21 @@ def test_parse_xmp_properties_flattens_known_namespaces():
 
 def test_parse_xmp_properties_tolerates_malformed_packet():
     assert parse_xmp_properties("<x:xmpmeta><unclosed") == {}
+
+
+def test_parse_xmp_properties_rejects_entity_declarations(caplog):
+    # defusedxml raises EntitiesForbidden (a ValueError, not a ParseError) for a packet
+    # that declares entities; it must be swallowed like any other unusable packet.
+    hostile = (
+        '<?xml version="1.0"?><!DOCTYPE x [<!ENTITY lol "lol">]>'
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/">'
+        '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+        '<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        "<dc:title>&lol;</dc:title></rdf:Description></rdf:RDF></x:xmpmeta>"
+    )
+    with caplog.at_level(logging.WARNING, logger="docling.utils.pdf_metadata"):
+        assert parse_xmp_properties(hostile) == {}
+    assert "rejected by defusedxml" in caplog.text
 
 
 @pytest.mark.parametrize(
