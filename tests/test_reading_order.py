@@ -525,6 +525,77 @@ def _box(
     return _el(cid, label).model_copy(update={"l": l, "r": r, "t": t, "b": b})
 
 
+@pytest.mark.parametrize("origin", [CoordOrigin.BOTTOMLEFT, CoordOrigin.TOPLEFT])
+@pytest.mark.parametrize("reverse_input", [False, True])
+@pytest.mark.parametrize("merged_party_row", [False, True])
+def test_centered_header_precedes_narrow_head_of_wide_body(
+    origin: CoordOrigin, reverse_input: bool, merged_party_row: bool
+) -> None:
+    # A short party name starts a separate chain below a centered court header.
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 651.05, 661.14, l=284.09, r=321.31),
+        _box(1, DocItemLabel.TEXT, 623.40, 633.74, l=180.62, r=428.85),
+        _box(2, DocItemLabel.TEXT, 540.57, 606.14, l=228.29, r=381.27),
+        _box(3, DocItemLabel.SECTION_HEADER, 513.02, 523.11, l=180.26, r=429.32),
+        _box(4, DocItemLabel.TEXT, 499.17, 509.51, l=167.78, r=441.61),
+        _box(5, DocItemLabel.SECTION_HEADER, 457.77, 468.11, l=85.10, r=93.77),
+        _box(6, DocItemLabel.TEXT, 443.97, 454.31, l=85.10, r=181.34),
+        _box(7, DocItemLabel.TEXT, 443.97, 454.31, l=316.15, r=450.08),
+        _box(8, DocItemLabel.TEXT, 416.37, 426.71, l=85.10, r=103.78),
+        _box(9, DocItemLabel.TEXT, 388.75, 399.09, l=85.10, r=93.11),
+        _box(10, DocItemLabel.TEXT, 388.75, 399.09, l=316.15, r=490.44),
+        _box(11, DocItemLabel.TEXT, 361.15, 371.49, l=85.10, r=211.09),
+        _box(12, DocItemLabel.TEXT, 347.35, 371.49, l=316.15, r=490.43),
+        _box(13, DocItemLabel.PICTURE, 704.05, 808.58, l=177.78, r=432.11),
+    ]
+    for element in elements:
+        element.page_size = Size(width=595.32, height=841.92)
+    if merged_party_row:
+        # Layout models can return the party and counsel as one wide text box.
+        elements[6].r = elements[7].r
+        elements.pop(7)
+        for cid, element in enumerate(elements):
+            element.cid = cid
+    expected = [elements[-1].cid, *range(len(elements) - 1)]
+    if origin == CoordOrigin.TOPLEFT:
+        elements = [
+            element.model_copy(
+                update=element.to_top_left_origin(
+                    page_height=element.page_size.height
+                ).model_dump()
+            )
+            for element in elements
+        ]
+    if reverse_input:
+        elements.reverse()
+
+    result = ReadingOrderPredictor().predict_reading_order(elements)
+
+    assert [element.cid for element in result] == expected
+    # Dilation must affect ordering only, not the returned source boxes.
+    assert result[6].l == 85.10
+    assert result[6].r == 93.77
+
+
+@pytest.mark.parametrize("dilate", [False, True])
+def test_staggered_columns_keep_left_to_right_order_before_shared_footer(
+    dilate: bool,
+) -> None:
+    elements = [
+        _box(0, DocItemLabel.TEXT, 450, 600, l=50, r=290),
+        _box(1, DocItemLabel.TEXT, 250, 400, l=50, r=290),
+        _box(2, DocItemLabel.SECTION_HEADER, 700, 720, l=320, r=560),
+        _box(3, DocItemLabel.TEXT, 250, 680, l=320, r=560),
+        _box(4, DocItemLabel.TEXT, 100, 200, l=50, r=560),
+    ]
+
+    predictor = ReadingOrderPredictor()
+    predictor.dilated_page_element = dilate
+    result = predictor.predict_reading_order(elements)
+
+    assert [element.cid for element in result] == [0, 1, 2, 3, 4]
+
+
 def test_caption_binds_below_when_the_graphic_below_is_nearer():
     # Doc 01030000000128, "Figure 13.3. Graph of Projection Estimates": a table
     # sits 49.7 above the caption, the figure it names 24.9 below. Ranking by

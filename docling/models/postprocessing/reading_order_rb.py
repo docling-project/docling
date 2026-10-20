@@ -1011,7 +1011,14 @@ class ReadingOrderPredictor:
                         x1=x1_dil,
                         vertical_separators=vertical_separators,
                     )
-                    if (x0 - x0_dil) > th or (x1_dil - x1) > th:
+                    # A narrow heading can start a much wider text column.
+                    if ((x0 - x0_dil) > th or (x1_dil - x1) > th) and not (
+                        isinstance(pelem_i, PageElement)
+                        and pelem_i.label == DocItemLabel.SECTION_HEADER
+                        and not state.up_map[i]
+                        and isinstance(pelem_dn, PageElement)
+                        and not _is_graphic(pelem_dn)
+                    ):
                         continue
                     x0 = x0_dil
                     x1 = x1_dil
