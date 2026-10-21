@@ -4,8 +4,10 @@
 """Test the NVIDIA Nemotron 3.5 Parse preset, remote-code gate and output mapper."""
 
 import sys
+from importlib.machinery import ModuleSpec
 from pathlib import Path
 from types import ModuleType
+from unittest.mock import Mock
 
 import pytest
 from docling_core.types.doc import (
@@ -182,6 +184,54 @@ def test_explicit_native_mlx_reports_missing_port(
             artifacts_path=None,
             model_config=spec.get_engine_config(VlmEngineType.MLX),
         )
+
+
+def test_explicit_native_mlx_loads_pinned_export(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
+
+    model, processor, config = object(), object(), object()
+    load = Mock(return_value=(model, processor))
+    load_config = Mock(return_value=config)
+    download = Mock(return_value=tmp_path)
+    mlx_module = ModuleType("mlx_vlm")
+    prompt_module = ModuleType("mlx_vlm.prompt_utils")
+    utils_module = ModuleType("mlx_vlm.utils")
+    native_module = ModuleType("mlx_vlm.models.nemotron_parse_v3_5")
+    native_module.__spec__ = ModuleSpec(native_module.__name__, loader=None)
+    # Stub only the optional vendor boundary; run Docling's module gate and loader.
+    monkeypatch.setattr(mlx_module, "load", load, raising=False)
+    monkeypatch.setattr(mlx_module, "stream_generate", Mock(), raising=False)
+    monkeypatch.setattr(prompt_module, "apply_chat_template", Mock(), raising=False)
+    monkeypatch.setattr(utils_module, "load_config", load_config, raising=False)
+    for module in (mlx_module, prompt_module, utils_module, native_module):
+        monkeypatch.setitem(sys.modules, module.__name__, module)
+    monkeypatch.setattr(MlxVlmEngine, "download_models", staticmethod(download))
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm._utils._installed_engine_version",
+        lambda engine_type: "0.7.9",
+    )
+
+    spec = VlmConvertOptions.get_preset("nemotron_parse_v3_5").model_spec
+    engine = MlxVlmEngine(
+        options=MlxVlmEngineOptions(),
+        artifacts_path=None,
+        model_config=spec.get_engine_config(VlmEngineType.MLX),
+    )
+
+    download.assert_called_once_with(
+        "geoHeil/Nemotron-3.5-Parse-MLX-bf16",
+        revision="d6a6b5386601e04706e36268e0c003fca9671ade",
+        trust_remote_code=False,
+    )
+    load.assert_called_once_with(tmp_path, strict=True)
+    load_config.assert_called_once_with(tmp_path)
+    assert engine._initialized
+    assert engine.vlm_model is model
+    assert engine.processor is processor
+    assert engine.config is config
 
 
 def test_transformers_engine_refuses_remote_code_without_opt_in(
