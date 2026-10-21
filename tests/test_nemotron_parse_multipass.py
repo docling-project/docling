@@ -169,6 +169,37 @@ def test_triple_union_prefers_detector_and_keeps_parser_only_boxes() -> None:
     assert len(prepare_nemotron_crops(image, parser, "")) == 2
 
 
+@pytest.mark.parametrize("use_detector", [False, True])
+def test_primary_crop_dedup_keeps_distinct_regions_and_classes(
+    use_detector: bool,
+) -> None:
+    image = Image.new("RGB", (1000, 800))
+    first = (0.1, 0.1, 0.5, 0.5)
+    nearby = (0.11, 0.1, 0.51, 0.5)
+    overlapping = (0.15, 0.1, 0.55, 0.5)
+    separate = (0.6, 0.6, 0.9, 0.9)
+    content = (
+        _block("", first)
+        + _block("", nearby)
+        + _block("", overlapping)
+        + _block("", first, label="Chart")
+        + _block("", separate)
+    )
+    crops = prepare_nemotron_crops(
+        image,
+        "" if use_detector else content,
+        content if use_detector else None,
+        union=False,
+    )
+    # The shifted duplicate has IoU > 0.85; the distinct overlap has IoU < 0.85.
+    assert [(crop.region.label, crop.region.bbox) for crop in crops] == [
+        ("Table", first),
+        ("Table", overlapping),
+        ("Chart", first),
+        ("Table", separate),
+    ]
+
+
 @pytest.mark.parametrize(
     "body",
     [
@@ -375,11 +406,17 @@ def test_empty_crop_and_partial_batch_failure_preserve_other_regions(
 
 
 @pytest.mark.parametrize(
-    "eos_token_ids,pad_token_id,final_eos",
-    [(2, 0, 2), ([2, 7], 0, 7), (2, 2, 2), (None, 0, 2)],
+    "eos_token_ids,pad_token_id,final_token,tokenizer_eos_token_id",
+    [
+        (2, 0, 2, 2),
+        ([2, 7], 0, 7, 2),
+        (2, 2, 2, 2),
+        (None, 0, 2, 2),
+        pytest.param(None, 0, 2, None, id="no-eos-configured"),
+    ],
 )
 def test_transformers_distinguishes_token_limit_from_final_eos_and_padding(
-    eos_token_ids, pad_token_id, final_eos
+    eos_token_ids, pad_token_id, final_token, tokenizer_eos_token_id
 ) -> None:
     torch = pytest.importorskip("torch")
     from transformers import GenerationConfig
@@ -391,13 +428,15 @@ def test_transformers_distinguishes_token_limit_from_final_eos_and_padding(
 
     generated = [
         [3, 4, 5, 6],
-        [3, 4, 5, final_eos],
-        [3, final_eos, pad_token_id, pad_token_id],
+        [3, 4, 5, final_token],
+        [3, final_token, pad_token_id, pad_token_id],
     ]
 
     class Processor:
         tokenizer = SimpleNamespace(
-            pad_token_id=pad_token_id, eos_token_id=2, pad_token=None
+            pad_token_id=pad_token_id,
+            eos_token_id=tokenizer_eos_token_id,
+            pad_token=None,
         )
 
         def __call__(self, **kwargs):
@@ -405,7 +444,7 @@ def test_transformers_distinguishes_token_limit_from_final_eos_and_padding(
 
         def batch_decode(self, sequences, **kwargs):
             assert sequences.tolist() == generated
-            return ["truncated", "complete at limit", "complete with padding"]
+            return ["token limit", "final token at limit", "stopped before limit"]
 
     engine = TransformersVlmEngine.__new__(TransformersVlmEngine)
     engine._initialized = True
@@ -428,10 +467,12 @@ def test_transformers_distinguishes_token_limit_from_final_eos_and_padding(
             for _ in range(3)
         ]
     )
+    # Without an EOS ID, only generation below the token limit can be complete.
+    capped_indices = (
+        {0, 1} if eos_token_ids is None and tokenizer_eos_token_id is None else {0}
+    )
     assert [out.stop_reason for out in outputs] == [
-        "length",
-        "unspecified",
-        "unspecified",
+        "length" if index in capped_indices else "unspecified" for index in range(3)
     ]
     assert [out.metadata["num_tokens"] for out in outputs] == [
         sum(token != pad_token_id for token in row) for row in generated
@@ -445,9 +486,11 @@ def test_transformers_distinguishes_token_limit_from_final_eos_and_padding(
             pages=[page], status=ConversionStatus.STARTED, errors=[]
         )
         assert pipeline._determine_status(result) == (
-            ConversionStatus.PARTIAL_SUCCESS if index == 0 else ConversionStatus.SUCCESS
+            ConversionStatus.PARTIAL_SUCCESS
+            if index in capped_indices
+            else ConversionStatus.SUCCESS
         )
-        assert len(result.errors) == (1 if index == 0 else 0)
+        assert len(result.errors) == (1 if index in capped_indices else 0)
 
 
 @pytest.mark.parametrize(
