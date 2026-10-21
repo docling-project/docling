@@ -104,11 +104,35 @@ def test_a_sequence_that_ran_out_of_tokens_stays_a_truncation(fake_vllm) -> None
 
 def test_an_unknown_finish_reason_is_not_read_as_a_completion(fake_vllm) -> None:
     """An unrecognised reason must never be reported as a finished sequence."""
-    engine = _engine([SimpleNamespace(outputs=[_completion("a", [1], "abort")])])
+    engine = _engine([SimpleNamespace(outputs=[_completion("a", [1], "made_up")])])
 
     outputs = _run(engine)
 
     assert outputs[0].stop_reason == VlmStopReason.UNSPECIFIED.value
+
+
+@pytest.mark.parametrize("finish_reason", ["abort", "error"])
+def test_an_unfinished_request_is_not_counted_as_a_page(
+    fake_vllm, finish_reason
+) -> None:
+    """vLLM documents abort, and newer versions use error, for a request that
+    did not finish, so a page that carries partial text must not be a success."""
+    engine = _engine([SimpleNamespace(outputs=[_completion("a", [1], finish_reason)])])
+
+    outputs = _run(engine)
+
+    assert outputs[0].stop_reason == VlmStopReason.INFERENCE_ERROR.value
+
+
+def test_a_stop_string_end_on_its_own_is_a_completed_call(fake_vllm) -> None:
+    """A stop string end comes back as finish_reason stop with the string set."""
+    completion = _completion("a", [1], "stop", stop_reason="</doctag>")
+
+    engine = _engine([SimpleNamespace(outputs=[completion])])
+
+    outputs = _run(engine)
+
+    assert outputs[0].stop_reason == VlmStopReason.END_OF_SEQUENCE.value
 
 
 def test_a_custom_stop_string_does_not_hide_the_finish_reason(fake_vllm) -> None:

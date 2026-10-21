@@ -6,12 +6,15 @@
 from docling.datamodel.base_models import VlmStopReason
 
 # Finish reasons used by OpenAI compatible chat completion endpoints. The model
-# ran out of tokens / hit the context window, or refused to answer because of a
-# content policy. Both leave the output incomplete.
+# ran out of tokens / hit the context window, refused to answer because of a
+# content policy, or the request was aborted before it could finish. All of them
+# leave the output incomplete.
 _INCOMPLETE_FINISH_REASONS = {
     "length": VlmStopReason.LENGTH,
     "max_tokens": VlmStopReason.LENGTH,
     "content_filter": VlmStopReason.CONTENT_FILTERED,
+    "abort": VlmStopReason.INFERENCE_ERROR,
+    "error": VlmStopReason.INFERENCE_ERROR,
 }
 
 # Finish reasons that mean the model emitted its end-of-text token on its own,
@@ -22,12 +25,13 @@ _COMPLETE_FINISH_REASONS = {
     "end_of_sequence": VlmStopReason.END_OF_SEQUENCE,
 }
 
-# Local engines stop on a configured stop string or a custom stopping criteria:
-# the model reached its natural end, so the output is complete as well.
+# A configured stop string is the proper end of the output, so a generation that
+# stopped on one is complete. A custom stopping criteria is different: the MLX
+# engine reports it when a GenerationStopper cut a model that was looping, which
+# is a stopped sequence and not a natural end.
 _STOPPED_BY_REQUEST = {
-    "stop_sequence": VlmStopReason.END_OF_SEQUENCE,
     "stop_string": VlmStopReason.END_OF_SEQUENCE,
-    "custom_criteria": VlmStopReason.END_OF_SEQUENCE,
+    "custom_criteria": VlmStopReason.STOP_SEQUENCE,
 }
 
 
