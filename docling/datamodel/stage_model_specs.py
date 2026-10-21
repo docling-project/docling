@@ -82,6 +82,11 @@ class EngineModelConfig(BaseModel):
         ),
     )
 
+    required_module: str | None = Field(
+        default=None,
+        description="Native model module required in the installed engine package",
+    )
+
     extra_config: Dict[str, Any] = Field(
         default_factory=dict, description="Additional engine-specific configuration"
     )
@@ -103,6 +108,7 @@ class EngineModelConfig(BaseModel):
             revision=self.revision or base_revision,
             torch_dtype=self.torch_dtype,
             min_engine_version=self.min_engine_version,
+            required_module=self.required_module,
             extra_config=self.extra_config,
         )
 
@@ -275,17 +281,20 @@ class VlmModelSpec(BaseModel):
         extra_config = {}
         torch_dtype = None
         min_engine_version = None
+        required_module = None
         if engine_type in self.engine_overrides:
             override = self.engine_overrides[engine_type]
             extra_config = override.extra_config.copy()
             torch_dtype = override.torch_dtype
             min_engine_version = override.min_engine_version
+            required_module = override.required_module
 
         return EngineModelConfig(
             repo_id=repo_id,
             revision=revision,
             torch_dtype=torch_dtype,
             min_engine_version=min_engine_version,
+            required_module=required_module,
             extra_config=extra_config,
         )
 
@@ -1411,6 +1420,7 @@ VLM_CONVERT_NEMOTRON_PARSE_V3_5 = StageModelPreset(
                 repo_id="geoHeil/Nemotron-3.5-Parse-MLX-bf16",
                 revision=_NEMOTRON_PARSE_V3_5_MLX_REVISION,
                 min_engine_version="0.7.9",
+                required_module="mlx_vlm.models.nemotron_parse_v3_5",
                 extra_config={
                     "extra_generation_config": {
                         "repetition_penalty": 1.1,

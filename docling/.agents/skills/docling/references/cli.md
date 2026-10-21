@@ -60,7 +60,10 @@ docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extractio
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
 
-`nemotron_parse_v3_5` selects the native MLX port on Apple Silicon. It uses a
+`nemotron_parse_v3_5` selects the native MLX port on Apple Silicon when its
+model module is installed. Until the port is released upstream, install
+`mlx-vlm @ git+https://github.com/geoHeil/mlx-vlm.git@398153fa9d0ca62e7e3761eef46362348104d628`.
+Without that module, auto-inline falls back to Transformers. MLX uses a
 pinned `geoHeil/Nemotron-3.5-Parse-MLX-bf16` checkpoint and does not require
 remote model code. On CUDA it selects Transformers, which runs code from its
 model repository at a pinned revision. That engine requires

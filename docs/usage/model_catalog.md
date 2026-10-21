@@ -269,7 +269,8 @@ community-published `carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16` conversion 
 OpenDataLab MLX checkpoint is currently available. Image/chart analysis and cross-page table merging
 are not enabled by this preset.
 
-`nemotron_parse_v3_5` selects MLX on Apple Silicon and Transformers on CUDA. The MLX engine
+`nemotron_parse_v3_5` selects MLX on Apple Silicon when the native model module is installed.
+Otherwise it selects Transformers, including on CUDA. The MLX engine
 uses the native `mlx-vlm` port and the pinned
 [`geoHeil/Nemotron-3.5-Parse-MLX-bf16`](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16)
 checkpoint. It does not require `trust_remote_code=True`. The port uses plain greedy decoding;
@@ -278,9 +279,18 @@ Transformers. The [8-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-
 and [4-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-4bit) checkpoints are also available.
 
 The native port is proposed in [`mlx-vlm` PR #2562](https://github.com/Blaizzy/mlx-vlm/pull/2562).
-Released `mlx-vlm==0.7.9` does not contain this port. This branch pins the source dependency
-until an upstream release includes it. Install this branch with the `models-vlm-inline` extra.
-The source pin must be replaced with that release before publishing Docling to PyPI.
+Released `mlx-vlm==0.7.9` does not contain this port. Auto-inline checks the native module as
+well as the package version. It falls back to Transformers when the port is absent. Explicit MLX
+selection reports the missing module before it downloads model weights.
+
+Until an upstream release includes the port, install the signed source build on Apple Silicon:
+
+```bash
+pip install 'mlx-vlm @ git+https://github.com/geoHeil/mlx-vlm.git@398153fa9d0ca62e7e3761eef46362348104d628'
+```
+
+Repository development with `uv` uses the same source pin through `tool.uv.sources`. The published
+Docling dependency uses a normal version range; wheel and source metadata contain no Git requirement.
 
 [Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d28803cbe9fa7359f982288adbeafa53e5ecbcb7/PARITY.md)
 compare the uploaded checkpoints against the pinned Transformers reference on three pages.

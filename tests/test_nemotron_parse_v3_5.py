@@ -30,6 +30,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
+    MlxVlmEngineOptions,
     TransformersVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
@@ -95,20 +96,24 @@ def test_preset_pins_revision_and_requires_opt_in() -> None:
 
 
 @pytest.mark.parametrize(
-    ("system", "device", "mlx_version_ok", "expected"),
+    ("system", "device", "mlx_version", "module_layout", "expected"),
     [
-        ("Darwin", "mps", True, VlmEngineType.MLX),
-        ("Darwin", "mps", False, VlmEngineType.TRANSFORMERS),
-        ("Darwin", "cpu", True, VlmEngineType.TRANSFORMERS),
-        ("Linux", "cuda:0", True, VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.9", "native", VlmEngineType.MLX),
+        ("Darwin", "mps", "0.7.9", "released", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.9", "no-models", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.8", "native", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "cpu", "0.7.9", "native", VlmEngineType.TRANSFORMERS),
+        ("Linux", "cuda:0", "0.7.9", "native", VlmEngineType.TRANSFORMERS),
     ],
 )
 def test_auto_inline_selects_nemotron_native_engine(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
     *,
     system: str,
     device: str,
-    mlx_version_ok: bool,
+    mlx_version: str,
+    module_layout: str,
     expected: VlmEngineType,
 ) -> None:
     from docling.models.inference_engines.vlm.auto_inline_engine import (
@@ -127,10 +132,24 @@ def test_auto_inline_selects_nemotron_native_engine(
         "docling.models.inference_engines.vlm.auto_inline_engine.decide_device",
         lambda *args, **kwargs: device,
     )
-    monkeypatch.setitem(sys.modules, "mlx_vlm", ModuleType("mlx_vlm"))
+    # Use real module discovery for source and released packages with the same
+    # version. The minimal package needs no Apple Silicon runtime or model.
+    mlx_module = ModuleType("mlx_vlm")
+    mlx_module.__path__ = [str(tmp_path / "empty")]
+    monkeypatch.setitem(sys.modules, "mlx_vlm", mlx_module)
+    monkeypatch.delitem(sys.modules, "mlx_vlm.models", raising=False)
+    monkeypatch.delitem(
+        sys.modules, "mlx_vlm.models.nemotron_parse_v3_5", raising=False
+    )
+    if module_layout != "no-models":
+        models_module = ModuleType("mlx_vlm.models")
+        models_module.__path__ = [str(tmp_path)]
+        monkeypatch.setitem(sys.modules, "mlx_vlm.models", models_module)
+    if module_layout == "native":
+        (tmp_path / "nemotron_parse_v3_5.py").write_text("", encoding="utf-8")
     monkeypatch.setattr(
-        "docling.models.inference_engines.vlm.auto_inline_engine.engine_version_satisfied",
-        lambda engine_type, min_version: mlx_version_ok,
+        "docling.models.inference_engines.vlm._utils._installed_engine_version",
+        lambda engine_type: mlx_version,
     )
 
     assert engine._select_engine() == expected
@@ -145,6 +164,24 @@ def test_auto_inline_selects_nemotron_native_engine(
         }
     else:
         assert (config.repo_id, config.revision) == (_REPO_ID, _REVISION)
+
+
+def test_explicit_native_mlx_reports_missing_port(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
+
+    spec = VlmConvertOptions.get_preset("nemotron_parse_v3_5").model_spec
+    monkeypatch.setattr("importlib.util.find_spec", lambda name: None)
+    with pytest.raises(
+        RuntimeError,
+        match=r"mlx_vlm\.models\.nemotron_parse_v3_5.*Transformers engine",
+    ):
+        MlxVlmEngine(
+            options=MlxVlmEngineOptions(),
+            artifacts_path=None,
+            model_config=spec.get_engine_config(VlmEngineType.MLX),
+        )
 
 
 def test_transformers_engine_refuses_remote_code_without_opt_in(
