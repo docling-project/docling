@@ -281,6 +281,63 @@ sends `top_k=1`, `repetition_penalty=1.1`, and `skip_special_tokens=False`. If y
 `params`, the preset parameters are not sent, so include these values yourself. The preset maps
 charts to pictures with a chart class and data table, with one picture for each chart panel.
 
+The default is single-pass. To re-parse Table and Chart crops, set
+`VlmConvertOptions.nemotron_parse` in the Python SDK:
+
+```python
+from docling.datamodel.pipeline_options import (
+    NemotronParseOptions,
+    VlmConvertOptions,
+    VlmPipelineOptions,
+)
+from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset(
+        "nemotron_parse_v3_5",
+        engine_options=AutoInlineVlmEngineOptions(trust_remote_code=True),
+        nemotron_parse=NemotronParseOptions(
+            passes="double",  # "single", "double", or "triple"
+            triple_regions="union",  # "union" or "detector"; triple-pass only
+            crop_batch_size=8,
+        ),
+    ),
+)
+```
+
+Double-pass uses the Table and Chart boxes from the page parse. Triple-pass adds a
+separate no-text detection request. `triple_regions="detector"` uses detector boxes;
+`"union"` also keeps parser boxes that do not overlap detector boxes of the same class.
+Both Transformers and API engines use bounded crop batches. Each page has at most
+80 crop regions. Crops have a 4% + 12 pixel margin, use JPEG quality 95, and are
+skipped if either padded dimension is less than 8 pixels. Crop coordinates map back
+to the page frame.
+
+Multi-pass page and detection requests use temperature 0.2 and repetition penalty
+1.05. Crop requests use 0.1 and 1.0. All stages use `top_k=50` and `top_p=1.0`.
+Detection has a 4096 token limit; page and crop requests have an 8744 token limit.
+Explicit API `params` override these request settings. Single-pass keeps the original
+preset settings. For every Transformers VLM preset, output that reaches the token
+limit without EOS is now reported as incomplete. The VLM pipeline returns
+`PARTIAL_SUCCESS` for these pages. Output that reaches EOS at the token limit
+remains complete.
+
+Only guarded merging is supported. A crop table must have a valid grid and compatible
+column count. A replacement also needs at least 0.5 box intersection over union and
+0.65 text similarity. It keeps the page box and reading order. New objects must not
+overlap an existing object of the same class. Failed, empty, truncated, and invalid
+crop output keeps the page result. Invalid detection output skips the crop stage.
+These guards can retain the less detailed page result. NVIDIA's published multi-pass
+scores use its alternatives merge policy and do not measure this guarded policy.
+
+Each page prediction has `nemotron_parse` metadata with the mode and model request
+counts. The exported document keeps these values at
+`body.meta.docling__nemotron_parse.pages`, keyed by source page number. `requests`
+counts page, detection, and crop requests, including unsuccessful crop requests;
+it is not a stage or engine-batch count. `rejected_crop_requests` counts unsuccessful
+or invalid crop generations before merging. Token counts include all stages, and
+`usage` keeps each stage response's provider usage when available.
+
 `unlimited_ocr` is served through an OpenAI-compatible endpoint: point `ApiVlmEngineOptions.url` at your own runtime. Its API override sets `skip_special_tokens=False`, without which the layout annotations are stripped from the completion.
 
 #### Picture Description Stage
