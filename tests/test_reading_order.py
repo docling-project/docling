@@ -577,6 +577,55 @@ def test_centered_header_precedes_narrow_head_of_wide_body(
     assert result[6].r == 93.77
 
 
+@pytest.mark.parametrize("origin", [CoordOrigin.BOTTOMLEFT, CoordOrigin.TOPLEFT])
+@pytest.mark.parametrize("reverse_input", [False, True])
+def test_author_columns_precede_narrow_abstract_heading(
+    origin: CoordOrigin, reverse_input: bool
+) -> None:
+    # Page 1 of 2206.01062.pdf: the abstract must not split the author row.
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 672.39, 708.39, l=108.83, r=504.72),
+        _box(1, DocItemLabel.TEXT, 611.76, 658.29, l=91.08, r=193.70),
+        _box(2, DocItemLabel.TEXT, 612.52, 658.29, l=255.23, r=357.85),
+        _box(3, DocItemLabel.TEXT, 612.52, 658.29, l=419.37, r=522.00),
+        _box(4, DocItemLabel.TEXT, 579.52, 599.91, l=182.28, r=265.23),
+        _box(5, DocItemLabel.TEXT, 554.13, 574.61, l=172.65, r=275.28),
+        _box(6, DocItemLabel.TEXT, 554.13, 599.43, l=336.80, r=439.43),
+        _box(7, DocItemLabel.SECTION_HEADER, 536.41, 543.69, l=53.81, r=111.88),
+        _box(8, DocItemLabel.TEXT, 257.67, 529.07, l=53.49, r=295.20),
+    ]
+    for element in elements:
+        element.page_size = Size(width=612, height=792)
+    if origin == CoordOrigin.TOPLEFT:
+        elements = [
+            element.model_copy(
+                update=element.to_top_left_origin(page_height=792).model_dump()
+            )
+            for element in elements
+        ]
+    if reverse_input:
+        elements.reverse()
+
+    result = ReadingOrderPredictor().predict_reading_order(elements)
+
+    assert [element.cid for element in result] == list(range(9))
+
+
+def test_heading_above_form_does_not_reorder_other_reading_chains() -> None:
+    # A form is a container, not the text column below a narrow heading.
+    elements = [
+        _box(0, DocItemLabel.TEXT, 44.82, 53.66, l=82.39, r=152.46),
+        _box(1, DocItemLabel.SECTION_HEADER, 734.58, 748.41, l=479.44, r=592.00),
+        _box(2, DocItemLabel.FORM, 50.00, 720.02, l=54.86, r=590.00),
+    ]
+    for element in elements:
+        element.page_size = Size(width=612, height=792)
+
+    result = ReadingOrderPredictor().predict_reading_order(elements)
+
+    assert [element.cid for element in result] == [0, 1, 2]
+
+
 @pytest.mark.parametrize("dilate", [False, True])
 def test_staggered_columns_keep_left_to_right_order_before_shared_footer(
     dilate: bool,

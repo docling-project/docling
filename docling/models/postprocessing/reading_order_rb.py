@@ -703,7 +703,7 @@ class ReadingOrderPredictor:
             # redo with dilated provs
             self._init_ud_maps(dilated_page_elements, state)
 
-        self._find_heads(page_elements, state)
+        self._find_heads(page_elements, state, vertical_separators=vertical_separators)
 
         self._sort_ud_maps(page_elements, state)
 
@@ -1011,14 +1011,7 @@ class ReadingOrderPredictor:
                         x1=x1_dil,
                         vertical_separators=vertical_separators,
                     )
-                    # A narrow heading can start a much wider text column.
-                    if ((x0 - x0_dil) > th or (x1_dil - x1) > th) and not (
-                        isinstance(pelem_i, PageElement)
-                        and pelem_i.label == DocItemLabel.SECTION_HEADER
-                        and not state.up_map[i]
-                        and isinstance(pelem_dn, PageElement)
-                        and not _is_graphic(pelem_dn)
-                    ):
+                    if (x0 - x0_dil) > th or (x1_dil - x1) > th:
                         continue
                     x0 = x0_dil
                     x1 = x1_dil
@@ -1096,12 +1089,39 @@ class ReadingOrderPredictor:
         return x0, x1
 
     def _find_heads(
-        self, page_elems: List[ReadingOrderNode], state: _ReadingOrderPredictorState
+        self,
+        page_elems: List[ReadingOrderNode],
+        state: _ReadingOrderPredictorState,
+        *,
+        vertical_separators: List[SeparatorElement] | None,
     ) -> None:
         head_page_elems = []
         for key, vals in state.up_map.items():
-            if len(vals) == 0:
-                head_page_elems.append(page_elems[key])
+            if vals:
+                continue
+            head = page_elems[key]
+            if (
+                self.dilated_page_element
+                and isinstance(head, PageElement)
+                and head.label == DocItemLabel.SECTION_HEADER
+                and len(state.dn_map[key]) == 1
+            ):
+                down_index = state.dn_map[key][0]
+                following = page_elems[down_index]
+                if (
+                    isinstance(following, PageElement)
+                    and following.label == DocItemLabel.TEXT
+                    and self._is_one_to_one_vertical_edge(state, key, down_index)
+                ):
+                    left, right = self._clamp_dilation_to_vertical_separators(
+                        head,
+                        x0=min(head.l, following.l),
+                        x1=max(head.r, following.r),
+                        vertical_separators=vertical_separators,
+                    )
+                    # Use the text column to sort heads, not to create new edges.
+                    head = head.model_copy(update={"l": left, "r": right})
+            head_page_elems.append(head)
 
         """
         print("before sorting the heads: ")
