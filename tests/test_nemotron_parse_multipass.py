@@ -173,6 +173,9 @@ def test_triple_union_prefers_detector_and_keeps_parser_only_boxes() -> None:
     "body",
     [
         _table(columns="ccc"),
+        r"\begin{tabular}{cc}a} & b\\\end{tabular}",
+        r"\begin{tabular}{cc}\end{tabular}",
+        r"\begin{tabular}{cc}\multirow{2}{*} & b\\\end{tabular}",
         r"\begin{tabular}{cc}a & b & c\\\end{tabular}",
         r"\begin{tabular}{cc}\multirow{3}{*}{a} & b\\ & c\\\end{tabular}",
         r"\begin{tabular}{cc}\multirow{2}{*}{a} & b\\ x & c\\\end{tabular}",
@@ -445,3 +448,45 @@ def test_transformers_distinguishes_token_limit_from_final_eos_and_padding(
             ConversionStatus.PARTIAL_SUCCESS if index == 0 else ConversionStatus.SUCCESS
         )
         assert len(result.errors) == (1 if index == 0 else 0)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        r"\begin{tabular}{ccc}Name & Value & Unit\\ A & 12 & kg\\\end{tabular}",
+        _table("different " * 100),
+    ],
+)
+def test_guard_rejects_valid_but_incompatible_or_unrelated_tables(body) -> None:
+    original = _block(_table())
+    candidate = NemotronParseBlock("Table", (0.1, 0.1, 0.9, 0.4), body)
+    assert merge_nemotron_crops(original, [candidate]) == original
+
+
+@pytest.mark.parametrize("stage", ["fullpage", "detection", "crop"])
+def test_wrong_engine_output_count_never_attaches_a_result_to_the_wrong_page(
+    stage, monkeypatch
+) -> None:
+    engine = _Engine([_block(_table())], detection=_block(""))
+    predict = engine.predict_batch
+
+    def omit_output(batch):
+        current_stage = (
+            "fullpage"
+            if not engine.batches
+            else "detection"
+            if batch[0].prompt == NEMOTRON_DETECT_PROMPT
+            else "crop"
+        )
+        if current_stage == stage:
+            return []
+        return predict(batch)
+
+    monkeypatch.setattr(engine, "predict_batch", omit_output)
+    model = _model(engine, "triple")
+    page = Page(page_no=3)
+    page._image_cache = {model.options.scale: Image.new("RGB", (1000, 800))}
+    page._default_image_scale = model.options.scale
+    with pytest.raises(RuntimeError, match="output count does not match"):
+        list(model(SimpleNamespace(timings={}), [page]))
+    assert page.predictions.vlm_response is None

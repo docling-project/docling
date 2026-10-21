@@ -350,10 +350,6 @@ class VlmConvertModel(BasePageModel):
                     stage="detection",
                 )
             )
-            if len(detection_outputs) != len(valid_indices):
-                raise RuntimeError(
-                    "Nemotron detection output count does not match the input count"
-                )
             for index, output in zip(valid_indices, detection_outputs):
                 inference[index].detection_requests = 1
                 detections[index] = output
@@ -384,10 +380,6 @@ class VlmConvertModel(BasePageModel):
                     stage="crop",
                 )
             )
-            if len(crop_outputs) != len(batch):
-                raise RuntimeError(
-                    "Nemotron crop output count does not match the input count"
-                )
             for (index, crop), output in zip(batch, crop_outputs):
                 inference[index].crop_requests += 1
                 stage_outputs[index].append(output)
