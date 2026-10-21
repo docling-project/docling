@@ -26,20 +26,27 @@ from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 
 
 @pytest.mark.parametrize(
-    ("options", "expected_repetition_kwargs"),
+    ("options", "input_config", "expected_repetition_kwargs"),
     [
-        (MlxVlmEngineOptions(), {}),
+        (MlxVlmEngineOptions(), {}, {}),
+        (
+            MlxVlmEngineOptions(),
+            {"repetition_penalty": 1.1, "repetition_context_size": 0},
+            {"repetition_penalty": 1.1, "repetition_context_size": 0},
+        ),
         (
             MlxVlmEngineOptions(
                 repetition_penalty=1.15,
                 repetition_context_size=64,
             ),
+            {"repetition_penalty": 1.1, "repetition_context_size": 0},
             {"repetition_penalty": 1.15, "repetition_context_size": 64},
         ),
     ],
 )
 def test_mlx_engine_forwards_optional_repetition_settings(
     options: MlxVlmEngineOptions,
+    input_config: dict[str, Any],
     expected_repetition_kwargs: dict[str, Any],
 ) -> None:
     captured: dict[str, Any] = {}
@@ -63,6 +70,7 @@ def test_mlx_engine_forwards_optional_repetition_settings(
                 prompt="Prompt",
                 max_new_tokens=10,
                 temperature=0.2,
+                extra_generation_config=input_config,
             )
         ]
     )

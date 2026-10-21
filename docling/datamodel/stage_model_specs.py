@@ -1377,6 +1377,7 @@ VLM_CONVERT_NEMOTRON_PARSE_V2 = StageModelPreset(
 
 # The model needs its own repository code; pin the commit the user reviews and trusts.
 _NEMOTRON_PARSE_V3_5_REVISION = "e7ea79242a87ea0ad3919b672bfedb429a683206"
+_NEMOTRON_PARSE_V3_5_MLX_REVISION = "d6a6b5386601e04706e36268e0c003fca9671ade"
 _NEMOTRON_PARSE_V3_5_MAX_TOKENS = 8744
 
 VLM_CONVERT_NEMOTRON_PARSE_V3_5 = StageModelPreset(
@@ -1384,8 +1385,8 @@ VLM_CONVERT_NEMOTRON_PARSE_V3_5 = StageModelPreset(
     name="Nemotron 3.5 Parse",
     description=(
         "NVIDIA Nemotron 3.5 Parse model for document parsing with semantic "
-        "classes, bounding boxes, tables and charts (0.6B parameters). Runs "
-        "code from the pinned model repository: requires trust_remote_code=True"
+        "classes, bounding boxes, tables and charts (0.6B parameters). "
+        "Transformers requires trust_remote_code=True; MLX uses a native port."
     ),
     model_spec=VlmModelSpec(
         name="Nemotron-3.5-Parse",
@@ -1397,11 +1398,27 @@ VLM_CONVERT_NEMOTRON_PARSE_V3_5 = StageModelPreset(
         ),
         response_format=ResponseFormat.NEMOTRON_PARSE_V3_5,
         # In-process vLLM needs NVIDIA's out-of-tree plugin; use its server via API.
-        supported_engines={VlmEngineType.TRANSFORMERS, VlmEngineType.API},
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.MLX,
+            VlmEngineType.API,
+        },
         # Never trusted implicitly: the user opts in on the engine options.
         trust_remote_code=False,
         max_new_tokens=_NEMOTRON_PARSE_V3_5_MAX_TOKENS,
         engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="geoHeil/Nemotron-3.5-Parse-MLX-bf16",
+                revision=_NEMOTRON_PARSE_V3_5_MLX_REVISION,
+                min_engine_version="0.7.9",
+                extra_config={
+                    "extra_generation_config": {
+                        "repetition_penalty": 1.1,
+                        # mlx-vlm uses tokens[-context_size:]; 0 includes all tokens.
+                        "repetition_context_size": 0,
+                    },
+                },
+            ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 min_engine_version="5.14.1",
