@@ -282,7 +282,7 @@ Released `mlx-vlm==0.7.9` does not contain this port. This branch pins the sourc
 until an upstream release includes it. Install this branch with the `models-vlm-inline` extra.
 The source pin must be replaced with that release before publishing Docling to PyPI.
 
-[Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d6a6b5386601e04706e36268e0c003fca9671ade/PARITY.md)
+[Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d28803cbe9fa7359f982288adbeafa53e5ecbcb7/PARITY.md)
 compare the uploaded checkpoints against the pinned Transformers reference on three pages.
 The float32 architecture control matches the complete reference output on all three pages.
 The bf16 checkpoint preserves text and classes on the authored text/table page, with coordinate
