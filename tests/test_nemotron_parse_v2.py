@@ -3,15 +3,21 @@
 
 """Test NVIDIA Nemotron Parse 2.0 VLM preset configuration."""
 
+import sys
+from types import ModuleType
+
 import pytest
 from docling_core.types.doc import DocItemLabel, Size
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
     TransformersModelType,
     TransformersPromptStyle,
 )
+from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
+from docling.models.inference_engines.vlm.auto_inline_engine import AutoInlineVlmEngine
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.utils.nemotron_parse_utils import (
     extract_nemotron_parse_v2_regions,
@@ -90,6 +96,35 @@ def test_nemotron_parse_v2_options_can_be_created() -> None:
 
     assert options.model_spec.default_repo_id == "nvidia/NVIDIA-Nemotron-Parse-2.0"
     assert options.engine_options.engine_type == VlmEngineType.AUTO_INLINE
+
+
+@pytest.mark.parametrize(
+    ("installed_version", "expected"),
+    [("0.20.0", VlmEngineType.VLLM), ("0.19.0", VlmEngineType.TRANSFORMERS)],
+)
+def test_auto_inline_checks_vllm_version_without_native_module_requirement(
+    monkeypatch: pytest.MonkeyPatch,
+    installed_version: str,
+    expected: VlmEngineType,
+) -> None:
+    engine = AutoInlineVlmEngine(
+        options=AutoInlineVlmEngineOptions(prefer_vllm=True),
+        accelerator_options=AcceleratorOptions(),
+        artifacts_path=None,
+    )
+    engine.model_spec = VlmConvertOptions.get_preset("nemotron_parse_v2").model_spec
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.auto_inline_engine.decide_device",
+        lambda *args, **kwargs: "cuda:0",
+    )
+    monkeypatch.setitem(sys.modules, "vllm", ModuleType("vllm"))
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm._utils._installed_engine_version",
+        lambda engine_type: installed_version,
+    )
+
+    assert engine._select_engine() == expected
 
 
 def test_extract_nemotron_parse_v2_multiline_regions() -> None:
