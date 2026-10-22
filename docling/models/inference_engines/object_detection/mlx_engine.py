@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import struct
 import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
@@ -24,6 +26,28 @@ _log = logging.getLogger(__name__)
 
 # Global lock for MLX model calls - MLX models are not thread-safe.
 _MLX_GLOBAL_LOCK = threading.Lock()
+
+
+def _safetensors_metadata(path: Path) -> Dict[str, str]:
+    """Read the metadata block from a single-file safetensors checkpoint.
+
+    The container starts with an 8-byte little-endian header length followed
+    by a JSON header. Reading it directly avoids a ``safetensors`` dependency.
+    """
+    try:
+        with path.open("rb") as handle:
+            header_length = struct.unpack("<Q", handle.read(8))[0]
+            header = json.loads(handle.read(header_length))
+    except (OSError, ValueError, struct.error):
+        return {}
+
+    metadata = header.get("__metadata__", {})
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def _identity_weights(weights: Dict[str, Any]) -> Dict[str, Any]:
+    """Return weights unchanged, to bypass ``mlx-vlm`` sanitization."""
+    return weights
 
 
 class MlxObjectDetectionEngine(
@@ -116,8 +140,33 @@ class MlxObjectDetectionEngine(
         }
         _log.debug("Loaded label mapping with %d labels", len(self._id_to_label))
 
-        # Load model via mlx-vlm
-        model = load_model(model_folder)
+        # Load model via mlx-vlm.
+        # RT-DETR v2 checkpoints produced by ``mlx_vlm.models.rt_detr_v2.convert``
+        # are already in MLX layout and record ``{"format": "mlx"}`` in the
+        # safetensors metadata. ``load_model()`` ignores that marker and runs
+        # ``Model.sanitize()``, which transposes the conv weights a second time
+        # and fails with a shape error. Skip the sanitizer for those checkpoints.
+        model_file = model_folder / "model.safetensors"
+        metadata = _safetensors_metadata(model_file) if model_file.is_file() else {}
+
+        if metadata.get("format") == "mlx":
+            try:
+                from mlx_vlm.models.rt_detr_v2.rt_detr_v2 import Model
+            except ImportError:
+                model = load_model(model_folder)
+            else:
+                with _MLX_GLOBAL_LOCK:
+                    original_sanitize = Model.__dict__.get("sanitize")
+                    if original_sanitize is None:
+                        model = load_model(model_folder)
+                    else:
+                        Model.sanitize = staticmethod(_identity_weights)
+                        try:
+                            model = load_model(model_folder)
+                        finally:
+                            Model.sanitize = original_sanitize
+        else:
+            model = load_model(model_folder)
 
         # Create predictor (labels are auto-resolved from model config)
         self._predictor = RTDetrV2Predictor(
