@@ -1067,6 +1067,21 @@ def test_ordered_list_numbers_survive_html_block():
     )
 
 
+def test_html_block_entities_are_decoded_exactly_once():
+    """Raw HTML must reach the HTML backend unchanged, whether or not the
+    docling-core HTML serializer escapes code text.
+
+    Double escaping keeps `&amp;lt;` in the text; double unescaping turns
+    `&lt;b&gt;` into `<b>`.
+    """
+    markdown = "Intro.\n\n<div>Write &amp;lt;b&amp;gt; for bold &amp; more</div>\n"
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    texts = [item.text for item in conv_result.document.texts]
+    assert texts == ["Intro.", "Write &lt;b&gt; for bold & more"]
+
+
 def test_standard_ordered_list_still_starts_at_one():
     """Ordinary 1-based ordered lists must continue to export as 1-based."""
     markdown = "1. alpha\n2. beta\n3. gamma\n"

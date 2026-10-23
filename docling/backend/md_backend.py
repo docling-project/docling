@@ -268,7 +268,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         self._pending_hard_line_break = False
         self._pending_soft_line_break = False
-        self._html_blocks: int = 0
+        self._html_blocks: list[str] = []
         self._image_loader: ImageResourceLoader | None = None
 
         # A leading BOM is dropped. Kept, it prefixes the first line, so a
@@ -998,15 +998,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._pending_hard_line_break = True
 
         elif isinstance(element, marko.block.HTMLBlock):
-            self._html_blocks += 1
             _log.debug("HTML Block: %s", element)
             if (
                 len(element.body) > 0
             ):  # If Marko doesn't return any content for HTML block, skip it
-                html_block = element.body.strip()
+                self._html_blocks.append(element.body.strip())
 
-                # wrap in markers to enable post-processing in convert()
-                text_to_add = f"{_START_MARKER}{html_block}{_STOP_MARKER}"
+                # Keep only an index in the code text: the HTML serializer may
+                # escape code text, so convert() splices the raw block back.
+                text_to_add = (
+                    f"{_START_MARKER}{len(self._html_blocks) - 1}{_STOP_MARKER}"
+                )
                 doc.add_code(
                     parent=parent_item,
                     text=text_to_add,
@@ -1182,30 +1184,27 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 list_last_item_by_ref={},
             )
 
-            if self._html_blocks > 0:
+            if self._html_blocks:
                 html_backend_cls = MarkdownHTMLDocumentBackend
                 html_payload = serialize_markdown_for_html(
                     doc, source_hash=self.document_hash
                 )
-                html_str = html_payload.text
-
-                # Restore only the marked HTML blocks. The HTML serializer
-                # escapes code content, so decode each block before parsing it.
+                html_blocks = self._html_blocks
+                # restore the raw HTML blocks in place of their marked code blocks
                 pattern = (
                     rf"<pre>\s*<code>\s*{re.escape(_START_MARKER)}"
-                    rf"(.*?){re.escape(_STOP_MARKER)}\s*</code>\s*</pre>"
+                    rf"(\d+){re.escape(_STOP_MARKER)}\s*</code>\s*</pre>"
                 )
                 html_str, count = re.subn(
                     pattern,
-                    lambda match: unescape(match.group(1)),
-                    html_str,
-                    flags=re.DOTALL,
+                    lambda match: html_blocks[int(match.group(1))],
+                    html_payload.text,
                 )
-                if count != self._html_blocks:
+                if count != len(html_blocks):
                     raise RuntimeError(
                         "An internal error has occurred during Markdown conversion."
                     )
-                self._html_blocks = 0
+                self._html_blocks = []
                 # delegate to HTML backend
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))
                 md_options = cast(MarkdownBackendOptions, self.options)
