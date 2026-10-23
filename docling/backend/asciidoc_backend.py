@@ -4,7 +4,7 @@
 import logging
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union
@@ -839,16 +839,32 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             return []
         # Mixed formatting needs one item per run, kept together in an inline
         # group like the Markdown backend does.
-        group = doc.add_inline_group(parent=parent)
+        # Runs keep their boundary whitespace (docling-core joins them with ""); a
+        # code run's edge whitespace moves out into a plain " " run of its own.
+        spaced: list[_InlineRun] = []
         for run in runs:
-            run_text = run.text.strip()
-            if not run_text:
-                continue
+            core = run.text.strip() if run.code else run.text
+            if run.code and run.text[:1].isspace():
+                spaced.append(_InlineRun(" "))
+            if core:
+                spaced.append(replace(run, text=core))
+            if run.code and core and run.text[-1:].isspace():
+                spaced.append(_InlineRun(" "))
+        # Only the block's outer edges are trimmed.
+        while spaced and not spaced[0].text.strip():
+            spaced.pop(0)
+        while spaced and not spaced[-1].text.strip():
+            spaced.pop()
+        if spaced:
+            spaced[0] = replace(spaced[0], text=spaced[0].text.lstrip())
+            spaced[-1] = replace(spaced[-1], text=spaced[-1].text.rstrip())
+        group = doc.add_inline_group(parent=parent)
+        for run in spaced:
             if run.code:
-                doc.add_code(text=run_text, parent=group)
+                doc.add_code(text=run.text, parent=group)
             else:
                 doc.add_text(
-                    text=run_text,
+                    text=run.text,
                     label=DocItemLabel.TEXT,
                     parent=group,
                     formatting=(
