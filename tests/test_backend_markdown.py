@@ -1012,6 +1012,42 @@ def test_convert_table_cell_whitespace_around_inline_emphasis():
     ]
 
 
+def test_rich_table_cell_runs_keep_boundary_whitespace():
+    """Rich-cell runs carry their own boundary whitespace; only the cell edges are trimmed."""
+    from docling_core.types.doc import RichTableCell
+
+    markdown = (
+        "| Cell | Note |\n"
+        "|---|---|\n"
+        "| **C** Cadre | x |\n"
+        "| **A** **B** | y |\n"
+        "|  Install with `pip install x` first.  | z |\n"
+    )
+    doc = get_converter().convert_string(markdown, format=InputFormat.MD).document
+
+    runs = [
+        [
+            ref.resolve(doc).text
+            for ref in cell.ref.resolve(doc).children[0].resolve(doc).children
+        ]
+        for cell in doc.tables[0].data.table_cells
+        if isinstance(cell, RichTableCell)
+    ]
+    assert runs == [
+        ["C", " Cadre"],
+        ["A", " ", "B"],
+        ["Install with ", "pip install x", " first."],
+    ]
+    rows = [
+        line.split("|")[1].strip() for line in doc.export_to_markdown().splitlines()
+    ]
+    assert rows[2:] == [
+        "**C** Cadre",
+        "**A** **B**",
+        "Install with `pip install x` first.",
+    ]
+
+
 def test_line_break_does_not_cross_block_boundary():
     """A line break only joins runs of its own paragraph.
 

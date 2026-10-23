@@ -544,7 +544,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             raw = element.children if isinstance(element.children, str) else ""
-            text = unescape(raw.strip())
+            # Keep the raw fragment: its edge whitespace is the run boundary. Marko has
+            # already trimmed the cell edges, and whitespace-only runs are significant.
+            text = unescape(raw)
             if text:
                 item = doc.add_text(
                     label=DocItemLabel.TEXT,
