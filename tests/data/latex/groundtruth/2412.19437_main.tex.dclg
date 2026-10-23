@@ -1,4 +1,4 @@
-<doclang version="0.7">
+<doclang version="0.8">
   <text>
     <layer value="furniture"/>
     \documentclass[11pt, a4paper, logo, copyright, nonumbering]{deepseek}
@@ -375,7 +375,7 @@
     <formula>\mathbf{h}_{t} \in \mathbb{R}^{d}</formula>
     <content> denote the attention input for the </content>
     <formula>t</formula>
--th token at a given attention layer. The core of MLA is the low-rank joint compression for attention keys and values to reduce Key-Value (KV) cache during inference:
+    -th token at a given attention layer. The core of MLA is the low-rank joint compression for attention keys and values to reduce Key-Value (KV) cache during inference:
   </text>
   <formula>
     <content><![CDATA[\begin{align}
@@ -405,7 +405,7 @@
     <formula>\color{blue} \mathbf{c}_{t}^{KV}</formula>
     <content> and </content>
     <formula>\color{blue}\mathbf{k}_{t}^{R}</formula>
-) need to be cached during generation, which results in significantly reduced KV cache while maintaining performance comparable to standard Multi-Head Attention (MHA)[transformer].
+    ) need to be cached during generation, which results in significantly reduced KV cache while maintaining performance comparable to standard Multi-Head Attention (MHA)[transformer].
   </text>
   <text>For the attention queries, we also perform a low-rank compression, which can reduce the activation memory during training:</text>
   <formula>
@@ -430,13 +430,13 @@
   <text>
     Ultimately, the attention queries (
     <formula>\mathbf{q}_{t, i}</formula>
-), keys (
+    ), keys (
     <formula>\mathbf{k}_{j, i}</formula>
-), and values (
+    ), and values (
     <formula>\mathbf{v}_{j, i}^{C}</formula>
     <content>) are combined to yield the final attention output </content>
     <formula>\mathbf{u}_{t}</formula>
-:
+    :
   </text>
   <formula>
     <content><![CDATA[\begin{align}
@@ -501,7 +501,7 @@
     <formula>K</formula>
     <content> highest scores among the affinity scores calculated for the </content>
     <formula>t</formula>
--th token and all routed experts. Slightly different from DeepSeek-V2, DeepSeek-V3 uses the sigmoid function to compute the affinity scores, and applies a normalization among all selected affinity scores to produce the gating values.
+    -th token and all routed experts. Slightly different from DeepSeek-V2, DeepSeek-V3 uses the sigmoid function to compute the affinity scores, and applies a normalization among all selected affinity scores to produce the gating values.
   </text>
   <text>
     <content>Auxiliary-Loss-Free Load Balancing. For MoE models, an unbalanced expert load will lead to routing collapse[moe] and diminish computational efficiency in scenarios with expert parallelism. Conventional solutions usually rely on the auxiliary loss[switch,gshard] to avoid unbalanced load. However, too large an auxiliary loss will impair the model performance[noaux_tc]. To achieve a better trade-off between load balance and model performance, we pioneer an auxiliary-loss-free load balancing strategy[noaux_tc] to ensure load balance. To be specific, we introduce a bias term </content>
@@ -616,7 +616,7 @@
     <formula>k</formula>
     <content>-th depth to produce the output representation at the current depth </content>
     <formula>\mathbf{h}_{i}^{k}</formula>
-:
+    :
   </text>
   <formula>
     <content>\begin{equation}
@@ -650,12 +650,12 @@
     <formula>\operatorname{Softmax}(\cdot)</formula>
     <content> function to compute the prediction probabilities of the </content>
     <formula>k</formula>
--th additional token. Also, for each MTP module, its output head is shared with the main model. Our principle of maintaining the causal chain of predictions is similar to that of EAGLE[eagle], but its primary objective is speculative decoding[speculative_xhm,speculative_google], whereas we utilize MTP to improve training.
+    -th additional token. Also, for each MTP module, its output head is shared with the main model. Our principle of maintaining the causal chain of predictions is similar to that of EAGLE[eagle], but its primary objective is speculative decoding[speculative_xhm,speculative_google], whereas we utilize MTP to improve training.
   </text>
   <text>
     <content>MTP Training Objective. For each prediction depth, we compute a cross-entropy loss </content>
     <formula>\mathcal{L}_{\text{MTP}}^{k}</formula>
-:
+    :
   </text>
   <formula>
     <content>\begin{equation}
@@ -679,7 +679,7 @@
     <formula>\lambda</formula>
     <content> to obtain the overall MTP loss </content>
     <formula>\mathcal{L}_{\text{MTP}}</formula>
-, which serves as an additional training objective for DeepSeek-V3:
+    , which serves as an additional training objective for DeepSeek-V3:
   </text>
   <formula>
     <content>\begin{equation}
@@ -950,7 +950,7 @@
     <formula>\sqrt{t} = 0.1 \ln{s} + 1</formula>
     <content>. In the first phase, the sequence length is set to 32K, and the batch size is 1920. During the second phase, the sequence length is increased to 128K, and the batch size is reduced to 480. The learning rate for both phases is set to </content>
     <formula>7.3 \times 10^{-6}</formula>
-, matching the final learning rate from the pre-training stage.
+    , matching the final learning rate from the pre-training stage.
   </text>
   <text><![CDATA[Through this two-phase extension training, DeepSeek-V3 is capable of handling inputs up to 128K in length while maintaining strong performance. Figure[fig:long_context] illustrates that DeepSeek-V3, following supervised fine-tuning, achieves notable performance on the "Needle In A Haystack" (NIAH) test, demonstrating consistent robustness across context window lengths up to 128K.]]></text>
   <heading level="3">Evaluations</heading>
@@ -2016,7 +2016,7 @@
     <formula>5 \times 10^{-6}</formula>
     <content> and gradually decreases to </content>
     <formula>1 \times 10^{-6}</formula>
-. During training, each single sequence is packed from multiple samples. However, we adopt a sample masking strategy to ensure that these examples remain isolated and mutually invisible.
+    . During training, each single sequence is packed from multiple samples. However, we adopt a sample masking strategy to ensure that these examples remain isolated and mutually invisible.
   </text>
   <heading level="3">Reinforcement Learning</heading>
   <heading level="4">Reward Model</heading>

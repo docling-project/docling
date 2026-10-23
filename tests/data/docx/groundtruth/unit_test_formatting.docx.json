@@ -850,8 +850,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This text carries a",
-      "text": "This text carries a",
+      "orig": "This text carries a ",
+      "text": "This text carries a ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -888,8 +888,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "property in OOXML but it should not be bold.",
-      "text": "property in OOXML but it should not be bold.",
+      "orig": " property in OOXML but it should not be bold.",
+      "text": " property in OOXML but it should not be bold.",
       "formatting": {
         "bold": false,
         "italic": false,

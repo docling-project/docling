@@ -1,4 +1,4 @@
-<doclang version="0.7">
+<doclang version="0.8">
   <text>
     <layer value="furniture"/>
     \documentclass[apj,twocolumn,twocolappendix]{aastex631}
@@ -70,13 +70,13 @@
   <text>
     <content>We select galaxies from the SDSS Main Galaxy Sample [2002AJ....124.1810S,sdssdr7] that have emission line signal-to-noise ratios greater than 3 for [N2] </content>
     <formula>\lambda6584</formula>
-, H
+    , H
     <formula>\alpha</formula>
     <content> </content>
     <formula>\lambda6564</formula>
     <content>, [O3] </content>
     <formula>\lambda5007</formula>
-, and H
+    , and H
     <formula>\beta</formula>
     <content> </content>
     <formula>\lambda4861</formula>
@@ -101,7 +101,7 @@
     <formula>k=4</formula>
     <content>. Later, in Section[ssec:comparison-pca], we vary </content>
     <formula>k \in \{2, 3, 4, 6, 8\}</formula>
-. Thus, the SFNet learns a representation of each galaxy using just a few features out of a library of 512 possible features. Critically, the features activate directly after the convolution layers, so that morphological features are localized in pixel space.
+    . Thus, the SFNet learns a representation of each galaxy using just a few features out of a library of 512 possible features. Critically, the features activate directly after the convolution layers, so that morphological features are localized in pixel space.
   </text>
   <text>The resnet18 backbone of the model is initialized to ImageNet-pretrained weights [5206848], and we update model parameters by minimizing the root mean squared error. We randomly designate 20% of objects for validation, and train on the remainder. Random flips are applied for data augmentation. We train for 20 epochs using the ranger optimizer [wright2021ranger21synergisticdeeplearning] and an initial learning rate of 0.1 with a flat+cosine annealing schedule. All code and the trained models presented here can be found in our public Github repository: https://github.com/jwuphysics/sparse-feature-networks.</text>
   <heading level="2">Results</heading>
@@ -110,16 +110,15 @@
     <formula>A_{\tt SL\,17}</formula>
     <content> and </content>
     <formula>A_{\tt Z\,256}</formula>
-, respectively.
+    , respectively.
   </text>
   <heading level="3">Emission line fluxes</heading>
   <text>
     We train a SFNet to predict the spectral line fluxes for [N2], H
     <formula>\alpha</formula>
-, [O3], and H
+    , [O3], and H
     <formula>\beta</formula>
-<![CDATA[. These lines can diagnose a galaxy's global ionization state; for example, the line ratios [N2]/H]]>    
-    <formula>\alpha</formula>
+<![CDATA[. These lines can diagnose a galaxy's global ionization state; for example, the line ratios [N2]/H]]>    <formula>\alpha</formula>
     <content> against [O3]/H</content>
     <formula>\beta</formula>
     <content> comprise the BPT diagram [1981PASP...93....5B], which is commonly used to differentiate activate galactic nuclei (AGN) from star-forming galaxies. Other physical processes can also affect these line strengths, including stellar evolution/age, AGN, gas metallicity, gas physical state, and dust attenuation.</content>
@@ -136,7 +135,7 @@
     <formula>\beta</formula>
     <content>, indicating harder ionizing radiation and higher gas density [2019ARAA..57..511K]. Meanwhile, the opposite appears to be true for SL138 (or at least, for non-AGN with high </content>
     <formula>A_{\tt SL\,138}</formula>
-). Additional features contain information about metallicity and stellar populations. In Table[tab:features], we offer physical interpretations for these features.
+    ). Additional features contain information about metallicity and stellar populations. In Table[tab:features], we offer physical interpretations for these features.
   </text>
   <picture>
     <caption>SFNet learned features when trained to predict optical emission lines. We show how each feature correlates with optical line ratios (BPT diagrams; left) and examples of the top nine image activations (right). For the BPT diagrams, colors denote scaled activation strength, ranging from black (zero) to dark magenta (low) to bright yellow (high).</caption>
@@ -161,7 +160,7 @@
     <formula>0.087</formula>
     <content>dex using only two image features, Z61 and Z256, which are activated 99.6% and 87.9% of the time respectively. If we also incorporate the third and fourth most frequent activations (40.2% and 11.9%, respectively), then we can achieve </content>
     <formula>0.086</formula>
-dex error. This level of performance suggests that our SFNet is extremely accurate (see Section[ssec:performance-interpretability] for further discussion).
+    dex error. This level of performance suggests that our SFNet is extremely accurate (see Section[ssec:performance-interpretability] for further discussion).
   </text>
   <text>
     In the bottom two rows of Table[tab:features], we describe the two main features used to predict metallicity. Z61 is associated with galaxies with prominent red bulges and is linked to higher metallicity. It activates strongly for red ellipticals or face-on disk galaxies (often with two loosely wound spiral arms; see, e.g., 2019MNRAS.487.1808M for more on the correlations between galaxy properties and spiral arm pitch angle).  Feature Z256 is associated with blue, edge-on disk galaxies and lower metallicity. [2004ApJ...613..898T] noted that metal-poor galaxies tended to have highly inclined disk morphologies, and attributed this effect to observational bias. SDSS spectroscopic fibers collect light from lower-
@@ -175,7 +174,7 @@ dex error. This level of performance suggests that our SFNet is extremely accura
     <caption>
       Linear relationships between galaxy properties and image features learned by the SFNet. We show how the gas metallicity, [N2]/H
       <formula>\alpha</formula>
-, and [O3]/H
+      , and [O3]/H
       <formula>\beta</formula>
       <content> depend on SFNet feature activations, where SFNet features are represented using the top-activating galaxy image cutout from the validation set.</content>
     </caption>
@@ -187,11 +186,11 @@ dex error. This level of performance suggests that our SFNet is extremely accura
     <formula>\alpha</formula>
     <content> and [O3]/H</content>
     <formula>\beta</formula>
-; we might interpret these morphological features as indicators of spectral hardness and low ionization (nuclear) emission-line regions, respectively. Meanwhile, S322 correlates with [O3]/H
+    ; we might interpret these morphological features as indicators of spectral hardness and low ionization (nuclear) emission-line regions, respectively. Meanwhile, S322 correlates with [O3]/H
     <formula>\beta</formula>
     <content> but anticorrelates with [N2]/H</content>
     <formula>\alpha</formula>
-, suggesting that it is associated with harder ionizing spectra.
+    , suggesting that it is associated with harder ionizing spectra.
   </text>
   <text><![CDATA[The model is only able to learn physical laws by leveraging galaxy morphology present within the optical image cutouts. However, galaxy evolution is governed by the complex interplay between multiple physical processes [2015ARAA..53...51S,2017MNRAS.471.2687B], which are not always imprinted in galaxy morphology, or perhaps not at the scales or wavelengths probed by our imaging surveys. Nonetheless, CNNs are surprisingly powerful at predicting the spectroscopic tracers of galaxy evolution. [2019AA...624A.102D] and [2019MNRAS.484.4683W] showed that galaxies' stellar masses can be estimated directly from image cutouts, and [2021MNRAS.501.4359Z] suggest that CNNs are sensitive to small-scale morphological perturbations due to dust in galaxies. Even information outside of the image cutout can be indirectly probed; [2020ApJ...900..142W] measure impact of galaxy environment on CNN-predicted gas properties, suggesting that the well-known density-morphology relation [1980ApJ...236..351D] can be implicitly learned via ML models. In summary, SFNets can learn a limited (but still powerful) set of physical relationships that govern galaxy evolution.]]></text>
   <heading level="3">Performance versus interpretability</heading>
@@ -203,7 +202,7 @@ dex error. This level of performance suggests that our SFNet is extremely accura
     <formula>0.085</formula>
     <content>dex error [2019MNRAS.484.4683W]; note that the systematic scatter is </content>
     <formula>\sim 0.03</formula>
-dex. Again, this suggests that SFNets do not sacrifice performance in order to gain interpretability.
+    dex. Again, this suggests that SFNets do not sacrifice performance in order to gain interpretability.
   </text>
   <heading level="3">Comparison to PCA</heading>
   <text>
@@ -223,12 +222,12 @@ dex. Again, this suggests that SFNets do not sacrifice performance in order to g
     <formula>k</formula>
     <content> principal components from dense CNN activations as features, again using the same training and validation split, to predict both the metallicity and spectral line strengths. For comparison, we have also re-trained the SFNet using </content>
     <formula>k \in \{2, 3, 4, 6, 8\}</formula>
-. We independently re-train the SFNet three times in order to estimate the mean and standard error on the prediction RMSE.
+    . We independently re-train the SFNet three times in order to estimate the mean and standard error on the prediction RMSE.
   </text>
   <footnote>
     <content>We use the same training/validation split and re-initialize the model each time for each value of </content>
     <formula>k</formula>
-. Because we repeat the training process from scratch, the RMSE values presented in this section slightly differ from the ones reported in Section [sec:results].
+    . Because we repeat the training process from scratch, the RMSE values presented in this section slightly differ from the ones reported in Section [sec:results].
   </footnote>
   <text>The results are shown in Figure[fig:pca-comparison], and specific RMSE values are given in Table[tab:dimred].</text>
   <text>l cc cc[t!] 5</text>
@@ -281,7 +280,7 @@ dex. Again, this suggests that SFNets do not sacrifice performance in order to g
     <formula>k=4</formula>
     <content> features (with significantly worse performance at </content>
     <formula>k=2</formula>
-).
+    ).
   </text>
   <text>Our experiment shows that we can reduce the dimensionality of CNN feature activations via PCA, but the ensuing principal components are not always robust features for recovering the training targets (e.g., for metallicity). These difficulties may arise from superposition and polysemanticity, which cause the most important features to be entangled and spread across multiple CNN activations in highly non-linear ways. Since typical CNNs are not optimized with any sparsity constraint in mind, there is no guarantee that a linear combination of the learned features should be interpretable (although there are non-linear methods for finding optimal summary statistics; e.g., Charnock_2018). By forcing a CNN to be sparse during the training process, we find that SFNets can learn robust features and produce accurate predictions.</text>
   <heading level="3">Comparison to GalaxyZoo features</heading>
@@ -298,16 +297,16 @@ dex. Again, this suggests that SFNets do not sacrifice performance in order to g
   <text>
     <content>First, we fit a linear model to the training dataset, and find poor performance on the validation dataset (error of </content>
     <formula>0.183</formula>
-dex). When we fit on the validation dataseti.e., if we attempt to memorize the answersthe error remains very high (
+    dex). When we fit on the validation dataseti.e., if we attempt to memorize the answersthe error remains very high (
     <formula>0.181</formula>
-dex). This result demonstrates that no linear combination of Zoobot features can reconstruct galaxy metallicity.
+    dex). This result demonstrates that no linear combination of Zoobot features can reconstruct galaxy metallicity.
   </text>
   <text>
     <content>Second, we fit an gradient-boosted decision tree (XGBoost) model to the training dataset, and achieve only </content>
     <formula>0.180</formula>
     <content>dex error on the validation dataset. However, when we cheat by fitting on the validation dataset, we can lower the error down to </content>
     <formula>0.085</formula>
-dex (comparable to the SFNet performance).
+    dex (comparable to the SFNet performance).
   </text>
   <text>Our experiments confirm that the Zoobot features indeed contain enough information to memorize the validation set, but that these features (i) cannot be linearly combined to reconstruct galaxy metallicity, and (ii) cannot generalize across the random training/validation split. We surmise that regular CNN features are not interpretable. Meanwhile, our SFNet is both performant and interpretable.</text>
   <text>
@@ -352,7 +351,7 @@ dex (comparable to the SFNet performance).
     <ldiv/>
     <content>Polysemanticity means that any given neuron can also have multiple separate meanings. These semantic concepts may not even be correlated with each other! For example, a specific neuron in a regularly trained CNN might activate on features such as three-armed spiral galaxy and </content>
     <formula>r</formula>
--band light bleed from nearby saturated star.
+    -band light bleed from nearby saturated star.
   </list>
   <text>So rather than a one-to-one mapping of neurons to features, or vice versa, there is actually a many-to-many mapping. Multiple learned features can be distributed and superposed across many different neurons. Superposition and polysemanticity encapsulate why it is so challenging to understand neural networks, even in just a single layer.</text>
   <heading level="3">Sparse autoencoders and SFNets</heading>

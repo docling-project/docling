@@ -1,4 +1,4 @@
-<doclang version="0.7">
+<doclang version="0.8">
   <text>
     <layer value="furniture"/>
     \documentclass{article}
@@ -273,7 +273,7 @@
     <formula>131K</formula>
     <content> tokens. In practice, for a sequence length of 16K and </content>
     <formula>W=4096</formula>
-, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022] yield a 2x speed improvement over a vanilla attention baseline.
+    , changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022] yield a 2x speed improvement over a vanilla attention baseline.
   </text>
   <text>
     <content>=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache. The cache has a fixed size of </content>
@@ -288,7 +288,7 @@
     <formula>W</formula>
     <content>, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for </content>
     <formula>W=3</formula>
-. On a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality.
+    . On a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality.
   </text>
   <text>[][c]</text>
   <picture>
@@ -303,7 +303,7 @@
       <formula>i</formula>
       <content> is larger than </content>
       <formula>W</formula>
-, past values in the cache are overwritten. The hidden state corresponding to the latest generated tokens are colored in orange.
+      , past values in the cache are overwritten. The hidden state corresponding to the latest generated tokens are colored in orange.
     </caption>
   </picture>
   <text>
@@ -311,7 +311,7 @@
     <formula>k</formula>
     <content>, </content>
     <formula>v</formula>
-) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure[fig:chunking] shows how the attention mask works over both the cache and the chunk.
+    ) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. For each chunk, we thus need to compute the attention over the cache and over the chunk. Figure[fig:chunking] shows how the attention mask works over both the cache and the chunk.
   </text>
   <picture>
     <caption>Pre-fill and chunking. During pre-fill of the cache, long sequences are chunked to limit memory usage. We process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. The figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).</caption>

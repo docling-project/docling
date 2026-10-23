@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "line_breaks",
   "origin": {
     "mimetype": "text/markdown",
@@ -360,8 +360,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Author",
-      "text": "Author"
+      "orig": "Author ",
+      "text": "Author "
     },
     {
       "self_ref": "#/texts/14",

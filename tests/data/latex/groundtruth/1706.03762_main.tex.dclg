@@ -1,4 +1,4 @@
-<doclang version="0.7">
+<doclang version="0.8">
   <text>
     <layer value="furniture"/>
     \documentclass{article}
@@ -159,7 +159,7 @@
     <formula>h_{t-1}</formula>
     <content> and the input for position </content>
     <formula>t</formula>
-. This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples. Recent work has achieved significant improvements in computational efficiency through factorization tricks [Kuchaiev2017Factorization] and conditional computation [shazeer2017outrageously], while also improving model performance in case of the latter. The fundamental constraint of sequential computation, however, remains.
+    . This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples. Recent work has achieved significant improvements in computational efficiency through factorization tricks [Kuchaiev2017Factorization] and conditional computation [shazeer2017outrageously], while also improving model performance in case of the latter. The fundamental constraint of sequential computation, however, remains.
   </text>
   <text>Attention mechanisms have become an integral part of compelling sequence modeling and transduction models in various tasks, allowing modeling of dependencies without regard to their distance in the input or output sequences [bahdanau2014neural, structuredAttentionNetworks]. In all but a few cases [decomposableAttnModel], however, such attention mechanisms are used in conjunction with a recurrent network.</text>
   <text>In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global dependencies between input and output. The Transformer allows for significantly more parallelization and can reach a new state of the art in translation quality after being trained for as little as twelve hours on eight P100 GPUs.</text>
@@ -194,7 +194,7 @@
     <formula>\mathrm{Sublayer}(x)</formula>
     <content> is the function implemented by the sub-layer itself.  To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension </content>
     <formula>d_{\text{model}}=512</formula>
-.
+    .
   </text>
   <text>
     <content>Decoder:The decoder is also composed of a stack of </content>
@@ -203,7 +203,7 @@
     <formula>i</formula>
     <content> can depend only on the known outputs at positions less than </content>
     <formula>i</formula>
-.
+    .
   </text>
   <heading level="3">Attention</heading>
   <text>An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors.  The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key.</text>
@@ -215,7 +215,7 @@
     <formula>d_v</formula>
     <content>.  We compute the dot products of the query with all keys, divide each by </content>
     <formula>\sqrt{d_k}</formula>
-, and apply a softmax function to obtain the weights on the values.
+    , and apply a softmax function to obtain the weights on the values.
   </text>
   <text>
     <content>In practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix </content>
@@ -224,7 +224,7 @@
     <formula>K</formula>
     <content> and </content>
     <formula>V</formula>
-.  We compute the matrix of outputs as:
+    .  We compute the matrix of outputs as:
   </text>
   <formula>
     <content>\begin{equation}
@@ -234,7 +234,7 @@
   <text>
     <content>The two most commonly used attention functions are additive attention [bahdanau2014neural], and dot-product (multiplicative) attention.  Dot-product attention is identical to our algorithm, except for the scaling factor of </content>
     <formula>\frac{1}{\sqrt{d_k}}</formula>
-. Additive attention computes the compatibility function using a feed-forward network with a single hidden layer.  While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code.
+    . Additive attention computes the compatibility function using a feed-forward network with a single hidden layer.  While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code.
   </text>
   <text>
     <content>While for small values of </content>
@@ -243,7 +243,7 @@
     <formula>d_k</formula>
     <content> [DBLP:journals/corr/BritzGLL17]. We suspect that for large values of </content>
     <formula>d_k</formula>
-, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients
+    , the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients
   </text>
   <footnote>
     <content>To illustrate why the dot products get large, assume that the components of </content>
@@ -260,12 +260,12 @@
     <formula>0</formula>
     <content> and variance </content>
     <formula>d_k</formula>
-.
+    .
   </footnote>
   <text>
     <content>. To counteract this effect, we scale the dot products by </content>
     <formula>\frac{1}{\sqrt{d_k}}</formula>
-.
+    .
   </text>
   <heading level="4">Multi-Head Attention</heading>
   <text>[t]0.5</text>
@@ -289,7 +289,7 @@
     <formula>d_v</formula>
     <content> dimensions, respectively. On each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding </content>
     <formula>d_v</formula>
--dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure[fig:multi-head-att].
+    -dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure[fig:multi-head-att].
   </text>
   <text>Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this.</text>
   <formula>
@@ -308,14 +308,14 @@
     <formula>W^V_i \in \mathbb{R}^{d_{\text{model}} \times d_v}</formula>
     <content> and </content>
     <formula>W^O \in \mathbb{R}^{hd_v \times d_{\text{model}}}</formula>
-.
+    .
   </text>
   <text>
     <content>In this work we employ </content>
     <formula>h=8</formula>
     <content> parallel attention layers, or heads. For each of these we use </content>
     <formula>d_k=d_v=d_{\text{model}}/h=64</formula>
-. Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality.
+    . Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality.
   </text>
   <heading level="4">Applications of Attention in our Model</heading>
   <text>The Transformer uses multi-head attention in three different ways:</text>
@@ -327,7 +327,7 @@
     <ldiv/>
     <content>Similarly, self-attention layers in the decoder allow each position in the decoder to attend to all positions in the decoder up to and including that position.  We need to prevent leftward information flow in the decoder to preserve the auto-regressive property.  We implement this inside of scaled dot-product attention by masking out (setting to </content>
     <formula>-\infty</formula>
-) all values in the input of the softmax which correspond to illegal connections.  See Figure[fig:multi-head-att].
+    ) all values in the input of the softmax which correspond to illegal connections.  See Figure[fig:multi-head-att].
   </list>
   <heading level="3">Position-wise Feed-Forward Networks</heading>
   <text>In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically.  This consists of two linear transformations with a ReLU activation in between.</text>
@@ -341,7 +341,7 @@
     <formula>d_{\text{model}}=512</formula>
     <content>, and the inner-layer has dimensionality </content>
     <formula>d_{ff}=2048</formula>
-.
+    .
   </text>
   <heading level="3">Embeddings and Softmax</heading>
   <text>
@@ -349,7 +349,7 @@
     <formula>d_{\text{model}}</formula>
     <content>.  We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities.  In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to [press2016using].   In the embedding layers, we multiply those weights by </content>
     <formula>\sqrt{d_{\text{model}}}</formula>
-.
+    .
   </text>
   <heading level="3">Positional Encoding</heading>
   <text>
@@ -379,7 +379,7 @@
     <formula>PE_{pos+k}</formula>
     <content> can be represented as a linear function of </content>
     <formula>PE_{pos}</formula>
-.
+    .
   </text>
   <text>We also experimented with using learned positional embeddings [JonasFaceNet2017] instead, and found that the two versions produced nearly identical results (see Table[tab:variations] row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training.</text>
   <heading level="2">Why Self-Attention</heading>
@@ -390,7 +390,7 @@
     <formula>(z_1, ..., z_n)</formula>
     <content>, with </content>
     <formula>x_i, z_i \in \mathbb{R}^d</formula>
-, such as a hidden layer in a typical sequence transduction encoder or decoder. Motivating our use of self-attention we consider three desiderata.
+    , such as a hidden layer in a typical sequence transduction encoder or decoder. Motivating our use of self-attention we consider three desiderata.
   </text>
   <text>One is the total computational complexity per layer. Another is the amount of computation that can be parallelized, as measured by the minimum number of sequential operations required.</text>
   <text>The third is the path length between long-range dependencies in the network. Learning long-range dependencies is a key challenge in many sequence transduction tasks. One key factor affecting the ability to learn such dependencies is the length of the paths forward and backward signals have to traverse in the network. The shorter these paths between any combination of positions in the input and output sequences, the easier it is to learn long-range dependencies [hochreiter2001gradient]. Hence we also compare the maximum path length between any two input and output positions in networks composed of the different layer types.</text>
@@ -498,7 +498,7 @@
     <formula>r</formula>
     <content> in the input sequence centered around the respective output position. This would increase the maximum path length to </content>
     <formula>O(n/r)</formula>
-. We plan to investigate this approach further in future work.
+    . We plan to investigate this approach further in future work.
   </text>
   <text>
     <content>A single convolutional layer with kernel width </content>
@@ -513,7 +513,7 @@
     <formula>O(k \cdot n \cdot d + n \cdot d^2)</formula>
     <content>. Even with </content>
     <formula>k=n</formula>
-, however, the complexity of a separable convolution is equal to the combination of a self-attention layer and a point-wise feed-forward layer, the approach we take in our model.
+    , however, the complexity of a separable convolution is equal to the combination of a self-attention layer and a point-wise feed-forward layer, the approach we take in our model.
   </text>
   <text>As side benefit, self-attention could yield more interpretable models. We inspect attention distributions from our models and present and discuss examples in the appendix. Not only do individual attention heads clearly learn to perform different tasks, many appear to exhibit behavior related to the syntactic and semantic structure of the sentences.</text>
   <heading level="2">Training</heading>
@@ -530,7 +530,7 @@
     <formula>\beta_2=0.98</formula>
     <content> and </content>
     <formula>\epsilon=10^{-9}</formula>
-.  We varied the learning rate over the course of training, according to the formula:
+    .  We varied the learning rate over the course of training, according to the formula:
   </text>
   <formula>
     <content>\begin{equation}
@@ -544,14 +544,14 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <formula>warmup\_steps</formula>
     <content> training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.  We used </content>
     <formula>warmup\_steps=4000</formula>
-.
+    .
   </text>
   <heading level="3">Regularization</heading>
   <text>We employ three types of regularization during training:</text>
   <text>
     <content>Residual Dropout We apply dropout [srivastava2014dropout] to the output of each sub-layer, before it is added to the sub-layer input and normalized.   In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks.  For the base model, we use a rate of </content>
     <formula>P_{drop}=0.1</formula>
-.
+    .
   </text>
   <text>
     <content>Label Smoothing During training, we employed label smoothing of value </content>
@@ -1237,7 +1237,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <formula>P_{drop}=0.1</formula>
     <content>, instead of </content>
     <formula>0.3</formula>
-.
+    .
   </text>
   <text>
     <content>For the base models, we used a single model obtained by averaging the last 5 checkpoints, which were written at 10-minute intervals.  For the big models, we averaged the last 20 checkpoints. We used beam search with a beam size of </content>
@@ -1246,7 +1246,7 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <formula>\alpha=0.6</formula>
     <content> [wu2016google].  These hyperparameters were chosen after experimentation on the development set.  We set the maximum output length during inference to input length + </content>
     <formula>50</formula>
-, but terminate early when possible [wu2016google].
+    , but terminate early when possible [wu2016google].
   </text>
   <text>Table [tab:wmt-results] summarizes our results and compares our translation quality and training costs to other model architectures from the literature.  We estimate the number of floating point operations used to train a model by multiplying the training time, the number of GPUs used, and an estimate of the sustained single-precision floating-point capacity of each GPU</text>
   <footnote>We used values of 2.8, 3.7, 6.0 and 9.5 TFLOPS for K80, K40, M40 and P100, respectively.</footnote>
