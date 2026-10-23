@@ -3016,11 +3016,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             with self._use_inline_group(min_parts, doc):
                 compacted_parts = self._compact_adjacent_single_char_parts(min_parts)
-                for annotated_text, source_tag_ids in compacted_parts:
-                    # Already normalized as one block above -- no per-run strip.
-                    text_part = _resolve_line_breaks(annotated_text.text)
-                    if _BR_SENTINEL in annotated_text.text and not text_part.strip():
-                        # The part only held <br> tags
+                # Already normalized as one block above -- no per-run strip. A <br> is not
+                # whitespace there, so it can still sit at an edge of the item: trim it.
+                text_parts = [
+                    _resolve_line_breaks(annotated_text.text)
+                    for annotated_text, _ in compacted_parts
+                ]
+                non_blank = [i for i, text in enumerate(text_parts) if text.strip()]
+                first, last = non_blank[0], non_blank[-1]
+                text_parts[first] = text_parts[first].lstrip()
+                text_parts[last] = text_parts[last].rstrip()
+                for i, (annotated_text, source_tag_ids) in enumerate(compacted_parts):
+                    text_part = text_parts[i]
+                    # A run that only held <br> tags stays as a "\n" run between its
+                    # neighbours; dropping it merged them (`**Bold***italic*`).
+                    if not text_part or not first <= i <= last:
                         continue
                     clean_text = HTMLDocumentBackend._clean_unicode(text_part)
 
@@ -3604,16 +3614,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 )
             language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
-                for annotated_text in annotated_texts:
+                for i, annotated_text in enumerate(annotated_texts):
                     # In preformatted text, each <br> is a newline. No strip: the block
                     # edges are trimmed above and every interior space is significant.
                     text_orig = re.sub(
                         rf" ?{_BR_SENTINEL} ?", "\n", annotated_text.text
                     )
-                    if not text_orig or (
-                        _BR_SENTINEL in annotated_text.text and not text_orig.strip()
-                    ):
-                        # Empty, or the run only held <br> tags
+                    if not text_orig:
+                        continue
+                    if _BR_SENTINEL in annotated_text.text and not text_orig.strip():
+                        # The run only held <br> tags. Between two runs it is a line break,
+                        # as a plain run: whitespace never goes inside a code run.
+                        if 0 < i < len(annotated_texts) - 1:
+                            doc.add_text(
+                                parent=self.parents[self.level],
+                                label=DocItemLabel.TEXT,
+                                text="\n",
+                                content_layer=self.content_layer,
+                            )
                         continue
                     text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
                     prov = self._make_prov(
@@ -5280,7 +5298,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         cap_list = self._extract_text_and_hyperlink_recursively(
             caption_tag, find_parent_annotation=True
         )
-        cap_anno = cap_list.to_single_text_element()
+        cap_anno = cap_list.normalize_whitespace().to_single_text_element()
         if not cap_anno.text or not cap_anno.text.strip():
             return None
 

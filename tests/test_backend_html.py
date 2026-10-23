@@ -2545,7 +2545,9 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
 def test_html_line_break_outside_paragraphs():
     # A <br> outside a paragraph or a table cell, e.g. in a heading or a list
     # item, left the internal sentinel (U+E000) in the text. It is now a line
-    # break, as in a paragraph. The text of a checkbox stays on one line.
+    # break, as in a paragraph. The text of a checkbox stays on one line. A <br>
+    # between two inline runs is a "\n" run of its own: runs are joined with "",
+    # so dropping it merged the words (docling#3891).
     src = (
         b"<html><body>"
         b"<h1>Title<br>line</h1>"
@@ -2572,8 +2574,9 @@ def test_html_line_break_outside_paragraphs():
         "Title\nline",
         "Heading\nline",
         "Item\nline",
-        "",  # the list item with formatting: its text is in the two runs below
+        "",  # the list item with formatting: its text is in the three runs below
         "Bold",
+        "\n",
         "italic",
         "Term\nline",
         "Definition\nline",
@@ -2581,11 +2584,65 @@ def test_html_line_break_outside_paragraphs():
         "Figure\nline",
         "Code\nline",
         "bold",
+        "\n",
         "code",
         "Task line",
     ]
     assert not any(_BR_SENTINEL in item.orig for item in doc.texts)
-    assert "## Heading line" in doc.export_to_markdown()
+    markdown = doc.export_to_markdown()
+    assert "## Heading line" in markdown
+    assert "- **Bold**  \n*italic*\n" in markdown
+    assert "**`bold`**  \n*`code`*" in markdown
+
+
+def test_html_line_break_at_list_item_edge_is_trimmed():
+    # A <br> at the start or end of a list item is a block edge, not a line break.
+    src = (
+        b"<html><body><ul>"
+        b"<li><br><b>Bold</b> <i>italic</i><br></li>"
+        b"<li>plain <b>Bold</b><br>tail<br></li>"
+        b"</ul></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert [item.text for item in doc.texts] == [
+        "",
+        "Bold ",
+        "italic",
+        "",
+        "plain ",
+        "Bold",
+        "\ntail",
+    ]
+    assert doc.export_to_markdown() == "- **Bold** *italic*\n- plain **Bold**  \ntail"
+
+
+def test_html_caption_collapses_whitespace_across_runs():
+    # Caption runs are joined faithfully, so boundary whitespace from several runs must
+    # collapse to one space first, as in a paragraph.
+    src = (
+        b"<html><body>"
+        b"<table><caption>A <b> table </b> caption</caption><tr><td>x</td></tr></table>"
+        b"<figure><table><tr><td>y</td></tr></table>"
+        b"<figcaption>A <b> figure </b> caption</figcaption></figure>"
+        b"</body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    captions = [item.text for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert captions == ["A table caption", "A figure caption"]
 
 
 def test_gfm_task_list_renders_checkbox_with_text():
