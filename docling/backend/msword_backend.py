@@ -2657,10 +2657,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Common checkbox symbols in docx documents
         checkbox_symbols = ["☐", "☑", "☒", "□", "■", "▪", "▫"]
 
-        text = text.strip()
+        # Only the leading edge: the text may be the first of several inline runs.
+        text = text.lstrip()
         for symbol in checkbox_symbols:
             if text.startswith(symbol):
-                text = text[len(symbol) :].strip()
+                text = text[len(symbol) :].lstrip()
                 break
 
         return text
@@ -3313,6 +3314,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         skip_empty_text: bool,
     ) -> list[RefItem]:
         """Add ordinary paragraph text items under the current parent."""
+        if checkbox_label and paragraph_elements:
+            text, formatting, hyperlink = paragraph_elements[0]
+            first = (self._clean_checkbox_symbols(text), formatting, hyperlink)
+            paragraph_elements = _trim_run_edges([first, *paragraph_elements[1:]]) or [
+                ("", formatting, hyperlink)
+            ]
+        # Runs are already edge-trimmed: whitespace-only runs left are interior and significant.
+        if skip_empty_text and not any(
+            text.strip() for text, _, _ in paragraph_elements
+        ):
+            return []
+
         level = self._get_level()
         parent = self._create_or_reuse_parent(
             doc=doc,
@@ -3322,14 +3335,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref: list[RefItem] = []
 
         for text, formatting, hyperlink in paragraph_elements:
-            clean_text = self._clean_checkbox_symbols(text) if checkbox_label else text
-            if skip_empty_text and (not clean_text or not clean_text.strip()):
-                continue
-
             text_item = doc.add_text(
                 label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                 parent=parent,
-                text=clean_text,
+                text=text,
                 formatting=formatting,
                 hyperlink=hyperlink,
                 content_layer=self.content_layer,
