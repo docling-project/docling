@@ -802,7 +802,7 @@ def test_convert_line_breaks():
     # leading '\n' on the run that follows, since the runs cannot be merged.
     doc = _convert_markdown("Author **John**  \nUniversity XYZ", opt)
     assert len(doc.texts) == 3
-    assert doc.texts[0].text == "Author"
+    assert doc.texts[0].text == "Author "
     assert doc.texts[0].formatting is None
     assert doc.texts[1].text == "John"
     assert doc.texts[1].formatting is not None
@@ -860,24 +860,43 @@ def test_convert_line_break_next_to_code_span():
         doc = _convert_markdown(markdown, opt)
         return [(str(t.label), t.text) for t in doc.texts]
 
-    expected = [("text", "Already in"), ("code", "Reference/"), ("text", ". Done.")]
+    # Runs keep their boundary whitespace; a soft break before the code span
+    # becomes a plain " " run, never a space inside the code run.
 
     # No break: the reference behaviour
-    assert items("Already in `Reference/`. Done.") == expected
+    assert items("Already in `Reference/`. Done.") == [
+        ("text", "Already in "),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Soft break before the code span
-    assert items("Already in\n`Reference/`. Done.") == expected
+    assert items("Already in\n`Reference/`. Done.") == [
+        ("text", "Already in"),
+        ("text", " "),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Hard break before the code span
-    assert items("Already in  \n`Reference/`. Done.") == expected
+    assert items("Already in  \n`Reference/`. Done.") == [
+        ("text", "Already in"),
+        ("text", "\n"),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Soft break after the code span
-    assert items("Already in `Reference/`\n. Done.") == expected
+    assert items("Already in `Reference/`\n. Done.") == [
+        ("text", "Already in "),
+        ("code", "Reference/"),
+        ("text", " . Done."),
+    ]
 
     # Hard break after the code span: the break is kept as a leading '\\n' on
     # the run that follows, as across a formatting boundary.
     assert items("Already in `Reference/`  \n. Done.") == [
-        ("text", "Already in"),
+        ("text", "Already in "),
         ("code", "Reference/"),
         ("text", "\n. Done."),
     ]
@@ -885,8 +904,9 @@ def test_convert_line_break_next_to_code_span():
     # Two code spans after a soft break
     assert items("Already in\n`Reference/` and `Other/`. Done.") == [
         ("text", "Already in"),
+        ("text", " "),
         ("code", "Reference/"),
-        ("text", "and"),
+        ("text", " and "),
         ("code", "Other/"),
         ("text", ". Done."),
     ]
@@ -895,6 +915,7 @@ def test_convert_line_break_next_to_code_span():
     assert items("- Already in\n  `Reference/`. Done.") == [
         ("list_item", ""),
         ("text", "Already in"),
+        ("text", " "),
         ("code", "Reference/"),
         ("text", ". Done."),
     ]
@@ -1091,6 +1112,7 @@ def test_line_break_does_not_cross_block_boundary():
     # A code span at the end of a paragraph does not take in the next paragraph
     assert items("Intro\n`code`\n\nAfter") == [
         ("text", "Intro"),
+        ("text", " "),
         ("code", "code"),
         ("text", "After"),
     ]

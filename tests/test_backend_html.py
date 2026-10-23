@@ -653,8 +653,9 @@ def test_table_and_image_inside_figure_are_parsed():
     ("figure", "expected"),
     [
         ("<figure>Quote text<figcaption>cap</figcaption></figure>", ["Quote text"]),
-        ("<figure>one <code>two</code> three</figure>", ["one", "two", "three"]),
-        ("<figure><em>one</em> two</figure>", ["one", "two"]),
+        # The boundary space stays on the plain neighbours, outside the code run.
+        ("<figure>one <code>two</code> three</figure>", ["one ", "two", " three"]),
+        ("<figure><em>one</em> two</figure>", ["one ", "two"]),
         ('<figure><img src="x.png"/>after</figure>', ["after"]),
     ],
 )
@@ -911,7 +912,7 @@ def test_orig_keeps_source_text():
         paragraph.orig
         == "See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept."
     )
-    assert items["Item 3-5 with"].orig == "Item 3\u20135 with"
+    assert items["Item 3-5 with "].orig == "Item 3\u20135 with "
     assert items['"text"'].orig == "\u201ctext\u201d"
 
 
@@ -2387,7 +2388,7 @@ def test_link_and_image_outside_base_directory_keep_conversion(tmp_path: Path):
     doc = result.document
     assert doc.texts[-1].text == "End"
     links = {t.text: t.hyperlink for t in doc.texts if t.hyperlink is not None}
-    assert Path(str(links["about"])).as_posix() == "/about"
+    assert Path(str(links["about "])).as_posix() == "/about"
     assert Path(str(links["home"])).as_posix() == "../index.html"
     assert len(doc.pictures) == 2
     assert all(pic.image is None for pic in doc.pictures)
