@@ -274,14 +274,6 @@ class _Run:
     formatting: Formatting = field(default_factory=Formatting)
     hyperlink: AnyUrl | Path | None = None
 
-    @property
-    def plain(self) -> bool:
-        return (
-            self.label == DocItemLabel.TEXT
-            and self.formatting == Formatting()
-            and self.hyperlink is None
-        )
-
 
 @dataclass
 class _Provenance:
@@ -339,7 +331,13 @@ def _inline_runs(
         text = "" if kind in {"checkbox", "radio"} else node.text()
         yield _Run(text, label, formatting, hyperlink)
     elif label is not None:
-        yield _Run(node.text().strip(), label, formatting, hyperlink)
+        # A boundary space never goes inside a code or formula run: move it out.
+        text = node.text()
+        if text[:1].isspace():
+            yield _Run(" ", formatting=formatting, hyperlink=hyperlink)
+        yield _Run(text.strip(), label, formatting, hyperlink)
+        if text.strip() and text[-1:].isspace():
+            yield _Run(" ", formatting=formatting, hyperlink=hyperlink)
     elif node.tag == "br":
         yield _Run("\n", formatting=formatting, hyperlink=hyperlink)
     elif node.tag not in {"script", "style", "head"}:
@@ -393,6 +391,12 @@ class _ChandraDocumentBuilder:
     ) -> None:
         merged: list[_Run] = []
         for run in runs:
+            if run.label == DocItemLabel.TEXT and merged:
+                if merged[-1].text[-1:].isspace():
+                    # HTML collapses a boundary to one space; the left run carries it.
+                    run.text = run.text.lstrip(" \t")
+                if not run.text:
+                    continue
             if (
                 merged
                 and run.label == merged[-1].label == DocItemLabel.TEXT
@@ -406,34 +410,34 @@ class _ChandraDocumentBuilder:
             DocItemLabel.SECTION_HEADER,
             DocItemLabel.TITLE,
         }
+        # A break inside one run of a multi-run heading would end the heading line.
+        collapse = heading and len(merged) > 1
         runs, merged = merged, []
-        line_break = False
         for run in runs:
-            edges = run.text.strip(" \t")
-            run.text = run.text.strip()
-            is_text = run.label == DocItemLabel.TEXT
-            line_break = line_break or (is_text and edges.startswith("\n"))
+            if run.label != DocItemLabel.TEXT:
+                # Code, formula and field runs never own boundary whitespace.
+                run.text = run.text.strip()
+            elif collapse:
+                run.text = re.sub(r"\s+", " ", run.text)
             if not run.text and run.label not in {
                 DocItemLabel.FIELD_VALUE,
                 DocItemLabel.CHECKBOX_SELECTED,
                 DocItemLabel.CHECKBOX_UNSELECTED,
             }:
                 continue
-            if line_break and merged and not heading:
-                # shortcut: a break next to a formatted run or in a heading becomes a
-                # space: docling-core's Markdown puts run edge whitespace inside the
-                # emphasis markers ("**  \nX**"). Upgrade when it emits that outside
-                # them and joins heading lines: then always carry it to the next run.
-                if run.plain:
-                    run.text = "\n" + run.text
-                elif merged[-1].plain:
-                    merged[-1].text += "\n"
-            line_break = is_text and edges.endswith("\n")
             merged.append(run)
-        if heading and len(merged) > 1:
-            # A break inside one run of a multi-run heading would end the heading line.
-            for run in merged:
-                run.text = " ".join(run.text.split())
+        # Runs keep their boundary whitespace (docling-core joins them with ""); only the
+        # block's outer edges are trimmed.
+        while merged and merged[0].label == DocItemLabel.TEXT:
+            merged[0].text = merged[0].text.lstrip()
+            if merged[0].text:
+                break
+            merged.pop(0)
+        while merged and merged[-1].label == DocItemLabel.TEXT:
+            merged[-1].text = merged[-1].text.rstrip()
+            if merged[-1].text:
+                break
+            merged.pop()
         if not merged:
             return
         before = len(self.doc.texts)

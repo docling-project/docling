@@ -63,19 +63,63 @@ def test_chandra_simple_parsing():
 
 
 @pytest.mark.parametrize(
-    ("label", "html", "texts"),
+    ("label", "html", "texts", "markdown"),
     [
-        ("Text", "Hello<br/>World", ["Hello\nWorld"]),
-        # A break between runs goes to a plain run; outer breaks are dropped.
-        ("Text", "<br>Hello<br><b>World</b>", ["Hello\n", "World"]),
-        ("Text", "<b>Hello</b><br>World<br>", ["Hello", "\nWorld"]),
-        ("Text", "<b>Hello</b> <br> <b>World</b>", ["Hello", "World"]),
-        ("Section-Header", "<b>Hello</b><br>World", ["", "Hello", "World"]),
-        ("Section-Header", "<b>Hello</b> big<br>World", ["", "Hello", "big World"]),
+        ("Text", "Hello<br/>World", ["Hello\nWorld"], "Hello  \nWorld"),
+        # Runs keep their boundary whitespace; only the block's outer edges are trimmed.
+        (
+            "Text",
+            "<br>Hello<br><b>World</b>",
+            ["Hello\n", "World"],
+            "Hello  \n**World**",
+        ),
+        (
+            "Text",
+            "<b>Hello</b><br>World<br>",
+            ["Hello", "\nWorld"],
+            "**Hello**  \nWorld",
+        ),
+        (
+            "Text",
+            "<b>Hello</b> <br> <b>World</b>",
+            ["Hello", " \n", "World"],
+            "**Hello**   \n**World**",
+        ),
+        (
+            "Section-Header",
+            "<b>Hello</b><br>World",
+            ["", "Hello", " World"],
+            "## **Hello** World",
+        ),
+        (
+            "Section-Header",
+            "<b>Hello</b> big<br>World",
+            ["", "Hello", " big World"],
+            "## **Hello** big World",
+        ),
+        # A boundary space never goes inside a code or formula run.
+        (
+            "Text",
+            "Install with <code>pip install x</code> first.",
+            ["Install with ", "pip install x", " first."],
+            "Install with `pip install x` first.",
+        ),
+        (
+            "Text",
+            "A <b>bold </b> <i> it</i> <math>x</math> <math>y</math> end",
+            ["A ", "bold ", "it", " ", "x", " ", "y", " end"],
+            "A **bold** *it* $x$ $y$ end",
+        ),
+        (
+            "Text",
+            "Run<code> make </code>now, <b>then </b> <i> rest</i>",
+            ["Run ", "make", " now, ", "then ", "rest"],
+            "Run `make` now, **then** *rest*",
+        ),
     ],
 )
-def test_chandra_br_spacing(label: str, html: str, texts: list[str]):
-    """Test that br tags preserve spacing between text."""
+def test_chandra_br_spacing(label: str, html: str, texts: list[str], markdown: str):
+    """Test that br tags and run boundaries keep their whitespace."""
     content = f'<div data-bbox="0 0 1000 1000" data-label="{label}">{html}</div>'
 
     doc = parse_chandra_html(
@@ -86,6 +130,7 @@ def test_chandra_br_spacing(label: str, html: str, texts: list[str]):
     )
 
     assert [item.text for item in doc.texts] == texts
+    assert doc.export_to_markdown() == markdown
 
 
 def test_chandra_multiblock_parsing():
@@ -597,10 +642,11 @@ def test_chandra_equation_block_with_prose_becomes_text():
         "1. Compute <math>\\int_0^1 x\\,dx</math> .", "Equation-Block"
     )
     assert [(t.label, t.text) for t in doc.texts] == [
-        (DocItemLabel.TEXT, "1. Compute"),
+        (DocItemLabel.TEXT, "1. Compute "),
         (DocItemLabel.FORMULA, "\\int_0^1 x\\,dx"),
-        (DocItemLabel.TEXT, "."),
+        (DocItemLabel.TEXT, " ."),
     ]
+    assert doc.export_to_markdown() == "1. Compute $\\int_0^1 x\\,dx$ ."
     dclg = doc.export_to_doclang()
     assert dclg.count("<formula>") == 1
     assert dclg.count("<location") == 4
