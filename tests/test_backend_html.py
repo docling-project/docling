@@ -2595,6 +2595,28 @@ def test_html_line_break_outside_paragraphs():
     assert "**`bold`**  \n*`code`*" in markdown
 
 
+def test_block_child_of_list_item_is_a_word_boundary():
+    # The list item text and its block child are separate words; source whitespace stays single.
+    src = (
+        b"<html><body><ul>"
+        b"<li>Intro<p>more <b>x</b> y</p></li>"
+        b"<li><b>A</b> b<div>c <i>d</i></div>tail</li>"
+        b"<li>e <p>f</p> g</li>"
+        b"</ul></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert doc.export_to_markdown() == (
+        "- Intro more **x** y\n- **A** b c *d* tail\n- e f g"
+    )
+
+
 def test_html_line_break_at_list_item_edge_is_trimmed():
     # A <br> at the start or end of a list item is a block edge, not a line break.
     src = (

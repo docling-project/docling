@@ -2584,6 +2584,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
+        # Indexes in `result` where a block child starts or ends: a word boundary.
+        block_edges: set[int] = set()
         if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
@@ -2602,10 +2604,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         )
                 else:
                     # Recursively get the child's text content
-                    result.extend(
-                        self._extract_text_and_hyperlink_recursively(
-                            child, ignore_list, keep_newlines=keep_newlines
+                    child_result = self._extract_text_and_hyperlink_recursively(
+                        child, ignore_list, keep_newlines=keep_newlines
+                    )
+                    if isinstance(child, Tag) and child.name in _PARA_BREAKERS:
+                        block_edges.update(
+                            (len(result), len(result) + len(child_result))
                         )
+                    result.extend(child_result)
+        if not keep_newlines:
+            # `<li>a<p>para</p>` is "a para": keep the boundary unless the source already
+            # has whitespace there (normalize_whitespace() moves it out of code runs).
+            for i in sorted(block_edges):
+                if (
+                    0 < i < len(result)
+                    and not result[i - 1].text[-1:].isspace()
+                    and not result[i].text[:1].isspace()
+                ):
+                    result[i - 1] = result[i - 1].model_copy(
+                        update={"text": result[i - 1].text + " "}
                     )
         return result
 
