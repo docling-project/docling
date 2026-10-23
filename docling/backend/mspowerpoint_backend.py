@@ -201,6 +201,22 @@ def _paragraph_fragments(element: etree._Element) -> list[tuple[DocItemLabel, st
     return fragments
 
 
+def _trim_fragment_edges(
+    fragments: list[tuple[DocItemLabel, str]],
+) -> list[tuple[DocItemLabel, str]]:
+    """Trim only the outer edges of a fragment sequence; interior whitespace is text.
+
+    Formulas are already stripped and text fragments never touch each other, so only
+    a text fragment at either end needs trimming.
+    """
+    fragments = list(fragments)
+    if fragments and fragments[0][0] != DocItemLabel.FORMULA:
+        fragments[0] = (fragments[0][0], fragments[0][1].lstrip())
+    if fragments and fragments[-1][0] != DocItemLabel.FORMULA:
+        fragments[-1] = (fragments[-1][0], fragments[-1][1].rstrip())
+    return [fragment for fragment in fragments if fragment[1]]
+
+
 _SAFE_XML_PARSER: Final = etree.XMLParser(
     resolve_entities=False,
     load_dtd=False,
@@ -1060,7 +1076,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     inline_group = doc.add_inline_group(
                         parent=current.last_item, content_layer=content_layer
                     )
-                    for label, text in fragments:
+                    for label, text in _trim_fragment_edges(fragments):
                         doc.add_text(
                             label=label,
                             parent=inline_group,
@@ -1101,8 +1117,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         if has_text
                         else fragment_parent
                     )
-                    for label, text in fragments:
-                        if text.strip():
+                    for label, text in _trim_fragment_edges(fragments):
+                        # Without an inline group the formulas are separate blocks.
+                        if has_text or label == DocItemLabel.FORMULA:
                             doc.add_text(
                                 label=label,
                                 parent=parent,
