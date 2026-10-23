@@ -843,9 +843,20 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         )
                     )
             else:
-                segments.extend(
-                    JatsDocumentBackend._walk_inline_formula(child, current, hyperlink)
+                child_segments = JatsDocumentBackend._walk_inline_formula(
+                    child, current, hyperlink
                 )
+                if (
+                    tag == "p"
+                    and segments
+                    and child_segments
+                    and not segments[-1].text[-1:].isspace()
+                    and not child_segments[0].text[:1].isspace()
+                ):
+                    # A paragraph is a block: keep the boundary to what precedes it
+                    # (`<fn><label>1</label><p>See` reads "1 See").
+                    segments.append(InlineSegment(label=DocItemLabel.TEXT, text=" "))
+                segments.extend(child_segments)
             if child.tail:
                 tail = JatsDocumentBackend._normalize_xml_line_breaks(child.tail)
                 if tail:

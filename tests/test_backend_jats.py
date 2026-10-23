@@ -255,18 +255,18 @@ def test_jats_plain_abstract_styling_is_preserved():
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    # Each styled span remains a separate inline run.
+    # Each styled span remains a separate inline run; runs keep their boundary whitespace.
     assert [_formatting_tuple(item) for item in groups[0]] == [
-        (DocItemLabel.TEXT, "We study", None),
+        (DocItemLabel.TEXT, "We study ", None),
         (
             DocItemLabel.TEXT,
             "Homo sapiens",
             (False, True, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, ",", None),
+        (DocItemLabel.TEXT, ", ", None),
         (
             DocItemLabel.TEXT,
-            "key",
+            "key ",
             (True, False, False, False, Script.BASELINE),
         ),
         (
@@ -286,13 +286,13 @@ def test_jats_plain_abstract_styling_is_preserved():
             "3",
             (False, False, False, False, Script.SUPER),
         ),
-        (DocItemLabel.TEXT, "Pa,", None),
+        (DocItemLabel.TEXT, " Pa, ", None),
         (
             DocItemLabel.TEXT,
             "u",
             (False, False, True, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, ",", None),
+        (DocItemLabel.TEXT, ", ", None),
         (
             DocItemLabel.TEXT,
             "old",
@@ -326,14 +326,14 @@ def test_jats_abstract_styling_preserves_inline_runs():
         # (source paragraph, expected inline runs)
         (
             "conditions <italic>in vitro</italic>.",
-            [(T, "conditions", None), (T, "in vitro", italic), (T, ".", None)],
+            [(T, "conditions ", None), (T, "in vitro", italic), (T, ".", None)],
         ),
         (
             "cultures of <italic>Y. pestis</italic>, and <italic>E. coli</italic>.",
             [
-                (T, "cultures of", None),
+                (T, "cultures of ", None),
                 (T, "Y. pestis", italic),
-                (T, ", and", None),
+                (T, ", and ", None),
                 (T, "E. coli", italic),
                 (T, ".", None),
             ],
@@ -343,11 +343,11 @@ def test_jats_abstract_styling_preserves_inline_runs():
             [
                 (T, "CO", None),
                 (T, "2", sub),
-                (T, "and (CO", None),
+                (T, " and (CO", None),
                 (T, "2", sub),
                 (T, "e) at 10", None),
                 (T, "3", sup),
-                (T, "Pa", None),
+                (T, " Pa", None),
             ],
         ),
         (
@@ -374,7 +374,7 @@ def test_jats_abstract_styling_preserves_inline_runs():
         # as authored (no collapsing, no stripping of interior blanks).
         (
             "a  <italic>b\nc</italic>\n   d.",
-            [(T, "a", None), (T, "b c", italic), (T, "d.", None)],
+            [(T, "a  ", None), (T, "b c", italic), (T, " d.", None)],
         ),
     ]
     for paragraph, expected in cases:
@@ -396,9 +396,9 @@ def test_jats_inline_runs_drop_xml_indentation_but_keep_same_line_whitespace():
 
     italic = (False, True, False, False, Script.BASELINE)
     expected = [
-        (DocItemLabel.TEXT, "Alpha  beta", None),
+        (DocItemLabel.TEXT, "Alpha  beta ", None),
         (DocItemLabel.TEXT, "Yersinia pestis", italic),
-        (DocItemLabel.TEXT, "is critical  here.", None),
+        (DocItemLabel.TEXT, " is critical  here.", None),
     ]
     for doc in documents:
         groups = _inline_group_items(doc)
@@ -448,7 +448,7 @@ def test_jats_structured_abstract_styling_is_preserved():
             "Bg",
             (False, True, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, "text.", None),
+        (DocItemLabel.TEXT, " text.", None),
     ]
     assert [_formatting_tuple(item) for item in groups[1]] == [
         (
@@ -456,7 +456,7 @@ def test_jats_structured_abstract_styling_is_preserved():
             "M",
             (True, False, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.TEXT, "text.", None),
+        (DocItemLabel.TEXT, " text.", None),
     ]
 
 
@@ -489,33 +489,32 @@ def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
     assert footnotes == ["Plain footnote."]
 
 
-def test_jats_footnote_styling_is_preserved():
+_FOOTNOTE = (
+    "<label>1</label>{sep}<p>See <italic>ibid</italic> for <bold>details</bold>.</p>"
+)
+
+
+@pytest.mark.parametrize("sep", ["\n              ", ""], ids=["indented", "compact"])
+def test_jats_footnote_styling_is_preserved(sep: str):
+    fn = _FOOTNOTE.format(sep=sep)
     doc = convert_jats_body(
-        """
-        <sec>
-          <title>Footnote Styling Test</title>
-          <fn-group>
-            <fn id="fn1">
-              <label>1</label>
-              <p>See <italic>ibid</italic> for <bold>details</bold>.</p>
-            </fn>
-          </fn-group>
-        </sec>
-        """
+        f"<sec><title>Footnote Styling Test</title><fn-group><fn>{fn}</fn></fn-group></sec>"
     )
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    # The punctuation after the bold run remains separate and unformatted.
+    # The punctuation after the bold run remains separate and unformatted. The label
+    # and the paragraph are separate blocks: a " " run keeps them apart.
     assert [_formatting_tuple(item) for item in groups[0]] == [
         (DocItemLabel.FOOTNOTE, "1", None),
-        (DocItemLabel.FOOTNOTE, "See", None),
+        (DocItemLabel.FOOTNOTE, " ", None),
+        (DocItemLabel.FOOTNOTE, "See ", None),
         (
             DocItemLabel.FOOTNOTE,
             "ibid",
             (False, True, False, False, Script.BASELINE),
         ),
-        (DocItemLabel.FOOTNOTE, "for", None),
+        (DocItemLabel.FOOTNOTE, " for ", None),
         (
             DocItemLabel.FOOTNOTE,
             "details",
@@ -523,6 +522,7 @@ def test_jats_footnote_styling_is_preserved():
         ),
         (DocItemLabel.FOOTNOTE, ".", None),
     ]
+    assert doc.export_to_markdown().endswith("- 1 See *ibid* for **details**.")
 
 
 def test_jats_nested_lists_are_preserved():
@@ -840,9 +840,9 @@ def test_jats_external_link_boundaries_are_preserved():
         (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
         for item in groups[0]
     ] == [
-        ("Before", None),
+        ("Before ", None),
         ("linked text", "https://example.com/docs"),
-        ("after.", None),
+        (" after.", None),
     ]
 
 
@@ -933,9 +933,9 @@ def test_jats_external_link_is_preserved_on_inline_formula():
         )
         for item in groups[0]
     ] == [
-        (DocItemLabel.TEXT, "value", "https://example.com/equation"),
+        (DocItemLabel.TEXT, "value ", "https://example.com/equation"),
         (DocItemLabel.FORMULA, "x", "https://example.com/equation"),
-        (DocItemLabel.TEXT, "after.", None),
+        (DocItemLabel.TEXT, " after.", None),
     ]
 
 
