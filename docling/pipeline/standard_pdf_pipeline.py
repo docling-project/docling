@@ -205,20 +205,29 @@ class ThreadedQueue:
 
     # ------------------------------------------------------------ get_batch()
     def get_batch(self, size: int, timeout: float | None = None) -> list[ThreadedItem]:
-        """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout."""
+        """Return up to *size* items.
+
+        With *timeout*, wait up to that many seconds to fill the batch. The
+        wait ends when the batch is full, the queue closes, or the time runs
+        out. Without *timeout*, return as soon as one item is present.
+        """
         with self._not_empty:
-            start = time.monotonic()
-            while not self._items and not self._closed:
-                if timeout is not None:
-                    remaining = timeout - (time.monotonic() - start)
-                    if remaining <= 0:
-                        return []
-                    self._not_empty.wait(remaining)
-                else:
-                    self._not_empty.wait()
+            deadline = None if timeout is None else time.monotonic() + timeout
             batch: list[ThreadedItem] = []
-            while self._items and len(batch) < size:
-                batch.append(self._items.popleft())
+            while len(batch) < size:
+                while self._items and len(batch) < size:
+                    batch.append(self._items.popleft())
+                if len(batch) >= size or self._closed:
+                    break
+                if deadline is None:
+                    if batch:
+                        break
+                    self._not_empty.wait()
+                    continue
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                self._not_empty.wait(remaining)
             if batch:
                 self._not_full.notify_all()
             return batch

@@ -2287,8 +2287,9 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         Field(
             description=(
                 "Batch size for layout analysis stage in threaded pipeline. Pages are grouped and processed together by "
-                "the layout model. Higher values improve throughput but increase memory usage. Only used by "
-                "`StandardPdfPipeline` (threaded mode)."
+                "the layout model. Higher values improve throughput but increase memory usage. With the Transformers "
+                "layout engine, picture and table boxes can differ across batch compositions when this is greater than "
+                "1; use 1 when those boxes must be reproducible. Only used by `StandardPdfPipeline` (threaded mode)."
             )
         ),
     ] = 4
