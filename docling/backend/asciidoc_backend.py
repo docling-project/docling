@@ -890,8 +890,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return re.match(r"^= ", line)
 
     @staticmethod
+    def _strip_closing_marker(text: str, marker: str) -> str:
+        """Drop the closing marks of a symmetric title such as "== Title ==".
+
+        Asciidoctor accepts a title closed by the same marks that open it,
+        separated by whitespace, and leaves them out of the title text.
+        """
+        return re.sub(rf"[ \t]+{re.escape(marker)}$", "", text)
+
+    @staticmethod
     def _parse_title(line):
-        return {"type": "title", "text": line[2:].strip(), "level": 0}
+        text = AsciiDocBackend._strip_closing_marker(line[2:].strip(), "=")
+        return {"type": "title", "text": text, "level": 0}
 
     #   =========   Section headers
     @staticmethod
@@ -909,7 +919,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return {
             "type": "header",
             "level": header_level - 1,
-            "text": text.strip(),
+            "text": AsciiDocBackend._strip_closing_marker(text.strip(), marker),
         }
 
     #   =========   Lists

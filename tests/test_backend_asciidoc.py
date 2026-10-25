@@ -952,6 +952,31 @@ def test_heading_flushes_pending_paragraph() -> None:
     assert paras == {"body": "S1.1", "body2": "S2"}
 
 
+def test_symmetric_titles_drop_their_closing_marks() -> None:
+    # Asciidoctor accepts titles closed by the marks that open them
+    # ("== Title =="); the closing marks used to end up in the heading text.
+    # Marks of a different length are part of the title, as in Asciidoctor.
+    src = b"= Doc =\n\n== Intro ==\n\ntext\n\n=== Details ==\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="symmetric.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    headings = [
+        (item.label, item.text)
+        for item in doc.texts
+        if item.label in (DocItemLabel.TITLE, DocItemLabel.SECTION_HEADER)
+    ]
+    assert headings == [
+        (DocItemLabel.TITLE, "Doc"),
+        (DocItemLabel.SECTION_HEADER, "Intro"),
+        (DocItemLabel.SECTION_HEADER, "Details =="),
+    ]
+
+
 def test_block_title_without_floating_target_keeps_content() -> None:
     # A block title followed by a paragraph used to absorb every following
     # line as "multiline caption" and drop all of it at EOF.
