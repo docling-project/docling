@@ -621,15 +621,12 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Create outputs
         outputs = []
         for i, text in enumerate(decoded_texts):
-            stop_reason = (
-                stop_reasons[i] if i < len(stop_reasons) else "unspecified"
-            )
+            stop_reason = stop_reasons[i] if i < len(stop_reasons) else "unspecified"
             if (
                 stop_reason == "unspecified"
                 and not ended_with_eos[i]
                 and merged_generation_config.max_new_tokens is not None
-                and generated_token_counts[i]
-                >= merged_generation_config.max_new_tokens
+                and generated_token_counts[i] >= merged_generation_config.max_new_tokens
             ):
                 stop_reason = "length"
             outputs.append(
