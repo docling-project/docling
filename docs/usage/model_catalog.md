@@ -278,19 +278,20 @@ it does not use the optional MTP head. The output uses the same native-output ma
 Transformers. The [8-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-8bit)
 and [4-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-4bit) checkpoints are also available.
 
-The native port is proposed in [`mlx-vlm` PR #2562](https://github.com/Blaizzy/mlx-vlm/pull/2562).
-Released `mlx-vlm==0.7.9` does not contain this port. Auto-inline checks the native module as
+The native port merged in [`mlx-vlm` PR #2562](https://github.com/Blaizzy/mlx-vlm/pull/2562)
+after version 0.7.10. Upstream release support requires **`mlx-vlm > 0.7.10`** and the native
+model module. Version 0.7.10 does not contain the port. Auto-inline checks the native module as
 well as the package version. It falls back to Transformers when the port is absent. Explicit MLX
 selection reports the missing module before it downloads model weights.
 
-Until an upstream release includes the port, install the signed source build on Apple Silicon:
+Until a later upstream release includes the port, install the merged upstream source on Apple Silicon:
 
 ```bash
-pip install 'mlx-vlm @ git+https://github.com/geoHeil/mlx-vlm.git@398153fa9d0ca62e7e3761eef46362348104d628'
+pip install 'mlx-vlm @ git+https://github.com/Blaizzy/mlx-vlm.git@4319ef2c837b7226b758c3dd69edda51b7079785'
 ```
 
-Repository development with `uv` uses the same source pin through `tool.uv.sources`. The published
-Docling dependency uses a normal version range; wheel and source metadata contain no Git requirement.
+Repository development and published packages use the normal dependency range. They contain no
+fork source override. The preset selects MLX only when the native module is available.
 
 [Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d28803cbe9fa7359f982288adbeafa53e5ecbcb7/PARITY.md)
 compare the uploaded checkpoints against the pinned Transformers reference on three pages.

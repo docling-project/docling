@@ -102,6 +102,8 @@ def test_preset_pins_revision_and_requires_opt_in() -> None:
     [
         ("Darwin", "mps", "0.7.9", "native", VlmEngineType.MLX),
         ("Darwin", "mps", "0.7.9", "released", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.10", "released", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.11", "native", VlmEngineType.MLX),
         ("Darwin", "mps", "0.7.9", "no-models", VlmEngineType.TRANSFORMERS),
         ("Darwin", "mps", "0.7.8", "native", VlmEngineType.TRANSFORMERS),
         ("Darwin", "cpu", "0.7.9", "native", VlmEngineType.TRANSFORMERS),
