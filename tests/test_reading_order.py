@@ -715,6 +715,31 @@ def test_heads_in_side_by_side_columns_keep_column_order():
     assert _predicted_cids(elements) == [2, 0, 1]
 
 
+def test_narrow_text_column_and_spanning_block_order_heads_together():
+    # The centred header (0) and the narrow section header (2) do not share a
+    # column, and nothing between them spans both. Sorting (2) by the wide
+    # text under it keeps (0) first.
+    # The centred heading (6) has only a narrow text column, so that sort does
+    # not reach the left-hand line (10). The full-width block (8) spans both,
+    # so (6) stays above (10).
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 740, 752, l=284, r=321),
+        _box(1, DocItemLabel.TEXT, 700, 730, l=180, r=430),
+        _box(2, DocItemLabel.SECTION_HEADER, 650, 665, l=85, r=94),
+        _box(3, DocItemLabel.TEXT, 610, 640, l=85, r=400),
+        _box(4, DocItemLabel.LIST_ITEM, 561.8, 570.1, l=67.4, r=482.7),
+        _box(5, DocItemLabel.TEXT, 521.4, 528.8, l=67.4, r=194.5),
+        _box(6, DocItemLabel.SECTION_HEADER, 500, 512, l=278.0, r=317.3),
+        _box(7, DocItemLabel.TEXT, 470, 490, l=278.0, r=317.3),
+        _box(8, DocItemLabel.TEXT, 322.0, 387.9, l=67.4, r=529.9),
+        _box(9, DocItemLabel.SECTION_HEADER, 263.5, 272.1, l=274.6, r=320.7),
+        _box(10, DocItemLabel.TEXT, 237.4, 245.8, l=67.4, r=202.0),
+        _box(11, DocItemLabel.LIST_ITEM, 190.4, 219.7, l=67.4, r=529.9),
+    ]
+
+    assert _predicted_cids(elements) == list(range(12))
+
+
 """
 def test_readingorder_multipage():
 
