@@ -651,6 +651,24 @@ converter = DocumentConverter()
 result = converter.convert(source, max_num_pages=100, max_file_size=20971520)
 ```
 
+## Convert ZIP archives
+
+Docling expands generic ZIP archives into separate documents. Use
+`convert_all()` to convert every supported archive member:
+
+```python
+from docling.document_converter import DocumentConverter
+
+converter = DocumentConverter()
+results = list(converter.convert_all(["documents.zip"]))
+```
+
+`convert()` returns one result. It raises `ConversionError` when its source
+contains multiple documents. Use `convert_all()` for a ZIP archive with more
+than one member. By default, `convert_all()` raises on the first failed member.
+Pass `raises_on_error=False` to receive failure results and continue with later
+members. The configured file-size limit applies to each member and to the total
+size of successfully read members.
 For image inputs, the page count is checked against `max_num_pages` before any
 page is decoded, and each page (for example each frame of a multi-page TIFF) is
 decoded only when it is processed. The `max_image_pixels` backend option limits
