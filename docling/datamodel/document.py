@@ -1081,7 +1081,25 @@ class _DocumentConversionInput(BaseModel):
 
     @staticmethod
     def _has_cv_metadata(obj: Union[Path, DocumentStream]) -> bool:
-        """Detect the .cv XMP namespace declaration in a PDF.
+        """Detect the .cv XMP metadata in the catalog of a PDF.
+
+        A byte scan for the namespace declaration selects the candidates
+        cheaply. The declaration can also occur in page content or in another
+        stream, so the CV backend confirms a match against the catalog
+        metadata before the PDF is routed to it.
+        """
+        if not _DocumentConversionInput._contains_cv_namespace(obj):
+            return False
+        # Imported here because the CV backend imports this module.
+        from docling.backend.cv_backend import CvDocumentBackend
+
+        return CvDocumentBackend.declares_cv_metadata(
+            obj if isinstance(obj, Path) else obj.stream
+        )
+
+    @staticmethod
+    def _contains_cv_namespace(obj: Union[Path, DocumentStream]) -> bool:
+        """Search a PDF for the .cv XMP namespace declaration.
 
         XMP packets are stored unfiltered so that a byte scan finds them, which
         is what the ``xpacket`` wrapper is for. The packet has no fixed offset,

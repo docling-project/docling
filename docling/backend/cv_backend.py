@@ -245,6 +245,25 @@ class CvDocumentBackend(DeclarativeDocumentBackend):
         return {InputFormat.CV}
 
     @classmethod
+    def declares_cv_metadata(cls, path_or_stream: BytesIO | Path) -> bool:
+        """Return whether a PDF catalog carries the ``cv:`` XMP properties.
+
+        Format detection calls this to confirm a byte match of the .cv
+        namespace, which can also occur in page content or in another stream.
+        """
+        if not _CV_DEPENDENCIES_AVAILABLE:
+            return False
+        position = path_or_stream.tell() if isinstance(path_or_stream, BytesIO) else 0
+        try:
+            cls._read_cv_metadata(PdfReader(path_or_stream).root_object)
+        except Exception:
+            return False
+        finally:
+            if isinstance(path_or_stream, BytesIO):
+                path_or_stream.seek(position)
+        return True
+
+    @classmethod
     def dependencies_available(cls) -> bool:
         return (
             _CV_DEPENDENCIES_AVAILABLE

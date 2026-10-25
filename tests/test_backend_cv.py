@@ -95,13 +95,71 @@ def test_pdf_without_cv_metadata_stays_pdf():
     assert in_doc.format is InputFormat.PDF
 
 
-def test_cv_with_tampered_payload_fails():
-    # Change one byte of the stored Markdown so it no longer matches the
-    # sha-256 digest recorded in cv:integrity.
-    data = MARKDOWN_CV.read_bytes().replace(b"Physicist", b"Physicisx", 1)
-    result = DocumentConverter(allowed_formats=[InputFormat.CV]).convert(
-        DocumentStream(name="tampered.cv", stream=BytesIO(data)),
+def test_pdf_with_cv_namespace_outside_the_catalog_stays_pdf():
+    # Unlink the XMP stream from the catalog. Its bytes, which declare the .cv
+    # namespace, stay in the file, as they could in page content.
+    data = MARKDOWN_CV.read_bytes().replace(b"/Metadata 9 0 R", b"/Metadatx 9 0 R", 1)
+    stream = DocumentStream(name="resume.pdf", stream=BytesIO(data))
+    conversion_input = _DocumentConversionInput(path_or_stream_iterator=[stream])
+
+    [in_doc] = conversion_input.docs(
+        {InputFormat.CV: CvFormatOption(), InputFormat.PDF: PdfFormatOption()}
+    )
+
+    assert in_doc.format is InputFormat.PDF
+
+
+def _convert_cv(data: bytes):
+    return DocumentConverter(allowed_formats=[InputFormat.CV]).convert(
+        DocumentStream(name="edited.cv", stream=BytesIO(data)),
         raises_on_error=False,
     )
 
+
+def _convert_edited_cv(old: bytes, new: bytes):
+    # Each edit keeps the byte length, so the cross-reference table stays valid.
+    assert len(old) == len(new)
+    data = MARKDOWN_CV.read_bytes()
+    assert old in data
+    return _convert_cv(data.replace(old, new, 1))
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        pytest.param(b"Physicist", b"Physicisx", id="payload-digest-mismatch"),
+        pytest.param(b"/AF [", b"/AX [", id="no-associated-files"),
+        pytest.param(
+            b"cv:primaryPayload>resume.md</cv:primaryPayload>",
+            b"cv:primaryPayloax>resume.md</cv:primaryPayloax>",
+            id="no-primary-payload",
+        ),
+        pytest.param(
+            b"cv:primaryPayload>resume.md<",
+            b"cv:primaryPayload>resume.mx<",
+            id="unknown-primary-payload",
+        ),
+        pytest.param(
+            b"/Subtype /text#2Fmarkdown",
+            b"/Subtype /text#2Fmarkdowx",
+            id="unsupported-payload-type",
+        ),
+    ],
+)
+def test_invalid_cv_fails(old: bytes, new: bytes):
+    assert _convert_edited_cv(old, new).status is ConversionStatus.FAILURE
+
+
+def test_cv_payload_over_the_size_limit_fails(monkeypatch):
+    # The fixture's payload declares 501 bytes in /Params /Size.
+    monkeypatch.setattr("docling.backend.cv_backend._MAX_PAYLOAD_BYTES", 500)
+    result = _convert_cv(MARKDOWN_CV.read_bytes())
+
     assert result.status is ConversionStatus.FAILURE
+
+
+def test_cv_with_newer_major_version_converts(caplog):
+    result = _convert_edited_cv(b"cv:version>1.0<", b"cv:version>2.0<")
+
+    assert result.status is ConversionStatus.SUCCESS
+    assert "newer than the supported version" in caplog.text
