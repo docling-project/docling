@@ -43,7 +43,7 @@ from PIL import Image as PILImage
 
 from docling.utils.chandra_utils import _add_html_fragment, _add_html_table
 from docling.utils.code_language import detect_code_language
-from docling.utils.markdown_math import create_markdown_parser
+from docling.utils.markdown_math import _MATH, create_markdown_parser
 from docling.utils.vlm_utils import (
     link_adjacent_captions,
     normalize_section_header_levels,
@@ -61,17 +61,16 @@ _HTML_TAG_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _LITERAL_INLINE_PATTERN = re.compile(
-    r"(?<!\\)(?:\$\$[\s\S]*?(?<!\\)\$\$|\$[^\n$]+?(?<!\\)\$"
-    r"|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\])"
-    r"|<code\b[^>]*>[\s\S]*?</code>",
+    rf"{_MATH.pattern}|<code\b[^>]*>[\s\S]*?</code>",
     re.IGNORECASE,
 )
 # Literal spans and code spans pass through; `\\` keeps `\\*` from unescaping.
-# A code span opens only at a full backtick run, read atomically with `(?=(`+))\1`:
+# A code span opens only at a full backtick run, read atomically in a lookahead:
 # a backtracking `(`+)` takes cubic time on a long unclosed run.
 _MARKDOWN_ESCAPE_PATTERN = re.compile(
     rf"{_LITERAL_INLINE_PATTERN.pattern}"
-    r"|(?<!`)(?=(`+))\1[\s\S]*?(?<!`)\1(?!`)|\\([*_])|\\\\",
+    r"|(?<!`)(?=(?P<ticks>`+))(?P=ticks)[\s\S]*?(?<!`)(?P=ticks)(?!`)"
+    r"|\\(?P<escape>[*_])|\\\\",
     re.IGNORECASE,
 )
 
@@ -79,7 +78,7 @@ _MARKDOWN_ESCAPE_PATTERN = re.compile(
 def _unescape_markdown_literals(text: str) -> str:
     r"""Turn the Markdown escapes `\*` and `\_` into literal characters."""
     return _MARKDOWN_ESCAPE_PATTERN.sub(
-        lambda match: match.group(2) or match.group(0), text
+        lambda match: match.group("escape") or match.group(0), text
     )
 
 

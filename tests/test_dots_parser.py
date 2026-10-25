@@ -115,6 +115,7 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
     ("text", "expected"),
     [
         ("snake_case and a_b_c", "snake_case and a_b_c"),
+        (r"Price $5\_x-$10", "Price $5_x-$10"),
         (r"\*literal\*", "*literal*"),
         (r"a\_b, `c\_d` and \\*", r"a_b, `c\_d` and \\*"),
         ("unmatched **bold", "unmatched **bold"),

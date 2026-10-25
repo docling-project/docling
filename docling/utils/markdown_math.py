@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import html
 import re
+from threading import local
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,11 +21,21 @@ _MATH = re.compile(
 )
 
 
+class _MarkdownParsers(local):
+    def __init__(self) -> None:
+        self.by_mode: dict[bool, marko.Markdown] = {}
+
+
+_parsers = _MarkdownParsers()
+
+
 def create_markdown_parser(*, inline_only: bool = False) -> marko.Markdown:
     """Render LaTeX as literal math nodes and keep code and currency literal.
 
     ``inline_only`` leaves the enclosing native block type in control instead
     of interpreting its text as new Markdown lists, headings, or tables.
+
+    Reuse one parser per mode and thread: Marko instances are not thread-safe.
     """
     # Markdown is an optional dependency for slim installations.
     try:
@@ -34,6 +45,9 @@ def create_markdown_parser(*, inline_only: bool = False) -> marko.Markdown:
             "Markdown parsing requires `pip install 'docling-slim[format-markdown]'`."
         ) from exc
     from marko.helpers import MarkoExtension
+
+    if inline_only in _parsers.by_mode:
+        return _parsers.by_mode[inline_only]
 
     class Math(marko.inline.InlineElement):
         children: str
@@ -54,7 +68,8 @@ def create_markdown_parser(*, inline_only: bool = False) -> marko.Markdown:
     class MathRenderer:
         def render_math(self, element: Math) -> str:
             match = _MATH.fullmatch(element.children)
-            assert match is not None
+            if match is None:
+                return html.escape(element.children)
             latex = next(group for group in match.groups() if group is not None)
             display = match.group(1) is not None or match.group(4) is not None
             attrs = ' display="block"' if display else ""
@@ -85,7 +100,7 @@ def create_markdown_parser(*, inline_only: bool = False) -> marko.Markdown:
                 if name in {"Document", "Paragraph", "BlankLine"}
             }
 
-    return marko.Markdown(
+    markdown = marko.Markdown(
         parser=InlineParser if inline_only else marko.Parser,
         extensions=[
             # GFM adds block elements after InlineParser filters them, and its
@@ -102,3 +117,5 @@ def create_markdown_parser(*, inline_only: bool = False) -> marko.Markdown:
             ),
         ],
     )
+    _parsers.by_mode[inline_only] = markdown
+    return markdown
