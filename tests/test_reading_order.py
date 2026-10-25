@@ -567,17 +567,20 @@ def test_heads_separated_by_full_width_text_are_read_top_down():
     # reaches the short intro line below it, so both start chains of their own.
     # Ordered by left edge alone, the intro line and its list came before
     # CHAPTER I, although the body text between the two spans both.
+    # As on the page, more centred headings follow CHAPTER I before the body
+    # text, so only the spanning text can order the two heads.
     elements = [
         _box(0, DocItemLabel.LIST_ITEM, 561.8, 570.1, l=67.4, r=482.7),
         _box(1, DocItemLabel.TEXT, 521.4, 528.8, l=67.4, r=194.5),
         _box(2, DocItemLabel.SECTION_HEADER, 480.9, 488.4, l=278.0, r=317.3),
-        _box(3, DocItemLabel.TEXT, 322.0, 387.9, l=67.4, r=529.9),
-        _box(4, DocItemLabel.SECTION_HEADER, 263.5, 272.1, l=274.6, r=320.7),
-        _box(5, DocItemLabel.TEXT, 237.4, 245.8, l=67.4, r=202.0),
-        _box(6, DocItemLabel.LIST_ITEM, 190.4, 219.7, l=67.4, r=529.9),
+        _box(3, DocItemLabel.SECTION_HEADER, 405.6, 414.2, l=285.4, r=309.8),
+        _box(4, DocItemLabel.TEXT, 322.0, 387.9, l=67.4, r=529.9),
+        _box(5, DocItemLabel.SECTION_HEADER, 263.5, 272.1, l=274.6, r=320.7),
+        _box(6, DocItemLabel.TEXT, 237.4, 245.8, l=67.4, r=202.0),
+        _box(7, DocItemLabel.LIST_ITEM, 190.4, 219.7, l=67.4, r=529.9),
     ]
 
-    assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5, 6]
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5, 6, 7]
 
 
 def test_heads_in_side_by_side_columns_keep_column_order():

@@ -1102,11 +1102,13 @@ class ReadingOrderPredictor:
             print(f"{l}\t{str(elem)}")
         """
 
+        if _RTREE_IMPORT_ERROR is not None:
+            raise ImportError(_INSTALL_HINT) from _RTREE_IMPORT_ERROR
         spatial_idx = rtree_index.Index()
         for i, pelem in enumerate(page_elems):
             spatial_idx.insert(i, (pelem.l, pelem.b, pelem.r, pelem.t))
 
-        def compare(lhs: PageElement, rhs: PageElement) -> int:
+        def compare(lhs: ReadingOrderNode, rhs: ReadingOrderNode) -> int:
             if self._is_separated_above(spatial_idx, page_elems, lhs, rhs):
                 return -1
             if self._is_separated_above(spatial_idx, page_elems, rhs, lhs):
@@ -1128,10 +1130,10 @@ class ReadingOrderPredictor:
 
     @staticmethod
     def _is_separated_above(
-        spatial_idx: rtree_index.Index,
-        page_elems: List[PageElement],
-        upper: PageElement,
-        lower: PageElement,
+        spatial_idx: "rtree_index.Index",
+        page_elems: List[ReadingOrderNode],
+        upper: ReadingOrderNode,
+        lower: ReadingOrderNode,
     ) -> bool:
         """
         Whether `upper` must be read before `lower` although the two do not
