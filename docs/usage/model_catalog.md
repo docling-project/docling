@@ -279,19 +279,9 @@ it does not use the optional MTP head. The output uses the same native-output ma
 Transformers. The [8-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-8bit)
 and [4-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-4bit) checkpoints are also available.
 
-The native port merged in [`mlx-vlm` PR #2562](https://github.com/Blaizzy/mlx-vlm/pull/2562)
-after version 0.7.10. Upstream release support requires **`mlx-vlm > 0.7.10`** and the native
-model module. The preset sets `min_engine_version="0.7.11"`. Release 0.7.10 does not contain the port.
-Auto-inline checks the native module as
-well as the package version. It falls back to Transformers when the port is absent. Explicit MLX
-selection reports the missing module before it downloads model weights.
-
-Source builds that still report version 0.7.10 also fail the minimum-version check, even when
-they contain the native module. Auto-inline falls back to Transformers; explicit MLX selection
-reports the required version before it downloads model weights.
-
-Repository development and published packages use the normal dependency range. They contain no
-fork source override. The preset selects MLX only when both requirements are met.
+The native MLX engine requires `mlx-vlm` 0.7.11 or later and the native model module.
+Auto-inline checks both requirements and falls back to Transformers if either is not met.
+Explicit MLX selection reports an old version or a missing module before it downloads model weights.
 
 [Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d28803cbe9fa7359f982288adbeafa53e5ecbcb7/PARITY.md)
 compare the uploaded checkpoints against the pinned Transformers reference on three pages.
