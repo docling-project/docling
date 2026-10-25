@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-import importlib.metadata
 import re
 from collections.abc import Iterable
 from pathlib import Path
@@ -16,7 +15,6 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.labels import CodeLanguageLabel
-from packaging import version
 from PIL import Image
 from pydantic import BaseModel
 
@@ -25,7 +23,11 @@ from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
-from docling.utils.accelerator_utils import decide_device, resolve_torch_dtype
+from docling.utils.accelerator_utils import (
+    decide_device,
+    resolve_torch_dtype,
+    transformers_dtype_kwargs,
+)
 
 
 class CodeFormulaModelOptions(BaseModel):
@@ -122,16 +124,12 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
                 artifacts_path,
             )
             self._model_max_length = self._processor.tokenizer.model_max_length
-            # transformers>=5 renamed the `torch_dtype` kwarg to `dtype`.
-            dtype_arg_name = (
-                "dtype"
-                if version.parse(importlib.metadata.version("transformers")).major >= 5
-                else "torch_dtype"
-            )
             self._model = AutoModelForImageTextToText.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
-                **{dtype_arg_name: resolve_torch_dtype("bfloat16", self.device)},
+                **transformers_dtype_kwargs(
+                    resolve_torch_dtype("bfloat16", self.device)
+                ),
             )
             self._model.eval()
 

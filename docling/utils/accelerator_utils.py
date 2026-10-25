@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import importlib.metadata
 import logging
 from typing import List, Optional
+
+from packaging import version
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.exceptions import AcceleratorDeviceNotAvailableError
@@ -169,3 +172,12 @@ def _device_supports_bfloat16(device: str) -> bool:
         # The oneDNN bfloat16 kernels need AVX-512; AMX CPUs also report AVX512.
         return torch.backends.cpu.get_cpu_capability() == "AVX512"
     return True
+
+
+def transformers_dtype_kwargs(torch_dtype: Optional[str]) -> dict[str, Optional[str]]:
+    """Return the dtype keyword argument for ``from_pretrained``.
+
+    transformers>=5 renamed the ``torch_dtype`` kwarg to ``dtype``.
+    """
+    major = version.parse(importlib.metadata.version("transformers")).major
+    return {"dtype" if major >= 5 else "torch_dtype": torch_dtype}

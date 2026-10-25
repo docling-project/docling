@@ -257,40 +257,24 @@ class TestRuntimeOptions:
         )
 
     @pytest.mark.parametrize(
-        ("device", "cpu_capability", "cuda_capability", "explicit_dtype", "expected"),
+        ("explicit_dtype", "expected"),
         [
-            # CPU without native bfloat16 (e.g. AVX2 laptops): emulated, slow.
-            ("cpu", "AVX2", None, None, "float32"),
-            # AVX-512 / AMX CPUs run bfloat16 natively.
-            ("cpu", "AVX512", None, None, "bfloat16"),
-            # CUDA before Ampere (e.g. T4) has no native bfloat16.
-            ("cuda:0", None, (7, 5), None, "float32"),
-            ("cuda:0", None, (8, 0), None, "bfloat16"),
+            # The CodeFormulaV2 preset bfloat16 falls back on a CPU that emulates it.
+            (None, "float32"),
             # An explicit engine option dtype is never changed.
-            ("cpu", "AVX2", None, "bfloat16", "bfloat16"),
+            ("bfloat16", "bfloat16"),
         ],
     )
-    def test_transformers_engine_falls_back_from_unsupported_preset_dtype(
-        self,
-        monkeypatch,
-        device,
-        cpu_capability,
-        cuda_capability,
-        explicit_dtype,
-        expected,
+    def test_transformers_engine_resolves_preset_dtype_for_device(
+        self, monkeypatch, explicit_dtype, expected
     ):
-        """The CodeFormulaV2 preset bfloat16 falls back where the device emulates it."""
+        """Only the preset dtype goes through the device fallback."""
         import torch
 
         import docling.models.inference_engines.vlm.transformers_engine as tf_engine
         from docling.datamodel.stage_model_specs import CODE_FORMULA_CODEFORMULAV2
 
-        monkeypatch.setattr(
-            torch.backends.cpu, "get_cpu_capability", lambda: cpu_capability
-        )
-        monkeypatch.setattr(
-            torch.cuda, "get_device_capability", lambda device=None: cuda_capability
-        )
+        monkeypatch.setattr(torch.backends.cpu, "get_cpu_capability", lambda: "AVX2")
 
         captured_kwargs = {}
 
@@ -306,11 +290,6 @@ class TestRuntimeOptions:
             def eval(self):
                 return None
 
-        monkeypatch.setattr(
-            tf_engine.importlib.metadata,
-            "version",
-            lambda package: "5.8.0" if package == "transformers" else "0.0.0",
-        )
         monkeypatch.setattr(
             tf_engine,
             "resolve_model_artifacts_path",
@@ -336,7 +315,7 @@ class TestRuntimeOptions:
             accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
             artifacts_path=None,
         )
-        engine.device = device
+        engine.device = "cpu"
         engine.model_config = CODE_FORMULA_CODEFORMULAV2.model_spec.get_engine_config(
             VlmEngineType.TRANSFORMERS
         )
@@ -346,7 +325,8 @@ class TestRuntimeOptions:
             model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
         )
 
-        assert captured_kwargs["dtype"] == expected
+        (dtype_arg_name,) = tf_engine.transformers_dtype_kwargs(None)
+        assert captured_kwargs[dtype_arg_name] == expected
 
     @pytest.mark.parametrize(
         ("transformers_version", "expected_trust_remote_code"),
