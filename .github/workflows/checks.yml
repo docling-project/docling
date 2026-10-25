@@ -223,7 +223,7 @@ jobs:
             TACH_ARGS="--tach-base $TACH_BASE_REF"
           fi
           echo "Running core test suite"
-          uv run pytest -v --durations=0 --cov=docling --cov-branch --cov-report=xml --cov-context=test $TACH_ARGS "${ML_IGNORE_ARGS[@]}"
+          uv run pytest -n auto --dist loadfile -v --durations=0 --cov=docling --cov-branch --cov-report=xml --cov-context=test $TACH_ARGS "${ML_IGNORE_ARGS[@]}"
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
