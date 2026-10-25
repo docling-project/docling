@@ -77,6 +77,7 @@ try:  # pragma: no cover - import-time guard
     from docx.opc.part import XmlPart
     from docx.oxml import parse_xml as docx_parse_xml
     from docx.oxml.ns import qn
+    from docx.oxml.exceptions import InvalidXmlError
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement
@@ -3938,7 +3939,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref: list[RefItem] = []
         table: Table = Table(element, self.docx_obj)
         num_rows = len(table.rows)
-        num_cols = len(table.columns)
+        try:
+            num_cols = len(table.columns)
+        except InvalidXmlError:
+            # Some generators and converters omit the required w:tblGrid;
+            # Word still renders every w:tc. Derive the width from the rows.
+            num_cols = 0
+        # A declared grid can also be narrower than the rows (fewer gridCol
+        # elements than w:tc per row); widen it so no cell is cut off. Width
+        # counts grid columns, not w:tc elements: gridBefore offsets and
+        # gridSpan values each cover more than one cell.
+        for row in table.rows:
+            row_width = row.grid_cols_before + sum(
+                tc.grid_span for tc in MsWordDocumentBackend._row_cells(row._tr)
+            )
+            num_cols = max(num_cols, row_width)
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
 
         if num_rows == 1 and num_cols == 1:

@@ -2706,3 +2706,104 @@ def test_body_level_alternate_content_with_no_usable_branch_adds_nothing(tmp_pat
         "Paragraph before AlternateContent",
         "Paragraph after AlternateContent",
     ]
+
+
+def _write_raw_table_docx(path: Path, table_xml: str) -> None:
+    """Write a minimal docx whose body holds a raw ``w:tbl`` element."""
+    import zipfile
+
+    content_types = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        "</Types>"
+    )
+    rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+        "</Relationships>"
+    )
+    document = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        "<w:body>" + table_xml + "<w:p/><sectPr/></w:body></w:document>"
+    )
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("[Content_Types].xml", content_types)
+        archive.writestr("_rels/.rels", rels)
+        archive.writestr("word/document.xml", document)
+
+
+_ROWS = (
+    "<w:tr>"
+    "<w:tc><w:p><w:r><w:t>ant</w:t></w:r></w:p></w:tc>"
+    "<w:tc><w:p><w:r><w:t>bee</w:t></w:r></w:p></w:tc>"
+    "<w:tc><w:p><w:r><w:t>cat</w:t></w:r></w:p></w:tc>"
+    "</w:tr>"
+    "<w:tr>"
+    "<w:tc><w:p><w:r><w:t>dog</w:t></w:r></w:p></w:tc>"
+    "<w:tc><w:p><w:r><w:t>eel</w:t></w:r></w:p></w:tc>"
+    "<w:tc><w:p><w:r><w:t>fox</w:t></w:r></w:p></w:tc>"
+    "</w:tr>"
+)
+
+
+def test_table_without_tblgrid_keeps_all_cells(tmp_path):
+    """A table whose required ``w:tblGrid`` is absent is not dropped.
+
+    Generators and converters can omit the grid; Word renders every ``w:tc``.
+    """
+    docx_path = tmp_path / "no_grid.docx"
+    _write_raw_table_docx(docx_path, f"<w:tbl>{_ROWS}</w:tbl>")
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 1
+    texts = {cell.text for cell in doc.tables[0].data.table_cells}
+    assert {"ant", "bee", "cat", "dog", "eel", "fox"}.issubset(texts)
+
+
+def test_table_with_undeclared_grid_columns_keeps_extra_cells(tmp_path):
+    """Cells past an under-declared ``w:tblGrid`` are not cut off.
+
+    Two ``w:gridCol`` elements with three ``w:tc`` per row: Word shows every
+    cell, so the third column must be kept.
+    """
+    narrow_grid = '<w:tblGrid><w:gridCol/><w:gridCol/></w:tblGrid>'
+    docx_path = tmp_path / "narrow_grid.docx"
+    _write_raw_table_docx(docx_path, f"<w:tbl>{narrow_grid}{_ROWS}</w:tbl>")
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 1
+    texts = {cell.text for cell in doc.tables[0].data.table_cells}
+    assert {"ant", "bee", "cat", "dog", "eel", "fox"}.issubset(texts)
+    assert doc.tables[0].data.num_cols == 3
+
+
+def test_table_span_cells_count_as_grid_columns(tmp_path):
+    """Width derivation counts gridSpan coverage, not w:tc elements.
+
+    No ``w:tblGrid``; row cells: ant spans 2 columns, then bee and cat. The
+    effective grid is 3 columns wide (row 0 spans cols 0-1); counting
+    ``w:tc`` elements would compute 2 and cut row 1's second cell.
+    """
+    spanned_rows = (
+        "<w:tr>"
+        '<w:tc><w:tcPr><w:gridSpan w:val="2"/></w:tcPr>'
+        "<w:p><w:r><w:t>ant</w:t></w:r></w:p></w:tc>"
+        "<w:tc><w:p><w:r><w:t>bee</w:t></w:r></w:p></w:tc>"
+        "</w:tr>"
+        "<w:tr>"
+        "<w:tc><w:p><w:r><w:t>cat</w:t></w:r></w:p></w:tc>"
+        "<w:tc><w:p><w:r><w:t>dog</w:t></w:r></w:p></w:tc>"
+        "</w:tr>"
+    )
+    docx_path = tmp_path / "span_cells.docx"
+    _write_raw_table_docx(docx_path, f"<w:tbl>{spanned_rows}</w:tbl>")
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_cols == 3
+    texts = {cell.text for cell in doc.tables[0].data.table_cells}
+    assert {"ant", "bee", "cat", "dog"}.issubset(texts)
