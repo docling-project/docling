@@ -33,6 +33,8 @@ Below you can find a listing of all supported input and output formats.
 
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
+PowerPoint shape groups are kept as `unspecified` groups in the document tree;
+groups without content, such as lines only, are left out.
 
 For LaTeX input, front matter such as authors, affiliations, institutes, email
 addresses, and dates is stored as text items. Inline formulas remain formula

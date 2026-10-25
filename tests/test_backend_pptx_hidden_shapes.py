@@ -68,6 +68,7 @@ def test_pptx_hidden_group_hides_everything_inside_it(tmp_path: Path):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
 
     hidden_group = slide.shapes.add_group_shape()
+    hidden_group.name = "Hidden group"
     for index, text in enumerate(["Hidden group first", "Hidden group second"]):
         box = hidden_group.shapes.add_textbox(
             Inches(1), Inches(1 + index), Inches(4), Inches(0.5)
@@ -94,6 +95,8 @@ def test_pptx_hidden_group_hides_everything_inside_it(tmp_path: Path):
         "Shown group kept": "body",
         "Shown group hidden member": "invisible",
     }
+    group_layers = {group.name: group.content_layer for group in doc.groups}
+    assert group_layers["Hidden group"] == ContentLayer.INVISIBLE
     assert doc.export_to_markdown() == "Shown group kept"
 
 
