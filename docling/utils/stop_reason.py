@@ -26,12 +26,9 @@ _COMPLETE_FINISH_REASONS = {
 }
 
 # A configured stop string is the proper end of the output, so a generation that
-# stopped on one is complete. A custom stopping criteria is different: the MLX
-# engine reports it when a GenerationStopper cut a model that was looping, which
-# is a stopped sequence and not a natural end.
+# stopped on one is complete.
 _STOPPED_BY_REQUEST = {
     "stop_string": VlmStopReason.END_OF_SEQUENCE,
-    "custom_criteria": VlmStopReason.STOP_SEQUENCE,
 }
 
 

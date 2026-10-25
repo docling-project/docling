@@ -12,9 +12,6 @@ from docling.utils.stop_reason import normalize_stop_reason
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
-        # MLX reports custom_criteria when a GenerationStopper ended the
-        # generation, which is a stopped sequence and not a natural end.
-        ("custom_criteria", VlmStopReason.STOP_SEQUENCE),
         # The configured stop strings are the proper end of the output.
         ("stop_string", VlmStopReason.END_OF_SEQUENCE),
         # An unknown value must never be read as a finished sequence.
