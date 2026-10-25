@@ -1067,16 +1067,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             attributes = mtch.group(2).split(",")
             picture_info = {"type": "picture", "uri": picture_path}
 
-            # Extract optional attributes (alt text, width, height, alignment)
-            if attributes:
-                alt_parts = [attributes[0].strip()] if attributes[0] else [""]
-                for attr in attributes[1:]:
-                    if "=" in attr:
-                        key, value = attr.split("=", 1)
-                        picture_info[key.strip()] = value.strip()
-                    else:
-                        alt_parts.append(attr.strip())
-                picture_info["alt"] = ", ".join(alt_parts)
+            # Extract optional attributes (alt text, width, height, alignment).
+            # The alt text is positional, so a leading named attribute such as
+            # "width=300" in "image::a.png[width=300]" is not the alt text.
+            alt_parts = []
+            for attr in attributes:
+                if "=" in attr:
+                    key, value = attr.split("=", 1)
+                    picture_info[key.strip()] = value.strip()
+                else:
+                    alt_parts.append(attr.strip())
+            picture_info["alt"] = ", ".join(alt_parts)
 
             return picture_info
 

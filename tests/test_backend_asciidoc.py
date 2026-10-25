@@ -703,6 +703,18 @@ def test_parse_picture() -> None:
         == "A screenshot showing a dialog box, containing text fields, buttons, and validation errors"
     )
 
+    # Only named attributes: there is no alt text, and the first one is kept.
+    line = "image::images/diagram.png[width=300, height=200]"
+    res = AsciiDocBackend._parse_picture(line)
+    assert res.get("width", 0) == "300"
+    assert res.get("height", 0) == "200"
+    assert res.get("alt", None) == ""
+    assert res.get("uri", "") == "images/diagram.png"
+
+    line = "image::logo.png[]"
+    res = AsciiDocBackend._parse_picture(line)
+    assert res.get("alt", None) == ""
+
 
 def test_table_cell_format_specifiers() -> None:
     # A header row whose cells carry alignment + style specifiers ("^.^h|")
