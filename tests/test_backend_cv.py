@@ -95,11 +95,29 @@ def test_pdf_without_cv_metadata_stays_pdf():
     assert in_doc.format is InputFormat.PDF
 
 
-def test_pdf_with_cv_namespace_outside_the_catalog_stays_pdf():
-    # Unlink the XMP stream from the catalog. Its bytes, which declare the .cv
-    # namespace, stay in the file, as they could in page content.
-    data = MARKDOWN_CV.read_bytes().replace(b"/Metadata 9 0 R", b"/Metadatx 9 0 R", 1)
-    stream = DocumentStream(name="resume.pdf", stream=BytesIO(data))
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        # Unlink the XMP stream from the catalog. Its bytes, which declare the
+        # .cv namespace, stay in the file, as they could in page content.
+        pytest.param(
+            b"/Metadata 9 0 R", b"/Metadatx 9 0 R", id="namespace-outside-catalog"
+        ),
+        # A PDF tool can drop the attachments and keep the XMP metadata.
+        pytest.param(b"/AF [", b"/AX [", id="no-associated-files"),
+        pytest.param(
+            b"cv:primaryPayload>resume.md<",
+            b"cv:primaryPayload>resume.mx<",
+            id="primary-payload-not-embedded",
+        ),
+    ],
+)
+def test_pdf_without_a_cv_payload_stays_pdf(old: bytes, new: bytes):
+    data = MARKDOWN_CV.read_bytes()
+    assert old in data
+    stream = DocumentStream(
+        name="resume.pdf", stream=BytesIO(data.replace(old, new, 1))
+    )
     conversion_input = _DocumentConversionInput(path_or_stream_iterator=[stream])
 
     [in_doc] = conversion_input.docs(

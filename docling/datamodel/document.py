@@ -1064,8 +1064,8 @@ class _DocumentConversionInput(BaseModel):
         A .cv file is a valid PDF. It converts from its embedded payload when
         ``InputFormat.CV`` is allowed and its backend dependencies are
         installed. Otherwise it converts as an ordinary PDF. A PDF without a
-        ``.cv`` name is a .cv file when its XMP metadata declares the .cv
-        namespace.
+        ``.cv`` name is a .cv file when its catalog declares the ``cv:`` XMP
+        properties and embeds the primary payload they name.
         """
         cv_option = format_options.get(InputFormat.CV)
         cv_usable = cv_option is not None and cv_option.backend.dependencies_available()
@@ -1074,26 +1074,26 @@ class _DocumentConversionInput(BaseModel):
         if (
             format == InputFormat.PDF
             and cv_usable
-            and _DocumentConversionInput._has_cv_metadata(obj)
+            and _DocumentConversionInput._has_cv_payload(obj)
         ):
             return InputFormat.CV
         return format
 
     @staticmethod
-    def _has_cv_metadata(obj: Union[Path, DocumentStream]) -> bool:
-        """Detect the .cv XMP metadata in the catalog of a PDF.
+    def _has_cv_payload(obj: Union[Path, DocumentStream]) -> bool:
+        """Detect a .cv file by its catalog metadata and primary payload.
 
         A byte scan for the namespace declaration selects the candidates
         cheaply. The declaration can also occur in page content or in another
         stream, so the CV backend confirms a match against the catalog
-        metadata before the PDF is routed to it.
+        metadata and the embedded payload before the PDF is routed to it.
         """
         if not _DocumentConversionInput._contains_cv_namespace(obj):
             return False
         # Imported here because the CV backend imports this module.
         from docling.backend.cv_backend import CvDocumentBackend
 
-        return CvDocumentBackend.declares_cv_metadata(
+        return CvDocumentBackend.embeds_cv_payload(
             obj if isinstance(obj, Path) else obj.stream
         )
 

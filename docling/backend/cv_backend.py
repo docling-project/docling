@@ -186,7 +186,10 @@ class CvDocumentBackend(DeclarativeDocumentBackend):
         )
 
     @staticmethod
-    def _read_associated_file(catalog: DictionaryObject, name: str) -> _CvPayload:
+    def _find_embedded_file(
+        catalog: DictionaryObject, name: str
+    ) -> tuple[DictionaryObject, StreamObject]:
+        """Return the file specification and stream of an associated file."""
         associated_files = catalog.get("/AF")
         associated_files = (
             associated_files.get_object() if associated_files is not None else None
@@ -206,32 +209,36 @@ class CvDocumentBackend(DeclarativeDocumentBackend):
                 continue
             stream = embedded.get("/UF") or embedded.get("/F")
             stream = stream.get_object() if stream is not None else None
-            if not isinstance(stream, StreamObject):
-                continue
-            # /Params /Size is the decoded size, which the specification
-            # requires. Checking it first avoids decoding a declared oversized
-            # payload. pypdf also bounds the output of its decoders.
-            params = stream.get("/Params")
-            params = params.get_object() if params is not None else None
-            declared_size = (
-                params.get("/Size") if isinstance(params, DictionaryObject) else None
-            )
-            if declared_size is not None and int(declared_size) > _MAX_PAYLOAD_BYTES:
-                raise DocumentLoadError(
-                    f"The .cv payload {name!r} is larger than {_MAX_PAYLOAD_BYTES} bytes."
-                )
-            data = stream.get_data()
-            if len(data) > _MAX_PAYLOAD_BYTES:
-                raise DocumentLoadError(
-                    f"The .cv payload {name!r} is larger than {_MAX_PAYLOAD_BYTES} bytes."
-                )
-            # The specification puts /Subtype on the file specification, and
-            # the PDF specification puts it on the embedded file stream.
-            subtype = stream.get("/Subtype") or filespec.get("/Subtype") or ""
-            mime_type = str(subtype).removeprefix("/").split(";", 1)[0].strip()
-            return _CvPayload(data=data, mime_type=mime_type.lower())
+            if isinstance(stream, StreamObject):
+                return filespec, stream
 
         raise DocumentLoadError(f"The .cv file has no associated file named {name!r}.")
+
+    @classmethod
+    def _read_associated_file(cls, catalog: DictionaryObject, name: str) -> _CvPayload:
+        filespec, stream = cls._find_embedded_file(catalog, name)
+        # /Params /Size is the decoded size, which the specification requires.
+        # Checking it first avoids decoding a declared oversized payload. pypdf
+        # also bounds the output of its decoders.
+        params = stream.get("/Params")
+        params = params.get_object() if params is not None else None
+        declared_size = (
+            params.get("/Size") if isinstance(params, DictionaryObject) else None
+        )
+        if declared_size is not None and int(declared_size) > _MAX_PAYLOAD_BYTES:
+            raise DocumentLoadError(
+                f"The .cv payload {name!r} is larger than {_MAX_PAYLOAD_BYTES} bytes."
+            )
+        data = stream.get_data()
+        if len(data) > _MAX_PAYLOAD_BYTES:
+            raise DocumentLoadError(
+                f"The .cv payload {name!r} is larger than {_MAX_PAYLOAD_BYTES} bytes."
+            )
+        # The specification puts /Subtype on the file specification, and the
+        # PDF specification puts it on the embedded file stream.
+        subtype = stream.get("/Subtype") or filespec.get("/Subtype") or ""
+        mime_type = str(subtype).removeprefix("/").split(";", 1)[0].strip()
+        return _CvPayload(data=data, mime_type=mime_type.lower())
 
     def is_valid(self) -> bool:
         return self.valid
@@ -245,17 +252,22 @@ class CvDocumentBackend(DeclarativeDocumentBackend):
         return {InputFormat.CV}
 
     @classmethod
-    def declares_cv_metadata(cls, path_or_stream: BytesIO | Path) -> bool:
-        """Return whether a PDF catalog carries the ``cv:`` XMP properties.
+    def embeds_cv_payload(cls, path_or_stream: BytesIO | Path) -> bool:
+        """Return whether a PDF is a .cv file with its primary payload.
 
         Format detection calls this to confirm a byte match of the .cv
         namespace, which can also occur in page content or in another stream.
+        The catalog must carry the ``cv:`` XMP properties and embed the payload
+        they name. A PDF tool can drop the attachments and keep the XMP, and
+        such a file converts from its visual layer as a PDF.
         """
         if not _CV_DEPENDENCIES_AVAILABLE:
             return False
         position = path_or_stream.tell() if isinstance(path_or_stream, BytesIO) else 0
         try:
-            cls._read_cv_metadata(PdfReader(path_or_stream).root_object)
+            catalog = PdfReader(path_or_stream).root_object
+            metadata = cls._read_cv_metadata(catalog)
+            cls._find_embedded_file(catalog, metadata.primary_payload)
         except Exception:
             return False
         finally:
