@@ -14,6 +14,7 @@ from docling_core.types.doc import (
     ContentLayer,
     DocItemLabel,
     DoclingDocument,
+    Formatting,
     ImageRefMode,
     ListItem,
 )
@@ -998,7 +999,21 @@ def test_text_before_block_title_is_not_merged_with_text_after() -> None:
     doc = in_doc._backend.convert()
 
     texts = [item.text for item, _ in doc.iterate_items()]
-    assert texts == ["text1", "Caption text2", "text3"]
+    assert texts == ["text1", "Caption", "text2", "text3"]
+
+
+def test_block_title_is_not_merged_into_the_paragraph_it_titles() -> None:
+    # A block title is a single line; the paragraph after it is ordinary text.
+    doc = _convert_adoc(
+        b"Intro.\n\n.Block title\nTitled paragraph,\nsecond line.\n\nAfter.\n"
+    )
+
+    assert [(item.text, item.formatting) for item in doc.texts] == [
+        ("Intro.", None),
+        ("Block title", Formatting(bold=True)),
+        ("Titled paragraph, second line.", None),
+        ("After.", None),
+    ]
 
 
 def test_content_block_delimiters_not_leaked() -> None:

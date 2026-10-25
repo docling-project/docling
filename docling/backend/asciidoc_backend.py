@@ -418,11 +418,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_caption(line)
                 caption_data.append(item["text"])
 
-            elif (
-                len(line.strip()) > 0 and len(caption_data) > 0
-            ):  # allow multiline captions
+            elif len(line.strip()) > 0 and len(caption_data) > 0:
+                # A block title is a single line, so this line starts the
+                # paragraph it titles. A paragraph has no caption slot.
+                parent = self._get_current_parent(parents)
+                text_data = self._flush_text_data(
+                    doc=doc, text_data=text_data, parent=parent
+                )
+                caption_data = self._flush_caption_as_paragraph(
+                    doc, caption_data, parent
+                )
                 item = self._parse_text(line)
-                caption_data.append(item["text"])
+                text_data.append(item["text"])
 
             elif len(line.strip()) == 0:
                 caption_data, text_data = self._flush_blank_line(
