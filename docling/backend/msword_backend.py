@@ -76,8 +76,8 @@ try:  # pragma: no cover - import-time guard
     from docx.opc.constants import RELATIONSHIP_TYPE as DOCX_RT
     from docx.opc.part import XmlPart
     from docx.oxml import parse_xml as docx_parse_xml
-    from docx.oxml.ns import qn
     from docx.oxml.exceptions import InvalidXmlError
+    from docx.oxml.ns import qn
     from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.table import CT_Tc
     from docx.oxml.xmlchemy import BaseOxmlElement

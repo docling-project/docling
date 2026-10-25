@@ -2770,7 +2770,7 @@ def test_table_with_undeclared_grid_columns_keeps_extra_cells(tmp_path):
     Two ``w:gridCol`` elements with three ``w:tc`` per row: Word shows every
     cell, so the third column must be kept.
     """
-    narrow_grid = '<w:tblGrid><w:gridCol/><w:gridCol/></w:tblGrid>'
+    narrow_grid = "<w:tblGrid><w:gridCol/><w:gridCol/></w:tblGrid>"
     docx_path = tmp_path / "narrow_grid.docx"
     _write_raw_table_docx(docx_path, f"<w:tbl>{narrow_grid}{_ROWS}</w:tbl>")
     doc = _convert(docx_path)
