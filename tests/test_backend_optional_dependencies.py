@@ -327,3 +327,27 @@ def test_converter_constructs_without_chart_extraction_dependency() -> None:
         "from docling.document_converter import DocumentConverter\nDocumentConverter()\n",
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_converter_constructs_without_torch() -> None:
+    """Constructing DocumentConverter must not import torch.
+
+    A finder that refuses ``torch`` simulates a slim install. It is used in
+    place of ``sys.modules["torch"] = None`` because scipy inspects that entry
+    and crashes on None (see the test above).
+    """
+    body = (
+        "class _NoTorch:\n"
+        "    def find_spec(self, name, path=None, target=None):\n"
+        "        if name == 'torch' or name.startswith('torch.'):\n"
+        "            raise ImportError(f'No module named {name!r}')\n"
+        "        return None\n"
+        "sys.meta_path.insert(0, _NoTorch())\n"
+        "from docling.document_converter import DocumentConverter\n"
+        "DocumentConverter()\n"
+        "assert 'torch' not in sys.modules\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", f"import sys\n{body}"], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
