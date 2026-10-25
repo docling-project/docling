@@ -178,13 +178,16 @@ docling report.pdf --artifacts-path /models --output /tmp/
 
 For native Whisper ASR, prefetch a selected OpenAI-format checkpoint. Plain
 `--all` excludes ASR models; `--all --asr` includes all native Whisper sizes and
-the Distil-Whisper presets.
+the Distil-Whisper presets. WhisperS2T presets are prefetched only by name; each
+one downloads the `float16` and `float32` models and the word aligner it needs.
 
 ```bash
 docling-tools models download whisper_tiny --output-dir /models
 docling --asr-model whisper_tiny_native --artifacts-path /models audio.wav
 docling-tools models download whisper_distil_small_en --output-dir /models
 docling --asr-model whisper_distil_small_en_native --artifacts-path /models audio.wav
+docling-tools models download whisper_small_en_s2t --output-dir /models
+docling --asr-model whisper_small_en_s2t --artifacts-path /models audio.wav
 ```
 
 `--artifacts-path` overrides the default Hugging Face cache; you can also set

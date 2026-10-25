@@ -30,7 +30,9 @@ except ImportError as e:
 
 from docling.datamodel.asr_model_specs import (
     _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
+    _WHISPER_S2T_PRESETS,
     _distil_whisper_prefetch_name,
+    _whisper_s2t_prefetch_name,
 )
 from docling.datamodel.settings import settings
 from docling.exceptions import RapidOcrModelSizeNotSupportedError
@@ -93,6 +95,20 @@ class _AvailableModels(str, Enum):
     WHISPER_DISTIL_MEDIUM_EN = "whisper_distil_medium_en"
     WHISPER_DISTIL_LARGE_V3 = "whisper_distil_large_v3"
     WHISPER_DISTIL_LARGE_V3_5 = "whisper_distil_large_v3_5"
+    WHISPER_TINY_S2T = "whisper_tiny_s2t"
+    WHISPER_TINY_EN_S2T = "whisper_tiny_en_s2t"
+    WHISPER_BASE_S2T = "whisper_base_s2t"
+    WHISPER_BASE_EN_S2T = "whisper_base_en_s2t"
+    WHISPER_SMALL_S2T = "whisper_small_s2t"
+    WHISPER_SMALL_EN_S2T = "whisper_small_en_s2t"
+    WHISPER_DISTIL_SMALL_EN_S2T = "whisper_distil_small_en_s2t"
+    WHISPER_MEDIUM_S2T = "whisper_medium_s2t"
+    WHISPER_MEDIUM_EN_S2T = "whisper_medium_en_s2t"
+    WHISPER_DISTIL_MEDIUM_EN_S2T = "whisper_distil_medium_en_s2t"
+    WHISPER_LARGE_V3_S2T = "whisper_large_v3_s2t"
+    WHISPER_DISTIL_LARGE_V3_S2T = "whisper_distil_large_v3_s2t"
+    WHISPER_DISTIL_LARGE_V3_5_S2T = "whisper_distil_large_v3_5_s2t"
+    WHISPER_LARGE_V3_TURBO_S2T = "whisper_large_v3_turbo_s2t"
 
 
 _WHISPER_MODELS = {
@@ -111,6 +127,11 @@ _WHISPER_MODELS = {
 _WHISPER_DISTIL_MODELS = {
     _AvailableModels(_distil_whisper_prefetch_name(model_name)): model_name
     for model_name in _DISTIL_WHISPER_OPENAI_CHECKPOINTS
+}
+
+_WHISPER_S2T_MODELS = {
+    _AvailableModels(_whisper_s2t_prefetch_name(model_name)): model_name
+    for model_name in _WHISPER_S2T_PRESETS
 }
 
 
@@ -159,7 +180,8 @@ def download(
             "--asr",
             help=(
                 "With --all, also download native Whisper ASR models, including "
-                "the Distil-Whisper presets."
+                "the Distil-Whisper presets. WhisperS2T models are downloaded "
+                "only by name."
             ),
         ),
     ] = False,
@@ -234,8 +256,13 @@ def download(
         [
             model
             for model in _AvailableModels
-            if asr
-            or (model not in _WHISPER_MODELS and model not in _WHISPER_DISTIL_MODELS)
+            if model not in _WHISPER_S2T_MODELS
+            and (
+                asr
+                or (
+                    model not in _WHISPER_MODELS and model not in _WHISPER_DISTIL_MODELS
+                )
+            )
         ]
         if all
         else _default_models
@@ -323,6 +350,11 @@ def download(
             _WHISPER_DISTIL_MODELS[model]
             for model in to_download
             if model in _WHISPER_DISTIL_MODELS
+        ],
+        whisper_s2t_models=[
+            _WHISPER_S2T_MODELS[model]
+            for model in to_download
+            if model in _WHISPER_S2T_MODELS
         ],
     )
 
