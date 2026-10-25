@@ -7,7 +7,7 @@ Kept separate from ``test_backend_msword.py`` so that file stays under the
 repository's per-file line limit.
 """
 
-from docling_core.types.doc import ListItem
+from docling_core.types.doc import ListItem, TextItem
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -206,3 +206,10 @@ def test_nested_list_items_keep_nesting_across_empty_paragraphs(tmp_path):
     assert items["Prepare the site"].parent == items["Install the inverter"].parent
     assert sub_group_1.get_ref() != items["Prepare the site"].parent
     assert sub_group_2.get_ref() != items["Install the inverter"].parent
+
+    # Empty spacer paragraphs must not survive as empty text items in the document
+    assert [
+        it.text
+        for it in converted.texts
+        if isinstance(it, TextItem) and not it.text.strip()
+    ] == []
