@@ -21,6 +21,7 @@ from PIL import Image
 from typer.main import get_command
 from typer.testing import CliRunner
 
+import docling.cli.main as cli_main
 from docling.cli.export_utils import (
     _parse_page_range,
     _should_generate_export_images,
@@ -1743,7 +1744,9 @@ def test_cli_deprecated_psm_still_sets_tesseract_psm(tmp_path, monkeypatch):
     assert ocr_options.psm == 4
 
 
-def test_cli_options_lists_engine_fields():
+def test_cli_options_lists_engine_fields(monkeypatch):
+    # The rich console reads its width at import, so terminal_width does not reach it
+    monkeypatch.setattr(cli_main.console, "width", 200)
     result = runner.invoke(app, ["options", "ocr", "rapidocr"], terminal_width=200)
     assert result.exit_code == 0, result.output
     assert "model_size" in result.output
