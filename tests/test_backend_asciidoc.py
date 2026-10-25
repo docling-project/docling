@@ -1186,6 +1186,25 @@ def test_unclosed_comment_block_comments_out_the_rest() -> None:
     assert _notes(doc) == ["hidden rest\nmore hidden"]
 
 
+def test_three_slashes_are_body_text_not_a_comment() -> None:
+    # only exactly two slashes start a line comment, as in Asciidoctor
+    doc = _convert_adoc(b"/// not a comment\n//// nor this\n\n// a note\n")
+
+    assert [item.text for item, _ in doc.iterate_items()] == [
+        "/// not a comment //// nor this"
+    ]
+    assert _notes(doc) == ["a note"]
+
+
+@pytest.mark.parametrize("delimiter", ["/////", "///////"])
+def test_longer_comment_delimiter_needs_an_identical_closer(delimiter: str) -> None:
+    src = f"before\n\n{delimiter}\nhidden\n////\nstill hidden\n{delimiter}\n\nafter\n"
+    doc = _convert_adoc(src.encode())
+
+    assert [item.text for item, _ in doc.iterate_items()] == ["before", "after"]
+    assert _notes(doc) == ["hidden\n////\nstill hidden"]
+
+
 def _convert_within(src: bytes, seconds: float = 10.0) -> DoclingDocument:
     """Convert `src`, failing rather than hanging if the parser never returns.
 
