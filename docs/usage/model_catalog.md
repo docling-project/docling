@@ -269,7 +269,8 @@ community-published `carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16` conversion 
 OpenDataLab MLX checkpoint is currently available. Image/chart analysis and cross-page table merging
 are not enabled by this preset.
 
-`nemotron_parse_v3_5` selects MLX on Apple Silicon when the native model module is installed.
+`nemotron_parse_v3_5` selects MLX on Apple Silicon when the package version meets the preset's
+minimum and the native model module is installed.
 Otherwise it selects Transformers, including on CUDA. The MLX engine
 uses the native `mlx-vlm` port and the pinned
 [`geoHeil/Nemotron-3.5-Parse-MLX-bf16`](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16)
@@ -280,18 +281,17 @@ and [4-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-4bit) checkpoi
 
 The native port merged in [`mlx-vlm` PR #2562](https://github.com/Blaizzy/mlx-vlm/pull/2562)
 after version 0.7.10. Upstream release support requires **`mlx-vlm > 0.7.10`** and the native
-model module. Version 0.7.10 does not contain the port. Auto-inline checks the native module as
+model module. The preset sets `min_engine_version="0.7.11"`. Release 0.7.10 does not contain the port.
+Auto-inline checks the native module as
 well as the package version. It falls back to Transformers when the port is absent. Explicit MLX
 selection reports the missing module before it downloads model weights.
 
-Until a later upstream release includes the port, install the merged upstream source on Apple Silicon:
-
-```bash
-pip install 'mlx-vlm @ git+https://github.com/Blaizzy/mlx-vlm.git@4319ef2c837b7226b758c3dd69edda51b7079785'
-```
+Source builds that still report version 0.7.10 also fail the minimum-version check, even when
+they contain the native module. Auto-inline falls back to Transformers; explicit MLX selection
+reports the required version before it downloads model weights.
 
 Repository development and published packages use the normal dependency range. They contain no
-fork source override. The preset selects MLX only when the native module is available.
+fork source override. The preset selects MLX only when both requirements are met.
 
 [Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d28803cbe9fa7359f982288adbeafa53e5ecbcb7/PARITY.md)
 compare the uploaded checkpoints against the pinned Transformers reference on three pages.

@@ -1419,7 +1419,7 @@ VLM_CONVERT_NEMOTRON_PARSE_V3_5 = StageModelPreset(
             VlmEngineType.MLX: EngineModelConfig(
                 repo_id="geoHeil/Nemotron-3.5-Parse-MLX-bf16",
                 revision=_NEMOTRON_PARSE_V3_5_MLX_REVISION,
-                min_engine_version="0.7.9",
+                min_engine_version="0.7.11",
                 required_module="mlx_vlm.models.nemotron_parse_v3_5",
                 extra_config={
                     "extra_generation_config": {

@@ -61,10 +61,11 @@ docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
 
 `nemotron_parse_v3_5` selects the native MLX port on Apple Silicon when its
-model module is installed. The port merged after 0.7.10; upstream release support
-requires `mlx-vlm > 0.7.10`. Until a later release includes it, install
-`mlx-vlm @ git+https://github.com/Blaizzy/mlx-vlm.git@4319ef2c837b7226b758c3dd69edda51b7079785`.
-Without that module, auto-inline falls back to Transformers. MLX uses a
+model module is installed and its package version meets the preset minimum.
+The port merged after 0.7.10; upstream release support requires `mlx-vlm > 0.7.10`.
+The preset sets `min_engine_version="0.7.11"`. Source builds that still report
+0.7.10 also fail this version check. Without a sufficient version and the native
+module, auto-inline falls back to Transformers. MLX uses a
 pinned `geoHeil/Nemotron-3.5-Parse-MLX-bf16` checkpoint and does not require
 remote model code. On CUDA it selects Transformers, which runs code from its
 model repository at a pinned revision. That engine requires
