@@ -353,9 +353,9 @@ def test_chart_parsed_as_classified_picture_with_data():
           ...
           | 2022    | 175              | 130             |
 
-    * Slide 2 — a 3-D bar chart (``c:bar3DChart``) for which python-pptx has no
-      registered element class. It should degrade gracefully: the chart is
-      emitted as a PictureItem with no tabular data.
+    * Slide 2 — a 3-D column chart (``c:bar3DChart``) for which python-pptx has
+      no plot class. It is still classified as a bar chart and carries its
+      data: one series "2026" over the categories Q1 to Q3.
     """
     converter = get_converter()
     doc = converter.convert(CHART_PPTX).document
@@ -384,12 +384,19 @@ def test_chart_parsed_as_classified_picture_with_data():
     assert grid[(4, 1)] == "175"
     assert grid[(4, 2)] == "130"
 
-    # --- slide 2: 3-D chart degrades gracefully (no tabular data, no crash) ---
+    # --- slide 2: 3-D chart with full data ---
     revenue_pic = next(
         p for p in pictures if p.caption_text(doc) != "Wild Duck Observations by Year"
     )
     assert revenue_pic.meta is not None
-    assert revenue_pic.meta.tabular_chart is None
+    assert (
+        revenue_pic.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert [
+        [cell.text for cell in row]
+        for row in revenue_pic.meta.tabular_chart.chart_data.grid
+    ] == [["", "2026"], ["Q1", "10"], ["Q2", "20"], ["Q3", "30"]]
 
 
 def test_chart_image_not_rendered_by_default():
