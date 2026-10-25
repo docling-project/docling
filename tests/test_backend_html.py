@@ -1492,6 +1492,35 @@ def test_e2e_html_conversion_with_images(mock_local, monkeypatch):
     assert verify_document(res_local.document, gt_path + ".json", GENERATE)
 
 
+def test_local_file_uri_source_resolves_images(tmp_path: Path):
+    """A file URI source must resolve relative HTML images locally."""
+    image_path = tmp_path / "figure.png"
+    image_path.write_bytes(PNG_1X1)
+    html_path = tmp_path / "doc.html"
+    html_path.write_text('<img src="figure.png">', encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(
+                backend_options=HTMLBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=html_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(html_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is not None
+
+
 def test_html_furniture():
     raw_html = (
         b"<html><body><p>Initial content with some <strong>bold text</strong></p>"

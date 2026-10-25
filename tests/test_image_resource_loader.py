@@ -6,14 +6,17 @@
 import base64
 import socket
 import struct
+import sys
 import threading
 import zlib
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import quote
 
 import pytest
 from PIL import Image
 
+from docling.backend.utils import image_resource_loader
 from docling.backend.utils.image_resource_loader import (
     ImageResourceLoader,
     validate_url_safety,
@@ -247,6 +250,69 @@ def test_load_image_data_local_requires_base_path():
     loader = ImageResourceLoader(enable_local_fetch=True)
     with pytest.raises(OperationNotAllowed, match="requires base_path"):
         loader.load_image_data("/some/where/image.png", None)
+
+
+def test_resolve_relative_path_accepts_file_uri_base(tmp_path):
+    loader = ImageResourceLoader()
+    base_path = (tmp_path / "doc.md").as_uri()
+
+    resolved = loader.resolve_relative_path("figure.png", base_path)
+
+    assert Path(resolved) == (tmp_path / "figure.png").resolve()
+
+
+def test_resolve_relative_path_accepts_localhost_file_uri(tmp_path):
+    loader = ImageResourceLoader()
+    base_path = (
+        (tmp_path / "doc.md").as_uri().replace("file:///", "file://localhost/", 1)
+    )
+
+    resolved = loader.resolve_relative_path("figure.png", base_path)
+
+    assert Path(resolved) == (tmp_path / "figure.png").resolve()
+
+
+def test_local_base_path_normalizes_unc_authority(monkeypatch):
+    converted_paths: list[str] = []
+
+    def convert_path(path: str) -> str:
+        converted_paths.append(path)
+        return "converted-unc-path"
+
+    monkeypatch.setattr(image_resource_loader, "url2pathname", convert_path)
+
+    result = ImageResourceLoader._local_base_path("file://server/share/docs/doc.md")
+
+    assert converted_paths == ["//server/share/docs/doc.md"]
+    assert result == "converted-unc-path"
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="UNC filesystem paths require Windows"
+)
+def test_resolve_relative_path_accepts_unc_file_uri():
+    loader = ImageResourceLoader()
+
+    resolved = loader.resolve_relative_path(
+        "figure.png", "file://server/share/docs/doc.md"
+    )
+
+    assert Path(resolved) == Path("//server/share/docs/figure.png")
+
+
+def test_resolve_relative_path_keeps_file_uri_confinement(tmp_path):
+    loader = ImageResourceLoader()
+    base_path = (tmp_path / "doc.md").as_uri()
+
+    with pytest.raises(ValueError, match="Path traversal blocked"):
+        loader.resolve_relative_path("../outside.png", base_path)
+
+
+def test_resolve_relative_path_rejects_empty_file_uri():
+    loader = ImageResourceLoader()
+
+    with pytest.raises(ValueError, match="empty path"):
+        loader.resolve_relative_path("figure.png", "file://")
 
 
 def _png_header_data_uri(width: int, height: int) -> str:

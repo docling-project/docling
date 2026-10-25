@@ -23,6 +23,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
 from urllib.parse import urljoin, urlparse, urlsplit
+from urllib.request import url2pathname
 
 import certifi
 import requests
@@ -310,6 +311,20 @@ class ImageResourceLoader:
             and not parsed_loc.netloc
         )
 
+    @staticmethod
+    def _local_base_path(value: str) -> str:
+        """Return a filesystem path for a local path or ``file://`` URI."""
+        parsed = urlparse(value)
+        if parsed.scheme.lower() != "file":
+            return value
+
+        path = parsed.path
+        if parsed.netloc and parsed.netloc.lower() != "localhost":
+            path = f"//{parsed.netloc}{path}"
+        if not path:
+            raise ValueError("Invalid file URI: empty path")
+        return url2pathname(path)
+
     def resolve_relative_path(self, loc: str, base_path: Optional[str]) -> str:
         loc = loc.strip()
 
@@ -320,6 +335,7 @@ class ImageResourceLoader:
         abs_loc = loc
 
         if base_path:
+            base_path = self._local_base_path(base_path)
             if loc.startswith("//"):
                 abs_loc = "https:" + loc
             elif not loc.startswith(("http://", "https://", "data:", "#")):

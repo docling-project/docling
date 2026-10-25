@@ -1128,7 +1128,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         base_path = (
             str(md_options.source_uri) if md_options.source_uri is not None else None
         )
-        return self._get_image_loader().load_image_ref(dest, base_path)
+        try:
+            return self._get_image_loader().load_image_ref(dest, base_path)
+        except ValueError as exc:
+            # Keep the document usable when a relative image escapes its local
+            # source directory. The image is omitted, while the loader still
+            # enforces the confinement check.
+            warnings.warn(f"Could not process an image from {dest}: {exc}")
+            return None
 
     def is_valid(self) -> bool:
         return self.valid
