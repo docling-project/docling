@@ -213,8 +213,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for attachment in message.attachments:
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
+            # Payload is never read; only filename and MIME type are used.
             email_message.add_attachment(
-                attachment.file_bytes or b"",
+                b"",
                 maintype=maintype or "application",
                 subtype=subtype or "octet-stream",
                 filename=attachment.file_name,
