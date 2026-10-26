@@ -1930,9 +1930,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if not shape.has_text_frame:
                     _log.warning("Warning: shape has text but not text_frame")
                     return
+                # Skip shapes without visible content. A whitespace-only run
+                # is still a fragment, so only count an equation or a fragment
+                # with non-blank text.
                 if not shape.text.strip() and not any(
-                    _paragraph_fragments(paragraph._element)
+                    label == DocItemLabel.FORMULA or text.strip()
                     for paragraph in shape.text_frame.paragraphs
+                    for label, text in _paragraph_fragments(paragraph._element)
                 ):
                     return
                 # Handle other text elements, including lists (bullet lists, numbered
