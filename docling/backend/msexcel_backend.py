@@ -451,6 +451,10 @@ class _MergedCellIndex:
             in self._anchor_spans
         )
 
+    def contains_at(self, row: int, col: int) -> bool:
+        """Return whether a 0-based coordinate without a cell object is an anchor."""
+        return (row, col) in self._anchor_spans
+
     @staticmethod
     def is_shadow(cell: Cell | MergedCell) -> bool:
         """Return whether a cell is a non-anchor part of a merged range."""
@@ -1430,56 +1434,49 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         threaded_comments = self._parse_threaded_comments(sheet.title)
 
         # Limit scan to actual data bounds
-        for ri, row in enumerate(
-            sheet.iter_rows(
-                min_row=bounds.min_row,
-                max_row=bounds.max_row,
-                min_col=bounds.min_col,
-                max_col=bounds.max_col,
-                values_only=False,
-            ),
-            start=bounds.min_row - 1,
+        # Iterate existing cells only: sheet.iter_rows() creates empty cells
+        for row_1, col_1 in sorted(
+            coord
+            for coord in sheet._cells
+            if bounds.min_row <= coord[0] <= bounds.max_row
+            and bounds.min_col <= coord[1] <= bounds.max_col
         ):
-            for rj, cell in enumerate(row, start=bounds.min_col - 1):
-                # Collect comment if present
-                if cell.comment is not None:
-                    author = cell.comment.author or ""
-                    raw_text = (
-                        str(cell.comment.text).strip() if cell.comment.text else ""
-                    )
-                    timestamp = None
+            cell = sheet._cells[(row_1, col_1)]
+            ri, rj = row_1 - 1, col_1 - 1
+            # Collect comment if present
+            if cell.comment is not None:
+                author = cell.comment.author or ""
+                raw_text = str(cell.comment.text).strip() if cell.comment.text else ""
+                timestamp = None
 
-                    # Check if this is a threaded comment with better data in XML
-                    thread = threaded_comments.get(cell.coordinate)
-                    if thread is None:
-                        if (
-                            author.startswith("tc={")
-                            and "[Threaded comment]" in raw_text
-                        ):
-                            # Fallback: extract from openpyxl's text if XML parsing failed
-                            if "Comment:\n" in raw_text:
-                                raw_text = raw_text.split("Comment:\n", 1)[1].strip()
-                            author = "Threaded comment"
-                        thread = [(author, raw_text, timestamp)]
+                # Check if this is a threaded comment with better data in XML
+                thread = threaded_comments.get(cell.coordinate)
+                if thread is None:
+                    if author.startswith("tc={") and "[Threaded comment]" in raw_text:
+                        # Fallback: extract from openpyxl's text if XML parsing failed
+                        if "Comment:\n" in raw_text:
+                            raw_text = raw_text.split("Comment:\n", 1)[1].strip()
+                        author = "Threaded comment"
+                    thread = [(author, raw_text, timestamp)]
 
-                    thread = [entry for entry in thread if entry[1]]
-                    if thread:
-                        comment_map[(ri, rj)] = thread
+                thread = [entry for entry in thread if entry[1]]
+                if thread:
+                    comment_map[(ri, rj)] = thread
 
-                if cell.value is None or (ri, rj) in visited:
-                    continue
+            if cell.value is None or (ri, rj) in visited:
+                continue
 
-                # If the cell starts a new table, find its bounds
-                table_bounds, visited_cells = self._find_table_bounds(
-                    sheet,
-                    start_row=ri,
-                    start_col=rj,
-                    max_row=bounds.max_row,
-                    max_col=bounds.max_col,
-                    merged_cell_index=merged_cell_index,
-                )
-                visited.update(visited_cells)  # Mark these cells as visited
-                tables.append(table_bounds)
+            # If the cell starts a new table, find its bounds
+            table_bounds, visited_cells = self._find_table_bounds(
+                sheet,
+                start_row=ri,
+                start_col=rj,
+                max_row=bounds.max_row,
+                max_col=bounds.max_col,
+                merged_cell_index=merged_cell_index,
+            )
+            visited.update(visited_cells)  # Mark these cells as visited
+            tables.append(table_bounds)
 
         return tables, comment_map
 
@@ -1542,8 +1539,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if r < 0 or c < 0 or r >= max_row or c >= max_col:
                 return False
 
-            # 1. Check direct value
-            cell = sheet.cell(row=r + 1, column=c + 1)
+            # 1. Check direct value (avoid sheet.cell(): it creates empty cells)
+            cell = sheet._cells.get((r + 1, c + 1))
+            if cell is None:
+                return merged_cell_index.contains_at(r, c)
             if cell.value is not None:
                 return True
 
@@ -1597,11 +1596,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 # Logic: If we found a "U" shape, do we fill the middle?
                 # Yes, Excel tables are typically treated as rectangular bounding boxes.
 
-                cell = sheet.cell(row=ri + 1, column=rj + 1)
-                if merged_cell_index.is_shadow(cell):
+                cell = sheet._cells.get((ri + 1, rj + 1))
+                if cell is not None and merged_cell_index.is_shadow(cell):
                     continue
 
-                cell_text = _displayed_cell_text(cell)
+                cell_text = "" if cell is None else _displayed_cell_text(cell)
 
                 # Compute Spans
                 row_span, col_span = merged_cell_index.span_at(ri, rj)
