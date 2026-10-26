@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from PIL import Image, ImageDraw
 
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TesseractCliOcrOptions,
@@ -37,7 +37,7 @@ def test_rendered_images_include_dpi(
         fill="black",
     )
     source = tmp_path / "scan.pdf"
-    image.rotate(orientation, expand=True).save(source)
+    image.save(source)
 
     options = PdfPipelineOptions(do_ocr=True, do_table_structure=False)
     options.ocr_options = TesseractCliOcrOptions(lang=["eng"], scale=scale)
@@ -46,14 +46,13 @@ def test_rendered_images_include_dpi(
     )
 
     run_tesseract = TesseractOcrCliModel._run_tesseract
+    seen_dpi: list[tuple[float, float] | None] = []
 
     def run_ocr(
         model: TesseractOcrCliModel, filename: str, osd: pd.DataFrame
     ) -> pd.DataFrame:
         with Image.open(filename) as rendered:
-            assert rendered.info["dpi"] == pytest.approx(
-                (72 * scale, 72 * scale), abs=0.02
-            )
+            seen_dpi.append(rendered.info.get("dpi"))
         return run_tesseract(model, filename, osd)
 
     # Select the rotation path without depending on OSD accuracy.
@@ -67,8 +66,9 @@ def test_rendered_images_include_dpi(
         ),
         patch.object(
             TesseractOcrCliModel, "_run_tesseract", autospec=True, side_effect=run_ocr
-        ) as ocr,
+        ),
     ):
-        converter.convert(source)
+        result = converter.convert(source)
 
-    ocr.assert_called_once()
+    assert result.status == ConversionStatus.SUCCESS
+    assert seen_dpi == [pytest.approx((72 * scale, 72 * scale), abs=0.02)]
