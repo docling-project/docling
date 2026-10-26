@@ -656,7 +656,7 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile, limits: ArchiveLimits) -> 
             target.writestr(info, content)
     normalized.seek(0)
     return normalized
-  
+
 
 _RefT = TypeVar("_RefT", bound=RefItem)
 
@@ -672,8 +672,8 @@ def _remap_refs(refs: list[_RefT], copies: dict[str, NodeItem]) -> list[_RefT]:
         for ref in refs
         if ref.cref in copies
     ]
-  
-  
+
+
 def _normalize_list_style_types(docx_obj: DocxDocument) -> None:
     """Change the style type ``list`` to ``numbering`` in the styles part.
 
@@ -686,7 +686,7 @@ def _normalize_list_style_types(docx_obj: DocxDocument) -> None:
         if style.get(qn("w:type")) == "list":
             style.set(qn("w:type"), "numbering")
 
-            
+
 class _NestedList(NamedTuple):
     """A list opened under an open list's item for its larger left indentation.
 
