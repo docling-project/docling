@@ -1,0 +1,288 @@
+%PDF-1.3
+%âãÏÓ
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+/AF [ 6 0 R 8 0 R ]
+/Metadata 9 0 R
+/OutputIntents [ <<
+/Type /OutputIntent
+/S /GTS_PDFA1
+/OutputConditionIdentifier (sRGB IEC61966\0552\0561)
+/Info (sRGB IEC61966\0552\0561)
+/RegistryName (http\072\057\057www\056color\056org)
+/DestOutputProfile 10 0 R
+>> ]
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 1
+/Kids [ 3 0 R ]
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Resources <<
+>>
+/MediaBox [ 0.0 0.0 595 842 ]
+/Parent 2 0 R
+>>
+endobj
+4 0 obj
+<<
+/Producer (pypdf)
+>>
+endobj
+5 0 obj
+<<
+/Type /EmbeddedFile
+/Subtype /text#2Fmarkdown
+/Length 501
+/Params <<
+/CreationDate (D\07220261019000000\05300\04700\047)
+/ModDate (D\07220261019000000\05300\04700\047)
+/Size 501
+/CheckSum <652efcedff8d8fab73c90b40fc19f687>
+>>
+>>
+stream
+# Marie Curie
+
+Physicist and chemist, Paris, France. Contact: [curie@example.org](mailto:curie@example.org)
+
+## Experience
+
+### Professor, University of Paris
+
+*1906 to 1934*
+
+- Took over the physics chair after the death of Pierre Curie, as the first woman to hold it.
+- Founded the Radium Institute laboratory with **Claude Regaud**.
+
+## Awards
+
+| Year | Award | Field |
+| ---- | ----- | ----- |
+| 1903 | Nobel Prize | Physics |
+| 1911 | Nobel Prize | Chemistry |
+
+## Languages
+
+1. Polish
+2. French
+
+endstream
+endobj
+6 0 obj
+<<
+/Type /Filespec
+/F (resume\056md)
+/UF (resume\056md)
+/Desc (Markdown representation)
+/AFRelationship /Alternative
+/EF <<
+/F 5 0 R
+/UF 5 0 R
+>>
+>>
+endobj
+7 0 obj
+<<
+/Type /EmbeddedFile
+/Subtype /text#2Fhtml
+/Length 284
+/Params <<
+/CreationDate (D\07220261019000000\05300\04700\047)
+/ModDate (D\07220261019000000\05300\04700\047)
+/Size 284
+/CheckSum <941532ef06f8a370a4f6e3d53a79a527>
+>>
+>>
+stream
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Marie Curie</title></head>
+<body>
+<h1>Marie Curie</h1>
+<p>Physicist and chemist, Paris, France.</p>
+<h2>Awards</h2>
+<ul><li>Nobel Prize in Physics, 1903</li><li>Nobel Prize in Chemistry, 1911</li></ul>
+</body></html>
+
+endstream
+endobj
+8 0 obj
+<<
+/Type /Filespec
+/F (resume\056html)
+/UF (resume\056html)
+/Desc (HTML representation)
+/AFRelationship /Alternative
+/EF <<
+/F 7 0 R
+/UF 7 0 R
+>>
+>>
+endobj
+9 0 obj
+<<
+/Type /Metadata
+/Subtype /XML
+/Length 6201
+>>
+stream
+<?xpacket begin="ï»¿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="cvfile-py 1.0">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about=""
+      xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
+      <pdfaid:part>3</pdfaid:part>
+      <pdfaid:conformance>U</pdfaid:conformance>
+    </rdf:Description>
+    <rdf:Description rdf:about=""
+      xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <dc:format>application/pdf</dc:format>
+    </rdf:Description>
+    <rdf:Description rdf:about=""
+      xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+      <xmp:CreateDate>2026-10-19T00:00:00Z</xmp:CreateDate>
+      <xmp:ModifyDate>2026-10-19T00:00:00Z</xmp:ModifyDate>
+      <xmp:CreatorTool>docling-tests</xmp:CreatorTool>
+    </rdf:Description>
+    <rdf:Description rdf:about=""
+      xmlns:cv="http://ns.cvfile.org/cv/1.0/">
+      <cv:version>1.0</cv:version>
+      <cv:created>2026-10-19T00:00:00Z</cv:created>
+      <cv:modified>2026-10-19T00:00:00Z</cv:modified>
+      <cv:primaryLanguage>en</cv:primaryLanguage>
+      <cv:primaryPayload>resume.md</cv:primaryPayload>
+      <cv:generator>docling-tests</cv:generator>
+      <cv:alternates>[{&quot;payload&quot;: &quot;resume.html&quot;, &quot;language&quot;: &quot;en&quot;, &quot;mimeType&quot;: &quot;text/html&quot;}]</cv:alternates>
+      <cv:integrity>[{&quot;payload&quot;: &quot;resume.md&quot;, &quot;algorithm&quot;: &quot;sha-256&quot;, &quot;digest&quot;: &quot;fa0bc2ad922e6a9bc0f0d956f575af1bed20191713b7544134d0e980f4bc9ffa&quot;}, {&quot;payload&quot;: &quot;resume.html&quot;, &quot;algorithm&quot;: &quot;sha-256&quot;, &quot;digest&quot;: &quot;6e90033c4f28a47f22d71f1ab65ff59ebcb4333635b2d7df524f4a249356ed47&quot;}]</cv:integrity>
+    </rdf:Description>
+    <rdf:Description rdf:about=""
+      xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"
+      xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"
+      xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">
+      <pdfaExtension:schemas>
+        <rdf:Bag>
+          <rdf:li rdf:parseType="Resource">
+            <pdfaSchema:namespaceURI>http://ns.cvfile.org/cv/1.0/</pdfaSchema:namespaceURI>
+            <pdfaSchema:prefix>cv</pdfaSchema:prefix>
+            <pdfaSchema:schema>cvfile.org cv namespace</pdfaSchema:schema>
+            <pdfaSchema:property>
+              <rdf:Seq>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>version</pdfaProperty:name>
+                  <pdfaProperty:valueType>Text</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>cvfile.org format version (MAJOR.MINOR)</pdfaProperty:description>
+                </rdf:li>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>created</pdfaProperty:name>
+                  <pdfaProperty:valueType>Date</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>When the .cv file was created</pdfaProperty:description>
+                </rdf:li>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>modified</pdfaProperty:name>
+                  <pdfaProperty:valueType>Date</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>When the .cv file was last modified</pdfaProperty:description>
+                </rdf:li>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>primaryLanguage</pdfaProperty:name>
+                  <pdfaProperty:valueType>Text</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>BCP-47 tag of the canonical content language</pdfaProperty:description>
+                </rdf:li>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>primaryPayload</pdfaProperty:name>
+                  <pdfaProperty:valueType>Text</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>Filename of the canonical text payload</pdfaProperty:description>
+                </rdf:li>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>generator</pdfaProperty:name>
+                  <pdfaProperty:valueType>Text</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>Identifier of the producer</pdfaProperty:description>
+                </rdf:li>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>alternates</pdfaProperty:name>
+                  <pdfaProperty:valueType>Text</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>Alternate payload descriptors (JSON-encoded array)</pdfaProperty:description>
+                </rdf:li>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>integrity</pdfaProperty:name>
+                  <pdfaProperty:valueType>Text</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>Per-payload digest entries (JSON-encoded array)</pdfaProperty:description>
+                </rdf:li>
+                <rdf:li rdf:parseType="Resource">
+                  <pdfaProperty:name>embeddings</pdfaProperty:name>
+                  <pdfaProperty:valueType>Text</pdfaProperty:valueType>
+                  <pdfaProperty:category>external</pdfaProperty:category>
+                  <pdfaProperty:description>Embedding-space summaries (JSON-encoded array)</pdfaProperty:description>
+                </rdf:li>
+              </rdf:Seq>
+            </pdfaSchema:property>
+          </rdf:li>
+        </rdf:Bag>
+      </pdfaExtension:schemas>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>
+endstream
+endobj
+10 0 obj
+<<
+/N 3
+/Length 2920
+>>
+stream
+  HLino  mntrRGB XYZ Î  	  1  acspMSFT    IEC sRGB              öÖ     Ó-HP                                                cprt  P   3desc  „   lwtpt  ğ   bkpt     rXYZ     gXYZ  ,   bXYZ  @   dmnd  T   pdmdd  Ä   ˆvued  L   †view  Ô   $lumi  ø   meas     $tech  0   rTRC  <  gTRC  <  bTRC  <  text    Copyright (c) 1998 Hewlett-Packard Company  desc       sRGB IEC61966-2.1           sRGB IEC61966-2.1                                                XYZ       óQ    ÌXYZ                 XYZ       o¢  8õ  XYZ       b™  ·…  ÚXYZ       $   „  ¶Ïdesc       IEC http://www.iec.ch           IEC http://www.iec.ch                                              desc       .IEC 61966-2.1 Default RGB colour space - sRGB           .IEC 61966-2.1 Default RGB colour space - sRGB                      desc       ,Reference Viewing Condition in IEC61966-2.1           ,Reference Viewing Condition in IEC61966-2.1                          view     ¤ş _. Ï íÌ  \   XYZ      L	V P   Wçmeas                            sig     CRT curv           
+     # ( - 2 7 ; @ E J O T Y ^ c h m r w |  † ‹  • š Ÿ ¤ © ® ² · ¼ Á Æ Ë Ğ Õ Û à å ë ğ ö û%+28>ELRY`gnu|ƒ‹’š¡©±¹ÁÉÑÙáéòú&/8AKT]gqz„˜¢¬¶ÁËÕàëõ !-8COZfr~Š–¢®ºÇÓàìù -;HUcq~Œš¨¶ÄÓáğş+:IXgw†–¦µÅÕåö'7HYj{Œ¯ÀÑãõ+=Oat†™¬¿Òåø2FZn‚–ª¾Òçû		%	:	O	d	y		¤	º	Ï	å	û
+
+'
+=
+T
+j
+
+˜
+®
+Å
+Ü
+ó"9Qi€˜°Èáù*C\u§ÀÙó&@Zt©ÃŞø.Id›¶Òî	%A^z–³Ïì	&Ca~›¹×õ1OmŒªÉè&Ed„£Ãã#Ccƒ¤Åå'Ij‹­Îğ4Vx›½à&Il²ÖúAe‰®Ò÷@eŠ¯Õú Ek‘·İ*QwÅì;cŠ²Ú*R{£ÌõGp™Ãì@j”¾é>i”¿ê  A l ˜ Ä ğ!!H!u!¡!Î!û"'"U"‚"¯"İ#
+#8#f#”#Â#ğ$$M$|$«$Ú%	%8%h%—%Ç%÷&'&W&‡&·&è''I'z'«'Ü((?(q(¢(Ô))8)k))Ğ**5*h*›*Ï++6+i++Ñ,,9,n,¢,×--A-v-«-á..L.‚.·.î/$/Z/‘/Ç/ş050l0¤0Û11J1‚1º1ò2*2c2›2Ô33F33¸3ñ4+4e44Ø55M5‡5Â5ı676r6®6é7$7`7œ7×88P8Œ8È99B99¼9ù:6:t:²:ï;-;k;ª;è<'<e<¤<ã="=a=¡=à> >`> >à?!?a?¢?â@#@d@¦@çA)AjA¬AîB0BrBµB÷C:C}CÀDDGDŠDÎEEUEšEŞF"FgF«FğG5G{GÀHHKH‘H×IIcI©IğJ7J}JÄKKSKšKâL*LrLºMMJM“MÜN%NnN·O OIO“OİP'PqP»QQPQ›QæR1R|RÇSS_SªSöTBTTÛU(UuUÂVV\V©V÷WDW’WàX/X}XËYYiY¸ZZVZ¦Zõ[E[•[å\5\†\Ö]']x]É^^l^½__a_³``W`ª`üaOa¢aõbIbœbğcCc—cëd@d”dée=e’eçf=f’fèg=g“géh?h–hìiCišiñjHjŸj÷kOk§kÿlWl¯mm`m¹nnknÄooxoÑp+p†pàq:q•qğrKr¦ss]s¸ttptÌu(u…uáv>v›vøwVw³xxnxÌy*y‰yçzFz¥{{c{Â|!||á}A}¡~~b~Â#„å€G€¨
+kÍ‚0‚’‚ôƒWƒº„„€„ã…G…«††r†×‡;‡ŸˆˆiˆÎ‰3‰™‰şŠdŠÊ‹0‹–‹Ü‹C‹©ŒŒwŒßŒFŒ®}åN¶ˆñ[Ä‘.‘˜’’l’Ö“A“¬“ü”G”’”Ş•)•u•Á––Z–§–ô—A——Ü˜)˜w˜Å™™a™°™ÿšNšší›@››àœ0œœÑ"s¸l¿ŸŸeŸ¹  g »¡¡c¡·¢¢i¢¾££l£¾¤¤n¤Æ¥¥s¥Î¦(¦ƒ¦Ş§:§•§p§Í¨)¨†¨ã©A©¿ªDªÏ«b¬¬º­®n¯•°Ï²(³ÏµŒ·`¹I»7½(¿ÁÃÅÇÉËÍÏÑÓ ÕÖ‡Ø[Ú5Ü Şàâoä­ç
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000322 00000 n 
+0000000381 00000 n 
+0000000475 00000 n 
+0000000514 00000 n 
+0000001280 00000 n 
+0000001444 00000 n 
+0000001989 00000 n 
+0000002153 00000 n 
+0000008436 00000 n 
+trailer
+<<
+/Size 11
+/Root 1 0 R
+/Info 4 0 R
+/ID [ <3441414236334432423731423642324546453244393746453533344431314546> <3441414236334432423731423642324546453244393746453533344431314546> ]
+>>
+startxref
+11414
+%%EOF

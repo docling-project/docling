@@ -4,6 +4,7 @@
 import csv
 import json
 import logging
+import mmap
 import platform
 import re
 import sys
@@ -649,6 +650,11 @@ The member holds a short ASCII media type such as
 read in full.
 """
 
+_CV_XMP_NAMESPACE = re.compile(
+    rb"""xmlns:[A-Za-z_][\w.-]*\s*=\s*["']http://ns\.cvfile\.org/cv/1\.0/["']"""
+)
+"""The XMP namespace declaration that marks a PDF as a .cv file."""
+
 _ZIP_SUFFIX_MIMETYPES = {
     ".xlsx": _OFFICE_OPEN_XML_ROOT + ".spreadsheetml.sheet",
     ".docx": _OFFICE_OPEN_XML_ROOT + ".wordprocessingml.document",
@@ -728,7 +734,9 @@ class _DocumentConversionInput(BaseModel):
             else:
                 obj = item
                 backend_input = item
-            format = self._guess_format(obj)
+            format = self._resolve_cv_format(
+                self._guess_format(obj), obj, format_options
+            )
             if format is None:
                 path_or_stream = obj if isinstance(obj, Path) else obj.stream
                 try:
@@ -802,7 +810,9 @@ class _DocumentConversionInput(BaseModel):
                                     name=member_name,
                                     stream=BytesIO(member_content),
                                 )
-                                member_format = self._guess_format(member)
+                                member_format = self._resolve_cv_format(
+                                    self._guess_format(member), member, format_options
+                                )
                                 option = format_options.get(member_format)
                                 member_backend = (
                                     option.backend
@@ -983,6 +993,7 @@ class _DocumentConversionInput(BaseModel):
                         mime = office_mime
 
         mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
+        mime = _DocumentConversionInput._resolve_cv_mime(mime, obj_ext)
 
         if mime is not None and mime.lower() == "application/gzip":
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
@@ -1029,6 +1040,83 @@ class _DocumentConversionInput(BaseModel):
         if ext.lower() == "msg":
             return _DocumentConversionInput._mime_from_extension("msg")
         return mime
+
+    @staticmethod
+    def _resolve_cv_mime(mime: Optional[str], ext: Optional[str]) -> Optional[str]:
+        """Let the ``.cv`` extension mark a PDF as a .cv file.
+
+        A .cv file is a PDF, so ``filetype`` reports ``application/pdf``.
+        """
+        if ext is None or ext.lower() not in FormatToExtensions[InputFormat.CV]:
+            return mime
+        if mime is not None and mime.lower() != FormatToMimeType[InputFormat.PDF][0]:
+            return mime
+        return FormatToMimeType[InputFormat.CV][0]
+
+    @staticmethod
+    def _resolve_cv_format(
+        format: Optional[InputFormat],
+        obj: Union[Path, DocumentStream],
+        format_options: Mapping[InputFormat, "BaseFormatOption"],
+    ) -> Optional[InputFormat]:
+        """Choose between the PDF and CV formats for a PDF container.
+
+        A .cv file is a valid PDF. It converts from its embedded payload when
+        ``InputFormat.CV`` is allowed and its backend dependencies are
+        installed. Otherwise it converts as an ordinary PDF. A PDF without a
+        ``.cv`` name is a .cv file when its catalog declares the ``cv:`` XMP
+        properties and embeds the primary payload they name.
+        """
+        cv_option = format_options.get(InputFormat.CV)
+        cv_usable = cv_option is not None and cv_option.backend.dependencies_available()
+        if format == InputFormat.CV and not cv_usable:
+            return InputFormat.PDF
+        if (
+            format == InputFormat.PDF
+            and cv_usable
+            and _DocumentConversionInput._has_cv_payload(obj)
+        ):
+            return InputFormat.CV
+        return format
+
+    @staticmethod
+    def _has_cv_payload(obj: Union[Path, DocumentStream]) -> bool:
+        """Detect a .cv file by its catalog metadata and primary payload.
+
+        A byte scan for the namespace declaration selects the candidates
+        cheaply. The declaration can also occur in page content or in another
+        stream, so the CV backend confirms a match against the catalog
+        metadata and the embedded payload before the PDF is routed to it.
+        """
+        if not _DocumentConversionInput._contains_cv_namespace(obj):
+            return False
+        # Imported here because the CV backend imports this module.
+        from docling.backend.cv_backend import CvDocumentBackend
+
+        return CvDocumentBackend.embeds_cv_payload(
+            obj if isinstance(obj, Path) else obj.stream
+        )
+
+    @staticmethod
+    def _contains_cv_namespace(obj: Union[Path, DocumentStream]) -> bool:
+        """Search a PDF for the .cv XMP namespace declaration.
+
+        XMP packets are stored unfiltered so that a byte scan finds them, which
+        is what the ``xpacket`` wrapper is for. The packet has no fixed offset,
+        so the whole file is searched, and a file is memory-mapped rather than
+        read. A .cv file whose XMP stream is compressed converts as a PDF
+        unless its name has the ``.cv`` extension.
+        """
+        if isinstance(obj, DocumentStream):
+            with obj.stream.getbuffer() as view:
+                return _CV_XMP_NAMESPACE.search(view) is not None
+        if obj.stat().st_size == 0:
+            return False
+        with (
+            obj.open("rb") as f,
+            mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as view,
+        ):
+            return _CV_XMP_NAMESPACE.search(view) is not None
 
     @staticmethod
     def _has_doclang_extension(name: str) -> bool:

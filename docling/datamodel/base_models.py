@@ -133,6 +133,7 @@ class InputFormat(str, Enum):
     IWORK_NUMBERS = "iwork_numbers"
     EBCDIC = "ebcdic"
     AFP = "afp"
+    CV = "cv"
 
 
 class OutputFormat(str, Enum):
@@ -187,6 +188,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.IWORK_NUMBERS: ["numbers"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
     InputFormat.AFP: ["afp"],
+    InputFormat.CV: ["cv"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -289,6 +291,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
     InputFormat.AFP: ["application/vnd.ibm.modcap", "application/x-afp"],
+    InputFormat.CV: ["application/vnd.cv+pdf"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {

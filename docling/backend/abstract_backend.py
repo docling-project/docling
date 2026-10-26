@@ -53,6 +53,11 @@ class AbstractDocumentBackend(ABC):
     def supported_formats(cls) -> set["InputFormat"]:
         pass
 
+    @classmethod
+    def dependencies_available(cls) -> bool:
+        """Return whether the optional packages this backend needs are installed."""
+        return True
+
 
 class PaginatedDocumentBackend(AbstractDocumentBackend):
     """PaginatedDocumentBackend.
