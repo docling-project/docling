@@ -665,6 +665,20 @@ at inside instead.
 """
 
 
+def _is_macos_archive_metadata(path: PurePosixPath) -> bool:
+    """Return True for a ZIP member that macOS adds to an archive, not a document.
+
+    Finder stores resource forks and extended attributes as AppleDouble files
+    named ``._<name>``, under a top-level ``__MACOSX/`` folder, and the view
+    settings of a folder as ``.DS_Store``.
+    """
+    return (
+        path.parts[0] == "__MACOSX"
+        or path.name.startswith("._")
+        or path.name == ".DS_Store"
+    )
+
+
 class _DocumentConversionInput(BaseModel):
     path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream, HttpSource]]
     headers: Optional[dict[str, str]] = None
@@ -739,6 +753,9 @@ class _DocumentConversionInput(BaseModel):
                             if not info.is_dir()
                             and not PurePosixPath(info.filename).is_absolute()
                             and ".." not in PurePosixPath(info.filename).parts
+                            and not _is_macos_archive_metadata(
+                                PurePosixPath(info.filename)
+                            )
                         ]
                         if members:
                             expanded_size = 0
