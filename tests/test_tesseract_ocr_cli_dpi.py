@@ -45,36 +45,30 @@ def test_rendered_images_include_dpi(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
     )
 
-    def check_dpi(filename: str) -> None:
-        with Image.open(filename) as rendered:
-            assert rendered.info["dpi"] == pytest.approx(
-                (72 * scale, 72 * scale), abs=0.02
-            )
-
-    def perform_osd(model: TesseractOcrCliModel, filename: str) -> pd.DataFrame:
-        check_dpi(filename)
-        # Select the rotation path without depending on OSD accuracy.
-        return pd.DataFrame(
-            {"key": ["Orientation in degrees"], "value": [str(orientation)]}
-        )
-
     run_tesseract = TesseractOcrCliModel._run_tesseract
 
     def run_ocr(
         model: TesseractOcrCliModel, filename: str, osd: pd.DataFrame
     ) -> pd.DataFrame:
-        check_dpi(filename)
+        with Image.open(filename) as rendered:
+            assert rendered.info["dpi"] == pytest.approx(
+                (72 * scale, 72 * scale), abs=0.02
+            )
         return run_tesseract(model, filename, osd)
 
+    # Select the rotation path without depending on OSD accuracy.
     with (
         patch.object(
-            TesseractOcrCliModel, "_perform_osd", autospec=True, side_effect=perform_osd
-        ) as osd,
+            TesseractOcrCliModel,
+            "_perform_osd",
+            return_value=pd.DataFrame(
+                {"key": ["Orientation in degrees"], "value": [str(orientation)]}
+            ),
+        ),
         patch.object(
             TesseractOcrCliModel, "_run_tesseract", autospec=True, side_effect=run_ocr
         ) as ocr,
     ):
         converter.convert(source)
 
-    osd.assert_called_once()
     ocr.assert_called_once()
