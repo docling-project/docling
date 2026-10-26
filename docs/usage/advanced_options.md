@@ -572,6 +572,24 @@ Relative image paths are resolved against the current working directory. The
 in JSON input; save the document with `ImageRefMode.EMBEDDED` if it has to go
 through the CLI again with its images.
 
+### Load local JATS figure images
+
+JATS figure images require both `fetch_images=True` and
+`enable_local_fetch=True` on `JatsBackendOptions`. For a `DocumentStream`, set
+`source_uri` to the source document path or its `file://` URI. The source
+document need not exist, but its directory must contain the referenced images.
+Relative figure paths stay within that directory. Remote image references and
+remote source URIs do not enable downloads, even with `enable_remote_fetch=True`.
+
+File URIs with no authority or with `localhost` work on all supported platforms.
+Other authorities, such as `file://server/share/article.nxml`, require Windows
+UNC paths. JATS skips file URIs that identify only a filesystem root or a UNC
+share root, including empty file URIs normalized to `file:///`. Use a document
+location such as `file:///path/to/article.nxml` instead.
+
+Missing or damaged images produce a warning. The figure, its caption, and the
+rest of the article remain in the converted document. SVG figures are skipped.
+
 ### Fetch HTML images from remote hosts
 
 The HTML backend only downloads images referenced by a page when you opt in with

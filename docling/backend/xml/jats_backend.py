@@ -29,6 +29,7 @@ from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
 from typing import Final, cast
+from urllib.parse import urlsplit
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -962,11 +963,21 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     def _load_figure_image(self, node: etree._Element) -> ImageRef | None:
         """Load an explicitly enabled local JATS figure image."""
-        if (
-            not self.options.fetch_images
-            or self.base_path is None
-            or not ImageResourceLoader.is_local_path(self.base_path)
-        ):
+        if not self.options.fetch_images or self.base_path is None:
+            return None
+
+        is_file_uri = urlsplit(self.base_path).scheme.lower() == "file"
+        if not is_file_uri and not ImageResourceLoader.is_local_path(self.base_path):
+            return None
+        try:
+            local_base = Path(
+                self._image_loader.normalize_local_base_path(self.base_path)
+            )
+            # AnyUrl normalizes empty file URIs to a root directory URI.
+            if is_file_uri and local_base.parent == local_base:
+                raise ValueError("JATS file URI must identify a source document")
+        except ValueError as e:
+            warnings.warn(f"Could not process JATS figure images: {e}")
             return None
 
         graphic_nodes = node.xpath("graphic | alternatives/graphic")
@@ -1018,9 +1029,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 # loader.
                 if Path(resolved_href).is_file():
                     found_candidate = True
-                    image_ref = self._image_loader.create_image_ref(
-                        resolved_href, self.base_path
-                    )
+                    try:
+                        image_ref = self._image_loader.create_image_ref(
+                            resolved_href, self.base_path
+                        )
+                    except OSError as e:
+                        warnings.warn(f"Could not process an image from {href}: {e}")
+                        continue
                     if image_ref is not None:
                         return image_ref
 
