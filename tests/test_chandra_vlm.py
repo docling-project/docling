@@ -363,6 +363,12 @@ def test_chandra_nested_lists_preserve_parent_order_and_markers():
     assert doc.validate_tree(doc.body)
 
 
+def test_chandra_list_item_text_keeps_boundary_before_inline_paragraph():
+    # The item text is one more run before its leading inline group (joined with "").
+    doc = _parse_fragment("<ul><li>Intro<p>more <b>x</b> y</p></li></ul>", "List-Group")
+    assert doc.export_to_markdown() == "- Intro more **x** y"
+
+
 def test_chandra_paragraph_list_and_form_controls():
     doc = _parse_fragment(
         "<p><input type='checkbox' checked>Yes</p><p><input type='radio'>No</p>",

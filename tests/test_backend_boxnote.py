@@ -119,6 +119,33 @@ def _linked_paragraph(href) -> dict:
     }
 
 
+def test_list_item_text_keeps_boundary_before_rich_paragraph():
+    # The item text is one more run before its leading inline group (joined with "").
+    def run(text: str, mark: str | None = None) -> dict:
+        return {
+            "type": "text",
+            "text": text,
+            **({"marks": [{"type": mark}]} if mark else {}),
+        }
+
+    item = {
+        "type": "list_item",
+        "content": [
+            {"type": "paragraph", "content": [run("Intro")]},
+            {
+                "type": "paragraph",
+                "content": [run("more "), run("x", "strong"), run(" y")],
+            },
+        ],
+    }
+    payload = {
+        "doc": {"type": "doc", "content": [{"type": "bullet_list", "content": [item]}]}
+    }
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    assert doc.export_to_markdown() == "- Intro more **x** y"
+
+
 def test_safe_hyperlink_is_kept():
     doc = (
         get_converter()
