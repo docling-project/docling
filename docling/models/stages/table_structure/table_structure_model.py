@@ -229,8 +229,10 @@ class TableStructureModel(BaseTableStructureModel):
 
                 # Resolved once per page: the segmented page is the same for
                 # every table on it, and get_cells_in_bbox already walks all of
-                # its cells per call.
-                sp = page._backend.get_segmented_page()
+                # its cells per call. Use the page's own copy, not the backend's:
+                # in full-page OCR mode the native decode is skipped and the
+                # backend would re-parse and return native words OCR replaced.
+                sp = page.parsed_page
 
                 for table_cluster, tbl_box in in_tables:
                     # Check if word-level cells are available from backend:
