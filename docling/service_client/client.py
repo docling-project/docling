@@ -863,11 +863,13 @@ class _BaseDoclingServiceClient:
         """
         if fallback_exc.status_code not in {400, 422}:
             return None
+        # A FastAPI validation error has a list detail, which the client maps to None.
+        prefix = f"{fallback_exc.detail} " if fallback_exc.detail else ""
         return ServiceError(
             fallback_exc.message,
             status_code=fallback_exc.status_code,
             detail=(
-                f"{fallback_exc.detail} The client tried the InBody target because "
+                f"{prefix}The client tried the InBody target because "
                 f"the server rejected the presigned_url target: {presigned_exc.detail}"
             ),
         )
