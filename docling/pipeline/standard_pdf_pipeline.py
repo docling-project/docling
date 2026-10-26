@@ -60,6 +60,7 @@ from docling.datamodel.pipeline_options import (
     ThreadedPdfPipelineOptions,
 )
 from docling.datamodel.settings import settings
+from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
@@ -725,6 +726,12 @@ class StandardPdfPipeline(ConvertPipeline):
                 self.pipeline_options.do_chart_extraction,
             )
         )
+        # Those enrichments crop page images after the page stages finish.
+        # Cache the scales they request, then release the page backend.
+        # Keeping every page backend until the conversion ends is what makes
+        # memory grow with the page count (#1886). A caller that sets
+        # ``keep_backend`` itself still keeps the live backend.
+        self._release_backend_after_image_cache = self.keep_backend
 
     # ---------------------------------------------------------------- helpers
     def _make_ocr_model(self, art_path: Path | None) -> Any:
@@ -746,15 +753,54 @@ class StandardPdfPipeline(ConvertPipeline):
             **extra,
         )
 
+    def _enrichment_image_scales(self) -> tuple[float, ...]:
+        """Scales later enrichment crops from the cached page image."""
+        if not self._release_backend_after_image_cache:
+            return ()
+        scales: list[float] = []
+        for model in self.enrichment_pipe:
+            if not isinstance(model, BaseItemAndImageEnrichmentModel):
+                continue
+            if not model.enabled:
+                continue
+            scale = float(model.images_scale)
+            if scale not in scales:
+                scales.append(scale)
+        return tuple(scales)
+
+    def _release_page_backend(self, page: Page) -> None:
+        """Cache enrichment page images, then drop the page backend.
+
+        Enrichment crops a cached page image. The PDF page backend is not
+        needed after that, so it does not have to stay alive for the rest of
+        the document.
+        """
+        scales = self._enrichment_image_scales()
+        if page._backend is not None and page._backend.is_valid():
+            for scale in scales:
+                page.get_image(scale=scale)
+        if not self.keep_images:
+            if scales:
+                retained = set(scales)
+                page._image_cache = {
+                    scale: image
+                    for scale, image in page._image_cache.items()
+                    if scale in retained
+                }
+            else:
+                page._image_cache = {}
+        if page._backend is None:
+            return
+        if self.keep_backend and not scales:
+            return
+        page._backend.unload()
+        page._backend = None
+
     def _release_page_resources(self, item: ThreadedItem) -> None:
         page = item.payload
         if page is None:
             return
-        if not self.keep_images:
-            page._image_cache = {}
-        if not self.keep_backend and page._backend is not None:
-            page._backend.unload()
-            page._backend = None
+        self._release_page_backend(page)
         if not self.pipeline_options.generate_parsed_pages:
             page.parsed_page = None
 
@@ -1135,12 +1181,8 @@ class StandardPdfPipeline(ConvertPipeline):
             conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         else:
             conv_res.status = ConversionStatus.SUCCESS
-        if not self.keep_images:
-            for p in conv_res.pages:
-                p._image_cache = {}
         for p in conv_res.pages:
-            if not self.keep_backend and p._backend is not None:
-                p._backend.unload()
+            self._release_page_backend(p)
             if not self.pipeline_options.generate_parsed_pages:
                 del p.parsed_page
                 p.parsed_page = None

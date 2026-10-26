@@ -601,7 +601,16 @@ class Page(BaseModel):
         cropbox: BoundingBox | None = None,
     ) -> Image | None:
         if self._backend is None:
-            return self._image_cache.get(scale, None)
+            page_image = self._image_cache.get(scale)
+            if page_image is None or cropbox is None:
+                return page_image
+            if self.size is None:
+                return None
+            return page_image.crop(
+                cropbox.to_top_left_origin(page_height=self.size.height)
+                .scaled(scale=scale)
+                .as_tuple()
+            )
 
         if max_size:
             assert self.size is not None

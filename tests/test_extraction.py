@@ -251,6 +251,7 @@ def test_standard_pipeline_integrate_preserves_failed_page_category() -> None:
     pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
     pipeline.keep_images = False
     pipeline.keep_backend = False
+    pipeline._release_backend_after_image_cache = False
     pipeline.pipeline_options = SimpleNamespace(generate_parsed_pages=False)
 
     failure = ErrorItem(

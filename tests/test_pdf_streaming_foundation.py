@@ -158,6 +158,7 @@ def test_standard_pipeline_bounds_live_streaming_backends() -> None:
     pipeline._run_seq = itertools.count(1)
     pipeline.keep_images = False
     pipeline.keep_backend = False
+    pipeline._release_backend_after_image_cache = False
     pipeline.pipeline_options = SimpleNamespace(
         heading_hierarchy_options=SimpleNamespace(enabled=False, use_bookmarks=False),
         document_timeout=None,
@@ -184,6 +185,7 @@ def test_failed_page_sizes_are_kept_per_conversion() -> None:
     pipeline._run_seq = itertools.count(1)
     pipeline.keep_images = False
     pipeline.keep_backend = False
+    pipeline._release_backend_after_image_cache = False
     pipeline.pipeline_options = SimpleNamespace(
         heading_hierarchy_options=SimpleNamespace(enabled=False, use_bookmarks=False),
         document_timeout=None,
