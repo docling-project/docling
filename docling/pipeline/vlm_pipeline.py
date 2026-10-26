@@ -62,10 +62,6 @@ from docling.datamodel.settings import settings
 # No need to import it separately as it's already imported above
 from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
-from docling.models.vlm_pipeline_models.hf_transformers_model import (
-    HuggingFaceTransformersVlmModel,
-)
-from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import TimeRecorder
@@ -208,6 +204,10 @@ class VlmPipeline(PaginatedPipeline):
         elif isinstance(self.pipeline_options.vlm_options, InlineVlmOptions):
             vlm_options = cast(InlineVlmOptions, self.pipeline_options.vlm_options)
             if vlm_options.inference_framework == InferenceFramework.MLX:
+                from docling.models.vlm_pipeline_models.mlx_model import (
+                    HuggingFaceMlxModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceMlxModel(
                         enabled=True,
@@ -217,6 +217,10 @@ class VlmPipeline(PaginatedPipeline):
                     ),
                 ]
             elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS:
+                from docling.models.vlm_pipeline_models.hf_transformers_model import (
+                    HuggingFaceTransformersVlmModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceTransformersVlmModel(
                         enabled=True,
