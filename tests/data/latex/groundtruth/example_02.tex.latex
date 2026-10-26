@@ -23,7 +23,6 @@ $$\begin{equation}
 Name & Age & City \\ \hline
 Alice & 25 & Boston \\ \hline
 Bob & 30 & Seattle \\ \hline
- &  &  \\ \hline
 \end{tabular}
 \end{table}
 

@@ -257,7 +257,7 @@ item-0 at level 0: unspecified: group _root_
       item-246 at level 3: text:  is the kernel size of convolutions and 
       item-247 at level 3: formula: r
       item-248 at level 3: text:  the size of the neighborhood in restricted self-attention.
-  item-249 at level 1: table with [7x4]
+  item-249 at level 1: table with [6x4]
     item-249 at level 2: caption: 
     item-250 at level 2: unspecified: group group
       item-251 at level 3: text: 
@@ -377,7 +377,7 @@ lrate = d_{\tex ... {warmup\_steps}^{-1.5})
   item-363 at level 1: section_header: Results
   item-364 at level 1: section_header: Machine Translation
   item-365 at level 1: caption: The Transformer achieves better  ... ts at a fraction of the training cost.
-  item-366 at level 1: table with [13x43]
+  item-366 at level 1: table with [12x43]
     item-366 at level 2: caption: The Transformer achieves better BLEU scores than previous state-of-the-art models on the English-to-German and English-to-French newstest2014 tests at a fraction of the training cost.
     item-367 at level 2: unspecified: group group
       item-368 at level 3: text: 
@@ -473,7 +473,7 @@ lrate = d_{\tex ... {warmup\_steps}^{-1.5})
   item-458 at level 1: text: .
   item-459 at level 1: section_header: Model Variations
   item-460 at level 1: caption: Variations on the Transformer ar ...  be compared to per-word perplexities.
-  item-461 at level 1: table with [23x13]
+  item-461 at level 1: table with [22x13]
     item-461 at level 2: caption: Variations on the Transformer architecture. Unlisted values are identical to those of the base model.  All metrics are on the English-to-German translation development set, newstest2013.  Listed perplexities are per-wordpiece, according to our byte-pair encoding, and should not be compared to per-word perplexities.
     item-462 at level 2: unspecified: group group
       item-463 at level 3: text: 
@@ -528,7 +528,7 @@ lrate = d_{\tex ... {warmup\_steps}^{-1.5})
       item-512 at level 3: text:  hurts model quality. This sugge ... y identical results to the base model.
   item-513 at level 1: section_header: English Constituency Parsing
   item-514 at level 1: caption: The Transformer generalizes well ... ing (Results are on Section 23 of WSJ)
-  item-515 at level 1: table with [14x4]
+  item-515 at level 1: table with [13x4]
     item-515 at level 2: caption: The Transformer generalizes well to English constituency parsing (Results are on Section 23 of WSJ)
   item-516 at level 1: text: To evaluate if the Transformer c ... lts in small-data regimes [KVparse15].
   item-517 at level 1: text: 

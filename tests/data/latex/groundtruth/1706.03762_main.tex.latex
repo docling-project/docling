@@ -209,7 +209,6 @@ Layer Type & Complexity per Layer & Sequential & Maximum Path Length \\ \hline
 Recurrent & $O(n \cdot d^2)$ & $O(n)$ & $O(n)$ \\ \hline
 Convolutional & $O(k \cdot n \cdot d^2)$ & $O(1)$ & $O(log_k(n))$ \\ \hline
 Self-Attention (restricted) & $O(r \cdot n \cdot d)$ & $O(1)$ & $O(n/r)$ \\ \hline
- &  &  &  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -271,7 +270,6 @@ GNMT + RL Ensemble \textbackslash{}citep\{wu2016google\} & 26.30 & 41.16 &  & $1
 ConvS2S Ensemble \textbackslash{}citep\{JonasFaceNet2017\} & 26.36 & 41.29 &  & $7.7\cdot10^{19}$ & $1.2\cdot10^{21}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 1pt-1pt0pt 0pt2.2exTransformer (base model) & 27.3 & 38.1 &  & 2c$3.3\cdot10^{18}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 Transformer (big) & 28.4 & 41.8 &  & 2c$2.3\cdot10^{19}$ &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
- &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -315,7 +313,6 @@ We used values of 2.8, 3.7, 6.0 and 9.5 TFLOPS for K80, K40, M40 and P100, respe
  &  &  &  &  &  &  &  & 0.2 &  & 5.47 & 25.7 &  \\ \hline
 0pt2.0ex (E) &  & 7cpositional embedding instead of sinusoids &  & 4.92 & 25.7 &  &  &  &  &  &  &  \\ \hline
 0pt2.0ex big & 6 & 1024 & 4096 & 16 &  &  & 0.3 &  & 300K & 4.33 & 26.4 & 213 \\ \hline
- &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -344,7 +341,6 @@ Vinyals & Kaiser el al. (2014) \textbackslash{}cite\{KVparse15\} & semi-supervis
 1pt-1pt0pt Transformer (4 layers) & semi-supervised & 92.7 &  \\ \hline
 1pt-1pt0pt Luong et al. (2015) \textbackslash{}cite\{multiseq2seq\} & multi-task & 93.0 &  \\ \hline
 Dyer et al. (2016) \textbackslash{}cite\{dyer-rnng:16\} & generative & 93.3 &  \\ \hline
- &  &  &  \\ \hline
 \end{tabular}
 \end{table}
 

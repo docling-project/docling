@@ -166,7 +166,6 @@ We have chosen the PubTabNet data set to perform HPO, since it includes a highly
  &  & HTML & 0.945 & 0.901 & 0.931 & 0.834 & 3.81 \\ \hline
 2*4 & 2*2 & OTSL & 0.952 & 0.92 & 0.942 & 0.857 & 1.22 \\ \hline
  &  & HTML & 0.944 & 0.903 & 0.931 & 0.824 & 2 \\ \hline
- &  &  &  &  &  &  &  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -186,7 +185,6 @@ We picked the model parameter configuration that produced the best prediction qu
  & HTML & 0.917 & 0.922 & 0.92 & 0.722 & 3.26 \\ \hline
 2*PubTables-1M & OTSL & 0.987 & 0.964 & 0.977 & 0.896 & 1.79 \\ \hline
  & HTML & 0.983 & 0.944 & 0.966 & 0.889 & 3.26 \\ \hline
- &  &  &  &  &  &  \\ \hline
 \end{tabular}
 \end{table}
 

@@ -13,7 +13,7 @@ item-0 at level 0: unspecified: group _root_
   item-11 at level 1: text: In order to achieve efficient tr ... , we achieve high training efficiency.
   item-12 at level 1: text: During pre-training, we train De ...  model accuracy and generation length.
   item-13 at level 1: text: We evaluate DeepSeek-V3 on a com ... of standard and open-ended benchmarks.
-  item-14 at level 1: table with [4x5]
+  item-14 at level 1: table with [3x5]
     item-14 at level 2: caption: Training costs of DeepSeek-V3, assuming the rental price of H800 is $2 per GPU hour.
   item-15 at level 1: caption: Training costs of DeepSeek-V3, a ... ntal price of H800 is $2 per GPU hour.
   item-16 at level 1: text: Lastly, we emphasize again the e ... on architectures, algorithms, or data.
@@ -348,7 +348,7 @@ item-0 at level 0: unspecified: group _root_
       item-318 at level 3: text: In addition, even in more genera ... reasing the peak activation memory by 
       item-319 at level 3: formula: \frac{1}{PP}
       item-320 at level 3: text:  times. Although DualPipe requir ...  as the number of micro-batches grows.
-  item-321 at level 1: table with [5x4]
+  item-321 at level 1: table with [4x4]
     item-321 at level 2: caption: 
     item-322 at level 2: unspecified: group group
       item-323 at level 3: text: 
@@ -581,14 +581,14 @@ item-0 at level 0: unspecified: group _root_
   item-545 at level 1: text: Code datasets include HumanEval[ ... P[mbpp], and CRUXEval[gu2024cruxeval].
   item-546 at level 1: text: Standardized exams include AGIEv ... udes both English and Chinese subsets.
   item-547 at level 1: text: Following our previous work[dsvi ... ong models using different tokenizers.
-  item-548 at level 1: table with [38x9]
+  item-548 at level 1: table with [37x9]
     item-548 at level 2: caption: Comparison among DeepSeek-V3-Base and other representative open-source base models. All models are evaluated in our internal framework and share the same evaluation setting. Scores with a gap not exceeding 0.3 are considered to be at the same level. DeepSeek-V3-Base achieves the best performance on most benchmarks, especially on math and code tasks.
   item-549 at level 1: caption: Comparison among DeepSeek-V3-Bas ... ks, especially on math and code tasks.
   item-550 at level 1: section_header: Evaluation Results
   item-551 at level 1: text: In Table[tab:main], we compare t ... oming the strongest open-source model.
   item-552 at level 1: text: From a more detailed perspective ... series, DROP, C-Eval, CMMLU, and CCPM.
   item-553 at level 1: text: Due to our efficient architectur ... han training 72B or 405B dense models.
-  item-554 at level 1: table with [16x6]
+  item-554 at level 1: table with [15x6]
     item-554 at level 2: caption: Ablation results for the MTP strategy. The MTP strategy consistently enhances the model performance on most of the evaluation benchmarks.
   item-555 at level 1: caption: Ablation results for the MTP str ...  on most of the evaluation benchmarks.
   item-556 at level 1: section_header: Discussion
@@ -596,7 +596,7 @@ item-0 at level 0: unspecified: group _root_
   item-558 at level 1: text: In Table[tab:ablation_nextn], we ...  on most of the evaluation benchmarks.
   item-559 at level 1: section_header: Ablation Studies for the Auxiliary-Loss-Free Balancing Strategy
   item-560 at level 1: text: In Table[tab:ablation_noaux_tc], ...  on most of the evaluation benchmarks.
-  item-561 at level 1: table with [16x6]
+  item-561 at level 1: table with [15x6]
     item-561 at level 2: caption: Ablation results for the auxiliary-loss-free balancing strategy. Compared with the purely auxiliary-loss-based method, the auxiliary-loss-free strategy consistently achieves better model performance on most of the evaluation benchmarks.
   item-562 at level 1: caption: Ablation results for the auxilia ...  on most of the evaluation benchmarks.
   item-563 at level 1: section_header: Batch-Wise Load Balance VS. Sequence-Wise Load Balance
@@ -678,7 +678,7 @@ item-0 at level 0: unspecified: group _root_
   item-629 at level 1: text: Detailed Evaluation Configuratio ... rompts from the simple-evals framework
   item-630 at level 1: footnote: https://github.com/openai/simple-evals
   item-631 at level 1: text: . We utilize the Zero-Eval promp ... mum of 8192 tokens for each benchmark.
-  item-632 at level 1: table with [28x10]
+  item-632 at level 1: table with [27x10]
     item-632 at level 2: caption: Comparison between DeepSeek-V3 and other representative chat models. All models are evaluated in a configuration that limits the output length to 8K. Benchmarks containing fewer than 1000 samples are tested multiple times using varying temperature settings to derive robust final results. DeepSeek-V3 stands as the best-performing open-source model, and also exhibits competitive performance against frontier closed-source models.
   item-633 at level 1: caption: Comparison between DeepSeek-V3 a ... against frontier closed-source models.
   item-634 at level 1: section_header: Standard Evaluation
@@ -689,7 +689,7 @@ item-0 at level 0: unspecified: group _root_
   item-639 at level 1: text: On math benchmarks, DeepSeek-V3  ... hly beneficial for non-o1-like models.
   item-640 at level 1: text: Chinese Benchmarks. Qwen and Dee ... ns that DeepSeek-V3 is pre-trained on.
   item-641 at level 1: text: On C-Eval, a representative benc ... guage reasoning and educational tasks.
-  item-642 at level 1: table with [8x3]
+  item-642 at level 1: table with [7x3]
     item-642 at level 2: caption: English open-ended conversation evaluations. For AlpacaEval 2.0, we use the length-controlled win rate as the metric.
   item-643 at level 1: caption: English open-ended conversation  ... gth-controlled win rate as the metric.
   item-644 at level 1: section_header: Open-Ended Evaluation
@@ -697,7 +697,7 @@ item-0 at level 0: unspecified: group _root_
   item-646 at level 1: text: Similarly, DeepSeek-V3 showcases ... the effectiveness of its advancements.
   item-647 at level 1: section_header: DeepSeek-V3 as a Generative Reward Model
   item-648 at level 1: text: We compare the judgment ability  ... d robustness of the alignment process.
-  item-649 at level 1: table with [9x6]
+  item-649 at level 1: table with [8x6]
     item-649 at level 2: caption: Performances of GPT-4o, Claude-3.5-sonnet and DeepSeek-V3 on RewardBench.
   item-650 at level 1: caption: Performances of GPT-4o, Claude-3.5-sonnet and DeepSeek-V3 on RewardBench.
   item-651 at level 1: section_header: Discussion
@@ -705,7 +705,7 @@ item-0 at level 0: unspecified: group _root_
   item-653 at level 1: paragraph: We ablate the contribution of di ... he expert checkpoints described above.
   item-654 at level 1: text: Table[tab:distill] demonstrates  ... tings for DeepSeek-V3 in distillation.
   item-655 at level 1: paragraph: Our research suggests that knowl ... portant direction for future research.
-  item-656 at level 1: table with [5x5]
+  item-656 at level 1: table with [4x5]
     item-656 at level 2: caption: The contribution of distillation from DeepSeek-R1. The evaluation settings of LiveCodeBench and MATH-500 are the same as in Table[tab:chat].
   item-657 at level 1: caption: The contribution of distillation ... 00 are the same as in Table[tab:chat].
   item-658 at level 1: section_header: Self-Rewarding

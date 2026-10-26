@@ -399,6 +399,25 @@ def test_latex_multicolumn_span_is_clamped(latex_content: bytes):
     assert all(c.end_col_offset_idx <= table.num_cols for c in table.table_cells)
 
 
+@pytest.mark.parametrize(
+    "latex_content",
+    [
+        b"\\begin{tabular}{cc}\nA & B \\\\\n1 & 2 \\\\\n\\end{tabular}",
+        b"\\begin{tabular}{cc}\n\\hline\nA & B \\\\ \\hline\n1 & 2 \\\\\n\\hline\n"
+        b"\\end{tabular}",
+        b"\\begin{tabular}{cc}\n\\toprule\nA & B \\\\\n\\midrule\n1 & 2 \\\\ % last row\n"
+        b"\\bottomrule\n\\end{tabular}",
+    ],
+    ids=["trailing-row-break", "hline", "booktabs-and-comment"],
+)
+def test_latex_trailing_row_break_adds_no_empty_row(latex_content: bytes):
+    doc = _convert_latex_table(latex_content)
+
+    table = doc.tables[0].data
+    assert table.num_rows == 2
+    assert [c.text for c in table.table_cells] == ["A", "B", "1", "2"]
+
+
 def test_latex_table_formatting_in_cells():
     """Test that LaTeX formatting commands in multicolumn/multirow cells
     produce clean text, not raw LaTeX syntax (issue #3199)."""
