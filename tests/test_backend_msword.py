@@ -6,7 +6,10 @@ import os
 import re
 import threading
 import time
+import zipfile
 from contextlib import nullcontext
+from copy import deepcopy
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -20,6 +23,9 @@ from docling_core.types.doc import (
     ListItem,
     PictureClassificationLabel,
     PictureItem,
+    RichTableCell,
+    TableCell,
+    TableData,
     TableItem,
 )
 from docx import Document
@@ -31,6 +37,7 @@ from docx.shared import Inches
 from lxml import etree
 from PIL import Image
 
+import docling.backend.msexcel_backend as msexcel_backend_module
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
@@ -66,8 +73,18 @@ def docx_paths() -> list[Path]:
     return docx_files
 
 
-def get_converter():
-    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+EMBEDDED_OBJECTS_DOCX = Path("./tests/data/docx/sources/docx_embedded_objects.docx")
+
+
+def get_converter(backend_options: MsWordBackendOptions | None = None):
+    format_options = (
+        None
+        if backend_options is None
+        else {InputFormat.DOCX: WordFormatOption(backend_options=backend_options)}
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.DOCX], format_options=format_options
+    )
 
     return converter
 
@@ -88,6 +105,10 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
     documents: list[dict[Path, DoclingDocument]] = []
 
     converter = get_converter()
+    # The reference output of this file shows the converted embedded documents.
+    embedded_converter = get_converter(
+        MsWordBackendOptions(process_embedded_objects=True)
+    )
 
     for docx_path in docx_paths:
         _log.debug(f"converting {docx_path}")
@@ -100,7 +121,11 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
             else nullcontext()
         )
         with warning_context:
-            conv_result: ConversionResult = converter.convert(docx_path)
+            conv_result: ConversionResult = (
+                embedded_converter
+                if docx_path.name == EMBEDDED_OBJECTS_DOCX.name
+                else converter
+            ).convert(docx_path)
 
         doc: DoclingDocument = conv_result.document
 
@@ -124,7 +149,12 @@ def test_e2e_docx_conversions(documents):
             not IS_CI
             and not has_libreoffice
             and docx_path.name
-            in {"drawingml.docx", "textbox.docx", "test_emf_docx.docx"}
+            in {
+                "drawingml.docx",
+                "textbox.docx",
+                "test_emf_docx.docx",
+                EMBEDDED_OBJECTS_DOCX.name,
+            }
         ):
             print(f"Skipping {docx_path} because no Libreoffice is installed.")
             continue
@@ -2706,3 +2736,262 @@ def test_body_level_alternate_content_with_no_usable_branch_adds_nothing(tmp_pat
         "Paragraph before AlternateContent",
         "Paragraph after AlternateContent",
     ]
+
+
+# Embedded OLE objects. docx_embedded_objects.docx was saved by Microsoft Word.
+# It embeds a workbook, a presentation, a Word document that embeds a workbook of
+# its own, and a text file that Word stores as a binary OLE package.
+_EMBEDDED_EXCEL = "embedded: Microsoft_Excel_Worksheet.xlsx"
+_EMBEDDED_POWERPOINT = "embedded: Microsoft_PowerPoint_Presentation.pptx"
+_EMBEDDED_WORD = "embedded: Microsoft_Word_Document.docx"
+_EMBEDDED_POWERPOINT_PART = "word/embeddings/Microsoft_PowerPoint_Presentation.pptx"
+_EMBEDDED_WORD_PART = "word/embeddings/Microsoft_Word_Document.docx"
+
+
+@pytest.fixture
+def no_libreoffice(monkeypatch):
+    # The previews are EMF pictures. Rendering them needs LibreOffice and is not
+    # what these tests check.
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+
+
+def _convert_embedded_objects_docx(
+    data: bytes | None = None, **options: int
+) -> DoclingDocument:
+    stream = DocumentStream(
+        name=EMBEDDED_OBJECTS_DOCX.name,
+        stream=BytesIO(data or EMBEDDED_OBJECTS_DOCX.read_bytes()),
+    )
+    backend_options = MsWordBackendOptions(process_embedded_objects=True, **options)
+    return get_converter(backend_options).convert(stream).document
+
+
+def _rewrite_docx_parts(replacements: dict[str, bytes]) -> bytes:
+    out = BytesIO()
+    with (
+        zipfile.ZipFile(EMBEDDED_OBJECTS_DOCX) as source,
+        zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as target,
+    ):
+        for info in source.infolist():
+            target.writestr(
+                info, replacements.get(info.filename, source.read(info.filename))
+            )
+    return out.getvalue()
+
+
+def _embedded_group_names(doc: DoclingDocument) -> list[str]:
+    return [group.name for group in doc.groups if group.name.startswith("embedded: ")]
+
+
+def test_embedded_objects_are_not_converted_by_default(no_libreoffice):
+    doc = get_converter().convert(EMBEDDED_OBJECTS_DOCX).document
+
+    assert not _embedded_group_names(doc)
+    assert len(doc.pictures) == 4
+    assert not doc.tables
+
+
+def test_embedded_objects_export_without_page_references(documents):
+    # The Excel and PowerPoint backends give their items page provenance, but a
+    # Word document has no pages. DocTags export fails on a dangling page.
+    doc = next(
+        doc for path, doc in documents if path.name == EMBEDDED_OBJECTS_DOCX.name
+    )
+
+    assert "<fcel>Rent<fcel>1200" in doc.export_to_doctags()
+
+
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [
+        (
+            {"max_embedding_depth": 1},
+            [_EMBEDDED_EXCEL, _EMBEDDED_POWERPOINT, _EMBEDDED_WORD],
+        ),
+        (
+            {"max_embedded_objects": 3},
+            [_EMBEDDED_EXCEL, _EMBEDDED_POWERPOINT, _EMBEDDED_WORD],
+        ),
+        # The presentation goes above the budget, and what is left of it is too
+        # small for the workbook in the embedded Word document.
+        ({"max_embedded_total_bytes": 100_000}, [_EMBEDDED_EXCEL, _EMBEDDED_WORD]),
+    ],
+    ids=["depth", "count", "total-bytes"],
+)
+def test_embedded_object_limits_cover_all_nesting_levels(
+    no_libreoffice, options, expected
+):
+    doc = _convert_embedded_objects_docx(**options)
+
+    assert _embedded_group_names(doc) == expected
+
+
+def test_objects_of_a_nested_document_count_against_the_parent_limit(
+    no_libreoffice,
+):
+    # Move the Word object, which embeds a workbook, before the other objects.
+    with zipfile.ZipFile(EMBEDDED_OBJECTS_DOCX) as archive:
+        document = etree.fromstring(archive.read("word/document.xml"))
+    namespaces = {
+        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        "o": "urn:schemas-microsoft-com:office:office",
+    }
+    word_paragraph, excel_paragraph = (
+        document.xpath(
+            f"//w:p[.//o:OLEObject[@ProgID='{prog_id}']]", namespaces=namespaces
+        )[0]
+        for prog_id in ("Word.Document.12", "Excel.Sheet.12")
+    )
+    excel_paragraph.addprevious(word_paragraph)
+
+    doc = _convert_embedded_objects_docx(
+        _rewrite_docx_parts({"word/document.xml": etree.tostring(document)}),
+        max_embedded_objects=3,
+    )
+
+    # The nested workbook is the second object, so the presentation is the fourth.
+    assert _embedded_group_names(doc) == [
+        _EMBEDDED_WORD,
+        _EMBEDDED_EXCEL,
+        _EMBEDDED_EXCEL,
+    ]
+
+
+def _zip_bomb() -> bytes:
+    out = BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("ppt/presentation.xml", b"\0" * (2 * 1024 * 1024))
+    return out.getvalue()
+
+
+def _linked_excel_rels() -> bytes:
+    with zipfile.ZipFile(EMBEDDED_OBJECTS_DOCX) as archive:
+        rels = etree.fromstring(archive.read("word/_rels/document.xml.rels"))
+    for rel in rels:
+        if rel.get("Target") == "embeddings/Microsoft_Excel_Worksheet.xlsx":
+            rel.set("Target", "file:///C:/Reports/budget.xlsx")
+            rel.set("TargetMode", "External")
+    return etree.tostring(rels)
+
+
+@pytest.mark.parametrize(
+    ("replacements", "options", "expected", "warning"),
+    [
+        (
+            {_EMBEDDED_POWERPOINT_PART: b"not a package"},
+            {},
+            [_EMBEDDED_EXCEL, _EMBEDDED_WORD, _EMBEDDED_EXCEL],
+            "File is not a zip file",
+        ),
+        # The package is refused before the PowerPoint backend opens it.
+        (
+            {_EMBEDDED_POWERPOINT_PART: _zip_bomb()},
+            {"max_total_bytes": 1024 * 1024},
+            [_EMBEDDED_EXCEL, _EMBEDDED_WORD, _EMBEDDED_EXCEL],
+            "exceeding the max_total_bytes limit",
+        ),
+        (
+            {"word/_rels/document.xml.rels": _linked_excel_rels()},
+            {},
+            [_EMBEDDED_POWERPOINT, _EMBEDDED_WORD, _EMBEDDED_EXCEL],
+            "",
+        ),
+    ],
+    ids=["broken-package", "zip-bomb", "linked-object"],
+)
+def test_embedded_object_that_cannot_be_converted_keeps_its_preview(
+    no_libreoffice, caplog, replacements, options, expected, warning
+):
+    with caplog.at_level(logging.WARNING, logger=msword_backend_module.__name__):
+        doc = _convert_embedded_objects_docx(
+            _rewrite_docx_parts(replacements), **options
+        )
+
+    assert _embedded_group_names(doc) == expected
+    assert len(doc.pictures) == 5
+    assert warning in caplog.text
+
+
+def test_embedded_object_without_its_format_extra_keeps_its_preview(
+    no_libreoffice, monkeypatch, caplog
+):
+    monkeypatch.setattr(msexcel_backend_module, "_OPENPYXL_AVAILABLE", False)
+
+    with caplog.at_level(logging.WARNING, logger=msword_backend_module.__name__):
+        doc = _convert_embedded_objects_docx()
+
+    assert _embedded_group_names(doc) == [_EMBEDDED_POWERPOINT, _EMBEDDED_WORD]
+    assert "docling-slim[format-xlsx]" in caplog.text
+
+
+def test_embedded_part_shared_by_two_objects_is_converted_once(no_libreoffice):
+    # A crafted file can point many objects at one large part.
+    with zipfile.ZipFile(EMBEDDED_OBJECTS_DOCX) as archive:
+        document = etree.fromstring(archive.read("word/document.xml"))
+    namespaces = {
+        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        "o": "urn:schemas-microsoft-com:office:office",
+    }
+    paragraph = document.xpath(
+        "//w:p[.//o:OLEObject[@ProgID='Excel.Sheet.12']]", namespaces=namespaces
+    )[0]
+    paragraph.addnext(deepcopy(paragraph))
+
+    doc = _convert_embedded_objects_docx(
+        _rewrite_docx_parts({"word/document.xml": etree.tostring(document)})
+    )
+
+    assert _embedded_group_names(doc) == [
+        _EMBEDDED_EXCEL,
+        _EMBEDDED_POWERPOINT,
+        _EMBEDDED_WORD,
+        _EMBEDDED_EXCEL,
+    ]
+    assert len(doc.pictures) == 6
+
+
+def test_rich_table_cells_of_an_embedded_document_point_to_their_copies(
+    no_libreoffice,
+):
+    rich_cells_docx = Path("./tests/data/docx/sources/docx_rich_cells.docx")
+    doc = _convert_embedded_objects_docx(
+        _rewrite_docx_parts({_EMBEDDED_WORD_PART: rich_cells_docx.read_bytes()})
+    )
+
+    rich_cells = [
+        (table, cell)
+        for table in doc.tables
+        for cell in table.data.table_cells
+        if isinstance(cell, RichTableCell)
+    ]
+    assert rich_cells
+    for table, cell in rich_cells:
+        assert cell.ref.resolve(doc).parent.cref == table.self_ref
+
+
+def test_rich_table_cell_whose_target_is_not_copied_keeps_its_text(backend):
+    embedded = DoclingDocument(name="embedded")
+    table = embedded.add_table(data=TableData(num_rows=1, num_cols=1))
+    target = embedded.add_group(parent=table)
+    embedded.add_text(label=DocItemLabel.TEXT, text="rich", parent=target)
+    table.data.table_cells.append(
+        RichTableCell(
+            text="rich",
+            ref=target.get_ref(),
+            start_row_offset_idx=0,
+            end_row_offset_idx=1,
+            start_col_offset_idx=0,
+            end_col_offset_idx=1,
+        )
+    )
+    # Only items in the body tree are copied.
+    table.children.remove(target.get_ref())
+    doc = DoclingDocument(name="word")
+
+    backend._add_embedded_document(doc, embedded, doc.add_group(name="object"))
+
+    (cell,) = doc.tables[0].data.table_cells
+    assert type(cell) is TableCell
+    assert cell.text == "rich"
