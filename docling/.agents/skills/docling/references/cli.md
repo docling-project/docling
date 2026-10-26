@@ -7,7 +7,8 @@ file the agent cannot open directly — PDFs above all, but also DOCX, PPTX, XLS
 HTML, Markdown, AsciiDoc, CSV, images, audio, and XML.
 
 Authoritative flag list: <https://docling-project.github.io/docling/reference/cli/>
-(or `docling --help`). This file is a task-oriented summary.
+(or `docling --help`). Both `docling` and `docling-tools` accept `-h` as a short
+help flag, including on subcommands. This file is a task-oriented summary.
 
 ## Basics
 
@@ -18,6 +19,8 @@ docling <source> [--to md|json|html|text|doctags] [--output DIR]
 - `<source>` is a **local path or an http(s) URL** — both work directly.
 - Output files are named after the input (`report.pdf` → `report.md`).
 - `--output` defaults to the current directory. Use `--output /tmp/` to redirect.
+- For one input and one output format, `--output-file PATH` writes to an exact
+  filename instead of deriving it from the input.
 - `--to` may be repeated to emit several formats in one run.
 
 ```bash
@@ -25,6 +28,7 @@ docling report.pdf --to md --output /tmp/              # Markdown (readable)
 docling report.pdf --to json --output /tmp/            # DoclingDocument JSON (lossless)
 docling https://arxiv.org/pdf/2408.09869 --to md       # convert a URL
 docling report.pdf --to md --to json --output /tmp/    # both at once
+docling report.pdf --to dclx --output-file /tmp/named-result.dclx
 ```
 
 Supported input formats include: `pdf`, `docx`/`doc`, `pptx`/`ppt`, `xlsx`/`xls`,
@@ -34,18 +38,48 @@ XML flavors. Restrict/force detection with `--from` (repeatable), e.g.
 
 ## Picking a pipeline (PDF / images)
 
-Docling has two pipeline families for PDFs and images. Choose with `--pipeline`.
+Docling has three pipeline families for PDFs and images. Choose with `--pipeline`.
 
 | Pipeline | Flag | Best for | Tradeoff |
 |---|---|---|---|
 | **Standard** (default) | `--pipeline standard` | Born-digital PDFs, speed | CPU-only OK; OCR handles scanned pages |
 | **VLM** | `--pipeline vlm` | Complex layout, handwriting, formulas, figures with text | Needs GPU (or Apple MPS); slower |
+| **Native** | `--pipeline native --from pdf` | Dumping the text and images a born-digital PDF already contains, as fast as possible | No models at all: no reading order, headings or tables; PDF input only |
 
 ```bash
 docling report.pdf --pipeline vlm --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
+docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
+docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
+
+`nemotron_parse_v3_5` runs code from its model repository at a pinned revision.
+Docling refuses to load it until you add `--trust-remote-code` (SDK:
+`AutoInlineVlmEngineOptions(trust_remote_code=True)`). Review the model code
+first. For vLLM, run NVIDIA's `vllm serve` server and use the API engine; the
+in-process vLLM engine is not supported for this preset.
+
+VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
+classifies pictures first and adds chart data only where the VLM has not
+already provided it.
+Use `--chart-extraction-preset granite_vision_v3_3` for the older CSV-only
+`ibm-granite/granite-vision-3.3-2b-chart2csv-preview` checkpoint. The default
+`granite_vision_v4` preset uses Granite Vision 4.1 4B, selecting MLX on
+compatible Apple Silicon systems and Transformers elsewhere. To require MLX,
+use `--chart-extraction-preset granite_vision_v4_mlx` with the same repository.
+
+For PDFs, visible horizontal and vertical rules are used as reading-order
+signals by default. Disable this to compare against rule-free ordering:
+
+```bash
+docling report.pdf --from pdf --no-reading-order-separators --output /tmp/
+```
+
+When diagnosing a VLM parser, add `--debug-vlm-native-output` to save each
+page's unparsed model response in the shared `debug_<document>/` directory.
 
 Decision guide:
 
@@ -57,6 +91,7 @@ Decision guide:
 | Handwriting or formulas | `--pipeline vlm` (standard OCR won't handle these) |
 | Air-gapped / no GPU | Standard |
 | Speed-critical, accuracy secondary | Standard with `--no-ocr` and/or `--no-tables` |
+| Only the raw text/images of a born-digital PDF, structure not needed | `--pipeline native --from pdf` |
 
 ## OCR (scanned PDFs and images)
 
@@ -69,8 +104,17 @@ docling scan.pdf --ocr-engine tesserocr --output /tmp/   # needs system Tesserac
 docling scan.pdf --ocr-engine ocrmac --output /tmp/      # macOS Vision (mac only)
 docling scan.pdf --force-ocr --output /tmp/              # re-OCR even extractable text
 docling report.pdf --no-ocr --output /tmp/               # skip OCR (faster)
-docling scan.pdf --ocr-lang en --ocr-lang de --output /tmp/   # restrict languages
+docling scan.pdf --ocr-lang eng,deu --output /tmp/       # the engine's own codes
+docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `iso:`
+docling scan.pdf --ocr-engine rapidocr --ocr-option model_size=tiny --output /tmp/  # engine-specific field
 ```
+
+`--ocr-option KEY=VALUE` (repeatable) sets any field of the selected OCR engine.
+VALUE is read as JSON when possible (`text_score=0.6`, `lang=["en"]`), else as a
+string. List the keys of an engine with `docling options ocr <engine>`. The
+same works for `--layout-option` / `docling options layout <engine>` and
+`--table-structure-option` / `docling options table-structure <engine>`. These
+options are for local `convert` only; `convert-remote` does not accept them.
 
 OCR engines are optional dependencies — see
 [slim-packaging.md](slim-packaging.md) for the `feat-ocr-*` extras.
@@ -82,6 +126,7 @@ docling report.pdf --no-tables --output /tmp/            # skip table structure 
 docling report.pdf --table-mode accurate --output /tmp/  # vs. fast
 docling report.pdf --layout-engine docling_layout_default --output /tmp/  # choose layout engine
 docling report.pdf --table-structure-engine docling_tableformer_v2 --output /tmp/  # choose table engine
+docling form.pdf --extract-form-fields --output /tmp/    # AcroForm widgets as fields with keys from printed text (not with --to doctags)
 docling report.pdf --enrich-code --output /tmp/          # code understanding
 docling report.pdf --enrich-formula --output /tmp/       # formula understanding
 docling report.pdf --enrich-picture-classes --output /tmp/
@@ -96,12 +141,15 @@ docling report.pdf --enrich-picture-description --output /tmp/
 | Password-protected PDF | `--pdf-password PASSWORD` (raises `ConversionError` if wrong) |
 | Very large document (500+ pages) | Standard, add `--no-tables` for speed; set `--device` / `--num-threads` |
 | Only part of a document is needed | `--page-range 1-4` (or a single page, `--page-range 4`); page numbers start at 1 |
+| Long run, want to see progress | Progress bars on stderr by default in a terminal (document position, pages, enrichment items); `--progress` forces it for pipes, `--no-progress` / `-q` hides it |
 | Complex / multi-column layout | `--pipeline vlm` (standard may misorder reading flow) |
 | Handwriting or formulas | `--pipeline vlm` only |
 | Output near-empty | Enable OCR, or switch to `--pipeline vlm` |
 | `�` replacement characters | Try a different `--ocr-engine`, or `--pipeline vlm` |
 | Same line repeated many times | `--pipeline vlm` (or hybrid `force_backend_text`, Python SDK only) |
 | Choose GPU/CPU explicitly | `--device cuda` / `--device cpu` / `--device mps` |
+| HTML images on remote hosts | `--html-image-fetch remote`; add auth with `--html-image-headers '{"Authorization": "Bearer T"}'` (sent only to the source page's origin, or to each `--html-image-headers-origin https://cdn.example.com`) |
+| Script or CI must detect failed documents | Exit code 1 when a document fails; partially converted documents are still written and exit 0. `--fail-on partial` also exits 1 for them, `--fail-on never` always exits 0 (same flag on `convert-remote`). `--abort-on-error` stops at the first failure instead |
 
 ## Remote VLM services from the CLI
 
@@ -122,6 +170,17 @@ Pre-download models and point the CLI at them for air-gapped runs:
 ```bash
 docling-tools models download --output-dir /models   # fetch model artifacts
 docling report.pdf --artifacts-path /models --output /tmp/
+```
+
+For native Whisper ASR, prefetch a selected OpenAI-format checkpoint. Plain
+`--all` excludes ASR models; `--all --asr` includes all native Whisper sizes and
+the Distil-Whisper presets.
+
+```bash
+docling-tools models download whisper_tiny --output-dir /models
+docling --asr-model whisper_tiny_native --artifacts-path /models audio.wav
+docling-tools models download whisper_distil_small_en --output-dir /models
+docling --asr-model whisper_distil_small_en_native --artifacts-path /models audio.wav
 ```
 
 `--artifacts-path` overrides the default Hugging Face cache; you can also set

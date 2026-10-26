@@ -2,4 +2,4 @@ Docling is available an ingestion engine for [OpenContracts](https://github.com/
 
 - 💻 [OpenContracts GitHub](https://github.com/JSv4/OpenContracts)
 - 📖 [OpenContracts Docs](https://jsv4.github.io/OpenContracts/)
-- ▶️ [OpenContracts x Docling PDF annotation screen capture](https://github.com/JSv4/OpenContracts/blob/main/docs/assets/images/gifs/PDF%20Annotation%20Flow.gif)
+- ▶️ [OpenContracts x Docling PDF annotation screen capture](https://github.com/Open-Source-Legal/OpenContracts/blob/main/docs/assets/images/gifs/pdf-annotation-flow.gif)

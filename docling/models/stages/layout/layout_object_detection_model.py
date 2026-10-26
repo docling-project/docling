@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Layout detection stage backed by object-detection runtimes."""
 
 from __future__ import annotations
@@ -62,11 +65,8 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         label_map = {}
 
         for label_id, label_name in id_to_label_str.items():
-            # Normalize to the DocItemLabel enum member convention: uppercase with
-            # underscores. Model configs emit hyphenated or spaced names such as
-            # "List-item", which .upper() alone leaves as "LIST-ITEM" and fails the
-            # enum name lookup (the member is LIST_ITEM).
-            label_enum_name = label_name.upper().replace("-", "_").replace(" ", "_")
+            # Convert label name to uppercase to match DocItemLabel enum convention
+            label_enum_name = label_name.upper()
             try:
                 label_map[label_id] = DocItemLabel[label_enum_name]
             except KeyError:

@@ -1,17 +1,30 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+import logging
 from io import BytesIO
 from pathlib import Path
+from typing import Literal
 
 import pytest
+from pydantic import ValidationError
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import RapidOcrOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import (
+    OcrLanguageNotSupportedError,
+    RapidOcrModelSizeNotSupportedError,
+)
 from docling.models.stages.ocr.rapid_ocr_model import (
     RapidOcrModel,
+    _installed_ppocrv6_codes,
     _parse_rapidocr_model_spec,
+    _ppocr_supported_languages,
+    _rapidocr_vocabulary,
     _resolve_rapidocr,
 )
-from docling.utils.model_downloader import download_models
+from docling.utils.model_downloader import _DEFAULT_RAPIDOCR_MODELS, download_models
 
 pytestmark = pytest.mark.ml_ocr
 
@@ -43,12 +56,15 @@ def _install_fakes(monkeypatch, captured_params: list[dict[str, object]]) -> lis
     return downloaded_urls
 
 
-def _seed(artifacts_path: Path, backend: str, lang: str) -> None:
-    """Prefetch one `(backend, lang)` set into artifacts_path, the way a user would."""
+def _seed(
+    artifacts_path: Path, backend: str, lang: str, model_size: str = "small"
+) -> None:
+    """Prefetch one `(backend, lang, model_size)` set into artifacts_path."""
     RapidOcrModel.download_models(
         backend=backend,
         lang=lang,
         local_dir=artifacts_path / RapidOcrModel._model_repo_folder,
+        model_size=model_size,
     )
 
 
@@ -57,7 +73,7 @@ def _build(
     options: RapidOcrOptions,
     artifacts_path: Path | None,
     *,
-    seed: tuple[str, str] | None = None,
+    seed: tuple[str, str] | tuple[str, str, str] | None = None,
 ):
     captured_params: list[dict[str, object]] = []
     downloaded = _install_fakes(monkeypatch, captured_params)
@@ -80,54 +96,95 @@ def _build(
 
 
 def _resolved(lang: str, backend: str):
-    """The (version, registry token) pair the assertions below care about."""
+    """The (version, registry code) pair the assertions below care about."""
     spec = _resolve_rapidocr(lang, backend)
-    return spec.ppocr_version, spec.rapidocr_lang_token
+    return spec.ppocr_version, spec.rapidocr_code
 
 
 def test_resolve_populates_the_whole_spec() -> None:
     from rapidocr.utils.typings import OCRVersion
 
-    spec = _resolve_rapidocr("zh", "onnxruntime")
+    spec = _resolve_rapidocr("iso:zh", "onnxruntime")
     assert spec.backend == "onnxruntime"
-    # The user's token is preserved verbatim, the registry token is normalized.
-    assert spec.user_lang == "zh"
-    assert spec.rapidocr_lang_token == "ch"
+    # The user's spelling is preserved verbatim, the registry code is normalized.
+    assert spec.user_lang == "iso:zh"
+    assert spec.rapidocr_code == "ch"
     assert spec.ppocr_version == OCRVersion.PPOCRV6
+
+
+def test_resolve_does_not_need_the_removed_ppocrv6_constant(monkeypatch) -> None:
+    """rapidocr 3.10.0 removed `PP_OCRV6_LANGS`; resolution must not import it."""
+    from rapidocr.utils import model_resolver
+    from rapidocr.utils.typings import OCRVersion
+
+    monkeypatch.delattr(model_resolver, "PP_OCRV6_LANGS", raising=False)
+    _installed_ppocrv6_codes.cache_clear()
+    _rapidocr_vocabulary.cache_clear()
+    try:
+        assert _resolved("iso:zh", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
+        assert _resolved("iso:th", "onnxruntime") == (OCRVersion.PPOCRV5, "th")
+    finally:
+        _installed_ppocrv6_codes.cache_clear()
+        _rapidocr_vocabulary.cache_clear()
 
 
 def test_resolve_defaults_to_ppocrv6_chinese() -> None:
     from rapidocr.utils.typings import OCRVersion
 
-    assert _resolved("chinese", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
-    assert _resolved("zh", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
+    assert _resolved("ch", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
+    assert _resolved("iso:zh-Hans", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
+    assert _resolved("iso:zh", "onnxruntime") == (OCRVersion.PPOCRV6, "ch")
 
 
 def test_resolve_english_and_latin_use_ppocrv6() -> None:
     from rapidocr.utils.typings import OCRVersion
 
-    assert _resolved("english", "onnxruntime") == (OCRVersion.PPOCRV6, "en")
-    assert _resolved("en", "torch") == (OCRVersion.PPOCRV6, "en")
-    assert _resolved("de", "onnxruntime") == (OCRVersion.PPOCRV6, "de")
-    assert _resolved("fr", "onnxruntime") == (OCRVersion.PPOCRV6, "fr")
+    assert _resolved("iso:en", "onnxruntime") == (OCRVersion.PPOCRV6, "en")
+    assert _resolved("iso:en", "torch") == (OCRVersion.PPOCRV6, "en")
+    assert _resolved("iso:de", "onnxruntime") == (OCRVersion.PPOCRV6, "de")
+    assert _resolved("iso:fr", "onnxruntime") == (OCRVersion.PPOCRV6, "fr")
 
 
 def test_resolve_script_families_route_by_backend() -> None:
     from rapidocr.utils.typings import OCRVersion
 
     # onnxruntime/openvino/paddle -> PP-OCRv5
-    assert _resolved("th", "onnxruntime") == (OCRVersion.PPOCRV5, "th")
-    assert _resolved("cyrillic", "onnxruntime") == (OCRVersion.PPOCRV5, "cyrillic")
+    assert _resolved("iso:th", "onnxruntime") == (OCRVersion.PPOCRV5, "th")
+    assert _resolved("cyrillic", "onnxruntime") == (
+        OCRVersion.PPOCRV5,
+        "cyrillic",
+    )
     # torch -> PP-OCRv4
     assert _resolved("arabic", "torch") == (OCRVersion.PPOCRV4, "arabic")
+    # Devanagari picks the backbone its backend can reach.
+    assert _resolved("iso:hi", "onnxruntime") == (OCRVersion.PPOCRV5, "devanagari")
+    assert _resolved("iso:hi", "torch") == (OCRVersion.PPOCRV4, "devanagari")
+
+
+def test_resolve_rejects_a_malformed_tag() -> None:
+    with pytest.raises(ValueError, match="BCP-47"):
+        _resolve_rapidocr("iso:klingon", "onnxruntime")
 
 
 def test_resolve_raises_on_unsupported_language() -> None:
-    with pytest.raises(ValueError):
-        _resolve_rapidocr("klingon", "onnxruntime")
     # Thai is a PP-OCRv5 language, not served by the torch PP-OCRv4 backbone.
-    with pytest.raises(ValueError):
-        _resolve_rapidocr("th", "torch")
+    with pytest.raises(OcrLanguageNotSupportedError):
+        _resolve_rapidocr("iso:th", "torch")
+    # PP-OCR has no Georgian recognizer; its `ka` is Kannada.
+    with pytest.raises(OcrLanguageNotSupportedError):
+        _resolve_rapidocr("iso:ka-Geor", "onnxruntime")
+
+
+@pytest.mark.parametrize("backend", ["onnxruntime", "openvino", "paddle", "torch"])
+def test_resolve_kannada_falls_back_to_ppocrv4_on_every_backend(backend: str) -> None:
+    from rapidocr.utils.typings import OCRVersion
+
+    # PP-OCR serves Kannada only on the v4 backbone, so every backend has to
+    # reach past its own v5/v6 set for it -- `ka` is the one code v5 lacks.
+    assert _resolved("iso:kn", backend) == (OCRVersion.PPOCRV4, "ka")
+    # ...and it is advertised, so the coverage error never names it. `Knda` is
+    # the script CLDR infers for `kn`, so the advertised spelling drops it.
+    assert "kn" in _ppocr_supported_languages(_rapidocr_vocabulary(backend)).bcp47
 
 
 # --- model selection / pinned paths -----------------------------------------
@@ -153,9 +210,9 @@ def test_rapidocr_default_onnx_uses_ppocrv6(monkeypatch, tmp_path: Path) -> None
 def test_rapidocr_default_torch_uses_ppocrv6(monkeypatch, tmp_path: Path) -> None:
     params, downloaded = _build(
         monkeypatch,
-        RapidOcrOptions(backend="torch"),  # default lang -> chinese -> ch -> v6
+        RapidOcrOptions(backend="torch"),  # default lang -> ch -> v6
         tmp_path,
-        seed=("torch", "chinese"),
+        seed=("torch", "ch"),
     )
     assert Path(params["Det.model_path"]).name == "PP-OCRv6_det_small.pth"
     assert Path(params["Rec.model_path"]).name == "PP-OCRv6_rec_small.pth"
@@ -199,14 +256,22 @@ def test_rapidocr_arabic_torch_uses_ppocrv4(monkeypatch, tmp_path: Path) -> None
     assert params["Rec.rec_keys_path"] is not None
 
 
+def test_rapidocr_malformed_language_raises_at_options_time() -> None:
+    """A typo never reaches the model: the options validator rejects it."""
+    with pytest.raises(ValidationError, match="BCP-47"):
+        RapidOcrOptions(lang=["iso:klingon"], backend="onnxruntime")
+
+
 def test_rapidocr_unsupported_language_raises(monkeypatch, tmp_path: Path) -> None:
     captured_params: list[dict[str, object]] = []
     _install_fakes(monkeypatch, captured_params)
-    with pytest.raises(ValueError):
+    # Georgian must be spelled out: a bare `ka` given to RapidOCR is PP-OCR's own
+    # code for Kannada.
+    with pytest.raises(OcrLanguageNotSupportedError, match="ka-Geor"):
         RapidOcrModel(
             enabled=True,
             artifacts_path=tmp_path,
-            options=RapidOcrOptions(lang=["klingon"], backend="onnxruntime"),
+            options=RapidOcrOptions(lang=["ka-Geor"], backend="onnxruntime"),
             accelerator_options=AcceleratorOptions(),
         )
 
@@ -457,19 +522,282 @@ def test_model_downloader_rejects_bad_rapidocr_spec(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "spec", ["onnxruntime:th", "torch:ka", "paddle:ch", "openvino:el"]
+    "spec", ["onnxruntime:th", "torch:iso:kn", "paddle:iso:zh-Hans", "openvino:el"]
 )
 def test_parse_rapidocr_model_spec_accepts_valid_pairs(spec: str) -> None:
     parsed = _parse_rapidocr_model_spec(spec)
     assert f"{parsed.backend}:{parsed.user_lang}" == spec
     # Parsing yields the requested form only; resolution is left to the consumer.
     assert parsed.ppocr_version is None
-    assert parsed.rapidocr_lang_token is None
+    assert parsed.rapidocr_code is None
 
 
 @pytest.mark.parametrize(
-    "spec", ["torch:th", "torch:el", "onnxruntime:ka", "bogus:en", "no-colon", "a:b:c"]
+    "spec",
+    ["torch:th", "torch:el", "onnxruntime:ka-Geor", "bogus:en", "no-colon", "a:b:c"],
 )
 def test_parse_rapidocr_model_spec_rejects_invalid_pairs(spec: str) -> None:
     with pytest.raises(ValueError):
         _parse_rapidocr_model_spec(spec)
+
+
+# --- model_size ---------------------------------------------------------------
+
+
+def test_rapidocr_options_model_size_defaults_to_small() -> None:
+    assert RapidOcrOptions().model_size == "small"
+
+
+def test_rapidocr_options_model_size_rejects_invalid_value() -> None:
+    with pytest.raises(ValidationError):
+        RapidOcrOptions(model_size="large")  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "model_size,det_name,rec_name",
+    [
+        ("small", "PP-OCRv6_det_small.onnx", "PP-OCRv6_rec_small.onnx"),
+        ("tiny", "PP-OCRv6_det_tiny.onnx", "PP-OCRv6_rec_tiny.onnx"),
+        ("medium", "PP-OCRv6_det_medium.onnx", "PP-OCRv6_rec_medium.onnx"),
+    ],
+)
+def test_rapidocr_model_size_selects_matching_ppocrv6_assets(
+    monkeypatch,
+    tmp_path: Path,
+    model_size: Literal["tiny", "small", "medium"],
+    det_name: str,
+    rec_name: str,
+) -> None:
+    params, downloaded = _build(
+        monkeypatch,
+        RapidOcrOptions(lang=["en"], backend="onnxruntime", model_size=model_size),
+        tmp_path,
+        seed=("onnxruntime", "en", model_size),
+    )
+    assert Path(params["Det.model_path"]).name == det_name
+    assert Path(params["Rec.model_path"]).name == rec_name
+    assert downloaded == []
+
+
+@pytest.mark.parametrize("model_size", ["tiny", "small", "medium"])
+def test_rapidocr_model_size_never_affects_classification(
+    monkeypatch, tmp_path: Path, model_size: Literal["tiny", "small", "medium"]
+) -> None:
+    params, _ = _build(
+        monkeypatch,
+        RapidOcrOptions(lang=["en"], backend="onnxruntime", model_size=model_size),
+        tmp_path,
+        seed=("onnxruntime", "en", model_size),
+    )
+    assert Path(params["Cls.model_path"]).name == "ch_ppocr_mobile_v2.0_cls_mobile.onnx"
+
+
+def test_rapidocr_model_size_tiny_rejects_japanese_at_options_time(
+    monkeypatch, tmp_path: Path
+) -> None:
+    _install_fakes(monkeypatch, [])
+    with pytest.raises(
+        RapidOcrModelSizeNotSupportedError, match=r"model_size.*tiny.*japan"
+    ):
+        RapidOcrModel(
+            enabled=True,
+            artifacts_path=tmp_path,
+            options=RapidOcrOptions(
+                lang=["japan"], backend="onnxruntime", model_size="tiny"
+            ),
+            accelerator_options=AcceleratorOptions(),
+        )
+
+
+def test_rapidocr_model_size_tiny_rejects_japanese_without_artifacts_path(
+    monkeypatch,
+) -> None:
+    """Same rejection on the library-managed path, before any file resolution."""
+    _install_fakes(monkeypatch, [])
+    with pytest.raises(RapidOcrModelSizeNotSupportedError):
+        RapidOcrModel(
+            enabled=True,
+            artifacts_path=None,
+            options=RapidOcrOptions(
+                lang=["japan"], backend="onnxruntime", model_size="tiny"
+            ),
+            accelerator_options=AcceleratorOptions(),
+        )
+
+
+@pytest.mark.parametrize("model_size", ["tiny", "medium"])
+def test_rapidocr_model_size_ignored_for_non_ppocrv6_with_warning(
+    monkeypatch, tmp_path: Path, caplog, model_size: Literal["tiny", "medium"]
+) -> None:
+    with caplog.at_level(logging.WARNING):
+        params, _ = _build(
+            monkeypatch,
+            RapidOcrOptions(lang=["th"], backend="onnxruntime", model_size=model_size),
+            tmp_path,
+            seed=("onnxruntime", "th"),
+        )
+    assert Path(params["Det.model_path"]).name == "ch_PP-OCRv5_det_mobile.onnx"
+    assert any(
+        "model_size" in record.message and "PP-OCRv6" in record.message
+        for record in caplog.records
+    )
+
+
+def test_rapidocr_model_size_small_no_warning_for_non_ppocrv6(
+    monkeypatch, tmp_path: Path, caplog
+) -> None:
+    with caplog.at_level(logging.WARNING):
+        _build(
+            monkeypatch,
+            RapidOcrOptions(lang=["th"], backend="onnxruntime"),
+            tmp_path,
+            seed=("onnxruntime", "th"),
+        )
+    assert not any("model_size" in record.message for record in caplog.records)
+
+
+def test_rapidocr_model_size_applies_after_language_reduction(
+    monkeypatch, tmp_path: Path
+) -> None:
+    params, _ = _build(
+        monkeypatch,
+        RapidOcrOptions(lang=["en", "th"], backend="onnxruntime", model_size="tiny"),
+        tmp_path,
+        seed=("onnxruntime", "en", "tiny"),
+    )
+    assert Path(params["Det.model_path"]).name == "PP-OCRv6_det_tiny.onnx"
+
+
+def test_rapidocr_artifacts_missing_hint_omits_model_size_when_default(
+    monkeypatch, tmp_path: Path
+) -> None:
+    _install_fakes(monkeypatch, [])
+    with pytest.raises(FileNotFoundError) as excinfo:
+        RapidOcrModel(
+            enabled=True,
+            artifacts_path=tmp_path,
+            options=RapidOcrOptions(lang=["en"], backend="onnxruntime"),
+            accelerator_options=AcceleratorOptions(),
+        )
+    assert "--rapidocr-model-size" not in str(excinfo.value)
+
+
+def test_rapidocr_model_size_mismatch_with_prefetched_assets_raises(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Only `small` was prefetched; requesting `tiny` must fail, not reuse it."""
+    _install_fakes(monkeypatch, [])
+    _seed(tmp_path, "onnxruntime", "en")
+    with pytest.raises(FileNotFoundError) as excinfo:
+        RapidOcrModel(
+            enabled=True,
+            artifacts_path=tmp_path,
+            options=RapidOcrOptions(
+                lang=["en"], backend="onnxruntime", model_size="tiny"
+            ),
+            accelerator_options=AcceleratorOptions(),
+        )
+    message = str(excinfo.value)
+    assert "PP-OCRv6_det_tiny.onnx" in message
+    assert "--rapidocr-model-size tiny" in message
+
+
+@pytest.mark.parametrize(
+    "model_size,det_name,rec_name",
+    [
+        ("tiny", "PP-OCRv6_det_tiny.onnx", "PP-OCRv6_rec_tiny.onnx"),
+        ("medium", "PP-OCRv6_det_medium.onnx", "PP-OCRv6_rec_medium.onnx"),
+    ],
+)
+def test_download_models_respects_model_size(
+    monkeypatch, tmp_path: Path, model_size: str, det_name: str, rec_name: str
+) -> None:
+    downloaded_urls: list[str] = []
+
+    def fake_download_url_with_progress(url: str, *, progress: bool) -> BytesIO:
+        del progress
+        downloaded_urls.append(url)
+        return BytesIO(b"dummy content")
+
+    monkeypatch.setattr(
+        "docling.models.stages.ocr.rapid_ocr_model.download_url_with_progress",
+        fake_download_url_with_progress,
+    )
+
+    RapidOcrModel.download_models(
+        local_dir=tmp_path, backend="onnxruntime", force=True, model_size=model_size
+    )
+
+    assert any(det_name in url for url in downloaded_urls)
+    assert any(rec_name in url for url in downloaded_urls)
+    assert (tmp_path / det_name).exists()
+    assert (tmp_path / rec_name).exists()
+
+
+def test_download_models_rejects_unsupported_model_size(tmp_path: Path) -> None:
+    with pytest.raises(RapidOcrModelSizeNotSupportedError, match=r"tiny.*japan"):
+        RapidOcrModel.download_models(
+            local_dir=tmp_path, backend="onnxruntime", lang="japan", model_size="tiny"
+        )
+
+
+def test_model_downloader_forwards_rapidocr_model_size(
+    monkeypatch, tmp_path: Path
+) -> None:
+    captured_calls: list[dict[str, object]] = []
+
+    def fake_download_models(**kwargs: object) -> None:
+        captured_calls.append(kwargs)
+
+    monkeypatch.setattr(RapidOcrModel, "download_models", fake_download_models)
+    download_models(
+        output_dir=tmp_path,
+        with_layout=False,
+        with_tableformer=False,
+        with_tableformer_v2=False,
+        with_code_formula=False,
+        with_picture_classifier=False,
+        with_smolvlm=False,
+        with_granitedocling=False,
+        with_granitedocling_mlx=False,
+        with_smoldocling=False,
+        with_smoldocling_mlx=False,
+        with_granite_vision=False,
+        with_granite_chart_extraction=False,
+        with_granite_chart_extraction_v4=False,
+        with_rapidocr=True,
+        rapidocr_model_size="medium",
+        with_easyocr=False,
+    )
+    assert len(captured_calls) == len(_DEFAULT_RAPIDOCR_MODELS)
+    assert all(call["model_size"] == "medium" for call in captured_calls)
+
+
+def test_model_downloader_rapidocr_model_size_defaults_to_small(
+    monkeypatch, tmp_path: Path
+) -> None:
+    captured_calls: list[dict[str, object]] = []
+
+    def fake_download_models(**kwargs: object) -> None:
+        captured_calls.append(kwargs)
+
+    monkeypatch.setattr(RapidOcrModel, "download_models", fake_download_models)
+    download_models(
+        output_dir=tmp_path,
+        with_layout=False,
+        with_tableformer=False,
+        with_tableformer_v2=False,
+        with_code_formula=False,
+        with_picture_classifier=False,
+        with_smolvlm=False,
+        with_granitedocling=False,
+        with_granitedocling_mlx=False,
+        with_smoldocling=False,
+        with_smoldocling_mlx=False,
+        with_granite_vision=False,
+        with_granite_chart_extraction=False,
+        with_granite_chart_extraction_v4=False,
+        with_rapidocr=True,
+        with_easyocr=False,
+    )
+    assert all(call["model_size"] == "small" for call in captured_calls)

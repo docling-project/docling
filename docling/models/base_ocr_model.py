@@ -1,25 +1,96 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import copy
 import logging
 from abc import abstractmethod
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
-from docling_core.types.doc.page import TextCell
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    PdfCellRenderingMode,
+    PdfPageGeometry,
+    PdfTextCell,
+    SegmentedPdfPage,
+    TextCell,
+)
 from PIL import Image, ImageDraw
-from rtree import index
-from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
+from docling.datamodel.spatial import BoundingBoxSpatialIndex
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageResolver,
+    OcrLanguageSupport,
+)
 
 _log = logging.getLogger(__name__)
+
+_SCIPY_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from scipy.ndimage import binary_dilation, find_objects, label
+except ImportError as e:  # pragma: no cover - import-time guard
+    _SCIPY_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'scipy' package is required for OCR bitmap-area detection. "
+    "Install it with `pip install 'docling-slim[convert-core]'`."
+)
+
+
+def _empty_segmented_page(page: Page) -> SegmentedPdfPage:
+    """A minimal SegmentedPdfPage for pages whose native parse was skipped
+    (PagePreprocessingOptions.skip_cell_extraction), sized from the page."""
+    width, height = page.size.width, page.size.height
+    # CoordOrigin.BOTTOMLEFT by convention: a real backend produces the
+    # segmented page in bottom-left coordinates.
+    rect = BoundingRectangle(
+        r_x0=0,  # lower-left
+        r_y0=0,
+        r_x1=width,  # lower-right
+        r_y1=0,
+        r_x2=width,  # upper-right
+        r_y2=height,
+        r_x3=0,  # upper-left
+        r_y3=height,
+        coord_origin=CoordOrigin.BOTTOMLEFT,
+    )
+    bbox = BoundingBox(l=0, t=height, r=width, b=0, coord_origin=CoordOrigin.BOTTOMLEFT)
+    # NOTE: angle is hardcoded to 0.0 rather than reflecting the page's true
+    # rotation. No PdfPageBackend currently exposes rotation (or the individual
+    # crop/media/art/bleed/trim boxes) without triggering content decoding --
+    # the very work skip_cell_extraction exists to avoid. Left for future work:
+    # add a cheap PdfPageBackend.get_page_geometry() primitive (pypdfium2:
+    # ppage.get_rotation() plus the existing get_pdf_page_geometry() helper;
+    # docling-parse sync/threaded: page_decoder.get_page_dimension()) and
+    # source the dimension from it here.
+    return SegmentedPdfPage(
+        dimension=PdfPageGeometry(
+            angle=0.0,
+            rect=rect,
+            boundary_type="crop_box",
+            art_bbox=bbox,
+            bleed_bbox=bbox,
+            crop_bbox=bbox,
+            media_bbox=bbox,
+            trim_bbox=bbox,
+        ),
+        char_cells=[],
+        word_cells=[],
+        textline_cells=[],
+    )
+
 
 try:
     import cv2
@@ -37,6 +108,37 @@ class _MergeCellsPriority(str, Enum):
     OCR_FIRST = "ocr_cells_first"
 
 
+# PDF 32000 text rendering modes that paint no ink
+_INVISIBLE_RENDERING_MODES = frozenset(
+    {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
+)
+
+
+# Flag to control if the OCR cells post-processing will use all PDF cells or only the visible ones
+_PDF_CELLS_POST_PROCESSING_SEGREGATION = True
+
+
+def _segregate_by_visibility(
+    cells: Iterable[TextCell],
+) -> tuple[list[TextCell], list[TextCell]]:
+    """Split cells into (visible, invisible), preserving the order within each group.
+
+    Cells carrying no rendering mode (plain `TextCell`, e.g. OCR output) count as visible,
+    as does `UNKNOWN` (-1): no `Tr` operator means the PDF default mode 0 (fill).
+    """
+    visible: list[TextCell] = []
+    invisible: list[TextCell] = []
+    for cell in cells:
+        if (
+            isinstance(cell, PdfTextCell)
+            and cell.rendering_mode in _INVISIBLE_RENDERING_MODES
+        ):
+            invisible.append(cell)
+        else:
+            visible.append(cell)
+    return visible, invisible
+
+
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     r"""
     Base class for all OCR models.
@@ -44,6 +146,21 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     """
 
     DEFAULT_DILATION_SIZE = 20
+
+    # A rule, an underline or a table border is at least this many times longer than it
+    # is thick; anything stubbier may be part of an outlined glyph. Measured on the test
+    # fixtures: a 0.8pt rule reports 145:1 stroked and 287:1 filled (pypdfium2 inflates
+    # the stroke to 2pt thick), while vector letterforms report 1.3:1 to 6:1 whether
+    # drawn filled or stroked, and a rule merged with the glyph it crosses reports 2.6:1.
+    RULE_LIKE_ASPECT_RATIO = 12.0
+    # A shape no thicker than this many text lines is a band -- a highlight, a table
+    # stripe, a filled cell -- and any text on it accounts for it.
+    THIN_SHAPE_LINE_HEIGHTS = 2.0
+    # A thicker shape is accounted for only when text covers this share of its area.
+    TEXT_BACKED_MIN_COVERAGE = 0.1
+
+    # Whether the engine can run several languages at once
+    multiple_languages: ClassVar[bool] = False
 
     def __init__(
         self,
@@ -55,6 +172,67 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     ):
         self.enabled = enabled
         self.options = options
+
+        # Translate options.lang into a list of OcrLanguage
+        self.languages: list[OcrLanguage] = (
+            OcrLanguageResolver.canonicalize_ocr_languages(options.lang)
+            if options.canonicalize_lang
+            else []
+        )
+
+    @property
+    def _engine_name(self) -> str:
+        """Human-readable engine name for coverage errors."""
+        return type(self).__name__.removesuffix("Model")
+
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        """The languages this OCR engine supports, segregated in BCP47 and native"""
+        return OcrLanguageSupport()
+
+    def map_ocr_language(self, language: OcrLanguage) -> str | list[str]:
+        """Map one canonical tag onto this engine's native code(s).
+
+        A list covers an engine that answers one request with several codes;
+        most engines return a single code.
+
+        Raises:
+            OcrLanguageNotSupportedError: The engine has no model for it.
+        """
+        if language.is_passthrough():
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag(),
+                supported=self.supported_ocr_languages(),
+                detail="This engine needs a BCP-47 tag behind the `iso:` prefix.",
+            )
+        return language.bcp47_language
+
+    def resolve_ocr_languages(self) -> list[str]:
+        """Turn the canonical request into the native codes to hand the engine.
+
+        An empty request stays empty: `lang=[]` means "the engine's own default",
+        and each engine decides what that is when it reads the result.
+
+        Applies the two uniform policies: too many languages for the engine are
+        dropped with a warning (list order is preference order), and a language
+        with no model is an error, never a silent substitution.
+        """
+        languages = list(self.languages)
+        if not self.multiple_languages and len(languages) > 1:
+            _log.warning(
+                "%s handles one OCR language at a time. Using %s and ignoring %s; "
+                "the order of `lang` is the order of preference.",
+                self._engine_name,
+                [languages[0].tag()],
+                [lang.tag() for lang in languages[1:]],
+            )
+            languages = languages[:1]
+
+        codes: list[str] = []
+        for language in languages:
+            mapped = self.map_ocr_language(language)
+            codes.extend([mapped] if isinstance(mapped, str) else mapped)
+        return list(dict.fromkeys(codes))
 
     def get_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
@@ -103,15 +281,120 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         )
         return ocr_rects
 
+    @staticmethod
+    def _boxes_touch(a: BoundingBox, b: BoundingBox) -> bool:
+        """Inclusive overlap test, so a zero-thickness shape segment still matches.
+
+        `BoundingBox.overlaps` is strict and reports False for a degenerate box even
+        against itself, which is precisely what a connected shape box is for a rule.
+        Both boxes must share the top-left origin the shape queries document.
+        """
+        return a.l <= b.r and b.l <= a.r and a.t <= b.b and b.t <= a.b
+
+    @staticmethod
+    def _text_geometry(
+        page: Page,
+    ) -> tuple[list[BoundingBox], BoundingBoxSpatialIndex]:
+        """The page's visible text cell boxes, top-left origin, with a spatial index."""
+        assert page._backend is not None
+        assert page.size is not None
+        cells = page._backend.get_visible_text_cells()
+        if cells is None:
+            cells = page._backend.get_text_cells()
+        boxes = [
+            cell.rect.to_bounding_box().to_top_left_origin(page.size.height)
+            for cell in cells
+        ]
+        index = BoundingBoxSpatialIndex()
+        for i, box in enumerate(boxes):
+            index.insert(i, box)
+        return boxes, index
+
+    @classmethod
+    def _text_accounts_for(
+        cls,
+        probe: BoundingBox,
+        text_boxes: list[BoundingBox],
+        text_index: BoundingBoxSpatialIndex,
+    ) -> bool:
+        """Whether the text cells under `probe` explain the shape it was cut from.
+
+        A band no thicker than a couple of text lines -- a highlight, a table
+        stripe, a filled cell -- is explained by any text on it. A thicker shape
+        is explained only when text covers a fair share of its area: a chart box
+        with one native caption in a corner is not, and the labels drawn as paths
+        inside it still need OCR.
+        """
+        under = [
+            (box, area)
+            for box in (text_boxes[i] for i in text_index.intersection(probe))
+            if (area := box.intersection_area_with(probe)) > 0
+        ]
+        if not under:
+            return False
+        heights = sorted(box.height for box, _ in under)
+        line_height = heights[len(heights) // 2]
+        if min(probe.width, probe.height) <= cls.THIN_SHAPE_LINE_HEIGHTS * line_height:
+            return True
+        covered = sum(area for _, area in under)
+        return covered / probe.area() >= cls.TEXT_BACKED_MIN_COVERAGE
+
+    @staticmethod
+    def _clip_box(box: BoundingBox, clip: BoundingBox) -> BoundingBox:
+        """The part of `box` inside `clip`, for two boxes that `_boxes_touch`.
+
+        Unlike `BoundingBox.get_intersection_bbox`, a degenerate result is kept
+        rather than turned into `None`, so a shape that merely touches the clip
+        edge yields a zero-thickness box that `_is_rule_like` then dismisses.
+        """
+        return BoundingBox(
+            l=max(box.l, clip.l),
+            t=max(box.t, clip.t),
+            r=min(box.r, clip.r),
+            b=min(box.b, clip.b),
+            coord_origin=box.coord_origin,
+        )
+
+    @classmethod
+    def _is_rule_like(cls, bbox: BoundingBox) -> bool:
+        """Whether a shape is a rule, an underline or a table border.
+
+        Decided on the shape's extent alone. A backend's stroked-segment report
+        (`get_shape_lines`) cannot stand in for this: it misses rules drawn as
+        filled rectangles, and it reports letterforms drawn as stroked segments
+        exactly as it reports a rule.
+        """
+        thickness = min(bbox.width, bbox.height)
+        if thickness <= 0:
+            return True  # a degenerate segment is a line by construction
+        return max(bbox.width, bbox.height) / thickness >= cls.RULE_LIKE_ASPECT_RATIO
+
     def _find_pdf_aware_layout_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
         Compute the OCR rects from the layout clusters of a programmatic PDF.
 
         1. Start from the layout clusters.
-        2. Eliminate clusters that intersect exclusively with programmatic text PDF cells
-           The following clusters therefore remain:
-           - Clusters without any overlapping PDF cell.
-           - Clusters with at least one overlapping non-text region (e.g. bitmap, shape).
+        2. Keep the clusters that need OCR:
+           - Clusters overlapping a bitmap (their text may be rasterised).
+           - Clusters without any visible programmatic text (their text may be
+             vector-outlined, or the region may be empty).
+           - Clusters whose text layer does not account for every shape in them,
+             i.e. a shape that is neither a stroked segment nor sitting behind text.
+           A shape alone does not force OCR: rules, underlines and table borders
+           routinely cross clusters of perfectly good programmatic text, and OCR-ing
+           those is both slow and lossier than the text layer (#4174, #4139). But
+           the converse is just as lossy -- a glyph drawn as a filled path is absent
+           from the text layer, so a cluster mixing one with real text still needs
+           OCR (#4209). A shape counts as a rule when its extent says so: long and
+           thin. That holds whether the rule was stroked or filled, and it does not
+           mistake letterforms for rules the way a stroked-segment report does.
+           Whether text accounts for a shape is judged on the part of the shape
+           inside the cluster only: a connected shape may extend well past the
+           cluster, and text under it elsewhere cannot account for what is here.
+           Any text on a band no thicker than a couple of lines accounts for it;
+           a thicker shape needs text over a fair share of its area, since one
+           native caption inside a chart says nothing about the labels drawn as
+           paths in it.
         3. Deduplicate the remaining cluster bboxes.
         """
         if page.predictions.layout is None:
@@ -119,31 +402,104 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         if page._backend is None:
             return self._find_layout_ocr_rects(page)
 
-        # Create index for the text PDF cells
-        p = index.Property()
-        p.dimension = 2
-        text_index = index.Index(properties=p)
-        for i, text_cell in enumerate(page._backend.get_text_cells()):
-            text_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
+        assert page.size is not None
+        backend = page._backend
 
-        # Create index for the non-text PDF cells
-        non_text_index = index.Index(properties=p)
-        for i, bbox in enumerate(page._backend.get_bitmap_rects()):
-            non_text_index.insert(i, bbox.as_tuple())
+        # Probe the backend to decide if `has_content_in()` is available or indexing is needed
+        page_bbox = BoundingBox(
+            l=0,
+            t=0,
+            r=page.size.width,
+            b=page.size.height,
+            coord_origin=CoordOrigin.TOPLEFT,
+        )
+        use_backend_queries = backend.has_content_in(bbox=page_bbox) is not None
+
+        # Text cell geometry, read at most once. The spatial-index path needs it for
+        # every cluster; the native-query path only for clusters that carry both text
+        # and shapes, so it is read lazily there.
+        text_boxes: list[BoundingBox] | None = None
+        text_index: BoundingBoxSpatialIndex | None = None
+        non_text_index: BoundingBoxSpatialIndex | None = None
+        if not use_backend_queries:
+            text_boxes, text_index = self._text_geometry(page)
+
+            # Index for the bitmaps. Shapes are deliberately left out (see docstring).
+            non_text_index = BoundingBoxSpatialIndex()
+            for i, bbox in enumerate(backend.get_bitmap_rects()):
+                non_text_index.insert(i, bbox)
+
+        # Page shape geometry, read at most once and only if some cluster turns out to
+        # carry both text and shapes. Reading it is costly on chart-heavy pages, and
+        # the overwhelming majority of text clusters never need it.
+        shape_boxes: list[BoundingBox] | None = None
 
         # Collect the non-eliminated cluster bboxes
         ocr_rects: list[BoundingBox] = []
         for cluster in page.predictions.layout.clusters:
-            cluster_bbox_tuple = cluster.bbox.as_tuple()
-            text_overlaps = list(text_index.intersection(cluster_bbox_tuple))
-            non_text_overlaps = list(non_text_index.intersection(cluster_bbox_tuple))
+            cluster_bbox = cluster.bbox
 
-            # Get the clusters that overlap with non-txt PDF cells
-            if len(non_text_overlaps) > 0:
-                ocr_rects.append(cluster.bbox)
-            # And the ones that don't overlap with any PDF cells
-            elif len(text_overlaps) == 0:
-                ocr_rects.append(cluster.bbox)
+            if use_backend_queries:
+                has_bitmap = backend.has_content_in(
+                    bbox=cluster_bbox, chars=False, shapes=False, bitmaps=True
+                )
+            else:
+                assert non_text_index is not None
+                has_bitmap = any(
+                    True for _ in non_text_index.intersection(cluster_bbox)
+                )
+
+            if has_bitmap:
+                ocr_rects.append(cluster_bbox)
+                continue
+
+            # Of the rest, only the clusters without any programmatic text need OCR.
+            if use_backend_queries:
+                has_text = backend.has_content_in(
+                    bbox=cluster_bbox, chars=True, shapes=False, bitmaps=False
+                )
+            else:
+                assert text_index is not None
+                has_text = any(True for _ in text_index.intersection(cluster_bbox))
+
+            if not has_text:
+                ocr_rects.append(cluster_bbox)
+                continue
+
+            # The cluster carries programmatic text, but that text layer need not
+            # account for all of it: glyphs drawn as filled paths are invisible to it.
+            # A shape is accounted for when it is a stroked segment, or when text sits
+            # inside it (a highlight, a filled table cell). Anything else may be an
+            # outlined glyph, so the cluster still needs OCR.
+            if (
+                backend.has_content_in(
+                    bbox=cluster_bbox, chars=False, shapes=True, bitmaps=False
+                )
+                is False
+            ):
+                continue  # no shapes here, so the text layer accounts for everything
+
+            if shape_boxes is None:
+                shape_boxes = backend.get_connected_shape_bounding_boxes() or []
+
+            for shape in shape_boxes:
+                if not self._boxes_touch(shape, cluster_bbox):
+                    continue
+                if self._is_rule_like(shape):
+                    continue
+                # Judge only the part of the shape that lies inside the cluster. A
+                # connected shape can reach far beyond it -- an outlined glyph fused
+                # with a page-wide fill, say -- and text under the fill elsewhere on
+                # the page says nothing about the glyph. A sliver of a neighbouring
+                # fill that just crosses the cluster edge is treated like a rule.
+                probe = self._clip_box(shape, cluster_bbox)
+                if self._is_rule_like(probe):
+                    continue
+                if text_boxes is None or text_index is None:
+                    text_boxes, text_index = self._text_geometry(page)
+                if not self._text_accounts_for(probe, text_boxes, text_index):
+                    ocr_rects.append(cluster_bbox)
+                    break
 
         # Deduplicate the surviving cluster bboxes.
         _, ocr_rects = self._deduplicate_rects(
@@ -178,6 +534,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         np_image = np.array(image)
 
+        if _SCIPY_IMPORT_ERROR is not None:
+            raise ImportError(_INSTALL_HINT) from _SCIPY_IMPORT_ERROR
+
         if dilation_size > 0:
             # Grow the rects by dilation_size / 2 pixels in all directions.
             kernel = np.ones((dilation_size, dilation_size), dtype=np.uint8)
@@ -204,9 +563,36 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             for slc in slices
         ]
 
+        # A component can lie inside the enclosing box of another one, e.g. a block
+        # framed on three sides by other clusters. OCR-ing both boxes would read the
+        # enclosed content twice, so keep only the boxes no other box contains.
+        bounding_boxes = self._drop_contained_rects(bounding_boxes)
+
         # Compute area fraction on page covered by bitmaps
         area_frac = np.sum(np_image > 0) / (size.width * size.height)
         return (area_frac, bounding_boxes)  # fraction covered  # boxes
+
+    @staticmethod
+    def _drop_contained_rects(rects: list[BoundingBox]) -> list[BoundingBox]:
+        """Remove every rect that lies fully inside another rect of the list.
+
+        Rects are visited from the largest to the smallest, so a rect is compared
+        only with the rects already kept. A rect inside a dropped rect is also
+        inside the rect that dropped it. The kept rects stay in the input order.
+        """
+        order = sorted(range(len(rects)), key=lambda i: rects[i].area(), reverse=True)
+        kept: list[int] = []
+        for i in order:
+            box = rects[i]
+            if not any(
+                rects[k].l <= box.l
+                and rects[k].t <= box.t
+                and box.r <= rects[k].r
+                and box.b <= rects[k].b
+                for k in kept
+            ):
+                kept.append(i)
+        return [rects[i] for i in sorted(kept)]
 
     def post_process_cells(
         self,
@@ -223,6 +609,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
           the priority is auto-selected based on the OcrMode:
               - OCR_FIRST when LAYOUT_REGIONS
               - PDF_FIRST when PDF_AWARE_LAYOUT_REGIONS
+          Check the comments on _MergeCellsPriority for the semantic of each priority value
         """
         # Get existing cells from the read-only property
         existing_cells = page.cells
@@ -238,23 +625,26 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     else _MergeCellsPriority.PDF_FIRST
                 )
             final_cells = self._merge_ocr_and_pdf_cells(
-                ocr_cells, existing_cells, priority
+                ocr_cells,
+                existing_cells,
+                priority,
+                segregate_pdf_cells=_PDF_CELLS_POST_PROCESSING_SEGREGATION,
             )
 
         # Re-index in-place
         for i, cell in enumerate(final_cells):
             cell.index = i
 
-        assert page.parsed_page is not None
+        if page.parsed_page is None:
+            # No native parse ran (e.g. skip_cell_extraction): create an empty
+            # SegmentedPdfPage so the OCR output has somewhere to live.
+            page.parsed_page = _empty_segmented_page(page)
 
         # Update parsed_page.textline_cells directly
         page.parsed_page.textline_cells = final_cells
         page.parsed_page.has_lines = len(final_cells) > 0
 
-        # In OcrMode.FULL_PAGE, PDF-extracted word/char cells are unreliable.
-        # Filter out cells where from_ocr=False, keeping any OCR generated cells.
-        # This ensures downstream components (e.g., table structure model) fall back to
-        # OCR-extracted textline cells.
+        # In OcrMode.FULL_PAGE, PDF-extracted word/char cells are unreliable. Keep only OCR cells
         if self.options.mode == OcrMode.FULL_PAGE:
             page.parsed_page.word_cells = [
                 c for c in page.parsed_page.word_cells if c.from_ocr
@@ -276,20 +666,46 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ocr_cells: list[TextCell],
         pdf_cells: list[TextCell],
         priority: _MergeCellsPriority,
+        segregate_pdf_cells: bool = True,
     ) -> list[TextCell]:
         r"""
         Merge PDF and OCR cells, resolving overlaps according to `priority`.
+
+        When `segregate_pdf_cells` is True, the OCR cells are merged only with the visible PDF
+        cells and the invisible ones are put back afterwards. Otherwise, the OCR cells are merged
+        with all the PDF cells indiscriminately.
         """
+        visible_cells: list[TextCell]
+        invisible_cells: list[TextCell]
+        if segregate_pdf_cells:
+            visible_cells, invisible_cells = _segregate_by_visibility(pdf_cells)
+        else:
+            visible_cells, invisible_cells = list(pdf_cells), []
+
         # The prioritized cells are always kept
         # the secondary cells are added only where they don't overlap a prioritized cell.
         if priority == _MergeCellsPriority.PDF_FIRST:
-            prioritized_cells, secondary_cells = pdf_cells, ocr_cells
+            prioritized_cells, secondary_cells = visible_cells, ocr_cells
         else:
-            prioritized_cells, secondary_cells = ocr_cells, pdf_cells
+            prioritized_cells, secondary_cells = ocr_cells, visible_cells
 
-        p = index.Property()
-        p.dimension = 2
-        idx = index.Index(properties=p)
+        merged_cells = self._merge_cells_by_priority(prioritized_cells, secondary_cells)
+
+        # Put the invisible cells back
+        if invisible_cells:
+            merged_cells = self._merge_cells_by_priority(merged_cells, invisible_cells)
+
+        return merged_cells
+
+    def _merge_cells_by_priority(
+        self,
+        prioritized_cells: list[TextCell],
+        secondary_cells: list[TextCell],
+    ) -> list[TextCell]:
+        r"""
+        Keep every prioritized cell, plus the secondary cells that overlap none of them.
+        """
+        idx = BoundingBoxSpatialIndex()
 
         # The R-tree bbox intersection is a weak criterion but it works.
         merged_cells = list(prioritized_cells)
@@ -298,20 +714,21 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             # Index the (smaller) prioritized cells; keep each secondary cell that
             # doesn't overlap any of them.
             for i, cell in enumerate(prioritized_cells):
-                idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+                idx.insert(i, cell.rect.to_bounding_box())
             for cell in secondary_cells:
-                if not any(idx.intersection(cell.rect.to_bounding_box().as_tuple())):
+                overlaps = any(
+                    True for _ in idx.intersection(cell.rect.to_bounding_box())
+                )
+                if not overlaps:
                     merged_cells.append(cell)
         else:
             # Index the (smaller) secondary cells; drop the ones overlapping any
             # prioritized cell and keep the rest.
             for i, cell in enumerate(secondary_cells):
-                idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+                idx.insert(i, cell.rect.to_bounding_box())
             overlapping_ids: set[int] = set()
             for cell in prioritized_cells:
-                overlapping_ids.update(
-                    idx.intersection(cell.rect.to_bounding_box().as_tuple())
-                )
+                overlapping_ids.update(idx.intersection(cell.rect.to_bounding_box()))
             merged_cells.extend(
                 cell
                 for i, cell in enumerate(secondary_cells)

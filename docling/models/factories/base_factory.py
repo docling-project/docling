@@ -1,6 +1,10 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import enum
 import logging
 from abc import ABCMeta
+from importlib.metadata import entry_points
 from typing import Generic, Optional, Type, TypeVar
 
 from pluggy import PluginManager
@@ -93,18 +97,26 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         plugin_name = plugin_name or self.plugin_name
 
         plugin_manager = PluginManager(plugin_name)
-        plugin_manager.load_setuptools_entrypoints(plugin_name)
 
-        for plugin_name, plugin_module in plugin_manager.list_name_plugin():
-            plugin_module_name = str(plugin_module.__name__)  # type: ignore
+        # Decide from the entry point metadata whether a plugin is allowed
+        # before importing it, so that disallowed plugin modules are never
+        # imported.
+        for entry_point in entry_points(group=plugin_name):
+            if plugin_manager.get_plugin(entry_point.name) is not None:
+                continue
 
-            if not allow_external_plugins and not plugin_module_name.startswith(
+            if not allow_external_plugins and not entry_point.module.startswith(
                 "docling."
             ):
                 logger.warning(
-                    f"The plugin {plugin_name} will not be loaded because Docling is being executed with allow_external_plugins=false."
+                    f"The plugin {entry_point.name} will not be loaded because Docling is being executed with allow_external_plugins=false."
                 )
                 continue
+
+            plugin_manager.register(entry_point.load(), name=entry_point.name)
+
+        for plugin_name, plugin_module in plugin_manager.list_name_plugin():
+            plugin_module_name = str(plugin_module.__name__)  # type: ignore
 
             attr = getattr(plugin_module, self.plugin_attr_name, None)
 

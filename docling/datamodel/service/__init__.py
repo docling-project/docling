@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from docling.datamodel.service.callbacks import (
     BaseProgress,
     CallbackSpec,
@@ -8,6 +11,7 @@ from docling.datamodel.service.callbacks import (
     ProgressDocumentCompleted,
     ProgressKind,
     ProgressSetNumDocs,
+    ProgressTaskCompleted,
     ProgressUpdateProcessed,
 )
 from docling.datamodel.service.chunking import (
@@ -169,6 +173,7 @@ __all__ = [
     "ProgressDocumentCompleted",
     "ProgressKind",
     "ProgressSetNumDocs",
+    "ProgressTaskCompleted",
     "ProgressUpdateProcessed",
     "PublicFailureInfo",
     "PutTarget",

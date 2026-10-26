@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from docling.models.base_layout_model import BaseLayoutModel
 from docling.models.factories.base_factory import BaseFactory
 

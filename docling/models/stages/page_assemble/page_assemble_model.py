@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import re
 from collections.abc import Iterable
@@ -5,13 +8,16 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, DocItemLabel
 from pydantic import AnyUrl, BaseModel, ValidationError
 
 from docling.datamodel.base_models import (
     AssembledUnit,
+    Cluster,
     ContainerElement,
+    FieldRegionElement,
     FigureElement,
+    FormFieldPrediction,
     Page,
     PageElement,
     Table,
@@ -109,7 +115,20 @@ class PageAssembleModel(BasePageModel):
         except ValidationError:
             return Path(best_uri)
 
-    def sanitize_text(self, lines):
+    def sanitize_text(self, lines: List[str]) -> str:
+        """Join the text lines of a cluster into a single normalized string.
+
+        Lines are joined with a space, except across a hyphen that splits a
+        word over the line break ("algo-" / "rithms"), which is dropped so
+        that the two halves close up. A hyphen only splits a word when it is
+        attached to the word it splits; one that follows whitespace is a
+        literal character -- a separator dash, a bullet marker, or a wrapped
+        hyphen-prefixed token -- so it is kept and its lines are joined like
+        any other line break.
+
+        The joined text is then normalized: a few typographic characters are
+        replaced by ASCII equivalents and ligatures are expanded.
+        """
         if len(lines) == 0:
             return ""
 
@@ -120,13 +139,18 @@ class PageAssembleModel(BasePageModel):
                 prev_words = re.findall(r"\b[\w]+\b", prev_line)
                 line_words = re.findall(r"\b[\w]+\b", line)
 
+                hyphen_attached_to_word = len(prev_line) > 1 and prev_line[-2].isalnum()
+
                 if (
-                    len(prev_words)
+                    hyphen_attached_to_word
+                    and len(prev_words)
                     and len(line_words)
                     and prev_words[-1].isalnum()
                     and line_words[0].isalnum()
                 ):
                     lines[ix] = prev_line[:-1]
+                elif not hyphen_attached_to_word:
+                    lines[ix] += " "
             else:
                 lines[ix] += " "
 
@@ -172,6 +196,7 @@ class PageAssembleModel(BasePageModel):
                     elements: List[PageElement] = []
                     headers: List[PageElement] = []
                     body: List[PageElement] = []
+                    form_fields = page.predictions.form_fields or FormFieldPrediction()
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
@@ -183,6 +208,11 @@ class PageAssembleModel(BasePageModel):
                             ]
                             text = self.sanitize_text(textlines)
                             hyperlink = self._match_hyperlink(cluster.bbox, page)
+                            # A paragraph that inlines AcroForm widgets carries a
+                            # single keyed field item; attach it so it materializes
+                            # as a field_item in place (see TextElement.field_item)
+                            # instead of being pulled into a separate field_region.
+                            field_item = form_fields.inline_items.get(cluster.id)
                             text_el = TextElement(
                                 label=cluster.label,
                                 id=cluster.id,
@@ -190,6 +220,7 @@ class PageAssembleModel(BasePageModel):
                                 hyperlink=hyperlink,
                                 page_no=page.page_no,
                                 cluster=cluster,
+                                field_item=field_item,
                             )
                             elements.append(text_el)
 
@@ -213,7 +244,6 @@ class PageAssembleModel(BasePageModel):
                                     cluster=cluster,
                                     page_no=page.page_no,
                                 )
-
                             elements.append(tbl)
                             body.append(tbl)
                         elif cluster.label == FIGURE_LABEL:
@@ -234,12 +264,22 @@ class PageAssembleModel(BasePageModel):
                             elements.append(fig)
                             body.append(fig)
                         elif cluster.label in CONTAINER_LABELS:
-                            container_el = ContainerElement(
-                                label=cluster.label,
-                                id=cluster.id,
-                                page_no=page.page_no,
-                                cluster=cluster,
-                            )
+                            field_items = form_fields.form_items.get(cluster.id)
+                            if field_items is None:
+                                container_el = ContainerElement(
+                                    label=cluster.label,
+                                    id=cluster.id,
+                                    page_no=page.page_no,
+                                    cluster=cluster,
+                                )
+                            else:
+                                container_el = FieldRegionElement(
+                                    label=DocItemLabel.FIELD_REGION,
+                                    id=cluster.id,
+                                    page_no=page.page_no,
+                                    cluster=cluster,
+                                    items=field_items,
+                                )
                             elements.append(container_el)
                             body.append(container_el)
 

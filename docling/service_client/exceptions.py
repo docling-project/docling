@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Exceptions for the docling-serve client SDK."""
 
 from __future__ import annotations

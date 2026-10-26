@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 # Define the input options for the API
 import json
 import warnings
@@ -10,6 +13,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    SerializeAsAny,
     field_validator,
     model_validator,
 )
@@ -19,6 +23,7 @@ from docling.datamodel import vlm_model_specs
 from docling.datamodel.base_models import InputFormat, OutputFormat
 
 # Import new engine system (available in docling>=2.73.0)
+from docling.datamodel.chart_extraction_options import ChartExtractionVlmEngineOptions
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
     HeadingHierarchyOptions,
@@ -375,12 +380,13 @@ class ConvertDocumentsOptions(BaseModel):
         Optional[list[str]],
         Field(
             description=(
-                "List of languages used by the OCR engine. "
-                "Note that each OCR engine has "
-                "different values for the language names. String or list of strings. "
-                "Optional, defaults to empty."
+                "OCR languages as BCP-47 tags (e.g. `en`, `de-DE`, `zh-Hant`), in "
+                "order of preference. The service canonicalizes them to a "
+                "language-script pair, so `deu`, `ger` and `de-DE` are all German. "
+                "The reserved tag `mul` must be used alone. Optional; "
+                "the selected engine's default applies when omitted or empty."
             ),
-            examples=[["fr", "de", "es", "en"]],
+            examples=[["fr", "de", "es", "en"], ["zh-Hant"], []],
         ),
     ] = None
 
@@ -423,11 +429,11 @@ class ConvertDocumentsOptions(BaseModel):
             description=(
                 "The PDF backend to use. String. "
                 f"Allowed values: {', '.join([v.value for v in PdfBackend])}. "
-                f"Optional, defaults to {PdfBackend.DOCLING_PARSE.value}."
+                f"Optional, defaults to {PdfBackend.THREADED_DOCLING_PARSE.value}."
             ),
-            examples=[PdfBackend.DOCLING_PARSE],
+            examples=[PdfBackend.THREADED_DOCLING_PARSE],
         ),
-    ] = PdfBackend.DOCLING_PARSE
+    ] = PdfBackend.THREADED_DOCLING_PARSE
 
     table_mode: Annotated[
         TableFormerMode,
@@ -559,6 +565,19 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = ""
 
+    md_compact_tables: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to use compact table format without column padding in the "
+                "markdown output. When False (default), tables use padded columns "
+                "for better visual formatting. When True, tables use minimal "
+                "whitespace, which is better for large tables and downstream processing."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
     chunking_options: Annotated[
         Optional[ChunkingOptionType],
         Field(
@@ -627,6 +646,51 @@ class ConvertDocumentsOptions(BaseModel):
             examples=[False],
         ),
     ] = False
+
+    chart_extraction_preset: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description=(
+                "Preset ID for chart extraction. "
+                'Use "default" for the admin-controlled default, or a specific preset '
+                'such as "granite_vision_v4", "granite_vision_v4_mlx", or "granite_vision_v3_3".'
+            ),
+            examples=[
+                "default",
+                "granite_vision_v4",
+                "granite_vision_v4_mlx",
+                "granite_vision_v3_3",
+            ],
+        ),
+    ] = None
+
+    chart_extraction_custom_config: Annotated[
+        Optional[SerializeAsAny[Union[ChartExtractionVlmEngineOptions, dict]]],
+        Field(
+            default=None,
+            description=(
+                "Custom chart extraction configuration including model spec and engine options. "
+                "Only available if the admin allows it. "
+                "Accepts a ChartExtractionVlmEngineOptions object or an equivalent dict with "
+                "'model_spec', 'engine_options', and optional output flags "
+                "(chart2csv, chart2summary, chart2code)."
+            ),
+            examples=[
+                {
+                    "model_spec": {
+                        "name": "Granite-Vision-4.1-4B",
+                        "default_repo_id": "ibm-granite/granite-vision-4.1-4b",
+                        "prompt": "<chart2csv>",
+                        "response_format": "plain text",
+                    },
+                    "engine_options": {"engine_type": "api_lmstudio"},
+                    "chart2csv": True,
+                    "chart2summary": True,
+                },
+            ],
+        ),
+    ] = None
 
     do_picture_description: Annotated[
         bool,
@@ -882,6 +946,7 @@ class ConvertDocumentsOptions(BaseModel):
         "table_structure_custom_config",
         "layout_custom_config",
         "picture_classification_custom_config",
+        "chart_extraction_custom_config",
         mode="before",
     )
     @classmethod
@@ -1071,6 +1136,16 @@ class ConvertDocumentsOptions(BaseModel):
                 "Cannot specify both code_formula_preset and code_formula_custom_config."
             )
 
+        return self
+
+    @model_validator(mode="after")
+    def validate_chart_extraction_options(self) -> Self:
+        """Ensure preset and custom config are mutually exclusive for chart extraction."""
+        if self.chart_extraction_preset and self.chart_extraction_custom_config:
+            raise ValueError(
+                "Cannot specify both chart_extraction_preset and "
+                "chart_extraction_custom_config."
+            )
         return self
 
     @model_validator(mode="after")

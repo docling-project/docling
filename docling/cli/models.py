@@ -1,9 +1,12 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import sys
 import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 # Check for CLI dependencies
 try:
@@ -25,13 +28,23 @@ except ImportError as e:
     print("     pip install typer rich\n", file=sys.stderr)
     sys.exit(1)
 
-from docling.datamodel.settings import settings
-from docling.models.stages.ocr.easyocr_model import (
-    _resolve_easyocr_recognition_models,
+from docling.datamodel.asr_model_specs import (
+    _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
+    _distil_whisper_prefetch_name,
 )
-from docling.models.stages.ocr.rapid_ocr_model import _parse_rapidocr_model_spec
+from docling.datamodel.settings import settings
+from docling.exceptions import RapidOcrModelSizeNotSupportedError
+from docling.models.stages.ocr.easyocr_model import (
+    resolve_easyocr_codes,
+)
+from docling.models.stages.ocr.rapid_ocr_model import (
+    _RAPIDOCR_DEFAULT_LANGUAGE,
+    _parse_rapidocr_model_spec,
+    _resolve_rapidocr,
+    _validate_rapidocr_model_size,
+)
 from docling.models.utils.hf_model_download import download_hf_model
-from docling.utils.model_downloader import download_models
+from docling.utils.model_downloader import _DEFAULT_RAPIDOCR_MODELS, download_models
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -61,10 +74,44 @@ class _AvailableModels(str, Enum):
     SMOLDOCLING_MLX = "smoldocling_mlx"
     GRANITE_VISION = "granite_vision"
     GRANITE_CHART_EXTRACTION = "granite_chart_extraction"
+    GRANITE_CHART_EXTRACTION_V3_3 = "granite_chart_extraction_v3_3"
     GRANITE_CHART_EXTRACTION_V4 = "granite_chart_extraction_v4"
     RAPIDOCR = "rapidocr"
     EASYOCR = "easyocr"
     NEMOTRON_OCR_V2 = "nemotron_ocr_v2"
+    WHISPER_TINY = "whisper_tiny"
+    WHISPER_TINY_EN = "whisper_tiny_en"
+    WHISPER_BASE = "whisper_base"
+    WHISPER_BASE_EN = "whisper_base_en"
+    WHISPER_SMALL = "whisper_small"
+    WHISPER_SMALL_EN = "whisper_small_en"
+    WHISPER_MEDIUM = "whisper_medium"
+    WHISPER_MEDIUM_EN = "whisper_medium_en"
+    WHISPER_LARGE = "whisper_large"
+    WHISPER_TURBO = "whisper_turbo"
+    WHISPER_DISTIL_SMALL_EN = "whisper_distil_small_en"
+    WHISPER_DISTIL_MEDIUM_EN = "whisper_distil_medium_en"
+    WHISPER_DISTIL_LARGE_V3 = "whisper_distil_large_v3"
+    WHISPER_DISTIL_LARGE_V3_5 = "whisper_distil_large_v3_5"
+
+
+_WHISPER_MODELS = {
+    _AvailableModels.WHISPER_TINY: "tiny",
+    _AvailableModels.WHISPER_TINY_EN: "tiny.en",
+    _AvailableModels.WHISPER_BASE: "base",
+    _AvailableModels.WHISPER_BASE_EN: "base.en",
+    _AvailableModels.WHISPER_SMALL: "small",
+    _AvailableModels.WHISPER_SMALL_EN: "small.en",
+    _AvailableModels.WHISPER_MEDIUM: "medium",
+    _AvailableModels.WHISPER_MEDIUM_EN: "medium.en",
+    _AvailableModels.WHISPER_LARGE: "large",
+    _AvailableModels.WHISPER_TURBO: "turbo",
+}
+
+_WHISPER_DISTIL_MODELS = {
+    _AvailableModels(_distil_whisper_prefetch_name(model_name)): model_name
+    for model_name in _DISTIL_WHISPER_OPENAI_CHECKPOINTS
+}
 
 
 _default_models = [
@@ -105,6 +152,17 @@ def download(
             show_default=True,
         ),
     ] = False,
+    asr: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            "--asr",
+            help=(
+                "With --all, also download native Whisper ASR models, including "
+                "the Distil-Whisper presets."
+            ),
+        ),
+    ] = False,
     quiet: Annotated[
         bool,
         typer.Option(
@@ -119,7 +177,12 @@ def download(
         typer.Option(
             ...,
             "--easyocr-lang",
-            help="EasyOCR language code to prefetch. Repeat for multiple languages.",
+            help=(
+                "OCR language to prefetch for EasyOCR, as a BCP-47 tag "
+                "(e.g. 'de', 'zh-Hant', 'ru'). EasyOCR's own codes are accepted "
+                "too and mean what EasyOCR means by them, so 'ch_sim' is "
+                "Simplified Chinese. Repeat for multiple."
+            ),
         ),
     ] = None,
     rapidocr_backend_lang: Annotated[
@@ -129,15 +192,37 @@ def download(
             "--rapidocr-backend-lang",
             help=(
                 "RapidOCR checkpoint set to prefetch, as '<backend>:<lang>' "
-                "(e.g. 'onnxruntime:el', 'torch:korean'). Repeat for multiple. Replaces the default set."
+                "with a BCP-47 language (e.g. 'onnxruntime:el', 'torch:ko'). "
+                "PP-OCR's own codes are accepted too, including its script "
+                "recognizers, which no language tag can name: "
+                "'onnxruntime:cyrillic', 'torch:ch'. Repeat for multiple. "
+                "Replaces the default set."
             ),
         ),
     ] = None,
+    rapidocr_model_size: Annotated[
+        Literal["tiny", "small", "medium"],
+        typer.Option(
+            ...,
+            "--rapidocr-model-size",
+            help=(
+                "Detection/recognition model size, applied to every selected "
+                "--rapidocr-backend-lang pair (or the default set) -- one scalar "
+                "for the whole command, unlike the repeatable "
+                "--rapidocr-backend-lang. Only affects pairs resolving to "
+                "PP-OCRv6; `tiny` is not available for every PP-OCRv6 language "
+                "(e.g. Japanese), and an unsupported combination is rejected "
+                "before any download starts."
+            ),
+        ),
+    ] = "small",
 ):
     if models and all:
         raise typer.BadParameter(
             "Cannot simultaneously set 'all' parameter and specify models to download."
         )
+    if asr and not all:
+        raise typer.BadParameter("--asr requires --all", param_hint="--asr")
     if not quiet:
         logging.basicConfig(
             level=logging.INFO,
@@ -145,7 +230,16 @@ def download(
             datefmt="[%X]",
             handlers=[RichHandler(show_level=False, show_time=False, markup=True)],
         )
-    to_download = models or (list(_AvailableModels) if all else _default_models)
+    to_download = models or (
+        [
+            model
+            for model in _AvailableModels
+            if asr
+            or (model not in _WHISPER_MODELS and model not in _WHISPER_DISTIL_MODELS)
+        ]
+        if all
+        else _default_models
+    )
     if easyocr_lang is not None:
         if _AvailableModels.EASYOCR not in to_download:
             raise typer.BadParameter(
@@ -153,7 +247,7 @@ def download(
                 param_hint="--easyocr-lang",
             )
         try:
-            _resolve_easyocr_recognition_models(easyocr_lang)
+            resolve_easyocr_codes(easyocr_lang)
         except ValueError as error:
             raise typer.BadParameter(str(error), param_hint="--easyocr-lang") from error
     if rapidocr_backend_lang is not None:
@@ -168,6 +262,32 @@ def download(
         except ValueError as error:
             raise typer.BadParameter(
                 str(error), param_hint="--rapidocr-backend-lang"
+            ) from error
+    if rapidocr_model_size != "small":
+        if _AvailableModels.RAPIDOCR not in to_download:
+            raise typer.BadParameter(
+                "--rapidocr-model-size requires the 'rapidocr' model",
+                param_hint="--rapidocr-model-size",
+            )
+        # Checked against every pair that will actually be prefetched, so a bad
+        # combination (e.g. onnxruntime:japan + tiny) fails here, not mid-download.
+        try:
+            for value in rapidocr_backend_lang or _DEFAULT_RAPIDOCR_MODELS:
+                spec = _parse_rapidocr_model_spec(value)
+                lang = spec.user_lang or _RAPIDOCR_DEFAULT_LANGUAGE
+                resolved = _resolve_rapidocr(lang, spec.backend)
+                assert resolved.ppocr_version is not None
+                assert resolved.rapidocr_code is not None
+                _validate_rapidocr_model_size(
+                    backend=spec.backend,
+                    language=lang,
+                    ppocr_version=resolved.ppocr_version,
+                    rec_code=resolved.rapidocr_code,
+                    model_size=rapidocr_model_size,
+                )
+        except (ValueError, RapidOcrModelSizeNotSupportedError) as error:
+            raise typer.BadParameter(
+                str(error), param_hint="--rapidocr-model-size"
             ) from error
     output_dir = download_models(
         output_dir=output_dir,
@@ -186,13 +306,24 @@ def download(
         with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
         with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
         in to_download,
+        with_granite_chart_extraction_v3_3=_AvailableModels.GRANITE_CHART_EXTRACTION_V3_3
+        in to_download,
         with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
         in to_download,
         with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
         rapidocr_models=rapidocr_backend_lang,
+        rapidocr_model_size=rapidocr_model_size,
         with_easyocr=_AvailableModels.EASYOCR in to_download,
         easyocr_languages=easyocr_lang,
         with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR_V2 in to_download,
+        whisper_models=[
+            _WHISPER_MODELS[model] for model in to_download if model in _WHISPER_MODELS
+        ],
+        whisper_distil_models=[
+            _WHISPER_DISTIL_MODELS[model]
+            for model in to_download
+            if model in _WHISPER_DISTIL_MODELS
+        ],
     )
 
     if quiet:
@@ -249,7 +380,8 @@ def download_hf_repo(
         )
 
     for item in models:
-        typer.secho(f"\nDownloading {item} model from HuggingFace...")
+        if not quiet:
+            typer.secho(f"\nDownloading {item} model from HuggingFace...")
         download_hf_model(
             repo_id=item,
             # would be better to reuse "repo_cache_folder" property: https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options_vlm_model.py#L76

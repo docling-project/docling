@@ -222,7 +222,13 @@ Recommended configs by use case:
 | Lecture recordings | `frame_sampling_mode=SCENE_CHANGE, cuts_per_minute=2.0` |
 | General video | `frame_sampling_mode=FIXED_INTERVAL, frame_interval_seconds=10.0` |
 
-`max_sampled_frames` caps the total number of frames sampled regardless of mode. Set `generate_frame_images=False` to skip frame sampling entirely and transcribe only.
+`max_sampled_frames` caps the total number of frames sampled regardless of mode (default `200`, about 33 minutes at the default 10 s interval; set `None` for no limit). Set `generate_frame_images=False` to skip frame sampling entirely and transcribe only.
+
+### Container handling and time limits
+
+The video pipeline reads each file with the FFmpeg demuxer that matches its extension (`.mp4`/`.mov` as MP4/QuickTime, `.mkv`/`.webm` as Matroska, `.avi` as AVI) and only from the local file itself. A file whose content does not match its extension fails to open instead of being interpreted as another format.
+
+FFmpeg calls share the document's `document_timeout` budget when it is set. Without it, each call is limited to 5 minutes or the video duration, whichever is longer. If a call runs out of time, the frames and transcript gathered so far are kept, the result status is `PARTIAL_SUCCESS`, and a `TIMEOUT` error is recorded in `ConversionResult.errors` (see `ConversionResult.has_timeout_errors()`).
 
 ### Speaker diarization
 
@@ -248,6 +254,7 @@ docling --to md --video-sampling-mode scene --video-diarization video.mp4
 | `--video-cuts-per-minute` | `0.0` (unset) | Target scene cuts per minute; overrides `--video-prominence` when set. |
 | `--video-prominence` | `0.0` (auto) | Scene-change sensitivity threshold. `0` auto-calibrates to the video's motion. |
 | `--video-diarization` | disabled | Enable speaker diarization. Requires `resemblyzer`. |
+| `--document-timeout` | unset | Time budget in seconds for each video, shared by all FFmpeg calls. |
 
 See the [CLI reference](../reference/cli.md) for the complete flag list.
 
@@ -345,6 +352,56 @@ pipeline_options.asr_options = InlineAsrWhisperS2TOptions(
 
 !!! note "WhisperS2T is not available on Apple Silicon"
     The `whisper-s2t-reborn` dependency installs only on non-Apple-Silicon platforms, so `_S2T` presets can't be used on M-series Macs — use the native or MLX backends there. On Linux with CUDA, see the [cuBLAS note](#installation) above if model loading fails.
+
+### Transcribing with a remote Whisper server
+
+Instead of loading a model in the Docling process, the ASR pipeline can send the audio to an OpenAI-compatible
+`/v1/audio/transcriptions` endpoint — a Whisper server that is deployed on its own (for example faster-whisper-server,
+whisper.cpp's server or vLLM) or a hosted service. This keeps the model, and its GPU, out of the process that converts
+documents, and lets several services share one transcription server.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import AsrPipelineOptions
+from docling.datamodel.pipeline_options_asr_model import ApiAsrOptions
+from docling.document_converter import AudioFormatOption, DocumentConverter
+from docling.pipeline.asr_pipeline import AsrPipeline
+
+pipeline_options = AsrPipelineOptions(
+    asr_options=ApiAsrOptions(
+        url="http://whisper:8000/v1/audio/transcriptions",
+        model="Systran/faster-whisper-small",
+        language="en",
+        initial_prompt="Columbus flight control loop: COL FLIGHT, COL SYSTEMS",
+        headers={"Authorization": "Bearer TOKEN"},
+    ),
+    enable_remote_services=True,  # required: the audio leaves this process
+)
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.AUDIO: AudioFormatOption(
+            pipeline_cls=AsrPipeline, pipeline_options=pipeline_options
+        )
+    }
+)
+result = converter.convert("recording.mp3")
+```
+
+The file is posted as `multipart/form-data` with `response_format=verbose_json`, and every timed segment of the answer
+becomes a text item with a `TrackSource` (start and end time), like with the local backends. Words are added to each
+segment when `word_timestamps=True` and the server supports `timestamp_granularities[]=word`. Settings that are specific to a
+server go in `params`, which are sent as additional form fields.
+
+Notes:
+
+- `enable_remote_services=True` is required, as for remote picture description: without it the pipeline raises
+  `OperationNotAllowed` and nothing is sent.
+- FFmpeg is not needed for audio files, the server decodes them. (The video pipeline still uses it to extract the
+  audio track.)
+- The server must return timed segments (`verbose_json`). An answer without them fails the conversion with a message
+  saying so. Speaker labels are not part of the OpenAI transcription API, so the items have no speaker.
+- The request waits up to `timeout` seconds (600 by default), which long recordings may need to exceed.
 
 ### From the command line
 

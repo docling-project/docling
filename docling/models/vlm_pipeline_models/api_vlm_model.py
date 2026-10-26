@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Union
@@ -133,6 +136,7 @@ class ApiVlmModel(BaseVlmPageModel):
                 image = image.convert("RGB")
 
             stop_reason = VlmStopReason.UNSPECIFIED
+            error_message = None
 
             if self.vlm_options.custom_stopping_criteria:
                 # Instantiate any GenerationStopper classes before passing to streaming
@@ -158,6 +162,8 @@ class ApiVlmModel(BaseVlmPageModel):
                 )
                 page_tags = api_response.text
                 num_tokens = api_response.num_tokens
+                stop_reason = api_response.stop_reason
+                error_message = api_response.error
             else:
                 # Non-streaming fallback (existing behavior)
                 api_response = api_image_request(
@@ -171,6 +177,7 @@ class ApiVlmModel(BaseVlmPageModel):
                 page_tags = api_response.text
                 num_tokens = api_response.num_tokens
                 stop_reason = api_response.stop_reason
+                error_message = api_response.error
 
             page_tags = self.vlm_options.decode_response(page_tags)
             input_prompt = prompt_text if self.vlm_options.track_input_prompt else None
@@ -180,6 +187,7 @@ class ApiVlmModel(BaseVlmPageModel):
                 usage=api_response.usage,
                 stop_reason=stop_reason,
                 input_prompt=input_prompt,
+                error_message=error_message,
             )
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:

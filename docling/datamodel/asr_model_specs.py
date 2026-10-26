@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 from enum import Enum
 
@@ -529,6 +532,37 @@ WHISPER_DISTIL_LARGE_V3_5_NATIVE = InlineAsrNativeWhisperOptions(
     max_new_tokens=256,
     max_time_chunk=30.0,
 )
+
+# Distil-Whisper models are not part of openai-whisper's model registry, but
+# their Hugging Face repos publish the checkpoint in the original OpenAI
+# format, which whisper.load_model() accepts as a local file path.
+_DISTIL_WHISPER_OPENAI_CHECKPOINTS: dict[str, tuple[str, str, str]] = {
+    "distil-small.en": (
+        "distil-whisper/distil-small.en",
+        "original-model.bin",
+        "9e4a67ca4569c30be43a3fe7fba1621e504f0093",
+    ),
+    "distil-medium.en": (
+        "distil-whisper/distil-medium.en",
+        "original-model.bin",
+        "6e61418885eaf4d5cc9f64e508e80ac5b4c052b7",
+    ),
+    "distil-large-v3": (
+        "distil-whisper/distil-large-v3-openai",
+        "model.bin",
+        "81941037893cb90dc82af45bc5dc5146ab0a818f",
+    ),
+    "distil-large-v3.5": (
+        "distil-whisper/distil-large-v3.5-openai",
+        "model.bin",
+        "24c117e115e74a9979c49f65cff75c5552dc3652",
+    ),
+}
+
+
+def _distil_whisper_prefetch_name(model_name: str) -> str:
+    return "whisper_" + model_name.replace("-", "_").replace(".", "_")
+
 
 # =============================================================================
 # WhisperS2T Models (CTranslate2 backend - fastest option for CPU/CUDA)

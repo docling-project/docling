@@ -1,6 +1,11 @@
 model_artifacts/
 scratch/
 ds_convert_models/
+/latex-failures.jsonl
+/latex-manifest.jsonl
+/latex-failures/
+/latex-success/
+output/
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,macos,virtualenv,pycharm,visualstudiocode,emacs,vim,jupyternotebooks
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,macos,virtualenv,pycharm,visualstudiocode,emacs,vim,jupyternotebooks
@@ -8,6 +13,11 @@ ds_convert_models/
 ### Emacs ###
 # -*- mode: gitignore; -*-
 *~
+*.dclx
+*.dclg
+!tests/data/latex/groundtruth/*.dclg
+*.xml
+*.zip
 \#*\#
 /.emacs.desktop
 /.emacs.desktop.lock
@@ -15,6 +25,8 @@ ds_convert_models/
 auto-save-list
 tramp
 .\#*
+_plans*
+_references*
 
 # Org-mode
 .org-id-locations

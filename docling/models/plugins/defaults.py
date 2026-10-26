@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
+
 def ocr_engines():
     from docling.models.stages.ocr.auto_ocr_model import OcrAutoModel
     from docling.models.stages.ocr.easyocr_model import EasyOcrModel

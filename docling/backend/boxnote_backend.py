@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import json
 import logging
 from io import BytesIO
@@ -20,6 +23,12 @@ from pydantic import AnyUrl, TypeAdapter, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.utils.table_spans import (
+    MAX_COLSPAN,
+    MAX_ROWSPAN,
+    clamp_span,
+    table_width,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -36,6 +45,12 @@ _SAFE_LINK_SCHEMES = frozenset({"http", "https", "mailto"})
 _Run = tuple[str, Formatting | None, AnyUrl | None]
 
 
+def _declared_span(cell: dict[str, Any], key: str, limit: int) -> int:
+    """Read a cell's ``rowspan``/``colspan`` attribute, clamped to ``[1, limit]``."""
+    value = (cell.get("attrs") or {}).get(key)
+    return clamp_span(value, limit) if isinstance(value, int) else 1
+
+
 class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
     """Declarative backend for Box Notes (.boxnote files).
 
@@ -50,12 +65,15 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
 
         self.data: dict[str, Any] = {}
+        # utf-8-sig drops a leading BOM. Kept, it reaches json.loads, which
+        # rejects it as an unexpected character and fails the whole load.
+        # Equivalent to utf-8 when no BOM is present.
         try:
             raw = ""
             if isinstance(self.path_or_stream, BytesIO):
-                raw = self.path_or_stream.getvalue().decode("utf-8")
+                raw = self.path_or_stream.getvalue().decode("utf-8-sig")
             elif isinstance(self.path_or_stream, Path):
-                raw = self.path_or_stream.read_text(encoding="utf-8")
+                raw = self.path_or_stream.read_text(encoding="utf-8-sig")
             if raw.strip():
                 loaded = json.loads(raw)
                 if isinstance(loaded, dict):
@@ -260,19 +278,45 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         data = TableData(num_rows=len(rows), num_cols=0, table_cells=[])
         table = doc.add_table(data=data, parent=parent)
 
+        row_cells = [
+            [
+                cell
+                for cell in row.get("content", [])
+                if cell.get("type") in ("table_cell", "table_header")
+            ]
+            for row in rows
+        ]
+        width = table_width(
+            [
+                [
+                    (
+                        _declared_span(cell, "colspan", MAX_COLSPAN),
+                        _declared_span(cell, "rowspan", MAX_ROWSPAN),
+                    )
+                    for cell in cells
+                ]
+                for cells in row_cells
+            ]
+        )
+
         occupied: set[tuple[int, int]] = set()
         num_cols = 0
-        for row_idx, row in enumerate(rows):
+        for row_idx, cells in enumerate(row_cells):
             col_idx = 0
-            for cell in row.get("content", []):
+            for cell in cells:
                 cell_type = cell.get("type")
-                if cell_type not in ("table_cell", "table_header"):
-                    continue
                 while (row_idx, col_idx) in occupied:
                     col_idx += 1
-                attrs = cell.get("attrs", {})
-                row_span = attrs.get("rowspan") or 1
-                col_span = attrs.get("colspan") or 1
+                # Keep the cell within the table so the work below stays
+                # proportional to the table size, not to the declared spans.
+                row_span = min(
+                    _declared_span(cell, "rowspan", MAX_ROWSPAN),
+                    len(rows) - row_idx,
+                )
+                col_span = min(
+                    _declared_span(cell, "colspan", MAX_COLSPAN),
+                    max(width - col_idx, 1),
+                )
                 end_row = row_idx + row_span
                 end_col = col_idx + col_span
                 blocks = cell.get("content", [])

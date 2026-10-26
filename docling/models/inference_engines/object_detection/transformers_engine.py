@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Transformers implementation for object-detection models."""
 
 from __future__ import annotations
@@ -216,7 +219,9 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Preprocess images using HF processor
         images = [item.image.convert("RGB") for item in input_batch]
-        inputs = self._processor(images=images, return_tensors="pt").to(self._device)
+        inputs = self._processor(images=images, return_tensors="pt").to(
+            self._device, self._model.dtype
+        )
 
         # Get target sizes for post-processing
         target_sizes = torch.tensor(
@@ -240,9 +245,9 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             batch_outputs.append(
                 self._build_output(
                     input_item=input_item,
-                    labels=result["labels"],
-                    scores=result["scores"],
-                    boxes=result["boxes"],
+                    labels=result["labels"].tolist(),
+                    scores=result["scores"].tolist(),
+                    boxes=result["boxes"].tolist(),
                 )
             )
 

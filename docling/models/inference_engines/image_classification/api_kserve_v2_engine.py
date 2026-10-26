@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """KServe v2 remote implementation for image-classification models."""
 
 from __future__ import annotations

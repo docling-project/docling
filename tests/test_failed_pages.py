@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for failed page handling in StandardPdfPipeline.
 
 These tests verify that when some PDF pages fail to parse, they are still
@@ -80,6 +83,9 @@ def test_normal_pages_all_present(normal_4pages_path):
     )
 
 
+# These fixtures parse successfully with docling-parse 7.16 and no longer
+# exercise failed-page handling.
+@pytest.mark.skip(reason="No known fixture currently triggers a page failure")
 def test_failed_pages_added_to_document_1page(skipped_1page_path):
     """Test that a single failed page is added to DoclingDocument.pages."""
     converter = DocumentConverter(
@@ -123,6 +129,7 @@ def test_failed_pages_added_to_document_1page(skipped_1page_path):
     )
 
 
+@pytest.mark.skip(reason="No known fixture currently triggers a page failure")
 def test_failed_pages_added_to_document_2pages(skipped_2pages_path):
     """Test that multiple failed pages are added to DoclingDocument.pages."""
     converter = DocumentConverter(
@@ -166,6 +173,7 @@ def test_failed_pages_added_to_document_2pages(skipped_2pages_path):
     )
 
 
+@pytest.mark.skip(reason="No known fixture currently triggers a page failure")
 def test_failed_pages_have_size_info(skipped_1page_path):
     """Test that failed pages have size information when available."""
     converter = DocumentConverter(
@@ -194,6 +202,7 @@ def test_failed_pages_have_size_info(skipped_1page_path):
         assert page_item.size.height >= 0, f"Page {page_no} height should be >= 0"
 
 
+@pytest.mark.skip(reason="No known fixture currently triggers a page failure")
 def test_errors_recorded_for_failed_pages(skipped_1page_path):
     """Test that errors are recorded in conv_res.errors for failed pages."""
     converter = DocumentConverter(

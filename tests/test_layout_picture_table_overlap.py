@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Integration test for the PICTURE/TABLE duplicate-emission fix (issue #3522).
 
 The layout model can emit the same region as both a PICTURE and a TABLE cluster.

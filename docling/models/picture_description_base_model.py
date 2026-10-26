@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
@@ -19,11 +22,13 @@ from docling.datamodel.base_models import ApiImageRequestResult
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
 )
+from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import (
     BaseItemAndImageEnrichmentModel,
     BaseModelWithOptions,
     ItemAndImageEnrichmentElement,
 )
+from docling.utils.image_utils import to_rgb
 
 _USAGE_META_NAMESPACE = "docling"
 _USAGE_META_FIELD_NAME = "usage"
@@ -32,6 +37,7 @@ _USAGE_META_FIELD_NAME = "usage"
 class PictureDescriptionBaseModel(
     BaseItemAndImageEnrichmentModel, BaseModelWithOptions
 ):
+    progress_step = EnrichmentStep.PICTURE_DESCRIPTION
     images_scale: float = 2.0
 
     def __init__(
@@ -55,7 +61,11 @@ class PictureDescriptionBaseModel(
         self.images_scale = options.scale
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
-        return self.enabled and isinstance(element, PictureItem)
+        return (
+            self.enabled
+            and isinstance(element, PictureItem)
+            and (element.meta is None or element.meta.description is None)
+        )
 
     def _annotate_images(
         self, images: Iterable[Image.Image]
@@ -96,7 +106,7 @@ class PictureDescriptionBaseModel(
                 describe_image = False
             if describe_image:
                 elements.append(el.item)
-                images.append(el.image.convert("RGB"))
+                images.append(to_rgb(el.image))
 
         outputs = self._annotate_images(images)
 

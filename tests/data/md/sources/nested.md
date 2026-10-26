@@ -64,3 +64,11 @@ Table nesting apparently not yet suported by HTML backend:
   <tr><td>additional row</td></tr>
 </table>
 -->
+
+A nested ordered list:
+
+1. First main item
+2. Second main item
+    1. First nested sub-item
+    2. Second nested sub-item
+3. Third main item

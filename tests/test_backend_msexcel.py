@@ -1,5 +1,11 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
+import tracemalloc
+import zipfile
 from collections.abc import Iterator
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
@@ -26,6 +32,7 @@ from docling.backend.msexcel_backend import (
     ExcelCell,
     ExcelTable,
     MsExcelDocumentBackend,
+    _order_comment_thread,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -180,6 +187,61 @@ def test_comment_cell_coordinates(documents) -> None:
     )
 
 
+def test_threaded_comment_keeps_root_and_replies(documents) -> None:
+    """Test that a comment thread keeps its root comment and replies in order."""
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
+
+    thread = next(g for g in doc.groups if g.name.endswith("-F7"))
+    texts = [child.resolve(doc).text for child in thread.children]
+
+    assert len(texts) == 2
+    assert "Minimum number of saltwater ducks" in texts[0]
+    assert "I never thought it would be so low" in texts[1]
+
+
+@pytest.mark.parametrize(
+    ("entries", "expected"),
+    [
+        pytest.param(
+            [("c", "a", 3), ("b", "a", 2), ("a", None, 1)],
+            ["a", "b", "c"],
+            id="reversed-order",
+        ),
+        pytest.param(
+            [("p", "q", 1), ("q", "p", 2), ("a", None, 3)],
+            ["a", "p", "q"],
+            id="cycle",
+        ),
+        pytest.param(
+            [("r", "a", 3), ("a", None, 2), ("o", "gone", 1)],
+            ["o", "a", "r"],
+            id="orphaned-parent",
+        ),
+        pytest.param(
+            [("r2", "b", 4), ("b", None, 2), ("r1", "a", 3), ("a", None, 1)],
+            ["a", "r1", "b", "r2"],
+            id="multi-root",
+        ),
+    ],
+)
+def test_order_comment_thread(
+    entries: list[tuple[str, str | None, int]], expected: list[str]
+) -> None:
+    """Test that each comment comes before its replies, whatever the XML order."""
+    thread = _order_comment_thread(
+        [
+            (
+                comment_id,
+                parent_id,
+                ("Author", comment_id, datetime(2024, 1, 1, 0, minute)),
+            )
+            for comment_id, parent_id, minute in entries
+        ]
+    )
+
+    assert [text for _, text, _ in thread] == expected
+
+
 def test_e2e_excel_conversions(documents, libreoffice_available) -> None:
     for gt_path, doc in documents:
         # xlsx_emf.xlsx contains EMF images that require LibreOffice to render.
@@ -326,17 +388,19 @@ def test_chartsheet(documents) -> None:
     )
     assert picture.caption_text(doc) == "Wild Duck Observations by Year"
 
-    # The two series and their shared categories are rebuilt as a table:
-    #   | <blank> | Freshwater Ducks | Saltwater Ducks |
-    #   | 2019    | 120              | 80              |
+    # The two series and their shared categories are rebuilt as a table, with
+    # the category axis title in the top-left cell:
+    #   | Year | Freshwater Ducks | Saltwater Ducks |
+    #   | 2019 | 120              | 80              |
     #   ...
-    #   | 2024    | 180              | 130             |
+    #   | 2024 | 180              | 130             |
     chart_data = picture.meta.tabular_chart.chart_data
     assert (chart_data.num_rows, chart_data.num_cols) == (7, 3)
     grid = {
         (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
         for cell in chart_data.table_cells
     }
+    assert grid[(0, 0)] == "Year"
     assert grid[(0, 1)] == "Freshwater Ducks"
     assert grid[(0, 2)] == "Saltwater Ducks"
     assert grid[(6, 0)] == "2024"
@@ -673,7 +737,146 @@ def test_merged_cells_are_indexed_once_and_preserve_semantics(tmp_path: Path) ->
     assert [(cell.row_span, cell.col_span) for cell in table.data if cell.col == 0] == [
         (1, 3)
     ] * 10
-    assert comment_map[(3, 3)] == ("Codex", "Synthetic note", None)
+    assert comment_map[(3, 3)] == [("Codex", "Synthetic note", None)]
+
+
+def _rewrite_sheet_xml(
+    path: Path, old: str, new: str, sheet_part: str = "xl/worksheets/sheet1.xml"
+) -> None:
+    """Rewrite a range in a sheet part, as openpyxl cannot save such ranges."""
+    with zipfile.ZipFile(path) as source:
+        parts = {info.filename: source.read(info) for info in source.infolist()}
+    assert old.encode() in parts[sheet_part]
+    parts[sheet_part] = parts[sheet_part].replace(old.encode(), new.encode())
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target:
+        for name, data in parts.items():
+            target.writestr(name, data)
+
+
+def test_whole_sheet_merged_range_is_clipped_to_data(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "Quarterly report"
+    sheet["B3"] = "end"
+    sheet.merge_cells("A1:B2")
+    file_path = tmp_path / "whole-sheet-merge.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(
+        file_path, '<mergeCell ref="A1:B2"/>', '<mergeCell ref="A1:XFD1048576"/>'
+    )
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    tracemalloc.start()
+    try:
+        doc = converter.convert(file_path).document
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert peak < 50 * 1024 * 1024
+    assert len(doc.tables) == 1
+    table = doc.tables[0].data
+    assert (table.num_rows, table.num_cols) == (3, 2)
+    [anchor] = [cell for cell in table.table_cells if cell.text == "Quarterly report"]
+    assert (anchor.row_span, anchor.col_span) == (3, 2)
+
+
+def test_merged_range_beyond_data_is_clipped(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Inventory", None, None])
+    sheet.append(["Item", "Count", "Price"])
+    sheet.append(["Fruit", 3, 1.5])
+    sheet.append([None, 4, 2.5])
+    sheet.append(["Total", None, None])
+    sheet.merge_cells("A1:C1")
+    sheet.merge_cells("A3:A4")
+    sheet.merge_cells("A5:B5")
+    file_path = tmp_path / "partial-merge.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(
+        file_path, '<mergeCell ref="A5:B5"/>', '<mergeCell ref="A5:XFD1000"/>'
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    loaded_sheet = backend.workbook.active
+    assert {str(merged) for merged in loaded_sheet.merged_cells.ranges} == {
+        "A1:C1",
+        "A3:A4",
+        "A5:C5",
+    }
+
+    tables, _ = backend._find_data_tables(loaded_sheet)
+
+    assert len(tables) == 1
+    table = tables[0]
+    assert (table.anchor, table.num_rows, table.num_cols) == ((0, 0), 5, 3)
+    spans = {
+        cell.text: (cell.row_span, cell.col_span)
+        for cell in table.data
+        if cell.text in {"Inventory", "Fruit", "Total"}
+    }
+    assert spans == {"Inventory": (1, 3), "Fruit": (2, 1), "Total": (1, 3)}
+
+
+def test_hyperlink_range_is_clipped_to_data(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "Docs"
+    sheet["A1"].hyperlink = "https://example.com/docs"
+    sheet["B3"] = "end"
+    small = workbook.create_sheet("Small")
+    small["A1"] = "Home"
+    small["A1"].hyperlink = "https://example.com/"
+    small["C3"] = "end"
+    file_path = tmp_path / "hyperlink-range.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(file_path, 'ref="A1" r:id', 'ref="A1:J100000" r:id')
+    _rewrite_sheet_xml(
+        file_path,
+        'ref="A1" r:id',
+        'ref="A1:B2" r:id',
+        sheet_part="xl/worksheets/sheet2.xml",
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    tracemalloc.start()
+    try:
+        backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+        doc = backend.convert()
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert peak < 50 * 1024 * 1024
+    loaded_sheet = backend.workbook["Sheet"]
+    assert loaded_sheet["A1"].hyperlink.target == "https://example.com/docs"
+    assert (loaded_sheet.max_row, loaded_sheet.max_column) == (3, 2)
+    loaded_small = backend.workbook["Small"]
+    linked = {
+        cell.coordinate
+        for row in loaded_small.iter_rows()
+        for cell in row
+        if cell.hyperlink is not None
+    }
+    assert linked == {"A1", "A2", "B1", "B2"}
+    [docs_table] = [
+        table.data
+        for table in doc.tables
+        if any(cell.text == "Docs" for cell in table.data.table_cells)
+    ]
+    assert (docs_table.num_rows, docs_table.num_cols) == (3, 2)
 
 
 def test_split_leading_section_label_helper() -> None:
@@ -831,6 +1034,35 @@ def test_edge_cases_merging() -> None:
     assert len(tables_by_page.get(3, [])) == 2, (
         "Page 3 (Diagonal) should have 2 separate tables"
     )
+
+
+def test_sparse_table_cells_inside_bbox_are_not_duplicated(tmp_path: Path) -> None:
+    """Sparse cells already included in a table bbox must not become extra tables.
+
+    Regression test for #4230. The Note column is disconnected from the rest
+    of the table below the header, but those cells are already included in the
+    rectangular table that spans A1:C4.
+    """
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["ID", "Name", "Note"])
+    sheet.append([1, "alpha", None])
+    sheet.append([2, None, "foo"])
+    sheet.append([3, None, "bar"])
+
+    file_path = tmp_path / "sparse_sheet.xlsx"
+    workbook.save(file_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(file_path).document
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (4, 3)
+
+    texts = [cell.text for cell in table.data.table_cells]
+    assert texts.count("foo") == 1
+    assert texts.count("bar") == 1
 
 
 def test_gap_tolerance_comparison() -> None:
@@ -996,3 +1228,27 @@ def test_emf_images_in_xlsx(libreoffice_available):
             f"Page {page_no}: picture (idx {pic_indices}) should come before "
             f"table (idx {tbl_indices}) in document order"
         )
+
+
+def test_chart_caption_is_parented_to_its_sheet(documents) -> None:
+    """A chart caption belongs to the sheet holding the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so it surfaced outside its
+    sheet group and carried no provenance.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+
+    picture = doc.pictures[0]
+    sheet = picture.parent.resolve(doc)
+    caption = picture.captions[0].resolve(doc)
+
+    assert caption.parent.cref == sheet.self_ref, (
+        f"caption is parented to {caption.parent.cref}, expected {sheet.self_ref}"
+    )
+    assert caption.self_ref in [child.cref for child in sheet.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+    assert len(caption.prov) == 1
+    assert caption.prov[0].charspan == (0, len(caption.text))

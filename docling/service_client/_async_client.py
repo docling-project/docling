@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Async client SDK for docling-serve."""
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ from urllib.parse import urlencode, urlparse
 
 import httpx
 from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc.common.constants import CURRENT_VERSION
 from docling_core.types.io import DocumentStream
 from pydantic import ValidationError
 
@@ -145,7 +149,11 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             write=self._http_read_timeout,
             pool=self._http_read_timeout,
         )
-        headers: dict[str, str] = {}
+        headers: dict[str, str] = {
+            # Tell the server the newest DoclingDocument version this client's
+            # installed docling-core can read; the server down-projects if needed.
+            "Accept-Docling-Document-Version": CURRENT_VERSION,
+        }
         if self._api_key:
             headers["X-Api-Key"] = self._api_key
         self._async_client = httpx.AsyncClient(timeout=timeout, headers=headers)

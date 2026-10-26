@@ -25,10 +25,20 @@ layers = [
 [[modules]]
 path = "docling.exceptions"
 layer = "foundation"
-depends_on = []
+depends_on = ["docling.utils.ocr_language"]
 
 [[modules]]
 path = "docling.chunking"
+layer = "foundation"
+depends_on = []
+
+[[modules]]
+path = "docling.utils.ocr_language"
+layer = "foundation"
+depends_on = []
+
+[[modules]]
+path = "docling.utils.image_utils"
 layer = "foundation"
 depends_on = []
 
@@ -42,6 +52,7 @@ depends_on = [
   "docling.datamodel.backend_options",
   "docling.exceptions",
   "docling.utils",
+  "docling.utils.image_utils",
 ]
 
 [[modules]]
@@ -91,6 +102,7 @@ depends_on = [
   "docling.models.inference_engines.vlm",
   "docling.models.utils",
   "docling.utils",
+  "docling.utils.ocr_language",
 ]
 
 [[modules]]
@@ -171,10 +183,16 @@ layer = "foundation"
 depends_on = []
 
 [[modules]]
+path = "docling.utils.nemotron_parse_utils"
+layer = "core"
+depends_on = ["docling.backend", "docling.datamodel", "docling.utils"]
+
+[[modules]]
 path = "docling.utils"
 layer = "core"
 depends_on = [
   "docling.datamodel",
+  "docling.datamodel.asr_model_specs",
   "docling.datamodel.vlm_model_specs",
   "docling.models.stages.chart_extraction",
   "docling.models.stages.code_formula",
@@ -190,6 +208,9 @@ layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
+  "docling.exceptions",
+  "docling.utils.image_utils",
+  "docling.utils.ocr_language",
 ]
 
 [[modules]]
@@ -252,6 +273,7 @@ depends_on = [
   "docling.exceptions",
   "docling.models.utils",
   "docling.utils",
+  "docling.utils.image_utils",
 ]
 
 [[modules]]
@@ -265,6 +287,7 @@ layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models",
+  "docling.models.inference_engines.vlm",
   "docling.models.utils",
   "docling.utils",
 ]
@@ -298,10 +321,17 @@ path = "docling.models.stages.ocr"
 layer = "core"
 depends_on = [
   "docling.datamodel",
+  "docling.exceptions",
   "docling.models",
   "docling.models.inference_engines.common",
   "docling.utils",
+  "docling.utils.ocr_language",
 ]
+
+[[modules]]
+path = "docling.models.stages.form_field"
+layer = "models"
+depends_on = ["docling.datamodel", "docling.models", "docling.utils"]
 
 [[modules]]
 path = "docling.models.stages.page_assemble"
@@ -325,6 +355,7 @@ depends_on = [
   "docling.models",
   "docling.models.inference_engines.image_classification",
   "docling.models.utils",
+  "docling.utils.image_utils",
 ]
 
 [[modules]]
@@ -447,6 +478,7 @@ layer = "pipeline"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
+  "docling.datamodel.asr_model_specs",
   "docling.datamodel.pipeline_options_asr_model",
   "docling.pipeline.base_pipeline",
   "docling.utils",
@@ -508,10 +540,21 @@ depends_on = [
   "docling.datamodel",
   "docling.models.factories",
   "docling.models.stages.code_formula",
+  "docling.models.stages.form_field",
   "docling.models.stages.heading_hierarchy",
   "docling.models.stages.page_assemble",
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.native_pdf_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
   "docling.pipeline.base_pipeline",
   "docling.utils",
 ]
@@ -525,18 +568,8 @@ depends_on = ["docling.pipeline.standard_pdf_pipeline"]
 path = "docling.pipeline.legacy_standard_pdf_pipeline"
 layer = "pipeline"
 depends_on = [
-  "docling.backend",
   "docling.datamodel",
-  "docling.datamodel.layout_model_specs",
-  "docling.models",
-  "docling.models.factories",
-  "docling.models.stages.code_formula",
-  "docling.models.stages.heading_hierarchy",
-  "docling.models.stages.page_assemble",
-  "docling.models.stages.page_preprocessing",
-  "docling.models.stages.reading_order",
-  "docling.pipeline.base_pipeline",
-  "docling.utils",
+  "docling.pipeline.standard_pdf_pipeline",
 ]
 
 [[modules]]
@@ -552,6 +585,7 @@ depends_on = [
   "docling.pipeline",
   "docling.pipeline.asr_pipeline",
   "docling.pipeline.base_pipeline",
+  "docling.pipeline.native_pdf_pipeline",
   "docling.pipeline.simple_pipeline",
   "docling.pipeline.standard_pdf_pipeline",
   "docling.utils",

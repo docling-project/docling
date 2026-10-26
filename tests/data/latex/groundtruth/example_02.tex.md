@@ -1,24 +1,24 @@
 ## Math Examples
 
-Inline math:
-
-$E = mc^2$
+Inline math:  $E = mc^2$
 
 Display math:
 
 $$\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
 
-$$\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}$$
+$$\begin{equation}
+\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}
+\end{equation}$$
 
 ## Table Example
+
+Sample table
 
 | Name | Age | City |
 | - | - | - |
 | Alice | 25 | Boston |
 | Bob | 30 | Seattle |
 |  |  |  |
-
-Sample table
 
 ## References
 

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import shutil
 import sys
@@ -6,6 +9,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Final, Protocol
 
+import requests
 from docling_core.types.doc import (
     ContentLayer,
     DocItemLabel,
@@ -20,6 +24,10 @@ from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
+from docling.datamodel.asr_model_specs import (
+    _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
+    _distil_whisper_prefetch_name,
+)
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -30,11 +38,13 @@ from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
 )
 from docling.datamodel.pipeline_options_asr_model import (
+    ApiAsrOptions,
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
     InlineAsrOptions,
     InlineAsrWhisperS2TOptions,
 )
+from docling.exceptions import OperationNotAllowed
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -177,17 +187,6 @@ class _ConversationItem(BaseModel):
         return result
 
 
-# Distil-Whisper models are not part of openai-whisper's model registry, but
-# their Hugging Face repos publish the checkpoint in the original OpenAI
-# format, which whisper.load_model() accepts as a local file path.
-_DISTIL_WHISPER_OPENAI_CHECKPOINTS: dict[str, tuple[str, str]] = {
-    "distil-small.en": ("distil-whisper/distil-small.en", "original-model.bin"),
-    "distil-medium.en": ("distil-whisper/distil-medium.en", "original-model.bin"),
-    "distil-large-v3": ("distil-whisper/distil-large-v3-openai", "model.bin"),
-    "distil-large-v3.5": ("distil-whisper/distil-large-v3.5-openai", "model.bin"),
-}
-
-
 class _NativeWhisperModel:
     def __init__(
         self,
@@ -233,7 +232,7 @@ class _NativeWhisperModel:
                 from huggingface_hub import hf_hub_download
                 from huggingface_hub.utils import LocalEntryNotFoundError
 
-                repo_id, filename = distil_checkpoint
+                repo_id, filename, revision = distil_checkpoint
                 _log.info(
                     f"loading {self.model_name} from OpenAI-format checkpoint "
                     f"{repo_id}/{filename}"
@@ -245,6 +244,7 @@ class _NativeWhisperModel:
                         checkpoint_path = hf_hub_download(
                             repo_id=repo_id,
                             filename=filename,
+                            revision=revision,
                             cache_dir=str(artifacts_path),
                             local_files_only=True,
                         )
@@ -253,12 +253,13 @@ class _NativeWhisperModel:
                             f"artifacts_path ({artifacts_path}) does not contain "
                             f"the checkpoint {repo_id}/{filename} required by ASR "
                             f"model '{self.model_name}'. Prefetch it with: "
-                            f"hf download {repo_id} {filename} "
-                            f'--cache-dir "{artifacts_path}"'
+                            f"docling-tools models download "
+                            f"{_distil_whisper_prefetch_name(self.model_name)} "
+                            f'--output-dir "{artifacts_path}"'
                         ) from err
                 else:
                     checkpoint_path = hf_hub_download(
-                        repo_id=repo_id, filename=filename
+                        repo_id=repo_id, filename=filename, revision=revision
                     )
                 self.model = whisper.load_model(
                     name=checkpoint_path, device=self.device
@@ -580,15 +581,6 @@ class _WhisperS2TModel:
                 "asr_options": asr_opts,
             }
 
-            # large-v3, distil-large-v3, distil-large-v3.5, and large-v3-turbo models require n_mels=128
-            if self.model_identifier in [
-                "large-v3",
-                "distil-large-v3",
-                "distil-large-v3.5",
-                "large-v3-turbo",
-            ]:
-                model_kwargs["n_mels"] = 128
-
             self.model = whisper_s2t.load_model(
                 model_identifier=self.model_identifier,
                 **model_kwargs,
@@ -702,6 +694,137 @@ class _WhisperS2TModel:
 # ============================================================
 
 
+class _ApiAsrModel:
+    """Transcriber that sends the audio to an OpenAI-compatible transcription API.
+
+    Nothing is loaded in this process: the file is posted to ``/audio/transcriptions``
+    (a Whisper server of its own, or a hosted service) with
+    ``response_format=verbose_json`` and the timed segments of the answer become the
+    conversation. FFmpeg is not needed, the server decodes the audio.
+    """
+
+    def __init__(self, asr_options: ApiAsrOptions):
+        self.asr_options = asr_options
+
+    def _form_fields(self) -> list[tuple[str, str]]:
+        options = self.asr_options
+        fields: list[tuple[str, str]] = [("response_format", "verbose_json")]
+        if options.model:
+            fields.append(("model", options.model))
+        if options.language:
+            fields.append(("language", options.language))
+        if options.initial_prompt:
+            fields.append(("prompt", options.initial_prompt))
+        if options.word_timestamps:
+            fields.append(("timestamp_granularities[]", "segment"))
+            fields.append(("timestamp_granularities[]", "word"))
+        for key, value in options.params.items():
+            # `response_format` stays verbose_json: the timed segments are needed
+            if key != "response_format":
+                fields.append(
+                    (key, str(value).lower() if isinstance(value, bool) else str(value))
+                )
+        return fields
+
+    def _post(self, name: str, content: bytes) -> dict:
+        options = self.asr_options
+        _log.info(f"transcribing {name} with {options.url}")
+        response = requests.post(
+            str(options.url),
+            headers=options.headers,
+            data=self._form_fields(),
+            files={"file": (name, content, _audio_mimetype(name))},
+            timeout=options.timeout,
+        )
+        if not response.ok:
+            detail = " ".join(response.text.split())[:300]
+            raise RuntimeError(
+                f"The transcription service answered HTTP {response.status_code}"
+                + (f": {detail}" if detail else "")
+            )
+        try:
+            return response.json()
+        except ValueError as err:
+            raise RuntimeError(
+                "The transcription service did not answer with JSON; it must "
+                "support response_format=verbose_json"
+            ) from err
+
+    @staticmethod
+    def _to_conversation(answer: dict) -> list[_ConversationItem]:
+        segments = answer.get("segments")
+        if not isinstance(segments, list):
+            raise RuntimeError(
+                "The transcription service gave no timed segments; it must "
+                "support response_format=verbose_json"
+            )
+        # OpenAI puts the words in a list of their own, other servers inside each
+        # segment: take both, and give a word to the segment it falls in.
+        top_level_words = [
+            _ConversationWord(
+                start_time=w.get("start"), end_time=w.get("end"), text=w.get("word", "")
+            )
+            for w in answer.get("words") or []
+        ]
+        convo: list[_ConversationItem] = []
+        for seg in segments:
+            start, end = seg.get("start"), seg.get("end")
+            words = [
+                _ConversationWord(
+                    start_time=w.get("start"),
+                    end_time=w.get("end"),
+                    text=w.get("word", ""),
+                )
+                for w in seg.get("words") or []
+            ]
+            if not words and top_level_words and start is not None and end is not None:
+                words = [
+                    w
+                    for w in top_level_words
+                    if w.start_time is not None and start <= w.start_time < end
+                ]
+            convo.append(
+                _ConversationItem(
+                    start_time=start,
+                    end_time=end,
+                    text=str(seg.get("text", "")).strip(),
+                    words=words,
+                )
+            )
+        return convo
+
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
+        return self._to_conversation(self._post(fpath.name, fpath.read_bytes()))
+
+    def run(self, conv_res: ConversionResult) -> ConversionResult:
+        path_or_stream = conv_res.input._backend.path_or_stream
+        try:
+            if isinstance(path_or_stream, BytesIO):
+                conversation = self._to_conversation(
+                    self._post(conv_res.input.file.name, path_or_stream.getvalue())
+                )
+            elif isinstance(path_or_stream, Path):
+                conversation = self.transcribe(path_or_stream)
+            else:
+                raise RuntimeError(
+                    f"ASR pipeline requires a file path or BytesIO stream, "
+                    f"but got {type(path_or_stream)}"
+                )
+            _process_conversation(conversation, conv_res)
+            conv_res.status = ConversionStatus.SUCCESS
+        except Exception as exc:
+            _log.error(f"Audio transcription by the API has an error: {exc}")
+            conv_res.errors.append(
+                ErrorItem(
+                    component_type=DoclingComponentType.PIPELINE,
+                    module_name="AsrPipeline",
+                    error_message=str(exc),
+                )
+            )
+            conv_res.status = ConversionStatus.FAILURE
+        return conv_res
+
+
 # ============================================================
 # Transcriber protocol + factory (new; consumed by AsrPipeline and VideoPipeline)
 # ============================================================
@@ -713,8 +836,9 @@ def _merge_into_sentences(
     """Merge Whisper segments into complete sentences.
 
     Consecutive segments are merged until a sentence-ending punctuation
-    mark (. ? !) is found. The merged item spans the full time range
-    of all contributing segments and concatenates their text.
+    mark (. ? ! or its full-width CJK form) is found. The merged item spans
+    the full time range of all contributing segments and concatenates their
+    text.
 
     This produces one block per sentence, which maps cleanly to one
     speaker per block for diarization.
@@ -747,7 +871,7 @@ def _merge_into_sentences(
                 current.words = (current.words or []) + list(item.words)
 
         # Flush on sentence boundary
-        if current.text.rstrip().endswith((".", "?", "!")):
+        if current.text.rstrip().endswith((".", "?", "!", "。", "？", "！")):  # noqa: RUF001
             merged.append(current)
             current = None
 
@@ -779,10 +903,19 @@ class _AsrModelFactory:
 
     @staticmethod
     def create(
-        asr_options: InlineAsrOptions,
+        asr_options: InlineAsrOptions | ApiAsrOptions,
         artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
+        enable_remote_services: bool = False,
     ) -> _AsrTranscriber:
+        if isinstance(asr_options, ApiAsrOptions):
+            if not enable_remote_services:
+                raise OperationNotAllowed(
+                    "Transcribing with a remote API is not allowed by default. "
+                    "Set `enable_remote_services=True` in the pipeline options to "
+                    "send the audio to the configured service."
+                )
+            return _ApiAsrModel(asr_options=asr_options)
         if isinstance(asr_options, InlineAsrNativeWhisperOptions):
             return _NativeWhisperModel(
                 enabled=True,

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Helpers for KServe transport URL handling."""
 
 from __future__ import annotations

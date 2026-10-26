@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import sys
 from contextlib import contextmanager
 from pathlib import Path
@@ -12,7 +15,9 @@ def _validate_page_range(v: Tuple[int, int]) -> Tuple[int, int]:
         raise ValueError(
             "Invalid page range: start must be ≥ 1 and end must be ≥ start."
         )
-    return v
+    # Clamp to sys.maxsize: larger ints (e.g. 2**63, what (1, sys.maxsize) becomes
+    # after a JavaScript JSON round-trip) cannot be passed to native backends.
+    return (min(v[0], sys.maxsize), min(v[1], sys.maxsize))
 
 
 PageRange = Annotated[Tuple[int, int], AfterValidator(_validate_page_range)]

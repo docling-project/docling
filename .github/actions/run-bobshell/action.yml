@@ -1,0 +1,94 @@
+name: Run Bob Shell (read-only)
+description: >-
+  Install a pinned Bob Shell and run one headless task in a read-only custom
+  mode from .github/ai-triage/custom_modes.yaml. `bob run` pre-approves every
+  tool of the mode, so the mode and the disabled tool groups must stay
+  read-only.
+
+inputs:
+  api-key:
+    description: Bob API key with the Inference scope.
+    required: true
+  team-id:
+    description: Team ID, only for API keys of type 'general'.
+    required: false
+    default: ""
+  mode:
+    description: Custom mode slug.
+    required: true
+  prompt-file:
+    description: Prompt file from the trusted base checkout.
+    required: true
+  max-turns:
+    description: Maximum agent turns.
+    required: true
+  max-cost:
+    description: Maximum cost of the task.
+    required: true
+  output:
+    description: Path of the JSON output file.
+    required: true
+  version:
+    description: Bob Shell version.
+    required: false
+    default: "2.0.5"
+  sha256:
+    description: SHA-256 of the Bob Shell tarball for this version.
+    required: false
+    default: "eff232eb1b69f34f984ddd295e6960470058ca922b1c751879c5a8d06199f566"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: "22"
+
+    - name: Install Bob Shell
+      shell: bash
+      env:
+        BOBSHELL_VERSION: ${{ inputs.version }}
+        BOBSHELL_SHA256: ${{ inputs.sha256 }}
+      run: |
+        tarball="${RUNNER_TEMP}/bobshell.tgz"
+        curl -fsSL -o "${tarball}" \
+          "https://s3.us-south.cloud-object-storage.appdomain.cloud/bob-shell/bobshell-${BOBSHELL_VERSION}.tgz"
+        echo "${BOBSHELL_SHA256}  ${tarball}" | sha256sum --check --strict
+        npm install --global --ignore-scripts --registry=https://registry.npmjs.org/ "${tarball}"
+        bob --version
+
+    - name: Run Bob Shell
+      shell: bash
+      env:
+        BOB_API_KEY: ${{ inputs.api-key }}
+        BOB_TEAM_ID: ${{ inputs.team-id }}
+        BOB_MODE: ${{ inputs.mode }}
+        BOB_PROMPT_FILE: ${{ inputs.prompt-file }}
+        BOB_MAX_TURNS: ${{ inputs.max-turns }}
+        BOB_MAX_COST: ${{ inputs.max-cost }}
+        BOB_OUTPUT: ${{ inputs.output }}
+      run: |
+        if [ -z "${BOB_API_KEY}" ]; then
+          echo "::warning::BOB_API_KEY is not set. Skipping the AI analysis."
+          exit 1
+        fi
+        mkdir -p .bob
+        cp .github/ai-triage/custom_modes.yaml .bob/custom_modes.yaml
+        team_args=()
+        if [ -n "${BOB_TEAM_ID}" ]; then
+          team_args=(--team-id "${BOB_TEAM_ID}")
+        fi
+        bob run \
+          --accept-license \
+          --trust \
+          --format json \
+          --mode "${BOB_MODE}" \
+          --disable-mcp \
+          --disable-subagents \
+          --disable-tool-groups edit,execute,browser,mcp,skill,artifact,subagent,mode \
+          --max-turns "${BOB_MAX_TURNS}" \
+          --max-cost "${BOB_MAX_COST}" \
+          --log-level warn \
+          "${team_args[@]}" \
+          "$(cat "${BOB_PROMPT_FILE}")" \
+          < /dev/null > "${BOB_OUTPUT}"

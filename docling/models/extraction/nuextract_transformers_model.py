@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import logging
 import sys
 import time
@@ -15,6 +18,7 @@ from docling.datamodel.accelerator_options import (
 from docling.datamodel.base_models import VlmPrediction, VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BaseVlmModel
+from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
@@ -134,6 +138,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 artifacts_path = self.download_models(
                     repo_id=self.vlm_options.repo_id,
                     revision=self.vlm_options.revision,
+                    trust_remote_code=self.vlm_options.trust_remote_code,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
@@ -256,17 +261,19 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         processor_inputs = {k: v.to(self.device) for k, v in processor_inputs.items()}
 
         # Generate
+        generation_config = build_generation_config(
+            self.generation_config,
+            overrides=self.vlm_options.extra_generation_config,
+            max_new_tokens=self.max_new_tokens,
+            do_sample=self.temperature > 0,
+            temperature=self.temperature if self.temperature > 0 else None,
+            pad_token_id=getattr(self.processor.tokenizer, "pad_token_id", None),
+            eos_token_id=getattr(self.processor.tokenizer, "eos_token_id", None),
+        )
         gen_kwargs = {
             **processor_inputs,
-            "max_new_tokens": self.max_new_tokens,
-            "generation_config": self.generation_config,
-            **self.vlm_options.extra_generation_config,
+            "generation_config": generation_config,
         }
-        if self.temperature > 0:
-            gen_kwargs["do_sample"] = True
-            gen_kwargs["temperature"] = self.temperature
-        else:
-            gen_kwargs["do_sample"] = False
 
         start_time = time.time()
         with torch.inference_mode():

@@ -61,13 +61,31 @@ Useful `PdfPipelineOptions` / base fields:
 |---|---|
 | `do_ocr` | Run OCR (default engine EasyOCR) |
 | `do_table_structure` | Detect table structure |
+| `extract_form_fields` | Convert docling-parse PDF widgets (AcroForm) into fillable fields with keys from printed text |
 | `do_code_enrichment` / `do_formula_enrichment` | Enrich code / formulas |
+| `code_formula_options` | Code/formula model, crop margin (`expansion_factor`), and stopping repeated output (`stop_on_repetition`, on by default) |
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
+| `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |
+| `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
 | `artifacts_path` | Use pre-downloaded model artifacts (offline) |
 | `enable_remote_services` | Gate all outbound HTTP (required for any remote model) |
+
+`extract_form_fields=True` associates each widget with a field key from printed
+text, using page geometry. The key can be text in or beside its cell, or a
+paragraph that contains the widget. Checkbox and radio option text becomes an
+option key; a shared prompt stays as ordinary text. Additional context becomes
+a field hint. A section header or formula used as a key stays inside the key.
+Fields keep their widget order and sit among the surrounding text by page
+geometry. A widget in a detected table goes into its table cell, with a key
+only from text in that same cell. PDF field
+names are not used as keys, and PDF-specific widget metadata is not stored in
+the `DoclingDocument`. Use `generate_parsed_pages=True` to retain raw widgets
+on parsed pages when needed. Backends without page-local widgets produce no
+fields; table cells need `do_table_structure=True`. Not available in the
+service client, and not supported by the DocTags export.
 
 ### Choosing an OCR engine
 
@@ -86,6 +104,39 @@ opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())      # macOS
 
 Each engine is an optional dependency — see [slim-packaging.md](slim-packaging.md).
 
+OCR can also run on a remote KServe v2 / Triton server. Page crops are sent to
+that server, so `enable_remote_services=True` is required:
+
+```python
+from docling.datamodel.pipeline_options import KserveV2OcrOptions
+
+opts = PdfPipelineOptions(
+    do_ocr=True,
+    enable_remote_services=True,   # REQUIRED for KserveV2OcrOptions
+    ocr_options=KserveV2OcrOptions(url="localhost:8001", model_name="rapidocr"),
+)
+```
+
+### Recovering heading levels
+
+PDF headings all come out at `level=1` unless this stage is enabled. It infers the level from the
+PDF bookmarks, the outline numbering (`PART I` / `1.` / `1.1` / `(a)`) and the font styling, in
+that order of precedence.
+
+```python
+from docling.datamodel.pipeline_options import (
+    HeadingHierarchyOptions,
+    PdfPipelineOptions,
+)
+
+opts = PdfPipelineOptions(
+    heading_hierarchy_options=HeadingHierarchyOptions(enabled=True),
+    generate_parsed_pages=True,  # required by the font-style signal only
+)
+```
+
+The service equivalent is `do_pdf_heading_hierarchy` plus `pdf_heading_hierarchy_options`.
+
 ### Selecting the accelerator
 
 ```python
@@ -96,6 +147,37 @@ opts = PdfPipelineOptions(
     accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CUDA, num_threads=8),
 )
 ```
+
+## Native PDF pipeline (no models)
+
+Extracts what the PDF already contains — one text item per native text cell, one
+picture per embedded bitmap — with docling-parse only. Very fast, but the result
+has no reading order, headings or tables. PDF input only.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import NativePdfPipelineOptions
+from docling.document_converter import DocumentConverter, NativePdfFormatOption
+from docling_core.types.doc.page import TextCellUnit
+
+pipeline_options = NativePdfPipelineOptions(
+    text_cell_unit=TextCellUnit.LINE,  # or WORD / CHAR
+    generate_page_images=True,  # parse *and* render each page; False = parse only
+    images_scale=2.0,  # 144 DPI page images
+    generate_picture_images=True,  # decode the embedded bitmaps
+    # parser_threads defaults to all but one CPU thread (no model runs here, so
+    # accelerator_options.num_threads does not apply)
+)
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: NativePdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+result = converter.convert("report.pdf")
+```
+
+CLI equivalent: `docling report.pdf --pipeline native --from pdf`.
 
 ## VLM pipeline (local inference)
 
@@ -270,6 +352,21 @@ for result in converter.convert_all(sources, raises_on_error=False):
   `SKIPPED`, `PENDING`, `STARTED`.
 - `allowed_formats=` restricts which input formats the converter will accept.
 
+### Progress events
+
+`DocumentConverter(show_progress=True)` prints progress bars for pages and
+enrichment to stderr with no extra code. For your own UI, `progress_callback=...`
+(on `convert` / `convert_all` for one call, or on the constructor for all
+calls) receives typed events from
+`docling.datamodel.progress` while documents convert: document start and end
+(with `document_index` in the batch and the final `status`), pipeline phases,
+`PageCompletedProgress` (`completed_pages` / `total_pages`) for PDF and image
+pipelines, and `EnrichmentProgress` (`completed_items` / `total_items` per
+enrichment step; match on the stable `step`, not on `label`). Enrichment runs
+after the last page, so a page count at 100% does not mean the document is
+done. The callback must be thread-safe when
+`settings.perf.doc_batch_concurrency > 1`.
+
 ## Audio / video (ASR)
 
 Docling transcribes audio (and video) into a `DoclingDocument` via an ASR
@@ -298,6 +395,12 @@ print(result.document.export_to_markdown())   # timestamped transcript
 ```
 
 The CLI can also transcribe: `docling interview.wav --to md --output /tmp/`.
+
+Video files (`.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`) use `VideoPipeline` with
+`VideoPipelineOptions`, which also samples frames. `max_sampled_frames` defaults
+to `200` (set `None` for no limit). When `document_timeout` is set, all FFmpeg
+calls share that budget; running out yields `PARTIAL_SUCCESS` with a `TIMEOUT`
+error (`result.has_timeout_errors()`).
 
 ## Exporting images and tables
 
@@ -334,6 +437,74 @@ for i, pic in enumerate(doc.pictures):
     img = pic.get_image(doc)
     if img is not None:
         img.save(f"figure_{i}.png")
+```
+
+### Re-converting a saved DoclingDocument JSON
+
+Converting a `.json` DoclingDocument again (e.g. to re-export it) ignores image
+references to local files (paths, `file:` URIs), with a warning; embedded
+`data:` images and `http(s)` URLs are kept. So a document saved with
+`ImageRefMode.REFERENCED` comes back without its images. For a trusted file,
+opt in (SDK only; the CLI always ignores them):
+
+```python
+from docling.datamodel.backend_options import DeclarativeBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, DoclingJSONFormatOption
+
+converter = DocumentConverter(format_options={
+    InputFormat.JSON_DOCLING: DoclingJSONFormatOption(
+        backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+    ),
+})
+```
+
+Or save with `ImageRefMode.EMBEDDED` so the JSON carries its images.
+
+## HTML: images on remote hosts
+
+HTML image downloads are off by default. Enable them on the HTML backend
+options; downloads only connect to public addresses, re-check every redirect
+and stop at `max_remote_image_bytes`. An image larger than `max_image_pixels`
+(width x height, default 89,478,485) is skipped with a warning.
+
+```python
+from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, HTMLFormatOption
+
+html_options = HTMLBackendOptions(
+    fetch_images=True,
+    enable_remote_fetch=True,
+    headers={"Authorization": "Bearer TOKEN"},  # optional
+    # Origins that receive `headers`. Default (None): only the source page's
+    # origin; local files/streams then get no headers.
+    headers_allowed_origins=["https://example.com", "https://cdn.example.com"],
+)
+converter = DocumentConverter(
+    format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
+)
+```
+## DOCX, XLSX and EPUB size limits
+
+These formats are ZIP archives. Docling checks the decompressed sizes before it
+parses them and fails the file with `ArchiveLimitError` (a `DocumentLoadError`)
+when one is too large. Defaults: DOCX/XLSX 128 MiB per member, 512 MiB in total,
+10,000 members; EPUB content documents 10 MB each, 100 MB in total. Raise them
+for large trusted files with `max_file_bytes`, `max_total_bytes` and
+`max_member_count` on `MsWordBackendOptions`, `MsExcelBackendOptions` or
+`EpubBackendOptions`:
+
+```python
+from docling.datamodel.backend_options import MsWordBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, WordFormatOption
+
+converter = DocumentConverter(format_options={
+    InputFormat.DOCX: WordFormatOption(
+        backend_options=MsWordBackendOptions(max_file_bytes=512 * 1024 * 1024)
+    ),
+})
 ```
 
 ## Offline / air-gapped models

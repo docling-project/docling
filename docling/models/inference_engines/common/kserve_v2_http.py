@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Utilities for calling KServe v2 REST inference endpoints.
 
 Note: This is a minimal synchronous implementation. The official KServe Python SDK

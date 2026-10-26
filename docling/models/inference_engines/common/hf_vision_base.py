@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Shared HuggingFace helpers for vision inference engine families."""
 
 from __future__ import annotations

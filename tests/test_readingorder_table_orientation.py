@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from pathlib import PurePath
 
 from docling_core.types.doc import (
@@ -208,7 +211,7 @@ def test_picture_inside_overlapping_table_cells_is_nested_in_rich_cell():
     model = ReadingOrderModel(options=ReadingOrderOptions())
     doc = model._readingorder_elements_to_docling_doc(
         conv_res,
-        model._assembled_to_readingorder_elements(conv_res),
+        ordered_siblings={None: model._assembled_to_readingorder_elements(conv_res)},
         el_to_captions_mapping={},
         el_to_footnotes_mapping={},
         el_merges_mapping={},

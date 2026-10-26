@@ -1,6 +1,9 @@
-"""End-to-end tests for legacy binary Office format backends.
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
 
-.doc, .xls, and .ppt files are converted via LibreOffice to their modern Open
+"""End-to-end tests for legacy Office format backends.
+
+.doc, .xls, .ppt, and .rtf files are converted via LibreOffice to their modern Open
 XML equivalents before being parsed by the respective existing backend.
 """
 
@@ -26,6 +29,7 @@ _CASES: list[tuple[InputFormat, str]] = [
     (InputFormat.DOC, "tests/data/doc/sources"),
     (InputFormat.XLS, "tests/data/xls/sources"),
     (InputFormat.PPT, "tests/data/ppt/sources"),
+    (InputFormat.RTF, "tests/data/rtf/sources"),
 ]
 
 
@@ -36,7 +40,7 @@ def test_e2e_legacy_conversions(fmt: InputFormat, sources_dir: str):
     LibreOffice conversion produces slightly different image sizes across platforms, so
     bbox comparisons use fuzzy tolerances.
     """
-    ext = fmt.value  # "doc", "xls", or "ppt"
+    ext = fmt.value  # "doc", "xls", "ppt", or "rtf"
     sources = Path(sources_dir)
     paths = sorted(sources.rglob(f"*.{ext}"))
     assert paths, f"No .{ext} test files found in {sources}"

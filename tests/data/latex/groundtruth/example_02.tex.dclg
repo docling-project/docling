@@ -1,0 +1,49 @@
+<doclang version="0.7">
+  <text>
+    <layer value="furniture"/>
+    \documentclass{article}
+  </text>
+  <heading level="2">Math Examples</heading>
+  <text>
+    <content>Inline math: </content>
+    <formula>E = mc^2</formula>
+  </text>
+  <text>Display math:</text>
+  <formula>\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}</formula>
+  <formula>
+    <content>\begin{equation}
+\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}
+\end{equation}</content>
+  </formula>
+  <heading level="2">Table Example</heading>
+  <table>
+    <caption>Sample table</caption>
+    <fcel/>
+    Name
+    <fcel/>
+    Age
+    <fcel/>
+    City
+    <nl/>
+    <fcel/>
+    Alice
+    <fcel/>
+    25
+    <fcel/>
+    Boston
+    <nl/>
+    <fcel/>
+    Bob
+    <fcel/>
+    30
+    <fcel/>
+    Seattle
+    <nl/>
+    <ecel/>
+    <ecel/>
+    <ecel/>
+    <nl/>
+  </table>
+  <heading level="2">References</heading>
+  <text>See [smith2020] for more details. Also refer to Section [sec:math].</text>
+</doclang>

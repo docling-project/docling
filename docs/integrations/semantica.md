@@ -6,7 +6,6 @@ By combining Docling's high-fidelity structural parsing with Semantica's knowled
 
 - 📖 [Semantica Documentation](https://hawksight-ai.github.io/semantica/)
 - 💻 [Semantica GitHub](https://github.com/Hawksight-AI/semantica)
-- 🧑🏽‍🍳 [Earnings Call Analysis Example](https://github.com/Hawksight-AI/semantica/blob/main/cookbook/use_cases/finance/03_Earnings_Call_Analysis.ipynb)
 - 📦 [Semantica PyPI](https://pypi.org/project/semantica/)
 
 ## Why Semantica + Docling?
@@ -66,9 +65,6 @@ triplets = extractor.extract_triplets(clean_text)
 for triplet in triplets[:3]:
     print(f"Extracted: {triplet.subject} --({triplet.predicate})--> {triplet.object}")
 ```
-
-!!! tip "Real-World Finance Use Case"
-    For a complete end-to-end example showing how to build a Knowledge Graph from Finance Earnings Calls using Docling and Semantica, see the [Earnings Call Analysis notebook](https://github.com/Hawksight-AI/semantica/blob/main/cookbook/use_cases/finance/03_Earnings_Call_Analysis.ipynb).
 
 ---
 

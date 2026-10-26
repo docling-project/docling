@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """
 Tests for the MLX Whisper ASR backend (Apple Silicon).
 """

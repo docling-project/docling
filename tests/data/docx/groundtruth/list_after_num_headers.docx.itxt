@@ -31,3 +31,13 @@ item-0 at level 0: unspecified: group _root_
               item-30 at level 7: text: Term 5
               item-31 at level 7: text: : Definition 5
         item-32 at level 4: text: 
+        item-33 at level 4: section_header: Subsection with an open list
+          item-34 at level 5: list: group list
+            item-35 at level 6: list_item: First item of the open list
+            item-36 at level 6: list_item: Second item of the open list
+    item-37 at level 2: section_header: 1 Numbered outline heading
+      item-38 at level 3: list: group list
+        item-39 at level 4: list_item: Item under the numbered heading
+        item-40 at level 4: list_item: Second item under the numbered heading
+      item-41 at level 3: section_header: Closing section
+        item-42 at level 4: text: Paragraph that closes the document.

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """
 Tests for the WhisperS2T (CTranslate2-based) ASR backend.
 """
@@ -501,35 +504,6 @@ class TestWhisperS2TModel:
             out = model.run(conv_res)
             assert out.status == ConversionStatus.SUCCESS
             assert out.document is not None
-
-    def test_whisper_s2t_large_v3_sets_n_mels(self):
-        """Test that large-v3, distil-large-v3, and large-v3-turbo pass n_mels=128."""
-        mock_whisper_s2t = Mock()
-        mock_whisper_s2t.load_model.return_value = Mock()
-
-        with patch.dict("sys.modules", {"whisper_s2t": mock_whisper_s2t}):
-            for repo_id in ["large-v3", "distil-large-v3", "large-v3-turbo"]:
-                asr_options = InlineAsrWhisperS2TOptions(
-                    repo_id=repo_id,
-                    inference_framework=InferenceAsrFramework.WHISPER_S2T,
-                    language="en",
-                    task="transcribe",
-                )
-                _WhisperS2TModel(
-                    enabled=True,
-                    artifacts_path=None,
-                    accelerator_options=AcceleratorOptions(
-                        device=AcceleratorDevice.CPU
-                    ),
-                    asr_options=asr_options,
-                )
-
-                # Verify n_mels=128 was passed to load_model
-                call_kwargs = mock_whisper_s2t.load_model.call_args
-                assert call_kwargs[1].get("n_mels") == 128, (
-                    f"n_mels should be 128 for {repo_id}"
-                )
-                mock_whisper_s2t.load_model.reset_mock()
 
     def test_whisper_s2t_cpu_coerces_float16_compute_type(self):
         """Regression test: compute_type='float16' must be coerced to 'float32'

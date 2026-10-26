@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Pre-render Jupyter notebooks and jupytext .py scripts under docs/examples.
 
 Zensical does not provide an mkdocs-jupyter equivalent, so the example sources

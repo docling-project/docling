@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 
@@ -109,6 +112,9 @@ class ResponseFormat(str, Enum):
     PLAINTEXT = "plaintext"
     CHANDRA_HTML = "chandra_html"
     DOTS_JSON = "dots_json"
+    NEMOTRON_PARSE_V2 = "nemotron_parse_v2"
+    NEMOTRON_PARSE_V3_5 = "nemotron_parse_v3_5"
+    MINERU2 = "mineru2"
 
 
 class InferenceFramework(str, Enum):
@@ -278,7 +284,11 @@ class InlineVlmOptions(BaseVlmOptions):
             description=(
                 "Custom stopping criteria objects for fine-grained control "
                 "over generation termination. Allows implementing complex "
-                "stopping logic beyond simple string matching."
+                "stopping logic beyond simple string matching. A "
+                "GenerationStopper declares with is_valid_end() whether its "
+                "stop marks the valid end of the output (stop reason "
+                "end_of_sequence) or cuts the output (stop reason "
+                "stop_sequence, the default)."
             )
         ),
     ] = []
@@ -436,7 +446,10 @@ class ApiVlmOptions(BaseVlmOptions):
             description=(
                 "Custom stopping criteria objects for client-side generation "
                 "control. Applied after receiving API responses for additional "
-                "filtering or termination logic."
+                "filtering or termination logic. A GenerationStopper declares "
+                "with is_valid_end() whether its stop marks the valid end of "
+                "the output (stop reason end_of_sequence) or cuts the output "
+                "(stop reason stop_sequence, the default)."
             )
         ),
     ] = []

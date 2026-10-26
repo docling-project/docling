@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Test module for the JATS backend parser.
 
 Third-party test data notice
@@ -53,12 +56,26 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel, TextItem
+from docling_core.types.doc import (
+    DocItemLabel,
+    DoclingDocument,
+    GroupLabel,
+    ListItem,
+    PictureItem,
+    TextItem,
+)
 from docling_core.types.doc.document import Script
+from PIL import Image
 
+from docling.backend.xml.jats_backend import JatsDocumentBackend
+from docling.datamodel.backend_options import JatsBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
-from docling.document_converter import DocumentConverter
+from docling.document_converter import (
+    DocumentConverter,
+    FormatOption,
+    XMLJatsFormatOption,
+)
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -75,8 +92,19 @@ def get_jats_paths():
     return sorted(nxml_files + xml_files)
 
 
-def get_converter():
-    converter = DocumentConverter(allowed_formats=[InputFormat.XML_JATS])
+def get_converter(backend_options: JatsBackendOptions | None = None):
+    format_options: dict[InputFormat, FormatOption] | None = (
+        {
+            InputFormat.XML_JATS: XMLJatsFormatOption(
+                backend_options=backend_options,
+            )
+        }
+        if backend_options is not None
+        else None
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XML_JATS], format_options=format_options
+    )
     return converter
 
 
@@ -110,6 +138,22 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
     return conv_result.document
 
 
+def write_jats_body(path: Path, body: str) -> None:
+    path.write_text(
+        f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article">
+  <body>{body}</body>
+</article>
+""",
+        encoding="utf-8",
+    )
+
+
+def get_pictures(doc: DoclingDocument) -> list[PictureItem]:
+    return [item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)]
+
+
 def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
@@ -126,7 +170,9 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
     return conv_result.document
 
 
-def convert_jats_body(body_content: str) -> DoclingDocument:
+def convert_jats_body(
+    body_content: str, backend_options: JatsBackendOptions | None = None
+) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
 <article article-type="research-article">
@@ -143,7 +189,7 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
 </article>
 """
     stream = DocumentStream(name="body-test.nxml", stream=BytesIO(xml.encode()))
-    conv_result: ConversionResult = get_converter().convert(stream)
+    conv_result: ConversionResult = get_converter(backend_options).convert(stream)
     return conv_result.document
 
 
@@ -158,6 +204,7 @@ def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocum
 
 
 def test_jats_structured_abstract_sections_are_preserved():
+    """Each <sec> inside a structured abstract becomes its own heading + paragraph."""
     doc = convert_jats_article_meta(
         """
       <title-group><article-title>Structured Abstract Test</article-title></title-group>
@@ -175,9 +222,307 @@ def test_jats_structured_abstract_sections_are_preserved():
     )
 
     md = doc.export_to_markdown()
+    # Top-level abstract heading
     assert "## Abstract" in md
-    assert "Background: Background text." in md
-    assert "Methods: Methods text." in md
+    # Section titles rendered as sub-headings (not inlined into text)
+    assert "### Background" in md
+    assert "### Methods" in md
+    # Section content appears as separate paragraphs, not prefixed with title
+    assert "Background text." in md
+    assert "Methods text." in md
+    # Old flat format must NOT appear
+    assert "Background: Background text." not in md
+    assert "Methods: Methods text." not in md
+
+    # Verify document structure: two headings parented under the Abstract heading
+    headings = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.SECTION_HEADER
+    ]
+    heading_texts = [h.text for h in headings]
+    assert "Background" in heading_texts
+    assert "Methods" in heading_texts
+
+
+def test_jats_plain_abstract_styling_is_preserved():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Abstract Styling Test</article-title></title-group>
+      <abstract><p>We study <italic>Homo sapiens</italic>, <bold>key <italic>results</italic></bold>, H<sub>2</sub>O at 10<sup>3</sup> Pa, <underline>u</underline>, <strike>old</strike>.</p></abstract>
+"""
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    # Each styled span remains a separate inline run.
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (DocItemLabel.TEXT, "We study", None),
+        (
+            DocItemLabel.TEXT,
+            "Homo sapiens",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ",", None),
+        (
+            DocItemLabel.TEXT,
+            "key",
+            (True, False, False, False, Script.BASELINE),
+        ),
+        (
+            DocItemLabel.TEXT,
+            "results",
+            (True, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ", H", None),
+        (
+            DocItemLabel.TEXT,
+            "2",
+            (False, False, False, False, Script.SUB),
+        ),
+        (DocItemLabel.TEXT, "O at 10", None),
+        (
+            DocItemLabel.TEXT,
+            "3",
+            (False, False, False, False, Script.SUPER),
+        ),
+        (DocItemLabel.TEXT, "Pa,", None),
+        (
+            DocItemLabel.TEXT,
+            "u",
+            (False, False, True, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ",", None),
+        (
+            DocItemLabel.TEXT,
+            "old",
+            (False, False, False, True, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ".", None),
+    ]
+
+
+def test_jats_abstract_styling_preserves_inline_runs():
+    """Styled spans become their own inline runs without fusion or loss."""
+
+    def abstract_runs(paragraph: str) -> list:
+        doc = convert_jats_article_meta(
+            f"""
+      <title-group><article-title>Spacing Test</article-title></title-group>
+      <abstract><p>{paragraph}</p></abstract>
+"""
+        )
+        groups = _inline_group_items(doc)
+        assert len(groups) == 1
+        return [_formatting_tuple(item) for item in groups[0]]
+
+    italic = (False, True, False, False, Script.BASELINE)
+    bold = (True, False, False, False, Script.BASELINE)
+    sub = (False, False, False, False, Script.SUB)
+    sup = (False, False, False, False, Script.SUPER)
+    T = DocItemLabel.TEXT
+
+    cases = [
+        # (source paragraph, expected inline runs)
+        (
+            "conditions <italic>in vitro</italic>.",
+            [(T, "conditions", None), (T, "in vitro", italic), (T, ".", None)],
+        ),
+        (
+            "cultures of <italic>Y. pestis</italic>, and <italic>E. coli</italic>.",
+            [
+                (T, "cultures of", None),
+                (T, "Y. pestis", italic),
+                (T, ", and", None),
+                (T, "E. coli", italic),
+                (T, ".", None),
+            ],
+        ),
+        (
+            "CO<sub>2</sub> and (CO<sub>2</sub>e) at 10<sup>3</sup> Pa",
+            [
+                (T, "CO", None),
+                (T, "2", sub),
+                (T, "and (CO", None),
+                (T, "2", sub),
+                (T, "e) at 10", None),
+                (T, "3", sup),
+                (T, "Pa", None),
+            ],
+        ),
+        (
+            "rate (ECM))<sup>-1</sup>, lactation<sup>-1</sup>.",
+            [
+                (T, "rate (ECM))", None),
+                (T, "-1", sup),
+                (T, ", lactation", None),
+                (T, "-1", sup),
+                (T, ".", None),
+            ],
+        ),
+        (
+            "(<italic>term</italic>) and [<bold>other</bold>];",
+            [
+                (T, "(", None),
+                (T, "term", italic),
+                (T, ") and [", None),
+                (T, "other", bold),
+                (T, "];", None),
+            ],
+        ),
+        # Newlines in source XML become spaces; other whitespace is kept
+        # as authored (no collapsing, no stripping of interior blanks).
+        (
+            "a  <italic>b\nc</italic>\n   d.",
+            [(T, "a", None), (T, "b c", italic), (T, "d.", None)],
+        ),
+    ]
+    for paragraph, expected in cases:
+        assert abstract_runs(paragraph) == expected, f"{paragraph!r}"
+
+
+def test_jats_inline_runs_drop_xml_indentation_but_keep_same_line_whitespace():
+    paragraph = """<p>Alpha  beta <italic>Yersinia pestis</italic> is
+              critical  here.</p>"""
+    documents = [
+        convert_jats_article_meta(
+            f"""
+      <title-group><article-title>Abstract Spacing Test</article-title></title-group>
+      <abstract>{paragraph}</abstract>
+"""
+        ),
+        convert_jats_body(f"<sec><title>Body Spacing Test</title>{paragraph}</sec>"),
+    ]
+
+    italic = (False, True, False, False, Script.BASELINE)
+    expected = [
+        (DocItemLabel.TEXT, "Alpha  beta", None),
+        (DocItemLabel.TEXT, "Yersinia pestis", italic),
+        (DocItemLabel.TEXT, "is critical  here.", None),
+    ]
+    for doc in documents:
+        groups = _inline_group_items(doc)
+        assert len(groups) == 1
+        assert [_formatting_tuple(item) for item in groups[0]] == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (" leading  space", " leading  space"),
+        ("trailing  space ", "trailing  space "),
+        ("a  b", "a  b"),
+        ("a \n   b", "a b"),
+        ("a\n   \n b", "a b"),
+        ("\n", " "),
+    ],
+)
+def test_jats_xml_line_break_normalization_preserves_same_line_whitespace(
+    text: str, expected: str
+):
+    assert JatsDocumentBackend._normalize_xml_line_breaks(text) == expected
+
+
+def test_jats_structured_abstract_styling_is_preserved():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Structured Abstract Styling Test</article-title></title-group>
+      <abstract>
+        <sec>
+          <title>Background</title>
+          <p><italic>Bg</italic> text.</p>
+        </sec>
+        <sec>
+          <title>Methods</title>
+          <p><bold>M</bold> text.</p>
+        </sec>
+      </abstract>
+"""
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 2
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (
+            DocItemLabel.TEXT,
+            "Bg",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, "text.", None),
+    ]
+    assert [_formatting_tuple(item) for item in groups[1]] == [
+        (
+            DocItemLabel.TEXT,
+            "M",
+            (True, False, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, "text.", None),
+    ]
+
+
+def test_jats_plain_abstract_without_styling_stays_a_single_text_item():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Plain Abstract Test</article-title></title-group>
+      <abstract><p>Plain abstract.</p></abstract>
+"""
+    )
+
+    # no emphasis anywhere → a single TEXT item, no inline group
+    assert _inline_group_items(doc) == []
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert texts == ["Plain abstract."]
+
+
+def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Plain Footnote Test</title>
+          <fn-group><fn><p>Plain footnote.</p></fn></fn-group>
+        </sec>
+        """
+    )
+
+    assert _inline_group_items(doc) == []
+    footnotes = [t.text for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
+    assert footnotes == ["Plain footnote."]
+
+
+def test_jats_footnote_styling_is_preserved():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Footnote Styling Test</title>
+          <fn-group>
+            <fn id="fn1">
+              <label>1</label>
+              <p>See <italic>ibid</italic> for <bold>details</bold>.</p>
+            </fn>
+          </fn-group>
+        </sec>
+        """
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    # The punctuation after the bold run remains separate and unformatted.
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (DocItemLabel.FOOTNOTE, "1", None),
+        (DocItemLabel.FOOTNOTE, "See", None),
+        (
+            DocItemLabel.FOOTNOTE,
+            "ibid",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.FOOTNOTE, "for", None),
+        (
+            DocItemLabel.FOOTNOTE,
+            "details",
+            (True, False, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.FOOTNOTE, ".", None),
+    ]
 
 
 def test_jats_nested_lists_are_preserved():
@@ -218,6 +563,88 @@ def test_jats_nested_lists_are_preserved():
     sub_item_parent = sub_item.parent.resolve(doc)
     assert sub_item_parent.label == GroupLabel.LIST
     assert sub_item_parent.parent == outer_item.get_ref()
+
+
+def _list_items(doc: DoclingDocument) -> list[ListItem]:
+    return [item for item, _ in doc.iterate_items() if isinstance(item, ListItem)]
+
+
+@pytest.mark.parametrize(
+    ("list_type", "enumerated", "markdown"),
+    [
+        ("order", True, "1. first\n2. second"),
+        ("alpha-lower", True, "1. first\n2. second"),
+        ("alpha-upper", True, "1. first\n2. second"),
+        ("roman-lower", True, "1. first\n2. second"),
+        ("roman-upper", True, "1. first\n2. second"),
+        ("bullet", False, "- first\n- second"),
+        ("simple", False, "- first\n- second"),
+        (None, False, "- first\n- second"),
+    ],
+)
+def test_jats_list_type_sets_enumerated(list_type, enumerated, markdown):
+    attr = f' list-type="{list_type}"' if list_type else ""
+    doc = convert_jats_body(
+        f"""
+        <sec>
+          <title>Steps</title>
+          <list{attr}>
+            <list-item><p>first</p></list-item>
+            <list-item><p>second</p></list-item>
+          </list>
+        </sec>
+        """
+    )
+
+    items = _list_items(doc)
+    assert [item.text for item in items] == ["first", "second"]
+    assert [item.enumerated for item in items] == [enumerated, enumerated]
+    assert [item.marker for item in items] == ["", ""]
+    assert markdown in doc.export_to_markdown()
+
+
+def test_jats_nested_list_takes_its_own_list_type():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Steps</title>
+          <list list-type="bullet">
+            <list-item>
+              <p>outer</p>
+              <list list-type="order">
+                <list-item><p>inner one</p></list-item>
+                <list-item><p>inner two</p></list-item>
+              </list>
+            </list-item>
+          </list>
+        </sec>
+        """
+    )
+
+    enumerated = {item.text: item.enumerated for item in _list_items(doc)}
+    assert enumerated == {"outer": False, "inner one": True, "inner two": True}
+
+
+def test_jats_list_item_label_becomes_marker():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Conditions</title>
+          <list list-type="simple">
+            <list-item><label>(a)</label><p>first</p></list-item>
+            <list-item><label>(b)</label><p>second</p></list-item>
+          </list>
+        </sec>
+        """
+    )
+
+    items = _list_items(doc)
+    assert [(item.marker, item.text) for item in items] == [
+        ("(a)", "first"),
+        ("(b)", "second"),
+    ]
+    assert [item.enumerated for item in items] == [False, False]
+    assert "(a) first" in doc.export_to_markdown()
 
 
 def _inline_group_items(doc: DoclingDocument) -> list[list]:
@@ -399,6 +826,119 @@ def test_jats_paragraph_emphasis_is_preserved():
     ]
 
 
+def test_jats_external_link_boundaries_are_preserved():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Before <ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="https://example.com/docs">linked text</ext-link> after.'
+        "</p></sec>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [
+        (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
+        for item in groups[0]
+    ] == [
+        ("Before", None),
+        ("linked text", "https://example.com/docs"),
+        ("after.", None),
+    ]
+
+
+def test_jats_adjacent_external_links_with_different_targets_do_not_merge():
+    doc = convert_jats_body(
+        '<sec><title>T</title><p xmlns:xlink="http://www.w3.org/1999/xlink">'
+        '<ext-link xlink:href="https://example.com/a">first</ext-link><ext-link '
+        'xlink:href="https://example.com/b">second</ext-link></p></sec>'
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [
+        (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
+        for item in groups[0]
+    ] == [
+        ("first", "https://example.com/a"),
+        ("second", "https://example.com/b"),
+    ]
+
+
+def test_jats_external_link_preserves_nested_formatting():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Before <ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="https://example.com/docs">linked '
+        "<italic>text</italic></ext-link> after.</p></sec>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [
+        (
+            item.text.strip(),
+            str(item.hyperlink) if item.hyperlink is not None else None,
+            item.formatting.italic if item.formatting is not None else False,
+        )
+        for item in groups[0]
+    ] == [
+        ("Before", None, False),
+        ("linked", "https://example.com/docs", False),
+        ("text", "https://example.com/docs", True),
+        ("after.", None, False),
+    ]
+
+
+def test_jats_external_link_without_href_is_plain_text():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Before <ext-link>plain text</ext-link> "
+        "after.</p></sec>"
+    )
+
+    texts = [item for item in doc.texts if item.label == DocItemLabel.TEXT]
+    assert [(item.text, item.hyperlink) for item in texts] == [
+        ("Before plain text after.", None)
+    ]
+
+
+def test_jats_external_relative_link_falls_back_to_path():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p><ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="../docs">relative</ext-link></p></sec>'
+    )
+
+    texts = [item for item in doc.texts if item.label == DocItemLabel.TEXT]
+    assert [(item.text, item.hyperlink) for item in texts] == [
+        ("relative", Path("../docs"))
+    ]
+
+
+def test_jats_external_link_is_preserved_on_inline_formula():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p><ext-link "
+        'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="https://example.com/equation">value '
+        "<inline-formula><tex-math>$$x$$</tex-math></inline-formula>"
+        "</ext-link> after.</p></sec>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [
+        (
+            item.label,
+            item.text,
+            str(item.hyperlink) if item.hyperlink is not None else None,
+        )
+        for item in groups[0]
+    ] == [
+        (DocItemLabel.TEXT, "value", "https://example.com/equation"),
+        (DocItemLabel.FORMULA, "x", "https://example.com/equation"),
+        (DocItemLabel.TEXT, "after.", None),
+    ]
+
+
 def test_jats_plain_paragraph_stays_a_single_text_item():
     doc = convert_jats_body(
         "<sec><title>T</title><p>Plain text with a <xref>1</xref> citation.</p></sec>"
@@ -455,6 +995,30 @@ def test_jats_empty_display_formula_does_not_drop_following_content():
     assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
 
 
+def test_jats_table_oversized_spans_clamped_to_table_size():
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    doc = convert_jats_body(
+        "<sec><title>T</title><table-wrap><table>"
+        '<tr><td rowspan="100000000">A</td><td colspan="3000000">B</td></tr>'
+        "<tr><td>C</td></tr>"
+        "</table></table-wrap></sec>"
+    )
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
+    ]
+
+
 def test_jats_footnotes_are_preserved():
     doc = convert_jats_body(
         """
@@ -479,6 +1043,350 @@ def test_jats_footnotes_are_preserved():
     md = doc.export_to_markdown()
     assert "First footnote" in md
     assert "Second footnote" in md
+
+
+def test_jats_file_does_not_fetch_relative_figure_image_by_default(tmp_path: Path):
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(jats_path, '<fig><graphic xlink:href="figure.png"/></fig>')
+
+    doc = get_converter().convert(jats_path).document
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+
+
+def test_jats_file_embeds_relative_figure_image_when_enabled(tmp_path: Path):
+    image_path = tmp_path / "images" / "figure.png"
+    image_path.parent.mkdir()
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
+
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        """
+    <fig>
+      <label>Figure 1</label>
+      <caption><p>A red rectangle.</p></caption>
+      <graphic xlink:href="images/figure.png"/>
+    </fig>
+""",
+    )
+
+    doc = (
+        get_converter(JatsBackendOptions(fetch_images=True, enable_local_fetch=True))
+        .convert(jats_path)
+        .document
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
+    assert pictures[0].captions[0].resolve(doc).text == "Figure 1 A red rectangle."
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (255, 0, 0)
+
+
+def test_jats_stream_does_not_resolve_relative_figure_image():
+    doc = convert_jats_body(
+        '<fig><graphic xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="figure.png"/></fig>',
+        JatsBackendOptions(fetch_images=True, enable_local_fetch=True),
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+
+
+def test_jats_stream_resolves_figure_image_from_source_uri(tmp_path: Path):
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    jats_path = tmp_path / "source.nxml"
+    write_jats_body(jats_path, '<fig><graphic xlink:href="figure.png"/></fig>')
+    stream = DocumentStream(name="article.nxml", stream=BytesIO(jats_path.read_bytes()))
+    converter = get_converter(
+        JatsBackendOptions(
+            fetch_images=True,
+            enable_local_fetch=True,
+            source_uri=jats_path,
+        )
+    )
+
+    doc = converter.convert(stream).document
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (0, 255, 0)
+
+
+def test_jats_stream_does_not_fetch_relative_image_from_remote_source_uri():
+    doc = convert_jats_body(
+        '<fig><graphic xmlns:xlink="http://www.w3.org/1999/xlink" '
+        'xlink:href="figure.png"/></fig>',
+        JatsBackendOptions(
+            fetch_images=True,
+            enable_remote_fetch=True,
+            source_uri="https://example.com/article.nxml",
+        ),
+    )
+
+    assert get_pictures(doc)[0].image is None
+
+
+def test_jats_figure_image_requires_local_fetch_permission(tmp_path: Path):
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(jats_path, '<fig><graphic xlink:href="figure.png"/></fig>')
+
+    with pytest.warns(UserWarning, match="Fetching local resources"):
+        doc = (
+            get_converter(JatsBackendOptions(fetch_images=True, source_uri=jats_path))
+            .convert(jats_path)
+            .document
+        )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+
+
+@pytest.mark.parametrize(
+    "graphic",
+    [
+        pytest.param('<graphic xlink:href="images/figure"/>', id="direct"),
+        pytest.param(
+            "<alternatives>"
+            '<graphic xlink:href="images/unsupported.svg"/>'
+            '<graphic xlink:href="images/figure"/>'
+            "</alternatives>",
+            id="alternatives",
+        ),
+    ],
+)
+def test_jats_figure_image_resolves_extensionless_href(tmp_path: Path, graphic: str):
+    image_path = tmp_path / "images" / "figure.jpg"
+    image_path.parent.mkdir()
+    Image.new("RGB", (9, 6), color=(0, 0, 255)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(jats_path, f"<fig>{graphic}</fig>")
+
+    doc = (
+        get_converter(JatsBackendOptions(fetch_images=True, enable_local_fetch=True))
+        .convert(jats_path)
+        .document
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (9, 6)
+
+
+def test_jats_figure_image_falls_back_after_undecodable_alternative(tmp_path: Path):
+    broken_path = tmp_path / "images" / "broken.png"
+    broken_path.parent.mkdir()
+    broken_path.write_bytes(b"not an image")
+    image_path = tmp_path / "images" / "figure.png"
+    Image.new("RGB", (9, 6), color=(0, 0, 255)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        "<fig><alternatives>"
+        '<graphic xlink:href="images/broken.png"/>'
+        '<graphic xlink:href="images/figure.png"/>'
+        "</alternatives></fig>",
+    )
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        doc = (
+            get_converter(
+                JatsBackendOptions(fetch_images=True, enable_local_fetch=True)
+            )
+            .convert(jats_path)
+            .document
+        )
+
+    image = get_pictures(doc)[0].get_image(doc)
+    assert image is not None
+    assert image.size == (9, 6)
+
+
+def test_jats_figure_image_falls_back_after_absolute_alternative(tmp_path: Path):
+    absolute_path = tmp_path / "absolute.png"
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(absolute_path)
+    relative_path = tmp_path / "images" / "relative.png"
+    relative_path.parent.mkdir()
+    Image.new("RGB", (9, 6), color=(0, 0, 255)).save(relative_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        "<fig><alternatives>"
+        f'<graphic xlink:href="{absolute_path.as_posix()}"/>'
+        '<graphic xlink:href="images/relative.png"/>'
+        "</alternatives></fig>",
+    )
+
+    with pytest.warns(UserWarning, match="Absolute paths are not allowed"):
+        doc = (
+            get_converter(
+                JatsBackendOptions(fetch_images=True, enable_local_fetch=True)
+            )
+            .convert(jats_path)
+            .document
+        )
+
+    image = get_pictures(doc)[0].get_image(doc)
+    assert image is not None
+    assert image.size == (9, 6)
+    assert image.getpixel((0, 0)) == (0, 0, 255)
+
+
+@pytest.mark.parametrize(
+    "graphic",
+    [
+        pytest.param("", id="no-graphic"),
+        pytest.param("<graphic/>", id="missing-href"),
+        pytest.param('<graphic xlink:href=" "/>', id="blank-href"),
+        pytest.param(
+            '<graphic xlink:href="https://example.com/figure.png"/>',
+            id="remote-href",
+        ),
+        pytest.param('<graphic xlink:href="figure.svg"/>', id="unsupported-svg"),
+    ],
+)
+def test_jats_file_skips_unavailable_figure_image(tmp_path: Path, graphic: str):
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        f"<fig>{graphic}</fig><p>Content after the unavailable figure.</p>",
+    )
+
+    doc = (
+        get_converter(JatsBackendOptions(fetch_images=True, enable_local_fetch=True))
+        .convert(jats_path)
+        .document
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+    assert "Content after the unavailable figure." in doc.export_to_markdown()
+
+
+def test_jats_file_warns_for_missing_figure_image(tmp_path: Path):
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(jats_path, '<fig><graphic xlink:href="missing.png"/></fig>')
+
+    with pytest.warns(UserWarning, match="no matching local file exists"):
+        doc = (
+            get_converter(
+                JatsBackendOptions(fetch_images=True, enable_local_fetch=True)
+            )
+            .convert(jats_path)
+            .document
+        )
+
+    assert get_pictures(doc)[0].image is None
+
+
+def test_jats_figure_image_blocks_path_traversal(tmp_path: Path):
+    image_path = tmp_path / "outside.png"
+    Image.new("RGB", (7, 5), color=(255, 0, 0)).save(image_path)
+    article_dir = tmp_path / "article"
+    article_dir.mkdir()
+    fallback_path = article_dir / "fallback.png"
+    Image.new("RGB", (9, 6), color=(0, 0, 255)).save(fallback_path)
+    jats_path = article_dir / "article.nxml"
+    write_jats_body(
+        jats_path,
+        "<fig><alternatives>"
+        '<graphic xlink:href="../outside.png"/>'
+        '<graphic xlink:href="fallback.png"/>'
+        "</alternatives></fig>"
+        "<p>Content after the blocked figure.</p>",
+    )
+
+    with pytest.warns(UserWarning, match="Path traversal blocked"):
+        doc = (
+            get_converter(
+                JatsBackendOptions(fetch_images=True, enable_local_fetch=True)
+            )
+            .convert(jats_path)
+            .document
+        )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+    assert "Content after the blocked figure." in doc.export_to_markdown()
+
+
+def test_jats_element_citation_surname_only_does_not_crash():
+    """Citations with only a surname are rendered with that surname."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname></name>"
+        "<article-title>Only a surname</article-title>"
+        "<year>2020</year>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Smith" in markdown
+    assert "Only a surname" in markdown
+
+
+def test_jats_element_citation_empty_name_parts_are_omitted():
+    """Citations with empty surname and given-names elements omit that author."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname></surname><given-names></given-names></name>"
+        "<article-title>Empty name parts</article-title>"
+        "</element-citation></ref></ref-list>"
+    )
+    citations = [
+        item
+        for item, _level in doc.iterate_items()
+        if isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
+    ]
+    assert len(citations) == 1
+    assert citations[0].text == "Empty name parts. "
+
+
+def test_jats_element_citation_given_names_only():
+    """Citations with only given-names are rendered with that name."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><given-names>Ada</given-names></name>"
+        "<article-title>Given names only</article-title>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Ada" in markdown
+    assert "Given names only" in markdown
+
+
+def test_jats_element_citation_empty_year_does_not_crash():
+    """Citations with an empty year element are rendered without a year."""
+    doc = convert_jats_body(
+        "<ref-list><ref><element-citation>"
+        "<name><surname>Smith</surname><given-names>Jane</given-names></name>"
+        "<article-title>Empty year</article-title>"
+        "<year></year>"
+        "</element-citation></ref></ref-list>"
+    )
+    markdown = doc.export_to_markdown()
+    assert "Smith Jane" in markdown
+    assert "Empty year" in markdown
 
 
 @pytest.mark.parametrize(
@@ -580,22 +1488,11 @@ def test_e2e_jats_conversions_no_stream():
     test_e2e_jats_conversions(use_stream=False)
 
 
-def test_jats_inline_runs_rejoin_to_the_source_text():
-    """Runs concatenate back to the paragraph text: no invented and no lost separator."""
-    cases = {
-        "The species <italic>Homo sapiens</italic> is <bold>common</bold>.": (
-            "The species Homo sapiens is common."
-        ),
-        # no whitespace at the boundary in the source, so none in the runs
-        "Water is H<sub>2</sub>O here.": "Water is H2O here.",
-        "Note<sup>1</sup> follows.": "Note1 follows.",
-        # block edges are trimmed exactly once; interior whitespace is verbatim, since
-        # XML content is not whitespace-collapsed the way HTML normal flow is
-        "  padded  <italic>x</italic>  ": "padded  x",
-    }
-    for paragraph, expected in cases.items():
-        doc = convert_jats_body(f"<sec><title>T</title><p>{paragraph}</p></sec>")
-        runs = [
-            t.text for t in doc.texts if t.label == DocItemLabel.TEXT and t.text != "T"
-        ]
-        assert "".join(runs) == expected, paragraph
+def test_jats_empty_article_title_does_not_crash():
+    """An empty article-title element produces an empty document title without aborting conversion."""
+    doc = convert_jats_article_meta(
+        "<title-group><article-title></article-title></title-group>"
+    )
+    exported = doc.export_to_markdown()
+    # Empty title is serialized as an H1 with no text.
+    assert exported == "# "

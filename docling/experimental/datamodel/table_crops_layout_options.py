@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Internal options for the experimental TableCrops layout model."""
 
 from typing import ClassVar

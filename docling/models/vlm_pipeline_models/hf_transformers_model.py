@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import importlib
 import importlib.metadata
 import logging
@@ -23,13 +26,17 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.models.base_model import BaseVlmPageModel
-from docling.models.utils.generation_utils import GenerationStopper
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    build_generation_config,
+)
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
 _log = logging.getLogger(__name__)
 
@@ -107,7 +114,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
             if artifacts_path is None:
                 artifacts_path = self.download_models(
-                    self.vlm_options.repo_id, revision=self.vlm_options.revision
+                    self.vlm_options.repo_id,
+                    revision=self.vlm_options.revision,
+                    trust_remote_code=self.vlm_options.trust_remote_code,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
@@ -367,18 +376,20 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         }
 
         # -- Generate (Image-Text-to-Text class expects these inputs from processor)
+        generation_config = build_generation_config(
+            self.generation_config,
+            overrides=generation_config,
+            max_new_tokens=self.max_new_tokens,
+            use_cache=self.use_cache,
+            do_sample=self.temperature > 0,
+            temperature=self.temperature if self.temperature > 0 else None,
+            pad_token_id=getattr(self.processor.tokenizer, "pad_token_id", None),
+            eos_token_id=getattr(self.processor.tokenizer, "eos_token_id", None),
+        )
         gen_kwargs = {
             **inputs,
-            "max_new_tokens": self.max_new_tokens,
-            "use_cache": self.use_cache,
-            "generation_config": self.generation_config,
-            **generation_config,
+            "generation_config": generation_config,
         }
-        if self.temperature > 0:
-            gen_kwargs["do_sample"] = True
-            gen_kwargs["temperature"] = self.temperature
-        else:
-            gen_kwargs["do_sample"] = False
 
         if stopping_criteria is not None:
             gen_kwargs["stopping_criteria"] = stopping_criteria
@@ -408,14 +419,12 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         # -- Clip off pad tokens from decoded texts
         pad_token = self.processor.tokenizer.pad_token
         if pad_token:
-            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+            decoded_texts = strip_trailing_token(decoded_texts, pad_token)
 
         if (
             self.vlm_options.extra_generation_config.get("strip_stop_strings", False)
             and self.vlm_options.stop_strings
         ):
-            from docling.utils.vlm_utils import strip_stop_strings
-
             decoded_texts = strip_stop_strings(
                 decoded_texts, self.vlm_options.stop_strings
             )

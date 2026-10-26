@@ -1,9 +1,13 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import enum
 from typing import Annotated, Literal
 
 from pydantic import AnyUrl, BaseModel, Field
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.service.responses import PublicFailureInfo
 
 
 class CallbackSpec(BaseModel):
@@ -16,6 +20,7 @@ class ProgressKind(str, enum.Enum):
     SET_NUM_DOCS = "set_num_docs"
     UPDATE_PROCESSED = "update_processed"
     DOCUMENT_COMPLETED = "document_completed"
+    TASK_COMPLETED = "task_completed"
 
 
 class BaseProgress(BaseModel):
@@ -71,10 +76,21 @@ class ProgressDocumentCompleted(BaseProgress):
     total_docs: int | None = None  # Total docs in task (if known)
 
 
+class ProgressTaskCompleted(BaseProgress):
+    """Terminal task outcome, independent of document outcomes."""
+
+    kind: Literal[ProgressKind.TASK_COMPLETED] = ProgressKind.TASK_COMPLETED
+    task_status: Literal["success", "failure"]
+    failure: PublicFailureInfo | None = None
+
+
 class ProgressCallbackRequest(BaseModel):
     task_id: str
     progress: Annotated[
-        ProgressSetNumDocs | ProgressUpdateProcessed | ProgressDocumentCompleted,
+        ProgressSetNumDocs
+        | ProgressUpdateProcessed
+        | ProgressDocumentCompleted
+        | ProgressTaskCompleted,
         Field(discriminator="kind"),
     ]
 

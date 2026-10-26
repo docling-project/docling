@@ -1,7 +1,15 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import pytest
 from pydantic import ValidationError
 
-from docling.datamodel.base_models import ConversionStatus
+from docling.datamodel.base_models import (
+    ConfidenceReport,
+    ConversionStatus,
+    PageConfidenceScores,
+    QualityGrade,
+)
 from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
     AzureBlobSourceRequest,
@@ -16,6 +24,7 @@ from docling.datamodel.service.requests import (
 )
 from docling.datamodel.service.responses import (
     ArtifactRef,
+    ConfidenceScores,
     DoclingTaskResult,
     DocumentArtifactItem,
     FailureCategory,
@@ -25,6 +34,7 @@ from docling.datamodel.service.responses import (
     TaskFailureResult,
     TaskStatusResponse,
 )
+from docling.datamodel.service.sources import S3Coordinates
 from docling.datamodel.service.targets import (
     AzureBlobTarget,
     GoogleCloudStorageTarget,
@@ -33,6 +43,74 @@ from docling.datamodel.service.targets import (
     S3Target,
     ZipTarget,
 )
+
+S3_MODEL_TYPES = (S3Coordinates, S3SourceRequest, S3Target)
+FAKE_S3_CREDENTIALS = {
+    "access_key": "fake-access-key-for-testing-only",
+    "secret_key": "fake-secret-key-for-testing-only",
+}
+
+
+def test_s3_source_and_target_inherit_coordinates() -> None:
+    assert issubclass(S3SourceRequest, S3Coordinates)
+    assert issubclass(S3Target, S3Coordinates)
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_allow_ambient_credentials(
+    model_type: type[S3Coordinates],
+) -> None:
+    coordinates = model_type(endpoint="s3.example.com", bucket="documents")
+
+    assert coordinates.access_key is None
+    assert coordinates.secret_key is None
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_preserve_explicit_string_credentials(
+    model_type: type[S3Coordinates],
+) -> None:
+    coordinates = model_type(
+        endpoint="s3.example.com",
+        bucket="documents",
+        **FAKE_S3_CREDENTIALS,
+    )
+
+    assert coordinates.access_key == FAKE_S3_CREDENTIALS["access_key"]
+    assert coordinates.secret_key == FAKE_S3_CREDENTIALS["secret_key"]
+    assert isinstance(coordinates.access_key, str)
+    assert isinstance(coordinates.secret_key, str)
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        {"access_key": "fake-access-key-for-testing-only"},
+        {"secret_key": "fake-secret-key-for-testing-only"},
+    ],
+)
+def test_s3_coordinates_reject_incomplete_explicit_credentials(
+    model_type: type[S3Coordinates], credentials: dict[str, str]
+) -> None:
+    with pytest.raises(ValidationError, match="access_key and secret_key"):
+        model_type(endpoint="s3.example.com", bucket="documents", **credentials)
+
+
+@pytest.mark.parametrize("model_type", S3_MODEL_TYPES)
+def test_s3_coordinates_credential_schema_is_optional_string(
+    model_type: type[S3Coordinates],
+) -> None:
+    schema = model_type.model_json_schema()
+
+    assert not {"access_key", "secret_key"} & set(schema["required"])
+    for field_name in ("access_key", "secret_key"):
+        field_schema = schema["properties"][field_name]
+        assert {item.get("type") for item in field_schema["anyOf"]} == {
+            "null",
+            "string",
+        }
+        assert "Optional" in field_schema["description"]
 
 
 def test_http_source_request_rejects_zip_urls() -> None:
@@ -363,3 +441,67 @@ def test_task_status_response_accepts_structured_failure() -> None:
 
     assert response.failure is not None
     assert response.failure.phase == FailurePhase.ORCHESTRATION
+
+
+def test_confidence_scores_from_flat_scores() -> None:
+    scores = PageConfidenceScores(
+        parse_score=0.9, layout_score=0.8, table_score=None, ocr_score=0.95
+    )
+    wire = ConfidenceScores.from_scores(scores)
+
+    assert wire.parse_score == 0.9
+    assert wire.layout_score == 0.8
+    assert wire.table_score is None
+    assert wire.ocr_score == 0.95
+    assert wire.pages == {}
+
+    # JSON serialization must emit an empty dict for pages, not null or a list
+    dump = wire.model_dump(mode="json")
+    assert dump["pages"] == {}
+
+    # Deserializing back into ConfidenceReport succeeds
+    report = ConfidenceReport.model_validate(dump)
+    assert report.parse_score == 0.9
+    assert report.pages == {}
+
+
+def test_confidence_scores_from_report_with_pages() -> None:
+    report = ConfidenceReport(
+        pages={
+            1: PageConfidenceScores(parse_score=0.9, layout_score=0.8),
+            2: PageConfidenceScores(parse_score=0.7, layout_score=0.6),
+        }
+    )
+    wire = ConfidenceScores.from_scores(report)
+
+    assert 1 in wire.pages
+    assert 2 in wire.pages
+    assert wire.pages[1].parse_score == 0.9
+    assert wire.pages[2].parse_score == 0.7
+
+    dump = wire.model_dump(mode="json")
+    assert "1" in dump["pages"]
+    assert "2" in dump["pages"]
+
+    restored = ConfidenceReport.model_validate(dump)
+    assert len(restored.pages) == 2
+    assert restored.pages[1].parse_score == 0.9
+    assert restored.pages[2].parse_score == 0.7
+
+
+def test_confidence_report_tolerant_to_pages_none() -> None:
+    legacy_payload = {
+        "parse_score": 0.85,
+        "layout_score": 0.80,
+        "table_score": None,
+        "ocr_score": 0.90,
+        "mean_score": 0.85,
+        "low_score": 0.80,
+        "mean_grade": QualityGrade.GOOD,
+        "low_grade": QualityGrade.GOOD,
+        "pages": None,
+    }
+
+    restored = ConfidenceReport.model_validate(legacy_payload)
+    assert restored.parse_score == 0.85
+    assert restored.pages == {}

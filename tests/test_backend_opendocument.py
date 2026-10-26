@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Tests for the OpenDocument Format (ODF) backends (ODT/ODS/ODP).
 
 This module includes two types of tests:
@@ -17,7 +20,10 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
+    FineRef,
+    GroupLabel,
     ImageRefMode,
     InlineGroup,
     PictureClassificationLabel,
@@ -34,7 +40,7 @@ from docling.backend.opendocument_backend import (
     OdsDocumentBackend,
     OdtDocumentBackend,
 )
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
 
@@ -44,6 +50,7 @@ from .verify_utils import verify_document, verify_export
 pytest.importorskip("odfdo")
 from odfdo import (
     Bookmark,
+    Cell,
     Document as OdfDocument,
     DrawPage,
     Element,
@@ -53,7 +60,9 @@ from odfdo import (
     Link,
     List as OdfList,
     ListItem,
+    Note,
     Paragraph,
+    Row,
     Section,
     Spacer,
     Span,
@@ -250,6 +259,48 @@ def test_odt_section_preserves_split_list_continuation(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odt_hidden_section_goes_to_invisible_layer(tmp_path: Path):
+    """A hidden section (``text:display="none"``) is left out of the export.
+
+    Its content, nested sections included, stays available in
+    ``ContentLayer.INVISIBLE``, the same as a hidden ODS sheet or ODP slide.
+    """
+    path = tmp_path / "hidden_section.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(Paragraph("Question"))
+    hidden = Section(name="Answers")
+    hidden.set_attribute("text:display", "none")
+    hidden.append(Header(1, "Answer key"))
+    table = Table("Answers", width=1, height=1)
+    table.set_value("A1", "42")
+    hidden.append(table)
+    nested = Section(name="Notes")
+    nested.append(Paragraph("Nested note"))
+    hidden.append(nested)
+    body.append(hidden)
+    shown = Section(name="Shown")
+    shown.append(Paragraph("Shown section"))
+    body.append(shown)
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    hidden_texts = [
+        item.text
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.INVISIBLE}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert document.export_to_markdown() == "Question\n\nShown section"
+    assert hidden_texts == ["Answer key", "Nested note"]
+    assert document.tables[0].content_layer == ContentLayer.INVISIBLE
+
+
 def test_ods_conversion(ods_path: Path):
     res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(ods_path)
     doc = res.document
@@ -282,6 +333,30 @@ def test_odp_conversion(odp_path: Path):
         "Second bullet",
         "Second Slide Heading",
     } <= body_texts
+
+
+def test_ods_page_range(ods_path: Path):
+    """page_range selects sheets, keeping their page numbers, as for XLSX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(
+        ods_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    assert set(doc.pages) == {2}
+    assert [g.name for g in doc.groups] == ["sheet: Sheet2"]
+    assert len(doc.tables) == 1
+
+
+def test_odp_page_range(odp_path: Path):
+    """page_range selects slides, as for PPTX."""
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(
+        odp_path, page_range=(2, 2)
+    )
+    doc = res.document
+
+    texts = {t.text for t in doc.texts}
+    assert "Second Slide Heading" in texts
+    assert not {"Slide One", "Headline Slide", "First bullet"} & texts
 
 
 @pytest.mark.parametrize(
@@ -365,6 +440,39 @@ def test_ods_merged_cells(tmp_path: Path):
     assert anchor.text == "merged"
 
 
+def test_ods_oversized_spans_clamped_to_table_size(tmp_path: Path):
+    # Declared spans far beyond the sheet must not size the table: it keeps the
+    # shape of its real cells, and the spans stop at its edges.
+    path = tmp_path / "oversized_spans.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    t = Table("S", width=2, height=2)
+    t.set_value("A1", "A")
+    t.set_value("B1", "B")
+    t.set_value("B2", "C")
+    t.set_span([0, 0, 0, 1])  # A1 spans two rows, A2 becomes covered
+    a1 = t.get_cell("A1")
+    a1.set_attribute("table:number-rows-spanned", "100000000")
+    t.set_cell("A1", a1)
+    b1 = t.get_cell("B1")
+    b1.set_attribute("table:number-columns-spanned", "3000000")
+    t.set_cell("B1", b1)
+    body.append(t)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+
+    assert len(res.document.tables) == 1
+    data = res.document.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+
+
 def test_odt_rich_table_cell_text(tmp_path: Path):
     path = tmp_path / "rich_table.odt"
     doc = OdfDocument("text")
@@ -424,6 +532,65 @@ def test_ods_rich_table_cell_defines_data_bounds(tmp_path: Path):
     assert cell_texts[(0, 1)] == "plain"
 
 
+def test_ods_sheet_anchored_picture_is_kept(tmp_path: Path):
+    # A picture anchored to the sheet is stored in <table:shapes>, not in a cell
+    image_path = tmp_path / "sheet_image.png"
+    Image.new("RGB", (2, 2), "red").save(image_path)
+
+    path = tmp_path / "sheet_image.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    table = Table("Sheet1", width=2, height=2)
+    body.append(table)
+    cell = table.get_cell("B2")
+    cell.append(Frame.image_frame(doc.add_file(str(image_path)), size=("1cm", "1cm")))
+    table.set_cell("B2", cell)
+    shapes = Element.from_tag("table:shapes")
+    shapes.append(
+        Frame.image_frame(
+            doc.add_file(str(image_path)), size=("1cm", "1cm"), position=("1cm", "1cm")
+        )
+    )
+    table.insert(shapes, position=0)
+    doc.save(str(path))
+
+    pictures = DocumentConverter().convert(path).document.pictures
+    # One picture from the cell and one from the sheet, neither of them twice
+    assert len(pictures) == 2
+    assert all(p.image is not None for p in pictures)
+
+
+def test_ods_sheet_anchored_vector_picture_is_skipped(tmp_path: Path):
+    # A vector picture cannot become a bitmap, so it is skipped like a cell picture
+    image_path = tmp_path / "sheet_image.svg"
+    image_path.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2">'
+        '<rect width="2" height="2" fill="red"/></svg>'
+    )
+
+    path = tmp_path / "sheet_image_vector.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    table = Table("Sheet1", width=1, height=1)
+    body.append(table)
+    shapes = Element.from_tag("table:shapes")
+    shapes.append(
+        Frame.image_frame(
+            doc.add_file(str(image_path)), size=("1cm", "1cm"), position=("1cm", "1cm")
+        )
+    )
+    table.insert(shapes, position=0)
+    doc.save(str(path))
+
+    result = DocumentConverter().convert(path)
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.document.pictures == []
+
+
 def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
     image_path = tmp_path / "cell_image.png"
     Image.new("RGB", (2, 2), "red").save(image_path)
@@ -451,6 +618,44 @@ def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
     pictures = [item for item in child_items if isinstance(item, PictureItem)]
     assert len(pictures) == 1
     assert pictures[0].image is not None
+
+
+@pytest.mark.parametrize("kind", ["odt", "odp", "ods"])
+def test_cmyk_picture_is_kept(tmp_path: Path, kind: str):
+    # PNG can't store CMYK, so the picture must be converted rather than dropped.
+    image_path = tmp_path / "cmyk.jpg"
+    Image.new("CMYK", (200, 100), (0, 255, 255, 0)).save(image_path, format="JPEG")
+
+    doc = OdfDocument(
+        {"odt": "text", "odp": "presentation", "ods": "spreadsheet"}[kind]
+    )
+    body = doc.body
+    body.clear()
+    frame = Frame.image_frame(doc.add_file(str(image_path)), size=("2cm", "1cm"))
+    if kind == "odt":
+        paragraph = Paragraph("")
+        paragraph.append(frame)
+        body.append(paragraph)
+    elif kind == "odp":
+        page = DrawPage("page1")
+        page.append(frame)
+        body.append(page)
+    else:
+        table = Table("Sheet1", width=1, height=1)
+        body.append(table)
+        cell = table.get_cell("A1")
+        cell.append(frame)
+        table.set_cell("A1", cell)
+    path = tmp_path / f"cmyk.{kind}"
+    doc.save(str(path))
+
+    pictures = DocumentConverter().convert(path).document.pictures
+    assert len(pictures) == 1
+    image = pictures[0].image
+    assert image is not None
+    assert image.pil_image is not None
+    assert image.pil_image.size == (200, 100)
+    assert image.pil_image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
 
 
 def test_odt_ordered_nested_list(tmp_path: Path):
@@ -522,6 +727,67 @@ def test_odt_text_document_nested_lists():
     assert parent_group_3_0_1.parent == item_by_text["numbered list 3"].get_ref()
 
 
+def test_odt_list_item_with_only_an_image_has_no_text(tmp_path: Path):
+    """A list item takes its text from the text runs, as a paragraph does. So an
+    item with only a footnote, or only an image or a chart with no alt text, gets
+    no text. The item keeps its number and its nested list. The footnote body is
+    a footnote item. The image and the chart are the ones of text_document_02.odt."""
+    source = OdfDocument("tests/data/odf/sources/text_document_02.odt")
+    style = Style("list", name="Numbered")
+    style.set_level_style(1, num_format="1", suffix=".")
+    style.set_level_style(2, num_format="1", suffix=")")
+    source.insert_style(style)
+    body = source.body
+    frames = {frame.name: frame.clone for frame in body.get_frames()}
+    body.clear()
+    image, chart, footnote = Paragraph(), Paragraph(), Paragraph()
+    image.append(frames["Image1"])
+    chart.append(frames["Object1"])
+    footnote.append(Note(citation="1", body="Note body."))
+    nested = OdfList(style="Numbered")
+    nested.append(ListItem("Nested one"))
+    odf_list = OdfList(style="Numbered")
+    for children in [
+        [Paragraph("First")],
+        [image],
+        [chart],
+        [footnote],
+        [image.clone, nested],
+        [Paragraph("Last")],
+    ]:
+        item = ListItem()
+        for child in children:
+            item.append(child)
+        odf_list.append(item)
+    body.append(odf_list)
+    path = tmp_path / "list_item_with_only_an_image.odt"
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+    list_items = [
+        item
+        for item, _level in document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [(item.text, item.enumerated, item.marker) for item in list_items] == [
+        ("First", True, "1."),
+        ("", True, "2."),
+        ("", True, "3."),
+        ("", True, "4."),
+        ("", True, "5."),
+        ("Nested one", True, "1)"),
+        ("Last", True, "6."),
+    ]
+    nested_group = list_items[5].parent.resolve(document)
+    assert nested_group.parent == list_items[4].get_ref()
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Note body."]
+
+
 def test_odt_text_document_title_and_subtitle():
     path = Path("tests/data/odf/sources/text_document_01.odt")
 
@@ -590,6 +856,255 @@ def test_odt_hyperlink_preserved(tmp_path: Path):
         "Watch [the example talk](https://example.com/talk) for context."
     )
     assert "example.com/talk" in res.document.model_dump_json()
+
+
+def test_odt_footnote_recovered_not_spliced(tmp_path: Path):
+    """A footnote's body text must not be spliced into the citing sentence, and
+    must not be silently dropped either.
+
+    Regression test: ``_odf_text_runs`` used to have no special case for
+    ``text:note``, so it recursed into the note's citation and body exactly like
+    any other inline span, concatenating an arbitrary-length footnote body
+    straight into the middle of the paragraph that cited it - corrupting the
+    reading-order text rather than merely losing content.
+    """
+    path = tmp_path / "footnote.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    paragraph = Paragraph("Sentence before the marker")
+    paragraph.append(
+        Note(
+            citation="1",
+            body="This is the footnote body text that should not vanish.",
+        )
+    )
+    paragraph.append(Span(" and sentence after the marker."))
+    body.append(paragraph)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    body_texts = [
+        item.text for item in res.document.texts if item.label != DocItemLabel.FOOTNOTE
+    ]
+    assert body_texts == [
+        "Sentence before the marker and sentence after the marker."
+    ], "the footnote body must not be spliced into the citing paragraph"
+
+    footnote_texts = [
+        item.text for item in res.document.texts if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_texts == [
+        "This is the footnote body text that should not vanish."
+    ], "the footnote body must be recovered, not silently dropped"
+
+
+def test_odt_annotation_becomes_comment_not_body_text(tmp_path: Path):
+    """A comment (office:annotation), as LibreOffice Writer saves it, must not be
+    spliced into the paragraph, footnote or table cell that anchors it. A reply
+    joins the thread of the comment it answers, also when the reply comes first.
+    Each thread is a child of the item made from the paragraph of its first
+    comment, or of the root when that paragraph makes no item. A comment on
+    text deleted in a tracked change is dropped with that text."""
+
+    def annotation(
+        attributes: str,
+        author: str,
+        initials: str,
+        text: str,
+        initials_tag: str = "meta:creator-initials",
+    ) -> str:
+        return (
+            f"<office:annotation {attributes}>"
+            f"<dc:creator>{author}</dc:creator>"
+            "<dc:date>2024-01-15T10:00:00</dc:date>"
+            f"<{initials_tag}>{initials}</{initials_tag}>"
+            f"<text:p>{text}</text:p></office:annotation>"
+        )
+
+    comment = annotation('office:name="c1"', "Ann Reviewer", "AR", "Source?")
+    # LibreOffice writes loext:sender-initials when it saves as ODF 1.2.
+    reply = annotation(
+        'office:name="c2" loext:parent-name="c1"',
+        "Bo Writer",
+        "BW",
+        "Added below.",
+        initials_tag="loext:sender-initials",
+    )
+    cell_comment = annotation('office:name="c3"', "Ann Reviewer", "AR", "Cell remark")
+    cell_reply = annotation(
+        'office:name="c6" loext:parent-name="c3"', "Bo Writer", "BW", "Fixed."
+    )
+    deleted_comment = annotation('office:name="c4"', "Bo Writer", "BW", "Gone")
+    note_comment = annotation('office:name="c5"', "Ann Reviewer", "AR", "Which year?")
+    unnamed = [annotation("", "Cy Editor", "CE", f"Note {n}") for n in (1, 2)]
+    # A reply to a reply, saved before the comments it answers, and a second
+    # reply saved after them.
+    chain = [
+        annotation(
+            'office:name="d3" loext:parent-name="d2"', "Ann Reviewer", "AR", "Done."
+        ),
+        annotation(
+            'office:name="d2" loext:parent-name="d1"', "Bo Writer", "BW", "Why?"
+        ),
+        annotation('office:name="d1"', "Ann Reviewer", "AR", "Split this."),
+        annotation(
+            'office:name="d4" loext:parent-name="d1"', "Cy Editor", "CE", "Agreed."
+        ),
+    ]
+    cycle = [
+        annotation('office:name="e1" loext:parent-name="e2"', "Bo Writer", "BW", "A"),
+        annotation('office:name="e2" loext:parent-name="e1"', "Bo Writer", "BW", "B"),
+    ]
+    heading_comment = annotation('office:name="h1"', "Ann Reviewer", "AR", "Rename")
+    number_comment = annotation('office:name="t1"', "Bo Writer", "BW", "Check")
+    item_comment = annotation('office:name="l1"', "Ann Reviewer", "AR", "Too vague")
+    link_comment = annotation('office:name="k1"', "Bo Writer", "BW", "Dead link?")
+    empty_comment = annotation('office:name="p1"', "Cy Editor", "CE", "Add text")
+    box_comment = annotation('office:name="b1"', "Bo Writer", "BW", "In a box")
+    footnote = (
+        '<text:note text:id="n1" text:note-class="footnote">'
+        "<text:note-citation>1</text:note-citation>"
+        f"<text:note-body><text:p>Source: {note_comment}annual report.</text:p>"
+        "</text:note-body></text:note>"
+    )
+
+    path = tmp_path / "annotation.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+    body.append(
+        Element.from_tag(
+            '<text:tracked-changes><text:changed-region text:id="ct1">'
+            f"<text:deletion><text:p>Old{deleted_comment}</text:p></text:deletion>"
+            "</text:changed-region></text:tracked-changes>"
+        )
+    )
+    body.append(
+        Element.from_tag(
+            f'<text:h text:outline-level="1">Budget{heading_comment}</text:h>'
+        )
+    )
+    body.append(
+        Element.from_tag(
+            f"<text:p>The total is {comment}{reply}42 EUR"
+            f'<office:annotation-end office:name="c1"/> this year.{footnote}</text:p>'
+        )
+    )
+    body.append(
+        Element.from_tag(
+            '<table:table table:name="T"><table:table-row>'
+            f"<table:table-cell><text:p>Key{cell_reply}</text:p></table:table-cell>"
+            f"<table:table-cell><text:p>Val{cell_comment}</text:p></table:table-cell>"
+            '<table:table-cell office:value-type="float" office:value="42">'
+            f"<text:p>42{number_comment}</text:p></table:table-cell>"
+            "</table:table-row></table:table>"
+        )
+    )
+    body.append(
+        Element.from_tag(
+            "<text:list><text:list-item>"
+            f"<text:p>First item{item_comment}</text:p>"
+            "</text:list-item></text:list>"
+        )
+    )
+    body.append(
+        Element.from_tag(
+            f"<text:p>More{''.join(unnamed + chain + cycle)} text.</text:p>"
+        )
+    )
+    # A hyperlink splits the paragraph into an InlineGroup of runs.
+    body.append(
+        Element.from_tag(
+            '<text:p>Read <text:a xlink:href="https://example.com/">the report'
+            f"</text:a>{link_comment}</text:p>"
+        )
+    )
+    body.append(Element.from_tag(f"<text:p>{empty_comment}</text:p>"))
+    # The walk skips a text box, so this thread goes to the root at the end.
+    body.append(
+        Element.from_tag(
+            '<draw:frame text:anchor-type="page"><draw:text-box>'
+            f"<text:p>Boxed{box_comment}</text:p></draw:text-box></draw:frame>"
+        )
+    )
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+
+    assert document.export_to_markdown() == (
+        "## Budget\n\nThe total is 42 EUR this year.\n\n"
+        "| Key   | Val   | 42   |\n|-------|-------|------|\n\n"
+        "- First item\n\nMore text.\n\nRead [the report](https://example.com/)"
+    )
+    assert [
+        item.text for item in document.texts if item.label == DocItemLabel.FOOTNOTE
+    ] == ["Source: annual report."]
+    comment_groups = [
+        group for group in document.groups if group.label == GroupLabel.COMMENT_SECTION
+    ]
+    assert {group.content_layer for group in comment_groups} == {ContentLayer.NOTES}
+    threads = [
+        [child.resolve(document).text for child in group.children]
+        for group in comment_groups
+    ]
+    assert threads == [
+        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Rename"],
+        [
+            "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Source?",
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Added below.",
+        ],
+        [
+            "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Cell remark",
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Fixed.",
+        ],
+        ["[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Check"],
+        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Too vague"],
+        ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Note 1"],
+        ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Note 2"],
+        [
+            "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Split this.",
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Why?",
+            "[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Done.",
+            "[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Agreed.",
+        ],
+        [
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: A",
+            "[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: B",
+        ],
+        ["[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: Dead link?"],
+        ["[author: Cy Editor (CE), time: 2024-01-15T10:00:00]: Add text"],
+        ["[author: Ann Reviewer (AR), time: 2024-01-15T10:00:00]: Which year?"],
+        ["[author: Bo Writer (BW), time: 2024-01-15T10:00:00]: In a box"],
+    ]
+    parents = [group.parent.resolve(document) for group in comment_groups]
+    assert [
+        parent.text if isinstance(parent, TextItem) else parent.self_ref
+        for parent in parents
+    ] == [
+        "Budget",
+        "The total is 42 EUR this year.",
+        "Val",
+        "#/tables/0",
+        "First item",
+        "More text.",
+        "More text.",
+        "More text.",
+        "More text.",
+        "#/groups/12",
+        "#/body",
+        "Source: annual report.",
+        "#/body",
+    ]
+    assert isinstance(parents[9], InlineGroup)
+    # As in the DOCX backend, the annotated item refers to its comment groups.
+    for group, parent in zip(comment_groups, parents):
+        if isinstance(parent, (TextItem, TableItem)):
+            assert FineRef(cref=group.self_ref) in parent.comments
 
 
 @pytest.mark.parametrize(
@@ -805,6 +1320,11 @@ def test_odt_text_document_embedded_chart():
     )
     assert chart.meta.tabular_chart is not None
 
+    # This fixture's chart carries no <chart:title>: the title stays unset and
+    # no caption is invented for it.
+    assert chart.meta.tabular_chart.title is None
+    assert not chart.captions
+
     table_data = chart.meta.tabular_chart.chart_data
     assert table_data.num_rows == 5
     assert table_data.num_cols == 4
@@ -816,6 +1336,54 @@ def test_odt_text_document_embedded_chart():
     assert cell_texts[(1, 0)] == "Row 1"
     assert cell_texts[(1, 1)] == "9.1"
     assert cell_texts[(4, 3)] == "6.2"
+
+
+def test_odt_embedded_chart_title_is_read(tmp_path: Path):
+    """An embedded chart's own chart:title reaches the meta and a caption.
+
+    The PowerPoint backend emits a native chart's title as a text item, but the
+    ODF backend read only the chart's local table, so a chart embedded in an ODP
+    or ODT lost its title entirely. The title is injected here rather than added
+    as a new binary fixture, so the chart keeps the structure the sources already
+    exercise.
+    """
+    source = Path("tests/data/odf/sources/text_document_02.odt")
+    path = tmp_path / "chart_with_title.odt"
+    with (
+        zipfile.ZipFile(source) as src,
+        zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as dst,
+    ):
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename == "Object 1/content.xml":
+                text = data.decode("utf-8")
+                # chart:title is a child of chart:chart, so it goes right after
+                # the opening tag.
+                start = text.index("<chart:chart")
+                end = text.index(">", start) + 1
+                text = (
+                    text[:end]
+                    + "<chart:title><text:p>Chart Title</text:p></chart:title>"
+                    + text[end:]
+                )
+                data = text.encode("utf-8")
+            dst.writestr(item, data)
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    charts = [
+        item
+        for item in res.document.pictures
+        if item.meta is not None and item.meta.tabular_chart is not None
+    ]
+
+    assert len(charts) == 1
+    assert charts[0].meta.tabular_chart.title == "Chart Title"
+
+    captions = [
+        item for item in res.document.texts if item.label == DocItemLabel.CAPTION
+    ]
+    assert [item.text for item in captions] == ["Chart Title"]
+    assert charts[0].caption_text(res.document) == "Chart Title"
 
 
 def test_odt_dangling_embedded_object_is_skipped(tmp_path: Path):
@@ -1377,6 +1945,44 @@ def test_ods_sheet_names_filter(tmp_path: Path):
     assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
 
 
+def test_ods_sheet_padded_to_the_full_grid(tmp_path: Path):
+    """Test a sheet that LibreOffice padded towards its full grid.
+
+    LibreOffice pads the sheets it writes, for example every sheet that it
+    converts from XLSX, with repeated empty cells that only carry a style, up to
+    column 16,384. When a column has a style, it also adds empty rows up to row
+    1,048,576. The padding holds no content, but the backend expanded each
+    repetition when it walked the sheet, so the conversion did not finish.
+    """
+    path = tmp_path / "padded.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    sheet = Table("Sheet1")
+    for values in (["Name", "Qty"], ["a", 1], ["b", 2]):
+        row = Row()
+        for value in values:
+            row.append_cell(Cell(value))
+        row.append_cell(Cell(repeated=16382, style="Default"))
+        sheet.append_row(row)
+    padding = Row(repeated=1048573)
+    padding.append_cell(Cell(repeated=16384, style="Default"))
+    sheet.append_row(padding)
+    body.append(sheet)
+    doc.save(str(path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.ODS])
+    tables = list(converter.convert(path).document.tables)
+
+    assert len(tables) == 1
+    assert [[cell.text for cell in row] for row in tables[0].data.grid] == [
+        ["Name", "Qty"],
+        ["a", "1"],
+        ["b", "2"],
+    ]
+
+
 def _build_odt_with_external_image_href(path: Path, href: str) -> Path:
     """Build a minimal ODT whose only draw:image points at *href* (not embedded)."""
     content_xml = (
@@ -1454,3 +2060,327 @@ def test_odt_extensionless_path_is_not_read(tmp_path: Path):
     assert "/etc/passwd" not in files_opened, (
         "ODF backend attempted to open an extension-less system path"
     )
+
+
+def test_odp_hidden_slide_goes_to_invisible_layer(tmp_path: Path):
+    """A hidden slide (``presentation:visibility="hidden"``) is left out of the export.
+
+    Its content stays available in ``ContentLayer.INVISIBLE``, the same as a
+    hidden ODS sheet.
+    """
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+    hidden_style = Style("drawing-page", name="dp_hidden")
+    properties = Element.from_tag("style:drawing-page-properties")
+    properties.set_attribute("presentation:visibility", "hidden")
+    hidden_style.append(properties)
+    doc.insert_style(hidden_style, automatic=True)
+    for index, (name, text, style_name) in enumerate(
+        [
+            ("Visible slide", "Presented text", None),
+            ("Hidden slide", "Backup text", "dp_hidden"),
+        ]
+    ):
+        page = DrawPage(f"page{index + 1}", name=name)
+        if style_name is not None:
+            page.set_attribute("draw:style-name", style_name)
+        page.append(
+            Frame.text_frame([text], size=("10cm", "2cm"), position=("1cm", "1cm"))
+        )
+        body.append(page)
+    path = tmp_path / "hidden.odp"
+    doc.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path).document
+    )
+
+    hidden_texts = [
+        item.text
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.INVISIBLE}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert document.export_to_markdown() == "# Visible slide\n\nPresented text"
+    assert hidden_texts == ["Hidden slide", "Backup text"]
+
+
+def test_odp_speaker_notes_go_to_notes_layer(tmp_path: Path):
+    """The speaker notes of a slide (``presentation:notes``) are kept.
+
+    As in the PowerPoint backend, they go under the slide group in
+    ``ContentLayer.NOTES``. The slide thumbnail and the slide number and date
+    fields of a notes page are not notes.
+    """
+    field = (
+        '<draw:frame presentation:class="{}"><draw:text-box><text:p>{}</text:p>'
+        "</draw:text-box></draw:frame>"
+    )
+    notes_pages = [
+        "<presentation:notes>"
+        '<draw:page-thumbnail draw:page-number="1" presentation:class="page"/>'
+        '<draw:frame presentation:class="notes"><draw:text-box>'
+        "<text:p>First note.</text:p>"
+        "<text:list><text:list-item><text:p>Point one</text:p></text:list-item>"
+        "<text:list-item><text:p>Point two</text:p></text:list-item></text:list>"
+        "<text:p>Last note.</text:p>"
+        "</draw:text-box></draw:frame>"
+        + field.format("page-number", "1")
+        + "</presentation:notes>",
+        "<presentation:notes>"
+        + field.format("page-number", "2")
+        + field.format("date-time", "17/10/2026")
+        + "</presentation:notes>",
+    ]
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+    for index, notes in enumerate(notes_pages):
+        page = DrawPage(f"page{index + 1}", name=f"Slide {index + 1}")
+        page.append(
+            Frame.text_frame(
+                [f"Slide text {index + 1}"],
+                size=("10cm", "2cm"),
+                position=("1cm", "1cm"),
+            )
+        )
+        page.append(Element.from_tag(notes))
+        body.append(page)
+    path = tmp_path / "notes.odp"
+    doc.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path).document
+    )
+
+    notes_items = [
+        item
+        for item, _ in document.iterate_items(
+            included_content_layers={ContentLayer.NOTES}
+        )
+        if isinstance(item, TextItem)
+    ]
+    assert [item.text for item in notes_items] == [
+        "First note.",
+        "Point one",
+        "Point two",
+        "Last note.",
+    ]
+    first_slide = document.groups[0]
+    assert all(
+        item.parent == first_slide.get_ref()
+        or item.parent.resolve(document).parent == first_slide.get_ref()
+        for item in notes_items
+    )
+    assert document.export_to_markdown() == (
+        "# Slide 1\n\nSlide text 1\n\n# Slide 2\n\nSlide text 2"
+    )
+
+
+def _odt_master(source: OdfDocument, name: str) -> Element:
+    masters = source.styles.get_element("office:master-styles")
+    assert masters is not None
+    for master in masters.children:
+        if master.get_attribute("style:name") == name:
+            return master
+    master = Element.from_tag(f'<style:master-page style:name="{name}"/>')
+    masters.append(master)
+    return master
+
+
+def _convert_odt_source(source: OdfDocument, path: Path) -> DoclingDocument:
+    source.save(str(path))
+    return DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+
+
+def test_odt_header_footer_structure_and_body(tmp_path: Path):
+    source = OdfDocument("text")
+    source.body.clear()
+    source.body.append(Header(1, "Body heading"))
+    source.body.append(Paragraph("Body paragraph."))
+    baseline = _convert_odt_source(source, tmp_path / "baseline.odt")
+    master = _odt_master(source, "Standard")
+    header = Element.from_tag(
+        '<style:header><text:h text:outline-level="2">Header heading</text:h>'
+        '<text:p>Header text<office:annotation office:name="comment">'
+        "<dc:creator>Header reviewer</dc:creator><dc:date>2026-01-01</dc:date>"
+        "<text:p>Header note</text:p></office:annotation>.</text:p>"
+        "<text:list><text:list-item><text:p>Header list</text:p>"
+        "</text:list-item></text:list></style:header>"
+    )
+    table = Table("HeaderTable", width=1, height=1)
+    table.set_value("A1", "Header cell")
+    header.append(table)
+    image_path = tmp_path / "header.png"
+    Image.new("RGB", (2, 2), "red").save(image_path)
+    header.append(
+        Frame.image_frame(source.add_file(str(image_path)), size=("1cm", "1cm"))
+    )
+    master.append(header)
+    master.append(
+        Element.from_tag("<style:footer><text:p>Footer text</text:p></style:footer>")
+    )
+    document = _convert_odt_source(source, tmp_path / "furniture.odt")
+
+    assert document.export_to_markdown() == baseline.export_to_markdown()
+    furniture = [
+        group
+        for group in document.groups
+        if group.content_layer == ContentLayer.FURNITURE
+    ]
+    assert [group.name for group in furniture if group.label == GroupLabel.SECTION] == [
+        "page header",
+        "page footer",
+    ]
+    header_group = furniture[0]
+    assert header_group.parent.cref == document.body.self_ref
+    assert [
+        item.text
+        for item in document.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == ["Header heading", "Header text.", "Header list", "Footer text"]
+    assert len(document.tables) == 1
+    assert document.tables[0].content_layer == ContentLayer.FURNITURE
+    assert document.tables[0].data.table_cells[0].text == "Header cell"
+    assert len(document.pictures) == 1
+    assert document.pictures[0].content_layer == ContentLayer.FURNITURE
+    paragraph = next(item for item in document.texts if item.text == "Header text.")
+    assert paragraph.parent.resolve(document) == header_group
+    assert len(paragraph.comments) == 1
+    assert [
+        child.resolve(document).text
+        for child in paragraph.comments[0].resolve(document).children
+    ] == ["[author: Header reviewer, time: 2026-01-01]: Header note"]
+
+
+@pytest.mark.parametrize(
+    "variant",
+    ["header", "header-left", "header-first", "footer", "footer-left", "footer-first"],
+)
+@pytest.mark.parametrize("display", [None, "true", "false", "0"])
+def test_odt_header_footer_variants(tmp_path: Path, variant: str, display: str | None):
+    source = OdfDocument("text")
+    source.body.clear()
+    source.body.append(Paragraph("Body"))
+    attribute = f' style:display="{display}"' if display is not None else ""
+    _odt_master(source, "Standard").append(
+        Element.from_tag(
+            f"<style:{variant}{attribute}><text:p>{variant}</text:p></style:{variant}>"
+        )
+    )
+    _odt_master(source, "Unused").append(
+        Element.from_tag("<style:header><text:p>Unused header</text:p></style:header>")
+    )
+    document = _convert_odt_source(source, tmp_path / "variants.odt")
+    assert [
+        item.text
+        for item in document.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == ([] if display in ("false", "0") else [variant])
+
+
+@pytest.mark.parametrize("explicit_first", [False, True])
+def test_odt_master_references_and_next_cycle(tmp_path: Path, explicit_first: bool):
+    source = OdfDocument("text")
+    source.body.clear()
+    source.body.append(
+        Element.from_tag('<text:p text:style-name="Child">First</text:p>')
+        if explicit_first
+        else Paragraph("First")
+    )
+    source.body.append(
+        Element.from_tag('<text:p text:style-name="Child">Second</text:p>')
+    )
+    source.body.append(
+        Element.from_tag('<text:p text:style-name="Child">Repeated</text:p>')
+    )
+    source.body.append(
+        Element.from_tag(
+            '<table:table table:name="BodyTable" table:style-name="TablePage"><table:table-row><table:table-cell><text:p text:style-name="Ignored">Cell</text:p></table:table-cell></table:table-row></table:table>'
+        )
+    )
+    automatic = source.content.get_element("office:automatic-styles")
+    assert automatic is not None
+    for xml in (
+        '<style:style style:name="Child" style:family="paragraph" style:parent-style-name="Parent"/>',
+        '<style:style style:name="Parent" style:family="paragraph" style:master-page-name="Custom"/>',
+        '<style:style style:name="Ignored" style:family="paragraph" style:master-page-name="Unused"/>',
+        '<style:style style:name="TablePage" style:family="table" style:master-page-name="TableMaster"/>',
+    ):
+        target = (
+            source.styles.get_element("office:styles")
+            if 'style:name="Parent"' in xml
+            else automatic
+        )
+        assert target is not None
+        target.append(Element.from_tag(xml))
+    for name in ("Standard", "Custom", "TableMaster", "Next", "Unused"):
+        _odt_master(source, name).append(
+            Element.from_tag(f"<style:header><text:p>{name}</text:p></style:header>")
+        )
+    _odt_master(source, "Custom").set_attribute("style:next-style-name", "Next")
+    _odt_master(source, "Next").set_attribute("style:next-style-name", "Custom")
+    document = _convert_odt_source(source, tmp_path / "masters.odt")
+    expected = ([] if explicit_first else ["Standard"]) + [
+        "Custom",
+        "TableMaster",
+        "Next",
+    ]
+    assert [
+        item.text
+        for item in document.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == expected
+
+
+def test_odt_first_master_fallback_and_empty_header(tmp_path: Path):
+    source = OdfDocument("text")
+    source.body.clear()
+    source.body.append(Paragraph("Body"))
+    master = _odt_master(source, "Standard")
+    master.set_attribute("style:name", "FirstDeclared")
+    master.append(Element.from_tag("<style:header><text:p/></style:header>"))
+    master.append(
+        Element.from_tag(
+            "<style:footer><text:p>Fallback footer</text:p></style:footer>"
+        )
+    )
+    document = _convert_odt_source(source, tmp_path / "fallback.odt")
+    assert [
+        group.name
+        for group in document.groups
+        if group.content_layer == ContentLayer.FURNITURE
+    ] == ["page footer"]
+    assert [
+        item.text
+        for item in document.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == ["Fallback footer"]
+
+
+def test_odt_master_variant_order_and_shared_text(tmp_path: Path):
+    source = OdfDocument("text")
+    source.body.clear()
+    master = _odt_master(source, "Standard")
+    # XML storage order does not define extraction order. Equal definitions stay distinct.
+    variants = [
+        "footer-first",
+        "footer-left",
+        "footer",
+        "header-first",
+        "header-left",
+        "header",
+    ]
+    for variant in variants:
+        master.append(
+            Element.from_tag(
+                f"<style:{variant}><text:p>Same text</text:p></style:{variant}>"
+            )
+        )
+    document = _convert_odt_source(source, tmp_path / "ordered.odt")
+    assert [group.name for group in document.groups] == ["page header"] * 3 + [
+        "page footer"
+    ] * 3
+    assert [item.text for item in document.texts] == ["Same text"] * 6

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Read weight and slant out of a PDF font name.
 
 PDF font names are the only styling metadata Docling gets from the digital text layer:

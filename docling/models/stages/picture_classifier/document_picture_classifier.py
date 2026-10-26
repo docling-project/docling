@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from collections.abc import Iterable
 from pathlib import Path
 from typing import List, Optional, Union
@@ -20,6 +23,7 @@ from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.picture_classification_options import (
     DocumentPictureClassifierOptions,
 )
+from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.inference_engines.image_classification import (
     BaseImageClassificationEngine,
@@ -27,6 +31,7 @@ from docling.models.inference_engines.image_classification import (
     create_image_classification_engine,
 )
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+from docling.utils.image_utils import to_rgb
 
 __all__ = [
     "DocumentPictureClassifier",
@@ -62,6 +67,7 @@ class DocumentPictureClassifier(
         Processes a batch of elements and adds classification annotations.
     """
 
+    progress_step = EnrichmentStep.PICTURE_CLASSIFICATION
     images_scale = 2
 
     def __init__(
@@ -118,7 +124,11 @@ class DocumentPictureClassifier(
         bool
             True if the element is a PictureItem and processing is enabled; False otherwise.
         """
-        return self.enabled and isinstance(element, PictureItem)
+        return (
+            self.enabled
+            and isinstance(element, PictureItem)
+            and (element.meta is None or element.meta.classification is None)
+        )
 
     def __call__(
         self,
@@ -157,9 +167,9 @@ class DocumentPictureClassifier(
 
             raw_image = el.image
             if isinstance(raw_image, Image.Image):
-                raw_image = raw_image.convert("RGB")
+                raw_image = to_rgb(raw_image)
             elif isinstance(raw_image, np.ndarray):
-                raw_image = Image.fromarray(raw_image).convert("RGB")
+                raw_image = to_rgb(Image.fromarray(raw_image))
             else:
                 raise TypeError(
                     "Supported input formats are PIL.Image.Image or numpy.ndarray."

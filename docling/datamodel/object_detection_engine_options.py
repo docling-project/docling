@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Engine option helpers for object-detection runtimes."""
 
 from __future__ import annotations

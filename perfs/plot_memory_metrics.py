@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Plot process memory metrics collected by iterate_pdf_pages.py."""
 
 import argparse

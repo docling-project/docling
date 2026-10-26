@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import csv
 import io
 import logging
@@ -22,11 +25,19 @@ from docling.datamodel.pipeline_options import (
     TesseractCliOcrOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import OcrLanguageNotSupportedError
 from docling.models.base_ocr_model import BaseOcrModel
-from docling.utils.ocr_utils import (
-    map_tesseract_script,
+from docling.models.stages.ocr.tesseract_utils import (
+    installed_tesseract_languages,
+    language_to_tesseract_code,
+    osd_script_to_tesseract_code,
     parse_tesseract_orientation,
     tesseract_box_to_bounding_rectangle,
+    tesseract_vocabulary,
+)
+from docling.utils.ocr_language import (
+    OcrLanguage,
+    OcrLanguageSupport,
 )
 from docling.utils.profiling import TimeRecorder
 
@@ -37,6 +48,8 @@ _VALID_LANG_RE = re.compile(r"^[a-zA-Z0-9_/][a-zA-Z0-9_/+-]*$")
 
 
 class TesseractOcrCliModel(BaseOcrModel):
+    multiple_languages = True
+
     def __init__(
         self,
         enabled: bool,
@@ -57,9 +70,11 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         self._name: Optional[str] = None
         self._version: Optional[str] = None
-        self._tesseract_languages: Optional[List[str]] = None
-        self._script_prefix: Optional[str] = None
-        self._is_auto: bool = "auto" in self.options.lang
+        self._tesseract_vocabulary: Optional[List[str]] = None
+        # No languages requested: Tesseract runs orientation and script
+        # detection per page and picks a `script/` reader from the result.
+        self._auto_script: bool = not self.languages
+        self._native_codes: List[str] = []
 
         # Pre-validate and store sanitized subprocess arguments at construction time
         # so that all subsequent subprocess calls use only these already-validated values.
@@ -69,15 +84,11 @@ class TesseractOcrCliModel(BaseOcrModel):
             if self.options.path is not None
             else None
         )
-        if self.options.lang:
-            for _lang_token in self.options.lang:
-                if _lang_token != "auto":
-                    self._sanitize_lang(_lang_token)
 
         if self.enabled:
             try:
                 self._get_name_and_version()
-                self._set_languages_and_prefix()
+                self._set_languages()
 
             except Exception as exc:
                 raise RuntimeError(
@@ -86,6 +97,34 @@ class TesseractOcrCliModel(BaseOcrModel):
                     "The actual command for Tesseract can be specified in `pipeline_options.ocr_options.tesseract_cmd='tesseract'`. "
                     "Alternatively, Docling has support for other OCR engines. See the documentation."
                 )
+
+            if self._auto_script and "osd" not in (self._tesseract_vocabulary or []):
+                raise ImportError(
+                    "An empty OCR language list runs Tesseract's orientation and "
+                    "script detection, which needs the 'osd' traineddata. Install "
+                    "it (e.g. the tesseract-ocr-osd package) or name a language "
+                    "explicitly in `ocr_options.lang`."
+                )
+
+            # Needs the installed language list, so it runs after the probe above.
+            self._native_codes = [
+                self._sanitize_lang(lang) for lang in self.resolve_ocr_languages()
+            ]
+
+    def supported_ocr_languages(self) -> OcrLanguageSupport:
+        return installed_tesseract_languages(self._tesseract_vocabulary or [])
+
+    def map_ocr_language(self, language: OcrLanguage) -> str | List[str]:
+        assert self._tesseract_vocabulary is not None
+        name = language_to_tesseract_code(language)
+        if name not in self._tesseract_vocabulary:
+            raise OcrLanguageNotSupportedError(
+                self._engine_name,
+                language.tag(),
+                supported=self.supported_ocr_languages(),
+                detail=f"No traineddata file {name!r} is installed.",
+            )
+        return name
 
     @staticmethod
     def _sanitize_lang(lang: str) -> str:
@@ -167,16 +206,14 @@ class TesseractOcrCliModel(BaseOcrModel):
         Run tesseract CLI
         """
         cmd = [self._safe_tesseract_cmd]
-        if self._is_auto and osd is not None:
+        if self._auto_script and osd is not None:
             lang = self._parse_language(osd)
             if lang is not None:
                 cmd.append("-l")
                 cmd.append(self._sanitize_lang(lang))
-        elif self.options.lang is not None and len(self.options.lang) > 0:
+        elif self._native_codes:
             cmd.append("-l")
-            cmd.append(
-                "+".join(self._sanitize_lang(lang) for lang in self.options.lang)
-            )
+            cmd.append("+".join(self._native_codes))
 
         if self._safe_tessdata_path is not None:
             cmd.append("--tessdata-dir")
@@ -201,9 +238,15 @@ class TesseractOcrCliModel(BaseOcrModel):
         decoded_data = output.stdout.decode("utf-8")
         # _log.info(decoded_data)
 
-        # Read the TSV file generated by Tesseract
+        # Read the TSV file generated by Tesseract. Keep the recognized text as
+        # written: pandas would otherwise turn words like "N/A" or "None" into NaN
+        # and an all-numeric text column into floats ("007" -> 7.0).
         df_result = pd.read_csv(
-            io.StringIO(decoded_data), quoting=csv.QUOTE_NONE, sep="\t"
+            io.StringIO(decoded_data),
+            quoting=csv.QUOTE_NONE,
+            sep="\t",
+            dtype={"text": str},
+            keep_default_na=False,
         )
 
         # Display the dataframe (optional)
@@ -241,17 +284,17 @@ class TesseractOcrCliModel(BaseOcrModel):
         return df_detected
 
     def _parse_language(self, df_osd: pd.DataFrame) -> Optional[str]:
-        assert self._tesseract_languages is not None
+        assert self._tesseract_vocabulary is not None
         scripts = df_osd.loc[df_osd["key"] == "Script"].value.tolist()
         if len(scripts) == 0:
             _log.warning("Tesseract cannot detect the script of the page")
             return None
 
-        script = map_tesseract_script(scripts[0].strip())
-        lang = f"{self._script_prefix}{script}"
+        script = scripts[0].strip()
+        lang = osd_script_to_tesseract_code(script)
 
         # Check if the detected language has been installed
-        if lang not in self._tesseract_languages:
+        if lang not in self._tesseract_vocabulary:
             msg = f"Tesseract detected the script '{script}' and language '{lang}'."
             msg += " However this language is not installed in your system and will be ignored."
             _log.warning(msg)
@@ -262,9 +305,9 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         return lang
 
-    def _set_languages_and_prefix(self):
+    def _set_languages(self):
         r"""
-        Read and set the languages installed in tesseract and decide the script prefix
+        Read and set the languages installed in tesseract
         """
         # Get all languages
         cmd = [self._safe_tesseract_cmd, "--list-langs"]
@@ -274,15 +317,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         decoded_data = output.stdout.decode("utf-8")
         df_list = pd.read_csv(io.StringIO(decoded_data), header=None)
-        self._tesseract_languages = df_list[0].tolist()[1:]
-
-        # Decide the script prefix
-        if any(lang.startswith("script/") for lang in self._tesseract_languages):
-            script_prefix = "script/"
-        else:
-            script_prefix = ""
-
-        self._script_prefix = script_prefix
+        self._tesseract_vocabulary = tesseract_vocabulary(df_list[0].tolist()[1:])
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -330,7 +365,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 )
                                 # Skipping if OSD fail when in auto mode, otherwise proceed
                                 # to OCR in the hope OCR will succeed while OSD failed
-                                if self._is_auto:
+                                if self._auto_script:
                                     continue
                             if doc_orientation != 0:
                                 high_res_image = high_res_image.rotate(

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """ONNX Runtime implementation for RT-DETR style object-detection models."""
 
 from __future__ import annotations

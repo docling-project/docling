@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Backend to parse XBRL (eXtensible Business Reporting Language) documents.
 
 XBRL is a standard XML format used for business and financial reporting.
@@ -51,6 +54,8 @@ try:
     from arelle.ModelDocument import Type  # type: ignore
     from arelle.ModelDtsObject import ModelConcept  # type: ignore
     from arelle.ModelXbrl import ModelXbrl  # type: ignore
+
+    from docling.backend.xml.xbrl_web_cache import FetchPolicyWebCache
 
     _XBRL_AVAILABLE = True
 except ImportError as e:
@@ -116,7 +121,11 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                     " 'options.enable_remote_fetch=True'. Either one or the other"
                     " needs to be enabled to load taxonomies."
                 )
-            with TemporaryDirectory() as tmpdir:
+            # Arelle keeps the taxonomy package zip files open for the lifetime
+            # of the model, which outlives this directory. On Windows, open
+            # files cannot be deleted, so the cleanup of this directory may
+            # leave stale files behind instead of raising.
+            with TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
                 tmp_path: Path = Path(tmpdir)
                 zip_paths: list[str] = []
                 if self.options.taxonomy:
@@ -149,21 +158,34 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
 
                 # cntlr = Cntlr.Cntlr(logFileName="logToPrint")
                 cntlr = Cntlr.Cntlr()
-                # Disable remote access for security purposes, unless explicitly set
+                # Apply the fetch options to every document that Arelle resolves.
+                # The copy of the instance and of the taxonomy folder is always
+                # readable.
+                web_cache = FetchPolicyWebCache(
+                    cntlr,
+                    enable_local_fetch=self.options.enable_local_fetch,
+                    enable_remote_fetch=self.options.enable_remote_fetch,
+                    local_roots=[tmp_path],
+                )
+                cntlr.webCache = web_cache
                 if not self.options.enable_remote_fetch:
-                    cntlr.webCache.workOffline = True
                     cntlr.modelManager.validateDisclosureSystem = False
                 else:
                     # TODO: parametrize the timeout?
-                    cntlr.webCache.timeout = _WEB_CACHE_TIMEOUT
+                    web_cache.timeout = _WEB_CACHE_TIMEOUT
                     # TODO: custom set cntlr.webCache.cacheDir?
                     _log.debug(
-                        f"Web Cache for remote taxonomy is: {cntlr.webCache.cacheDir}"
+                        f"Web Cache for remote taxonomy is: {web_cache.cacheDir}"
                     )
 
                 model = cntlr.modelManager.load(
                     str(instance_path), taxonomyPackages=zip_paths
                 )
+                if web_cache.refused:
+                    raise OperationNotAllowed(
+                        "XBRL resources refused by the fetch options: "
+                        + "; ".join(web_cache.refused)
+                    )
                 if (
                     not isinstance(model, ModelXbrl)
                     or not model
@@ -313,21 +335,37 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
 
             if fact.concept.isNumeric and fact.localName and fact.value:
                 # period
+                # Arelle adjusts date-only instants and end dates by one day
+                # (they denote the end of that day); `instantDate`/`endDate`
+                # report the dates as declared in the instance contexts.
+                # The properties are `date | None`, so guard against a
+                # malformed context producing a literal "None" in the cell.
                 period_text = ""
                 if fact.context is not None:
-                    if fact.context.isInstantPeriod:
-                        period_text = str(fact.context.instantDatetime.date())
-                    elif fact.context.isStartEndPeriod:
-                        period_text = f"{fact.context.startDatetime.date()} - {fact.context.endDatetime.date()}"
+                    if (
+                        fact.context.isInstantPeriod
+                        and fact.context.instantDate is not None
+                    ):
+                        period_text = str(fact.context.instantDate)
+                    elif (
+                        fact.context.isStartEndPeriod
+                        and fact.context.startDatetime is not None
+                        and fact.context.endDate is not None
+                    ):
+                        period_text = f"{fact.context.startDatetime.date()} - {fact.context.endDate}"
 
                 # unit
                 unit_text = ""
-                if (
-                    fact.unit is not None
-                    and fact.unit.measures
-                    and fact.unit.measures[0]
-                ):
-                    unit_text = fact.unit.measures[0][0].localName
+                if fact.unit is not None:
+                    # ModelUnit.measures is always a (numerators, denominators) pair,
+                    # rendered like Arelle's ModelUnit.value, e.g. "USD / shares"
+                    numerators, denominators = fact.unit.measures
+                    if numerators:
+                        unit_text = " ".join(m.localName for m in numerators)
+                        if denominators:
+                            unit_text += " / " + " ".join(
+                                m.localName for m in denominators
+                            )
 
                 # decimals
                 decimals_text = str(fact.decimals) if fact.decimals is not None else ""

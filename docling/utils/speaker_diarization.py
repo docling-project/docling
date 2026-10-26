@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Speaker diarization using Resemblyzer embedding-based clustering.
 
 Assigns speaker labels to transcript segments by:

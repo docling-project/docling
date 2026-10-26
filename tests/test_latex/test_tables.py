@@ -1,10 +1,16 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from docling_core.transforms.serializer.doclang import DocLangParams
+from docling_core.transforms.serializer.latex import LaTeXDocSerializer, LaTeXParams
+from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel, RichTableCell
 
 from docling.backend.latex_backend import LatexDocumentBackend
+from docling.backend.utils.table_spans import MAX_COLSPAN
 from docling.datamodel.backend_options import LatexBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
@@ -12,6 +18,11 @@ from docling.document_converter import DocumentConverter
 
 from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
+from .latex_serializer import (
+    SourceDocLangSerializer,
+    SourceLaTeXDocSerializer,
+    SourceLaTeXInlineSerializer,
+)
 
 GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
@@ -50,6 +61,72 @@ def test_latex_table_parsing():
     assert "%Escaped" in cells  # Should be unescaped or at least cleanly parsed
 
 
+def test_latex_table_cell_drops_source_linebreaks():
+    latex_content = (
+        b"\\documentclass{article}\\begin{document}"
+        b"\\begin{tabular}{l}first\n\tsecond \\\\"
+        b"\\end{tabular}\\end{document}"
+    )
+    stream = BytesIO(latex_content)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="table.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["first second"]
+
+
+def test_latex_table_cells_keep_inline_formulas():
+    latex_content = rb"""\documentclass{article}
+\newcommand{\mytree}{\ensuremath{\ell{\mathsf T}k}\,}
+\begin{document}
+\begin{tabular}{ll}
+Term & Meaning \\
+Sparse graph $G$ & Every subgraph on $n'$ vertices has $\le kn'-\ell$ edges \\
+\mytree & A tree \\
+\end{tabular}
+\end{document}"""
+    stream = BytesIO(latex_content)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="rich-table.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    assert len(doc.tables) == 1
+    grid = doc.tables[0].data.grid
+    assert not isinstance(grid[0][0], RichTableCell)
+    assert isinstance(grid[1][0], RichTableCell)
+    assert isinstance(grid[1][1], RichTableCell)
+    assert isinstance(grid[2][0], RichTableCell)
+    doc = DoclingDocument.model_validate(doc.model_dump())
+
+    dclg = doc.export_to_doclang()
+    assert "<formula>G</formula>" in dclg
+    assert r"<formula><![CDATA[\le kn'-\ell]]></formula>" in dclg
+    assert r"<formula>\ell{\mathsf T}k</formula>" in dclg
+
+    parsed_latex = (
+        LaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(include_annotations=False, enable_chart_tables=False),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    assert "Sparse graph $G$" in parsed_latex
+    assert r"$\le kn'-\ell$ edges" in parsed_latex
+    assert r"$\ell{\mathsf T}k$" in parsed_latex
+    assert r"\$G\$" not in parsed_latex
+
+
 def test_latex_table_environment():
     """Test table environment (wrapper around tabular)"""
     latex_content = b"""
@@ -73,7 +150,73 @@ def test_latex_table_environment():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    assert len(doc.tables) >= 1
+    assert len(doc.tables) == 1
+    assert [ref.resolve(doc).text for ref in doc.tables[0].captions] == ["Sample table"]
+
+
+@pytest.mark.parametrize(
+    "environment,caption_first",
+    [("table", False), ("table", True), ("longtable", True)],
+)
+def test_latex_table_caption_keeps_inline_formula(
+    environment: str, caption_first: bool
+):
+    caption = r"\caption{Values of $x$}"
+    tabular = r"\begin{tabular}{c}A\end{tabular}"
+    if environment == "longtable":
+        content = rf"\begin{{longtable}}{{c}}{caption}\\ A\\\end{{longtable}}"
+    else:
+        content = f"{caption}\n{tabular}" if caption_first else f"{tabular}\n{caption}"
+        content = rf"\begin{{table}}{content}\end{{table}}"
+    source = (
+        f"\\documentclass{{article}}\\begin{{document}}{content}\\end{{document}}"
+    ).encode()
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="table-caption.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    assert len(doc.tables) == 1
+    assert len(doc.tables[0].captions) == 1
+    cap = doc.tables[0].captions[0].resolve(doc)
+    assert cap.label == DocItemLabel.CAPTION
+    assert [
+        item.text
+        for item, _ in doc.iterate_items(root=cap)
+        if item.label == DocItemLabel.FORMULA
+    ] == ["x"]
+
+    dclg = (
+        SourceDocLangSerializer(
+            doc=doc,
+            params=DocLangParams(
+                layers={
+                    ContentLayer.BODY,
+                    ContentLayer.FURNITURE,
+                    ContentLayer.BACKGROUND,
+                }
+            ),
+        )
+        .serialize()
+        .text
+    )
+    assert "<caption>" in dclg
+    assert "<formula>x</formula>" in dclg
+
+    parsed = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(include_annotations=False, enable_chart_tables=False),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    assert r"\caption{Values of $x$}" in parsed
 
 
 def test_latex_empty_table():
@@ -122,6 +265,54 @@ def test_latex_starred_table_and_figure():
 
     assert len(doc.tables) >= 1
     assert len(doc.pictures) >= 1
+
+
+def test_latex_table_wrappers_are_tables():
+    """tabular*, tabularx and longtable are parsed as tables, columns intact."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tabular*}{\textwidth}{lr}
+    Key & Value \\
+    Left & Right \\
+    \end{tabular*}
+    \begin{tabularx}{\textwidth}{lX}
+    Name & Description \\
+    Alpha & First row \\
+    \end{tabularx}
+    \begin{longtable}[c]{cc}
+    Item & Qty \\
+    \endhead
+    Widgets & 3 \\
+    \end{longtable}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert len(doc.tables) == 3
+    # The table parser still appends an empty row for the whitespace after the
+    # final row separator, for every environment; only the rows with content
+    # are compared here.
+    rows = [
+        [
+            [cell.text.strip() for cell in row]
+            for row in table.data.grid
+            if any(cell.text.strip() for cell in row)
+        ]
+        for table in doc.tables
+    ]
+    assert rows == [
+        [["Key", "Value"], ["Left", "Right"]],
+        [["Name", "Description"], ["Alpha", "First row"]],
+        [["Item", "Qty"], ["Widgets", "3"]],
+    ]
 
 
 def test_latex_multicolumn_table():
@@ -177,6 +368,35 @@ def test_latex_multirow_table():
     assert len(doc.tables) >= 1
     cells = [c.text.strip() for c in doc.tables[0].data.table_cells]
     assert any("Tall Cell" in c for c in cells)
+
+
+def _convert_latex_table(latex_content: bytes) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    return backend.convert()
+
+
+@pytest.mark.parametrize(
+    "latex_content",
+    [
+        rb"\begin{tabular}{c}\multicolumn{1000000}{c}{x}\end{tabular}",
+        rb"\begin{tabular}{c}\multicolumn{" + b"9" * 5000 + rb"}{c}{x}\end{tabular}",
+        rb"\begin{tabular}{cc}\multicolumn{1000000}{c}{x} & y \\ a & b"
+        rb"\end{tabular}",
+    ],
+    ids=["large", "too-many-digits", "before-a-cell"],
+)
+def test_latex_multicolumn_span_is_clamped(latex_content: bytes):
+    doc = _convert_latex_table(latex_content)
+
+    table = doc.tables[0].data
+    assert table.num_cols < 2 * MAX_COLSPAN
+    assert all(c.end_col_offset_idx <= table.num_cols for c in table.table_cells)
 
 
 def test_latex_table_formatting_in_cells():

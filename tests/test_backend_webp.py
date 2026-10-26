@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 import sys
 from pathlib import Path
 from typing import List
@@ -55,9 +58,9 @@ def test_e2e_webp_conversions():
         TesseractCliOcrOptions(),
         EasyOcrOptions(mode=OcrMode.FULL_PAGE),
         TesseractOcrOptions(mode=OcrMode.FULL_PAGE),
-        TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]),
+        TesseractOcrOptions(mode=OcrMode.FULL_PAGE, lang=[]),
         TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE),
-        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, lang=["auto"]),
+        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, lang=[]),
     ]
 
     # rapidocr is only available for Python >=3.6,<3.14

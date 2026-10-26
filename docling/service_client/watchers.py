@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Task status watchers for docling-serve client jobs."""
 
 from __future__ import annotations

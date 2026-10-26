@@ -19,12 +19,6 @@
     "children": [
       {
         "$ref": "#/texts/0"
-      },
-      {
-        "$ref": "#/texts/1"
-      },
-      {
-        "$ref": "#/texts/2"
       }
     ],
     "content_layer": "body",
@@ -45,74 +39,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 361.07,
-            "t": 827.92,
-            "r": 439.68,
-            "b": 809.92,
+            "l": 87.64,
+            "t": 149.92,
+            "r": 525.48,
+            "b": 77.92,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            7
+            94
           ]
         }
       ],
-      "orig": "package",
-      "text": "package"
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 5.64,
-            "t": 802.49,
-            "r": 443.48,
-            "b": 779.96,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            43
-          ]
-        }
-      ],
-      "orig": "JSON and Markdown in an easy self contained",
-      "text": "JSON and Markdown in an easy self contained"
-    },
-    {
-      "self_ref": "#/texts/2",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 8.66,
-            "t": 774.59,
-            "r": 439.01,
-            "b": 755.92,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            42
-          ]
-        }
-      ],
-      "orig": "Docling bundles PDF document conversion to",
-      "text": "Docling bundles PDF document conversion to"
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

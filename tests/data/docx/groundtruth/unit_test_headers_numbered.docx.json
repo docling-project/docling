@@ -4,7 +4,7 @@
   "name": "unit_test_headers_numbered",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 10626469277266827274,
+    "binary_hash": 2504453942509889212,
     "filename": "unit_test_headers_numbered.docx"
   },
   "furniture": {
@@ -169,6 +169,9 @@
       },
       {
         "$ref": "#/texts/65"
+      },
+      {
+        "$ref": "#/groups/20"
       }
     ],
     "content_layer": "body",
@@ -366,9 +369,6 @@
       "children": [
         {
           "$ref": "#/texts/47"
-        },
-        {
-          "$ref": "#/groups/14"
         }
       ],
       "content_layer": "body",
@@ -378,17 +378,11 @@
     {
       "self_ref": "#/groups/14",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/texts/47"
       },
       "children": [
         {
           "$ref": "#/texts/48"
-        },
-        {
-          "$ref": "#/groups/15"
-        },
-        {
-          "$ref": "#/groups/16"
         }
       ],
       "content_layer": "body",
@@ -398,7 +392,7 @@
     {
       "self_ref": "#/groups/15",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/texts/48"
       },
       "children": [
         {
@@ -412,7 +406,7 @@
     {
       "self_ref": "#/groups/16",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/texts/48"
       },
       "children": [
         {
@@ -438,9 +432,6 @@
         },
         {
           "$ref": "#/texts/57"
-        },
-        {
-          "$ref": "#/groups/17"
         }
       ],
       "content_layer": "body",
@@ -450,7 +441,7 @@
     {
       "self_ref": "#/groups/17",
       "parent": {
-        "$ref": "#/groups/16"
+        "$ref": "#/texts/57"
       },
       "children": [
         {
@@ -489,6 +480,34 @@
       "children": [
         {
           "$ref": "#/texts/63"
+        }
+      ],
+      "content_layer": "body",
+      "name": "header-1",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/20",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/21"
+        }
+      ],
+      "content_layer": "body",
+      "name": "header-0",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/21",
+      "parent": {
+        "$ref": "#/groups/20"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/66"
         }
       ],
       "content_layer": "body",
@@ -1178,7 +1197,11 @@
       "parent": {
         "$ref": "#/groups/13"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/14"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
@@ -1199,7 +1222,14 @@
       "parent": {
         "$ref": "#/groups/14"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/15"
+        },
+        {
+          "$ref": "#/groups/16"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
@@ -1388,7 +1418,11 @@
       "parent": {
         "$ref": "#/groups/16"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/17"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
@@ -1541,6 +1575,19 @@
         "strikethrough": false,
         "script": "baseline"
       }
+    },
+    {
+      "self_ref": "#/texts/66",
+      "parent": {
+        "$ref": "#/groups/21"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "2.3 Inherited numbering section",
+      "text": "2.3 Inherited numbering section",
+      "level": 2
     }
   ],
   "pictures": [],

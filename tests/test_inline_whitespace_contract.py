@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Backend-side checks for the InlineGroup whitespace contract.
 
 Inline runs carry their own significant whitespace and the docling-core serializers
@@ -10,12 +13,15 @@ import re
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import DocItemLabel
 from docx import Document
 
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument, TextItem
+
+from .test_backend_jats import convert_jats_body
 
 
 def test_docx_paragraph_runs_keep_their_own_whitespace(tmp_path):
@@ -149,3 +155,24 @@ def test_html_pre_keeps_interior_whitespace(tmp_path):
 
     plain = _convert_html(tmp_path, "<pre>\ndef f():\n    return 1\n</pre>")
     assert "def f():\n    return 1" in plain.export_to_markdown()
+
+
+def test_jats_inline_runs_rejoin_to_the_source_text():
+    """Runs concatenate back to the paragraph text: no invented and no lost separator."""
+    cases = {
+        "The species <italic>Homo sapiens</italic> is <bold>common</bold>.": (
+            "The species Homo sapiens is common."
+        ),
+        # no whitespace at the boundary in the source, so none in the runs
+        "Water is H<sub>2</sub>O here.": "Water is H2O here.",
+        "Note<sup>1</sup> follows.": "Note1 follows.",
+        # block edges are trimmed exactly once; interior whitespace is verbatim, since
+        # XML content is not whitespace-collapsed the way HTML normal flow is
+        "  padded  <italic>x</italic>  ": "padded  x",
+    }
+    for paragraph, expected in cases.items():
+        doc = convert_jats_body(f"<sec><title>T</title><p>{paragraph}</p></sec>")
+        runs = [
+            t.text for t in doc.texts if t.label == DocItemLabel.TEXT and t.text != "T"
+        ]
+        assert "".join(runs) == expected, paragraph

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Best-effort detection of a code block's programming language.
 
 The blocks docling extracts are usually only a few lines. An explicit hint (a

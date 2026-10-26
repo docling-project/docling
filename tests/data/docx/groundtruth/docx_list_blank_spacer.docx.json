@@ -48,9 +48,6 @@
       "children": [
         {
           "$ref": "#/texts/1"
-        },
-        {
-          "$ref": "#/groups/2"
         }
       ],
       "content_layer": "body",
@@ -60,7 +57,7 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/texts/1"
       },
       "children": [
         {
@@ -121,7 +118,11 @@
       "parent": {
         "$ref": "#/groups/1"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/2"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
