@@ -12,6 +12,7 @@ import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,
+    TextCell,
     TextCellUnit,
 )
 from PIL import ImageDraw
@@ -24,12 +25,35 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 from docling.datamodel.settings import settings
+from docling.datamodel.spatial import BoundingBoxSpatialIndex
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+
+
+def _words_and_ocr_cells(
+    word_cells: Sequence[TextCell], cluster_cells: Sequence[TextCell]
+) -> list[TextCell]:
+    """Table tokens: the native words, plus the OCR cells of the table cluster.
+
+    OCR text exists only as line cells, never as word cells. Without the OCR
+    cells, a table with a few native words (e.g. a scanned form with filled-in
+    fields) loses all its OCR text. A native word under an OCR cell is dropped,
+    as the OCR merge already dropped its line.
+    """
+    ocr_cells = [c for c in cluster_cells if c.from_ocr]
+    idx = BoundingBoxSpatialIndex()
+    for i, cell in enumerate(ocr_cells):
+        idx.insert(i, cell.rect.to_bounding_box())
+    words = [
+        w
+        for w in word_cells
+        if not any(True for _ in idx.intersection(w.rect.to_bounding_box()))
+    ]
+    return words + ocr_cells
 
 
 class TableStructureModel(BaseTableStructureModel):
@@ -237,9 +261,12 @@ class TableStructureModel(BaseTableStructureModel):
                 for table_cluster, tbl_box in in_tables:
                     # Check if word-level cells are available from backend:
                     if sp is not None:
-                        tcells = sp.get_cells_in_bbox(
-                            cell_unit=TextCellUnit.WORD,
-                            bbox=table_cluster.bbox,
+                        tcells = _words_and_ocr_cells(
+                            sp.get_cells_in_bbox(
+                                cell_unit=TextCellUnit.WORD,
+                                bbox=table_cluster.bbox,
+                            ),
+                            table_cluster.cells,
                         )
                         if len(tcells) == 0:
                             # In case word-level cells yield empty
@@ -257,7 +284,9 @@ class TableStructureModel(BaseTableStructureModel):
                             )
                             tokens.append(
                                 {
-                                    "id": new_cell.index,
+                                    # Native word and OCR cell indices can collide,
+                                    # and the cell matcher keys tokens by id.
+                                    "id": len(tokens),
                                     "text": new_cell.text,
                                     "bbox": new_cell.rect.to_bounding_box().model_dump(),
                                 }
