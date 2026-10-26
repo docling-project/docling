@@ -733,6 +733,9 @@ class ReadingOrderModel:
                 isinstance(parent, GroupItem) and parent.label == GroupLabel.FORM_AREA
             ) or isinstance(parent, FieldRegionItem)
             current_list: GroupItem | None = None
+            list_stack: list[tuple[float, GroupItem]] = []
+            previous_list_element: ReadingOrderPageElement | None = None
+            indent_tolerance = 5.0
             siblings = [
                 rel
                 for rel in ordered_siblings[parent_ref]
@@ -746,11 +749,41 @@ class ReadingOrderModel:
                 rel = entry
                 element = id_to_elem[rel.ref.cref]
                 page_height = page_no_to_pages[element.page_no].size.height  # type: ignore
-                if split_lists_on_non_list and not (
+                is_list_item = (
                     isinstance(element, TextElement)
                     and element.label == DocItemLabel.LIST_ITEM
-                ):
+                )
+                if is_list_item:
+                    # A move right and back up is a new column, not a sublist.
+                    if current_list is None or (
+                        previous_list_element is not None
+                        and rel.page_no == previous_list_element.page_no
+                        and rel.l > previous_list_element.l + indent_tolerance
+                        and rel.t >= previous_list_element.t - indent_tolerance
+                    ):
+                        current_list = None
+                        list_stack.clear()
+                    left = element.cluster.bbox.l
+                    # Small layout-box differences do not make a new list level.
+                    while list_stack and left < list_stack[-1][0] - indent_tolerance:
+                        list_stack.pop()
+                    if list_stack:
+                        current_list = list_stack[-1][1]
+                        if left > list_stack[-1][0] + indent_tolerance:
+                            current_list = out_doc.add_group(
+                                label=GroupLabel.LIST,
+                                name="list",
+                                parent=current_list.children[-1].resolve(out_doc),
+                            )
+                            list_stack.append((left, current_list))
+                    else:
+                        current_list = None
+                elif split_lists_on_non_list and element.label not in {
+                    DocItemLabel.PAGE_HEADER,
+                    DocItemLabel.PAGE_FOOTER,
+                }:
                     current_list = None
+                    list_stack.clear()
 
                 if isinstance(element, TextElement):
                     if element.label == DocItemLabel.CODE:
@@ -773,6 +806,10 @@ class ReadingOrderModel:
                         parent=parent,
                         page_height=page_height,
                     )
+                    if is_list_item and not list_stack and current_list is not None:
+                        list_stack.append((element.cluster.bbox.l, current_list))
+                    if is_list_item:
+                        previous_list_element = rel
 
                     if element.field_item is None:
                         for merged_cid in el_merges_mapping.get(rel.cid, []):
@@ -1034,7 +1071,8 @@ class ReadingOrderModel:
                 parent=parent,
             )
         else:
-            current_list = None
+            if label not in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:
+                current_list = None
 
             content_layer = ContentLayer.BODY
             if element.label in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:

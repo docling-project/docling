@@ -53,6 +53,14 @@ Below example shows how all items under the heading "Let's swim" (`#/texts/5`) a
 "Let's swim" are both text items and groups, which contain the list elements. The group items are stored in the
 top-level `groups` field.
 
+For PDFs, list nesting is inferred from horizontal indentation. A nested list group
+is a child of the preceding item at the outer level, and an outdent returns to an outer list.
+Page headers and footers do not interrupt a list that continues on the next page.
+
+Recognised list markers are stored in `ListItem.marker` and removed from `ListItem.text`;
+`ListItem.orig` retains the source text. Word's `o` circle marker is recognised on
+items labelled as list items, but does not turn ordinary prose into a list.
+
 ![doc_hierarchy_2](../assets/docling_doc_hierarchy_2.png)
 
 <!--

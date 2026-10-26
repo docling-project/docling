@@ -81,6 +81,11 @@ class ListItemMarkerProcessor:
             re.compile(f"^({pattern})" + r"\s(.+)", re.DOTALL)
             for pattern in self._bullet_patterns
         ]
+        # Word's ASCII circle is ambiguous in prose; only strip it from list items.
+        self._compiled_list_bullet_item_patterns = [
+            *self._compiled_bullet_item_patterns,
+            re.compile(r"^(o)\s(.+)", re.DOTALL),
+        ]
         self._compiled_numbered_item_patterns = [
             re.compile(f"^({pattern})" + r"\s(.+)", re.DOTALL)
             for pattern in self._numbered_patterns
@@ -192,7 +197,7 @@ class ListItemMarkerProcessor:
 
         is_enumerated: bool = False
         if mtch := self._find_match(
-            text=item.orig, patterns=self._compiled_bullet_item_patterns
+            text=item.orig, patterns=self._compiled_list_bullet_item_patterns
         ):
             is_enumerated = False
         elif mtch := self._find_match(
