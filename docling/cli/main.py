@@ -66,12 +66,16 @@ from docling.cli.export_utils import (
 )
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
+    ADDITIONAL_ASR_PRESETS,
+    GRANITE_4_0_1B_SPEECH,
+    NEMOTRON_3_5_ASR_STREAMING,
     WHISPER_BASE,
     WHISPER_BASE_EN_NATIVE,
     WHISPER_BASE_EN_S2T,
     WHISPER_BASE_MLX,
     WHISPER_BASE_NATIVE,
     WHISPER_BASE_S2T,
+    WHISPER_BASE_TRANSFORMERS,
     WHISPER_DISTIL_LARGE_V3_5_NATIVE,
     WHISPER_DISTIL_LARGE_V3_5_S2T,
     WHISPER_DISTIL_LARGE_V3_NATIVE,
@@ -83,6 +87,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_LARGE,
     WHISPER_LARGE_MLX,
     WHISPER_LARGE_NATIVE,
+    WHISPER_LARGE_TRANSFORMERS,
     WHISPER_LARGE_V3_S2T,
     WHISPER_LARGE_V3_TURBO_S2T,
     WHISPER_MEDIUM,
@@ -91,21 +96,25 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_MEDIUM_MLX,
     WHISPER_MEDIUM_NATIVE,
     WHISPER_MEDIUM_S2T,
+    WHISPER_MEDIUM_TRANSFORMERS,
     WHISPER_SMALL,
     WHISPER_SMALL_EN_NATIVE,
     WHISPER_SMALL_EN_S2T,
     WHISPER_SMALL_MLX,
     WHISPER_SMALL_NATIVE,
     WHISPER_SMALL_S2T,
+    WHISPER_SMALL_TRANSFORMERS,
     WHISPER_TINY,
     WHISPER_TINY_EN_NATIVE,
     WHISPER_TINY_EN_S2T,
     WHISPER_TINY_MLX,
     WHISPER_TINY_NATIVE,
     WHISPER_TINY_S2T,
+    WHISPER_TINY_TRANSFORMERS,
     WHISPER_TURBO,
     WHISPER_TURBO_MLX,
     WHISPER_TURBO_NATIVE,
+    WHISPER_TURBO_TRANSFORMERS,
     AsrModelType,
 )
 from docling.datamodel.backend_options import (
@@ -148,7 +157,10 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
     normalize_pdf_backend,
 )
-from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrOptions,
+    InlineAsrTransformersOptions,
+)
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
@@ -406,13 +418,23 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
     Shared mapping so both audio and (later) video CLI setup resolve
     ASR presets the same way.
     """
+    if asr_model.value in ADDITIONAL_ASR_PRESETS:
+        return ADDITIONAL_ASR_PRESETS[asr_model.value].to_options()
     mapping: dict[AsrModelType, InlineAsrOptions] = {
+        AsrModelType.GRANITE_4_0_1B_SPEECH: GRANITE_4_0_1B_SPEECH,
+        AsrModelType.NEMOTRON_3_5_ASR_STREAMING: NEMOTRON_3_5_ASR_STREAMING,
         AsrModelType.WHISPER_TINY: WHISPER_TINY,
         AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
         AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
         AsrModelType.WHISPER_BASE: WHISPER_BASE,
         AsrModelType.WHISPER_LARGE: WHISPER_LARGE,
         AsrModelType.WHISPER_TURBO: WHISPER_TURBO,
+        AsrModelType.WHISPER_TINY_TRANSFORMERS: WHISPER_TINY_TRANSFORMERS,
+        AsrModelType.WHISPER_BASE_TRANSFORMERS: WHISPER_BASE_TRANSFORMERS,
+        AsrModelType.WHISPER_SMALL_TRANSFORMERS: WHISPER_SMALL_TRANSFORMERS,
+        AsrModelType.WHISPER_MEDIUM_TRANSFORMERS: WHISPER_MEDIUM_TRANSFORMERS,
+        AsrModelType.WHISPER_LARGE_TRANSFORMERS: WHISPER_LARGE_TRANSFORMERS,
+        AsrModelType.WHISPER_TURBO_TRANSFORMERS: WHISPER_TURBO_TRANSFORMERS,
         AsrModelType.WHISPER_TINY_MLX: WHISPER_TINY_MLX,
         AsrModelType.WHISPER_SMALL_MLX: WHISPER_SMALL_MLX,
         AsrModelType.WHISPER_MEDIUM_MLX: WHISPER_MEDIUM_MLX,
@@ -1001,6 +1023,13 @@ def convert(  # noqa: C901
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
     ] = AsrModelType.WHISPER_TINY,
+    asr_language: Annotated[
+        str | None,
+        typer.Option(
+            "--asr-language",
+            help="Source language for Transformers ASR.",
+        ),
+    ] = None,
     video_sampling_mode: Annotated[
         Literal["fixed", "scene"],
         typer.Option(..., help="frame sampling mode."),
@@ -2020,6 +2049,12 @@ def convert(  # noqa: C901
 
         # Auto-selecting models (choose best implementation for hardware)
         asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+        if isinstance(asr_pipeline_options.asr_options, InlineAsrTransformersOptions):
+            asr_pipeline_options.asr_options = (
+                asr_pipeline_options.asr_options.model_copy(
+                    update={"language": asr_language}
+                )
+            )
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
@@ -2053,7 +2088,9 @@ def convert(  # noqa: C901
             video_pipeline_options = VideoPipelineOptions()
             video_pipeline_options.enable_diarization = video_diarization
             video_pipeline_options.document_timeout = document_timeout
-            video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+            video_pipeline_options.asr_options = (
+                asr_pipeline_options.asr_options.model_copy(deep=True)
+            )
             if video_sampling_mode == "scene":
                 video_pipeline_options.frame_sampling_mode = (
                     VideoFrameSamplingMode.SCENE_CHANGE

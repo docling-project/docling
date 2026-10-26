@@ -36,10 +36,11 @@ from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
 
-# A line starting with // is a comment and never body content. //// opens a
-# delimited comment block: every line up to the matching //// is a comment.
-_LINE_COMMENT_RE = re.compile(r"^//")
-_COMMENT_BLOCK_DELIMITER = "////"
+# A line starting with exactly two slashes is a comment and never body content.
+# A line of four or more slashes opens a delimited comment block: every line up
+# to an identical line is a comment.
+_LINE_COMMENT_RE = re.compile(r"^//(?!/)")
+_COMMENT_BLOCK_DELIMITER_RE = re.compile(r"/{4,}")
 
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
@@ -483,11 +484,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _is_line_comment(line: str) -> bool:
-        """Is `line` a // comment line rather than a //// block delimiter?"""
-        return (
-            _LINE_COMMENT_RE.match(line) is not None
-            and line.strip() != _COMMENT_BLOCK_DELIMITER
-        )
+        """Is `line` a // comment line rather than text or a //// block delimiter?"""
+        return _LINE_COMMENT_RE.match(line) is not None
 
     @staticmethod
     def _make_comment(comment_lines: list[str]) -> _CommentBlock | None:
@@ -503,6 +501,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         block_delimiter: str | None = None
         block_language: str | None = None
         comment_data: list[str] | None = None
+        comment_delimiter: str | None = None
         # Content block delimiters still waiting for their closer, innermost
         # last. The lines between a pair run through this loop like any other,
         # so a comment inside such a block is a comment and not body text.
@@ -533,18 +532,20 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # the block openers: a "----" between //// delimiters is comment
             # text, not the start of a listing.
             if comment_data is not None:
-                if stripped == _COMMENT_BLOCK_DELIMITER:
+                if stripped == comment_delimiter:
                     comment = cls._make_comment(comment_data)
                     if comment is not None:
                         yield comment
                     comment_data = None
+                    comment_delimiter = None
                 else:
                     comment_data.append(line.rstrip("\r\n"))
                 i += 1
                 continue
 
-            if stripped == _COMMENT_BLOCK_DELIMITER:
+            if _COMMENT_BLOCK_DELIMITER_RE.fullmatch(stripped):
                 comment_data = []
+                comment_delimiter = stripped
                 i += 1
                 continue
 
@@ -905,8 +906,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return re.match(r"^= ", line)
 
     @staticmethod
+    def _strip_closing_marker(text: str, marker: str) -> str:
+        """Drop the closing marks of a symmetric title such as "== Title ==".
+
+        Asciidoctor accepts a title closed by the same marks that open it,
+        separated by whitespace, and leaves them out of the title text.
+        """
+        return re.sub(rf"[ \t]+{re.escape(marker)}$", "", text)
+
+    @staticmethod
     def _parse_title(line):
-        return {"type": "title", "text": line[2:].strip(), "level": 0}
+        text = AsciiDocBackend._strip_closing_marker(line[2:].strip(), "=")
+        return {"type": "title", "text": text, "level": 0}
 
     #   =========   Section headers
     @staticmethod
@@ -924,7 +935,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return {
             "type": "header",
             "level": header_level - 1,
-            "text": text.strip(),
+            "text": AsciiDocBackend._strip_closing_marker(text.strip(), marker),
         }
 
     #   =========   Lists

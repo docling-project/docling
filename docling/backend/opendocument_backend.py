@@ -2494,12 +2494,41 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 
         # Build a map of cell contents for quick lookup
         cell_map: dict[tuple[int, int], bool] = {}
+        rows_with_values: set[int] = set()
+        blank_spans: list[tuple[int, int, int, int]] = []
+        last_row, last_col = 0, 0
         for row_idx, row in enumerate(table.traverse()):
+            last_row = row_idx
             for col_idx, cell in enumerate(row.traverse()):
-                has_data = _odf_cell_has_content(cell) or (
-                    cell.tag == "table:covered-table-cell"
+                last_col = max(last_col, col_idx)
+                has_value = _odf_cell_has_content(cell)
+                if has_value:
+                    rows_with_values.add(row_idx)
+                elif cell.tag != "table:covered-table-cell":
+                    attrs = cell.attributes
+                    row_span = _odf_span(attrs, "table:number-rows-spanned")
+                    col_span = _odf_span(attrs, "table:number-columns-spanned")
+                    if row_span > 1 or col_span > 1:
+                        blank_spans.append(
+                            (
+                                row_idx,
+                                row_idx + row_span - 1,
+                                col_idx,
+                                col_idx + col_span - 1,
+                            )
+                        )
+                cell_map[(row_idx, col_idx)] = (
+                    has_value or cell.tag == "table:covered-table-cell"
                 )
-                cell_map[(row_idx, col_idx)] = has_data
+
+        # A blank merged range whose rows hold no value is a separator row. It
+        # does not connect the tables above and below it.
+        for top, bottom, left, right in blank_spans:
+            bottom, right = min(bottom, last_row), min(right, last_col)
+            if rows_with_values.isdisjoint(range(top, bottom + 1)):
+                for r in range(top, bottom + 1):
+                    for c in range(left, right + 1):
+                        cell_map[(r, c)] = False
 
         # Helper: Check if a cell has content
         def has_content(r: int, c: int) -> bool:

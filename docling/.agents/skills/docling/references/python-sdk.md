@@ -394,7 +394,35 @@ result = converter.convert("interview.wav")
 print(result.document.export_to_markdown())   # timestamped transcript
 ```
 
+For a Transformers-format Whisper checkpoint, install
+`docling-slim[feat-asr-transformers]` and select an explicit preset such as
+`asr_model_specs.WHISPER_TINY_TRANSFORMERS`. The presets cover tiny, base,
+small, medium, large, and large-v3-turbo. Set
+`pipeline_options.artifacts_path` to a directory that contains `config.json`
+and the Transformers model files, or to its parent directory with a
+`openai--whisper-tiny` subdirectory. The local directory is used without a
+Hugging Face lookup. For MLX Whisper, use `WHISPER_TINY_MLX` and provide an
+MLX checkpoint with `config.json` and `weights.safetensors` or `weights.npz`.
+
+Other explicit Transformers presets are `GRANITE_4_0_1B_SPEECH` and
+`NEMOTRON_3_5_ASR_STREAMING`. These models return
+one transcript item that covers the full audio duration. The Transformers
+Whisper presets provide model segment timestamps.
+
 The CLI can also transcribe: `docling interview.wav --to md --output /tmp/`.
+
+Additional presets include `GRANITE_SPEECH_5_0_2B`,
+`GRANITE_SPEECH_5_0_470M_TURBOCTC`, its `_NC` variant,
+`GRANITE_SPEECH_4_1_2B`, its `_PLUS` variant, and
+`NEMOTRON_SPEECH_STREAMING_EN_0_6B`. Copy a preset with
+`.model_copy(deep=True)` before changing `revision`, `language`, or `prompt`.
+Granite and TurboCTC use FP32 weights on MPS to avoid BF16 normalization failures.
+Plus defaults to plain transcription; speaker and timestamp tags are not parsed
+into tracks.
+The `_NC` preset uses a noncommercial license.
+For real decoding checks, use `scripts/validate_asr_models.py` in a repository
+checkout. Repeat `--model` to select presets; without it, the script runs every
+ASR preset on the same fragment. It is outside normal pytest collection.
 
 Video files (`.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`) use `VideoPipeline` with
 `VideoPipelineOptions`, which also samples frames. `max_sampled_frames` defaults

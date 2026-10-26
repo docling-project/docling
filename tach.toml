@@ -480,9 +480,15 @@ depends_on = [
   "docling.datamodel",
   "docling.datamodel.asr_model_specs",
   "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.asr_transformers",
   "docling.pipeline.base_pipeline",
   "docling.utils",
 ]
+
+[[modules]]
+path = "docling.pipeline.asr_transformers"
+layer = "pipeline"
+depends_on = ["docling.datamodel.pipeline_options_asr_model"]
 
 [[modules]]
 path = "docling.pipeline.asr_pipeline"

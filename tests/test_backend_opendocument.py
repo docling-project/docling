@@ -1873,6 +1873,48 @@ def test_ods_gap_tolerance(tmp_path: Path):
     assert merged_table.prov[0].bbox.r == 3, "Merged table should end at column 3"
 
 
+@pytest.mark.parametrize(
+    ("note", "expected_shapes"),
+    [
+        # The blank merged row A4:C4 only separates the two tables.
+        (None, [(3, 3), (2, 3)]),
+        # A value in the same row makes A4:C4 part of one table.
+        ("note", [(6, 4)]),
+    ],
+)
+def test_ods_blank_merged_separator_row_splits_tables(
+    tmp_path: Path, note: str | None, expected_shapes: list[tuple[int, int]]
+) -> None:
+    """The ODS counterpart of the XLSX regression test for #4965."""
+    path = tmp_path / "separator.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+    sheet = Table("Sheet1", width=4, height=6)
+    for row_idx, row in enumerate(
+        [
+            [None, "2025", "2026"],
+            ["GDP", 1.5, 2],
+            ["CPI", 3.1, 2.9],
+            [None, None, None, note],
+            [None, "Q1", "Q2"],
+            ["Profits", 384, 276.9],
+        ]
+    ):
+        for col_idx, value in enumerate(row):
+            if value is not None:
+                sheet.set_value((col_idx, row_idx), value)
+    sheet.set_span("A4:C4")
+    body.append(sheet)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+
+    assert [
+        (table.data.num_rows, table.data.num_cols) for table in res.document.tables
+    ] == expected_shapes
+
+
 def test_ods_sheet_names_filter(tmp_path: Path):
     """Test that sheet_names option filters sheets correctly."""
     from docling.datamodel.backend_options import OdsBackendOptions

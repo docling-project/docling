@@ -300,6 +300,104 @@ def test_local_relative_image_resolves_from_document_dir(tmp_path: Path, as_path
     assert image.getpixel((0, 0)) == (0, 255, 0)
 
 
+def test_local_relative_image_accepts_file_uri_source(tmp_path: Path):
+    """A file URI source must resolve relative images like a local path."""
+    source_dir = tmp_path / "with space"
+    source_dir.mkdir()
+    image_path = source_dir / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    md_path = source_dir / "doc.md"
+    md_path.write_text("# Title\n\n![alt](figure.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (0, 255, 0)
+
+
+def test_local_file_uri_source_respects_local_fetch(tmp_path: Path):
+    """A file URI base does not enable local image fetching by itself."""
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    md_path = tmp_path / "doc.md"
+    md_path.write_text("# Title\n\n![alt](figure.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=False,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    with pytest.warns(UserWarning, match="Fetching local resources"):
+        doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is None
+
+
+def test_local_file_uri_source_keeps_document_on_path_traversal(
+    tmp_path: Path,
+):
+    """A path-traversal image must not abort Markdown conversion."""
+    source_dir = tmp_path / "docs"
+    source_dir.mkdir()
+    outside_image = tmp_path / "outside.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(outside_image)
+    md_path = source_dir / "doc.md"
+    md_path.write_text("# Title\n\n![alt](../outside.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    with pytest.warns(UserWarning, match="Path traversal blocked"):
+        doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is None
+
+
 def test_code_block_language_detection():
     markdown = (
         "```python\n"

@@ -1150,7 +1150,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         base_path = (
             str(md_options.source_uri) if md_options.source_uri is not None else None
         )
-        return self._get_image_loader().load_image_ref(dest, base_path)
+        try:
+            return self._get_image_loader().load_image_ref(dest, base_path)
+        except ValueError as exc:
+            # Keep the document usable when a relative image escapes its local
+            # source directory. The image is omitted, while the loader still
+            # enforces the confinement check.
+            warnings.warn(f"Could not process an image from {dest}: {exc}")
+            return None
 
     def is_valid(self) -> bool:
         return self.valid
@@ -1204,20 +1211,22 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
                 html_str = html_payload.text
 
-                def _restore_original_html(txt, regex):
-                    _txt, count = re.subn(regex, "", txt)
-                    if count != self._html_blocks:
-                        raise RuntimeError(
-                            "An internal error has occurred during Markdown conversion."
-                        )
-                    return _txt
-
-                # restore original HTML by removing previously added markers
-                for regex in [
-                    rf"<pre>\s*<code>\s*{_START_MARKER}",
-                    rf"{_STOP_MARKER}\s*</code>\s*</pre>",
-                ]:
-                    html_str = _restore_original_html(txt=html_str, regex=regex)
+                # Restore only the marked HTML blocks. The HTML serializer
+                # escapes code content, so decode each block before parsing it.
+                pattern = (
+                    rf"<pre>\s*<code>\s*{re.escape(_START_MARKER)}"
+                    rf"(.*?){re.escape(_STOP_MARKER)}\s*</code>\s*</pre>"
+                )
+                html_str, count = re.subn(
+                    pattern,
+                    lambda match: unescape(match.group(1)),
+                    html_str,
+                    flags=re.DOTALL,
+                )
+                if count != self._html_blocks:
+                    raise RuntimeError(
+                        "An internal error has occurred during Markdown conversion."
+                    )
                 self._html_blocks = 0
                 # delegate to HTML backend
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))

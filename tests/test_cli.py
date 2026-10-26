@@ -1910,6 +1910,24 @@ def _capture_cli_asr_pipeline_options(monkeypatch, extra_args, tmp_path):
     return result, captured.get("asr_pipeline_options")
 
 
+def test_cli_transformers_asr_flags_reach_pipeline_options(tmp_path, monkeypatch):
+    from docling.datamodel.asr_model_specs import GRANITE_SPEECH_5_0_2B
+
+    result, options = _capture_cli_asr_pipeline_options(
+        monkeypatch,
+        [
+            "--asr-model",
+            "granite_speech_5_0_2b",
+            "--asr-language",
+            "de",
+        ],
+        tmp_path,
+    )
+    assert result.exit_code == 0, result.output
+    assert options.asr_options.language == "de"
+    assert GRANITE_SPEECH_5_0_2B.language is None
+
+
 def test_cli_allow_external_plugins_reaches_asr_pipeline_options(tmp_path, monkeypatch):
     """Regression test for #3284: `--allow-external-plugins` and
     `--enable-remote-services` were parsed correctly but never passed into

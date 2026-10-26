@@ -45,6 +45,16 @@ docling-tools models download whisper_distil_small_en --output-dir /models
 docling --asr-model whisper_distil_small_en_native --artifacts-path /models audio.wav
 ```
 
+The WhisperS2T presets use their `--asr-model` names. Each one downloads its
+CTranslate2 model in `float16` (for CUDA) and `float32` (for CPU), plus the
+small word-alignment model that word timestamps use if the preset needs one,
+into the output directory in the Hugging Face cache layout:
+
+```sh
+docling-tools models download whisper_small_en_s2t --output-dir /models
+docling --asr-model whisper_small_en_s2t --artifacts-path /models audio.wav
+```
+
 `docling-tools models download --all` does not include ASR models. Add `--asr`
 to prefetch all native Whisper model sizes, English-only variants, and
 Distil-Whisper presets:
@@ -54,7 +64,8 @@ docling-tools models download --all --asr --output-dir /models
 ```
 
 This requires the `asr` extra and downloads OpenAI-format checkpoints. It does
-not prefetch Transformers-format, MLX, or WhisperS2T models.
+not prefetch Transformers-format, MLX, or WhisperS2T models. Prefetch a
+WhisperS2T preset by its name, as shown above.
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
 
@@ -640,6 +651,24 @@ converter = DocumentConverter()
 result = converter.convert(source, max_num_pages=100, max_file_size=20971520)
 ```
 
+## Convert ZIP archives
+
+Docling expands generic ZIP archives into separate documents. Use
+`convert_all()` to convert every supported archive member:
+
+```python
+from docling.document_converter import DocumentConverter
+
+converter = DocumentConverter()
+results = list(converter.convert_all(["documents.zip"]))
+```
+
+`convert()` returns one result. It raises `ConversionError` when its source
+contains multiple documents. Use `convert_all()` for a ZIP archive with more
+than one member. By default, `convert_all()` raises on the first failed member.
+Pass `raises_on_error=False` to receive failure results and continue with later
+members. The configured file-size limit applies to each member and to the total
+size of successfully read members.
 For image inputs, the page count is checked against `max_num_pages` before any
 page is decoded, and each page (for example each frame of a multi-page TIFF) is
 decoded only when it is processed. The `max_image_pixels` backend option limits

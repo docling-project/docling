@@ -77,7 +77,7 @@ _PPTX_AVAILABLE: bool = False
 _PPTX_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from pptx import Presentation, presentation
-    from pptx.chart.plot import PlotFactory, PlotTypeInspector
+    from pptx.chart.series import BarSeries, XySeries
     from pptx.enum.action import PP_ACTION
     from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
     from pptx.exc import InvalidXmlError
@@ -119,6 +119,25 @@ _IMAGE_RENDER_HINT = (
     "still recorded with their position on the slide without it, but carry no "
     "image data."
 )
+
+_CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
+    "barChart": PictureClassificationLabel.BAR_CHART,
+    "bar3DChart": PictureClassificationLabel.BAR_CHART,
+    "lineChart": PictureClassificationLabel.LINE_CHART,
+    "line3DChart": PictureClassificationLabel.LINE_CHART,
+    "pieChart": PictureClassificationLabel.PIE_CHART,
+    "pie3DChart": PictureClassificationLabel.PIE_CHART,
+    "doughnutChart": PictureClassificationLabel.PIE_CHART,
+    "scatterChart": PictureClassificationLabel.SCATTER_CHART,
+    "areaChart": PictureClassificationLabel.OTHER_CHART,
+    "area3DChart": PictureClassificationLabel.OTHER_CHART,
+}
+"""Maps the tag-local name of a chart plot element, such as ``"bar3DChart"``, to
+a docling picture-classification label. The Word and Excel backends use the same
+mapping. Plot types not listed fall back to ``OTHER_CHART``."""
+
+_XY_PLOT_TAGNAMES: Final = frozenset({"scatterChart", "bubbleChart"})
+"""Plot types whose series keep their values in ``c:yVal`` instead of ``c:val``."""
 
 _EXCEL_EPOCH: Final = datetime(1899, 12, 30)
 _EXCEL_1904_EPOCH: Final = datetime(1904, 1, 1)
@@ -1303,87 +1322,51 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return
 
     @staticmethod
-    def _chart_type_to_classification(chart_type: Any) -> PictureClassificationLabel:
-        """Map a python-pptx ``XL_CHART_TYPE`` to a docling classification label.
-
-        The type of a plot is a granular enum (``COLUMN_CLUSTERED``,
-        ``XY_SCATTER_LINES``, ``THREE_D_PIE``, ...). Rather than enumerate every
-        member, we match on the enum member's name by family, mirroring the
-        Excel backend's tagname mapping: column/bar variants become BAR_CHART,
-        line variants LINE_CHART, pie/doughnut PIE_CHART, scatter SCATTER_CHART,
-        and everything else (area, radar, stock, surface, ...) OTHER_CHART.
-        SCATTER is matched before LINE because ``XY_SCATTER_LINES`` contains both.
-
-        Args:
-            chart_type: An ``XL_CHART_TYPE`` member, or None when python-pptx
-                cannot determine the type of the plot.
-
-        Returns:
-            The matching PictureClassificationLabel.
-        """
-        name = chart_type.name if chart_type is not None else ""
-        if "PIE" in name or "DOUGHNUT" in name:
-            return PictureClassificationLabel.PIE_CHART
-        if "SCATTER" in name:
-            return PictureClassificationLabel.SCATTER_CHART
-        if "LINE" in name:
-            return PictureClassificationLabel.LINE_CHART
-        if "BAR" in name or "COL" in name:
-            return PictureClassificationLabel.BAR_CHART
-        return PictureClassificationLabel.OTHER_CHART
-
-    @staticmethod
-    def _chart_plots(chart: Any) -> list[tuple[Any, Any]]:
-        """Return each plot of a chart with its plot element, back-most first.
-
-        A combination chart has one plot per chart type, for example a column
-        plot with a line plot drawn over it. python-pptx has no plot class for
-        some types (3-D bar, line and pie, stock, surface, bar-of-pie). Such a
-        plot is returned as None, so that the other plots keep their data.
-
-        Args:
-            chart: A python-pptx ``Chart`` object.
-
-        Returns:
-            ``(plot element, plot)`` pairs in drawing order. The plot is None
-            when python-pptx cannot read its type.
-        """
-        plots: list[tuple[Any, Any]] = []
-        for x_chart in chart.element.chart.plotArea.xCharts:
-            try:
-                plots.append((x_chart, PlotFactory(x_chart, chart)))
-            except ValueError:
-                plots.append((x_chart, None))
-        return plots
-
-    @classmethod
-    def _chart_classifications(
-        cls, plots: list[tuple[Any, Any]]
-    ) -> list[PictureClassificationLabel]:
+    def _chart_classifications(plots: list[Any]) -> list[PictureClassificationLabel]:
         """Return the classification labels of a chart, one per plot type.
 
-        The labels follow the drawing order, so the back-most plot gives the
-        main label. A plot that python-pptx cannot read counts as OTHER_CHART.
-        A label is listed once, even when several plots share it.
+        Each plot is classified by its tag, so a ``c:bar3DChart`` plot is a bar
+        chart. The labels follow the drawing order, so the back-most plot gives
+        the main label. A label is listed once, even when several plots share
+        it.
 
         Args:
-            plots: The chart's plots, as returned by ``_chart_plots``.
+            plots: The chart's plot elements, back-most first.
 
         Returns:
             The labels, or ``[OTHER_CHART]`` when the chart has no plot.
         """
         labels: list[PictureClassificationLabel] = []
-        for _, plot in plots:
-            chart_type = None
-            if plot is not None:
-                try:
-                    chart_type = PlotTypeInspector.chart_type(plot)
-                except (ValueError, NotImplementedError):
-                    chart_type = None
-            label = cls._chart_type_to_classification(chart_type)
+        for x_chart in plots:
+            label = _CHART_TAGNAME_TO_CLASSIFICATION.get(
+                etree.QName(x_chart).localname, PictureClassificationLabel.OTHER_CHART
+            )
             if label not in labels:
                 labels.append(label)
         return labels or [PictureClassificationLabel.OTHER_CHART]
+
+    @staticmethod
+    def _plot_series(x_chart: Any) -> list[Any]:
+        """Return the series of a plot, in the order of their ``c:order``.
+
+        python-pptx has no plot class for some plot types (3-D bar, line and
+        pie, stock, surface, bar-of-pie) and no series class for 3-D area
+        plots. Their ``c:ser`` elements still have the same structure, so a
+        python-pptx series class reads the series of every plot type.
+
+        Args:
+            x_chart: The plot element, such as ``c:bar3DChart``.
+
+        Returns:
+            One python-pptx series per ``c:ser`` element.
+        """
+        series_class = (
+            XySeries
+            if etree.QName(x_chart).localname in _XY_PLOT_TAGNAMES
+            else BarSeries
+        )
+        sers = sorted(x_chart.iterchildren(qn("c:ser")), key=lambda ser: ser.order.val)
+        return [series_class(ser) for ser in sers]
 
     @staticmethod
     def _chart_title_text(chart: Any) -> Optional[str]:
@@ -1436,14 +1419,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             The ``c:catAx`` or ``c:dateAx`` element, or None for a plot without
             one, such as a pie or a scatter plot.
         """
-        axis_ids = set(x_chart.xpath("./c:axId/@val"))
+        axis_ids = {
+            axis_id.get("val") for axis_id in x_chart.iterchildren(qn("c:axId"))
+        }
         for axis in chart.element.chart.plotArea.xpath("./c:catAx | ./c:dateAx"):
             if axis_ids.intersection(axis.xpath("./c:axId/@val")):
                 return axis
         return None
 
     @staticmethod
-    def _categories_are_dates(axis: Any, x_chart: Any) -> bool:
+    def _categories_are_dates(axis: Any, ser: Any) -> bool:
         """Return True when an axis shows its categories as dates.
 
         A date axis always does. A text axis does when its number format is a
@@ -1453,7 +1438,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         Args:
             axis: The plot's ``c:catAx`` or ``c:dateAx`` element.
-            x_chart: The plot element, such as ``c:barChart``.
+            ser: The first ``c:ser`` element of the plot.
 
         Returns:
             True when the categories are dates.
@@ -1467,9 +1452,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         ):
             format_code = number_format.get("formatCode", "")
         else:
-            format_code = "".join(
-                x_chart.xpath("./c:ser[1]/c:cat//c:numCache/c:formatCode/text()")
-            )
+            format_code = "".join(ser.xpath("./c:cat//c:numCache/c:formatCode/text()"))
         return _is_date_format(format_code)
 
     @staticmethod
@@ -1495,45 +1478,49 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             text = "".join(axis.xpath("./c:title/c:tx/c:strRef//c:v/text()"))
         return text.strip()
 
-    def _category_labels(
-        self, chart: Any, axis: Any, x_chart: Any, plot: Any
-    ) -> list[str]:
+    def _category_labels(self, chart: Any, axis: Any, x_chart: Any) -> list[str]:
         """Return the category labels of a plot, with dates in ISO 8601.
+
+        The labels are read from the first series, as python-pptx's
+        ``plot.categories`` reads them, because python-pptx has no plot class
+        for some plot types. A multi-level axis gives the labels of its leaf
+        level. A category without a cached label gives "".
 
         Args:
             chart: A python-pptx ``Chart`` object.
             axis: The plot's category axis, or None.
             x_chart: The plot element, such as ``c:barChart``.
-            plot: The python-pptx plot read from ``x_chart``.
 
         Returns:
             One label per category.
         """
-        labels = [self._cell_text(category) for category in plot.categories]
-        if axis is None or not self._categories_are_dates(axis, x_chart):
+        ser = x_chart.find(qn("c:ser"))
+        if ser is None:
+            return []
+        points = ser.xpath("./c:cat//c:lvl[1]/c:pt") or ser.xpath("./c:cat//c:pt")
+        texts = {point.idx: point.v.text or "" for point in points}
+        labels = [texts.get(idx, "") for idx in range(ser.cat_ptCount_val)]
+        if axis is None or not self._categories_are_dates(axis, ser):
             return labels
         date1904 = bool(chart.element.date_1904)
         return [_serial_to_iso(label, date1904) for label in labels]
 
-    def _chart_to_table_data(
-        self, chart: Any, plots: list[tuple[Any, Any]]
-    ) -> Optional[TableData]:
+    def _chart_to_table_data(self, chart: Any, plots: list[Any]) -> Optional[TableData]:
         """Reconstruct a chart's underlying data grid as a TableData.
 
         Unlike the Excel backend, python-pptx exposes the plotted numbers
-        directly on each series (``series.values``) and the shared category
-        labels on the plot (``plot.categories``) — no workbook reference
+        directly on each series (``series.values``), and the chart caches the
+        category labels with the first series — no workbook reference
         resolution is needed. ``build_chart_table`` lays the table out.
 
         The series of every plot become columns in drawing order, so a
         combination chart keeps its line series next to its column series.
         The categories come from the first plot that has them, and the title of
-        that plot's category axis goes in the top-left cell. A plot that
-        python-pptx cannot read is skipped with a warning.
+        that plot's category axis goes in the top-left cell.
 
         Args:
             chart: A python-pptx ``Chart`` object.
-            plots: The chart's plots, as returned by ``_chart_plots``.
+            plots: The chart's plot elements, back-most first.
 
         Returns:
             A TableData, or None if the chart exposes no usable series or no
@@ -1542,19 +1529,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         categories: list[str] = []
         corner = ""
         columns: list[tuple[str, list[str]]] = []
-        for x_chart, plot in plots:
-            if plot is None:
-                _log.warning(
-                    "Skipping the data of a chart plot that python-pptx cannot "
-                    "read: %s",
-                    etree.QName(x_chart).localname,
-                )
-                continue
+        for x_chart in plots:
             if not categories:
                 axis = self._category_axis(chart, x_chart)
-                categories = self._category_labels(chart, axis, x_chart, plot)
+                categories = self._category_labels(chart, axis, x_chart)
                 corner = self._axis_title_text(axis) if axis is not None else ""
-            for series in plot.series:
+            for series in self._plot_series(x_chart):
                 name = self._cell_text(series.name) if series.name is not None else ""
                 values = [self._cell_text(v) for v in series.values]
                 columns.append((name, values))
@@ -1593,7 +1573,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return
 
         try:
-            plots = self._chart_plots(chart)
+            plots = list(chart.element.chart.plotArea.xCharts)
         except InvalidXmlError as exc:
             _log.warning("Could not read the plots of a chart: %s", exc)
             plots = []
@@ -1601,7 +1581,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         caption_text = self._chart_title_text(chart)
         try:
             table_data = self._chart_to_table_data(chart, plots)
-        except (AttributeError, ValueError, KeyError) as exc:
+        except (AttributeError, ValueError, KeyError, InvalidXmlError) as exc:
             _log.warning("Could not extract chart data: %s", exc)
             table_data = None
 
