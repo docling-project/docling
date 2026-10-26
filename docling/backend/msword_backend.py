@@ -57,6 +57,7 @@ from docling.backend.docx.latex.omml import OMML_NS, oMath2Latex
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.utils.archive_limits import (
+    ArchiveLimitError,
     ArchiveLimits,
     check_archive_limits,
     read_member,
@@ -854,6 +855,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Part names of the embedded documents already converted, so a part that
         # several objects share is converted only once.
         self.converted_embedded_parts: set[str] = set()
+        # Embedded documents converted, and their decompressed bytes, including
+        # those of the nested Word documents. They count against the limits.
+        self.embedded_objects_converted: int = 0
+        self.embedded_total_bytes: int = 0
+        self.embedded_objects_skipped: int = 0
         # self.initialise(path_or_stream)
         # Word file:
         self.path_or_stream: BytesIO | Path = path_or_stream
@@ -1005,6 +1011,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.paragraph_comment_map.clear()
             self.paragraph_to_items.clear()
             self.converted_embedded_parts.clear()
+            self.embedded_objects_converted = 0
+            self.embedded_total_bytes = 0
+            self.embedded_objects_skipped = 0
             self._deferred_empty_paragraphs.clear()
             doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
             self._add_header_footer(self.docx_obj, doc)
@@ -4448,7 +4457,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 is_spacer = self._is_invisible_spacer(pil_image)
                 embedded = (
-                    self._convert_embedded_object(imagedata)
+                    self._convert_embedded_object(imagedata, self.options)
                     if isinstance(self.options, MsWordBackendOptions)
                     and self.options.process_embedded_objects
                     else None
@@ -4477,21 +4486,27 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return elem_ref
 
     def _convert_embedded_object(
-        self, imagedata: Any
+        self, imagedata: Any, options: MsWordBackendOptions
     ) -> tuple[str, DoclingDocument] | None:
         """Convert the Office document embedded in the OLE object of a VML picture.
 
         Word stores an embedded Word, Excel or PowerPoint document as a package
         part, and the ``v:imagedata`` only holds its preview picture.
 
+        The package must pass the archive limits of this Word document before it
+        is opened. ``max_embedded_objects`` and ``max_embedded_total_bytes`` are
+        shared with the nested Word documents, so they bound the work over all
+        nesting levels.
+
         Args:
             imagedata: The ``v:imagedata`` element of the preview picture.
+            options: The options of this backend.
 
         Returns:
             The file name of the embedded part and its converted document, or
             ``None`` if the picture is not the preview of an embedded Word, Excel
-            or PowerPoint document, if the part was already converted, or if the
-            conversion fails.
+            or PowerPoint document, if the part was already converted, if a limit
+            stops it, or if the conversion fails.
         """
         ole_objects = self.ole_object_xpath_expr(imagedata)
         if not ole_objects:
@@ -4506,36 +4521,85 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
         self.converted_embedded_parts.add(part.partname)
 
+        filename = part.partname.filename
+        if self.embedded_objects_converted >= options.max_embedded_objects:
+            self.embedded_objects_skipped += 1
+            if self.embedded_objects_skipped == 1:
+                _log.warning(
+                    f"Embedded document {filename} and the next ones are not "
+                    f"converted: max_embedded_objects ({options.max_embedded_objects}) "
+                    "is reached"
+                )
+            return None
+        try:
+            with zipfile.ZipFile(BytesIO(part.blob)) as archive:
+                check_archive_limits(archive, self._archive_limits)
+                package_bytes = sum(info.file_size for info in archive.infolist())
+        except (zipfile.BadZipFile, ArchiveLimitError) as exc:
+            _log.warning(f"Embedded document {filename} is not converted: {exc}")
+            return None
+        if self.embedded_total_bytes + package_bytes > options.max_embedded_total_bytes:
+            _log.warning(
+                f"Embedded document {filename} is not converted: the embedded "
+                "documents would decompress to more than max_embedded_total_bytes "
+                f"({options.max_embedded_total_bytes})"
+            )
+            return None
+        self.embedded_objects_converted += 1
+        self.embedded_total_bytes += package_bytes
+
         backend_cls: type[DeclarativeDocumentBackend]
+        backend_options: MsWordBackendOptions | None = None
         if input_format == InputFormat.XLSX:
             backend_cls = MsExcelDocumentBackend
         elif input_format == InputFormat.PPTX:
             backend_cls = MsPowerpointDocumentBackend
         else:
             backend_cls = MsWordDocumentBackend
+            backend_options = options.model_copy(
+                update={
+                    "process_embedded_objects": options.max_embedding_depth > 1,
+                    "max_embedding_depth": max(options.max_embedding_depth - 1, 1),
+                    "max_embedded_objects": options.max_embedded_objects
+                    - self.embedded_objects_converted,
+                    "max_embedded_total_bytes": options.max_embedded_total_bytes
+                    - self.embedded_total_bytes,
+                }
+            )
 
-        filename = part.partname.filename
+        # A broken or unsupported embedded document, or a missing format extra,
+        # must not fail the conversion of the Word document. The preview stays.
         try:
             in_doc = InputDocument(
                 path_or_stream=BytesIO(part.blob),
                 format=input_format,
                 backend=backend_cls,
+                backend_options=backend_options,
                 filename=filename,
             )
-            if not in_doc.valid:
-                _log.warning(f"Embedded document {filename} cannot be opened")
-                return None
-            backend = in_doc._backend
-            assert isinstance(backend, DeclarativeDocumentBackend)
-            try:
-                return filename, backend.convert()
-            finally:
-                backend.unload()
         except Exception as exc:
-            # A broken or unsupported embedded document must not fail the
-            # conversion of the Word document. Its preview picture is kept.
+            _log.warning(f"Embedded document {filename} cannot be opened: {exc}")
+            return None
+        if not in_doc.valid:
+            _log.warning(f"Embedded document {filename} cannot be opened")
+            return None
+        backend = in_doc._backend
+        if not isinstance(backend, DeclarativeDocumentBackend):
+            raise RuntimeError(
+                f"The backend {type(backend).__name__} of embedded document "
+                f"{filename} is not a declarative backend."
+            )
+        try:
+            embedded_doc = backend.convert()
+        except Exception as exc:
             _log.warning(f"Embedded document {filename} cannot be converted: {exc}")
             return None
+        finally:
+            backend.unload()
+        if isinstance(backend, MsWordDocumentBackend):
+            self.embedded_objects_converted += backend.embedded_objects_converted
+            self.embedded_total_bytes += backend.embedded_total_bytes
+        return filename, embedded_doc
 
     def _add_embedded_document(
         self, doc: DoclingDocument, embedded_doc: DoclingDocument, parent: NodeItem

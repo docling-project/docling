@@ -528,11 +528,36 @@ for group in doc.groups:
 
 Each object becomes a group at the position of the object. The group holds the
 preview picture, followed by the content of the embedded document, for example
-the sheets and tables of a workbook. The embedded document is converted with
-the default options of its backend, so the objects embedded in it are not
-converted. Linked objects, and objects of other types such as a PDF or a text
-file, keep only their preview picture. The `format-xlsx` and `format-pptx`
-extras are necessary to convert embedded workbooks and presentations.
+the sheets and tables of a workbook. An embedded Word document is converted with
+the same options, so its own embedded objects are converted too. An embedded
+workbook or presentation is converted with the default options of its backend.
+Linked objects, and objects of other types such as a PDF or a text file, keep
+only their preview picture. The `format-xlsx` and `format-pptx` extras are
+necessary to convert embedded workbooks and presentations.
+
+An embedded document can come from an untrusted source, so limits apply. An
+object that goes above a limit keeps only its preview picture, and a warning is
+logged:
+
+- Each embedded package must pass the same archive limits as the Word file
+  (`max_total_bytes`, `max_file_bytes` and `max_member_count`), before it is
+  opened.
+- `max_embedded_objects` (default 32) and `max_embedded_total_bytes` (default
+  512 MiB of decompressed data) apply to all embedded documents together,
+  including those inside an embedded Word document.
+- `max_embedding_depth` (default 3) is the deepest nesting level that is
+  converted. With `1`, only the objects of the Word file itself are converted.
+- A package that several objects share is converted once.
+
+```python
+from docling.datamodel.backend_options import MsWordBackendOptions
+
+options = MsWordBackendOptions(
+    process_embedded_objects=True,
+    max_embedded_objects=10,
+    max_embedding_depth=1,
+)
+```
 
 
 ### AsciiDoc comments
