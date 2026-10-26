@@ -6,7 +6,7 @@ import logging
 import warnings
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
@@ -221,20 +221,32 @@ class TableStructureModel(BaseTableStructureModel):
                     predictions.append(table_prediction)
                     continue
 
-                page_input = {
+                page_input: dict[str, Any] = {
                     "width": page.size.width * self.scale,
                     "height": page.size.height * self.scale,
                     "image": numpy.asarray(page.get_image(scale=self.scale)),
                 }
 
-                # Resolved once per page: the segmented page is the same for
-                # every table on it, and get_cells_in_bbox already walks all of
-                # its cells per call.
-                sp = page._backend.get_segmented_page()
+                # Resolved once per page: use parsed_page if available to avoid
+                # decoding native cells when skip_cell_extraction / full-page OCR is active.
+                sp = (
+                    page.parsed_page
+                    if page.parsed_page is not None
+                    else (
+                        page._backend.get_segmented_page()
+                        if page._backend is not None and page._backend.is_valid()
+                        else None
+                    )
+                )
 
                 for table_cluster, tbl_box in in_tables:
-                    # Check if word-level cells are available from backend:
-                    if sp is not None:
+                    has_ocr_cells = any(
+                        getattr(c, "from_ocr", False) for c in table_cluster.cells
+                    )
+                    # If OCR cells are present on the cluster, prioritize them over backend words
+                    if has_ocr_cells:
+                        tcells = table_cluster.cells
+                    elif sp is not None and getattr(sp, "has_words", False):
                         tcells = sp.get_cells_in_bbox(
                             cell_unit=TextCellUnit.WORD,
                             bbox=table_cluster.bbox,
@@ -272,7 +284,24 @@ class TableStructureModel(BaseTableStructureModel):
                             the_bbox = BoundingBox.model_validate(
                                 element["bbox"]
                             ).scaled(1 / self.scale)
-                            text_piece = page._backend.get_text_in_rect(the_bbox)
+                            if has_ocr_cells:
+                                matching_texts = [
+                                    c.text.strip()
+                                    for c in table_cluster.cells
+                                    if c.rect.to_bounding_box().get_intersection_bbox(
+                                        the_bbox
+                                    )
+                                    is not None
+                                    and c.rect.to_bounding_box().intersection_over_self(
+                                        the_bbox
+                                    )
+                                    > 0.3
+                                ]
+                                text_piece = " ".join(t for t in matching_texts if t)
+                            elif page._backend is not None:
+                                text_piece = page._backend.get_text_in_rect(the_bbox)
+                            else:
+                                text_piece = ""
                             element["bbox"]["token"] = text_piece
 
                         tc = TableCell.model_validate(element)
@@ -372,7 +401,7 @@ class TableStructureModel(BaseTableStructureModel):
                     }
                 )
 
-        page_input = {
+        page_input: dict[str, Any] = {
             "width": img_width,
             "height": img_height,
             "image": numpy.asarray(table_image),
