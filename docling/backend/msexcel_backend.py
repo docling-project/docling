@@ -969,6 +969,20 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         sheet_group.children.sort(key=_top_row)
 
+    @staticmethod
+    def _cell_prov(
+        page_no: int, col: int, row: int, col_span: int, row_span: int
+    ) -> ProvenanceItem:
+        """Return the provenance of a cell range, in 0-based cell units."""
+        return ProvenanceItem(
+            page_no=page_no,
+            charspan=(0, 0),
+            bbox=BoundingBox.from_tuple(
+                (col, row, col + col_span, row + row_span),
+                origin=CoordOrigin.TOPLEFT,
+            ),
+        )
+
     def _find_tables_in_sheet(
         self, doc: DoclingDocument, sheet: Worksheet, page_no: int
     ) -> DoclingDocument:
@@ -1005,47 +1019,35 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         text=title_cell.text,
                         label=DocItemLabel.TEXT,
                         parent=self.parent,
-                        prov=ProvenanceItem(
-                            page_no=page_no,
-                            charspan=(0, 0),
-                            bbox=BoundingBox.from_tuple(
-                                (
-                                    origin_col + title_cell.col,
-                                    origin_row - 1,
-                                    origin_col + title_cell.col + title_cell.col_span,
-                                    origin_row,
-                                ),
-                                origin=CoordOrigin.TOPLEFT,
-                            ),
+                        prov=self._cell_prov(
+                            page_no,
+                            origin_col + title_cell.col,
+                            origin_row - 1,
+                            title_cell.col_span,
+                            1,
                         ),
                         content_layer=content_layer,
                     )
 
+                table_prov = self._cell_prov(
+                    page_no, origin_col, origin_row, num_cols, num_rows
+                )
                 if treat_singleton_as_text and len(excel_table.data) == 1:
                     doc.add_text(
                         text=excel_table.data[0].text,
                         label=DocItemLabel.TEXT,
                         parent=self.parent,
-                        prov=ProvenanceItem(
-                            page_no=page_no,
-                            charspan=(0, 0),
-                            bbox=BoundingBox.from_tuple(
-                                (
-                                    origin_col,
-                                    origin_row,
-                                    origin_col + num_cols,
-                                    origin_row + num_rows,
-                                ),
-                                origin=CoordOrigin.TOPLEFT,
-                            ),
-                        ),
+                        prov=table_prov,
                         content_layer=content_layer,
                     )
                 else:
-                    table_data = TableData(
-                        num_rows=num_rows,
-                        num_cols=num_cols,
-                        table_cells=[],
+                    table_item = doc.add_table(
+                        data=TableData(
+                            num_rows=num_rows, num_cols=num_cols, table_cells=[]
+                        ),
+                        parent=self.parent,
+                        prov=table_prov,
+                        content_layer=content_layer,
                     )
 
                     for excel_cell in excel_table.data:
@@ -1060,26 +1062,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             column_header=excel_cell.row == 0,
                             row_header=False,
                         )
-                        table_data.table_cells.append(cell)
-
-                    doc.add_table(
-                        data=table_data,
-                        parent=self.parent,
-                        prov=ProvenanceItem(
-                            page_no=page_no,
-                            charspan=(0, 0),
-                            bbox=BoundingBox.from_tuple(
-                                (
-                                    origin_col,
-                                    origin_row,
-                                    origin_col + num_cols,
-                                    origin_row + num_rows,
-                                ),
-                                origin=CoordOrigin.TOPLEFT,
-                            ),
-                        ),
-                        content_layer=content_layer,
-                    )
+                        doc.add_table_cell(table_item=table_item, cell=cell)
 
             # Extract comments and link them to cells
             for (row, col), thread in comment_map.items():
