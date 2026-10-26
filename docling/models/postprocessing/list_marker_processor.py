@@ -111,6 +111,17 @@ class ListItemMarkerProcessor:
             pattern.match(text) for pattern in self._compiled_numbered_item_patterns
         )
 
+    def has_same_numbered_marker_style(self, first: str, second: str) -> bool:
+        """Check whether two different numbered markers use the same format."""
+        first_match = self._find_match(first, self._compiled_numbered_item_patterns)
+        second_match = self._find_match(second, self._compiled_numbered_item_patterns)
+        return (
+            first_match is not None
+            and second_match is not None
+            and first_match.re is second_match.re
+            and first_match[1] != second_match[1]
+        )
+
     @classmethod
     def _create_list_item(
         cls,

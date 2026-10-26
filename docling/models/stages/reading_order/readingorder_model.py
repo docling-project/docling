@@ -733,7 +733,7 @@ class ReadingOrderModel:
                 isinstance(parent, GroupItem) and parent.label == GroupLabel.FORM_AREA
             ) or isinstance(parent, FieldRegionItem)
             current_list: GroupItem | None = None
-            list_stack: list[tuple[float, GroupItem]] = []
+            list_stack: list[tuple[float, GroupItem, float]] = []
             previous_list_element: ReadingOrderPageElement | None = None
             indent_tolerance = 5.0
             siblings = [
@@ -753,7 +753,12 @@ class ReadingOrderModel:
                     isinstance(element, TextElement)
                     and element.label == DocItemLabel.LIST_ITEM
                 )
+                line_height = element.cluster.bbox.height
                 if is_list_item:
+                    line_height = min(
+                        (cell.rect.height for cell in element.cluster.cells),
+                        default=line_height,
+                    )
                     # A move right and back up is a new column, not a sublist.
                     if current_list is None or (
                         previous_list_element is not None
@@ -769,18 +774,34 @@ class ReadingOrderModel:
                         list_stack.pop()
                     if list_stack:
                         current_list = list_stack[-1][1]
+                        first_item = current_list.children[0].resolve(out_doc)
+                        # A leading quotation mark can hang left of the list marker.
+                        if (
+                            isinstance(first_item, TextItem)
+                            and first_item.orig.startswith(
+                                ("«", "\u201c", "\u2018", '"')
+                            )
+                            and first_item.prov
+                            and list_stack[-1][0] == first_item.prov[0].bbox.l
+                            and 0 < left - list_stack[-1][0] <= list_stack[-1][2]
+                            and self.list_item_processor.has_same_numbered_marker_style(
+                                first_item.orig[1:], element.text or ""
+                            )
+                        ):
+                            list_stack[-1] = (left, current_list, list_stack[-1][2])
                         if left > list_stack[-1][0] + indent_tolerance:
                             current_list = out_doc.add_group(
                                 label=GroupLabel.LIST,
                                 name="list",
                                 parent=current_list.children[-1].resolve(out_doc),
                             )
-                            list_stack.append((left, current_list))
+                            list_stack.append((left, current_list, line_height))
                     else:
                         current_list = None
                 elif split_lists_on_non_list and element.label not in {
                     DocItemLabel.PAGE_HEADER,
                     DocItemLabel.PAGE_FOOTER,
+                    DocItemLabel.FOOTNOTE,
                 }:
                     current_list = None
                     list_stack.clear()
@@ -807,7 +828,9 @@ class ReadingOrderModel:
                         page_height=page_height,
                     )
                     if is_list_item and not list_stack and current_list is not None:
-                        list_stack.append((element.cluster.bbox.l, current_list))
+                        list_stack.append(
+                            (element.cluster.bbox.l, current_list, line_height)
+                        )
                     if is_list_item:
                         previous_list_element = rel
 
@@ -1071,7 +1094,11 @@ class ReadingOrderModel:
                 parent=parent,
             )
         else:
-            if label not in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:
+            if label not in [
+                DocItemLabel.PAGE_HEADER,
+                DocItemLabel.PAGE_FOOTER,
+                DocItemLabel.FOOTNOTE,
+            ]:
                 current_list = None
 
             content_layer = ContentLayer.BODY

@@ -6,6 +6,7 @@ from pathlib import PurePath
 import pytest
 from docling_core.types.doc import BoundingBox, DocItemLabel, GroupLabel, Size
 from docling_core.types.doc.document import DoclingDocument, ListItem
+from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import (
     AssembledUnit,
@@ -25,6 +26,7 @@ def convert_entries(
     entries: list[tuple[str, float, int, DocItemLabel]],
     *,
     boxes: list[BoundingBox] | None = None,
+    cells: dict[int, list[TextCell]] | None = None,
 ) -> DoclingDocument:
     elements = []
     page_positions: dict[int, int] = {}
@@ -45,6 +47,7 @@ def convert_entries(
                         if boxes is not None
                         else BoundingBox(l=left, t=top, r=450, b=top + 15)
                     ),
+                    cells=(cells or {}).get(index, []),
                 ),
             )
         )
@@ -194,3 +197,143 @@ def test_pdf_list_in_next_column_is_not_nested() -> None:
         "Right second",
     ]
     assert [level for _, level in items] == [2, 2, 2, 2]
+
+
+@pytest.mark.parametrize("opening_quote", ["«", "\u201c", '"'])
+@pytest.mark.parametrize("markers", [("1.", "2.", "3."), ("(1)", "(2)", "(3)")])
+def test_opening_quote_does_not_indent_numbered_siblings(
+    opening_quote: str, markers: tuple[str, str, str]
+) -> None:
+    doc = convert_entries(
+        [
+            (
+                f"{opening_quote}{markers[0]} First item.",
+                113.4,
+                1,
+                DocItemLabel.LIST_ITEM,
+            ),
+            (f"{markers[1]} Second item.", 118.9, 1, DocItemLabel.LIST_ITEM),
+            (
+                f"{markers[2]} Third item.{opening_quote}",
+                118.9,
+                1,
+                DocItemLabel.LIST_ITEM,
+            ),
+        ]
+    )
+
+    items = [
+        (item, level)
+        for item, level in doc.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+    assert [level for _, level in items] == [2, 2, 2]
+    assert len({item.parent.cref for item, _ in items if item.parent is not None}) == 1
+    assert items[0][0].orig.startswith(opening_quote)
+
+
+def test_quoted_parent_still_has_an_indented_sublist() -> None:
+    doc = convert_entries(
+        [
+            ("«1. Parent", 113.4, 1, DocItemLabel.LIST_ITEM),
+            ("a) First child", 154, 1, DocItemLabel.LIST_ITEM),
+            ("b) Second child", 154, 1, DocItemLabel.LIST_ITEM),
+            ("2. Next parent»", 118.9, 1, DocItemLabel.LIST_ITEM),
+        ]
+    )
+
+    items = [
+        (item, level)
+        for item, level in doc.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+    assert [level for _, level in items] == [2, 4, 4, 2]
+    assert items[1][0].parent is not None
+    assert items[1][0].parent.resolve(doc).parent == items[0][0].get_ref()
+    assert items[0][0].parent == items[3][0].parent
+
+
+@pytest.mark.parametrize("child_marker", ["a)", "1."])
+def test_small_indent_with_a_new_numbering_style_still_nests(child_marker: str) -> None:
+    doc = convert_entries(
+        [
+            ("«1. Parent", 113.4, 1, DocItemLabel.LIST_ITEM),
+            (f"{child_marker} Child", 118.9, 1, DocItemLabel.LIST_ITEM),
+        ]
+    )
+
+    items = [
+        (item, level)
+        for item, level in doc.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+    assert [level for _, level in items] == [2, 4]
+
+
+def test_multiline_quoted_parent_does_not_absorb_a_real_indent() -> None:
+    first_line = BoundingBox(l=113.4, t=20, r=450, b=30)
+    doc = convert_entries(
+        [
+            (
+                "«1. A parent that spans several lines.",
+                113.4,
+                1,
+                DocItemLabel.LIST_ITEM,
+            ),
+            ("2. A nested item.", 149.4, 1, DocItemLabel.LIST_ITEM),
+        ],
+        boxes=[
+            BoundingBox(l=113.4, t=20, r=450, b=75),
+            BoundingBox(l=149.4, t=90, r=450, b=100),
+        ],
+        cells={
+            0: [
+                TextCell(
+                    index=0,
+                    text="«1. A parent",
+                    orig="«1. A parent",
+                    from_ocr=False,
+                    rect=BoundingRectangle.from_bounding_box(first_line),
+                )
+            ]
+        },
+    )
+
+    items = [
+        (item, level)
+        for item, level in doc.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+    assert [level for _, level in items] == [2, 4]
+
+
+def test_nested_list_continues_after_page_footnotes() -> None:
+    doc = convert_entries(
+        [
+            ("• Parent", 118, 1, DocItemLabel.LIST_ITEM),
+            ("o First child", 154, 1, DocItemLabel.LIST_ITEM),
+            ("1 A page footnote.", 100, 1, DocItemLabel.FOOTNOTE),
+            ("2 Another footnote.", 100, 1, DocItemLabel.FOOTNOTE),
+            ("1", 250, 1, DocItemLabel.PAGE_FOOTER),
+            ("Page header", 100, 2, DocItemLabel.PAGE_HEADER),
+            ("o Second child", 154, 2, DocItemLabel.LIST_ITEM),
+            ("• Next parent", 118, 2, DocItemLabel.LIST_ITEM),
+            ("A body paragraph ends the list.", 118, 2, DocItemLabel.TEXT),
+            ("o A separate list", 154, 2, DocItemLabel.LIST_ITEM),
+        ]
+    )
+
+    items = [
+        (item, level)
+        for item, level in doc.iterate_items()
+        if isinstance(item, ListItem)
+    ]
+    assert [level for _, level in items] == [2, 4, 4, 2, 2]
+    assert items[1][0].parent == items[2][0].parent
+    assert items[4][0].parent != items[1][0].parent
+    footnotes = [item for item in doc.texts if item.label == DocItemLabel.FOOTNOTE]
+    assert [item.text for item in footnotes] == [
+        "1 A page footnote.",
+        "2 Another footnote.",
+    ]
+    assert all(item.prov[0].page_no == 1 for item in footnotes)

@@ -55,7 +55,8 @@ top-level `groups` field.
 
 For PDFs, list nesting is inferred from horizontal indentation. A nested list group
 is a child of the preceding item at the outer level, and an outdent returns to an outer list.
-Page headers and footers do not interrupt a list that continues on the next page.
+Page headers, footers, and footnotes do not interrupt a list that continues on the next page.
+An opening quotation mark that hangs left of a numbered list does not add a list level.
 
 Recognised list markers are stored in `ListItem.marker` and removed from `ListItem.text`;
 `ListItem.orig` retains the source text. Word's `o` circle marker is recognised on
