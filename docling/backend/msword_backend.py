@@ -4588,9 +4588,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 item.footnotes = _remap_refs(item.footnotes, copies)
                 item.references = _remap_refs(item.references, copies)
             if isinstance(item, TableItem):
-                for cell in item.data.table_cells:
-                    if isinstance(cell, RichTableCell):
-                        cell.ref = copies[cell.ref.cref].get_ref()
+                cells = item.data.table_cells
+                for index, cell in enumerate(cells):
+                    if not isinstance(cell, RichTableCell):
+                        continue
+                    target = copies.get(cell.ref.cref)
+                    # Like _remap_refs, a cell whose target was not copied loses
+                    # its reference and keeps only its text.
+                    cells[index] = (
+                        cell.model_copy(update={"ref": target.get_ref()})
+                        if target is not None
+                        else TableCell.model_validate(cell.model_dump(exclude={"ref"}))
+                    )
 
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
         """Handle DrawingML elements by converting to image via DOCX->PDF->PNG.
