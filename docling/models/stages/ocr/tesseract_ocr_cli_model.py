@@ -347,7 +347,9 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 suffix=".png", mode="w+b", delete=False
                             ) as image_file:
                                 fname = image_file.name
-                                high_res_image.save(image_file)
+                                high_res_image.save(
+                                    image_file, dpi=(72 * self.scale, 72 * self.scale)
+                                )
                             doc_orientation = 0
                             df_osd: Optional[pd.DataFrame] = None
                             try:
@@ -371,7 +373,9 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 high_res_image = high_res_image.rotate(
                                     -doc_orientation, expand=True
                                 )
-                                high_res_image.save(fname)
+                                high_res_image.save(
+                                    fname, dpi=(72 * self.scale, 72 * self.scale)
+                                )
                             try:
                                 df_result = self._run_tesseract(fname, df_osd)
                             except subprocess.CalledProcessError as exc:
