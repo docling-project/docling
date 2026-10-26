@@ -8,7 +8,7 @@ Docling converts messy documents into structured data and simplifies downstream 
 
 # Start
 
-Install Docling as a Python library with your favorite package manager
+Install Docling as a  [Python library](https://pypi.org/project/docling)  with your favorite package manager
 
 # Features
 
