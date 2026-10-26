@@ -34,6 +34,12 @@ Below you can find a listing of all supported input and output formats.
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
+For LaTeX input, front matter such as authors, affiliations, institutes, email
+addresses, and dates is stored as text items. Inline formulas remain formula
+children. The `metadata`, `authors`, and `affiliations` groups record source roles.
+`\thanks` and `\altaffiliation` use footnote items in these groups. Retained
+source commands use the furniture layer and do not appear in default Markdown.
+
 Schema-specific support:
 
 | Format | Description |

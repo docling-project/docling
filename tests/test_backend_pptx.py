@@ -4,6 +4,7 @@
 import logging
 import re
 import struct
+import sys
 import warnings
 import zipfile
 import zlib
@@ -352,9 +353,9 @@ def test_chart_parsed_as_classified_picture_with_data():
           ...
           | 2022    | 175              | 130             |
 
-    * Slide 2 — a 3-D bar chart (``c:bar3DChart``) for which python-pptx has no
-      registered element class. It should degrade gracefully: the chart is
-      emitted as a PictureItem with no tabular data.
+    * Slide 2 — a 3-D column chart (``c:bar3DChart``) for which python-pptx has
+      no plot class. It is still classified as a bar chart and carries its
+      data: one series "2026" over the categories Q1 to Q3.
     """
     converter = get_converter()
     doc = converter.convert(CHART_PPTX).document
@@ -383,12 +384,19 @@ def test_chart_parsed_as_classified_picture_with_data():
     assert grid[(4, 1)] == "175"
     assert grid[(4, 2)] == "130"
 
-    # --- slide 2: 3-D chart degrades gracefully (no tabular data, no crash) ---
+    # --- slide 2: 3-D chart with full data ---
     revenue_pic = next(
         p for p in pictures if p.caption_text(doc) != "Wild Duck Observations by Year"
     )
     assert revenue_pic.meta is not None
-    assert revenue_pic.meta.tabular_chart is None
+    assert (
+        revenue_pic.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert [
+        [cell.text for cell in row]
+        for row in revenue_pic.meta.tabular_chart.chart_data.grid
+    ] == [["", "2026"], ["Q1", "10"], ["Q2", "20"], ["Q3", "30"]]
 
 
 def test_chart_image_not_rendered_by_default():
@@ -961,6 +969,10 @@ def test_metafile_detection(image_bytes: bytes, expected: bool):
     assert _is_metafile(image_bytes) is expected
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="Pillow 12 stores the WMF handler on the module, not the image class",
+)
 def test_pptx_emf_picture_survives_without_pillow_metafile_support(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ):
@@ -978,9 +990,9 @@ def test_pptx_emf_picture_survives_without_pillow_metafile_support(
 
     import docling.backend.mspowerpoint_backend as _pptx_backend
 
-    # The plugin registers a GDI-backed handler at import time on Windows only;
-    # on other platforms this attribute is already None.
-    monkeypatch.setattr(WmfImagePlugin, "_handler", None)
+    # The plugin registers a GDI-backed handler on Windows only. Pillow stores
+    # it on the image class; on other platforms the value is already None.
+    monkeypatch.setattr(WmfImagePlugin.WmfStubImageFile, "_handler", None)
     # Patch get_docx_to_pdf_converter in the pptx backend's own namespace so
     # LibreOffice is reported as unavailable regardless of PATH, environment
     # variables, or hardcoded install paths on the test machine.
@@ -1038,6 +1050,10 @@ def test_pptx_undecodable_raster_picture_is_still_skipped(tmp_path: Path):
     assert "Quarterly results" in [t.text for t in doc.texts]
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="Pillow 12 stores the WMF handler on the module, not the image class",
+)
 def test_pptx_emf_picture_rasterized_via_libreoffice(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, libreoffice_available: bool
 ):
@@ -1054,7 +1070,7 @@ def test_pptx_emf_picture_rasterized_via_libreoffice(
 
     from PIL import WmfImagePlugin
 
-    monkeypatch.setattr(WmfImagePlugin, "_handler", None)
+    monkeypatch.setattr(WmfImagePlugin.WmfStubImageFile, "_handler", None)
 
     deck_path = _deck_with_picture(tmp_path, _emf_bytes(drawable=True), ".emf")
     doc = get_converter().convert(deck_path).document

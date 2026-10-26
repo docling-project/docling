@@ -405,7 +405,7 @@ def test_chandra_inline_math_formatting_and_code_whitespace():
         str(next(t.hyperlink for t in doc.texts if t.text == "link"))
         == "https://example.org/"
     )
-    assert doc.texts[-1].level == 3
+    assert doc.texts[-1].level == 2
 
 
 def test_chandra_nested_math_does_not_inherit_table_bbox():

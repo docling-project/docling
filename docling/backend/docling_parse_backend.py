@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import sys
 import warnings
 from collections.abc import Iterable, Iterator
 from io import BytesIO
@@ -357,10 +358,13 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             # whole document.
             if isinstance(self.path_or_stream, BytesIO):
                 self.path_or_stream.seek(0)
+            # The native binding only accepts int64 values, so clamp the range in
+            # case the limits were built without validation.
+            start, end = in_doc.limits.page_range
             self.doc_key = self.parser.load(
                 self.path_or_stream,
                 password=password,
-                page_range=in_doc.limits.page_range,
+                page_range=(min(start, sys.maxsize), min(end, sys.maxsize)),
             )
         except (RuntimeError, ValueError) as e:
             # The threaded parser surfaces native parse failures on unreadable bytes

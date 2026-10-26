@@ -1,5 +1,9 @@
 # Docling CLI reference
 
+For Transformers ASR, install `docling-slim[feat-asr-transformers]` and select
+`--asr-model granite_speech_5_0_2b` (or another speech preset). The same ASR
+settings apply to video.
+
 The `docling` CLI is the quickest way to understand the content of any supported
 document. It ships with the `docling` package (`pip install docling`) and needs
 no code. Use it any time you need to read, convert, or extract content from a
@@ -149,6 +153,7 @@ docling report.pdf --enrich-picture-description --output /tmp/
 | Same line repeated many times | `--pipeline vlm` (or hybrid `force_backend_text`, Python SDK only) |
 | Choose GPU/CPU explicitly | `--device cuda` / `--device cpu` / `--device mps` |
 | HTML images on remote hosts | `--html-image-fetch remote`; add auth with `--html-image-headers '{"Authorization": "Bearer T"}'` (sent only to the source page's origin, or to each `--html-image-headers-origin https://cdn.example.com`) |
+| Script or CI must detect failed documents | Exit code 1 when a document fails; partially converted documents are still written and exit 0. `--fail-on partial` also exits 1 for them, `--fail-on never` always exits 0 (same flag on `convert-remote`). `--abort-on-error` stops at the first failure instead |
 
 ## Remote VLM services from the CLI
 
@@ -173,13 +178,16 @@ docling report.pdf --artifacts-path /models --output /tmp/
 
 For native Whisper ASR, prefetch a selected OpenAI-format checkpoint. Plain
 `--all` excludes ASR models; `--all --asr` includes all native Whisper sizes and
-the Distil-Whisper presets.
+the Distil-Whisper presets. WhisperS2T presets are prefetched only by name; each
+one downloads the `float16` and `float32` models and the word aligner it needs.
 
 ```bash
 docling-tools models download whisper_tiny --output-dir /models
 docling --asr-model whisper_tiny_native --artifacts-path /models audio.wav
 docling-tools models download whisper_distil_small_en --output-dir /models
 docling --asr-model whisper_distil_small_en_native --artifacts-path /models audio.wav
+docling-tools models download whisper_small_en_s2t --output-dir /models
+docling --asr-model whisper_small_en_s2t --artifacts-path /models audio.wav
 ```
 
 `--artifacts-path` overrides the default Hugging Face cache; you can also set

@@ -79,6 +79,7 @@ from docling.utils.code_language import (
     detect_code_language,
     normalize_code_language,
 )
+from docling.utils.image_utils import check_image_pixels
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -536,6 +537,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             enable_remote_fetch=options.enable_remote_fetch,
             max_image_data_base64_bytes=options.max_image_data_base64_bytes,
             max_remote_image_bytes=options.max_remote_image_bytes,
+            max_image_pixels=options.max_image_pixels,
             max_redirects=options.max_redirects,
             headers=options.headers,
             header_origins=self._get_header_origins(options, configured_base_path),
@@ -5375,11 +5377,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return None
                 try:
                     image = Image.open(BytesIO(image_data))
+                    check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
                     return ImageRef.from_pil(
                         image, dpi=int(image.info.get("dpi", (72,))[0])
                     )
-                except (UnidentifiedImageError, OSError, TypeError, ValueError) as exc:
+                except (
+                    Image.DecompressionBombError,
+                    UnidentifiedImageError,
+                    OSError,
+                    TypeError,
+                    ValueError,
+                ) as exc:
                     warnings.warn(
                         f"Could not process an embedded MHTML image from {src_url}: "
                         f"{exc}"

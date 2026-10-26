@@ -1,106 +1,221 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: text: Albert Q. Jiang, Alexandre Sabla ... g, Timothée Lacroix,
-
-William El Sayed
-  item-2 at level 1: caption: Image: images/header.jpeg
-  item-3 at level 1: picture
-    item-3 at level 2: caption: Image: images/header.jpeg
-  item-4 at level 1: section_header: Abstract
-  item-5 at level 1: text: We introduce , a 7billion-parame ... mistral.ai/news/announcing-mistral-7b/
-  item-6 at level 1: section_header: Introduction
-  item-7 at level 1: text: =-1 In the rapidly evolving doma ... rmance on non-code related benchmarks.
-  item-8 at level 1: text: leverages grouped-query attentio ... hanced performance and efficiency of .
-  item-9 at level 1: text: is released under the Apache 2.0 ... ompanied by a reference implementation
-  item-10 at level 1: footnote: https://github.com/mistralai/mistral-src
-  item-11 at level 1: text: facilitating easy deployment eit ... ficient] inference server and SkyPilot
-  item-12 at level 1: footnote: https://github.com/skypilot-org/skypilot
-  item-13 at level 1: text: .
-Integration with Hugging Face
-  item-14 at level 1: footnote: https://huggingface.co/mistralai
-  item-15 at level 1: text: is also streamlined for easier i ... tly outperforms the 2 13B  Chat model.
-  item-16 at level 1: text: =-1 takes a significant step in  ... wide range of real-world applications.
-  item-17 at level 1: section_header: Architectural details
-  item-18 at level 1: section: group figure
-    item-19 at level 2: picture
-      item-19 at level 3: caption: Image: images/swa.pdf
-    item-20 at level 2: text: Sliding Window Attention. The nu ...  forward by up to $k \times W$ tokens.
-  item-21 at level 1: caption: Image: images/swa.pdf
-  item-22 at level 1: text: r0.275
-  item-23 at level 1: table with [11x2]
-  item-24 at level 1: text: tableModel architecture.
-  item-25 at level 1: text: is based on a transformer archit ... a few changes that we summarize below.
-  item-26 at level 1: text: =-1 Sliding Window Attention. SW ... ent over a vanilla attention baseline.
-  item-27 at level 1: text: =-1 Rolling Buffer Cache. A fixe ... , without impacting the model quality.
-  item-28 at level 1: section: group figure
-    item-29 at level 2: text: [][c]
-    item-30 at level 2: picture
-      item-30 at level 3: caption: Image: images/rolling_buffer.pdf
-    item-31 at level 2: text: Rolling buffer cache. The cache  ... enerated tokens are colored in orange.
-  item-32 at level 1: caption: Image: images/rolling_buffer.pdf
-  item-33 at level 1: text: =-1 Pre-fill and Chunking. When  ... rks over both the cache and the chunk.
-  item-34 at level 1: section: group figure
-    item-35 at level 2: picture
-      item-35 at level 3: caption: Image: images/chunking.pdf
-    item-36 at level 2: text: Pre-fill and chunking.
-During pr ... de of the sliding window (left block).
-  item-37 at level 1: caption: Image: images/chunking.pdf
-  item-38 at level 1: section_header: Results
-  item-39 at level 1: text: We compare to , and re-run all b ... ariety of tasks categorized as follow:
-  item-40 at level 1: list: group list
-    item-41 at level 2: list_item: Commonsense Reasoning (0-shot):  ... CommonsenseQA[talmor2018commonsenseqa]
-    item-42 at level 2: list_item: World Knowledge (5-shot): Natura ... 9natural], TriviaQA[joshi2017triviaqa]
-    item-43 at level 2: list_item: Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]
-    item-44 at level 2: list_item: Math: GSM8K[cobbe2021training] ( ... ycks2021measuring] (4-shot) with maj@4
-    item-45 at level 2: list_item: Code: Humaneval[chen2021evaluati ... ) and MBPP[austin2021program] (3-shot)
-    item-46 at level 2: list_item: Popular aggregated results: MMLU ... nglish multiple-choice questions only)
-  item-47 at level 1: text: Detailed results for , 2 7B/13B, ... erformance of with 2 7B/13B, and 1 34B
-  item-48 at level 1: footnote: Since 2 34B was not open-sourced, we report results for 1 34B.
-  item-49 at level 1: text: in different categories.
-surpass ... mathematics, and reasoning benchmarks.
-  item-50 at level 1: text: Size and Efficiency. We computed ...  the amount of knowledge it can store.
-  item-51 at level 1: text: Evaluation Differences. On some  ...  we do not provide Wikipedia contexts.
-  item-52 at level 1: section: group figure
-    item-53 at level 2: picture
-      item-53 at level 3: caption: Image: images/230927_bars.png
-    item-54 at level 2: text: Performance of and different mod ...  generation, and reasoning benchmarks.
-  item-55 at level 1: caption: Image: images/230927_bars.png
-  item-56 at level 1: table with [6x14]
-  item-57 at level 1: text: Comparison of with . outperforms ... ng performance on non-code benchmarks.
-  item-58 at level 1: section: group figure
-    item-59 at level 2: picture
-      item-59 at level 3: caption: Image: images/230927_effective_sizes.png
-    item-60 at level 2: text: Results on MMLU, commonsense rea ...  amount of knowledge it can compress).
-  item-61 at level 1: caption: Image: images/230927_effective_sizes.png
-  item-62 at level 1: text: r0.48
-  item-63 at level 1: table with [9x3]
-  item-64 at level 1: text: tableComparison of Chat models.  ...  and is comparable to 13B Chat models.
-  item-65 at level 1: section_header: Instruction Finetuning
-  item-66 at level 1: text: =-1 To evaluate the generalizati ...  on https://llmboxing.com/leaderboard.
-  item-67 at level 1: text: In this evaluation, participants ... ompared to 4143 times for Llama 2 13B.
-  item-68 at level 1: section_header: Adding guardrails for front-facing applications
-  item-69 at level 1: text: =-1 The ability to enforce guard ... force quality content in applications.
-  item-70 at level 1: section_header: System prompt to enforce guardrails
-  item-71 at level 1: text: We introduce a system prompt (se ... as indicated in Table[tab:guardrails].
-  item-72 at level 1: text: 0.98Always assist with care, res ... plies promote fairness and positivity.
-  item-73 at level 1: text: r0.38
-  item-74 at level 1: table with [5x2]
-  item-75 at level 1: text: tableSystem prompts. Mean offici ... Chat reports official results of 6.65.
-  item-76 at level 1: text: =-1 We use a set of 175 unsafe p ...  answer 100% of the harmful questions.
-  item-77 at level 1: text: =-1 As an illustration, we provi ... y when system prompts are deactivated.
-  item-78 at level 1: table with [4x2]
-  item-79 at level 1: text: Comparison between Mistral and s ...  question How to kill a linux process.
-  item-80 at level 1: section_header: Content moderation with self-reflection
-  item-81 at level 1: text: =-1 can be used as a content mod ... n legal, medical or financial domains.
-  item-82 at level 1: text: =-1 To do so, we designed a self ... ring acceptable prompts as positives).
-  item-83 at level 1: text: =-1 The use cases are vast, from ... er based on their particular use-case.
-  item-84 at level 1: section_header: Conclusion
-  item-85 at level 1: text: Our work on Mistral 7B demonstra ... ance with the smallest possible model.
-  item-86 at level 1: section_header: Acknowledgements
-  item-87 at level 1: text: =-1 We are grateful to CoreWeave ... aking our model compatible everywhere.
-  item-88 at level 1: section: group figure
-    item-89 at level 2: picture
-      item-89 at level 3: caption: Image: images/llama_vs_mistral_example.png
-    item-90 at level 2: text: Human evaluation of vs 213BChat  ... cribes in the contents in more detail.
-  item-91 at level 1: caption: Image: images/llama_vs_mistral_example.png
-  item-92 at level 1: text: ref
-  item-93 at level 1: text: plain
+  item-1 at level 1: unspecified: group metadata
+    item-2 at level 2: title: Mistral~7B\xspace
+    item-3 at level 2: unspecified: group authors
+      item-4 at level 3: text: Albert Q. Jiang, Alexandre Sabla ... ng, Timothée Lacroix, William El Sayed
+  item-5 at level 1: caption: Image: images/header.jpeg
+  item-6 at level 1: picture
+    item-6 at level 2: caption: Image: images/header.jpeg
+  item-7 at level 1: section_header: Abstract
+  item-8 at level 1: text: We introduce Mistral~7B\xspace,  ... mistral.ai/news/announcing-mistral-7b/
+  item-9 at level 1: section_header: Introduction
+  item-10 at level 1: text: =-1 In the rapidly evolving doma ... rmance on non-code related benchmarks.
+  item-11 at level 1: text: Mistral~7B\xspaceleverages group ... e and efficiency of Mistral~7B\xspace.
+  item-12 at level 1: text: Mistral~7B\xspaceis released und ... ompanied by a reference implementation
+  item-13 at level 1: footnote: https://github.com/mistralai/mistral-src
+  item-14 at level 1: text: facilitating easy deployment eit ... ficient] inference server and SkyPilot
+  item-15 at level 1: footnote: https://github.com/skypilot-org/skypilot
+  item-16 at level 1: text: . Integration with Hugging Face
+  item-17 at level 1: footnote: https://huggingface.co/mistralai
+  item-18 at level 1: text: is also streamlined for easier i ... rms the Llama\xspace2 13B  Chat model.
+  item-19 at level 1: text: =-1 Mistral~7B\xspacetakes a sig ... wide range of real-world applications.
+  item-20 at level 1: section_header: Architectural details
+  item-21 at level 1: section: group figure
+    item-22 at level 2: picture
+      item-22 at level 3: caption: 
+    item-23 at level 2: caption: 
+      item-24 at level 3: inline: group group
+        item-25 at level 4: text: Sliding Window Attention. The nu ... ion: each token can attend to at most 
+        item-26 at level 4: formula: W
+        item-27 at level 4: text:  tokens from the previous layer (here, 
+        item-28 at level 4: formula: W=3
+        item-29 at level 4: text: ). Note that tokens outside the  ... ayer, information can move forward by 
+        item-30 at level 4: formula: W
+        item-31 at level 4: text:  tokens. Hence, after 
+        item-32 at level 4: formula: k
+        item-33 at level 4: text:  attention layers, information can move forward by up to 
+        item-34 at level 4: formula: k \times W
+        item-35 at level 4: text:  tokens.
+  item-36 at level 1: text: r0.275
+  item-37 at level 1: table with [11x2]
+    item-38 at level 2: unspecified: group group
+      item-39 at level 3: text: 
+        item-40 at level 4: inline: group group
+          item-41 at level 5: formula: 4096
+    item-42 at level 2: unspecified: group group
+      item-43 at level 3: text: 
+        item-44 at level 4: inline: group group
+          item-45 at level 5: formula: 32
+    item-46 at level 2: unspecified: group group
+      item-47 at level 3: text: 
+        item-48 at level 4: inline: group group
+          item-49 at level 5: formula: 128
+    item-50 at level 2: unspecified: group group
+      item-51 at level 3: text: 
+        item-52 at level 4: inline: group group
+          item-53 at level 5: formula: 14336
+    item-54 at level 2: unspecified: group group
+      item-55 at level 3: text: 
+        item-56 at level 4: inline: group group
+          item-57 at level 5: formula: 32
+    item-58 at level 2: unspecified: group group
+      item-59 at level 3: text: 
+        item-60 at level 4: inline: group group
+          item-61 at level 5: formula: 8
+    item-62 at level 2: unspecified: group group
+      item-63 at level 3: text: 
+        item-64 at level 4: inline: group group
+          item-65 at level 5: formula: 4096
+    item-66 at level 2: unspecified: group group
+      item-67 at level 3: text: 
+        item-68 at level 4: inline: group group
+          item-69 at level 5: formula: 8192
+    item-70 at level 2: unspecified: group group
+      item-71 at level 3: text: 
+        item-72 at level 4: inline: group group
+          item-73 at level 5: formula: 32000
+  item-74 at level 1: caption: Model architecture.
+  item-75 at level 1: text: Mistral~7B\xspaceis based on a t ... a few changes that we summarize below.
+  item-76 at level 1: text: 
+    item-77 at level 2: inline: group group
+      item-78 at level 3: text: =-1 Sliding Window Attention. SW ... nd information beyond the window size 
+      item-79 at level 3: formula: W
+      item-80 at level 3: text: . The hidden state in position 
+      item-81 at level 3: formula: i
+      item-82 at level 3: text:  of the layer 
+      item-83 at level 3: formula: k
+      item-84 at level 3: text: , 
+      item-85 at level 3: formula: h_i
+      item-86 at level 3: text: , attends to all hidden states f ... previous layer with positions between 
+      item-87 at level 3: formula: i-W
+      item-88 at level 3: text:  and 
+      item-89 at level 3: formula: i
+      item-90 at level 3: text: . Recursively, 
+      item-91 at level 3: formula: h_i
+      item-92 at level 3: text:  can access tokens from the input layer at a distance of up to 
+      item-93 at level 3: formula: W \times k
+      item-94 at level 3: text:  tokens, as illustrated in Figur ... he last layer, using a window size of 
+      item-95 at level 3: formula: W=4096
+      item-96 at level 3: text: , we have a theoretical attention span of approximately 
+      item-97 at level 3: formula: 131K
+      item-98 at level 3: text:  tokens. In practice, for a sequence length of 16K and 
+      item-99 at level 3: formula: W=4096
+      item-100 at level 3: text: , changes made to FlashAttention ... ent over a vanilla attention baseline.
+  item-101 at level 1: text: 
+    item-102 at level 2: inline: group group
+      item-103 at level 3: text: =-1 Rolling Buffer Cache. A fixe ...  cache. The cache has a fixed size of 
+      item-104 at level 3: formula: W
+      item-105 at level 3: text: , and the keys and values for the timestep 
+      item-106 at level 3: formula: i
+      item-107 at level 3: text:  are stored in position 
+      item-108 at level 3: formula: i \bmod W
+      item-109 at level 3: text:  of the cache. As a result, when the position 
+      item-110 at level 3: formula: i
+      item-111 at level 3: text:  is larger than 
+      item-112 at level 3: formula: W
+      item-113 at level 3: text: , past values in the cache are o ... illustration in Figure[fig:cache] for 
+      item-114 at level 3: formula: W=3
+      item-115 at level 3: text: . On a sequence length of 32k to ... , without impacting the model quality.
+  item-116 at level 1: section: group figure
+    item-117 at level 2: text: [][c]
+    item-118 at level 2: picture
+      item-118 at level 3: caption: 
+    item-119 at level 2: caption: 
+      item-120 at level 3: inline: group group
+        item-121 at level 4: text: Rolling buffer cache. The cache has a fixed size of 
+        item-122 at level 4: formula: W=4
+        item-123 at level 4: text: . Keys and values for position 
+        item-124 at level 4: formula: i
+        item-125 at level 4: text:  are stored in position 
+        item-126 at level 4: formula: i \bmod W
+        item-127 at level 4: text:  of the cache. When the position 
+        item-128 at level 4: formula: i
+        item-129 at level 4: text:  is larger than 
+        item-130 at level 4: formula: W
+        item-131 at level 4: text: , past values in the cache are o ... enerated tokens are colored in orange.
+  item-132 at level 1: text: 
+    item-133 at level 2: inline: group group
+      item-134 at level 3: text: =-1 Pre-fill and Chunking. When  ...  in advance, and we can pre-fill the (
+      item-135 at level 3: formula: k
+      item-136 at level 3: text: , 
+      item-137 at level 3: formula: v
+      item-138 at level 3: text: ) cache with the prompt. If the  ... rks over both the cache and the chunk.
+  item-139 at level 1: section: group figure
+    item-140 at level 2: picture
+      item-140 at level 3: caption: Pre-fill and chunking. During pre-fill of the cache, long sequences are chunked to limit memory usage. We process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. The figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).
+    item-141 at level 2: caption: Pre-fill and chunking. During pr ... de of the sliding window (left block).
+  item-142 at level 1: section_header: Results
+  item-143 at level 1: text: We compare Mistral~7B\xspaceto L ... ariety of tasks categorized as follow:
+  item-144 at level 1: list: group list
+    item-145 at level 2: list_item: Commonsense Reasoning (0-shot):  ... CommonsenseQA[talmor2018commonsenseqa]
+    item-146 at level 2: list_item: World Knowledge (5-shot): Natura ... 9natural], TriviaQA[joshi2017triviaqa]
+    item-147 at level 2: list_item: Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]
+    item-148 at level 2: list_item: Math: GSM8K[cobbe2021training] ( ... ycks2021measuring] (4-shot) with maj@4
+    item-149 at level 2: list_item: Code: Humaneval[chen2021evaluati ... ) and MBPP[austin2021program] (3-shot)
+    item-150 at level 2: list_item: Popular aggregated results: MMLU ... nglish multiple-choice questions only)
+  item-151 at level 1: text: Detailed results for Mistral~7B\ ... \xspace2 7B/13B, and Llama\xspace1 34B
+  item-152 at level 1: footnote: Since Llama\xspace2 34B was not  ...  report results for Llama\xspace1 34B.
+  item-153 at level 1: text: in different categories. Mistral ... mathematics, and reasoning benchmarks.
+  item-154 at level 1: text: Size and Efficiency. We computed ...  the amount of knowledge it can store.
+  item-155 at level 1: text: Evaluation Differences. On some  ...  we do not provide Wikipedia contexts.
+  item-156 at level 1: section: group figure
+    item-157 at level 2: picture
+      item-157 at level 3: caption: Performance of Mistral~7B\xspaceand different Llama\xspacemodels on a wide range of benchmarks. All models were re-evaluated on all metrics with our evaluation pipeline for accurate comparison. Mistral~7B\xspacesignificantly outperforms Llama\xspace2 7B and Llama\xspace2 13B on all benchmarks. It is also vastly superior to Llama\xspace1 34B in mathematics, code generation, and reasoning benchmarks.
+    item-158 at level 2: caption: Performance of Mistral~7B\xspace ...  generation, and reasoning benchmarks.
+  item-159 at level 1: table with [6x14]
+    item-159 at level 2: caption: Comparison of Mistral~7B\xspacewith Llama\xspace. Mistral~7B\xspaceoutperforms Llama\xspace2 13B on all metrics, and approaches the code performance of Code-Llama\xspace7B without sacrificing performance on non-code benchmarks.
+  item-160 at level 1: caption: Comparison of Mistral~7B\xspacew ... ng performance on non-code benchmarks.
+  item-161 at level 1: section: group figure
+    item-162 at level 2: picture
+      item-162 at level 3: caption: Results on MMLU, commonsense reasoning, world knowledge and reading comprehension for Mistral~7B\xspaceand Llama\xspace2 (7B/13B/70B). Mistral~7B\xspacelargely outperforms Llama\xspace2 13B on all evaluations, except on knowledge benchmarks, where it is on par (this is likely due to its limited parameter count, which limits the amount of knowledge it can compress).
+    item-163 at level 2: caption: Results on MMLU, commonsense rea ...  amount of knowledge it can compress).
+  item-164 at level 1: text: r0.48
+  item-165 at level 1: table with [9x3]
+  item-166 at level 1: caption: Comparison of Chat models. Mistr ... and is comparable to 13B  Chat models.
+  item-167 at level 1: section_header: Instruction Finetuning
+  item-168 at level 1: text: =-1 To evaluate the generalizati ...  on https://llmboxing.com/leaderboard.
+  item-169 at level 1: text: In this evaluation, participants ... ompared to 4143 times for Llama 2 13B.
+  item-170 at level 1: section_header: Adding guardrails for front-facing applications
+  item-171 at level 1: text: =-1 The ability to enforce guard ... force quality content in applications.
+  item-172 at level 1: section_header: System prompt to enforce guardrails
+  item-173 at level 1: text: We introduce a system prompt (se ... as indicated in Table[tab:guardrails].
+  item-174 at level 1: text: 0.98 Always assist with care, re ... plies promote fairness and positivity.
+  item-175 at level 1: text: r0.38
+  item-176 at level 1: table with [5x2]
+    item-177 at level 2: unspecified: group group
+      item-178 at level 3: text: 
+        item-179 at level 4: inline: group group
+          item-180 at level 5: text: 6.84 
+          item-181 at level 5: formula: \pm
+          item-182 at level 5: text:  0.07
+    item-183 at level 2: unspecified: group group
+      item-184 at level 3: text: 
+        item-185 at level 4: inline: group group
+          item-186 at level 5: text: 6.38 
+          item-187 at level 5: formula: \pm
+          item-188 at level 5: text:  0.07
+    item-189 at level 2: unspecified: group group
+      item-190 at level 3: text: 
+        item-191 at level 4: inline: group group
+          item-192 at level 5: text: 6.58 
+          item-193 at level 5: formula: \pm
+          item-194 at level 5: text:  0.05
+  item-195 at level 1: caption: System prompts. Mean official MT ... Chat reports official results of 6.65.
+  item-196 at level 1: text: =-1 We use a set of 175 unsafe p ...  answer 100% of the harmful questions.
+  item-197 at level 1: text: =-1 As an illustration, we provi ... y when system prompts are deactivated.
+  item-198 at level 1: table with [4x2]
+    item-198 at level 2: caption: Comparison between Mistral and Llama\xspacesystem prompts. Mistral provides the right answer whereas Llama\xspace2 declines to answer to the question How to kill a linux process.
+  item-199 at level 1: caption: Comparison between Mistral and L ...  question How to kill a linux process.
+  item-200 at level 1: section_header: Content moderation with self-reflection
+  item-201 at level 1: text: =-1 Mistral~7B~--~Instruct\xspac ... n legal, medical or financial domains.
+  item-202 at level 1: text: =-1 To do so, we designed a self ... ring acceptable prompts as positives).
+  item-203 at level 1: text: =-1 The use cases are vast, from ... er based on their particular use-case.
+  item-204 at level 1: section_header: Conclusion
+  item-205 at level 1: text: Our work on Mistral 7B demonstra ... ance with the smallest possible model.
+  item-206 at level 1: section_header: Acknowledgements
+  item-207 at level 1: text: =-1 We are grateful to CoreWeave ... aking our model compatible everywhere.
+  item-208 at level 1: section: group figure
+    item-209 at level 2: picture
+      item-209 at level 3: caption: Human evaluation of Mistral~7B~--~Instruct\xspacevs Llama\xspace213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. Llama\xspace2 13B  Chat recommends a general physics book, while Mistral~7B~--~Instruct\xspacerecommends a more relevant book on quantum physics and describes in the contents in more detail.
+    item-210 at level 2: caption: Human evaluation of Mistral~7B~- ... cribes in the contents in more detail.
+  item-211 at level 1: text: ref

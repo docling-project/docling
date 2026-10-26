@@ -394,7 +394,35 @@ result = converter.convert("interview.wav")
 print(result.document.export_to_markdown())   # timestamped transcript
 ```
 
+For a Transformers-format Whisper checkpoint, install
+`docling-slim[feat-asr-transformers]` and select an explicit preset such as
+`asr_model_specs.WHISPER_TINY_TRANSFORMERS`. The presets cover tiny, base,
+small, medium, large, and large-v3-turbo. Set
+`pipeline_options.artifacts_path` to a directory that contains `config.json`
+and the Transformers model files, or to its parent directory with a
+`openai--whisper-tiny` subdirectory. The local directory is used without a
+Hugging Face lookup. For MLX Whisper, use `WHISPER_TINY_MLX` and provide an
+MLX checkpoint with `config.json` and `weights.safetensors` or `weights.npz`.
+
+Other explicit Transformers presets are `GRANITE_4_0_1B_SPEECH` and
+`NEMOTRON_3_5_ASR_STREAMING`. These models return
+one transcript item that covers the full audio duration. The Transformers
+Whisper presets provide model segment timestamps.
+
 The CLI can also transcribe: `docling interview.wav --to md --output /tmp/`.
+
+Additional presets include `GRANITE_SPEECH_5_0_2B`,
+`GRANITE_SPEECH_5_0_470M_TURBOCTC`, its `_NC` variant,
+`GRANITE_SPEECH_4_1_2B`, its `_PLUS` variant, and
+`NEMOTRON_SPEECH_STREAMING_EN_0_6B`. Copy a preset with
+`.model_copy(deep=True)` before changing `revision`, `language`, or `prompt`.
+Granite and TurboCTC use FP32 weights on MPS to avoid BF16 normalization failures.
+Plus defaults to plain transcription; speaker and timestamp tags are not parsed
+into tracks.
+The `_NC` preset uses a noncommercial license.
+For real decoding checks, use `scripts/validate_asr_models.py` in a repository
+checkout. Repeat `--model` to select presets; without it, the script runs every
+ASR preset on the same fragment. It is outside normal pytest collection.
 
 Video files (`.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`) use `VideoPipeline` with
 `VideoPipelineOptions`, which also samples frames. `max_sampled_frames` defaults
@@ -465,7 +493,8 @@ Or save with `ImageRefMode.EMBEDDED` so the JSON carries its images.
 
 HTML image downloads are off by default. Enable them on the HTML backend
 options; downloads only connect to public addresses, re-check every redirect
-and stop at `max_remote_image_bytes`.
+and stop at `max_remote_image_bytes`. An image larger than `max_image_pixels`
+(width x height, default 89,478,485) is skipped with a warning.
 
 ```python
 from docling.datamodel.backend_options import HTMLBackendOptions
@@ -484,6 +513,28 @@ converter = DocumentConverter(
     format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
 )
 ```
+## DOCX, XLSX and EPUB size limits
+
+These formats are ZIP archives. Docling checks the decompressed sizes before it
+parses them and fails the file with `ArchiveLimitError` (a `DocumentLoadError`)
+when one is too large. Defaults: DOCX/XLSX 128 MiB per member, 512 MiB in total,
+10,000 members; EPUB content documents 10 MB each, 100 MB in total. Raise them
+for large trusted files with `max_file_bytes`, `max_total_bytes` and
+`max_member_count` on `MsWordBackendOptions`, `MsExcelBackendOptions` or
+`EpubBackendOptions`:
+
+```python
+from docling.datamodel.backend_options import MsWordBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, WordFormatOption
+
+converter = DocumentConverter(format_options={
+    InputFormat.DOCX: WordFormatOption(
+        backend_options=MsWordBackendOptions(max_file_bytes=512 * 1024 * 1024)
+    ),
+})
+```
+
 ## Offline / air-gapped models
 
 Pre-download model artifacts, then point conversions at them so no network is

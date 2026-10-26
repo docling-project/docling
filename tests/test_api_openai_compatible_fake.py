@@ -32,7 +32,10 @@ from docling.models.inference_engines.vlm.base import VlmEngineInput
 from docling.models.stages.vlm_convert.vlm_convert_model import (
     _prediction_from_engine_output,
 )
-from docling.models.utils.generation_utils import GenerationStopper
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    TailRepetitionStopper,
+)
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.utils.api_image_request import (
     api_image_request,
@@ -352,6 +355,56 @@ def test_engine_keeps_logprobs_when_a_stopper_aborts_the_stream(api, image):
         ("ok ", -0.1),
         ("loop", -0.2),
     ]
+
+
+class _ClosingTagStopper(GenerationStopper):
+    """Stops when the model closes the document: a valid end of the output."""
+
+    def should_stop(self, s: str) -> bool:
+        return "</doctag>" in s
+
+    def is_valid_end(self) -> bool:
+        return True
+
+
+@pytest.mark.parametrize(
+    ("stopper", "chunks", "expected_text", "expected_stop_reason"),
+    [
+        pytest.param(
+            _ClosingTagStopper(),
+            ["<doctag>text", "</doctag>", " not read"],
+            "<doctag>text</doctag>",
+            VlmStopReason.END_OF_SEQUENCE,
+            id="valid-end",
+        ),
+        pytest.param(
+            TailRepetitionStopper(min_repeats=4, min_span=8, max_unit=4),
+            ["<doctag>"] + ["ab"] * 30,
+            "<doctag>abababab",
+            VlmStopReason.STOP_SEQUENCE,
+            id="repetition-cut",
+        ),
+    ],
+)
+def test_engine_reports_the_stop_reason_declared_by_the_stopper(
+    api, image, stopper, chunks, expected_text, expected_stop_reason
+):
+    api.stream_chunks = chunks
+    engine = _engine(api, params={"model": "m"})
+
+    outputs = engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=image,
+                prompt="describe",
+                extra_generation_config={"custom_stopping_criteria": [stopper]},
+            )
+        ]
+    )
+
+    prediction = _prediction_from_engine_output(outputs[0])
+    assert prediction.text == expected_text
+    assert prediction.stop_reason == expected_stop_reason
 
 
 def test_engine_reports_a_failed_stream_as_an_inference_error(api, image):

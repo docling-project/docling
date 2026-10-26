@@ -122,6 +122,9 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
         ("$x_1 * y_2 * z_3$", "$x_1 * y_2 * z_3$"),
         ("______", "______"),
         ("a *\n=\nb", "a *\n=\nb"),
+        (r"``a\_b` c`` and d\_e", r"``a\_b` c`` and d_e"),
+        # An unclosed run took cubic time before the code-span match was atomic.
+        ("`" * 5000 + r" a\_b", "`" * 5000 + " a_b"),
     ],
 )
 def test_literal_markers_stay_literal(text: str, expected: str, page_size: Size):

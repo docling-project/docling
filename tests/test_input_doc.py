@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import importlib.util
+import zipfile
 from io import BytesIO
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
     _CONTENT_SNIFF_BYTES,
+    _ODF_MIMETYPE_MAX_BYTES,
     InputDocument,
     _DocumentConversionInput,
 )
@@ -356,6 +358,44 @@ def test_guess_format_ole2_with_fat_first_sector(tmp_path, suffix, expected):
     assert dci._guess_format(stream) == expected
 
 
+def _odf_like_zip(mimetype: bytes) -> bytes:
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("mimetype", mimetype)
+        zf.writestr("content.xml", "<office:document-content/>")
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("mimetype", "expected"),
+    [
+        (b"application/vnd.oasis.opendocument.text", InputFormat.ODT),
+        (b"application/vnd.oasis.opendocument.spreadsheet\n", InputFormat.ODS),
+        # A media type padded past the limit is not taken as OpenDocument, even
+        # though it starts with a valid one.
+        (
+            b"application/vnd.oasis.opendocument.text".ljust(
+                _ODF_MIMETYPE_MAX_BYTES + 1, b" "
+            ),
+            None,
+        ),
+        (b"application/vnd.oasis.opendocument.text" + b"\0" * 4_000_000, None),
+    ],
+    ids=["odt", "ods-newline", "over-limit", "large-member"],
+)
+def test_guess_format_odf_mimetype_member(tmp_path, mimetype, expected):
+    data = _odf_like_zip(mimetype)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    no_ext_path = tmp_path / "upload"
+    no_ext_path.write_bytes(data)
+    assert dci._guess_format(no_ext_path) == expected
+
+    stream = DocumentStream(name="upload", stream=BytesIO(data))
+    assert dci._guess_format(stream) == expected
+    assert stream.stream.tell() == 0
+
+
 def test_guess_format(tmp_path):
     """Test docling.datamodel.document._DocumentConversionInput.__guess_format"""
     dci = _DocumentConversionInput(path_or_stream_iterator=[])
@@ -493,10 +533,8 @@ def test_guess_format(tmp_path):
             assert isinstance(docs[0]._backend, backend_cls)
 
     # Plain ZIP (not Office) should not be detected as an Office format
-    import zipfile as _zipfile
-
     plain_zip_path = temp_dir / "archive_no_ext"
-    with _zipfile.ZipFile(plain_zip_path, "w") as zf:
+    with zipfile.ZipFile(plain_zip_path, "w") as zf:
         zf.writestr("data.txt", "hello world")
     assert dci._guess_format(plain_zip_path) is None
 

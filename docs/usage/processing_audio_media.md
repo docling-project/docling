@@ -260,7 +260,8 @@ See the [CLI reference](../reference/cli.md) for the complete flag list.
 
 ## Choosing an ASR model and backend
 
-Docling ships three interchangeable ASR backends, all installed by the `asr` extra shown above:
+Docling includes three Whisper backends installed by the `asr` extra shown above.
+The optional Transformers backend supports additional speech model families.
 
 | Backend | Library | Hardware | Notes |
 |---------|---------|----------|-------|
@@ -419,6 +420,89 @@ docling --to md --asr-model whisper_distil_large_v3_s2t recording.mp3
 ```
 
 See the [CLI reference](../reference/cli.md) for the complete list of `--asr-model` values.
+
+### Transformers speech models
+
+Install the optional backend:
+
+```bash
+pip install "docling-slim[feat-asr-transformers]"
+```
+
+The following additional presets use Transformers. The SDK constants are in
+`docling.datamodel.asr_model_specs`; the CLI names are their lower-case names.
+
+| SDK constant | Hugging Face repository |
+|---|---|
+| `GRANITE_SPEECH_5_0_2B` | [`ibm-granite/granite-speech-5.0-2b`](https://huggingface.co/ibm-granite/granite-speech-5.0-2b) |
+| `GRANITE_SPEECH_5_0_470M_TURBOCTC` | [`ibm-granite/granite-speech-5.0-470m-turboctc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc) |
+| `GRANITE_SPEECH_5_0_470M_TURBOCTC_NC` | [`ibm-granite/granite-speech-5.0-470m-turboctc-nc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc-nc) |
+| `GRANITE_SPEECH_4_1_2B` | [`ibm-granite/granite-speech-4.1-2b`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b) |
+| `GRANITE_SPEECH_4_1_2B_PLUS` | [`ibm-granite/granite-speech-4.1-2b-plus`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b-plus) |
+| `NEMOTRON_SPEECH_STREAMING_EN_0_6B` | [`nvidia/nemotron-speech-streaming-en-0.6b`](https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b) |
+| `PARAKEET_CTC_1_1B` | [`nvidia/parakeet-ctc-1.1b`](https://huggingface.co/nvidia/parakeet-ctc-1.1b) |
+
+```python
+from docling.datamodel import asr_model_specs
+
+options = asr_model_specs.GRANITE_SPEECH_5_0_2B.model_copy(deep=True)
+# Override the checkpoint revision when needed.
+# options.revision = "branch-tag-or-commit"
+pipeline_options.asr_options = options
+```
+
+On Apple MPS, Granite and TurboCTC load weights in FP32 to avoid a BF16
+normalization failure. Allow more memory than for BF16 weights.
+
+With `artifacts_path`, provide the local checkpoint or its parent directory.
+The loader does not download missing weights.
+
+```bash
+docling recording.wav --asr-model granite_speech_5_0_2b --to md
+docling recording.wav --asr-model parakeet_ctc_1_1b --to md
+```
+
+These models currently produce one transcript segment covering the full audio
+duration. Plus uses plain transcription by default; its speaker and timestamp
+tags are not mapped to structured Docling tracks. Streaming model names identify
+the checkpoints; this pipeline performs file transcription.
+
+The `TURBOCTC_NC` preset uses CC-BY-NC-SA-4.0.
+
+### Validate real model decoding
+
+From a repository checkout, run the separate script against one short speech
+fragment. It is outside pytest collection and never runs in the normal test suite.
+
+```bash
+# Select several models. Repeat --model for each preset.
+uv run python scripts/validate_asr_models.py \\
+  --audio tests/data/audio/sources/sample_10s.mp3 \\
+  --model granite_speech_5_0_2b \\
+  --model granite_speech_5_0_470m_turboctc \\
+  --output /tmp/asr-validation
+
+# List choices, or run every preset against the default ten-second fragment.
+uv run python scripts/validate_asr_models.py --list-models
+uv run python scripts/validate_asr_models.py --device auto
+```
+
+Each model runs in a separate process. The script checks conversion status and
+requires a nonempty transcript. It saves `transcript.txt`, `transcript.md`,
+`document.dclx`, `options.json`, and `run.log` in each model directory.
+The shared `report.json` records the audio SHA-256, elapsed time, and failures.
+It returns a nonzero exit code if any model fails, including missing dependencies
+or unsupported hardware, and continues with the other models.
+
+The default run selects every ASR preset, including native Whisper, MLX, and
+WhisperS2T variants. Install the required backends or select a subset suitable
+for your machine. Models download weights unless `--artifacts-path` is set.
+Use `--language` for the source language (default: English), `--revision` to
+override Transformers revisions, and `--timeout` to change the per-model limit
+(default: 900 seconds, including download time).
+
+Compare the saved transcripts to the spoken fragment to assess recognition
+accuracy. Decoding success alone does not measure transcription accuracy.
 
 ## Limitations
 

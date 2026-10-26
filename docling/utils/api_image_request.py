@@ -475,6 +475,8 @@ def api_image_request_streaming(
                                     # closing the connection when we exit the 'with' block.
                                     # vLLM/OpenAI-compatible servers will detect the client
                                     # disconnect and abort the request server-side.
+                                    if stopper.is_valid_end():
+                                        return _result(VlmStopReason.END_OF_SEQUENCE)
                                     return _result(VlmStopReason.STOP_SEQUENCE)
 
                     return _result(_map_stop_reason(finish_reason))

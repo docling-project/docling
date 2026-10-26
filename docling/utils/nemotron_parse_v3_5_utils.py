@@ -14,6 +14,7 @@ to the page. Bodies are Markdown text, LaTeX ``tabular`` tables, or a
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 from dataclasses import dataclass
@@ -42,14 +43,19 @@ from docling_core.types.doc import (
 )
 from PIL import Image as PILImage
 
-from docling.utils.chandra_utils import _add_html_table
+from docling.utils.chandra_utils import _MAX_TABLE_GRID_CELLS, _add_html_table
 from docling.utils.code_language import detect_code_language
 from docling.utils.dots_utils import (
     _add_inline_text,
     _markdown_inline_html,
     _unescape_markdown_literals,
 )
-from docling.utils.vlm_utils import link_adjacent_captions, parse_markdown_heading
+from docling.utils.vlm_utils import (
+    link_adjacent_captions,
+    normalize_section_header_levels,
+    parse_markdown_heading,
+    strip_math_delimiters,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -81,13 +87,13 @@ _LATEX_TEXT_REPLACEMENTS = {
     "mbox": "",
     "&": "&amp;",
 }
+# Inline tags that a table cell keeps as markup, and LaTeX text commands that it maps;
+# all other text is escaped.
+_CELL_MARKUP = re.compile(
+    rf"{_LATEX_TEXT.pattern}|(?i:</?(?:b|br|code|em|i|strong|sub|sup|u)\s*/?>)"
+)
 _CHART_OPEN = re.compile(r'<chart\s+type="([^"]*)"\s*>')
 _CHART_TABLE_KEY = re.compile(r"table\[(\w+)\]")
-# `\(` and `\)` are not math symbols, so in a formula they are delimiters; `\\` stays.
-_INLINE_MATH_DELIMITER = re.compile(r"\\\\|\\[()]")
-_OUTER_MATH = re.compile(
-    r"\$\$((?:(?!\$\$).)*)\$\$|\\\[((?:(?!\\[\[\]]).)*)\\\]|\$([^$]*)\$", re.DOTALL
-)
 
 
 @dataclass(frozen=True)
@@ -148,20 +154,6 @@ def _page_bbox(bbox: tuple[float, float, float, float], size: Size) -> BoundingB
         b=max(y1, y2) * size.height,
         coord_origin=CoordOrigin.TOPLEFT,
     )
-
-
-def _formula_latex(text: str) -> str:
-    """Formula LaTeX without math delimiters; the serializer adds its own.
-
-    The model wraps each segment in ``\\(...\\)``, often with text between them
-    (``(6) \\(x_1=a\\), \\(x_2=b\\)``), and leaves single ones in truncated output.
-    """
-    text = _INLINE_MATH_DELIMITER.sub(
-        lambda match: match.group() if match.group() == "\\\\" else "", text
-    ).strip()
-    while (outer := _OUTER_MATH.fullmatch(text)) is not None:
-        text = next(group for group in outer.groups() if group is not None).strip()
-    return text
 
 
 def _add_rich_text(
@@ -258,7 +250,30 @@ def _unwrap_command(text: str, command: str, arg_count: int) -> list[str] | None
 
 
 def _span(value: str) -> int:
-    return int(value) if value.strip().isdigit() and int(value) > 0 else 1
+    digits = value.strip().lstrip("0")
+    if not digits.isdecimal():
+        return 1
+    # Above the limit _add_html_table rejects the table; do not build a huge grid first.
+    if len(digits) > len(str(_MAX_TABLE_GRID_CELLS)):
+        return _MAX_TABLE_GRID_CELLS + 1
+    return min(int(digits), _MAX_TABLE_GRID_CELLS + 1)
+
+
+def _escape_cell_markup(text: str) -> str:
+    """Escape cell text so that it cannot change the table; keep inline tags."""
+    parts: list[str] = []
+    pos = 0
+    for match in _CELL_MARKUP.finditer(text):
+        parts.append(html.escape(text[pos : match.start()], quote=False))
+        command = match.group(1) or match.group(2)
+        parts.append(
+            match.group()
+            if command is None
+            else _LATEX_TEXT_REPLACEMENTS.get(command, command)
+        )
+        pos = match.end()
+    parts.append(html.escape(text[pos:], quote=False))
+    return "".join(parts)
 
 
 def _parse_latex_cell(text: str) -> _LatexCell:
@@ -273,12 +288,7 @@ def _parse_latex_cell(text: str) -> _LatexCell:
             header, text = True, args[0]
         else:
             break
-    text = _LATEX_TEXT.sub(
-        lambda match: _LATEX_TEXT_REPLACEMENTS.get(
-            match.group(1) or match.group(2), match.group(2) or ""
-        ),
-        text,
-    )
+    text = _escape_cell_markup(text)
     return _LatexCell(
         text=text.strip(), row_span=row_span, col_span=col_span, header=header
     )
@@ -318,6 +328,8 @@ def latex_tabular_to_html(latex: str) -> str:
                     continue
                 # Text under a multirow: the predicted row span was too long.
                 owner[0].row_span = row_index - owner[1]
+            if col + cell.col_span > _MAX_TABLE_GRID_CELLS:
+                raise ValueError(f"LaTeX table exceeds {_MAX_TABLE_GRID_CELLS} columns")
             for owned_col in range(col, col + cell.col_span):
                 owners[owned_col] = (cell, row_index)
             cells.append(cell)
@@ -470,8 +482,14 @@ def parse_nemotron_parse_v3_5(
     page_no: int,
     filename: str = "file",
     page_image: PILImage.Image | None = None,
+    *,
+    normalize_heading_levels: bool = True,
 ) -> DoclingDocument:
-    """Parse one page of Nemotron 3.5 Parse native output."""
+    """Parse one page of Nemotron 3.5 Parse native output.
+
+    Set ``normalize_heading_levels`` to False to keep raw heading depths for a
+    later document-wide :func:`normalize_section_header_levels`.
+    """
     doc = DoclingDocument(
         name=filename.rsplit(".", 1)[0],
         origin=DocumentOrigin(filename=filename, mimetype="text/plain", binary_hash=0),
@@ -544,14 +562,14 @@ def parse_nemotron_parse_v3_5(
                 )
         elif block.label in {"Title", "Section-header"}:
             clean_text, level = parse_markdown_heading(text)
-            # Markdown "##" is a level-1 section below the "#" title, as in dots.
             heading = (
                 doc.add_title(text="", orig=text, prov=prov)
                 if block.label == "Title"
                 else doc.add_heading(
                     text="",
                     orig=text,
-                    level=max(1, level - 1) if level is not None else 1,
+                    # Raw markup depth, normalized per document later.
+                    level=level if level is not None else 2,
                     prov=prov,
                 )
             )
@@ -560,7 +578,7 @@ def parse_nemotron_parse_v3_5(
             ):
                 heading.text = _unescape_markdown_literals(clean_text)
         elif block.label == "Formula":
-            doc.add_formula(text=_formula_latex(text), orig=text, prov=prov)
+            doc.add_formula(text=strip_math_delimiters(text), orig=text, prov=prov)
         elif block.label == "Code":
             doc.add_code(
                 text=text,
@@ -579,4 +597,6 @@ def parse_nemotron_parse_v3_5(
             )
 
     link_adjacent_captions(doc, block_starts, caption_owners)
+    if normalize_heading_levels:
+        normalize_section_header_levels(doc)
     return doc

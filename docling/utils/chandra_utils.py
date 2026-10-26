@@ -41,6 +41,7 @@ from PIL import Image as PILImage
 from pydantic import AnyUrl, ValidationError
 
 from docling.utils.code_language import detect_code_language
+from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
 
@@ -435,6 +436,7 @@ class _ChandraDocumentBuilder:
                 run.text = " ".join(run.text.split())
         if not merged:
             return
+        before = len(self.doc.texts)
         layer = (
             ContentLayer.FURNITURE
             if label in {DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER}
@@ -501,6 +503,10 @@ class _ChandraDocumentBuilder:
             )
             if run_label == DocItemLabel.FIELD_VALUE:
                 item.kind = "fillable"
+        for item in self.doc.texts[before:]:
+            if isinstance(item, SectionHeaderItem):
+                # Without <hN>, a section header has raw depth 2, like "##".
+                item.level = 2
 
     def walk(
         self,
@@ -620,6 +626,7 @@ class _ChandraDocumentBuilder:
             if re.fullmatch(r"h[1-6]", node.tag):
                 for item in self.doc.texts[before:]:
                     if isinstance(item, SectionHeaderItem):
+                        # Raw markup depth, normalized per document later.
                         item.level = int(node.tag[1])
 
     def _list(self, node: _Element, parent: NodeItem | None) -> None:
@@ -796,6 +803,8 @@ def parse_chandra_html(
     page_no: int,
     filename: str = "file",
     page_image: PILImage.Image | None = None,
+    *,
+    normalize_heading_levels: bool = True,
 ) -> DoclingDocument:
     """Map Chandra layout blocks and their HTML contents to document primitives.
 
@@ -803,7 +812,9 @@ def parse_chandra_html(
     block; derived children remain unlocated unless they declare their own bbox.
     Bare HTML is recovered without provenance; non-HTML responses raise ValueError.
     Caption/footnote links require explicit nesting. Separate layout blocks are
-    neither associated nor merged by proximity.
+    neither associated nor merged by proximity. Set ``normalize_heading_levels``
+    to False to keep raw heading depths for a later document-wide
+    :func:`normalize_section_header_levels`.
     """
     doc = DoclingDocument(
         name=Path(filename).stem,
@@ -855,4 +866,6 @@ def parse_chandra_html(
         block.attrs.get("data-label") == "Blank-Page" for block in blocks
     ):
         raise ValueError("Chandra HTML contains no document content")
+    if normalize_heading_levels:
+        normalize_section_header_levels(doc)
     return doc

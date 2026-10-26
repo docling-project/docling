@@ -43,7 +43,11 @@ from PIL import Image as PILImage
 
 from docling.utils.chandra_utils import _add_html_fragment, _add_html_table
 from docling.utils.code_language import detect_code_language
-from docling.utils.vlm_utils import link_adjacent_captions, parse_markdown_heading
+from docling.utils.vlm_utils import (
+    link_adjacent_captions,
+    normalize_section_header_levels,
+    parse_markdown_heading,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -62,8 +66,11 @@ _LITERAL_INLINE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 # Literal spans and code spans pass through; `\\` keeps `\\*` from unescaping.
+# A code span opens only at a full backtick run, read atomically with `(?=(`+))\1`:
+# a backtracking `(`+)` takes cubic time on a long unclosed run.
 _MARKDOWN_ESCAPE_PATTERN = re.compile(
-    rf"{_LITERAL_INLINE_PATTERN.pattern}|(`+)[\s\S]*?(?<!`)\1(?!`)|\\([*_])|\\\\",
+    rf"{_LITERAL_INLINE_PATTERN.pattern}"
+    r"|(?<!`)(?=(`+))\1[\s\S]*?(?<!`)\1(?!`)|\\([*_])|\\\\",
     re.IGNORECASE,
 )
 
@@ -213,6 +220,8 @@ def parse_dots_json(
     filename: str = "file",
     page_image: PILImage.Image | None = None,
     model_image_size: Size | None = None,
+    *,
+    normalize_heading_levels: bool = True,
 ) -> DoclingDocument:
     """Parse dots.ocr / dots.mocr JSON output into a DoclingDocument.
 
@@ -224,6 +233,8 @@ def parse_dots_json(
         page_image: Optional PIL image of the page.
         model_image_size: If provided, bbox pixel coords are rescaled from
             this resolution to *original_page_size*.
+        normalize_heading_levels: If False, keep raw heading depths for a later
+            document-wide :func:`normalize_section_header_levels`.
 
     Returns:
         DoclingDocument populated with parsed elements.
@@ -332,7 +343,8 @@ def parse_dots_json(
             item = doc.add_heading(
                 text="",
                 orig=text,
-                level=max(1, markdown_level - 1) if markdown_level is not None else 1,
+                # Raw markup depth, normalized per document later.
+                level=markdown_level if markdown_level is not None else 2,
                 prov=prov,
             )
             if not _add_inline_text(
@@ -371,4 +383,6 @@ def parse_dots_json(
                 )
 
     link_adjacent_captions(doc, block_starts, caption_owners)
+    if normalize_heading_levels:
+        normalize_section_header_levels(doc)
     return doc

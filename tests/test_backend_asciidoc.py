@@ -3,9 +3,11 @@
 
 import glob
 import threading
+import time
 from io import BytesIO
 from pathlib import Path
 
+import pytest
 from docling_core.types.doc import (
     CodeItem,
     CodeLanguageLabel,
@@ -882,6 +884,54 @@ No marks here.
     assert "No marks here." in plain
 
 
+def test_inline_formatting_marks_and_spans() -> None:
+    source = b"""Text with __ui__, ``um`` and *a b c* marks.
+
+Nested **bold _and italic_** text.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="inline-spans.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    styled = [
+        (item.text, item.formatting.bold, item.formatting.italic)
+        for item in doc.texts
+        if item.formatting is not None
+    ]
+    assert styled == [
+        ("ui", False, True),
+        ("a b c", True, False),
+        ("bold", True, False),
+        ("and italic", True, True),
+    ]
+    assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["um"]
+
+
+@pytest.mark.parametrize("mark", ["*", "_", "`"])
+def test_many_unclosed_inline_marks_stay_plain_text(mark: str) -> None:
+    # A long line of opening marks that never close must convert in linear
+    # time and keep the marks as plain text.
+    line = f" {mark}a" * 16_000
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(line.encode()),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="unclosed-marks.adoc",
+    )
+
+    start = time.monotonic()
+    doc = in_doc._backend.convert()
+    elapsed = time.monotonic() - start
+
+    assert [item.text for item in doc.texts] == [line.strip()]
+    assert doc.texts[0].formatting is None
+    assert elapsed < 2.0
+
+
 def test_heading_flushes_pending_paragraph() -> None:
     # text accumulated before a section header used to be appended to the
     # text after the header and attributed to the wrong section
@@ -900,6 +950,31 @@ def test_heading_flushes_pending_paragraph() -> None:
         if item.label.value == "paragraph"
     }
     assert paras == {"body": "S1.1", "body2": "S2"}
+
+
+def test_symmetric_titles_drop_their_closing_marks() -> None:
+    # Asciidoctor accepts titles closed by the marks that open them
+    # ("== Title =="); the closing marks used to end up in the heading text.
+    # Marks of a different length are part of the title, as in Asciidoctor.
+    src = b"= Doc =\n\n== Intro ==\n\ntext\n\n=== Details ==\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="symmetric.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    headings = [
+        (item.label, item.text)
+        for item in doc.texts
+        if item.label in (DocItemLabel.TITLE, DocItemLabel.SECTION_HEADER)
+    ]
+    assert headings == [
+        (DocItemLabel.TITLE, "Doc"),
+        (DocItemLabel.SECTION_HEADER, "Intro"),
+        (DocItemLabel.SECTION_HEADER, "Details =="),
+    ]
 
 
 def test_block_title_without_floating_target_keeps_content() -> None:
@@ -1134,6 +1209,25 @@ def test_unclosed_comment_block_comments_out_the_rest() -> None:
 
     assert [item.text for item, _ in doc.iterate_items()] == ["visible before"]
     assert _notes(doc) == ["hidden rest\nmore hidden"]
+
+
+def test_three_slashes_are_body_text_not_a_comment() -> None:
+    # only exactly two slashes start a line comment, as in Asciidoctor
+    doc = _convert_adoc(b"/// not a comment\n//// nor this\n\n// a note\n")
+
+    assert [item.text for item, _ in doc.iterate_items()] == [
+        "/// not a comment //// nor this"
+    ]
+    assert _notes(doc) == ["a note"]
+
+
+@pytest.mark.parametrize("delimiter", ["/////", "///////"])
+def test_longer_comment_delimiter_needs_an_identical_closer(delimiter: str) -> None:
+    src = f"before\n\n{delimiter}\nhidden\n////\nstill hidden\n{delimiter}\n\nafter\n"
+    doc = _convert_adoc(src.encode())
+
+    assert [item.text for item, _ in doc.iterate_items()] == ["before", "after"]
+    assert _notes(doc) == ["hidden\n////\nstill hidden"]
 
 
 def _convert_within(src: bytes, seconds: float = 10.0) -> DoclingDocument:
