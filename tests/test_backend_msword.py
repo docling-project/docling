@@ -407,6 +407,71 @@ def test_chart_caption_is_parented_to_the_chart_container():
     assert caption.self_ref not in [child.cref for child in doc.body.children]
 
 
+def _docx_with_table_grid(grid_xml: str) -> "BytesIO":
+    """A 2x3 table whose ``w:tblGrid`` is replaced by ``grid_xml``.
+
+    python-docx always writes a full grid, while generators and converters
+    omit or under-declare it, so the grid is rewritten after saving (an empty
+    string removes it entirely).
+    """
+    import zipfile
+    from io import BytesIO
+
+    source = Document()
+    table = source.add_table(rows=2, cols=3)
+    words = iter(["ant", "bee", "cat", "dog", "eel", "fox"])
+    for row in table.rows:
+        for cell in row.cells:
+            cell.text = next(words)
+    buffer = BytesIO()
+    source.save(buffer)
+
+    with zipfile.ZipFile(buffer) as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    document = entries["word/document.xml"].decode("utf-8")
+    entries["word/document.xml"] = re.sub(
+        r"<w:tblGrid>.*?</w:tblGrid>", grid_xml, document, flags=re.DOTALL
+    ).encode("utf-8")
+
+    rebuilt = BytesIO()
+    with zipfile.ZipFile(rebuilt, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
+    rebuilt.seek(0)
+    return rebuilt
+
+
+@pytest.mark.parametrize(
+    "grid_xml",
+    [
+        pytest.param("", id="no_grid"),
+        pytest.param(
+            "<w:tblGrid><w:gridCol/><w:gridCol/></w:tblGrid>", id="short_grid"
+        ),
+    ],
+)
+def test_table_without_full_grid_keeps_every_cell(grid_xml):
+    """A missing or under-declared ``w:tblGrid`` must not drop table content.
+
+    The schema requires the grid, but documents produced by generators and
+    converters omit it or declare fewer ``w:gridCol`` than the rows hold, and
+    Word renders every cell regardless. Reading the column count from the grid
+    alone dropped the whole table (python-docx cannot load it without a grid)
+    or cut every cell past the declared columns.
+    """
+    stream = DocumentStream(
+        name="partial_grid.docx", stream=_docx_with_table_grid(grid_xml)
+    )
+    doc = get_converter().convert(stream).document
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert data.num_rows == 2
+    assert data.num_cols == 3
+    texts = {cell.text for cell in data.table_cells}
+    assert texts == {"ant", "bee", "cat", "dog", "eel", "fox"}
+
+
 def test_is_rich_table_cell(docx_paths):
     """Test the function is_rich_table_cell."""
 

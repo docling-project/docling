@@ -3914,6 +3914,39 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     cells.extend(MsWordDocumentBackend._row_cells(sdt_content))
         return cells
 
+    @staticmethod
+    def _table_num_cols(element: BaseOxmlElement, table: Table) -> int:
+        """Return the table's layout-grid column count.
+
+        ``len(table.columns)`` reads ``w:tblGrid``, which generators and
+        converters may omit (python-docx then raises ``InvalidXmlError``) or
+        declare narrower than the rows, while Word still renders every cell.
+        Count the declared grid columns, then widen to the widest row:
+        ``w:gridBefore`` + the sum of the cells' ``w:gridSpan`` +
+        ``w:gridAfter``.
+
+        Args:
+            element: The ``w:tbl`` element.
+            table: The python-docx table built from ``element``.
+
+        Returns:
+            The number of layout-grid columns the cells actually occupy.
+        """
+        num_cols = len(
+            element.findall("./w:tblGrid/w:gridCol", namespaces=_OOXML_NAMESPACES)
+        )
+        for row in table.rows:
+            row_width = (
+                row.grid_cols_before
+                + sum(
+                    tc.grid_span
+                    for tc in MsWordDocumentBackend._row_cells(row._tr)
+                )
+                + row.grid_cols_after
+            )
+            num_cols = max(num_cols, row_width)
+        return num_cols
+
     def _handle_tables(
         self,
         element: BaseOxmlElement,
@@ -3938,7 +3971,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref: list[RefItem] = []
         table: Table = Table(element, self.docx_obj)
         num_rows = len(table.rows)
-        num_cols = len(table.columns)
+        num_cols = self._table_num_cols(element, table)
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
 
         if num_rows == 1 and num_cols == 1:
