@@ -900,6 +900,30 @@ def test_sparse_merged_anchor_and_comment_only_cell_tables(tmp_path: Path) -> No
     assert comment_map == {}  # comment-only cell outside any table is dropped
 
 
+def test_threaded_comment_fallback_without_xml(tmp_path: Path) -> None:
+    workbook = Workbook()
+    workbook.active.append(["a", "b", "c"])
+    file_path = tmp_path / "threaded-fallback.xlsx"
+    workbook.save(file_path)
+    backend, loaded_sheet = _load_backend_sheet(file_path)
+    # No threadedComment XML part exists, so the openpyxl text is the only source.
+    loaded_sheet["A1"].comment = Comment(
+        "[Threaded comment]\n\nYour version of Excel...\n\nComment:\n    the reply",
+        "tc={00000000-0001}",
+    )
+    loaded_sheet["B1"].comment = Comment(
+        "[Threaded comment] no body marker", "tc={00000000-0002}"
+    )
+    loaded_sheet["C1"].comment = Comment("   ", "Codex")
+
+    _, comment_map = backend._find_data_tables(loaded_sheet)
+
+    assert comment_map == {
+        (0, 0): [("Threaded comment", "the reply", None)],
+        (0, 1): [("Threaded comment", "[Threaded comment] no body marker", None)],
+    }
+
+
 def test_missing_merge_anchor_inside_table_keeps_span(tmp_path: Path) -> None:
     workbook = Workbook()
     sheet = workbook.active
