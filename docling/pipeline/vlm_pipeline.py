@@ -672,7 +672,7 @@ class VlmPipeline(PaginatedPipeline):
             return DoclingDocument(name=f"page_{page.page_no}")
 
         try:
-            return DocLangDocDeserializer().deserialize_str(fragment)
+            document = DocLangDocDeserializer().deserialize_str(fragment)
         except Exception as exc:
             conv_res.errors.append(
                 ErrorItem(
@@ -684,6 +684,52 @@ class VlmPipeline(PaginatedPipeline):
                 )
             )
             return DoclingDocument(name=f"page_{page.page_no}")
+        self._scale_doclang_to_page(document, page)
+        return document
+
+    @staticmethod
+    def _scale_doclang_to_page(document: DoclingDocument, page: Page) -> None:
+        """Map DocLang grid locations onto the page.
+
+        The deserializer keeps locations on the DocLang grid (512x512 by
+        default) and sizes the page from that grid. Scale the boxes and the
+        page size to the real page, so that crops and provenance are in page
+        points like the other response formats.
+        """
+        if page.size is None:
+            return
+        scales: dict[int, tuple[float, float]] = {}
+        for page_no, page_item in document.pages.items():
+            grid = page_item.size
+            if grid.width <= 0 or grid.height <= 0:
+                continue
+            scales[page_no] = (
+                page.size.width / grid.width,
+                page.size.height / grid.height,
+            )
+            page_item.size = Size(width=page.size.width, height=page.size.height)
+        if not scales:
+            return
+        for item, _level in document.iterate_items(
+            with_groups=True,
+            traverse_pictures=True,
+            included_content_layers=set(ContentLayer),
+        ):
+            if not isinstance(item, DocItem):
+                continue
+            for provenance in item.prov:
+                scale = scales.get(provenance.page_no)
+                if scale is None:
+                    continue
+                sx, sy = scale
+                bbox = provenance.bbox
+                provenance.bbox = BoundingBox(
+                    l=bbox.l * sx,
+                    t=bbox.t * sy,
+                    r=bbox.r * sx,
+                    b=bbox.b * sy,
+                    coord_origin=bbox.coord_origin,
+                )
 
     @staticmethod
     def _doctags_page_document(
