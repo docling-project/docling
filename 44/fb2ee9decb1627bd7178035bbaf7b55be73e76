@@ -1,0 +1,2 @@
+{"id":"08694d45-3313-4eee-a48c-5595aa6dae3d","fileUri":"file:///Users/ceb/git/docling-2/docling/backend/html_backend.py","repoName":"docling-project/docling","branchName":"fix/html-unclosed-p","toolName":"apply_diff","startLine":1870,"endLine":1871,"taskId":null,"createdAt":1793096922623}
+{"id":"0c1cca62-565b-4b52-9139-5411e092e8b8","fileUri":"file:///Users/ceb/git/docling-2/docling/backend/html_backend.py","repoName":"docling-project/docling","branchName":"fix/html-unclosed-p","toolName":"apply_diff","startLine":1871,"endLine":1876,"taskId":null,"createdAt":1793096550734}
