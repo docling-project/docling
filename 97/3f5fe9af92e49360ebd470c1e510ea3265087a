@@ -1,0 +1,2 @@
+{"id":"6f33039f-9adb-4ac4-ad2c-efc2311026bc","fileUri":"file:///Users/ceb/git/docling/tests/test_input_doc.py","repoName":"docling-project/docling","branchName":"fix/xbrl-sec","toolName":"apply_diff","startLine":530,"endLine":530,"taskId":null,"createdAt":1791543883046}
+{"id":"f82b5772-4e04-484e-a7c6-901a1dc4ce7e","fileUri":"file:///Users/ceb/git/docling/docling/datamodel/document.py","repoName":"docling-project/docling","branchName":"fix/xbrl-sec","toolName":"apply_diff","startLine":820,"endLine":820,"taskId":null,"createdAt":1791543728039}
