@@ -947,7 +947,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         # TODO: format label vs caption once styling is supported
         fig_text: str = f"{label}{' ' if label and caption else ''}{caption}"
         fig_caption: TextItem | None = (
-            doc.add_text(label=DocItemLabel.CAPTION, text=fig_text)
+            doc.add_text(label=DocItemLabel.CAPTION, text=fig_text, parent=parent)
             if fig_text
             else None
         )
@@ -1167,7 +1167,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         caption = table_xml_component["caption"]
         table_text: str = f"{label}{' ' if label and caption else ''}{caption}"
         table_caption: TextItem | None = (
-            doc.add_text(label=DocItemLabel.CAPTION, text=table_text)
+            doc.add_text(label=DocItemLabel.CAPTION, text=table_text, parent=parent)
             if table_text
             else None
         )

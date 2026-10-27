@@ -627,10 +627,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         parents: dict[int, GroupItem | None],
     ) -> tuple[list[str], bool, ListItem | None]:
         """Add a picture with its pending caption, if any."""
+        parent = last_list_item if in_list else self._get_current_parent(parents)
         caption: Optional[TextItem] = None
         if len(caption_data) > 0:
             caption = doc.add_text(
-                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+                text=" ".join(caption_data), label=DocItemLabel.CAPTION, parent=parent
             )
 
         caption_data = []
@@ -645,11 +646,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 else None
             )
             image = self._image_loader.load_image_ref(item["uri"], base_path)
-        doc.add_picture(
-            image=image,
-            caption=caption,
-            parent=last_list_item if in_list else self._get_current_parent(parents),
-        )
+        doc.add_picture(image=image, caption=caption, parent=parent)
         return caption_data, in_list, last_list_item
 
     def _add_block(
@@ -740,11 +737,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             text_data=text_data,
             parent=self._get_current_parent(parents),
         )
+        parent = last_list_item if in_list else self._get_current_parent(parents)
         caption: Optional[TextItem] = None
         if caption_data:
             caption = doc.add_text(
                 text=" ".join(caption_data),
                 label=DocItemLabel.CAPTION,
+                parent=parent,
             )
             caption_data = []
         code_language = (
@@ -756,7 +755,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             text=block.text,
             code_language=code_language,
             caption=caption,
-            parent=(last_list_item if in_list else self._get_current_parent(parents)),
+            parent=parent,
         )
         return text_data, caption_data, in_list, last_list_item, False
 
@@ -1020,7 +1019,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         caption = None
         if caption_data:
             caption = doc.add_text(
-                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+                text=" ".join(caption_data), label=DocItemLabel.CAPTION, parent=parent
             )
 
         data = AsciiDocBackend._populate_table_as_grid(table_data)
