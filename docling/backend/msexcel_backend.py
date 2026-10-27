@@ -1349,7 +1349,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             return None, table
 
         first_row_cells = [cell for cell in table.data if cell.row == 0]
-        first_row_text_cells = [cell for cell in first_row_cells if cell.text.strip()]
+        first_row_text_cells = [
+            cell
+            for cell in first_row_cells
+            if cell.text.strip() or cell.image is not None
+        ]
         if len(first_row_text_cells) != 1:
             return None, table
 

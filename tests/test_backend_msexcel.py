@@ -27,6 +27,7 @@ from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 from openpyxl.worksheet.merge import MergedCellRange
+from PIL import Image
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msexcel_backend import (
@@ -1195,6 +1196,36 @@ def test_image_placed_in_a_singleton_cell() -> None:
     pictures = [picture for picture in doc.pictures if picture.prov[0].page_no == 2]
     assert len(pictures) == 1
     assert pictures[0].image is not None
+
+
+def test_image_cell_next_to_a_section_label(tmp_path: Path) -> None:
+    """Test that an image cell keeps a merged label in its table."""
+    xlsxwriter = pytest.importorskip("xlsxwriter")
+
+    image_path = tmp_path / "icon.png"
+    Image.new("RGB", (16, 16), "red").save(image_path)
+    file_path = tmp_path / "section_image.xlsx"
+    workbook = xlsxwriter.Workbook(str(file_path))
+    sheet = workbook.add_worksheet()
+    sheet.merge_range("A1:B1", "Fruit list")
+    sheet.embed_image("C1", str(image_path), {"description": "Section icon"})
+    sheet.write_row("A2", ["name", "qty", "note"])
+    sheet.write_row("A3", ["apple", 1, "x"])
+    sheet.write_row("A4", ["pear", 2, "y"])
+    workbook.close()
+
+    doc = DocumentConverter().convert(file_path).document
+
+    # The image is content in the first row, so the label is not split off.
+    assert not doc.texts
+    [table] = doc.tables
+    assert (table.data.num_rows, table.data.num_cols) == (4, 3)
+    [picture] = doc.pictures
+    cell = table.data.grid[0][2]
+    assert isinstance(cell, RichTableCell)
+    assert cell.ref.cref == picture.self_ref
+    assert picture.parent is not None
+    assert picture.parent.cref == table.self_ref
 
 
 def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
