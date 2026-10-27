@@ -1395,6 +1395,29 @@ def test_pptx_footer_placeholders_go_to_furniture_layer(tmp_path: Path):
     ]
 
 
+def test_pptx_whitespace_only_shapes_are_skipped(tmp_path: Path):
+    """A shape whose text is only whitespace does not become a blank text item."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])  # "Title Only"
+    slide.shapes.title.text_frame.text = " "
+    blank = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
+    blank.text_frame.text = "   "
+    real = slide.shapes.add_textbox(Inches(1), Inches(4), Inches(4), Inches(1))
+    real.text_frame.text = "Real line"
+
+    pptx_path = tmp_path / "whitespace-shapes.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        ("paragraph", "Real line")
+    ]
+
+
 @pytest.mark.parametrize(
     ("layout_marker", "override_layer", "expected"),
     [
