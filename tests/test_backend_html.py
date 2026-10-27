@@ -650,6 +650,38 @@ def test_table_and_image_inside_figure_are_parsed():
 
 
 @pytest.mark.parametrize(
+    "figure",
+    [
+        '<figure><img src="x.png" alt="x"><figcaption>Caption text</figcaption></figure>',
+        '<img src="x.png" alt="Caption text">',
+    ],
+)
+def test_image_caption_stays_in_the_section_of_its_image(figure: str):
+    html = (
+        f"<html><body><h1>One</h1>{figure}<p>Para one.</p>"
+        "<h1>Two</h1><p>Para two.</p></body></html>"
+    ).encode()
+    doc = _convert_html(html)
+
+    picture = doc.pictures[0]
+    section = picture.parent.resolve(doc)
+    assert section.text == "One"
+    # The caption is a child of its picture, so it stays in section "One"
+    caption = picture.captions[0].resolve(doc)
+    assert caption.text == "Caption text"
+    assert [child.cref for child in picture.children] == [caption.self_ref]
+    para = next(t for t in doc.texts if t.text == "Para one.")
+    assert [child.cref for child in section.children] == [
+        picture.self_ref,
+        para.self_ref,
+    ]
+    assert [child.resolve(doc).label for child in doc.body.children] == [
+        DocItemLabel.TITLE,
+        DocItemLabel.TITLE,
+    ]
+
+
+@pytest.mark.parametrize(
     ("figure", "expected"),
     [
         ("<figure>Quote text<figcaption>cap</figcaption></figure>", ["Quote text"]),
