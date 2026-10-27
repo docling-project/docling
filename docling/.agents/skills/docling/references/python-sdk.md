@@ -109,6 +109,20 @@ opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())  # macOS onl
 
 Each engine is an optional dependency — see [slim-packaging.md](slim-packaging.md).
 
+When a PDF looks right but its text copies out as garbage (a font whose glyphs
+were not mapped to real characters), let OCR replace the text of just those pages.
+Off by default; such pages then report `parse_score` 0 in the confidence report:
+
+```python
+opts = PdfPipelineOptions(
+    do_ocr=True, ocr_options=RapidOcrOptions(replace_broken_text_layer=True)
+)
+```
+
+It does not detect text that uses the right alphabet but the wrong letters, or
+the right letters in the wrong order (e.g. `Cartifecita` for `Certificate`).
+Such pages keep their PDF text; `mode=OcrMode.FULL_PAGE` OCRs every page.
+
 OCR can also run on a remote KServe v2 / Triton server. Page crops are sent to
 that server, so `enable_remote_services=True` is required:
 

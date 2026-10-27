@@ -260,6 +260,23 @@ class OcrOptions(BaseOptions):
         ),
     ] = 3.0
 
+    replace_broken_text_layer: Annotated[
+        bool,
+        Field(
+            description=(
+                "Replace a broken PDF text layer with OCR, page by page. When enabled,"
+                " Docling checks the visible text layer of each page. A page whose"
+                " text layer is broken, for example from a font whose glyphs were not"
+                " mapped to real characters, is read with full-page OCR, and its OCR"
+                " text is used instead of its PDF text for that page only. Its"
+                " `parse_score` drops to 0 and keeps describing the PDF text layer. A"
+                " low `parse_score` alone does not replace a page. Other pages, and"
+                " pages without a text layer, keep the usual behavior."
+            ),
+            examples=[False, True],
+        ),
+    ] = False
+
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,

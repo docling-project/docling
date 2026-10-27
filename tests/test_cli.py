@@ -1743,7 +1743,9 @@ def test_cli_deprecated_psm_still_sets_tesseract_psm(tmp_path, monkeypatch):
     assert ocr_options.psm == 4
 
 
-def test_cli_options_lists_engine_fields():
+def test_cli_options_lists_engine_fields(monkeypatch):
+    # Rich reads the table width from `COLUMNS`, not from `terminal_width`.
+    monkeypatch.setenv("COLUMNS", "200")
     result = runner.invoke(app, ["options", "ocr", "rapidocr"], terminal_width=200)
     assert result.exit_code == 0, result.output
     assert "model_size" in result.output
