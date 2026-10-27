@@ -798,7 +798,9 @@ class ReadingOrderModel:
                             list_stack.append((left, current_list, line_height))
                     else:
                         current_list = None
-                elif split_lists_on_non_list and element.label not in {
+                elif (
+                    split_lists_on_non_list or isinstance(element, FigureElement)
+                ) and element.label not in {
                     DocItemLabel.PAGE_HEADER,
                     DocItemLabel.PAGE_FOOTER,
                     DocItemLabel.FOOTNOTE,

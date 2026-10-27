@@ -10,7 +10,9 @@ from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import (
     AssembledUnit,
+    BasePageElement,
     Cluster,
+    FigureElement,
     InputFormat,
     Page,
     TextElement,
@@ -28,29 +30,35 @@ def convert_entries(
     boxes: list[BoundingBox] | None = None,
     cells: dict[int, list[TextCell]] | None = None,
 ) -> DoclingDocument:
-    elements = []
+    elements: list[BasePageElement] = []
     page_positions: dict[int, int] = {}
     for index, (text, left, page_no, label) in enumerate(entries):
         top = 20 + 30 * page_positions.get(page_no, 0)
         page_positions[page_no] = page_positions.get(page_no, 0) + 1
-        elements.append(
-            TextElement(
-                id=index,
-                label=label,
-                text=text,
-                page_no=page_no,
-                cluster=Cluster(
+        cluster = Cluster(
+            id=index,
+            label=label,
+            bbox=(
+                boxes[index]
+                if boxes is not None
+                else BoundingBox(l=left, t=top, r=450, b=top + 15)
+            ),
+            cells=(cells or {}).get(index, []),
+        )
+        if label == DocItemLabel.PICTURE:
+            elements.append(
+                FigureElement(id=index, label=label, page_no=page_no, cluster=cluster)
+            )
+        else:
+            elements.append(
+                TextElement(
                     id=index,
                     label=label,
-                    bbox=(
-                        boxes[index]
-                        if boxes is not None
-                        else BoundingBox(l=left, t=top, r=450, b=top + 15)
-                    ),
-                    cells=(cells or {}).get(index, []),
-                ),
+                    text=text,
+                    page_no=page_no,
+                    cluster=cluster,
+                )
             )
-        )
     input_doc = InputDocument.model_construct(
         file=PurePath("list.pdf"),
         document_hash="0" * 64,
@@ -129,6 +137,27 @@ def test_nested_pdf_list_continues_across_page_furniture() -> None:
         "Second child",
         "Next parent",
     ]
+
+
+@pytest.mark.parametrize("next_page", [1, 2])
+def test_a_picture_stays_before_the_next_list(next_page: int) -> None:
+    doc = convert_entries(
+        [
+            ("1. Parent", 118, 1, DocItemLabel.LIST_ITEM),
+            ("o First child", 154, 1, DocItemLabel.LIST_ITEM),
+            ("", 60, 1, DocItemLabel.PICTURE),
+            ("o Separate item", 154, next_page, DocItemLabel.LIST_ITEM),
+        ]
+    )
+    labels = [item.label for item, _ in doc.iterate_items()]
+    assert labels == [
+        DocItemLabel.LIST_ITEM,
+        DocItemLabel.LIST_ITEM,
+        DocItemLabel.PICTURE,
+        DocItemLabel.LIST_ITEM,
+    ]
+    items = [item for item, _ in doc.iterate_items() if isinstance(item, ListItem)]
+    assert items[1].parent != items[2].parent
 
 
 def test_numbered_pdf_lists_keep_markers_when_nested() -> None:
