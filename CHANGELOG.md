@@ -1,3 +1,19 @@
+## [v2.143.1](https://github.com/docling-project/docling/releases/tag/v2.143.1) - 2026-10-27
+
+### Fix
+
+* **table:** Keep OCR word cells in table tokens ([`affa54c`](https://github.com/docling-project/docling/commit/affa54ce1fcb4a7e9df4900b1b9e16b9290a50ad))
+* **table:** Add OCR cells to table tokens next to native words ([`ce6690b`](https://github.com/docling-project/docling/commit/ce6690b67e9dc6f028cfe42f80b508900d027f28))
+* **table:** Read the page's parsed_page for table tokens in full-page OCR ([`a65b29e`](https://github.com/docling-project/docling/commit/a65b29e004ccbffaaa4fda8c40c0426a034b874d))
+* **pptx:** Count the header row against the chart table cell cap ([#5030](https://github.com/docling-project/docling/issues/5030)) ([`7331067`](https://github.com/docling-project/docling/commit/733106766a67c0804d2f52eed253648fb427fe74))
+* **ocr:** Pass render resolution to Tesseract CLI ([#5031](https://github.com/docling-project/docling/issues/5031)) ([`4818833`](https://github.com/docling-project/docling/commit/481883301e364d021e589ddeaef7927532dafb9a))
+* **pptx:** Skip shapes whose text is only whitespace ([#5028](https://github.com/docling-project/docling/issues/5028)) ([`af66cbf`](https://github.com/docling-project/docling/commit/af66cbf86fe5123e96a3efe10d435494b85fde85))
+* Widen dependency ranges to allow latest versions ([`1bab069`](https://github.com/docling-project/docling/commit/1bab0690252c7695a2d92f5692c4167d8ee263be))
+
+### Performance
+
+* **table:** Skip spatial indexes for empty token inputs ([`103edef`](https://github.com/docling-project/docling/commit/103edefc99a3696227773993e951833c5e3af71e))
+
 ## [v2.143.0](https://github.com/docling-project/docling/releases/tag/v2.143.0) - 2026-10-26
 
 ### Feature
