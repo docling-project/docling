@@ -25,7 +25,7 @@ repos:
           - --detect-license-in-X-top-lines=5
         files: '^(docling|tests|scripts|\.github/scripts|perfs)/.*\.py$'
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.10
+    rev: v0.17.2
     hooks:
       - id: ruff
         name: "Ruff linter"
