@@ -552,11 +552,24 @@ def test_chandra_table_row_groups_and_optional_end_tags():
     assert table.table_cells[-2].start_col_offset_idx == 0
 
 
-def test_chandra_rejects_runaway_table_grids():
-    with pytest.raises(ValueError, match="exceeds 1000 grid cells"):
-        _parse_fragment(
-            "<table><tr><td>Header</td></tr><tr>" + "<td></td>" * 501 + "</tr></table>"
-        )
+def test_chandra_runaway_table_grid_keeps_the_page(caplog):
+    """Test that an oversized table grid is not built, without losing the page."""
+    doc = parse_chandra_html(
+        "<div data-label='Text' data-bbox='0 0 1000 100'><p>Before</p></div>"
+        "<div data-label='Table' data-bbox='0 100 1000 900'><table>"
+        "<caption>Cap</caption><tr><td>Header</td></tr><tr>"
+        + "<td></td>" * 501
+        + "</tr></table></div>",
+        Size(width=1000, height=1000),
+        page_no=3,
+    )
+
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (0, 0)
+    assert table.prov[0].bbox.t == 100
+    assert [c.resolve(doc).text for c in table.captions] == ["Cap"]
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.TEXT] == ["Before"]
+    assert "exceeds 1000 grid cells" in caplog.text
 
 
 def test_chandra_malformed_overlapping_spans_do_not_shift_the_grid():

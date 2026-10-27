@@ -672,8 +672,16 @@ class _ChandraDocumentBuilder:
     def _table(
         self, node: _Element, parent: NodeItem | None, prov: _Provenance | None
     ) -> None:
-        parsed = _table_cells(node)
-        if not parsed:
+        parsed: list[tuple[TableCell, _Element]] | None
+        try:
+            parsed = _table_cells(node)
+        except ValueError as exc:
+            # Like the Nemotron Parse mapper: drop the grid, keep the page.
+            _log.warning(
+                "Chandra table is too large to map (%s); preserving an empty table", exc
+            )
+            parsed = None
+        if parsed is not None and not parsed:
             _log.warning("Chandra table contains no cells; preserving its content")
             self.walk(node.children, parent, prov)
             return
@@ -683,7 +691,7 @@ class _ChandraDocumentBuilder:
             prov=prov.take() if prov is not None else None,
         )
         cells: list[TableCell] = []
-        for cell, cell_node in parsed:
+        for cell, cell_node in parsed or []:
             if any(child.tag != "span" for child in cell_node.elements()):
                 group = self.doc.add_group(parent=table)
                 self.walk(cell_node.children, group)
