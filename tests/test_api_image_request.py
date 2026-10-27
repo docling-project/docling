@@ -527,3 +527,94 @@ class TestApiImageRequest:
         assert response.text == "done"
         assert response.num_tokens == 3
         assert response.usage == {"total_tokens": 3}
+
+
+class TestApiImageRequestStreamingFallbacks:
+    """The streaming path reads the answer from the same places as the non-streaming one."""
+
+    @staticmethod
+    def _run(mock_session_factory, lines):
+        class _StreamingResponse:
+            ok = True
+            text = ""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def iter_lines(self, decode_unicode=True):
+                yield from lines
+
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            _StreamingResponse()
+        )
+        return api_image_request_streaming(
+            image=Image.new("RGB", (10, 10), color="red"),
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_reasoning_content_is_used_when_content_is_empty(
+        self, mock_session_factory
+    ):
+        response = self._run(
+            mock_session_factory,
+            [
+                'data: {"choices": [{"delta": {"reasoning_content": "# Ti"}}]}',
+                'data: {"choices": [{"delta": {"reasoning_content": "tle\\n"}}]}',
+                'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}',
+                "data: [DONE]",
+            ],
+        )
+
+        assert response.text == "# Title"
+        assert response.error is None
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_content_wins_over_reasoning_content(self, mock_session_factory):
+        response = self._run(
+            mock_session_factory,
+            [
+                'data: {"choices": [{"delta": {"reasoning_content": "thinking"}}]}',
+                'data: {"choices": [{"delta": {"content": "answer"}}]}',
+                "data: [DONE]",
+            ],
+        )
+
+        assert response.text == "answer"
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_tool_call_arguments_are_used_when_there_is_no_content(
+        self, mock_session_factory
+    ):
+        response = self._run(
+            mock_session_factory,
+            [
+                'data: {"choices": [{"delta": {"tool_calls": [{"index": 0, '
+                '"function": {"name": "emit", "arguments": "{\\"text\\": "}}]}}]}',
+                'data: {"choices": [{"delta": {"tool_calls": [{"index": 0, '
+                '"function": {"arguments": "\\"page text\\"}"}}]}}]}',
+                "data: [DONE]",
+            ],
+        )
+
+        assert response.text == "page text"
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_error_chunk_without_choices_is_reported_as_a_failure(
+        self, mock_session_factory
+    ):
+        response = self._run(
+            mock_session_factory,
+            [
+                'data: {"choices": [{"delta": {"content": "partial"}}]}',
+                'data: {"error": {"message": "context length exceeded", "type": "bad"}}',
+            ],
+        )
+
+        assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
+        assert response.error is not None
+        assert "context length exceeded" in response.error
