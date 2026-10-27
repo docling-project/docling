@@ -3,9 +3,10 @@
 
 """Tests for the provenance boxes of shapes inside PowerPoint groups."""
 
+import warnings
 from pathlib import Path
 
-from docling_core.types.doc import TextItem
+from docling_core.types.doc import DoclingDocument, TextItem
 from pptx import Presentation
 from pptx.util import Emu, Inches
 
@@ -84,3 +85,33 @@ def test_pptx_grouped_shape_bbox_follows_group_transform(tmp_path: Path):
         "flip-left": inches(3, 6, 4, 7),
         "flip-right": inches(1, 6, 2, 7),
     }
+
+
+def test_pptx_shape_bbox_is_clamped_to_the_slide(tmp_path: Path):
+    """A shape that bleeds past or sits off the slide keeps its box on the page.
+
+    docling-core clamps provenance boxes when a document is loaded, so an
+    unclamped box made a converted document differ from its JSON round trip and
+    warned once per out-of-page edge.
+    """
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    width, height = prs.slide_width, prs.slide_height
+    _add_text(slide.shapes, "bleed", Emu(-190500), Inches(1), Inches(2), Inches(1))
+    _add_text(
+        slide.shapes, "off-canvas", width + Inches(1), Inches(1), Inches(1), height
+    )
+
+    path = tmp_path / "bleed.pptx"
+    prs.save(path)
+    doc = get_converter().convert(path).document
+    boxes = _boxes_by_text(path)
+
+    assert boxes == {
+        "bleed": (0, Inches(1), Inches(2) - 190500, Inches(2)),
+        "off-canvas": (width, Inches(1), width, height),
+    }
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        reloaded = DoclingDocument.model_validate_json(doc.model_dump_json())
+    assert reloaded.texts[0].prov == doc.texts[0].prov

@@ -464,6 +464,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         shape_bbox = [left, top, left + width, top + height]
         if None not in (shape.left, shape.top, shape.width, shape.height):
             shape_bbox = self._to_slide_coordinates(shape, shape_bbox)
+        # Shapes can bleed past the slide edge or sit entirely off the slide.
+        # Keep the box on the page, as docling-core does when it validates a
+        # loaded document, so a converted and a reloaded document agree.
+        shape_bbox = [
+            min(max(value, 0), limit)
+            for value, limit in zip(
+                shape_bbox,
+                (slide_size.width, slide_size.height) * 2,
+            )
+        ]
         # python-pptx reports left and top as EMU from the slide's top-left, with
         # y growing downward, so the tuple above is in TOPLEFT order. Tagging it
         # BOTTOMLEFT does not convert it: BoundingBox.from_tuple unpacks
