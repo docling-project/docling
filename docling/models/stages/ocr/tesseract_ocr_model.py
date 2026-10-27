@@ -25,13 +25,13 @@ from docling.models.stages.ocr.tesseract_utils import (
     language_to_tesseract_code,
     osd_script_to_tesseract_code,
     parse_tesseract_orientation,
-    tesseract_box_to_bounding_rectangle,
     tesseract_vocabulary,
 )
 from docling.utils.ocr_language import (
     OcrLanguage,
     OcrLanguageSupport,
 )
+from docling.utils.orientation import ocr_box_to_bounding_rectangle
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -269,7 +269,7 @@ class TesseractOcrModel(BaseOcrModel):
                                 b=bottom,
                                 coord_origin=CoordOrigin.TOPLEFT,
                             )
-                            rect = tesseract_box_to_bounding_rectangle(
+                            rect = ocr_box_to_bounding_rectangle(
                                 bbox,
                                 original_offset=ocr_rect,
                                 scale=self.scale,

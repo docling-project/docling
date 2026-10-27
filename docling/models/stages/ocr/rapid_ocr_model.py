@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Type, get_args
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_core.types.doc.page import TextCell
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -33,7 +33,7 @@ from docling.utils.ocr_language import (
     OcrLanguageResolver,
     OcrLanguageSupport,
 )
-from docling.utils.orientation import rotate_bounding_box
+from docling.utils.orientation import ocr_box_to_bounding_rectangle
 from docling.utils.profiling import TimeRecorder
 from docling.utils.utils import download_url_with_progress, safe_version
 
@@ -817,8 +817,22 @@ class RapidOcrModel(BaseOcrModel):
                                     orig=line[1],
                                     confidence=line[2],
                                     from_ocr=True,
-                                    rect=self._page_rect(
-                                        line[0], ocr_rect, orientation, im_size
+                                    rect=ocr_box_to_bounding_rectangle(
+                                        # Corners 0 and 2 of RapidOCR's quadrilateral
+                                        # span the line box
+                                        BoundingBox.from_tuple(
+                                            coord=(
+                                                line[0][0][0],
+                                                line[0][0][1],
+                                                line[0][2][0],
+                                                line[0][2][1],
+                                            ),
+                                            origin=CoordOrigin.TOPLEFT,
+                                        ),
+                                        original_offset=ocr_rect,
+                                        scale=self.scale,
+                                        orientation=orientation,
+                                        im_size=im_size,
                                     ),
                                 )
                                 for ix, line in enumerate(result)
@@ -871,32 +885,6 @@ class RapidOcrModel(BaseOcrModel):
                     break
         lines = [line for line in lines if line[2] >= self.options.text_score]
         return lines, orientation, im_size
-
-    def _page_rect(
-        self,
-        points: list[list[float]],
-        ocr_rect: BoundingBox,
-        orientation: int,
-        im_size: tuple[int, int],
-    ) -> BoundingRectangle:
-        """Map a line box on the (turned) region image back onto the page."""
-        # Corners 0 and 2 of RapidOCR's quadrilateral span the line box
-        box = BoundingBox.from_tuple(
-            coord=(points[0][0], points[0][1], points[2][0], points[2][1]),
-            origin=CoordOrigin.TOPLEFT,
-        )
-        box = rotate_bounding_box(box, orientation, im_size).to_bounding_box()
-        return BoundingRectangle.from_bounding_box(
-            BoundingBox.from_tuple(
-                coord=(
-                    box.l / self.scale + ocr_rect.l,
-                    box.t / self.scale + ocr_rect.t,
-                    box.r / self.scale + ocr_rect.l,
-                    box.b / self.scale + ocr_rect.t,
-                ),
-                origin=CoordOrigin.TOPLEFT,
-            )
-        )
 
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:
