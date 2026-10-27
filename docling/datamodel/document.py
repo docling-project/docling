@@ -670,13 +670,17 @@ def _is_macos_archive_metadata(path: PurePosixPath) -> bool:
 
     Finder stores resource forks and extended attributes as AppleDouble files
     named ``._<name>``, under a top-level ``__MACOSX/`` folder, and the view
-    settings of a folder as ``.DS_Store``.
+    settings of a folder as ``.DS_Store``. A skipped member is logged at debug
+    level.
     """
-    return (
-        path.parts[0] == "__MACOSX"
+    is_metadata = (
+        path.parts[:1] == ("__MACOSX",)
         or path.name.startswith("._")
         or path.name == ".DS_Store"
     )
+    if is_metadata:
+        _log.debug("Skipping macOS metadata member of a ZIP archive: %s", path)
+    return is_metadata
 
 
 class _DocumentConversionInput(BaseModel):

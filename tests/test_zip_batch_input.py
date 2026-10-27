@@ -137,3 +137,13 @@ def test_macos_archive_metadata_is_skipped() -> None:
         "mixed.zip/docs/notes.md"
     ]
     assert results[0].status == ConversionStatus.SUCCESS
+
+
+def test_member_with_an_empty_name_does_not_abort_the_batch() -> None:
+    source = make_zip((".", b"# Dot"), ("good.md", b"# Good"))
+    converter = DocumentConverter(allowed_formats=[InputFormat.MD])
+
+    results = list(converter.convert_all([source], raises_on_error=False))
+
+    assert results[-1].input.file.as_posix() == "mixed.zip/good.md"
+    assert results[-1].status == ConversionStatus.SUCCESS
