@@ -64,7 +64,7 @@ client = DoclingServiceClient(
 ```python
 from docling.service_client import DoclingServiceClient
 
-client = DoclingServiceClient(url=..., api_key=...)   # or rely on env / .env
+client = DoclingServiceClient(url=..., api_key=...)  # or rely on env / .env
 result = client.convert(source="path/to/report.pdf")  # local path or http(s) URL
 print(result.document.export_to_markdown())
 ```
@@ -77,7 +77,7 @@ from docling.datamodel.service.options import ConvertDocumentsOptions
 
 result = client.convert(
     source="report.pdf",
-    options=ConvertDocumentsOptions(...),   # per-request pipeline overrides
+    options=ConvertDocumentsOptions(...),  # per-request pipeline overrides
 )
 ```
 
