@@ -82,6 +82,9 @@ signals by default. Disable this to compare against rule-free ordering:
 docling report.pdf --from pdf --no-reading-order-separators --output /tmp/
 ```
 
+To keep a PDF's declared language (`/Lang`) and its `/Info` or XMP properties, add
+`--document-metadata`; they land on `body.meta` in the JSON export (off by default).
+
 When diagnosing a VLM parser, add `--debug-vlm-native-output` to save each
 page's unparsed model response in the shared `debug_<document>/` directory.
 

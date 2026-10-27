@@ -2268,6 +2268,20 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = HeadingHierarchyOptions()
+    attach_document_metadata: Annotated[
+        bool,
+        Field(
+            description=(
+                "Record the PDF's declared language (catalog /Lang) and its document "
+                "properties (/Info dictionary and XMP packet) on DoclingDocument.body.meta: "
+                "the language as BaseMeta.language plus a `pdf__lang` custom field holding "
+                "the full BCP 47 tag, and each property as a namespaced custom field such "
+                "as `dc__title` or `pdf__producer`. Off by default: docling-core's Markdown "
+                "and HTML serializers still render body meta fields as content "
+                "(docling-core#745)."
+            )
+        ),
+    ] = False
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 
