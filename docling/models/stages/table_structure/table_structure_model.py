@@ -34,26 +34,37 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
+def _uncovered(cells: Sequence[TextCell], covers: Sequence[TextCell]) -> list[TextCell]:
+    """The cells that overlap none of `covers`."""
+    idx = BoundingBoxSpatialIndex()
+    for i, cover in enumerate(covers):
+        idx.insert(i, cover.rect.to_bounding_box())
+    return [
+        c
+        for c in cells
+        if not any(True for _ in idx.intersection(c.rect.to_bounding_box()))
+    ]
+
+
 def _words_and_ocr_cells(
     word_cells: Sequence[TextCell], cluster_cells: Sequence[TextCell]
 ) -> list[TextCell]:
-    """Table tokens: the native words, plus the OCR cells of the table cluster.
+    """Table tokens: the finest cells of the text the OCR merge kept.
 
-    OCR text exists only as line cells, never as word cells. Without the OCR
-    cells, a table with a few native words (e.g. a scanned form with filled-in
-    fields) loses all its OCR text. A native word under an OCR cell is dropped,
-    as the OCR merge already dropped its line.
+    The OCR cells of the table cluster are the OCR lines that survived the
+    merge with the native text. Without them, a table with a few native words
+    (e.g. a scanned form with filled-in fields) loses all its OCR text.
+
+    - A native word under a surviving OCR line is dropped, as the merge
+      dropped its line.
+    - An OCR engine may also report word cells (e.g. third-party OCR plugins).
+      An OCR word on a kept native word is dropped, as the merge rejected its
+      line there. The other OCR words replace the OCR line they sit in.
     """
-    ocr_cells = [c for c in cluster_cells if c.from_ocr]
-    idx = BoundingBoxSpatialIndex()
-    for i, cell in enumerate(ocr_cells):
-        idx.insert(i, cell.rect.to_bounding_box())
-    words = [
-        w
-        for w in word_cells
-        if not any(True for _ in idx.intersection(w.rect.to_bounding_box()))
-    ]
-    return words + ocr_cells
+    ocr_lines = [c for c in cluster_cells if c.from_ocr]
+    native_words = _uncovered([w for w in word_cells if not w.from_ocr], ocr_lines)
+    ocr_words = _uncovered([w for w in word_cells if w.from_ocr], native_words)
+    return native_words + ocr_words + _uncovered(ocr_lines, ocr_words)
 
 
 class TableStructureModel(BaseTableStructureModel):
