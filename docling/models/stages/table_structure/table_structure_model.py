@@ -36,6 +36,9 @@ _log = logging.getLogger(__name__)
 
 def _uncovered(cells: Sequence[TextCell], covers: Sequence[TextCell]) -> list[TextCell]:
     """The cells that overlap none of `covers`."""
+    if not cells or not covers:
+        return list(cells)
+
     idx = BoundingBoxSpatialIndex()
     for i, cover in enumerate(covers):
         idx.insert(i, cover.rect.to_bounding_box())
