@@ -204,6 +204,9 @@ _PARA_BREAKERS = {
     "td",
 }
 
+# Same names as a list, the form bs4 documents for matching several tag names.
+_PARA_BREAKER_NAMES: Final = sorted(_PARA_BREAKERS)
+
 # Elements whose end tag may be omitted, mapped to (ancestors that a new
 # element implicitly closes, ancestors that stop the search).
 _IMPLIED_END_TAGS: Final = {
@@ -1867,7 +1870,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     new_nodes.remove(current_p)
             current_p = None
 
-        paragraphs = soup.select(f"p:has({','.join(tag for tag in _PARA_BREAKERS)})")
+        paragraphs = [
+            p
+            for p in soup.find_all("p")
+            if isinstance(p, Tag) and p.find(_PARA_BREAKER_NAMES) is not None
+        ]
 
         for p in paragraphs:
             parent = p.parent
