@@ -129,6 +129,15 @@ ORDINARY = {
         f"\N{REPLACEMENT CHARACTER} {item}"
         for item in ("Welcome", "Results", "Outlook", "Questions", "Close")
     ),
+    # One cell in a broken font: OCR would replace the good text of the whole page.
+    "one_private_use_cell": _PROSE * 2
+    + "\n"
+    + "".join(chr(0xF041 + i) for i in range(6))
+    + "\n",
+    "one_control_code_cell": _PROSE * 2
+    + "\nTotal "
+    + "".join(chr(0x10 + i) for i in range(6))
+    + "\n",
 }
 
 # Text layers from fonts whose glyphs were not mapped to real characters.
@@ -144,19 +153,9 @@ BROKEN = {
     "glyphs_as_accented_latin": _words(0x0100, 0x017F),
     "glyphs_as_shifted_letters": _shift(_PROSE, 3),
     "glyphs_as_letters_and_digits": _shift(_PROSE, -11),
-    # One cell in a broken font, on an otherwise good page.
-    "one_private_use_cell": _PROSE * 2
-    + "\n"
-    + "".join(chr(0xF041 + i) for i in range(6))
-    + "\n",
-    "one_control_code_cell": _PROSE * 2
-    + "\nTotal "
-    + "".join(chr(0x10 + i) for i in range(6))
-    + "\n",
-    # Below the share the control check needs, but in runs or in several cells.
-    "replacement_run_on_short_page": "Annual report of the regional transport "
-    "authority for 2024: \N{REPLACEMENT CHARACTER}\N{REPLACEMENT CHARACTER} "
-    "summary, outlook, notes",
+    # Not only English: the vowel check uses no language profile.
+    "welsh_as_shifted_letters": _shift(ORDINARY["welsh"], 3),
+    # Below the share the control check needs, but in several cells.
     "replacement_characters_in_many_cells": _PROSE
     + "\n"
     + "\n".join("Item " + "\N{REPLACEMENT CHARACTER}" * n for n in (4, 3, 3)),

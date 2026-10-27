@@ -183,12 +183,15 @@ docling report.pdf --replace-broken-text-layer
 ```
 
 Docling detects a broken page from characters that do not belong in text, such as control
-characters, `�`, or private-use characters. It also detects accented Latin letters that stand for
-another script, for example `Îò÷¸ò ïîêàçûâàåò` for Russian text, and Latin letters that are
-shifted as a whole, as in the example above. It cannot detect a page whose text uses the right alphabet but the wrong
-letters, or the right letters in the wrong order, for example `Cartifecita` instead of
-`Certificate`. Such pages keep their PDF text. To read every page with OCR, set
-`mode=OcrMode.FULL_PAGE` (`--ocr-mode full_page`).
+characters, `�`, or private-use characters, on the page or in many of its lines. These checks work
+for every script. For Latin letters, it also detects accented letters that stand for another
+script, for example `Îò÷¸ò ïîêàçûâàåò` for Russian text, and letters with too few vowels, as in
+the example above. The vowel check uses no language profile, so it works the same for every
+Latin-script language. One broken cell on an otherwise good page does not replace the page.
+
+Docling cannot detect a page whose text uses the right alphabet but the wrong letters, or the right
+letters in the wrong order, for example `Cartifecita` instead of `Certificate`. Such pages keep
+their PDF text. To read every page with OCR, set `mode=OcrMode.FULL_PAGE` (`--ocr-mode full_page`).
 
 
 ## RapidOCR
