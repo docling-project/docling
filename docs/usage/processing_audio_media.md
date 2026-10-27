@@ -462,10 +462,13 @@ docling recording.wav --asr-model granite_speech_5_0_2b --to md
 docling recording.wav --asr-model parakeet_ctc_1_1b --to md
 ```
 
-These models currently produce one transcript segment covering the full audio
-duration. Plus uses plain transcription by default; its speaker and timestamp
-tags are not mapped to structured Docling tracks. Streaming model names identify
-the checkpoints; this pipeline performs file transcription.
+Parakeet CTC keeps the word times from the Transformers pipeline. Words that
+are less than 0.8 seconds apart stay in one segment. A pause of 0.8 seconds or
+more, or sentence punctuation, starts a new segment. The other models in this
+table still produce one transcript segment covering the full audio duration.
+Plus uses plain transcription by default; its speaker and timestamp tags are
+not mapped to structured Docling tracks. Streaming model names identify the
+checkpoints; this pipeline performs file transcription.
 
 The `TURBOCTC_NC` preset uses CC-BY-NC-SA-4.0.
 

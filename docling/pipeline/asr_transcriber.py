@@ -566,6 +566,53 @@ class _MlxWhisperModel:
         return convo
 
 
+# A gap of this length, without sentence punctuation, starts a new segment.
+# Parakeet CTC returns word times, and those words have no punctuation.
+_SENTENCE_PAUSE_SECONDS: Final[float] = 0.8
+
+
+def _full_duration_item(text: str, fpath: Path) -> list[_ConversationItem]:
+    """One segment covering the whole file when no word times are available."""
+    stripped = text.strip()
+    if not stripped:
+        return []
+    return [
+        _ConversationItem(
+            start_time=0.0,
+            end_time=_audio_duration_seconds(fpath),
+            text=stripped,
+        )
+    ]
+
+
+def _conversation_items_from_chunks(chunks: object) -> list[_ConversationItem]:
+    """Turn Transformers ASR chunks into timed conversation items."""
+    if not isinstance(chunks, list):
+        return []
+    items: list[_ConversationItem] = []
+    for chunk in chunks:
+        if not isinstance(chunk, dict):
+            continue
+        text = str(chunk.get("text", "")).strip()
+        timestamp = chunk.get("timestamp")
+        if (
+            not text
+            or not isinstance(timestamp, tuple | list)
+            or len(timestamp) != 2
+            or timestamp[0] is None
+            or timestamp[1] is None
+        ):
+            continue
+        items.append(
+            _ConversationItem(
+                start_time=float(timestamp[0]),
+                end_time=float(timestamp[1]),
+                text=text,
+            )
+        )
+    return items
+
+
 class _TransformersAsrModel(_MlxWhisperModel):
     """Transcribe speech with a Transformers ASR pipeline."""
 
@@ -635,20 +682,19 @@ class _TransformersAsrModel(_MlxWhisperModel):
                 for chunk in result["chunks"]
             ]
 
+        if self.asr_options.model_family == "parakeet":
+            # CTC pipelines expose word times, not Whisper segment times.
+            result = self.asr_pipeline(str(fpath), return_timestamps="word")
+            words = _conversation_items_from_chunks(result.get("chunks"))
+            if words:
+                return _merge_into_sentences(words)
+            return _full_duration_item(str(result.get("text", "")), fpath)
+
         if self.decoder is not None:
             text = self.decoder.transcribe(fpath)
         else:
-            result = self.asr_pipeline(str(fpath))
-            text = result["text"].strip()
-        if not text:
-            return []
-        return [
-            _ConversationItem(
-                start_time=0.0,
-                end_time=_audio_duration_seconds(fpath),
-                text=text,
-            )
-        ]
+            text = self.asr_pipeline(str(fpath))["text"]
+        return _full_duration_item(text, fpath)
 
 
 class _WhisperS2TModel:
@@ -993,15 +1039,24 @@ class _ApiAsrModel:
 # ============================================================
 
 
+def _starts_after_sentence_pause(
+    current: _ConversationItem, following: _ConversationItem
+) -> bool:
+    """True when the next item starts a new spoken segment."""
+    if current.end_time is None or following.start_time is None:
+        return False
+    return following.start_time - current.end_time >= _SENTENCE_PAUSE_SECONDS
+
+
 def _merge_into_sentences(
     items: list["_ConversationItem"],
 ) -> list["_ConversationItem"]:
-    """Merge Whisper segments into complete sentences.
+    """Merge ASR segments into complete sentences.
 
     Consecutive segments are merged until a sentence-ending punctuation
-    mark (. ? ! or its full-width CJK form) is found. The merged item spans
-    the full time range of all contributing segments and concatenates their
-    text.
+    mark (. ? ! or its full-width CJK form) is found, or until the next
+    segment starts at least 0.8 seconds later. The merged item spans the
+    full time range of all contributing segments and concatenates their text.
 
     This produces one block per sentence, which maps cleanly to one
     speaker per block for diarization.
@@ -1019,6 +1074,10 @@ def _merge_into_sentences(
     current: _ConversationItem | None = None
 
     for item in items:
+        if current is not None and _starts_after_sentence_pause(current, item):
+            merged.append(current)
+            current = None
+
         if current is None:
             current = _ConversationItem(
                 start_time=item.start_time,

@@ -420,8 +420,11 @@ The CLI can also transcribe: `docling interview.wav --to md --output /tmp/`.
 
 Additional presets include `GRANITE_SPEECH_5_0_2B`,
 `GRANITE_SPEECH_5_0_470M_TURBOCTC`, its `_NC` variant,
-`GRANITE_SPEECH_4_1_2B`, its `_PLUS` variant, and
-`NEMOTRON_SPEECH_STREAMING_EN_0_6B`. Copy a preset with
+`GRANITE_SPEECH_4_1_2B`, its `_PLUS` variant,
+`NEMOTRON_SPEECH_STREAMING_EN_0_6B`, and `PARAKEET_CTC_1_1B`.
+`PARAKEET_CTC_1_1B` groups word timestamps into segments. A pause of 0.8
+seconds, or sentence punctuation, starts a new segment. The other presets in
+this list return one item for the full audio duration. Copy a preset with
 `.model_copy(deep=True)` before changing `revision`, `language`, or `prompt`.
 Granite and TurboCTC use FP32 weights on MPS to avoid BF16 normalization failures.
 Plus defaults to plain transcription; speaker and timestamp tags are not parsed
