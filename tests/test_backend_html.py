@@ -2658,3 +2658,44 @@ def test_task_list_item_keeps_nested_content_list_item():
     assert "details paragraph" in markdown
     # the checkbox must not be rendered as an empty extra bullet
     assert "- [x] \n" not in markdown and "- [x] \r" not in markdown
+
+
+@pytest.mark.parametrize(
+    ("colspan", "expected"),
+    [
+        (" 2", 2),
+        ("\t2", 2),
+        ("+2", 2),
+        (" +2 ", 2),
+        ("2px", 2),
+        ("-2", 1),
+        ("\u0663", 1),  # ARABIC-INDIC DIGIT THREE is not an ASCII digit
+        ("x2", 1),
+    ],
+)
+def test_table_span_parses_like_html(colspan, expected):
+    # HTML's rules for parsing non-negative integers skip leading ASCII
+    # whitespace and accept a "+" sign, so browsers render colspan=" 2" and
+    # colspan="+2" as two columns. Only ASCII digits count.
+    cell = BeautifulSoup(f'<td colspan="{colspan}">A</td>', "html.parser").find("td")
+    assert HTMLDocumentBackend._get_cell_spans(cell) == (expected, 1)
+
+
+def test_table_span_with_leading_space_keeps_columns_aligned():
+    src = (
+        b'<table><tr><td colspan=" 2">A</td><td>B</td></tr>'
+        b"<tr><td>C</td><td>D</td><td>E</td></tr></table>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert [[cell.text for cell in row] for row in doc.tables[0].data.grid] == [
+        ["A", "A", "B"],
+        ["C", "D", "E"],
+    ]

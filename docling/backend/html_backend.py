@@ -98,6 +98,10 @@ _INSTALL_HINT = (
 
 _log = logging.getLogger(__name__)
 
+# A span attribute as HTML parses a non-negative integer: optional leading ASCII
+# whitespace and "+", then the ASCII digits that start the value.
+_SPAN_DIGITS_RE = re.compile(r"[\t\n\f\r ]*\+?([0-9]+)")
+
 # Response headers not forwarded when serving a fetched resource to the browser:
 # the body is already decoded and complete, so encoding/length/range framing
 # from the origin server no longer applies.
@@ -5498,6 +5502,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         table cell tag.
         If the attribute does not exist, is not numeric, or is zero, it defaults to 1.
         Values above the HTML limits (1000 columns, 65534 rows) are clamped to them.
+        Like HTML's rules for parsing non-negative integers, leading ASCII
+        whitespace and a "+" sign are skipped, only ASCII digits count, and
+        anything after the digits is ignored.
         """
         raw_spans: tuple[str, str] = (
             str(cell.get("colspan", "1")),
@@ -5505,14 +5512,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
 
         def _extract_num(s: str) -> int:
-            if s and s[0].isnumeric():
-                match = re.search(r"\d+", s)
+            if s:
+                match = _SPAN_DIGITS_RE.match(s)
                 if match:
                     # A span of 0 covers no grid position, so the cell drops out
                     # of the table and the cells after it shift. HTML5 reads
                     # rowspan="0" as "span to the end of the row group"; falling
                     # back to 1 keeps the cell without implementing that rule.
-                    digits = match.group().lstrip("0")
+                    digits = match.group(1).lstrip("0")
                     # Any value this long is above both span limits; skip
                     # converting very long digit strings to int.
                     if len(digits) > len(str(MAX_ROWSPAN)):
