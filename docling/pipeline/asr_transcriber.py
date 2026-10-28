@@ -465,6 +465,7 @@ class _MlxWhisperModel:
             self.no_speech_threshold = asr_options.no_speech_threshold
             self.logprob_threshold = asr_options.logprob_threshold
             self.compression_ratio_threshold = asr_options.compression_ratio_threshold
+            self.temperature = asr_options.temperature
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         path_or_stream = conv_res.input._backend.path_or_stream
@@ -537,6 +538,7 @@ class _MlxWhisperModel:
             no_speech_threshold=self.no_speech_threshold,
             logprob_threshold=self.logprob_threshold,
             compression_ratio_threshold=self.compression_ratio_threshold,
+            temperature=self.temperature,
         )
 
         convo: list[_ConversationItem] = []

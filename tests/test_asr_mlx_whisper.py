@@ -304,6 +304,7 @@ class TestMlxWhisperIntegration:
             no_speech_threshold=0.6,
             logprob_threshold=-1.0,
             compression_ratio_threshold=2.4,
+            temperature=0.7,
         )
 
         model = _MlxWhisperModel(
@@ -336,6 +337,7 @@ class TestMlxWhisperIntegration:
             no_speech_threshold=0.6,
             logprob_threshold=-1.0,
             compression_ratio_threshold=2.4,
+            temperature=0.7,
         )
 
     @patch("builtins.__import__")
