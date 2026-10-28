@@ -424,6 +424,16 @@ class _ReadingOrderPredictorState:
 
 GRAPHIC_LABELS = {DocItemLabel.TABLE, DocItemLabel.PICTURE, DocItemLabel.CODE}
 
+_CHAIN_HEAD_COLUMN_SORT_LABELS = frozenset(
+    {
+        DocItemLabel.SECTION_HEADER,
+        DocItemLabel.TITLE,
+        DocItemLabel.TEXT,
+    }
+)
+
+_TEXT_COLUMN_SORT_LABELS = frozenset({DocItemLabel.TEXT})
+
 
 def _is_graphic(element: PageElement) -> bool:
     return element.label in GRAPHIC_LABELS
@@ -687,6 +697,7 @@ class ReadingOrderPredictor:
         )
 
         self._init_ud_maps(page_elements, state)
+        column_span_state = copy.deepcopy(state)
 
         if self.dilated_page_element:
             dilated_page_elements: List[ReadingOrderNode] = copy.deepcopy(
@@ -703,7 +714,12 @@ class ReadingOrderPredictor:
             # redo with dilated provs
             self._init_ud_maps(dilated_page_elements, state)
 
-        self._find_heads(page_elements, state, vertical_separators=vertical_separators)
+        self._find_heads(
+            page_elements,
+            state,
+            column_span_state=column_span_state,
+            vertical_separators=vertical_separators,
+        )
 
         self._sort_ud_maps(page_elements, state)
 
@@ -1045,6 +1061,39 @@ class ReadingOrderPredictor:
         ) == [upper_index]
 
     @staticmethod
+    def _text_chain_horizontal_span(
+        head_index: int,
+        page_elems: List[ReadingOrderNode],
+        state: _ReadingOrderPredictorState,
+    ) -> tuple[float, float]:
+        head = page_elems[head_index]
+        if not isinstance(head, PageElement):
+            return head.l, head.r
+
+        left, right = head.l, head.r
+        current = head_index
+        while True:
+            down_indices = state.dn_map.get(current, [])
+            if len(down_indices) != 1:
+                break
+            down_index = down_indices[0]
+            if not ReadingOrderPredictor._is_one_to_one_vertical_edge(
+                state, current, down_index
+            ):
+                break
+            down = page_elems[down_index]
+            if not isinstance(down, PageElement):
+                break
+            if down.label == DocItemLabel.FORM:
+                break
+            if down.label not in _TEXT_COLUMN_SORT_LABELS:
+                break
+            left = min(left, down.l)
+            right = max(right, down.r)
+            current = down_index
+        return left, right
+
+    @staticmethod
     def _has_vertical_separator_between(
         lhs: ReadingOrderNode,
         rhs: ReadingOrderNode,
@@ -1093,6 +1142,7 @@ class ReadingOrderPredictor:
         page_elems: List[ReadingOrderNode],
         state: _ReadingOrderPredictorState,
         *,
+        column_span_state: _ReadingOrderPredictorState,
         vertical_separators: List[SeparatorElement] | None,
     ) -> None:
         head_page_elems = []
@@ -1103,20 +1153,17 @@ class ReadingOrderPredictor:
             if (
                 self.dilated_page_element
                 and isinstance(head, PageElement)
-                and head.label == DocItemLabel.SECTION_HEADER
-                and len(state.dn_map[key]) == 1
+                and head.label in _CHAIN_HEAD_COLUMN_SORT_LABELS
+                and state.dn_map.get(key)
             ):
-                down_index = state.dn_map[key][0]
-                following = page_elems[down_index]
-                if (
-                    isinstance(following, PageElement)
-                    and following.label == DocItemLabel.TEXT
-                    and self._is_one_to_one_vertical_edge(state, key, down_index)
-                ):
+                left, right = self._text_chain_horizontal_span(
+                    key, page_elems, column_span_state
+                )
+                if right - left > head.r - head.l + head.eps:
                     left, right = self._clamp_dilation_to_vertical_separators(
                         head,
-                        x0=min(head.l, following.l),
-                        x1=max(head.r, following.r),
+                        x0=left,
+                        x1=right,
                         vertical_separators=vertical_separators,
                     )
                     # Use the text column to sort heads, not to create new edges.
@@ -1136,6 +1183,19 @@ class ReadingOrderPredictor:
             spatial_idx.insert(i, (pelem.l, pelem.b, pelem.r, pelem.t))
 
         def compare(lhs: ReadingOrderNode, rhs: ReadingOrderNode) -> int:
+            if isinstance(lhs, PageElement) and isinstance(rhs, PageElement):
+                if (
+                    _is_graphic(lhs)
+                    and not _is_graphic(rhs)
+                    and lhs.is_strictly_above(rhs)
+                ):
+                    return -1
+                if (
+                    _is_graphic(rhs)
+                    and not _is_graphic(lhs)
+                    and rhs.is_strictly_above(lhs)
+                ):
+                    return 1
             if self._is_separated_above(spatial_idx, page_elems, lhs, rhs):
                 return -1
             if self._is_separated_above(spatial_idx, page_elems, rhs, lhs):

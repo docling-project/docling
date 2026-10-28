@@ -525,21 +525,19 @@ def _box(
     return _el(cid, label).model_copy(update={"l": l, "r": r, "t": t, "b": b})
 
 
-@pytest.mark.parametrize("origin", [CoordOrigin.BOTTOMLEFT, CoordOrigin.TOPLEFT])
-@pytest.mark.parametrize("reverse_input", [False, True])
-@pytest.mark.parametrize("merged_party_row", [False, True])
-def test_centered_header_precedes_narrow_head_of_wide_body(
-    origin: CoordOrigin, reverse_input: bool, merged_party_row: bool
-) -> None:
-    # A short party name starts a separate chain below a centered court header.
+def _issue4913_court_page_elements(
+    *,
+    narrow_head_label: DocItemLabel = DocItemLabel.SECTION_HEADER,
+    party_first_line_right: float = 181.34,
+) -> List[PageElement]:
     elements = [
         _box(0, DocItemLabel.SECTION_HEADER, 651.05, 661.14, l=284.09, r=321.31),
         _box(1, DocItemLabel.TEXT, 623.40, 633.74, l=180.62, r=428.85),
         _box(2, DocItemLabel.TEXT, 540.57, 606.14, l=228.29, r=381.27),
         _box(3, DocItemLabel.SECTION_HEADER, 513.02, 523.11, l=180.26, r=429.32),
         _box(4, DocItemLabel.TEXT, 499.17, 509.51, l=167.78, r=441.61),
-        _box(5, DocItemLabel.SECTION_HEADER, 457.77, 468.11, l=85.10, r=93.77),
-        _box(6, DocItemLabel.TEXT, 443.97, 454.31, l=85.10, r=181.34),
+        _box(5, narrow_head_label, 457.77, 468.11, l=85.10, r=93.77),
+        _box(6, DocItemLabel.TEXT, 443.97, 454.31, l=85.10, r=party_first_line_right),
         _box(7, DocItemLabel.TEXT, 443.97, 454.31, l=316.15, r=450.08),
         _box(8, DocItemLabel.TEXT, 416.37, 426.71, l=85.10, r=103.78),
         _box(9, DocItemLabel.TEXT, 388.75, 399.09, l=85.10, r=93.11),
@@ -550,6 +548,29 @@ def test_centered_header_precedes_narrow_head_of_wide_body(
     ]
     for element in elements:
         element.page_size = Size(width=595.32, height=841.92)
+    return elements
+
+
+@pytest.mark.parametrize("origin", [CoordOrigin.BOTTOMLEFT, CoordOrigin.TOPLEFT])
+@pytest.mark.parametrize("reverse_input", [False, True])
+@pytest.mark.parametrize("merged_party_row", [False, True])
+@pytest.mark.parametrize(
+    "narrow_head_label",
+    [DocItemLabel.SECTION_HEADER, DocItemLabel.TITLE, DocItemLabel.TEXT],
+)
+@pytest.mark.parametrize("party_first_line_right", [181.34, 150.0])
+def test_centered_header_precedes_narrow_head_of_wide_body(
+    origin: CoordOrigin,
+    reverse_input: bool,
+    merged_party_row: bool,
+    narrow_head_label: DocItemLabel,
+    party_first_line_right: float,
+) -> None:
+    # A short party name starts a separate chain below a centered court header.
+    elements = _issue4913_court_page_elements(
+        narrow_head_label=narrow_head_label,
+        party_first_line_right=party_first_line_right,
+    )
     if merged_party_row:
         # Layout models can return the party and counsel as one wide text box.
         elements[6].r = elements[7].r
@@ -575,6 +596,19 @@ def test_centered_header_precedes_narrow_head_of_wide_body(
     # Dilation must affect ordering only, not the returned source boxes.
     assert result[6].l == 85.10
     assert result[6].r == 93.77
+
+
+def test_centered_header_precedes_narrow_head_when_party_column_stops_at_150() -> None:
+    # Every party line can stay left of the seal at x=178pt on the first row only.
+    elements = _issue4913_court_page_elements(party_first_line_right=150.0)
+    for index, element in enumerate(elements):
+        if element.label == DocItemLabel.TEXT and element.l < 120.0:
+            elements[index] = element.model_copy(update={"r": min(element.r, 150.0)})
+
+    expected = [elements[-1].cid, *range(len(elements) - 1)]
+    result = ReadingOrderPredictor().predict_reading_order(elements)
+
+    assert [element.cid for element in result] == expected
 
 
 @pytest.mark.parametrize("origin", [CoordOrigin.BOTTOMLEFT, CoordOrigin.TOPLEFT])
