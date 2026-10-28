@@ -4,7 +4,7 @@
   "name": "side_headings",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 2348782603302745130,
+    "binary_hash": 15442601636436015316,
     "filename": "side_headings.pdf"
   },
   "furniture": {
@@ -85,9 +85,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 724.92,
-            "r": 336.04,
-            "b": 708.27,
+            "t": 725.68,
+            "r": 362.77,
+            "b": 707.68,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -107,43 +107,15 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 72.0,
-            "t": 699.9,
-            "r": 256.64,
-            "b": 689.72,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            37
-          ]
-        }
-      ],
-      "orig": "Quick reference for bench technicians",
-      "text": "Quick reference for bench technicians",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/2",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
       "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 671.18,
+            "t": 679.6,
             "r": 540.0,
-            "b": 648.93,
+            "b": 656.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -156,7 +128,7 @@
       "text": "This supplement covers the bench checks for revision B units. Each section heading sits in the left margin, level with the first paragraph it introduces."
     },
     {
-      "self_ref": "#/texts/3",
+      "self_ref": "#/texts/2",
       "parent": {
         "$ref": "#/body"
       },
@@ -167,10 +139,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 119.34,
-            "t": 635.05,
+            "l": 108.96,
+            "t": 643.64,
             "r": 180.0,
-            "b": 606.1,
+            "b": 613.64,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -182,6 +154,33 @@
       "orig": "Package Contents",
       "text": "Package Contents",
       "level": 1
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 196.0,
+            "t": 639.6,
+            "r": 540.0,
+            "b": 590.6,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            214
+          ]
+        }
+      ],
+      "orig": "Your service kit should contain this supplement, a printed checklist and the sealed calibration certificate. Confirm that all three items are present before you begin, and report any missing component to the depot.",
+      "text": "Your service kit should contain this supplement, a printed checklist and the sealed calibration certificate. Confirm that all three items are present before you begin, and report any missing component to the depot."
     },
     {
       "self_ref": "#/texts/4",
@@ -196,19 +195,19 @@
           "page_no": 1,
           "bbox": {
             "l": 196.0,
-            "t": 631.18,
+            "t": 579.6,
             "r": 540.0,
-            "b": 595.93,
+            "b": 556.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            214
+            123
           ]
         }
       ],
-      "orig": "Your service kit should contain this supplement, a printed checklist and the sealed calibration certificate. Confirm that all three items are present before you begin, and report any missing component to the depot.",
-      "text": "Your service kit should contain this supplement, a printed checklist and the sealed calibration certificate. Confirm that all three items are present before you begin, and report any missing component to the depot."
+      "orig": "Do not start a service call with an incomplete kit. A missing certificate means that the readings you take cannot be filed.",
+      "text": "Do not start a service call with an incomplete kit. A missing certificate means that the readings you take cannot be filed."
     },
     {
       "self_ref": "#/texts/5",
@@ -222,10 +221,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 119.32,
-            "t": 578.05,
+            "l": 108.52,
+            "t": 539.64,
             "r": 180.0,
-            "b": 549.1,
+            "b": 509.64,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -251,9 +250,9 @@
           "page_no": 1,
           "bbox": {
             "l": 196.0,
-            "t": 574.18,
+            "t": 535.6,
             "r": 540.0,
-            "b": 551.93,
+            "b": 499.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -278,9 +277,9 @@
           "page_no": 1,
           "bbox": {
             "l": 196.0,
-            "t": 540.18,
+            "t": 488.6,
             "r": 540.0,
-            "b": 504.93,
+            "b": 439.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -304,10 +303,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 112.32,
-            "t": 487.05,
+            "l": 99.43,
+            "t": 422.64,
             "r": 180.0,
-            "b": 458.1,
+            "b": 392.64,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -333,9 +332,9 @@
           "page_no": 1,
           "bbox": {
             "l": 196.0,
-            "t": 483.18,
+            "t": 418.6,
             "r": 540.0,
-            "b": 447.93,
+            "b": 382.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -360,9 +359,9 @@
           "page_no": 1,
           "bbox": {
             "l": 196.0,
-            "t": 436.18,
+            "t": 371.6,
             "r": 540.0,
-            "b": 400.93,
+            "b": 335.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -387,9 +386,9 @@
           "page_no": 1,
           "bbox": {
             "l": 196.0,
-            "t": 389.18,
+            "t": 324.6,
             "r": 540.0,
-            "b": 366.93,
+            "b": 301.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -413,10 +412,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 137.22,
-            "t": 349.05,
+            "l": 132.26,
+            "t": 284.64,
             "r": 180.0,
-            "b": 320.1,
+            "b": 254.64,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -442,9 +441,9 @@
           "page_no": 1,
           "bbox": {
             "l": 196.0,
-            "t": 345.18,
+            "t": 280.6,
             "r": 540.0,
-            "b": 322.93,
+            "b": 244.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -469,9 +468,9 @@
           "page_no": 1,
           "bbox": {
             "l": 196.0,
-            "t": 311.18,
+            "t": 233.6,
             "r": 540.0,
-            "b": 288.93,
+            "b": 197.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -495,10 +494,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 303.5,
-            "t": 46.46,
-            "r": 308.5,
-            "b": 38.14,
+            "l": 303.14,
+            "t": 46.84,
+            "r": 308.86,
+            "b": 37.84,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

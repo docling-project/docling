@@ -1,12 +1,12 @@
 ## FIELD SERVICE SUPPLEMENT
 
-## Quick reference for bench technicians
-
 This supplement covers the bench checks for revision B units. Each section heading sits in the left margin, level with the first paragraph it introduces.
 
 ## Package Contents
 
 Your service kit should contain this supplement, a printed checklist and the sealed calibration certificate. Confirm that all three items are present before you begin, and report any missing component to the depot.
+
+Do not start a service call with an incomplete kit. A missing certificate means that the readings you take cannot be filed.
 
 ## Tools Required
 
