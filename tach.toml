@@ -188,6 +188,11 @@ layer = "core"
 depends_on = ["docling.backend", "docling.datamodel", "docling.utils"]
 
 [[modules]]
+path = "docling.utils.pdf_char_geometry"
+layer = "core"
+depends_on = ["docling.backend", "docling.utils"]
+
+[[modules]]
 path = "docling.utils"
 layer = "core"
 depends_on = [
@@ -382,6 +387,15 @@ layer = "models"
 depends_on = ["docling.datamodel", "docling.utils"]
 
 [[modules]]
+path = "docling.models.stages.script_position"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.utils",
+  "docling.utils.pdf_char_geometry",
+]
+
+[[modules]]
 path = "docling.models.stages.table_structure"
 layer = "core"
 depends_on = [
@@ -551,6 +565,7 @@ depends_on = [
   "docling.models.stages.page_assemble",
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
+  "docling.models.stages.script_position",
   "docling.pipeline.base_pipeline",
   "docling.utils",
 ]

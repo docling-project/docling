@@ -355,6 +355,33 @@ doc_converter = DocumentConverter(
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
 
+### Recover superscript and subscript in PDFs
+
+A PDF draws superscript and subscript text as smaller glyphs moved off the baseline, so by
+default "E = mc²" comes out as "E = mc 2". Docling can mark these runs with
+`formatting.script`, which the HTML export renders as `<sup>` and `<sub>`:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    ScriptPositionOptions,
+)
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.script_position_options = ScriptPositionOptions(enabled=True)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+A text item holding superscript or subscript text keeps its place, and its text moves into
+an inline group of runs that the item holds.
+
 ### PowerPoint and Excel charts
 
 A chart on a PowerPoint slide or an Excel sheet becomes a picture classified by
