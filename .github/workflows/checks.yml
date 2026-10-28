@@ -451,6 +451,47 @@ jobs:
           fi
           uv run pytest -p no:tach -m cross_platform "${cross_platform_args[@]}" --durations=10
 
+  # Python 3.15 has no torch, onnxruntime or docling-parse wheels yet, so the
+  # full `--all-extras` sync cannot run there. This lane syncs the extras that
+  # install on 3.15 and runs the cross-platform smoke tests. Add extras back as
+  # their dependencies ship cp315 wheels.
+  run-tests-py315-slim:
+    needs: changes
+    if: ${{ needs.changes.outputs.run_tests == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-ubuntu-ci
+        with:
+          python_version: "3.15"
+          uv_sync_args: >-
+            --frozen --no-default-groups --group dev
+            --extra convert-core --extra extract-core --extra format-pdf-pypdfium2
+            --extra format-office --extra format-opendocument --extra format-web
+            --extra format-latex --extra format-email --extra format-iwork
+            --extra format-xml-jats --extra format-xml-uspto --extra format-xml-xbrl
+            --extra format-html-render --extra feat-chunking --extra models-remote
+            --extra service-client --extra cli
+
+      - name: Check import and CLI wiring
+        run: |
+          uv run --no-sync python -c "import docling; from docling.document_converter import DocumentConverter; DocumentConverter(); print('Docling import smoke passed')"
+          uv run --no-sync docling --help
+
+      - name: Run cross-platform smoke tests
+        run: |
+          mapfile -t cross_platform_args < <(uv run --no-sync python .github/scripts/pytest_marker_selection.py marker-args cross_platform)
+          if [ "${#cross_platform_args[@]}" -eq 0 ]; then
+            echo "No tests are marked with pytest.mark.cross_platform" >&2
+            exit 1
+          fi
+          # These tests parse PDF bytes with the default docling-parse backend,
+          # which has no cp315 wheels yet.
+          uv run --no-sync pytest -p no:tach -m cross_platform "${cross_platform_args[@]}" --durations=10 \
+            --deselect tests/test_invalid_input.py::test_convert_invalid_pdf_bytes_chains_original_exception \
+            --deselect tests/test_invalid_input.py::test_convert_invalid_pdf_bytes_wout_exception_records_original_error
+
   test-pip-install-no-lock:
     needs: changes
     if: ${{ inputs.run_package_compat && needs.changes.outputs.run_package == 'true' }}
@@ -646,6 +687,7 @@ jobs:
       - run-examples-light
       - run-tests-windows
       - run-tests-macos
+      - run-tests-py315-slim
       - test-pip-install-no-lock
       - test-pip-install-no-dev-headers
       - build-package
@@ -662,7 +704,7 @@ jobs:
           NEEDS_JSON: ${{ toJSON(needs) }}
           ALLOWED_SKIPS: >-
             lint tach run-tests-core run-tests-ml run-examples-light run-tests-windows
-            run-tests-macos test-pip-install-no-lock test-pip-install-no-dev-headers
+            run-tests-macos run-tests-py315-slim test-pip-install-no-lock test-pip-install-no-dev-headers
             build-package test-package
         run: >-
           python3 .github/scripts/check_needs_results.py
