@@ -150,7 +150,6 @@ from docling.datamodel.pipeline_options import (
 
 opts = PdfPipelineOptions(
     heading_hierarchy_options=HeadingHierarchyOptions(enabled=True),
-    generate_parsed_pages=True,  # required by the font-style signal only
 )
 ```
 

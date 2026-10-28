@@ -4,15 +4,16 @@
 """Model-specific speech decoding through documented Transformers interfaces."""
 
 from pathlib import Path
-from typing import Any
-
-import torch
+from typing import TYPE_CHECKING, Any
 
 from docling.datamodel.pipeline_options_asr_model import InlineAsrTransformersOptions
 
+if TYPE_CHECKING:
+    import torch
+
 
 def _expand_granite_queries(
-    _module: torch.nn.Module, args: tuple[Any, ...], kwargs: dict[str, Any]
+    _module: "torch.nn.Module", args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> tuple[tuple[Any, ...], dict[str, Any]] | None:
     """Match Q-Former queries to the projector's batch of audio windows."""
     queries = kwargs["query_embeds"]
@@ -74,6 +75,7 @@ class TransformersAsrDecoder:
             )
 
     def transcribe(self, path: Path) -> str:
+        import torch
         from transformers.pipelines.audio_utils import ffmpeg_read
 
         waveform = ffmpeg_read(path.read_bytes(), sampling_rate=16000).copy()

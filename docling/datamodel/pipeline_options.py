@@ -333,10 +333,13 @@ class OcrAutoOptions(OcrOptions):
     """Automatic OCR engine selection based on system availability.
 
     When this option is used, Docling probes the runtime environment at
-    pipeline initialization and selects the best available OCR engine
-    (e.g., EasyOCR if GPU is present, Tesseract otherwise). The requested
-    languages are forwarded to whichever engine is chosen, and an engine with
-    no model for them is skipped in favour of the next candidate.
+    pipeline initialization and selects the first available OCR engine, in
+    this order: OcrMac on macOS, Nemotron OCR on Linux with CUDA, RapidOCR
+    with onnxruntime, EasyOCR, and RapidOCR with torch. Tesseract is never
+    selected automatically; use `TesseractOcrOptions` or
+    `TesseractCliOcrOptions` for it. The requested languages are forwarded to
+    whichever engine is chosen, and an engine with no model for them is
+    skipped in favour of the next candidate.
 
     Notes:
         `lang` is forwarded to whichever engine is selected. The default empty
@@ -1994,10 +1997,9 @@ class HeadingHierarchyOptions(BaseModel):
           When a bookmark confidently matches a detected heading it is authoritative; entries
           that match nothing fall back to numbering/style, so partial/noisy outlines never
           degrade the numbering result.
-        - ``use_style`` requires the parsed PDF cells to still be available when the
-          heading-hierarchy step runs, i.e.
-          ``PdfPipelineOptions.generate_parsed_pages=True``. Without them, style inference is
-          silently skipped (numbering still applies).
+        - ``use_style`` reads the text lines of the headings from the parsed PDF cells. The PDF
+          pipeline keeps those lines until the heading-hierarchy step has run, so
+          ``PdfPipelineOptions.generate_parsed_pages`` is not needed.
     """
 
     enabled: Annotated[
@@ -2037,7 +2039,7 @@ class HeadingHierarchyOptions(BaseModel):
             description=(
                 "Use the visual style of the heading (font size, and with `use_font_style` also "
                 "weight, slant and letter case) as a fallback for headings without recognizable "
-                "numbering. Requires `generate_parsed_pages=True`."
+                "numbering."
             )
         ),
     ] = True

@@ -466,6 +466,12 @@ class _MlxWhisperModel:
             self.no_speech_threshold = asr_options.no_speech_threshold
             self.logprob_threshold = asr_options.logprob_threshold
             self.compression_ratio_threshold = asr_options.compression_ratio_threshold
+            self.temperature = asr_options.temperature
+            self.condition_on_previous_text = asr_options.condition_on_previous_text
+            self.hallucination_silence_threshold = (
+                asr_options.hallucination_silence_threshold
+            )
+            self.initial_prompt = asr_options.initial_prompt
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         assert conv_res.input._backend is not None
@@ -530,6 +536,20 @@ class _MlxWhisperModel:
         Returns:
             List of conversation items with timestamps
         """
+        # Only forward options that are set, so mlx-whisper keeps its own
+        # defaults when they are None.
+        optional_kwargs: dict[str, bool | float | str] = {}
+        if self.condition_on_previous_text is not None:
+            optional_kwargs["condition_on_previous_text"] = (
+                self.condition_on_previous_text
+            )
+        if self.hallucination_silence_threshold is not None:
+            optional_kwargs["hallucination_silence_threshold"] = (
+                self.hallucination_silence_threshold
+            )
+        if self.initial_prompt is not None:
+            optional_kwargs["initial_prompt"] = self.initial_prompt
+
         result = self.mlx_whisper.transcribe(
             str(fpath),
             path_or_hf_repo=self.model_path,
@@ -539,6 +559,8 @@ class _MlxWhisperModel:
             no_speech_threshold=self.no_speech_threshold,
             logprob_threshold=self.logprob_threshold,
             compression_ratio_threshold=self.compression_ratio_threshold,
+            temperature=self.temperature,
+            **optional_kwargs,
         )
 
         convo: list[_ConversationItem] = []
