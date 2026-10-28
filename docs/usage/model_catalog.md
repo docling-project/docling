@@ -269,8 +269,7 @@ community-published `carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16` conversion 
 OpenDataLab MLX checkpoint is currently available. Image/chart analysis and cross-page table merging
 are not enabled by this preset.
 
-`nemotron_parse_v3_5` selects MLX on Apple Silicon when the package version meets the preset's
-minimum and the native model module is installed.
+`nemotron_parse_v3_5` selects MLX on Apple Silicon when `mlx-vlm` 0.7.11 or later is installed.
 Otherwise it selects Transformers, including on CUDA. The MLX engine
 uses the native `mlx-vlm` port and the pinned
 [`geoHeil/Nemotron-3.5-Parse-MLX-bf16`](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16)
@@ -279,9 +278,11 @@ it does not use the optional MTP head. The output uses the same native-output ma
 Transformers. The [8-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-8bit)
 and [4-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-4bit) checkpoints are also available.
 
-The native MLX engine requires `mlx-vlm` 0.7.11 or later and the native model module.
-Auto-inline checks both requirements and falls back to Transformers if either is not met.
-Explicit MLX selection reports an old version or a missing module before it downloads model weights.
+The native port is part of the [`mlx-vlm` 0.7.11 release](https://github.com/Blaizzy/mlx-vlm/releases/tag/v0.7.11).
+To use it, upgrade with `pip install "mlx-vlm>=0.7.11"`. Docling also checks that the installed
+package provides the `mlx_vlm.models.nemotron_parse_v3_5` module. Auto-inline falls back to
+Transformers if either check fails. Explicit MLX selection reports an old version or a missing
+module before it downloads model weights.
 
 [Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d28803cbe9fa7359f982288adbeafa53e5ecbcb7/PARITY.md)
 compare the uploaded checkpoints against the pinned Transformers reference on three pages.
