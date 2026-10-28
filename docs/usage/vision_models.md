@@ -167,6 +167,9 @@ Native dots.ocr and dots.mocr JSON text can contain Markdown bold and italic
 markers. Docling maps this emphasis and inline HTML to styled text spans. Mixed
 text uses inline groups. Titles, heading levels, list items, and text block labels
 are preserved. Formula blocks, inline math, and code keep their literal content.
+Escaped brackets that hold only words, digits, or citation punctuation, such as
+`\[9\]`, stay text. `\[...\]` with math content, such as `\[E = mc^2\]`, becomes
+a formula.
 
 Markdown emphasis uses the existing `marko` dependency. For slim installations,
 install it with `pip install 'docling-slim[format-markdown]'`.

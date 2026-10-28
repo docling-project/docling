@@ -13,11 +13,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import marko
 
+# Markdown escapes literal brackets as `\[` and `\]`. Brackets that hold only
+# words, digits, and citation punctuation (`\[9\]`, `\[3, 5\]`) are text.
+_ESCAPED_BRACKET_TEXT = r"(?:[^\W_]|[\s.,;:'&\u2013\u2014-])*\\\]"
+
 _MATH = re.compile(
     r"(?<!\\)(?:\$\$([\s\S]*?)(?<!\\)\$\$"
     # A dollar before a digit starts an amount, not a closing math delimiter.
     r"|(?<!\$)\$(?![\s$])([^\n$]*?)(?<![\\\s])\$(?![\d$])"
-    r"|\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\])"
+    rf"|\\\(([\s\S]*?)\\\)|\\\[(?!{_ESCAPED_BRACKET_TEXT})([\s\S]*?)\\\])"
 )
 
 
