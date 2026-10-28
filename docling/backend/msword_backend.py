@@ -3166,7 +3166,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # next list item opens fresh under this heading.
             self.level_at_new_list = None
             is_numbered_style = self._is_numbered_heading(paragraph)
-            h1 = self._add_heading(doc, p_level, text, is_numbered_style, numid, ilevel)
+            h1 = self._add_heading(
+                doc, p_level, text, is_numbered_style, numid, ilevel, equations
+            )
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
@@ -3322,6 +3324,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         is_numbered_style: bool = False,
         numid: int | None = None,
         ilevel: int | None = None,
+        equations: list[str] | None = None,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
         level = self._get_level()
@@ -3417,12 +3420,24 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         hd = doc.add_heading(
             parent=self.parents[parent_level],
-            text=text,
+            text="" if equations else text,
             level=add_level,
             content_layer=self.content_layer,
         )
         self.parents[current_level] = hd
         elem_ref.append(hd.get_ref())
+        if equations:
+            inline_group = doc.add_inline_group(
+                parent=hd, content_layer=self.content_layer
+            )
+            elem_ref.append(inline_group.get_ref())
+            self._add_inline_equations_to_parent(
+                doc=doc,
+                parent=inline_group,
+                text=text,
+                equations=equations,
+                elem_ref=elem_ref,
+            )
         return elem_ref
 
     def _add_formatted_list_item(
@@ -3508,8 +3523,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         This helper method splits text by equation markers and adds alternating
         TEXT and FORMULA elements as children of the given parent. This logic
-        is shared between regular paragraphs with inline equations and list items
-        with inline equations.
+        is shared between regular paragraphs, headings and list items with inline equations.
 
         Args:
             doc: The DoclingDocument being constructed.

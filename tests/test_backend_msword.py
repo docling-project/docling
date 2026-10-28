@@ -1443,7 +1443,9 @@ def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missin
     )
     monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
 
-    def fake_add_heading(doc, level, text, is_numbered_style, numid=None, ilevel=None):
+    def fake_add_heading(
+        doc, level, text, is_numbered_style, numid=None, ilevel=None, equations=None
+    ):
         captured["heading"] = (level, text, is_numbered_style)
         return []
 
