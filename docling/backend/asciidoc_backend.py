@@ -41,6 +41,12 @@ _log = logging.getLogger(__name__)
 # to an identical line is a comment.
 _LINE_COMMENT_RE = re.compile(r"^//(?!/)")
 _COMMENT_BLOCK_DELIMITER_RE = re.compile(r"/{4,}")
+# A line of four or more hyphens opens a listing block and a line of four or
+# more dots opens a literal block: the count is a minimum, so "-----" opens a
+# listing just as "----" does.
+_VERBATIM_DELIMITER_RE = re.compile(r"-{4,}|\.{4,}")
+# A listing block takes a "[source,lang]" attribute; a literal block does not.
+_LISTING_DELIMITER_RE = re.compile(r"-{4,}")
 
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
@@ -567,9 +573,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     yield comment
                 continue
 
-            if stripped in {"....", "----"}:
+            if _VERBATIM_DELIMITER_RE.fullmatch(stripped):
                 # "...." is a literal block; "----" a listing block. A
-                # "[source,lang]" attribute consumed just before a "----"
+                # "[source,lang]" attribute consumed just before a listing
                 # labels the listing's language.
                 block_data = []
                 block_delimiter = stripped
@@ -597,9 +603,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 continue
 
             source_attr = cls._SOURCE_ATTR_RE.match(stripped)
-            if source_attr is not None and i + 1 < n and lines[i + 1].strip() == "----":
+            if (
+                source_attr is not None
+                and i + 1 < n
+                and _LISTING_DELIMITER_RE.fullmatch(lines[i + 1].strip())
+            ):
                 block_data = []
-                block_delimiter = "----"
+                block_delimiter = lines[i + 1].strip()
                 block_language = source_attr.group(1)
                 i += 2
                 continue
