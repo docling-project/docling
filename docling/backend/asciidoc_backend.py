@@ -4,7 +4,7 @@
 import logging
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union
@@ -51,6 +51,9 @@ _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms
 # The span part of a cell specifier: "2+" spans two columns, ".3+" three rows,
 # "2.3+" both. A "*" factor duplicates the cell instead and is not a span.
 _CELL_SPAN_RE: Final = re.compile(r"(?P<col>\d+)?(?:\.(?P<row>\d+))?\+")
+# The duplication factor of a cell specifier: "3*" writes the cell three times.
+# Asciidoctor takes one span or one factor per cell, so "2*3+" stays text.
+_CELL_REPEAT_RE: Final = re.compile(r"(?P<repeat>\d+)\*(?![\d.])")
 # An ordered marker with a letter has one letter only ("a.", "B."), so a line
 # that starts with an abbreviation such as "Dr." or "Fig." stays text.
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
@@ -85,11 +88,12 @@ class _LiteralBlock:
 
 @dataclass
 class _TableCellSource:
-    """One table cell as written: its text and the spans its specifier sets."""
+    """One table cell as written: its text, spans and duplication factor."""
 
     text: str
     col_span: int = 1
     row_span: int = 1
+    repeat: int = 1
 
 
 @dataclass(frozen=True)
@@ -1035,11 +1039,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         cells = []
         for spec, text in zip(specs, texts):
             span = _CELL_SPAN_RE.match(spec)
+            repeat = _CELL_REPEAT_RE.match(spec)
             cells.append(
                 _TableCellSource(
                     text=text.replace("\\|", "|").strip(),
                     col_span=int(span.group("col") or 1) if span else 1,
                     row_span=int(span.group("row") or 1) if span else 1,
+                    repeat=int(repeat.group("repeat")) if repeat else 1,
                 )
             )
         return cells
@@ -1073,10 +1079,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         fills each row with that many columns, so a row may be written on
         several lines (one cell per line is common). A line that holds a whole
         row on its own stays one row, also when it is wider. Columns that a
-        rowspan from a row above covers count as filled.
+        rowspan from a row above covers count as filled. A cell with a "3*"
+        factor counts as three cells, expanded only here so that a line
+        continuing its text applies to every copy.
         """
         if not table_data:
             return []
+        table_data = [
+            [replace(cell, repeat=1) for cell in line for _ in range(cell.repeat)]
+            for line in table_data
+        ]
         num_cols = sum(cell.col_span for cell in table_data[0])
         rows: list[list[_TableCellSource]] = []
         covered: dict[int, int] = {}

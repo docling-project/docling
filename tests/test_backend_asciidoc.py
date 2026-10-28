@@ -184,6 +184,20 @@ def test_table_rows_over_several_lines_count_spans() -> None:
     ]
 
 
+def test_table_rows_over_several_lines_count_duplicated_cells() -> None:
+    # "2*|x" writes the cell twice, so a first line "2*|x |y" sets three
+    # columns, as Asciidoctor reads it. A line continuing the cell's text
+    # applies to both copies.
+    assert _table_rows(b"|===\n2*|x |y\n|z\n|p\n|q\n|===\n") == [
+        ["x", "x", "y"],
+        ["z", "p", "q"],
+    ]
+    assert _table_rows(b"|===\n|A |B |C\n2*|x\nmore\n|y\n|===\n") == [
+        ["A", "B", "C"],
+        ["x more", "x more", "y"],
+    ]
+
+
 def test_blank_line_inside_table_does_not_split_it() -> None:
     # Inside |=== ... |=== a blank line only separates rows: Asciidoctor's own
     # examples put one after the header row. It used to end the table, so the
