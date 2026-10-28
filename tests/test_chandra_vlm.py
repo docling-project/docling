@@ -343,6 +343,18 @@ def test_chandra_paragraph_list_and_form_controls():
     assert all(not value.prov for value in values)
 
 
+@pytest.mark.parametrize("separator", ["", "\n", "\n    "])
+def test_chandra_paragraph_list_ignores_whitespace_between_items(separator: str):
+    """Test that whitespace between list paragraphs is HTML layout, not an item."""
+    doc = _parse_fragment(
+        separator + separator.join(["<p>One</p>", "<p>Two</p>"]) + separator,
+        "List-Group",
+    )
+
+    items = [t.text for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert items == ["One", "Two"]
+
+
 @pytest.mark.parametrize("kind", ["checkbox", "radio"])
 @pytest.mark.parametrize("checked", [False, True])
 @pytest.mark.parametrize("in_table", [False, True])
