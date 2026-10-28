@@ -17,6 +17,7 @@ from docling_core.types.doc import (
     ImageRef,
     PictureItem,
     ProvenanceItem,
+    TableItem,
     TextItem,
 )
 from docling_core.types.doc.base import (
@@ -722,14 +723,18 @@ class VlmPipeline(PaginatedPipeline):
                 if scale is None:
                     continue
                 sx, sy = scale
-                bbox = provenance.bbox
-                provenance.bbox = BoundingBox(
-                    l=bbox.l * sx,
-                    t=bbox.t * sy,
-                    r=bbox.r * sx,
-                    b=bbox.b * sy,
-                    coord_origin=bbox.coord_origin,
+                provenance.bbox = provenance.bbox.resize_by_scale(
+                    x_scale=sx, y_scale=sy
                 )
+            if isinstance(item, TableItem):
+                page_no = item.prov[0].page_no if item.prov else 1
+                scale = scales.get(page_no)
+                if scale is None:
+                    continue
+                sx, sy = scale
+                for cell in item.data.table_cells:
+                    if cell.bbox is not None:
+                        cell.bbox = cell.bbox.resize_by_scale(x_scale=sx, y_scale=sy)
 
     @staticmethod
     def _doctags_page_document(

@@ -7,6 +7,11 @@ from pathlib import PurePath
 from types import SimpleNamespace
 
 import pytest
+from docling_core.transforms.deserializer.doclang import DocLangDocDeserializer
+from docling_core.transforms.serializer.doclang import (
+    DocLangDocSerializer,
+    DocLangParams,
+)
 from docling_core.types.doc import CoordOrigin, PictureItem, Size, TextItem
 from PIL import Image as PILImage
 
@@ -77,6 +82,15 @@ def test_doclang_locations_are_scaled_to_the_page(images_scale: float) -> None:
     )
     page = _page(images_scale)
     assert page.image is not None
+    page.image.paste(
+        "red",
+        (
+            round(306 * images_scale),
+            round(396 * images_scale),
+            page.image.width,
+            page.image.height,
+        ),
+    )
 
     doc = pipeline._finalize_page_document(conv_res, page)
 
@@ -94,7 +108,65 @@ def test_doclang_locations_are_scaled_to_the_page(images_scale: float) -> None:
     assert picture.image.size == Size(
         width=306 * images_scale, height=396 * images_scale
     )
+    crop = picture.image.pil_image
+    assert crop is not None
+    assert crop.getcolors() == [(crop.width * crop.height, (255, 0, 0))]
 
     text = next(item for item in doc.texts if isinstance(item, TextItem))
     bbox = text.prov[0].bbox
     assert (bbox.l, bbox.t, bbox.r, bbox.b) == pytest.approx((0, 0, 153, 99))
+
+
+@pytest.mark.parametrize("grid", [None, Size(width=1024, height=2048)])
+@pytest.mark.parametrize("rich_cell", [False, True])
+@pytest.mark.parametrize("table_location", [False, True])
+def test_doclang_table_cells_keep_their_page_locations(
+    grid: Size | None, rich_cell: bool, table_location: bool
+) -> None:
+    resolution = (
+        f'<default_resolution width="{int(grid.width)}" height="{int(grid.height)}"/>'
+        if grid is not None
+        else ""
+    )
+    width, height = (512, 512) if grid is None else grid.as_tuple()
+    locations = "".join(
+        f'<location value="{int(value)}"/>'
+        for value in (width / 4, height / 4, width * 3 / 4, height * 3 / 4)
+    )
+    cell = f"<text>{locations}Cell</text>" if rich_cell else "Cell"
+    table_head = locations if table_location else ""
+    page = _page(1.0)
+    assert page.predictions.vlm_response is not None
+    page.predictions.vlm_response.text = (
+        f'<doclang version="0.7">{resolution}'
+        f"<table>{table_head}<fcel/>{locations}{cell}<ecel/><nl/></table></doclang>"
+    )
+    conv_res = SimpleNamespace(
+        input=SimpleNamespace(file=PurePath("test.pdf")), errors=[]
+    )
+
+    doc = _pipeline(1.0)._finalize_page_document(conv_res, page)
+
+    assert not conv_res.errors
+    assert doc.pages[1].size == _PAGE
+    table = doc.tables[0]
+    bbox = table.data.table_cells[0].bbox
+    assert bbox is not None
+    assert bbox.as_tuple() == pytest.approx((153, 198, 459, 594))
+    assert table.data.table_cells[1].bbox is None
+    if rich_cell:
+        assert doc.texts[0].prov[0].bbox == bbox
+
+    if table_location:
+        assert table.prov[0].bbox == bbox
+        exported = (
+            DocLangDocSerializer(
+                doc=doc, params=DocLangParams(add_table_cell_location=True)
+            )
+            .serialize()
+            .text
+        )
+        reloaded = DocLangDocDeserializer().deserialize_str(exported)
+        table = reloaded.tables[0]
+        assert table.prov[0].bbox.as_tuple() == pytest.approx((128, 128, 384, 384))
+        assert table.data.table_cells[0].bbox == table.prov[0].bbox
