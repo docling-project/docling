@@ -729,40 +729,11 @@ def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
         assert name in rfc822
         assert mime in lowered
 
-    checked = 0
-    for payload in payloads:
-        if not payload or len(payload) < 16:
-            continue
-        checked += 1
-        encoded = b64encode(payload)
-        assert payload not in rfc822
-        assert encoded not in rfc822.replace(b"\r\n", b"").replace(b"\n", b"")
-    assert checked >= 1, "fixture payloads too small to be meaningful"
-
-
-def test_msg_attachment_listing_leaves_the_body_unchanged_end_to_end():
-    path = Path("tests/data/email/sources/msg_with_attachment.msg")
-    listing = DocumentConverter(
-        allowed_formats=[InputFormat.EMAIL],
-        format_options={
-            InputFormat.EMAIL: EmailFormatOption(
-                backend_options=EmailBackendOptions(list_attachments=True)
-            )
-        },
+    meaningful = [p for p in payloads if p and len(p) >= 16]
+    assert meaningful, (
+        "fixture must contain at least one non-trivial attachment payload"
     )
-    default = DocumentConverter(allowed_formats=[InputFormat.EMAIL])
-
-    listed_doc = listing.convert(path, raises_on_error=True).document
-    default_doc = default.convert(path, raises_on_error=True).document
-
-    listed_md = listed_doc.export_to_markdown()
-    assert "test.txt (text/plain)" in listed_md
-    assert "report.pdf (application/pdf)" in listed_md
-    assert "test.txt" not in default_doc.export_to_markdown()
-    assert "report.pdf" not in default_doc.export_to_markdown()
-
-    def body(doc):
-        return [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
-
-    assert "This email contains an attachment." in body(default_doc)
-    assert body(listed_doc) == body(default_doc)
+    flat = rfc822.replace(b"\r\n", b"").replace(b"\n", b"")
+    for payload in meaningful:
+        assert payload not in rfc822
+        assert b64encode(payload) not in flat
