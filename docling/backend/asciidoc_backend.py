@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Final, Optional, Union
 
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -35,10 +36,11 @@ from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
 
-# A line starting with // is a comment and never body content. //// opens a
-# delimited comment block: every line up to the matching //// is hidden.
-_LINE_COMMENT_RE = re.compile(r"^//")
-_COMMENT_BLOCK_DELIMITER = "////"
+# A line starting with exactly two slashes is a comment and never body content.
+# A line of four or more slashes opens a delimited comment block: every line up
+# to an identical line is a comment.
+_LINE_COMMENT_RE = re.compile(r"^//(?!/)")
+_COMMENT_BLOCK_DELIMITER_RE = re.compile(r"/{4,}")
 
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
@@ -46,13 +48,47 @@ _COMMENT_BLOCK_DELIMITER = "////"
 # "+" or "*", and either number may be omitted, so ".2+" is a rowspan on its
 # own. Requiring at least one of the two keeps a bare "+" from matching.
 _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
-_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|\w+\.)\s+(.*)"
+# An ordered marker with a letter has one letter only ("a.", "B."), so a line
+# that starts with an abbreviation such as "Dr." or "Fig." stays text.
+_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
+
+# Inline formatting marks, unconstrained (doubled, valid anywhere) before
+# constrained (single, valid only at word boundaries, so "snake_case" and
+# "2*3*4" stay plain text), as in Asciidoctor. A constrained span does not
+# contain its own mark, so each scan stops at the next mark on the line.
+_INLINE_FORMAT_RE: Final = re.compile(
+    r"``(?P<umono>.+?)``"
+    r"|\*\*(?P<ubold>.+?)\*\*"
+    r"|__(?P<uitalic>.+?)__"
+    r"|(?<!\w)`(?P<mono>[^`\s](?:[^`]*?[^`\s])?)`(?!\w)"
+    r"|(?<!\w)\*(?P<bold>[^*\s](?:[^*]*?[^*\s])?)\*(?!\w)"
+    r"|(?<!\w)_(?P<italic>[^_\s](?:[^_]*?[^_\s])?)_(?!\w)"
+)
+
+
+@dataclass(frozen=True)
+class _InlineRun:
+    text: str
+    bold: bool = False
+    italic: bool = False
+    code: bool = False
 
 
 @dataclass(frozen=True)
 class _LiteralBlock:
     text: str
     language: str | None = None  # set for [source,lang] listing blocks
+
+
+@dataclass(frozen=True)
+class _CommentBlock:
+    """An AsciiDoc comment, with its // or //// delimiters removed.
+
+    One block per comment: a run of consecutive // lines is one comment, and
+    so is everything between a pair of //// delimiters.
+    """
+
+    text: str
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -133,13 +169,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         preserve reading order, then any pending caption is emitted as a
         bold paragraph.
         """
-        if text_data:
-            doc.add_text(
-                text=" ".join(text_data),
-                label=DocItemLabel.PARAGRAPH,
-                parent=parent,
-            )
-            text_data = []
+        text_data = self._flush_text_data(doc=doc, text_data=text_data, parent=parent)
         if caption_data:
             caption_data = self._flush_caption_as_paragraph(doc, caption_data, parent)
         return caption_data, text_data
@@ -206,9 +236,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             indents[i] = None
 
         for block in self._iter_blocks(self.lines):
-            if isinstance(block, _LiteralBlock):
+            if not isinstance(block, str):
                 text_data, caption_data, in_list, last_list_item, list_continuation = (
-                    self._add_literal_block(
+                    self._add_block(
                         doc=doc,
                         block=block,
                         text_data=text_data,
@@ -389,11 +419,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_caption(line)
                 caption_data.append(item["text"])
 
-            elif (
-                len(line.strip()) > 0 and len(caption_data) > 0
-            ):  # allow multiline captions
+            elif len(line.strip()) > 0 and len(caption_data) > 0:
+                # A block title is a single line, so this line starts the
+                # paragraph it titles. A paragraph has no caption slot.
+                parent = self._get_current_parent(parents)
+                text_data = self._flush_text_data(
+                    doc=doc, text_data=text_data, parent=parent
+                )
+                caption_data = self._flush_caption_as_paragraph(
+                    doc, caption_data, parent
+                )
                 item = self._parse_text(line)
-                caption_data.append(item["text"])
+                text_data.append(item["text"])
 
             elif len(line.strip()) == 0:
                 caption_data, text_data = self._flush_blank_line(
@@ -407,13 +444,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_text(line)
                 text_data.append(item["text"])
 
-        if len(text_data) > 0:
-            doc.add_text(
-                text=" ".join(text_data),
-                label=DocItemLabel.PARAGRAPH,
-                parent=self._get_current_parent(parents),
-            )
-            text_data = []
+        text_data = self._flush_text_data(
+            doc=doc, text_data=text_data, parent=self._get_current_parent(parents)
+        )
 
         if in_table:
             # An unclosed table still consumes its pending caption below.
@@ -456,12 +489,30 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 return True
         return False
 
+    @staticmethod
+    def _is_line_comment(line: str) -> bool:
+        """Is `line` a // comment line rather than text or a //// block delimiter?"""
+        return _LINE_COMMENT_RE.match(line) is not None
+
+    @staticmethod
+    def _make_comment(comment_lines: list[str]) -> _CommentBlock | None:
+        """Build a comment block, or None when the comment carries no text."""
+        text = "\n".join(comment_lines).strip()
+        return _CommentBlock(text=text) if text else None
+
     @classmethod
-    def _iter_blocks(cls, lines: list[str]) -> Iterator[str | _LiteralBlock]:
+    def _iter_blocks(
+        cls, lines: list[str]
+    ) -> Iterator[str | _LiteralBlock | _CommentBlock]:
         block_data: list[str] | None = None
         block_delimiter: str | None = None
         block_language: str | None = None
-        in_comment_block = False
+        comment_data: list[str] | None = None
+        comment_delimiter: str | None = None
+        # Content block delimiters still waiting for their closer, innermost
+        # last. The lines between a pair run through this loop like any other,
+        # so a comment inside such a block is a comment and not body text.
+        open_content_blocks: list[str] = []
 
         i = 0
         n = len(lines)
@@ -470,7 +521,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             stripped = line.strip()
 
             if block_data is not None:
-                # Inside a delimited block: only the matching closer ends it.
+                # Inside a verbatim block: only the matching closer ends it,
+                # and a "//" line here is content rather than a comment.
                 if stripped == block_delimiter:
                     yield _LiteralBlock(
                         text="\n".join(block_data), language=block_language
@@ -483,6 +535,38 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
+            # A comment block hides every construct, so it is checked ahead of
+            # the block openers: a "----" between //// delimiters is comment
+            # text, not the start of a listing.
+            if comment_data is not None:
+                if stripped == comment_delimiter:
+                    comment = cls._make_comment(comment_data)
+                    if comment is not None:
+                        yield comment
+                    comment_data = None
+                    comment_delimiter = None
+                else:
+                    comment_data.append(line.rstrip("\r\n"))
+                i += 1
+                continue
+
+            if _COMMENT_BLOCK_DELIMITER_RE.fullmatch(stripped):
+                comment_data = []
+                comment_delimiter = stripped
+                i += 1
+                continue
+
+            if cls._is_line_comment(line):
+                # Consecutive // lines read as one comment, so take the run.
+                comment_lines = []
+                while i < n and cls._is_line_comment(lines[i]):
+                    comment_lines.append(lines[i].rstrip("\r\n")[2:].strip())
+                    i += 1
+                comment = cls._make_comment(comment_lines)
+                if comment is not None:
+                    yield comment
+                continue
+
             if stripped in {"....", "----"}:
                 # "...." is a literal block; "----" a listing block. A
                 # "[source,lang]" attribute consumed just before a "----"
@@ -493,37 +577,23 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
-            if in_comment_block:
-                if stripped == _COMMENT_BLOCK_DELIMITER:
-                    in_comment_block = False
-                i += 1
-                continue
-
-            if stripped == _COMMENT_BLOCK_DELIMITER:
-                in_comment_block = True
-                i += 1
-                continue
-
-            if _LINE_COMMENT_RE.match(line):
+            if open_content_blocks and stripped == open_content_blocks[-1]:
+                # Closer of the innermost content block. Yield a trailing blank
+                # so the following text starts a fresh paragraph.
+                open_content_blocks.pop()
+                yield ""
                 i += 1
                 continue
 
             if stripped in cls._CONTENT_BLOCK_DELIMITERS:
                 if cls._has_matching_closer(lines, i, stripped):
-                    # Consume both delimiters; yield inner lines and a trailing
-                    # blank so the following text starts a fresh paragraph.
-                    i += 1
-                    while i < n and lines[i].strip() != stripped:
-                        yield lines[i]
-                        i += 1
-                    i += 1
-                    yield ""
+                    open_content_blocks.append(stripped)
                 else:
                     # Stray delimiter (no closer): break the paragraph, do not
                     # render as text. The line must be consumed either way;
                     # leaving `i` on it loops over the same line forever.
                     yield ""
-                    i += 1
+                i += 1
                 continue
 
             source_attr = cls._SOURCE_ATTR_RE.match(stripped)
@@ -539,6 +609,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         if block_data is not None:
             yield _LiteralBlock(text="\n".join(block_data), language=block_language)
+        if comment_data is not None:
+            # An unclosed //// comments out the rest of the document, which is
+            # how Asciidoctor reads it.
+            comment = cls._make_comment(comment_data)
+            if comment is not None:
+                yield comment
 
     def _add_picture_item(
         self,
@@ -575,6 +651,68 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             parent=last_list_item if in_list else self._get_current_parent(parents),
         )
         return caption_data, in_list, last_list_item
+
+    def _add_block(
+        self,
+        *,
+        doc: DoclingDocument,
+        block: _LiteralBlock | _CommentBlock,
+        text_data: list[str],
+        caption_data: list[str],
+        in_list: bool,
+        last_list_item: ListItem | None,
+        list_continuation: bool,
+        parents: dict[int, GroupItem | None],
+    ) -> tuple[list[str], list[str], bool, ListItem | None, bool]:
+        """Add a delimited block and return the parser state after it.
+
+        A comment is markup, not content: it neither ends the list nor the
+        paragraph it sits in, so the state passes through unchanged. A
+        literal block flushes the pending text and captions first.
+        """
+        if isinstance(block, _CommentBlock):
+            self._add_comment_block(
+                doc=doc,
+                block=block,
+                in_list=in_list,
+                last_list_item=last_list_item,
+                parents=parents,
+            )
+            return text_data, caption_data, in_list, last_list_item, list_continuation
+        return self._add_literal_block(
+            doc=doc,
+            block=block,
+            text_data=text_data,
+            caption_data=caption_data,
+            in_list=in_list,
+            last_list_item=last_list_item,
+            list_continuation=list_continuation,
+            parents=parents,
+        )
+
+    def _add_comment_block(
+        self,
+        *,
+        doc: DoclingDocument,
+        block: _CommentBlock,
+        in_list: bool,
+        last_list_item: ListItem | None,
+        parents: dict[int, GroupItem | None],
+    ) -> None:
+        """Add a comment to the notes content layer.
+
+        A comment between two lines of one paragraph lands just before that
+        paragraph, since flushing the text to place it would split the body
+        text in two.
+        """
+        if not self.options.capture_comments:
+            return
+        doc.add_text(
+            text=block.text,
+            label=DocItemLabel.TEXT,
+            content_layer=ContentLayer.NOTES,
+            parent=(last_list_item if in_list else self._get_current_parent(parents)),
+        )
 
     def _add_literal_block(
         self,
@@ -700,13 +838,58 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         text_data: list[str],
         parent: GroupItem | None,
     ) -> list[str]:
-        if len(text_data) > 0:
-            doc.add_text(
-                text=" ".join(text_data),
-                label=DocItemLabel.PARAGRAPH,
-                parent=parent,
-            )
+        if len(text_data) == 0:
+            return []
+        text = " ".join(text_data)
+        runs = AsciiDocBackend._parse_inline(text)
+        if not any(run.bold or run.italic or run.code for run in runs):
+            doc.add_text(text=text, label=DocItemLabel.PARAGRAPH, parent=parent)
+            return []
+        # Mixed formatting needs one item per run, kept together in an inline
+        # group like the Markdown backend does.
+        group = doc.add_inline_group(parent=parent)
+        for run in runs:
+            run_text = run.text.strip()
+            if not run_text:
+                continue
+            if run.code:
+                doc.add_code(text=run_text, parent=group)
+            else:
+                doc.add_text(
+                    text=run_text,
+                    label=DocItemLabel.TEXT,
+                    parent=group,
+                    formatting=(
+                        Formatting(bold=run.bold, italic=run.italic)
+                        if run.bold or run.italic
+                        else None
+                    ),
+                )
         return []
+
+    @staticmethod
+    def _parse_inline(
+        text: str, bold: bool = False, italic: bool = False
+    ) -> list[_InlineRun]:
+        """Split text into runs of plain, bold, italic and monospace text."""
+        runs: list[_InlineRun] = []
+        position = 0
+        for match in _INLINE_FORMAT_RE.finditer(text):
+            if match.start() > position:
+                runs.append(
+                    _InlineRun(text[position : match.start()], bold=bold, italic=italic)
+                )
+            if (code := match.group("umono") or match.group("mono")) is not None:
+                runs.append(_InlineRun(code, code=True))
+            elif (inner := match.group("ubold") or match.group("bold")) is not None:
+                runs.extend(AsciiDocBackend._parse_inline(inner, True, italic))
+            else:
+                inner = match.group("uitalic") or match.group("italic")
+                runs.extend(AsciiDocBackend._parse_inline(inner, bold, True))
+            position = match.end()
+        if position < len(text):
+            runs.append(_InlineRun(text[position:], bold=bold, italic=italic))
+        return runs
 
     #   =========   Title
     @staticmethod
@@ -714,8 +897,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return re.match(r"^= ", line)
 
     @staticmethod
+    def _strip_closing_marker(text: str, marker: str) -> str:
+        """Drop the closing marks of a symmetric title such as "== Title ==".
+
+        Asciidoctor accepts a title closed by the same marks that open it,
+        separated by whitespace, and leaves them out of the title text.
+        """
+        return re.sub(rf"[ \t]+{re.escape(marker)}$", "", text)
+
+    @staticmethod
     def _parse_title(line):
-        return {"type": "title", "text": line[2:].strip(), "level": 0}
+        text = AsciiDocBackend._strip_closing_marker(line[2:].strip(), "=")
+        return {"type": "title", "text": text, "level": 0}
 
     #   =========   Section headers
     @staticmethod
@@ -733,7 +926,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return {
             "type": "header",
             "level": header_level - 1,
-            "text": text.strip(),
+            "text": AsciiDocBackend._strip_closing_marker(text.strip(), marker),
         }
 
     #   =========   Lists

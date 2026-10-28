@@ -309,7 +309,12 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             paragraphs = []
             for part in self.mail.text_html:
                 html_doc = self._convert_html_part(part)
-                paragraphs.extend(self._split_paragraphs(html_doc.export_to_markdown()))
+                # The paragraphs become plain text items, and every export of
+                # the email escapes them, so do not escape them here as well.
+                markdown = html_doc.export_to_markdown(
+                    escape_html=False, escape_underscores=False
+                )
+                paragraphs.extend(self._split_paragraphs(markdown))
             if paragraphs:
                 return paragraphs
 

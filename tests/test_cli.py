@@ -30,7 +30,12 @@ from docling.cli.main import app
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import OcrMode, PdfBackend, VlmPipelineOptions
+from docling.datamodel.pipeline_options import (
+    OcrMode,
+    PdfBackend,
+    TableFormerMode,
+    VlmPipelineOptions,
+)
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, PageRange
 from docling.document_converter import PdfFormatOption
 from tests.fakes.image_server import SERVER_IP, local_server, use_test_network
@@ -134,6 +139,22 @@ def test_cli_convert_help():
     )
     assert separator_option.opts == ["--reading-order-separators"]
     assert separator_option.secondary_opts == ["--no-reading-order-separators"]
+    metavar_by_name = {
+        parameter.name: parameter.metavar for parameter in convert_command.params
+    }
+    for name in (
+        "from_formats",
+        "vlm_model",
+        "layout_engine",
+        "table_structure_engine",
+        "ocr_engine",
+    ):
+        assert metavar_by_name[name].startswith("[")
+    assert "odf" in metavar_by_name["from_formats"]
+    assert "granite_docling" in metavar_by_name["vlm_model"]
+    assert metavar_by_name["ocr_engine"] == (
+        "[auto|easyocr|kserve_v2_ocr|nemotron-ocr|ocrmac|rapidocr|tesserocr|tesseract]"
+    )
 
 
 def test_cli_version():
@@ -149,6 +170,18 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+def test_cli_convert_exits_nonzero_when_a_document_fails(tmp_path):
+    source = tmp_path / "broken.pdf"
+    source.write_bytes(b"this is not a PDF")
+    output = tmp_path / "out"
+    output.mkdir()
+
+    result = runner.invoke(app, [str(source), "--output", str(output)])
+
+    assert result.exit_code == 1
+    assert not (output / "broken.md").exists()
 
 
 def test_cli_exports_doclang(tmp_path):
@@ -1606,6 +1639,125 @@ def test_cli_ocr_engine_can_be_set(tmp_path, monkeypatch):
     assert ocr_options.kind == "easyocr"
 
 
+def _flatten_error_box(output: str) -> str:
+    """Join the lines of a rich error box into one line of text."""
+    return re.sub(r"[\s│]+", " ", strip_ansi(output))
+
+
+def test_cli_ocr_option_sets_engine_fields(tmp_path, monkeypatch):
+    result, ocr_options = _capture_cli_engine_options(
+        monkeypatch,
+        [
+            "--ocr-engine",
+            "rapidocr",
+            "--ocr-option",
+            "model_size=tiny",
+            "--ocr-option",
+            "text_score=0.6",
+            "--ocr-option",
+            'lang=["en"]',
+            "--ocr-option",
+            "use_det=false",
+        ],
+        tmp_path,
+        "ocr_options",
+    )
+    assert result.exit_code == 0, result.output
+    assert ocr_options.model_size == "tiny"
+    assert ocr_options.text_score == 0.6
+    assert ocr_options.lang == ["en"]
+    assert ocr_options.use_det is False
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected"),
+    [
+        (
+            ["--ocr-engine", "rapidocr", "--ocr-option", "model_sise=tiny"],
+            "unknown key 'model_sise' for engine 'rapidocr'",
+        ),
+        (
+            ["--ocr-engine", "rapidocr", "--ocr-option", "model_size=huge"],
+            "model_size:",
+        ),
+        (
+            ["--ocr-engine", "rapidocr", "--ocr-option", "model_size"],
+            "expected KEY=VALUE",
+        ),
+        (
+            [
+                "--ocr-engine",
+                "rapidocr",
+                "--ocr-lang",
+                "en",
+                "--ocr-option",
+                'lang=["de"]',
+            ],
+            "also set by --ocr-lang",
+        ),
+        (
+            ["--table-mode", "fast", "--table-structure-option", "mode=accurate"],
+            "also set by --table-mode",
+        ),
+        (
+            ["--layout-option", "no_such_key=1"],
+            "unknown key 'no_such_key'",
+        ),
+    ],
+)
+def test_cli_engine_option_rejects_invalid_input(
+    tmp_path, monkeypatch, extra_args, expected
+):
+    result, _ = _capture_cli_engine_options(
+        monkeypatch, extra_args, tmp_path, "ocr_options"
+    )
+    assert result.exit_code == 2
+    assert expected in _flatten_error_box(result.output)
+
+
+def test_cli_table_structure_option_sets_engine_fields(tmp_path, monkeypatch):
+    result, table_options = _capture_cli_engine_options(
+        monkeypatch,
+        [
+            "--table-structure-option",
+            "mode=fast",
+            "--table-structure-option",
+            "do_cell_matching=false",
+        ],
+        tmp_path,
+        "table_structure_options",
+    )
+    assert result.exit_code == 0, result.output
+    assert table_options.mode == TableFormerMode.FAST
+    assert table_options.do_cell_matching is False
+
+
+def test_cli_deprecated_psm_still_sets_tesseract_psm(tmp_path, monkeypatch):
+    result, ocr_options = _capture_cli_engine_options(
+        monkeypatch,
+        ["--ocr-engine", "tesseract", "--psm", "4"],
+        tmp_path,
+        "ocr_options",
+    )
+    assert result.exit_code == 0, result.output
+    assert ocr_options.psm == 4
+
+
+def test_cli_options_lists_engine_fields(monkeypatch):
+    # Rich reads the table width from `COLUMNS`, not from `terminal_width`.
+    monkeypatch.setenv("COLUMNS", "200")
+    result = runner.invoke(app, ["options", "ocr", "rapidocr"], terminal_width=200)
+    assert result.exit_code == 0, result.output
+    assert "model_size" in result.output
+    assert "[tiny|small|medium]" in result.output
+
+
+def test_cli_options_rejects_unknown_engine():
+    result = runner.invoke(app, ["options", "layout", "no_such_engine"])
+    assert result.exit_code == 2
+    assert "unknown engine 'no_such_engine'" in _flatten_error_box(result.output)
+
+
 @pytest.mark.parametrize(
     ("extra_args", "expected"),
     [
@@ -1760,6 +1912,24 @@ def _capture_cli_asr_pipeline_options(monkeypatch, extra_args, tmp_path):
     return result, captured.get("asr_pipeline_options")
 
 
+def test_cli_transformers_asr_flags_reach_pipeline_options(tmp_path, monkeypatch):
+    from docling.datamodel.asr_model_specs import GRANITE_SPEECH_5_0_2B
+
+    result, options = _capture_cli_asr_pipeline_options(
+        monkeypatch,
+        [
+            "--asr-model",
+            "granite_speech_5_0_2b",
+            "--asr-language",
+            "de",
+        ],
+        tmp_path,
+    )
+    assert result.exit_code == 0, result.output
+    assert options.asr_options.language == "de"
+    assert GRANITE_SPEECH_5_0_2B.language is None
+
+
 def test_cli_allow_external_plugins_reaches_asr_pipeline_options(tmp_path, monkeypatch):
     """Regression test for #3284: `--allow-external-plugins` and
     `--enable-remote-services` were parsed correctly but never passed into
@@ -1895,3 +2065,23 @@ def test_cli_native_pipeline_parser_threads(
     assert captured["pipeline_options"].parser_threads == 3
     assert captured["backend_options"].parser_threads == 3
     assert captured["pipeline_options"].accelerator_options.num_threads == 7
+
+
+def test_form_fields_with_doctags_are_rejected_before_reading_inputs(
+    tmp_path: Path,
+) -> None:
+    # DocTags has no tokens for form fields and its export raises on them. The
+    # source does not exist: the options alone are refused, nothing is read.
+    result = runner.invoke(
+        app,
+        [
+            str(tmp_path / "missing.pdf"),
+            "--extract-form-fields",
+            "--to",
+            "doctags",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 2  # usage error, not the missing-input abort
+    assert "--extract-form-fields cannot be combined" in strip_ansi(result.output)

@@ -87,6 +87,22 @@ def test_mixed_html_keeps_size_rejected_image_placeholder(html_block: str) -> No
     assert doc.pictures[0].caption_text(doc) == "caption"
 
 
+def test_image_over_pixel_limit_is_skipped() -> None:
+    markdown = (
+        f"Before.\n\n![big]({_png_data_uri(8, 8)})\n\n"
+        f"![small]({_png_data_uri(7, 5)})\n\nAfter.\n"
+    )
+    with pytest.warns(UserWarning, match="exceeds the limit of 63 pixels"):
+        doc = _convert_markdown(
+            markdown, MarkdownBackendOptions(fetch_images=True, max_image_pixels=63)
+        )
+
+    assert len(doc.pictures) == 2
+    assert doc.pictures[0].image is None
+    assert doc.pictures[1].get_image(doc).size == (7, 5)
+    assert [text.text for text in doc.texts] == ["Before.", "big", "small", "After."]
+
+
 @pytest.mark.parametrize("fetch_images", [False, True])
 def test_original_html_images_keep_the_normal_loader(fetch_images: bool) -> None:
     markdown = (

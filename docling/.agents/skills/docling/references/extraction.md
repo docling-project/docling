@@ -33,25 +33,30 @@ a Pydantic model **instance** (`Union[str, dict, BaseModel, Type[BaseModel]]`).
 
 ```python
 # 1. JSON-ish string
-result = extractor.extract(source="invoice.pdf",
-                           template='{"bill_no": "string", "total": "float"}')
+result = extractor.extract(
+    source="invoice.pdf", template='{"bill_no": "string", "total": "float"}'
+)
 
 # 2. dict template
-result = extractor.extract(source="invoice.pdf",
-                           template={"bill_no": "string", "total": "float"})
+result = extractor.extract(
+    source="invoice.pdf", template={"bill_no": "string", "total": "float"}
+)
 
 # 3. Pydantic model class (recommended — typed, self-documenting)
 from pydantic import BaseModel
+
 
 class Invoice(BaseModel):
     bill_no: str
     total: float
 
+
 result = extractor.extract(source="invoice.pdf", template=Invoice)
 
 # 4. Pydantic instance (fields double as examples / defaults)
-result = extractor.extract(source="invoice.pdf",
-                           template=Invoice(bill_no="INV-0001", total=0.0))
+result = extractor.extract(
+    source="invoice.pdf", template=Invoice(bill_no="INV-0001", total=0.0)
+)
 ```
 
 Prefer a **Pydantic model class** for durable schemas — it documents intent and
@@ -70,7 +75,9 @@ result = extractor.extract(source="invoice.pdf", template=Invoice)
 
 if result.status in (ConversionStatus.SUCCESS, ConversionStatus.PARTIAL_SUCCESS):
     for page in result.pages:
-        print(page.page_no, page.extracted_data)   # e.g. {"bill_no": "...", "total": 42.0}
+        print(
+            page.page_no, page.extracted_data
+        )  # e.g. {"bill_no": "...", "total": 42.0}
 else:
     print("extraction failed:", result.errors)
 ```
@@ -81,7 +88,7 @@ else:
 for result in extractor.extract_all(
     source=["a.pdf", "b.pdf", "https://example.com/c.pdf"],
     template=Invoice,
-    raises_on_error=False,     # keep going past individual failures
+    raises_on_error=False,  # keep going past individual failures
 ):
     print(result.input.file.name, result.status)
 ```

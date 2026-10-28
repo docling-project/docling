@@ -9,6 +9,7 @@ import pytest
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import (
     InferenceFramework,
     InlineVlmOptions,
@@ -17,6 +18,10 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm.base import VlmEngineInput
 from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    TailRepetitionStopper,
+)
 from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 
 
@@ -71,6 +76,65 @@ def test_mlx_engine_forwards_optional_repetition_settings(
         for key, value in captured.items()
         if key in {"repetition_penalty", "repetition_context_size"}
     } == expected_repetition_kwargs
+
+
+class _ClosingTagStopper(GenerationStopper):
+    """Stops when the model closes the document: a valid end of the output."""
+
+    def should_stop(self, s: str) -> bool:
+        return "</doctag>" in s
+
+    def is_valid_end(self) -> bool:
+        return True
+
+
+@pytest.mark.parametrize(
+    ("stopper", "tokens", "expected_text", "expected_stop_reason"),
+    [
+        pytest.param(
+            _ClosingTagStopper(),
+            ["<doctag>", "text", "</doctag>", "not read"],
+            "<doctag>text</doctag>",
+            VlmStopReason.END_OF_SEQUENCE,
+            id="valid-end",
+        ),
+        pytest.param(
+            TailRepetitionStopper(min_repeats=4, min_span=8, max_unit=4),
+            ["<doctag>"] + ["ab"] * 30,
+            "<doctag>abababab",
+            VlmStopReason.STOP_SEQUENCE,
+            id="repetition-cut",
+        ),
+    ],
+)
+def test_mlx_engine_reports_the_stop_reason_declared_by_the_stopper(
+    stopper: GenerationStopper,
+    tokens: list[str],
+    expected_text: str,
+    expected_stop_reason: VlmStopReason,
+) -> None:
+    engine = MlxVlmEngine(options=MlxVlmEngineOptions(), artifacts_path=None)
+    engine._initialized = True
+    engine.vlm_model = object()
+    engine.processor = object()
+    engine.config = object()
+    engine.apply_chat_template = lambda *args, **kwargs: "prompt"
+    engine.stream_generate = lambda *args, **kwargs: (
+        SimpleNamespace(text=token) for token in tokens
+    )
+
+    (output,) = engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=Image.new("RGB", (8, 8), "white"),
+                prompt="Prompt",
+                extra_generation_config={"custom_stopping_criteria": [stopper]},
+            )
+        ]
+    )
+
+    assert output.text == expected_text
+    assert output.stop_reason == expected_stop_reason.value
 
 
 def _mlx_vlm_generation_kwargs() -> set[str]:

@@ -444,6 +444,34 @@ Content-Type: text/html; charset="utf-8"
     assert "<strong>" not in markdown
 
 
+def test_email_backend_escapes_html_body_text_once():
+    raw_email = b"""From: Alice Example <alice@example.com>
+To: Bob Example <bob@example.com>
+Subject: HTML Email
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+
+<html><body><p>Fish &amp; chips for a&lt;b, see my_file_name.txt</p></body></html>
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_email),
+        format=InputFormat.EMAIL,
+        filename="html.eml",
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_email))
+
+    doc = backend.convert()
+
+    assert "Fish & chips for a<b, see my_file_name.txt" in [
+        item.text for item in doc.texts
+    ]
+    assert "Fish &amp; chips for a&lt;b, see my\\_file\\_name.txt" in (
+        doc.export_to_markdown()
+    )
+    assert "Fish & chips for a<b, see my_file_name.txt" in doc.export_to_text()
+
+
 @pytest.mark.parametrize(
     ("mime_charset", "meta", "text"),
     [

@@ -42,7 +42,7 @@ class ConfidenceScores(BaseModel):
     low_score: Optional[float] = None
     mean_grade: QualityGrade = QualityGrade.UNSPECIFIED
     low_grade: QualityGrade = QualityGrade.UNSPECIFIED
-    pages: Optional[dict[int, "ConfidenceScores"]] = None
+    pages: Optional[dict[int, "ConfidenceScores"]] = {}
 
     @classmethod
     def from_scores(cls, scores: PageConfidenceScores) -> "ConfidenceScores":
@@ -62,7 +62,7 @@ class ConfidenceScores(BaseModel):
                     for page_no, page_scores in pages.items()
                 }
                 if pages
-                else None
+                else {}
             ),
         )
 
@@ -119,6 +119,14 @@ class ZipArchiveResult(BaseModel):
 
     kind: Literal["ZipArchiveResult"] = "ZipArchiveResult"
     content: bytes
+    filename: Optional[str] = Field(
+        default=None,
+        description=(
+            "Suggested download name for the archive, e.g. derived from the "
+            "source document when the task had a single input. None when no "
+            "specific name applies."
+        ),
+    )
 
 
 class RemoteTargetResult(BaseModel):

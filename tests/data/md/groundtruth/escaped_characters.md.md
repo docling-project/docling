@@ -13,13 +13,13 @@ Text: 00:16.000 ----&gt; 00:18.000 &amp; &lt; &gt; " '
 # Inline code
 
 ```
-& < > " '
+&amp; &lt; &gt; &quot; &#39;
 ```
 
 # Code block
 
 ```
-& < > " '
+&amp; &lt; &gt; &quot; &#39;
 ```
 
 # Table

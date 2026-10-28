@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import threading
+import time
 from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
@@ -33,6 +34,7 @@ from PIL import Image
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.utils.archive_limits import ArchiveLimitError, ArchiveLimits
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
@@ -837,27 +839,26 @@ def test_strict_ooxml_rejects_zip_slip(evil_name):
     with zipfile.ZipFile(buffer) as archive:
         assert msword_backend_module._is_strict_ooxml(archive) is True
         with pytest.raises(SecurityError, match="ZIP slip"):
-            msword_backend_module._normalize_strict_ooxml(archive)
+            msword_backend_module._normalize_strict_ooxml(
+                archive, msword_backend_module._DEFAULT_ARCHIVE_LIMITS
+            )
 
 
 @pytest.mark.parametrize(
-    ("cap_attr", "message"),
+    ("limits", "message"),
     [
-        ("_MAX_TOTAL_UNCOMPRESSED_SIZE", "uncompressed size"),
-        ("_MAX_MEMBER_UNCOMPRESSED_SIZE", "oversized OOXML part"),
+        (ArchiveLimits(4096, 1024, 10), "max_total_bytes"),
+        (ArchiveLimits(1024, 1 << 20, 10), "max_file_bytes"),
     ],
 )
-def test_strict_ooxml_rejects_zip_bomb(monkeypatch, cap_attr, message):
+def test_strict_ooxml_rejects_oversized_package(limits, message):
     """A Strict package exceeding the per-member or total budget is rejected."""
     import zipfile
 
-    from docling.exceptions import SecurityError
-
-    monkeypatch.setattr(msword_backend_module, cap_attr, 128)
     buffer = _make_strict_zip({"word/document.xml": b"A" * 4096})
     with zipfile.ZipFile(buffer) as archive:
-        with pytest.raises(SecurityError, match=message):
-            msword_backend_module._normalize_strict_ooxml(archive)
+        with pytest.raises(ArchiveLimitError, match=message):
+            msword_backend_module._normalize_strict_ooxml(archive, limits)
 
 
 def test_load_msword_file_propagates_security_error():
@@ -1977,6 +1978,22 @@ def test_docx_code_detection(tmp_path):
     assert str(getattr(design.label, "value", design.label)).startswith("checkbox")
 
 
+def test_docx_code_call_pattern_is_bounded():
+    pattern = MsWordDocumentBackend._CODE_CALL_PATTERN
+    assert pattern.search("x = foo(1, 2)") is not None
+    assert pattern.search("party(ies)") is None
+
+    # Many unclosed calls in one paragraph must not take quadratic time.
+    for unit in ("a(", "a(,"):
+        text = unit * (64_000 // len(unit))
+        start = time.perf_counter()
+        assert pattern.search(text) is None
+        assert time.perf_counter() - start < 2.0
+
+    # Argument lists past the bound no longer count as a call.
+    assert pattern.search("foo(" + "a" * 300 + ", 1)") is None
+
+
 # ------ Content control (w:sdt) holding a picture ------
 
 
@@ -2081,12 +2098,12 @@ def test_list_returning_to_starting_level_above_zero_keeps_items(documents):
     assert isinstance(group_of_a, ListGroup)
     assert group_of_c.get_ref() == group_of_a.get_ref()
 
-    # The deeper item must nest inside the same list (as a sub-group of the
-    # outer ListGroup), not become a sibling top-level list -- which is what
-    # the bug produced for Item A/Item B.
+    # The deeper item must nest inside the same list (as a sub-group of
+    # Item A), not become a sibling top-level list -- which is what the bug
+    # produced for Item A/Item B.
     group_of_b = list_items[1].parent.resolve(doc)
     assert isinstance(group_of_b, ListGroup)
-    assert group_of_b.parent == group_of_a.get_ref()
+    assert group_of_b.parent == list_items[0].get_ref()
 
     # The markdown must reflect a single nested list, not two separate lists.
     markdown = doc.export_to_markdown()
@@ -2353,6 +2370,30 @@ def test_fragment_only_rel_does_not_crash_backend():
     assert text_items[0].hyperlink is None
 
 
+@pytest.mark.parametrize("body_style", ["Body Text", None])
+def test_list_style_type_does_not_fail_conversion(tmp_path, body_style):
+    """A style with the invalid type ``list`` must not fail the conversion.
+
+    python-docx raises ``ValueError`` when it reads that type. Both the default
+    style lookup on load and the style of a paragraph without ``w:pStyle``
+    read the type of every style.
+    """
+    document = Document()
+    document.add_paragraph("Quarterly results", style="Heading 1")
+    document.add_paragraph("Revenue grew 3%.", style=body_style)
+    list_style = OxmlElement("w:style")
+    list_style.set(qn("w:type"), "list")
+    list_style.set(qn("w:styleId"), "OutlineList")
+    document.styles.element.append(list_style)
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "Quarterly results",
+        "Revenue grew 3%.",
+    ]
+
+
 _PLAIN_FOOTNOTE_BODY = (
     "<w:p><w:r><w:t>Smith, J. (2020). Example Study.</w:t></w:r></w:p>"
 )
@@ -2520,6 +2561,31 @@ def test_footnote_body_text_is_not_dropped_outside_plain_paragraphs(
         if item.label == DocItemLabel.FOOTNOTE
     ]
     assert expected in footnote_items
+
+
+def test_hidden_footnote_paragraph_is_left_out():
+    """A hidden paragraph in a footnote is left out of the footnote text.
+
+    python-docx loads the footnotes part as a plain part, so this also checks
+    that ``w:vanish`` there is found when the body has none.
+    """
+    note_body = (
+        "<w:p><w:r><w:t>Shown note.</w:t></w:r></w:p>"
+        "<w:p><w:r><w:rPr><w:vanish/></w:rPr><w:t>Hidden note.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(
+        name="notes.docx", stream=_docx_with_notes(footnote_body=note_body)
+    )
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(
+        stream, raises_on_error=True
+    )
+
+    footnote_items = [
+        item.text
+        for item in result.document.texts
+        if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_items == ["Shown note.", "An endnote body."]
 
 
 _MC_BODY_BLOCK = """

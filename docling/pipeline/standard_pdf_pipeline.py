@@ -68,6 +68,7 @@ from docling.models.factories import (
 from docling.models.stages.code_formula.code_formula_vlm_model import (
     CodeFormulaVlmModel,
 )
+from docling.models.stages.form_field.form_field_model import PdfFormFieldModel
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
 )
@@ -102,6 +103,7 @@ STAGE_FAILURE_CATEGORY = {
     "ocr": FailureCategory.INFERENCE_FAILURE,
     "layout": FailureCategory.INFERENCE_FAILURE,
     "table": FailureCategory.INFERENCE_FAILURE,
+    "form_field": FailureCategory.INFERENCE_FAILURE,
     "assemble": FailureCategory.INFERENCE_FAILURE,
 }
 
@@ -644,6 +646,10 @@ class StandardPdfPipeline(ConvertPipeline):
                 capture_reading_order_separators=(
                     self.pipeline_options.use_reading_order_separators
                 ),
+                detect_broken_text_layer=(
+                    self.pipeline_options.do_ocr
+                    and self.pipeline_options.ocr_options.replace_broken_text_layer
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)
@@ -666,6 +672,9 @@ class StandardPdfPipeline(ConvertPipeline):
                 create_orphan_clusters=lo.create_orphan_clusters,
                 run_postprocessor=self.layout_model.requires_layout_postprocessing,
             )
+        )
+        self.form_field_model = PdfFormFieldModel(
+            enabled=self.pipeline_options.extract_form_fields
         )
 
         table_factory = get_table_structure_factory(
@@ -848,11 +857,28 @@ class StandardPdfPipeline(ConvertPipeline):
         preprocess.add_output_queue(layout.input_queue)  # PDF parsing
         layout.add_output_queue(ocr.input_queue)  # Layout prediction
         ocr.add_output_queue(layout_postprocess.input_queue)  # OCR
-        layout_postprocess.add_output_queue(table.input_queue)  # Layout post-processing
-        table.add_output_queue(assemble.input_queue)  # Table model
+        layout_postprocess.add_output_queue(table.input_queue)  # Layout post-proc
+        stages = [preprocess, ocr, layout, layout_postprocess, table]
+        if self.pipeline_options.extract_form_fields:
+            # Form fields key widgets from table cells, so they follow the table
+            # model. When disabled, the stage is left out: tables feed assembly.
+            form_field = ThreadedPipelineStage(
+                name="form_field",
+                model=self.form_field_model,
+                batch_size=1,
+                batch_timeout=opts.batch_polling_interval_seconds,
+                queue_max_size=opts.queue_max_size,
+                shutdown_timeout=opts.stage_shutdown_timeout_seconds,
+                timed_out_run_ids=timed_out_run_ids,
+            )
+            table.add_output_queue(form_field.input_queue)  # Table model
+            form_field.add_output_queue(assemble.input_queue)  # Form fields
+            stages.append(form_field)
+        else:
+            table.add_output_queue(assemble.input_queue)  # Table model
         assemble.add_output_queue(output_q)  # Assembly
+        stages.append(assemble)
 
-        stages = [preprocess, ocr, layout, layout_postprocess, table, assemble]
         return RunContext(
             stages=stages,
             first_stage=preprocess,
@@ -903,6 +929,16 @@ class StandardPdfPipeline(ConvertPipeline):
         proc = ProcessingResult(total_expected=total_pages)
         batch_size: int = 32  # drain chunk
         start_time = time.monotonic()
+        if self.pipeline_options.document_timeout is not None:
+            # Absolute deadline for the whole conversion, so that stages
+            # running after the page loop (e.g. reading-order separator
+            # extraction in _assemble_document) can bound their own work.
+            # Kept on the conversion result because one pipeline instance is
+            # shared by every conversion made through the same
+            # DocumentConverter.
+            conv_res._conversion_deadline = (
+                start_time + self.pipeline_options.document_timeout
+            )
         timeout_exceeded = False
         producer_error: list[Exception] = []
 
@@ -1125,7 +1161,18 @@ class StandardPdfPipeline(ConvertPipeline):
             conv_res.assembled = AssembledUnit(
                 elements=elements, headers=headers, body=body
             )
-            conv_res.document = self.reading_order_model(conv_res)
+            time_budget_s: float | None = None
+            if (
+                self.pipeline_options.document_timeout is not None
+                and conv_res._conversion_deadline is not None
+            ):
+                # Remaining document budget for the reading-order stage, so
+                # that page separator extraction aborts instead of blocking
+                # the conversion once the timeout is exceeded.
+                time_budget_s = conv_res._conversion_deadline - time.monotonic()
+            conv_res.document = self.reading_order_model(
+                conv_res, time_budget_s=time_budget_s
+            )
             conv_res.document = self.heading_hierarchy_model(conv_res)
 
             # Generate page images in the output

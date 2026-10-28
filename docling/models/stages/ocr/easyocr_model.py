@@ -328,7 +328,7 @@ class EasyOcrModel(BaseOcrModel):
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
                         )
-                        im = numpy.array(high_res_image)
+                        im = numpy.asarray(high_res_image)
 
                         with warnings.catch_warnings():
                             if self.options.suppress_mps_warnings:

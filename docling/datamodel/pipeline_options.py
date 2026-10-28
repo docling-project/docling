@@ -53,7 +53,10 @@ from docling.datamodel.object_detection_engine_options import (
 from docling.datamodel.picture_classification_options import (
     DocumentPictureClassifierOptions,
 )
-from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    ApiAsrOptions,
+    InlineAsrOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
@@ -256,6 +259,23 @@ class OcrOptions(BaseOptions):
             gt=0.0,
         ),
     ] = 3.0
+
+    replace_broken_text_layer: Annotated[
+        bool,
+        Field(
+            description=(
+                "Replace a broken PDF text layer with OCR, page by page. When enabled,"
+                " Docling checks the visible text layer of each page. A page whose"
+                " text layer is broken, for example from a font whose glyphs were not"
+                " mapped to real characters, is read with full-page OCR, and its OCR"
+                " text is used instead of its PDF text for that page only. Its"
+                " `parse_score` drops to 0 and keeps describing the PDF text layer. A"
+                " low `parse_score` alone does not replace a page. Other pages, and"
+                " pages without a text layer, keep the usual behavior."
+            ),
+            examples=[False, True],
+        ),
+    ] = False
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -1222,6 +1242,7 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NANONETS_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NEMOTRON_PARSE_V2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NEMOTRON_PARSE_V3_5)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_MINERU2_PRO)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
@@ -1803,11 +1824,13 @@ class AsrPipelineOptions(PipelineOptions):
     """
 
     asr_options: Annotated[
-        InlineAsrOptions,
+        InlineAsrOptions | ApiAsrOptions,
         Field(
             description=(
                 "Automatic Speech Recognition (ASR) model configuration for audio transcription. Specifies which "
-                "ASR model to use (e.g., Whisper variants) and model-specific parameters for speech-to-text conversion."
+                "ASR model to use (e.g., Whisper variants) and model-specific parameters for speech-to-text conversion. "
+                "Use `ApiAsrOptions` (with `enable_remote_services=True`) to transcribe with an OpenAI-compatible "
+                "server instead of a model loaded in this process."
             )
         ),
     ] = asr_model_specs.WHISPER_TINY
@@ -1829,7 +1852,7 @@ class VideoPipelineOptions(PipelineOptions):
     """
 
     asr_options: Annotated[
-        InlineAsrOptions,
+        InlineAsrOptions | ApiAsrOptions,
         Field(description="ASR model configuration for the video audio track."),
     ] = asr_model_specs.WHISPER_TINY
 
@@ -2103,6 +2126,21 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = True
+    extract_form_fields: Annotated[
+        bool,
+        Field(
+            description=(
+                "Extract native interactive PDF widgets (AcroForm) as format-neutral fillable field values, "
+                "each with a field key from printed text associated by page geometry: text in or beside "
+                "its cell, or a whole paragraph that inlines the widget. A widget in a detected table goes "
+                "into its table cell, keyed only by text printed in that same cell; row and column "
+                "headers are not used as keys or hints. Requires the docling-parse backend, which supplies "
+                "page widgets; table cells need table structure. Raw widget metadata remains available only "
+                "on retained parsed pages. Scanned or flattened forms and backends without page widgets are "
+                "unaffected."
+            )
+        ),
+    ] = False
     do_ocr: Annotated[
         bool,
         Field(
