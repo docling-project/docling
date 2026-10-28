@@ -60,7 +60,7 @@ from docling.utils.form_fields import text_slots, without_whitespace
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.text_normalization import (
     cell_text_lines,
-    normalize_arabic_presentation_forms,
+    normalize_extracted_text,
 )
 
 _log = logging.getLogger(__name__)
@@ -119,9 +119,9 @@ class ReadingOrderModel:
             c_bbox = child.bbox.to_bottom_left_origin(
                 doc.pages[element.page_no].size.height
             )
-            c_text = normalize_arabic_presentation_forms(
+            c_text = normalize_extracted_text(
                 " ".join(cell_text_lines(child.cells))
-            )
+            ).strip()
 
             c_prov = ProvenanceItem(
                 page_no=element.page_no, charspan=(0, len(c_text)), bbox=c_bbox
