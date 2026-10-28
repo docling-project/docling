@@ -5,16 +5,18 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from docling_core.transforms.serializer.latex import LaTeXParams
+from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, LatexFormatOption
 
 from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
+from .latex_serializer import SourceLaTeXDocSerializer, SourceLaTeXInlineSerializer
 
 GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
@@ -40,7 +42,12 @@ def test_latex_basic_conversion():
     assert len(doc.texts) > 0
     # Check structure
     headers = [t for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
-    paragraphs = [t for t in doc.texts if t.label != DocItemLabel.SECTION_HEADER]
+    paragraphs = [
+        t
+        for t in doc.texts
+        if t.content_layer == ContentLayer.BODY
+        and t.label != DocItemLabel.SECTION_HEADER
+    ]
 
     assert len(headers) == 1
     assert headers[0].text == "Introduction"
@@ -224,6 +231,30 @@ def test_e2e_latex_conversions(latex_paths):
             f"Indented text export mismatch for {latex_path}"
         )
 
+        pred_dclg = doc.export_to_doclang()
+        assert verify_export(pred_dclg, str(gt_path) + ".dclg", generate=GENERATE), (
+            f"DocLang export mismatch for {latex_path}"
+        )
+
+        pred_latex = (
+            SourceLaTeXDocSerializer(
+                doc=doc,
+                params=LaTeXParams(
+                    layers={ContentLayer.BODY, ContentLayer.FURNITURE},
+                    document_class="",
+                    packages=[],
+                    include_annotations=False,
+                    enable_chart_tables=False,
+                ),
+                inline_serializer=SourceLaTeXInlineSerializer(),
+            )
+            .serialize()
+            .text
+        )
+        assert verify_export(pred_latex, str(gt_path) + ".latex", generate=GENERATE), (
+            f"LaTeX export mismatch for {latex_path}"
+        )
+
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
             f"Document JSON mismatch for {latex_path}"
         )
@@ -325,6 +356,104 @@ def test_latex_input_cycle_detection(tmp_path):
     doc = backend.convert()
     md = doc.export_to_markdown()
     assert "A content" in md
+
+
+@pytest.mark.parametrize(
+    ("encoding", "inputenc"), [("utf-8", "utf8"), ("latin-1", "latin1")]
+)
+def test_latex_input_file_in_main_file_encoding(tmp_path, encoding, inputenc):
+    """An \\input file in the same encoding as the main file is kept."""
+    main_file = tmp_path / "main.tex"
+    main_file.write_text(
+        "\\documentclass{article}\n"
+        f"\\usepackage[{inputenc}]{{inputenc}}\n"
+        "\\begin{document}\n"
+        "Résumé of the thesis.\n\n"
+        "\\input{chapter}\n"
+        "\\end{document}\n",
+        encoding=encoding,
+    )
+    (tmp_path / "chapter.tex").write_text(
+        "\\section{Méthode}\nThe chapter body.\n", encoding=encoding
+    )
+
+    conv_result = get_latex_converter().convert(main_file)
+    md = conv_result.document.export_to_markdown()
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert conv_result.errors == []
+    assert "Résumé of the thesis." in md
+    assert "Méthode" in md
+    assert "The chapter body." in md
+
+
+def _write_paper_with_includes(directory: Path) -> Path:
+    """Write a main.tex that pulls in a sibling .tex file and a figure."""
+    from PIL import Image as PILImage
+
+    (directory / "intro.tex").write_text("\\section{Introduction}\nIncluded text.\n")
+    PILImage.new("RGB", (20, 10), "blue").save(directory / "fig.png")
+    main_file = directory / "main.tex"
+    main_file.write_text(
+        "\\documentclass{article}\n\\begin{document}\nMain text.\n"
+        "\\input{intro}\n\\includegraphics{fig.png}\n\\end{document}\n"
+    )
+    return main_file
+
+
+@pytest.mark.parametrize("relative", [False, True])
+def test_latex_str_source_resolves_included_files(tmp_path, monkeypatch, relative):
+    """A str source resolves \\input and \\includegraphics like a Path source."""
+    main_file = _write_paper_with_includes(tmp_path)
+    if relative:
+        monkeypatch.chdir(tmp_path)
+        source = "main.tex"
+    else:
+        source = str(main_file)
+
+    doc = get_latex_converter().convert(source).document
+
+    assert "Included text." in doc.export_to_markdown()
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+
+
+def test_latex_stream_resolves_included_files_with_source_uri(tmp_path):
+    """A stream resolves relative files against source_uri when it is given."""
+    main_file = _write_paper_with_includes(tmp_path)
+    stream = BytesIO(main_file.read_bytes())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="main.tex",
+    )
+
+    doc = LatexDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=stream,
+        options=LatexBackendOptions(source_uri=main_file),
+    ).convert()
+
+    assert "Included text." in doc.export_to_markdown()
+    assert doc.pictures[0].image is not None
+
+
+def test_latex_format_option_source_uri_only_for_local_str():
+    """Only a local str source gets a source_uri; a URL has no local directory."""
+    option = LatexFormatOption()
+
+    local = option.backend_options_for_input("paper/main.tex")
+    assert local is not None
+    assert local.source_uri == Path("paper/main.tex")
+    assert option.backend_options_for_input("https://example.com/main.tex") is None
+    assert option.backend_options_for_input(Path("paper/main.tex")) is None
+
+    custom = LatexFormatOption(backend_options=LatexBackendOptions(parse_timeout=5))
+    options = custom.backend_options_for_input("paper/main.tex")
+    assert options is not None
+    assert options.parse_timeout == 5
+    assert options.source_uri == Path("paper/main.tex")
 
 
 def test_latex_author_date():

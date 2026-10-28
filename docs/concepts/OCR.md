@@ -11,6 +11,8 @@ Docling supports multiple OCR engines that can be installed as extra packages:
 - [tesseract-CLI](https://github.com/tesseract-ocr/tesseract)
 - [tesserocr](https://github.com/sirfz/tesserocr)
 
+Docling can also send OCR requests to a remote inference server, see [KServe v2](#kserve-v2).
+
 ## Language selection
 
 Every OCR engine takes its languages through the same field, `OcrOptions.lang`.
@@ -86,7 +88,7 @@ RapidOcrOptions(lang=["iso:zh-Hans"]).lang # -> ["iso:zh-Hans"], the same PP-OCR
 Two cases need the bare code:
 
 - the model has no `(language, script)` name at all -- see
-  [Models no tag can name](#models-no-tag-can-name)
+  [Models no tag can name](#when-an-engine-has-no-model)
 - you want the engine's reading of a code that is also a tag for something else -- see
   [Codes that shadow a tag](#codes-that-shadow-a-tag)
 
@@ -149,6 +151,49 @@ Engines that run one language at a time (RapidOCR, Nemotron-OCR) take the **firs
 about the rest. The KServe client also sends only the first entry.
 
 
+## Replace a broken PDF text layer
+
+Some PDFs look correct on screen, but their text copies out as garbage, for example `8VceZWZTReV`
+instead of `Certificate`. This happens when a font does not map its glyphs to real characters. With
+`replace_broken_text_layer`, Docling detects these pages and reads them with OCR instead. Other
+pages keep their PDF text.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(
+    do_ocr=True,
+    ocr_options=RapidOcrOptions(replace_broken_text_layer=True),
+)
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+The option is off by default and works with every OCR engine. Pick an engine and `lang` that can
+read the language of the document. A replaced page keeps its low `parse_score` in the
+[confidence scores](confidence_scores.md), because the score describes the PDF text layer.
+
+```bash
+docling report.pdf --replace-broken-text-layer
+```
+
+Docling detects a broken page from characters that do not belong in text, such as control
+characters, `�`, or private-use characters, on the page or in many of its lines. These checks work
+for every script. For Latin letters, it also detects accented letters that stand for another
+script, for example `Îò÷¸ò ïîêàçûâàåò` for Russian text, and letters with too few vowels, as in
+the example above. The vowel check uses no language profile, so it works the same for every
+Latin-script language. One broken cell on an otherwise good page does not replace the page.
+
+Docling cannot detect a page whose text uses the right alphabet but the wrong letters, or the right
+letters in the wrong order, for example `Cartifecita` instead of `Certificate`. Such pages keep
+their PDF text. To read every page with OCR, set `mode=OcrMode.FULL_PAGE` (`--ocr-mode full_page`).
+
+
 ## RapidOCR
 
 The engine's own vocabulary, in its own codes, is listed in
@@ -185,6 +230,62 @@ The following table shows how the language resolution works:
 They still resolve, onto `ch` and `en`, so older configurations keep working -- but each one logs
 a warning naming the PP-OCR code to write instead, and neither is reported by
 `supported_ocr_languages()`.
+
+### RapidOCR model size
+
+For languages that resolve to PP-OCRv6 (see the table above), the detection and recognition
+checkpoints are available in three sizes:
+
+| Size     | Notes                                                    |
+| -------- | --------------------------------------------------------- |
+| `tiny`   | Not available for every PP-OCRv6 language (e.g. Japanese). |
+| `small`  | Default.                                                   |
+| `medium` |                                                             |
+
+`tiny`, `small`, and `medium` are three separate checkpoints for the same detection/recognition
+task. Docling does not benchmark or recommend one over another -- if the choice matters for your
+documents, measure it on your own workload and hardware.
+
+<u>Notices</u>:
+
+- `model_size` only affects the PP-OCRv6 detection and recognition checkpoints. It has no effect on
+  languages served by PP-OCRv5 or PP-OCRv4 (see the language table above) -- those always use their
+  normal model assets, and a non-default `model_size` in that case logs a warning rather than
+  silently doing nothing or raising an error.
+- The classification checkpoint is unaffected by `model_size` in every case: it is always the
+  PP-OCRv4 `mobile` model.
+- A `model_size` unsupported for the resolved language and PP-OCR version -- `tiny` with Japanese,
+  for instance -- raises `RapidOcrModelSizeNotSupportedError` immediately, rather than failing
+  later during download or inference.
+
+Python configuration:
+
+```python
+from docling.datamodel.pipeline_options import RapidOcrOptions
+
+options = RapidOcrOptions(lang=["en"], model_size="tiny")
+```
+
+CLI conversion:
+
+```sh
+docling convert --from pdf --to dclx --ocr-engine rapidocr --ocr-lang en --ocr-option model_size=tiny document.pdf
+```
+
+`--ocr-option KEY=VALUE` sets any field of the selected engine's options class and can be
+repeated. The value is read as JSON when possible (`text_score=0.6`, `use_det=false`,
+`lang=["en"]`), otherwise as a string. An unknown key is an error. Run
+`docling options ocr rapidocr` to list the keys, types, and defaults of an engine.
+`--layout-option` and `--table-structure-option` do the same for the layout and table
+structure engines.
+
+CLI prefetch (for offline/`artifacts_path` use). `--rapidocr-model-size` is a single value applied
+to every `--rapidocr-backend-lang` pair given (or to the default pair, if none are given) -- unlike
+`--rapidocr-backend-lang`, which is repeatable:
+
+```sh
+docling-tools models download rapidocr --rapidocr-backend-lang onnxruntime:en --rapidocr-model-size tiny
+```
 
 
 ## EasyOCR
@@ -257,3 +358,31 @@ languages the running macOS reports, instead of mapping it through a table: `iso
 Some Vision codes carry a region that is not ISO valid like `vi-VT`. Such cases should be passed as
 bare/native inputs. An empty `lang` list lets Vision choose.
 
+## KServe v2
+
+`KserveV2OcrOptions` runs OCR on a model served by a KServe v2-compatible inference server, such as
+Triton Inference Server, over gRPC or HTTP. Page crops are sent to that server, so the pipeline
+must opt in to remote services with `enable_remote_services=True`; otherwise building the pipeline
+raises `OperationNotAllowed`. See [Using remote services](../usage/advanced_options.md#using-remote-services).
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import KserveV2OcrOptions, PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(
+    do_ocr=True,
+    enable_remote_services=True,
+    ocr_options=KserveV2OcrOptions(
+        url="localhost:8001",
+        transport="grpc",
+        model_name="rapidocr",
+        lang=["en"],
+    ),
+)
+converter = DocumentConverter(
+    format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}
+)
+```
+
+The server receives `lang` verbatim, and only its first entry, see [Language selection](#language-selection).

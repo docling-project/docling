@@ -3,7 +3,22 @@
 
 MACROS_NEWCOMMAND = frozenset(["newcommand", "renewcommand", "providecommand"])
 
-MACROS_PREAMBLE_METADATA = frozenset(["title", "author", "date"])
+MACROS_METADATA = frozenset(
+    [
+        "title",
+        "author",
+        "date",
+        "affiliation",
+        "affil",
+        "address",
+        "institute",
+        "email",
+        "altaffiliation",
+        "thanks",
+        "footnote",
+        "preprint",
+    ]
+)
 
 MACROS_INLINE_VERBATIM = frozenset(["%", "$", "&", "#", "_", "{", "}", "~"])
 
@@ -25,11 +40,21 @@ MACROS_STRUCTURAL = frozenset(
         "paragraph",
         "subparagraph",
         "caption",
+        "captionof",
         "label",
         "includegraphics",
         "bibliography",
         "title",
         "author",
+        "date",
+        "affiliation",
+        "affil",
+        "address",
+        "institute",
+        "email",
+        "altaffiliation",
+        "thanks",
+        "preprint",
         "maketitle",
         "footnote",
         "marginpar",
@@ -134,6 +159,11 @@ MACROS_ACCENTS = frozenset(
     ["'", '"', "^", "`", "~", "=", ".", "c", "d", "b", "H", "k", "r", "t", "u", "v"]
 )
 
+# Text-mode letters typed as macros without an argument, e.g. \o (ø), \ss (ß).
+MACROS_LETTERS = frozenset(
+    ["o", "O", "l", "L", "i", "j", "ss", "aa", "AA", "ae", "AE", "oe", "OE"]
+)
+
 MACROS_SPACING = frozenset(
     [
         "newline",
@@ -197,12 +227,8 @@ ENV_MATH_DISPLAY_PREFIXES = (
 
 ENV_MATH_CLEAN = frozenset(
     [
-        "equation",
-        "equation*",
         "displaymath",
         "math",
-        "eqnarray",
-        "eqnarray*",
         "dmath",
         "dmath*",
     ]
@@ -260,5 +286,10 @@ TABLE_MACROS_IGNORE = frozenset(
         "hphantom",
         "vphantom",
         "noalign",
+        # longtable repeating header/footer markers are not cell content
+        "endhead",
+        "endfirsthead",
+        "endfoot",
+        "endlastfoot",
     ]
 )

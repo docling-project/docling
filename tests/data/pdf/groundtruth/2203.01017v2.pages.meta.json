@@ -1,42 +1,39 @@
 [
   {
-    "num_cells": 147
+    "num_cells": 114
   },
   {
-    "num_cells": 170
+    "num_cells": 102
   },
   {
-    "num_cells": 166
+    "num_cells": 112
   },
   {
-    "num_cells": 177
+    "num_cells": 107
   },
   {
-    "num_cells": 204
+    "num_cells": 145
   },
   {
-    "num_cells": 203
+    "num_cells": 98
   },
   {
-    "num_cells": 241
+    "num_cells": 141
   },
   {
-    "num_cells": 226
+    "num_cells": 138
   },
   {
-    "num_cells": 261
+    "num_cells": 117
   },
   {
-    "num_cells": 157
+    "num_cells": 67
   },
   {
-    "num_cells": 124
+    "num_cells": 91
   },
   {
-    "num_cells": 204
-  },
-  {
-    "num_cells": 14
+    "num_cells": 141
   },
   {
     "num_cells": 10
@@ -46,5 +43,8 @@
   },
   {
     "num_cells": 4
+  },
+  {
+    "num_cells": 3
   }
 ]

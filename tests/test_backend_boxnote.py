@@ -168,3 +168,50 @@ def test_utf8_bom_does_not_fail_the_load(tmp_path):
     expected = converter.convert(source, raises_on_error=True).document
     for doc in (stream_doc, file_doc):
         assert doc.export_to_markdown() == expected.export_to_markdown()
+
+
+def _table_cell(text: str, **attrs: int) -> dict:
+    return {
+        "type": "table_cell",
+        "attrs": {"colspan": 1, "rowspan": 1, **attrs},
+        "content": [{"type": "paragraph", "content": [{"type": "text", "text": text}]}],
+    }
+
+
+def test_table_oversized_spans_clamped_to_table_size():
+    # Declared spans far beyond the table must not size the grid: the table
+    # keeps the shape of its real cells, and the spans stop at its edges.
+    payload = {
+        "doc": {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "table",
+                    "content": [
+                        {
+                            "type": "table_row",
+                            "content": [
+                                _table_cell("A", rowspan=100_000_000),
+                                _table_cell("B", colspan=3_000_000),
+                            ],
+                        },
+                        {"type": "table_row", "content": [_table_cell("C")]},
+                    ],
+                }
+            ],
+        }
+    }
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 2)
+    assert [(c.text, c.row_span, c.col_span) for c in data.table_cells] == [
+        ("A", 2, 1),
+        ("B", 1, 1),
+        ("C", 1, 1),
+    ]
+    assert [[cell.text for cell in row] for row in data.grid] == [
+        ["A", "B"],
+        ["A", "C"],
+    ]

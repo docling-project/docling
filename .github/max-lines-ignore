@@ -21,6 +21,7 @@ docling/backend/opendocument_backend.py
 docling/datamodel/pipeline_options.py
 docling/datamodel/service/options.py
 docling/datamodel/stage_model_specs.py
+docling/models/stages/reading_order/readingorder_model.py
 docling/pipeline/standard_pdf_pipeline.py
 docling/service_client/_async_client.py
 docling/service_client/client.py
@@ -29,3 +30,5 @@ tests/test_service_client_sdk_unit.py
 tests/test_backend_opendocument.py
 tests/test_backend_html.py
 tests/test_backend_msword.py
+tests/test_cli.py
+tests/test_form_extraction.py

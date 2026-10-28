@@ -7,13 +7,15 @@ Kept separate from ``test_backend_msword.py`` so that file stays under the
 repository's per-file line limit.
 """
 
+import pytest
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
+from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, WordFormatOption
 
 
 def _set_outline_level(style, outline_lvl: int):
@@ -133,3 +135,114 @@ def test_heading_style_with_the_body_text_sentinel_falls_back_to_its_name(tmp_pa
     pinned = build(pinned=True)
     assert pinned == build(pinned=False)
     assert pinned.strip().startswith("#")
+
+
+@pytest.fixture()
+def mixed_heading_docx(tmp_path):
+    """A document mixing name-based and outline-level-only heading styles.
+
+    Contains:
+    - A paragraph using the built-in ``Heading 1`` style (name-based detection).
+    - Two paragraphs using a custom ``Level3`` style that carries ``w:outlineLvl``
+      but has no 'heading' substring in its name (outline-level-only detection):
+      a short clause label and a long clause body.
+    - A plain body paragraph with no special style.
+    """
+    doc = Document()
+
+    doc.add_paragraph("Chapter One").style = doc.styles["Heading 1"]
+
+    level3 = doc.styles.add_style("Level3", WD_STYLE_TYPE.PARAGRAPH)
+    _set_outline_level(level3, 2)
+    doc.add_paragraph("1.1 Definitions", style="Level3")
+    doc.add_paragraph(
+        '"Work" means any result of the Supplier\'s activity created in the performance of the '
+        "Modifications under this Agreement which meets the criteria of a work protected by the "
+        "Copyright Act, including all documentation and source code relating to it.",
+        style="Level3",
+    )
+
+    doc.add_paragraph("Plain body paragraph.")
+
+    docx_path = tmp_path / "mixed_headings.docx"
+    doc.save(str(docx_path))
+    return docx_path
+
+
+def _convert_with_option(docx_path, *, use_outline_level: bool) -> str:
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.DOCX],
+        format_options={
+            InputFormat.DOCX: WordFormatOption(
+                backend_options=MsWordBackendOptions(
+                    use_outline_level_for_headings=use_outline_level
+                )
+            )
+        },
+    )
+    return converter.convert(docx_path).document.export_to_markdown()
+
+
+def test_use_outline_level_for_headings_enabled_promotes_outline_paragraphs(
+    mixed_heading_docx,
+):
+    """`use_outline_level_for_headings=True` promotes outline-only styles to headings.
+
+    With the default setting, paragraphs whose style carries `w:outlineLvl` but
+    no 'heading' name signal are also classified as headings. This is the
+    documented known limitation for documents that use the outline level only
+    for TOC participation.
+    """
+    md = _convert_with_option(mixed_heading_docx, use_outline_level=True)
+
+    # Name-based heading still detected.
+    assert "## Chapter One" in md
+    # Outline-level-only paragraphs are promoted to headings.
+    assert "### 1.1 Definitions" in md
+    assert '### "Work" means' in md
+
+
+def test_use_outline_level_for_headings_disabled_suppresses_localized_headings(
+    tmp_path,
+):
+    """`use_outline_level_for_headings=False` turns localized headings into plain text.
+
+    Localized heading styles (e.g. Czech `Nadpis1` from LibreOffice) have no
+    'heading' substring in their name and rely entirely on `w:outlineLvl` for
+    detection. Disabling the option suppresses that promotion, so the paragraphs
+    are emitted as plain text rather than headings.
+    """
+    doc = Document()
+    nadpis1 = _add_style_with_outline_level(doc, "Nadpis1", "Nadpis [1]", 0)
+    doc.add_paragraph("Uvod do problematiky").style = nadpis1
+    doc.add_paragraph("Body text under the heading.")
+
+    docx_path = tmp_path / "localized_off.docx"
+    doc.save(str(docx_path))
+
+    md = _convert_with_option(docx_path, use_outline_level=False)
+
+    assert "#" not in md
+    assert "Uvod do problematiky" in md
+    assert "Body text under the heading." in md
+
+
+def test_use_outline_level_for_headings_disabled_keeps_body_prose_as_text(
+    mixed_heading_docx,
+):
+    """`use_outline_level_for_headings=False` keeps outline-only paragraphs as text.
+
+    Disabling the fallback suppresses heading promotion for styles that carry
+    `w:outlineLvl` without a name-based signal, while name-based heading
+    detection (e.g. the built-in ``Heading 1``) continues to work normally.
+    """
+    md = _convert_with_option(mixed_heading_docx, use_outline_level=False)
+
+    # Name-based heading is unaffected by disabling the fallback.
+    assert "## Chapter One" in md
+    # Outline-level-only paragraphs remain as plain text.
+    assert "### 1.1 Definitions" not in md
+    assert "1.1 Definitions" in md
+    assert '### "Work" means' not in md
+    assert '"Work" means' in md
+    assert "Plain body paragraph." in md

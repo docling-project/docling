@@ -23,13 +23,21 @@ item-0 at level 0: unspecified: group _root_
         item-22 at level 4: text: italic
         item-23 at level 4: text: bold
         item-24 at level 4: text: underline
-    item-25 at level 2: list: group list
-      item-26 at level 3: list_item: 
-        item-27 at level 4: inline: group group
-          item-28 at level 5: text: Nested
-          item-29 at level 5: text: italic
-          item-30 at level 5: text: bold
+      item-25 at level 3: list: group list
+        item-26 at level 4: list_item: 
+          item-27 at level 5: inline: group group
+            item-28 at level 6: text: Nested
+            item-29 at level 6: text: italic
+            item-30 at level 6: text: bold
   item-31 at level 1: text: 
-  item-32 at level 1: text: The second page of the document with same header and footer
+  item-32 at level 1: text: 
   item-33 at level 1: text: 
-  item-34 at level 1: text: The third page of the document with different header and footer
+  item-34 at level 1: text: Indexation
+  item-35 at level 1: inline: group group
+    item-36 at level 2: text: This text carries a
+    item-37 at level 2: text: complex-script bold
+    item-38 at level 2: text: property in OOXML but it should not be bold.
+  item-39 at level 1: text: 
+  item-40 at level 1: text: The second page of the document with same header and footer
+  item-41 at level 1: text: 
+  item-42 at level 1: text: The third page of the document with different header and footer

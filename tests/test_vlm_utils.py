@@ -5,7 +5,11 @@
 
 from docling_core.types.doc import Size
 
-from docling.utils.vlm_utils import compute_qwen2vl_image_size, strip_stop_strings
+from docling.utils.vlm_utils import (
+    compute_qwen2vl_image_size,
+    strip_stop_strings,
+    strip_trailing_token,
+)
 
 
 class TestStripStopStrings:
@@ -59,6 +63,24 @@ class TestStripStopStrings:
         texts = ["<div>content</div><|endoftext|>"]
         result = strip_stop_strings(texts, ["<|im_end|>", "<|endoftext|>"])
         assert result == ["<div>content</div>"]
+
+
+class TestStripTrailingToken:
+    """Tests for pad-token removal from decoded VLM outputs."""
+
+    def test_keeps_eos_sharing_characters_with_pad(self):
+        # Regression: str.rstrip("<|endoftext|>") turned this into "text<|im_",
+        # which the stop-string cleanup could then no longer remove.
+        result = strip_trailing_token(["text<|im_end|><|endoftext|>"], "<|endoftext|>")
+        assert result == ["text<|im_end|>"]
+
+    def test_keeps_content_characters_found_in_pad(self):
+        result = strip_trailing_token(["the end</doctag>"], "<|end_of_text|>")
+        assert result == ["the end</doctag>"]
+
+    def test_removes_repeated_padding(self):
+        result = strip_trailing_token(["text<pad><pad><pad>"], "<pad>")
+        assert result == ["text"]
 
 
 class TestComputeQwen2vlImageSize:

@@ -6,7 +6,8 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from docling_core.transforms.serializer.latex import LaTeXParams
+from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
@@ -16,6 +17,7 @@ from docling.document_converter import DocumentConverter
 
 from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
+from .latex_serializer import SourceLaTeXDocSerializer, SourceLaTeXInlineSerializer
 
 GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
@@ -39,6 +41,123 @@ def test_latex_unknown_macro_fallback():
 
     md = doc.export_to_markdown()
     assert "Known Content" in md
+
+
+def test_latex_preserves_source_commands():
+    latex_content = rb"""\documentclass{article}
+\usepackage[utf8]{inputenc}
+\newenvironment{custom}[1]{\textbf{#1}}{\par}
+\newcommand{\myterm}[1]{first #1
+	second}
+\def\legacy{old}
+\begin{document}
+Body text.
+\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    expected = [
+        r"\documentclass{article}",
+        r"\usepackage[utf8]{inputenc}",
+        r"\newenvironment{custom}[1]{\textbf{#1}}{\par}",
+        "\\newcommand{\\myterm}[1]{first #1\n\tsecond}",
+        r"\def\legacy{old}",
+    ]
+    source_commands = [
+        item for item in doc.texts if item.content_layer == ContentLayer.FURNITURE
+    ]
+    assert [item.label for item in source_commands] == [DocItemLabel.TEXT] * len(
+        expected
+    )
+    assert [item.text for item in source_commands] == expected
+    assert [item.orig for item in source_commands] == expected
+    assert all(command in doc.export_to_doclang() for command in expected)
+    restored = DoclingDocument.model_validate_json(doc.model_dump_json())
+    assert [
+        item.text
+        for item in restored.texts
+        if item.content_layer == ContentLayer.FURNITURE
+    ] == expected
+    assert "Body text." in doc.export_to_markdown()
+    assert all(command not in doc.export_to_markdown() for command in expected)
+
+    parsed_latex = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(
+                layers={ContentLayer.BODY, ContentLayer.FURNITURE},
+                document_class="",
+                packages=[],
+                include_annotations=False,
+                enable_chart_tables=False,
+            ),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    preamble, body = parsed_latex.split(r"\begin{document}", maxsplit=1)
+    assert [preamble.index(command) for command in expected] == sorted(
+        preamble.index(command) for command in expected
+    )
+    assert all(command not in body for command in expected)
+    assert r"\textbackslash{}newcommand" not in parsed_latex
+    assert "Body text." in body
+
+
+def test_latex_preserves_complete_newtheorem_declarations():
+    declarations = [
+        r"\newtheorem{theorem}{Theorem}",
+        r"\newtheorem{corollary}[theorem]{Corollary}",
+        r"\newtheorem{lemma}{Lemma}[section]",
+        r"\newtheorem*{remark}{Remark}",
+    ]
+    source = (
+        "\\documentclass{article}\n"
+        + "\n".join(declarations)
+        + "\n\\begin{document}\nBody text.\n\\end{document}"
+    ).encode("utf-8")
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    source_commands = [
+        item.text for item in doc.texts if item.content_layer == ContentLayer.FURNITURE
+    ]
+    assert source_commands[1:] == declarations
+    assert all(command in doc.export_to_doclang() for command in declarations)
+
+    parsed = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(
+                layers={ContentLayer.BODY, ContentLayer.FURNITURE},
+                document_class="",
+                packages=[],
+                include_annotations=False,
+                enable_chart_tables=False,
+            ),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    preamble, body = parsed.split(r"\begin{document}", maxsplit=1)
+    assert all(command in preamble for command in declarations)
+    assert all(command not in body for command in declarations)
+    assert "Body text." in body
 
 
 def test_latex_label():
@@ -87,6 +206,27 @@ def test_latex_title_macro():
     assert len(title_items) >= 1
 
 
+def test_latex_title_with_optional_short_title():
+    latex_content = (
+        rb"\documentclass{article}\begin{document}"
+        rb"\title[Short $x$]{Long $y$}\maketitle"
+        rb"\end{document}"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+    titles = [item for item in doc.texts if item.label == DocItemLabel.TITLE]
+    assert len(titles) == 1
+    assert titles[0].children
+    assert "<formula>y</formula>" in doc.export_to_doclang()
+    assert "Short" not in doc.export_to_markdown()
+
+
 def test_latex_heading_levels():
     """Test different heading levels"""
     latex_content = b"""
@@ -112,6 +252,60 @@ def test_latex_heading_levels():
     assert len(headers) >= 3
 
 
+def test_latex_section_heading_and_title_keep_inline_formulas():
+    source = rb"""\documentclass{article}
+\title[Short $x$]{From $A_1$ to the $B^2$ case}
+\begin{document}
+\maketitle
+\section[Short $k$]{Dimension $2$ and rank $r$}
+\subsection{The $q$ case}
+\end{document}"""
+    stream = BytesIO(source)
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    doc = LatexDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+
+    titles = [item for item in doc.texts if item.label == DocItemLabel.TITLE]
+    headings = [item for item in doc.texts if item.label == DocItemLabel.SECTION_HEADER]
+    assert len(titles) == 1
+    assert len(headings) == 2
+    assert titles[0].children
+    assert all(item.children for item in headings)
+    assert [item.level for item in headings] == [1, 2]
+
+    dclg = doc.export_to_doclang()
+    assert "<formula>A_1</formula>" in dclg
+    assert "<formula>B^2</formula>" in dclg
+    assert "<formula>2</formula>" in dclg
+    assert "<formula>r</formula>" in dclg
+    assert "<formula>q</formula>" in dclg
+    assert "Short" not in dclg
+
+    parsed = (
+        SourceLaTeXDocSerializer(
+            doc=doc,
+            params=LaTeXParams(
+                layers={ContentLayer.BODY, ContentLayer.FURNITURE},
+                document_class="",
+                packages=[],
+                include_annotations=False,
+                enable_chart_tables=False,
+            ),
+            inline_serializer=SourceLaTeXInlineSerializer(),
+        )
+        .serialize()
+        .text
+    )
+    assert r"From $A_1$ to the $B^2$ case" in parsed
+    assert r"\section{Dimension $2$ and rank $r$}" in parsed
+    assert r"\subsection{The $q$ case}" in parsed
+    assert r"\$" not in parsed
+
+
 def test_latex_text_formatting():
     """Test text formatting macros"""
     latex_content = b"""
@@ -134,6 +328,30 @@ def test_latex_text_formatting():
     assert "bold" in md
     assert "italic" in md
     assert "emphasized" in md
+
+
+def test_latex_inline_macro_around_paragraph_break():
+    """Inline macros next to a paragraph break keep their spacing and paragraph"""
+    latex_content = b"""\\documentclass{article}
+\\begin{document}
+A \\textit{it} text. B \\textbf{bf} more.
+
+C \\emph{em}x and \\textit{it}.
+\\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert [t.text for t in doc.texts if t.content_layer == ContentLayer.BODY] == [
+        "A it text. B bf more.",
+        "C emx and it.",
+    ]
 
 
 def test_latex_marginpar():
@@ -488,7 +706,10 @@ def test_latex_accent_macro():
     latex_content = rb"""
     \documentclass{article}
     \begin{document}
-    caf\'{e} and na\"{i}ve.
+    \section{G\"odel}
+    caf\'{e} and na\"{i}ve, Espa\~na, J{\"u}rgen, {\c{C}}a\u{g}lar, \`a la.
+
+    {\o}, \ss{}, \aa, \v{s}, \'{\i}, http://x.org/\~{}user.
     \end{document}
     """
     in_doc = InputDocument(
@@ -500,9 +721,46 @@ def test_latex_accent_macro():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    md = doc.export_to_markdown()
-    assert "caf" in md
-    assert len(doc.texts) > 0
+    texts = [t.text for t in doc.texts if t.content_layer == ContentLayer.BODY]
+    assert texts == [
+        "Gödel",
+        "café and naïve, España, Jürgen, Çağlar, à la.",
+        "ø, ß, å, š, í, http://x.org/~user.",
+    ]
+
+
+def test_latex_accent_on_custom_macro():
+    """An accent keeps a document macro in its argument: \\'{\\vowel} -> é."""
+    latex_content = rb"""
+    \documentclass{article}
+    \newcommand{\vowel}{e}
+    \newcommand{\dotless}{\i}
+    \newcommand{\letter}{e}
+    \newcommand{\chained}{\letter}
+    \newcommand{\cycle}{\cycle}
+    \begin{document}
+    \section{caf\'{\chained}}
+    caf\'{\vowel} followed by text, caf\'\vowel, caf\'{\chained}, \'{\dotless}.
+
+    x\'{\cycle}y.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    texts = [t.text for t in doc.texts if t.content_layer == ContentLayer.BODY]
+    # A macro that never resolves stops expanding and keeps its text, unaccented.
+    assert texts == [
+        "café",
+        "café followed by text, café, café, í.",
+        "x\\cycley.",
+    ]
 
 
 def test_latex_renewcommand():
@@ -578,203 +836,3 @@ def test_hspace_argument_does_not_leak():
     assert "0.2cm" not in all_text, f"hspace argument leaked into text: {all_text!r}"
     assert "Left text" in all_text
     assert "Right text" in all_text
-
-
-def test_latex_subparagraph_heading():
-    """Test \\subparagraph emits heading level 5"""
-    latex_content = b"""
-    \\documentclass{article}
-    \\begin{document}
-    \\paragraph{Para Level}
-    Content A.
-    \\subparagraph{Subpara Level}
-    Content B.
-    \\end{document}
-    """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(latex_content),
-        format=InputFormat.LATEX,
-        backend=LatexDocumentBackend,
-        filename="test.tex",
-    )
-    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
-    doc = backend.convert()
-
-    headers = [t for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
-    assert any("Subpara Level" in h.text for h in headers)
-
-    md = doc.export_to_markdown()
-    assert "Content A" in md
-    assert "Content B" in md
-
-
-def test_latex_bibliography():
-    """Test bibliography environment parsing"""
-    latex_content = b"""
-    \\documentclass{article}
-    \\begin{document}
-    Some text.
-    \\begin{thebibliography}{9}
-    \\bibitem{ref1} Author One, Title One, 2020.
-    \\bibitem{ref2} Author Two, Title Two, 2021.
-    \\end{thebibliography}
-    \\end{document}
-    """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(latex_content),
-        format=InputFormat.LATEX,
-        backend=LatexDocumentBackend,
-        filename="test.tex",
-    )
-    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
-    doc = backend.convert()
-
-    md = doc.export_to_markdown()
-    assert "References" in md
-
-
-def test_latex_footnote():
-    """Test footnote macro parsing"""
-    latex_content = b"""
-    \\documentclass{article}
-    \\begin{document}
-    Main text\\footnote{This is a footnote}.
-    \\end{document}
-    """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(latex_content),
-        format=InputFormat.LATEX,
-        backend=LatexDocumentBackend,
-        filename="test.tex",
-    )
-    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
-    doc = backend.convert()
-
-    footnote_items = [t for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
-    assert len(footnote_items) >= 1
-    assert "footnote" in footnote_items[0].text
-
-
-def test_latex_citations():
-    """Test cite macros parsing"""
-    latex_content = b"""
-    \\documentclass{article}
-    \\begin{document}
-    As shown in \\cite{smith2020} and \\citep{jones2021}.
-    Also see \\ref{fig:1} and \\eqref{eq:main}.
-    \\end{document}
-    """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(latex_content),
-        format=InputFormat.LATEX,
-        backend=LatexDocumentBackend,
-        filename="test.tex",
-    )
-    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
-    doc = backend.convert()
-
-    # Citations are now inline with text
-    md = doc.export_to_markdown()
-    assert "[smith2020]" in md
-    assert "[jones2021]" in md
-    assert "[fig:1]" in md
-    assert "[eq:main]" in md
-
-
-def test_latex_citet_macro():
-    """Test citet macro (textual citation)"""
-    latex_content = b"""
-    \\documentclass{article}
-    \\begin{document}
-    According to \\citet{author2020}, this is correct.
-    \\end{document}
-    """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(latex_content),
-        format=InputFormat.LATEX,
-        backend=LatexDocumentBackend,
-        filename="test.tex",
-    )
-    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
-    doc = backend.convert()
-
-    # Citations are now inline with text
-    md = doc.export_to_markdown()
-    assert "[author2020]" in md
-    assert "According to" in md
-
-
-def test_latex_citet_macro_2():
-    """Test citet citation macro - citations inline with text"""
-    latex_content = b"""
-    \\documentclass{article}
-    \\begin{document}
-    \\citet{author2022} showed this.
-    \\end{document}
-    """
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(latex_content),
-        format=InputFormat.LATEX,
-        backend=LatexDocumentBackend,
-        filename="test.tex",
-    )
-    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
-    doc = backend.convert()
-
-    # Citations are now inline with text
-    md = doc.export_to_markdown()
-    assert "[author2022]" in md
-    assert "showed this" in md
-
-
-def test_latex_nested_formatting_macros():
-    """Nested formatting macros must be fully unwrapped without leaking raw commands."""
-    # Each case is a single-paragraph document so we can assert on the exact text node.
-    cases = [
-        # (description, latex_body, expected_text)
-        (
-            "textsc inline stays in paragraph",
-            b"\\documentclass{article}\\begin{document}Some \\textsc{small caps} text.\\end{document}",
-            "Some small caps text.",
-        ),
-        (
-            "textcolor+textbf inline stays in paragraph",
-            b"\\documentclass{article}\\begin{document}Some \\textcolor{blue}{\\textbf{nested bold}} and more.\\end{document}",
-            "Some nested bold and more.",
-        ),
-        (
-            "deep nesting textcolor+textbf+textsc inline",
-            b"\\documentclass{article}\\begin{document}Text \\textcolor{blue}{\\textbf{\\textsc{inline}}} here.\\end{document}",
-            "Text inline here.",
-        ),
-        (
-            "textbf wrapping textsc inline",
-            b"\\documentclass{article}\\begin{document}Plain \\textbf{\\textsc{bold sc}} text.\\end{document}",
-            "Plain bold sc text.",
-        ),
-        (
-            "color name must not appear in heading",
-            b"\\documentclass{article}\\begin{document}\\section{\\textcolor{blue}{\\textbf{\\textsc{[SEP]}}}}\\end{document}",
-            "[SEP]",
-        ),
-    ]
-
-    for description, latex_content, expected in cases:
-        in_doc = InputDocument(
-            path_or_stream=BytesIO(latex_content),
-            format=InputFormat.LATEX,
-            backend=LatexDocumentBackend,
-            filename="test.tex",
-        )
-        backend = LatexDocumentBackend(
-            in_doc=in_doc, path_or_stream=BytesIO(latex_content)
-        )
-        doc = backend.convert()
-
-        all_text = " ".join(t.text for t in doc.texts)
-        assert expected in all_text, (
-            f"[{description}] expected {expected!r} in output, got: {all_text!r}"
-        )
-
-        leaked = re.findall(r"\\[a-zA-Z]+", all_text)
-        assert not leaked, f"[{description}] leaked raw LaTeX commands: {leaked}"

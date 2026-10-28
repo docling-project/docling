@@ -9,7 +9,7 @@ from typing import Optional
 import pytest
 import torch
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import (
     AcceleratorDevice,
     AcceleratorOptions,
@@ -120,7 +120,7 @@ def get_converter(ocr_options: OcrOptions, ocr_batch_size: Optional[int] = None)
         format_options={
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=pipeline_options,
-                backend=DoclingParseDocumentBackend,
+                backend=ThreadedDoclingParseDocumentBackend,
             )
         }
     )

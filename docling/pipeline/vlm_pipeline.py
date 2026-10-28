@@ -55,22 +55,31 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
+from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import settings
 
 # VlmResponseFormat is actually ResponseFormat from pipeline_options_vlm_model
 # No need to import it separately as it's already imported above
 from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
-from docling.models.vlm_pipeline_models.hf_transformers_model import (
-    HuggingFaceTransformersVlmModel,
-)
-from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import TimeRecorder
+from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
 _DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>")
+# Formats whose mappers keep raw heading depths per page; the joined document is normalized.
+_RAW_HEADING_DEPTH_FORMATS = frozenset(
+    {
+        ResponseFormat.CHANDRA_HTML,
+        ResponseFormat.DEEPSEEKOCR_MARKDOWN,
+        ResponseFormat.DOTS_JSON,
+        ResponseFormat.NEMOTRON_PARSE_V2,
+        ResponseFormat.NEMOTRON_PARSE_V3_5,
+        ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+    }
+)
 
 
 class VlmPipeline(PaginatedPipeline):
@@ -84,9 +93,41 @@ class VlmPipeline(PaginatedPipeline):
         else:
             self._initialize_legacy_vlm_models(pipeline_options)
 
-        self.enrichment_pipe: list = [
-            # Other models working on `NodeItem` elements in the DoclingDocument
-        ]
+    def _enrich_document(self, conv_res: ConversionResult) -> ConversionResult:
+        # Picture enrichments run before each page backend is released.
+        return conv_res
+
+    def _enrich_page_document(
+        self, conv_res: ConversionResult, page: Page, document: DoclingDocument
+    ) -> None:
+        if not document.pictures or not self.enrichment_pipe:
+            return
+
+        # Finalized page documents use local page number 1. The enrichment
+        # models index conv_res.pages using provenance page numbers, so expose
+        # the source page number while running the models.
+        page_item = document.pages.pop(1)
+        page_item.page_no = page.page_no
+        document.pages[page.page_no] = page_item
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
+            if isinstance(item, DocItem):
+                for provenance in item.prov:
+                    provenance.page_no = page.page_no
+
+        original_document, original_pages = conv_res.document, conv_res.pages
+        original_progress = conv_res._progress
+        try:
+            conv_res.document = document
+            conv_res.pages = [page]
+            # The page is reported once its pictures are enriched, so its page
+            # event covers this work; per-page item counts would only add noise.
+            conv_res._progress = ProgressReporter()
+            super()._enrich_document(conv_res)
+        finally:
+            conv_res.document, conv_res.pages = original_document, original_pages
+            conv_res._progress = original_progress
 
     def _initialize_new_runtime_system(
         self, pipeline_options: VlmPipelineOptions
@@ -163,6 +204,10 @@ class VlmPipeline(PaginatedPipeline):
         elif isinstance(self.pipeline_options.vlm_options, InlineVlmOptions):
             vlm_options = cast(InlineVlmOptions, self.pipeline_options.vlm_options)
             if vlm_options.inference_framework == InferenceFramework.MLX:
+                from docling.models.vlm_pipeline_models.mlx_model import (
+                    HuggingFaceMlxModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceMlxModel(
                         enabled=True,
@@ -172,6 +217,10 @@ class VlmPipeline(PaginatedPipeline):
                     ),
                 ]
             elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS:
+                from docling.models.vlm_pipeline_models.hf_transformers_model import (
+                    HuggingFaceTransformersVlmModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceTransformersVlmModel(
                         enabled=True,
@@ -243,6 +292,9 @@ class VlmPipeline(PaginatedPipeline):
                 page._backend = page_backend
                 if not page_backend.is_valid():
                     failed_page_nos.add(page.page_no)
+                    conv_res._progress.page_completed(
+                        page.page_no, total_pages=len(pages_by_no), success=False
+                    )
                     conv_res.errors.append(
                         ErrorItem(
                             component_type=DoclingComponentType.DOCUMENT_BACKEND,
@@ -263,6 +315,7 @@ class VlmPipeline(PaginatedPipeline):
                     page_batch=page_batch,
                     page_documents=page_documents,
                     processed_page_nos=processed_page_nos,
+                    total_pages=len(pages_by_no),
                 )
                 page_batch = []
                 if self._document_timed_out(
@@ -279,6 +332,7 @@ class VlmPipeline(PaginatedPipeline):
                     page_batch=page_batch,
                     page_documents=page_documents,
                     processed_page_nos=processed_page_nos,
+                    total_pages=len(pages_by_no),
                 )
                 self._document_timed_out(
                     conv_res=conv_res,
@@ -290,6 +344,9 @@ class VlmPipeline(PaginatedPipeline):
             page_iterator.close()
             for page in pages_by_no.values():
                 self._release_page_resources(page)
+        conv_res._progress.fail_unfinished_pages(
+            expected_page_nos, total_pages=len(pages_by_no)
+        )
 
         if not any(
             error.category == FailureCategory.TIMEOUT for error in conv_res.errors
@@ -312,7 +369,7 @@ class VlmPipeline(PaginatedPipeline):
             for page_no in expected_page_nos
             if page_no in processed_page_nos
         ]
-        conv_res.document = self._concatenate_page_documents(
+        conv_res.document = self._join_page_documents(
             [
                 (page_no, page_documents[page_no])
                 for page_no in expected_page_nos
@@ -321,6 +378,15 @@ class VlmPipeline(PaginatedPipeline):
         )
         return conv_res
 
+    def _join_page_documents(
+        self, page_documents: list[tuple[int, DoclingDocument]]
+    ) -> DoclingDocument:
+        document = self._concatenate_page_documents(page_documents)
+        if self._response_format() in _RAW_HEADING_DEPTH_FORMATS:
+            # Once per document, so a heading depth has one level on all pages.
+            normalize_section_header_levels(document)
+        return document
+
     def _process_page_batch(
         self,
         *,
@@ -328,15 +394,19 @@ class VlmPipeline(PaginatedPipeline):
         page_batch: list[Page],
         page_documents: dict[int, DoclingDocument],
         processed_page_nos: set[int],
+        total_pages: int,
     ) -> None:
         try:
             for page in self._apply_on_pages(conv_res, page_batch):
                 if page.size is None:
                     continue
-                page_documents[page.page_no] = self._finalize_page_document(
-                    conv_res, page
-                )
+                document = self._finalize_page_document(conv_res, page)
+                self._enrich_page_document(conv_res, page, document)
+                page_documents[page.page_no] = document
                 processed_page_nos.add(page.page_no)
+                conv_res._progress.page_completed(
+                    page.page_no, total_pages=total_pages, success=True
+                )
         finally:
             for page in page_batch:
                 self._release_page_resources(page)
@@ -383,13 +453,14 @@ class VlmPipeline(PaginatedPipeline):
         """Determine conversion status accounting for VLM stop reasons.
 
         Extends the base implementation to detect partial failures from VLM
-        inference, such as truncated output (LENGTH) or filtered content
-        (CONTENT_FILTERED).
+        inference: a failed inference call (INFERENCE_ERROR), truncated output
+        (LENGTH) or filtered content (CONTENT_FILTERED).
         """
         status = conv_res.status
         if status in {ConversionStatus.PENDING, ConversionStatus.STARTED}:
             status = ConversionStatus.SUCCESS
 
+        failed_pages = 0
         for page in conv_res.pages:
             vlm_response = page.predictions.vlm_response
             if vlm_response is None:
@@ -403,6 +474,19 @@ class VlmPipeline(PaginatedPipeline):
                     )
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS
+            elif vlm_response.stop_reason == VlmStopReason.INFERENCE_ERROR:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message="VLM inference failed: "
+                        f"{vlm_response.error_message or 'unknown error'}.",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                status = ConversionStatus.PARTIAL_SUCCESS
+                failed_pages += 1
             elif vlm_response.stop_reason in (
                 VlmStopReason.LENGTH,
                 VlmStopReason.CONTENT_FILTERED,
@@ -419,6 +503,10 @@ class VlmPipeline(PaginatedPipeline):
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS
 
+        if conv_res.pages and failed_pages == len(conv_res.pages):
+            # No page produced any output: that is a failed conversion, not a
+            # partial result, and `raises_on_error` should fire for it.
+            return ConversionStatus.FAILURE
         if status == ConversionStatus.SUCCESS and conv_res.errors:
             status = ConversionStatus.PARTIAL_SUCCESS
         return status
@@ -436,8 +524,17 @@ class VlmPipeline(PaginatedPipeline):
     def _finalize_page_document(
         self, conv_res: ConversionResult, page: Page
     ) -> DoclingDocument:
-        response_format = self._response_format()
         response = page.predictions.vlm_response
+        if (
+            response is not None
+            and response.stop_reason == VlmStopReason.INFERENCE_ERROR
+        ):
+            # The failed call is reported by _determine_status; there is no
+            # output to parse, so do not add a parser error on top of it.
+            document = DoclingDocument(name=f"page_{page.page_no}")
+            self._finalize_page_output(document, page)
+            return document
+        response_format = self._response_format()
         predicted_text = response.text if response is not None else ""
         image = page.image or PILImage.new("RGB", (1, 1), "white")
         assert page.size is not None
@@ -453,6 +550,7 @@ class VlmPipeline(PaginatedPipeline):
                 page_no=page.page_no,
                 filename=conv_res.input.file.name or "file",
                 page_image=page.image,
+                normalize_heading_levels=False,
             )
         elif response_format == ResponseFormat.UNLIMITED_OCR_MARKDOWN:
             from docling.utils.deepseekocr_utils import parse_unlimited_ocr_markdown
@@ -463,6 +561,7 @@ class VlmPipeline(PaginatedPipeline):
                 page_no=page.page_no,
                 filename=conv_res.input.file.name or "file",
                 page_image=page.image,
+                normalize_heading_levels=False,
             )
         elif response_format == ResponseFormat.MARKDOWN:
             document = self._convert_text_page(
@@ -475,17 +574,69 @@ class VlmPipeline(PaginatedPipeline):
         elif response_format == ResponseFormat.CHANDRA_HTML:
             from docling.utils.chandra_utils import parse_chandra_html
 
-            document = parse_chandra_html(
+            try:
+                document = parse_chandra_html(
+                    content=predicted_text,
+                    original_page_size=page.size,
+                    page_no=page.page_no,
+                    filename=conv_res.input.file.name or "file",
+                    page_image=page.image,
+                    normalize_heading_levels=False,
+                )
+            except ValueError as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Invalid Chandra response: {exc}",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                document = DoclingDocument(name=f"page_{page.page_no}")
+        elif response_format == ResponseFormat.DOTS_JSON:
+            document = self._dots_page_document(
+                conv_res, page, predicted_text, page.image
+            )
+        elif response_format == ResponseFormat.NEMOTRON_PARSE_V2:
+            document = self._nemotron_parse_v2_page_document(
+                conv_res, page, predicted_text, page.image
+            )
+        elif response_format == ResponseFormat.NEMOTRON_PARSE_V3_5:
+            from docling.utils.nemotron_parse_v3_5_utils import (
+                parse_nemotron_parse_v3_5,
+            )
+
+            document = parse_nemotron_parse_v3_5(
                 content=predicted_text,
                 original_page_size=page.size,
                 page_no=page.page_no,
                 filename=conv_res.input.file.name or "file",
                 page_image=page.image,
+                normalize_heading_levels=False,
             )
-        elif response_format == ResponseFormat.DOTS_JSON:
-            document = self._dots_page_document(
-                conv_res, page, predicted_text, page.image
-            )
+        elif response_format == ResponseFormat.MINERU2:
+            from docling.utils.mineru_utils import parse_mineru2
+
+            try:
+                document = parse_mineru2(
+                    content=predicted_text,
+                    original_page_size=page.size,
+                    page_no=page.page_no,
+                    filename=conv_res.input.file.name or "file",
+                    page_image=page.image,
+                )
+            except ValueError as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Invalid MinerU response: {exc}",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                document = DoclingDocument(name=f"page_{page.page_no}")
         else:
             raise RuntimeError(f"Unsupported VLM response format {response_format}")
 
@@ -581,6 +732,45 @@ class VlmPipeline(PaginatedPipeline):
             filename=conv_res.input.file.name or "file",
             page_image=page_image,
             model_image_size=model_image_size,
+            normalize_heading_levels=False,
+        )
+
+    def _nemotron_parse_v2_page_document(
+        self,
+        conv_res: ConversionResult,
+        page: Page,
+        predicted_text: str,
+        page_image: PILImage.Image | None,
+    ) -> DoclingDocument:
+        from docling.utils.nemotron_parse_utils import (
+            parse_nemotron_parse_v2,
+        )
+
+        vlm_options = self.pipeline_options.vlm_options
+        if isinstance(vlm_options, (VlmConvertOptions, BaseVlmOptions)):
+            vlm_scale = vlm_options.scale
+            vlm_max_size = vlm_options.max_size
+        else:
+            raise TypeError(
+                "Nemotron Parse 2.0 parsing requires VlmConvertOptions or "
+                f"BaseVlmOptions, got {type(vlm_options).__name__}."
+            )
+
+        assert page.size is not None
+        inference_image = page.get_image(scale=vlm_scale, max_size=vlm_max_size)
+        inference_image_size = (
+            Size(width=inference_image.width, height=inference_image.height)
+            if inference_image is not None
+            else page.size
+        )
+        return parse_nemotron_parse_v2(
+            content=predicted_text,
+            original_page_size=page.size,
+            inference_image_size=inference_image_size,
+            page_no=page.page_no,
+            filename=conv_res.input.file.name or "file",
+            page_image=page_image,
+            normalize_heading_levels=False,
         )
 
     def _extract_code_block(self, text: str) -> str:
@@ -654,7 +844,9 @@ class VlmPipeline(PaginatedPipeline):
             page_item = next(iter(document.pages.values()))
             page_item.page_no = 1
             document.pages = {1: page_item}
-        for item, _level in document.iterate_items():
+        for item, _level in document.iterate_items(
+            traverse_pictures=True, included_content_layers=set(ContentLayer)
+        ):
             if isinstance(item, DocItem):
                 for provenance in item.prov:
                     provenance.page_no = 1

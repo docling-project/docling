@@ -4,7 +4,7 @@
 from pathlib import PurePath
 from types import SimpleNamespace
 
-from docling_core.types.doc import Size, TextItem
+from docling_core.types.doc import DoclingDocument, PictureItem, Size, TextItem
 from PIL import Image
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
@@ -20,7 +20,15 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
+from docling.datamodel.progress import (
+    ConversionProgressEvent,
+    EnrichmentProgress,
+    EnrichmentStep,
+    PageCompletedProgress,
+    ProgressReporter,
+)
 from docling.datamodel.settings import DocumentLimits, settings
+from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
 
@@ -28,6 +36,7 @@ class _Tracker:
     def __init__(self) -> None:
         self.live = 0
         self.high_water = 0
+        self.rendered_scales: list[float] = []
 
 
 class _PageBackend(PdfPageBackend):
@@ -56,7 +65,14 @@ class _PageBackend(PdfPageBackend):
         return []
 
     def get_page_image(self, scale: float = 1, cropbox=None):
-        return Image.new("RGB", (100, 100), (self.page_no, 0, 0))
+        self._tracker.rendered_scales.append(scale)
+        image = Image.new(
+            "RGB", (int(100 * scale), int(100 * scale)), (self.page_no, 0, 0)
+        )
+        if cropbox is not None:
+            bbox = cropbox.to_top_left_origin(page_height=100).scaled(scale)
+            return image.crop(bbox.as_tuple())
+        return image
 
     def get_size(self) -> Size:
         return Size(width=100, height=100)
@@ -144,6 +160,25 @@ class _PredictDoctags:
             yield page
 
 
+class _CapturePictureCrop:
+    elements_batch_size = 1
+    progress_step = EnrichmentStep.OTHER
+    expansion_factor = 0.0
+    images_scale = 1.5
+    prepare_element = BaseItemAndImageEnrichmentModel.prepare_element
+
+    def __init__(self) -> None:
+        self.image_sizes: list[tuple[int, int]] = []
+
+    def is_processable(self, doc, element) -> bool:
+        return isinstance(element, PictureItem)
+
+    def __call__(self, doc, element_batch):
+        for element in element_batch:
+            self.image_sizes.append(element.image.size)
+            yield element
+
+
 def _run_pipeline(
     *,
     page_nos: list[int],
@@ -154,6 +189,10 @@ def _run_pipeline(
     random_access: bool = False,
     failed_page_nos: set[int] | None = None,
     document_timeout: float | None = None,
+    progress: ProgressReporter | None = None,
+    do_chart_extraction: bool = False,
+    enrichment_model: _CapturePictureCrop | None = None,
+    drop_picture_images: bool = False,
 ):
     tracker = _Tracker()
     backend = (
@@ -168,6 +207,9 @@ def _run_pipeline(
         generate_page_images=generate_page_images,
         generate_picture_images=generate_picture_images,
         images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=do_chart_extraction,
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",
@@ -177,6 +219,19 @@ def _run_pipeline(
     )
     pipeline.force_backend_text = force_backend_text
     pipeline.build_pipe = [_PredictDoctags(tag)]
+    pipeline.enrichment_pipe = (
+        [enrichment_model] if enrichment_model is not None else []
+    )
+    if drop_picture_images:
+        finalize = pipeline._finalize_page_document
+
+        def finalize_without_embedded_images(conv_res, page):
+            document = finalize(conv_res, page)
+            for picture in document.pictures:
+                picture.image = None
+            return document
+
+        pipeline._finalize_page_document = finalize_without_embedded_images
     conv_res = SimpleNamespace(
         input=SimpleNamespace(
             _backend=backend,
@@ -185,9 +240,11 @@ def _run_pipeline(
             page_count=9,
         ),
         errors=[],
+        document=DoclingDocument(name=""),
         pages=[],
         status=ConversionStatus.STARTED,
         timings={},
+        _progress=progress or ProgressReporter(),
     )
     pipeline._build_document(conv_res)
     return conv_res, tracker, backend
@@ -216,6 +273,67 @@ def test_vlm_streams_out_of_order_pages_and_releases_each_batch(monkeypatch) -> 
         page._backend is None and not page._image_cache for page in conv_res.pages
     )
     assert all(page.image is None for page in conv_res.document.pages.values())
+
+
+def test_vlm_enriches_picture_crop_before_releasing_page() -> None:
+    model = _CapturePictureCrop()
+    conv_res, tracker, _backend = _run_pipeline(
+        page_nos=[5, 6],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        tag="picture",
+        enrichment_model=model,
+        drop_picture_images=True,
+    )
+
+    assert tracker.live == 0
+    assert conv_res.document.pictures
+    assert [picture.prov[0].page_no for picture in conv_res.document.pictures] == [
+        5,
+        6,
+    ]
+    assert all(
+        page._backend is None and not page._image_cache for page in conv_res.pages
+    )
+    assert model.image_sizes == [(24, 24), (24, 24)]
+    assert 1.5 in tracker.rendered_scales
+
+
+def test_vlm_page_events_cover_the_per_page_picture_enrichment() -> None:
+    events: list[ConversionProgressEvent] = []
+    _run_pipeline(
+        page_nos=[5, 6],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        tag="picture",
+        enrichment_model=_CapturePictureCrop(),
+        progress=ProgressReporter([events.append]),
+    )
+
+    # Pictures are enriched page by page before the page is reported, so the
+    # page count covers that work and no per-page item counts are sent.
+    assert not any(isinstance(ev, EnrichmentProgress) for ev in events)
+    pages = [ev for ev in events if isinstance(ev, PageCompletedProgress)]
+    assert len(pages) == len(events)
+    assert {ev.page_no for ev in pages if ev.success} == {5, 6}
+
+
+def test_vlm_does_not_render_enrichment_scale_without_pictures() -> None:
+    model = _CapturePictureCrop()
+    conv_res, _tracker, backend = _run_pipeline(
+        page_nos=[5],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        enrichment_model=model,
+    )
+
+    assert not conv_res.document.pictures
+    assert model.image_sizes == []
+    assert not conv_res.pages[0]._image_cache
+    assert 1.5 not in backend._tracker.rendered_scales
 
 
 def test_vlm_uses_indexed_loading_for_random_access_backends(monkeypatch) -> None:
@@ -277,6 +395,33 @@ def test_vlm_timeout_stops_iteration_and_releases_live_pages(monkeypatch) -> Non
     assert tracker.live == 0
 
 
+def test_vlm_reports_each_page_once_including_failed_and_timed_out(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings.perf, "page_batch_size", 2)
+    events: list[PageCompletedProgress] = []
+
+    _run_pipeline(
+        page_nos=[9, 5, 7, 6, 8],
+        force_backend_text=False,
+        generate_page_images=False,
+        generate_picture_images=False,
+        failed_page_nos={5},
+        document_timeout=0.0,
+        progress=ProgressReporter([events.append]),
+    )
+
+    assert {ev.page_no: ev.success for ev in events} == {
+        5: False,
+        9: True,
+        7: True,
+        6: False,
+        8: False,
+    }
+    assert [ev.completed_pages for ev in events] == [1, 2, 3, 4, 5]
+    assert {ev.total_pages for ev in events} == {5}
+
+
 def test_vlm_text_response_keeps_absolute_page_number_after_concatenation() -> None:
     tracker = _Tracker()
     page = Page(
@@ -291,6 +436,9 @@ def test_vlm_text_response_keeps_absolute_page_number_after_concatenation() -> N
         generate_page_images=False,
         generate_picture_images=False,
         images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=False,
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",
@@ -333,3 +481,64 @@ def test_vlm_owns_requested_page_and_picture_images_after_release(
     assert all(page.image is not None for page in conv_res.document.pages.values())
     assert conv_res.document.pictures
     assert all(picture.image is not None for picture in conv_res.document.pictures)
+
+
+def test_chandra_page_assembly_preserves_source_provenance_and_reports_bad_responses():
+    tracker = _Tracker()
+    pipeline = VlmPipeline.__new__(VlmPipeline)
+    pipeline.pipeline_options = SimpleNamespace(
+        generate_page_images=True,
+        generate_picture_images=False,
+        images_scale=1.0,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=False,
+        vlm_options=InlineVlmOptions(
+            prompt="",
+            repo_id="test",
+            response_format=ResponseFormat.CHANDRA_HTML,
+            inference_framework=InferenceFramework.TRANSFORMERS,
+        ),
+    )
+    pipeline.force_backend_text = False
+    conv_res = SimpleNamespace(
+        input=SimpleNamespace(file=PurePath("test.pdf")),
+        errors=[],
+        pages=[],
+        status=ConversionStatus.STARTED,
+    )
+    page_documents = []
+    for page_no, content in [
+        (
+            5,
+            '<div data-label="Figure" data-bbox="0 0 800 800"><img alt="Chart"><p>Picture text</p><table><tr><td><b>Cell</b></td></tr></table></div><div data-label="Page-Footer" data-bbox="0 900 1000 1000">Footer</div>',
+        ),
+        (6, "A prose response instead of a transcription."),
+    ]:
+        page = Page(
+            page_no=page_no,
+            size=Size(width=100, height=100),
+            predictions=PagePredictions(vlm_response=VlmPrediction(text=content)),
+        )
+        page._backend = _PageBackend(page_no, tracker)
+        page._default_image_scale = 1.0
+        conv_res.pages.append(page)
+        page_documents.append(
+            (page_no, pipeline._finalize_page_document(conv_res, page))
+        )
+        pipeline._release_page_resources(page)
+    document = pipeline._concatenate_page_documents(page_documents)
+    assert sorted(document.pages) == [5, 6]
+    assert all(item.prov[0].page_no == 5 for item in document.texts if item.prov)
+    assert all(
+        not item.prov
+        for item in document.texts
+        if item.text in {"Picture text", "Cell"}
+    )
+    assert document.pictures[0].prov[0].page_no == 5
+    assert document.pictures[0].get_image(document) is not None
+    assert [(error.page_no, error.category) for error in conv_res.errors] == [
+        (6, FailureCategory.INFERENCE_FAILURE)
+    ]
+    assert pipeline._determine_status(conv_res) == ConversionStatus.PARTIAL_SUCCESS
+    assert tracker.live == 0

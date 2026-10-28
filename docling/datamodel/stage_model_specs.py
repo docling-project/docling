@@ -689,19 +689,21 @@ class StagePresetMixin:
             else:
                 engine_options = AutoInlineVlmEngineOptions()
 
-        # Create instance with preset values
-        # Type ignore because cls is the concrete options class, not the mixin
-        instance = cls(  # type: ignore[call-arg]
+        # Build a merged dict of preset values + caller overrides, then construct
+        # a single validated instance so that model_validators (e.g. "at least one
+        # output") run against the final merged state rather than the pre-override
+        # state.
+        preset_data: dict = dict(
             model_spec=preset.model_spec,
             engine_options=engine_options,
             scale=preset.scale,
             max_size=preset.max_size,
             **preset.stage_options,
         )
+        preset_data.update(overrides)
 
-        # Apply overrides
-        for key, value in overrides.items():
-            setattr(instance, key, value)
+        # Type ignore because cls is the concrete options class, not the mixin
+        instance = cls(**preset_data)  # type: ignore[call-arg]
 
         return instance
 
@@ -1208,6 +1210,10 @@ VLM_CONVERT_GOT_OCR = StageModelPreset(
     default_engine_type=VlmEngineType.TRANSFORMERS,
 )
 
+# All presets in this module that set trust_remote_code=True execute Python
+# code from their Hugging Face repo on model load, so each one is pinned to a
+# commit SHA, including engine overrides that point at a different repo. A pin
+# is bumped only after reviewing the remote code at the new commit.
 VLM_CONVERT_PHI4 = StageModelPreset(
     preset_id="phi4",
     name="Phi-4",
@@ -1215,6 +1221,7 @@ VLM_CONVERT_PHI4 = StageModelPreset(
     model_spec=VlmModelSpec(
         name="Phi-4-Multimodal-Instruct",
         default_repo_id="microsoft/Phi-4-multimodal-instruct",
+        revision="93f923e1a7727d1c4f446756212d9d3e8fcc5d81",
         prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
         response_format=ResponseFormat.MARKDOWN,
         trust_remote_code=True,
@@ -1301,6 +1308,199 @@ VLM_CONVERT_NANONETS_OCR2 = StageModelPreset(
             ),
             VlmEngineType.API_OPENAI: ApiModelConfig(
                 params={"model": "nanonets-ocr2-3b", "max_tokens": 15000}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_NEMOTRON_PARSE_V2 = StageModelPreset(
+    preset_id="nemotron_parse_v2",
+    name="Nemotron Parse 2.0",
+    description=(
+        "NVIDIA Nemotron Parse 2.0 model for multilingual document parsing "
+        "with semantic classes and bounding boxes (0.9B parameters)"
+    ),
+    model_spec=VlmModelSpec(
+        name="NVIDIA-Nemotron-Parse-2.0",
+        default_repo_id="nvidia/NVIDIA-Nemotron-Parse-2.0",
+        revision="b6742064f4a8cf22a10383ece5e7fbead355ac04",
+        prompt=(
+            "</s><s><predict_bbox><predict_classes><output_markdown>"
+            "<predict_no_text_in_pic>"
+        ),
+        response_format=ResponseFormat.NEMOTRON_PARSE_V2,
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.MLX,
+            VlmEngineType.VLLM,
+        },
+        trust_remote_code=True,
+        max_new_tokens=9000,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.6.1",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL,
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                    "extra_processor_kwargs": {"add_special_tokens": False},
+                    "extra_generation_config": {
+                        "repetition_penalty": 1.1,
+                        "skip_special_tokens": True,
+                    },
+                },
+            ),
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/Nemotron-Parse-2.0-8bit",
+                revision="e7e89479657fb3631028ac12b6bc0d5a59ceafe4",
+                min_engine_version="0.6.17",
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                min_engine_version="0.20.0",
+                extra_config={
+                    "dtype": "bfloat16",
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                    "extra_generation_config": {
+                        "repetition_penalty": 1.1,
+                        "top_k": 1,
+                        "skip_special_tokens": False,
+                    },
+                },
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+# The model needs its own repository code; pin the commit the user reviews and trusts.
+_NEMOTRON_PARSE_V3_5_REVISION = "e7ea79242a87ea0ad3919b672bfedb429a683206"
+_NEMOTRON_PARSE_V3_5_MAX_TOKENS = 8744
+
+VLM_CONVERT_NEMOTRON_PARSE_V3_5 = StageModelPreset(
+    preset_id="nemotron_parse_v3_5",
+    name="Nemotron 3.5 Parse",
+    description=(
+        "NVIDIA Nemotron 3.5 Parse model for document parsing with semantic "
+        "classes, bounding boxes, tables and charts (0.6B parameters). Runs "
+        "code from the pinned model repository: requires trust_remote_code=True"
+    ),
+    model_spec=VlmModelSpec(
+        name="Nemotron-3.5-Parse",
+        default_repo_id="nvidia/Nemotron-3.5-Parse",
+        revision=_NEMOTRON_PARSE_V3_5_REVISION,
+        prompt=(
+            "</s><s><predict_bbox><predict_classes><output_markdown>"
+            "<predict_text_in_pic>"
+        ),
+        response_format=ResponseFormat.NEMOTRON_PARSE_V3_5,
+        # In-process vLLM needs NVIDIA's out-of-tree plugin; use its server via API.
+        supported_engines={VlmEngineType.TRANSFORMERS, VlmEngineType.API},
+        # Never trusted implicitly: the user opts in on the engine options.
+        trust_remote_code=False,
+        max_new_tokens=_NEMOTRON_PARSE_V3_5_MAX_TOKENS,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.14.1",
+                extra_config={
+                    "requires_trust_remote_code": True,
+                    "transformers_model_type": TransformersModelType.AUTOMODEL,
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                    "extra_processor_kwargs": {"add_special_tokens": False},
+                    "extra_generation_config": {
+                        "repetition_penalty": 1.1,
+                        "skip_special_tokens": True,
+                    },
+                },
+            ),
+        },
+        api_overrides={
+            # Matches NVIDIA's `vllm serve --served-model-name nemotron-parse`.
+            VlmEngineType.API: ApiModelConfig(
+                params={
+                    "model": "nemotron-parse",
+                    "max_tokens": _NEMOTRON_PARSE_V3_5_MAX_TOKENS,
+                    "top_k": 1,
+                    "repetition_penalty": 1.1,
+                    "skip_special_tokens": False,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    max_size=2048,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_MINERU2_PRO = StageModelPreset(
+    preset_id="mineru2_pro",
+    name="MinerU2.5-Pro",
+    description=(
+        "OpenDataLab MinerU2.5-Pro model for two-step document layout and "
+        "content recognition (1.2B parameters)"
+    ),
+    model_spec=VlmModelSpec(
+        name="MinerU2.5-Pro-2604-1.2B",
+        default_repo_id="opendatalab/MinerU2.5-Pro-2604-1.2B",
+        prompt="\nLayout Detection:",
+        response_format=ResponseFormat.MINERU2,
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.MLX,
+            VlmEngineType.API,
+            VlmEngineType.API_OPENAI,
+            VlmEngineType.API_LMSTUDIO,
+        },
+        max_new_tokens=4096,
+        stop_strings=["<|im_end|>", "<|endoftext|>"],
+        extra_generation_config={
+            "top_k": 1,
+            "top_p": 0.01,
+            "repetition_penalty": 1.0,
+            "no_repeat_ngram_size": 20,
+            "skip_special_tokens": False,
+        },
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="4.56.0",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    # Layout markers are special tokens, so they must survive decoding;
+                    # strip the end-of-turn tokens explicitly instead.
+                    "transformers_strip_stop_strings": True,
+                },
+            ),
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16",
+                extra_config={"mlx_tied_word_embeddings": True},
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={
+                    "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+                    "max_tokens": 4096,
+                    "skip_special_tokens": False,
+                }
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={
+                    "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+                    "max_tokens": 4096,
+                    "skip_special_tokens": False,
+                }
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={
+                    "model": "mineru2.5-pro-2604-1.2b",
+                    "max_tokens": 4096,
+                    "skip_special_tokens": False,
+                }
             ),
         },
     ),
@@ -1426,6 +1626,7 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="Falcon-OCR",
         default_repo_id="tiiuae/Falcon-OCR",
+        revision="42ec56b72a23984ac059e7c8a6d397a8529423fe",
         prompt="",
         response_format=ResponseFormat.MARKDOWN,
         trust_remote_code=True,
@@ -1433,7 +1634,8 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
             # Native Falcon-OCR support was added to mlx-vlm in v0.4.3.
             # A dedicated mlx-community checkpoint is now available for MLX.
             VlmEngineType.MLX: EngineModelConfig(
-                repo_id="mlx-community/Falcon-OCR-bf16"
+                repo_id="mlx-community/Falcon-OCR-bf16",
+                revision="28ccccd3f7cf68a266547ae035b3e0af544cf153",
             ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
@@ -1670,6 +1872,7 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     model_spec=VlmModelSpec(
         name="Chandra-OCR-2-5.3B",
         default_repo_id="datalab-to/chandra-ocr-2",
+        revision="af93b47dba1b47b6640c86ccf487ed2260ab9a09",
         prompt=CHANDRA_OCR_LAYOUT_PROMPT,
         response_format=ResponseFormat.CHANDRA_HTML,
         max_new_tokens=12384,
@@ -1683,6 +1886,7 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
             # not. No bf16 MLX export is published; this is the 8-bit conversion.
             VlmEngineType.MLX: EngineModelConfig(
                 repo_id="mlx-community/chandra-ocr-2-oQ8",
+                revision="eafcb4c79468ff6cf8b76ecc3aedbffe0dd82282",
                 min_engine_version="0.6.17",
             ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
@@ -1725,6 +1929,7 @@ VLM_CONVERT_DOTS_OCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="dots.ocr-3B",
         default_repo_id="rednote-hilab/dots.ocr",
+        revision="c0111ce6bc07803dbc267932ffef0ae3a51dc951",
         prompt=DOTS_LAYOUT_PROMPT,
         response_format=ResponseFormat.DOTS_JSON,
         max_new_tokens=24000,
@@ -1766,6 +1971,7 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="dots.mocr-3B",
         default_repo_id="rednote-hilab/dots.mocr",
+        revision="e539fbb52280393adc081b289ec597430a0f9031",
         prompt=DOTS_LAYOUT_PROMPT,
         response_format=ResponseFormat.DOTS_JSON,
         max_new_tokens=24000,
@@ -1798,4 +2004,90 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.VLLM,
+)
+
+# -----------------------------------------------------------------------------
+# CHART_EXTRACTION PRESETS
+# -----------------------------------------------------------------------------
+
+CHART_EXTRACTION_GRANITE_VISION = StageModelPreset(
+    preset_id="granite_vision_v3_3",
+    name="Granite-Vision-3.3-2B-Chart2CSV",
+    description="IBM Granite Vision chart extraction model (3.3-2B preview, CSV output only)",
+    model_spec=VlmModelSpec(
+        name="Granite-Vision-3.3-2B-chart2csv-preview",
+        default_repo_id="ibm-granite/granite-vision-3.3-2b-chart2csv-preview",
+        revision="6e1fbaae4604ecc85f4f371416d82154ca49ad67",
+        prompt="Convert the information in this chart into a data table in CSV format.",
+        response_format=ResponseFormat.PLAINTEXT,
+        trust_remote_code=True,
+        supported_engines={VlmEngineType.TRANSFORMERS},
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.TRANSFORMERS,
+    stage_options={"output_format": "granite_vision_chart2csv"},
+)
+
+CHART_EXTRACTION_GRANITE_VISION_V4 = StageModelPreset(
+    preset_id="granite_vision_v4",
+    name="Granite-Vision-4.1-4B",
+    description="IBM Granite Vision 4.1-4B chart extraction model (CSV, code, and summary output)",
+    model_spec=VlmModelSpec(
+        name="Granite-Vision-4.1-4B",
+        default_repo_id="ibm-granite/granite-vision-4.1-4b",
+        revision="dd48e97503de471803850df70843cf9eb5da8712",
+        # The active prompt tokens (<chart2csv>, <chart2summary>, <chart2code>) are
+        # assembled at call time from ChartExtractionVlmEngineOptions; this is the
+        # default used when no options override is present.
+        prompt="<chart2csv>",
+        response_format=ResponseFormat.PLAINTEXT,
+        trust_remote_code=True,
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.MLX,
+            VlmEngineType.API_LMSTUDIO,
+            VlmEngineType.API_OLLAMA,
+            VlmEngineType.API_OPENAI,
+        },
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                },
+            ),
+            VlmEngineType.MLX: EngineModelConfig(min_engine_version="0.7.0"),
+        },
+        api_overrides={
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "granite-vision-4.1-4b"}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "granite-vision-4.1-4b"}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "granite-vision-4.1-4b"}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+    stage_options={"output_format": "granite_vision_charts"},
+)
+
+CHART_EXTRACTION_GRANITE_VISION_V4_MLX = StageModelPreset(
+    preset_id="granite_vision_v4_mlx",
+    name="Granite-Vision-4.1-4B (MLX)",
+    description="IBM Granite Vision 4.1-4B chart extraction on Apple Silicon",
+    model_spec=CHART_EXTRACTION_GRANITE_VISION_V4.model_spec,
+    scale=CHART_EXTRACTION_GRANITE_VISION_V4.scale,
+    default_engine_type=VlmEngineType.MLX,
+    stage_options=CHART_EXTRACTION_GRANITE_VISION_V4.stage_options,
 )

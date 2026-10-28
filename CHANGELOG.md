@@ -1,3 +1,534 @@
+## [v2.143.1](https://github.com/docling-project/docling/releases/tag/v2.143.1) - 2026-10-27
+
+### Fix
+
+* **table:** Keep OCR word cells in table tokens ([`affa54c`](https://github.com/docling-project/docling/commit/affa54ce1fcb4a7e9df4900b1b9e16b9290a50ad))
+* **table:** Add OCR cells to table tokens next to native words ([`ce6690b`](https://github.com/docling-project/docling/commit/ce6690b67e9dc6f028cfe42f80b508900d027f28))
+* **table:** Read the page's parsed_page for table tokens in full-page OCR ([`a65b29e`](https://github.com/docling-project/docling/commit/a65b29e004ccbffaaa4fda8c40c0426a034b874d))
+* **pptx:** Count the header row against the chart table cell cap ([#5030](https://github.com/docling-project/docling/issues/5030)) ([`7331067`](https://github.com/docling-project/docling/commit/733106766a67c0804d2f52eed253648fb427fe74))
+* **ocr:** Pass render resolution to Tesseract CLI ([#5031](https://github.com/docling-project/docling/issues/5031)) ([`4818833`](https://github.com/docling-project/docling/commit/481883301e364d021e589ddeaef7927532dafb9a))
+* **pptx:** Skip shapes whose text is only whitespace ([#5028](https://github.com/docling-project/docling/issues/5028)) ([`af66cbf`](https://github.com/docling-project/docling/commit/af66cbf86fe5123e96a3efe10d435494b85fde85))
+* Widen dependency ranges to allow latest versions ([`1bab069`](https://github.com/docling-project/docling/commit/1bab0690252c7695a2d92f5692c4167d8ee263be))
+
+### Performance
+
+* **table:** Skip spatial indexes for empty token inputs ([`103edef`](https://github.com/docling-project/docling/commit/103edefc99a3696227773993e951833c5e3af71e))
+
+## [v2.143.0](https://github.com/docling-project/docling/releases/tag/v2.143.0) - 2026-10-26
+
+### Feature
+
+* **service:** Add optional filename to ZipArchiveResult ([#4996](https://github.com/docling-project/docling/issues/4996)) ([`87de795`](https://github.com/docling-project/docling/commit/87de795692189b3699c1246205c3988cb806bd4e))
+* Support mixed-format ZIP inputs ([#4865](https://github.com/docling-project/docling/issues/4865)) ([`aff98aa`](https://github.com/docling-project/docling/commit/aff98aa7d34956819a89695f79ecbd910276e170))
+* **asr:** Run the WhisperS2T presets offline from --artifacts-path ([#4898](https://github.com/docling-project/docling/issues/4898)) ([`0dbf500`](https://github.com/docling-project/docling/commit/0dbf5009e1dde8a421982528ca60d3503ab2a042))
+* **ASR:** Add transformers and MLX presets for the ASR pipelines ([#4771](https://github.com/docling-project/docling/issues/4771)) ([`53c11a2`](https://github.com/docling-project/docling/commit/53c11a20a5dd6ac0d85fe88cc257ca3b4b3a72d4))
+* **vlm:** Let a GenerationStopper declare a valid end of the output ([#4927](https://github.com/docling-project/docling/issues/4927)) ([`e38fceb`](https://github.com/docling-project/docling/commit/e38fceb2ccd536b9e931e62189466a4c9ebc9576))
+
+### Fix
+
+* **vlm:** Defer optional local provider imports ([#4967](https://github.com/docling-project/docling/issues/4967)) ([`2eaca3a`](https://github.com/docling-project/docling/commit/2eaca3af55af653689f34e71274bb3fe36e58750))
+* **utils:** Retain BOM decoding error diagnostics ([#4949](https://github.com/docling-project/docling/issues/4949)) ([`6ddd22e`](https://github.com/docling-project/docling/commit/6ddd22ee49d5f4af830392d5e82e15a82120859b))
+* **asciidoc:** Keep a block title separate from the paragraph it titles ([#4391](https://github.com/docling-project/docling/issues/4391)) ([`821526e`](https://github.com/docling-project/docling/commit/821526e73bdc8059799fd532dec520d41a730570))
+* **pptx:** Extract the picture of a picture-filled shape ([#4989](https://github.com/docling-project/docling/issues/4989)) ([`4ad544a`](https://github.com/docling-project/docling/commit/4ad544a59f4bdcf12f0ec6639544ac83feb3022b))
+* **pptx:** Read the series of every chart plot ([#4811](https://github.com/docling-project/docling/issues/4811)) ([`90234a7`](https://github.com/docling-project/docling/commit/90234a71b16785d08fd2f46ec62668dd2396db76))
+* **asciidoc:** Drop the closing marks of symmetric section titles ([#4938](https://github.com/docling-project/docling/issues/4938)) ([`7b729c6`](https://github.com/docling-project/docling/commit/7b729c61f6b5bd86a4534b5acee63ec13ae2fc24))
+* **ods:** Do not join tables across a blank merged separator row ([#4992](https://github.com/docling-project/docling/issues/4992)) ([`90661c4`](https://github.com/docling-project/docling/commit/90661c43532eda3e6718d61cbb061160cd2f2b56))
+* **utils:** Split a tuple or range into chunks only once in chunkify ([#5001](https://github.com/docling-project/docling/issues/5001)) ([`15c67d8`](https://github.com/docling-project/docling/commit/15c67d8c7c42d8551eed73c66277f3f39b661c8e))
+* Accept file URI bases for image resources ([#4912](https://github.com/docling-project/docling/issues/4912)) ([`59acbb6`](https://github.com/docling-project/docling/commit/59acbb63c2b0438fbbd59eb09ec7790206bb1e8c))
+* **asciidoc:** Keep /// as text and support longer comment delimiters ([#4394](https://github.com/docling-project/docling/issues/4394)) ([`9ccf607`](https://github.com/docling-project/docling/commit/9ccf6072ac74caa677359e3ac42a186aacad1b7e))
+* **docx:** Leave hidden text out of the default export ([#4958](https://github.com/docling-project/docling/issues/4958)) ([`36be1d2`](https://github.com/docling-project/docling/commit/36be1d247d6cc35bed2b815b64e1fd924e6f50ed))
+* **csv:** Use following rows when the header holds two delimiters ([#4896](https://github.com/docling-project/docling/issues/4896)) ([`db79955`](https://github.com/docling-project/docling/commit/db7995566b4facb1038c9356136c378ce8c6ce5d))
+
+### Documentation
+
+* Fix typos and grammar in FAQ, installation, and advanced options ([#4986](https://github.com/docling-project/docling/issues/4986)) ([`5de229e`](https://github.com/docling-project/docling/commit/5de229e511475e986e72218d74f738fe6a5c026a))
+* Add RAG example with TopK ([#4983](https://github.com/docling-project/docling/issues/4983)) ([`4d97a18`](https://github.com/docling-project/docling/commit/4d97a18aadec5d7fb71910e93f0850c39730a62d))
+
+## [v2.142.1](https://github.com/docling-project/docling/releases/tag/v2.142.1) - 2026-10-23
+
+### Fix
+
+* Clamp page_range bounds to sys.maxsize ([#4980](https://github.com/docling-project/docling/issues/4980)) ([`0db3aea`](https://github.com/docling-project/docling/commit/0db3aea34d93f370bd797f085b75f90a936f327e))
+* Limit the decompressed size of DOCX, XLSX and EPUB archive members ([#4977](https://github.com/docling-project/docling/issues/4977)) ([`ce0f04c`](https://github.com/docling-project/docling/commit/ce0f04c4353800cb46475dff2ec6ace4606ca36e))
+* **xlsx:** Clip merged-cell and hyperlink ranges while loading workbooks ([#4979](https://github.com/docling-project/docling/issues/4979)) ([`a63ec34`](https://github.com/docling-project/docling/commit/a63ec343ade9c994fabc0927083d39daae065421))
+* Decode image pages on demand and limit decoded image pixels ([#4976](https://github.com/docling-project/docling/issues/4976)) ([`bae7aa3`](https://github.com/docling-project/docling/commit/bae7aa3f24fe98b71e5aee9eb8f0d589e081ba73))
+* **xbrl:** Apply the fetch options to taxonomy references ([#4975](https://github.com/docling-project/docling/issues/4975)) ([`cf8959f`](https://github.com/docling-project/docling/commit/cf8959f769f16cf134c3395110806ff57e5bc86a))
+* **latex:** Clamp \multicolumn and \multirow spans ([#4974](https://github.com/docling-project/docling/issues/4974)) ([`c066288`](https://github.com/docling-project/docling/commit/c06628838b12557a90cf8d2c622a213ea4eb80fd))
+* **docx:** Bound argument runs in code call detection pattern ([#4973](https://github.com/docling-project/docling/issues/4973)) ([`be69ba3`](https://github.com/docling-project/docling/commit/be69ba3e55be98b8719b91f69c106998ca587016))
+* **asciidoc:** Stop constrained inline marks at the next mark ([#4972](https://github.com/docling-project/docling/issues/4972)) ([`7f574a0`](https://github.com/docling-project/docling/commit/7f574a0fd7a45627171c9d41b26dced7e4cb06aa))
+* Bound the ODF mimetype read during ZIP format detection ([#4971](https://github.com/docling-project/docling/issues/4971)) ([`a296007`](https://github.com/docling-project/docling/commit/a29600709c0428afb1df63dd139614c3ace8feb0))
+* **latex:** Require trusted input for Tectonic TikZ rendering ([#4970](https://github.com/docling-project/docling/issues/4970)) ([`3980c86`](https://github.com/docling-project/docling/commit/3980c8672c73c218163f4249edcf7fb2fb73ed1f))
+
+## [v2.142.0](https://github.com/docling-project/docling/releases/tag/v2.142.0) - 2026-10-22
+
+### Feature
+
+* **afp:** Treat a move to a new baseline as a line boundary ([#4962](https://github.com/docling-project/docling/issues/4962)) ([`af3e144`](https://github.com/docling-project/docling/commit/af3e144f294e5af7ca0c7f327aac94ba3965d2a5))
+
+### Fix
+
+* **cli:** Exit with code 1 when a document fails to convert ([#4888](https://github.com/docling-project/docling/issues/4888)) ([`787ad5e`](https://github.com/docling-project/docling/commit/787ad5e789ed850f8a2f3c0cbb67cf999826d3c4))
+* **nemotron-parse:** Bound work on untrusted model output ([#4923](https://github.com/docling-project/docling/issues/4923)) ([`3b0f25f`](https://github.com/docling-project/docling/commit/3b0f25f9b2d2bb8cc13992120f5c94a961a70042))
+* Align transformer engine input dtype with model weights (fixes #3110) ([#4158](https://github.com/docling-project/docling/issues/4158)) ([`a401629`](https://github.com/docling-project/docling/commit/a4016299b0fcdfa4cc299ddda13825f5c59e583b))
+* **asr:** End merged sentences at full-width CJK punctuation ([#4836](https://github.com/docling-project/docling/issues/4836)) ([`d18c25b`](https://github.com/docling-project/docling/commit/d18c25b9c094592e7b1108d1a2694b678f50dbdc))
+* Adapt to docling-core 2.103.1 image and HTML changes ([`4e6a615`](https://github.com/docling-project/docling/commit/4e6a6155ebf530553d631bc7cca2074a8489be2a))
+* **deps:** Require docling-core 2.103.1 ([`197a65c`](https://github.com/docling-project/docling/commit/197a65c3c05320b58495648656ab973b171329d4))
+* **vlm:** Keep every markup heading depth distinct across VLM mappers ([`73b7c97`](https://github.com/docling-project/docling/commit/73b7c97c8316501502abb8d417f0ed7c0419ac2e))
+* **vlm:** Share the Nemotron 3.5 formula delimiter normalizer ([`d2b076a`](https://github.com/docling-project/docling/commit/d2b076a944f0bf0dd47f87f43037b2ad5a2894a2))
+* Normalize Nemotron formula delimiters before export ([`91332c9`](https://github.com/docling-project/docling/commit/91332c99b68c6d8290253fb1a574aba511099b50))
+* Preserve VLM section heading depth in exports ([`fec45d3`](https://github.com/docling-project/docling/commit/fec45d34533881e364f223adbbc5bda88054a33b))
+* Preserve multiline DeepSeek and Unlimited OCR blocks ([`62eeaee`](https://github.com/docling-project/docling/commit/62eeaee8d595f56a7f3d4108dd39db315c3d8664))
+* **ebcdic:** Report a record length shorter than its layout ([#4961](https://github.com/docling-project/docling/issues/4961)) ([`6470556`](https://github.com/docling-project/docling/commit/6470556ddb6ee9c1dcdb3ac680e7fe11cab62bda))
+* **odt:** Extract page headers and footers ([#4960](https://github.com/docling-project/docling/issues/4960)) ([`e3d4743`](https://github.com/docling-project/docling/commit/e3d474324bf686c823615b9356c1bc8d3c43a412))
+* Handle truncated PNG chunks in DOCX pictures ([#4946](https://github.com/docling-project/docling/issues/4946)) ([`10054ec`](https://github.com/docling-project/docling/commit/10054ec7bbdc9435ef7ca2ec6be90c782082ae52))
+* **latex:** Backend updates for better parsing of arxiv papers ([#4817](https://github.com/docling-project/docling/issues/4817)) ([`29caea8`](https://github.com/docling-project/docling/commit/29caea8381e885872905dc9438f10014368a2a25))
+* **otsl:** Keep cells when an unclosed cell precedes a closed one ([#4916](https://github.com/docling-project/docling/issues/4916)) ([`7b9a6b1`](https://github.com/docling-project/docling/commit/7b9a6b10faa4f11b5fe556d7f55d9cf4ca299b39))
+* Support Pillow 13 and integer PNG images ([#4929](https://github.com/docling-project/docling/issues/4929)) ([`ed66a3c`](https://github.com/docling-project/docling/commit/ed66a3c8520933221c977292b875a0d8d939b6fd))
+* **datamodel:** Read one content-sniff window for a path and a stream ([#4924](https://github.com/docling-project/docling/issues/4924)) ([`ffa6a84`](https://github.com/docling-project/docling/commit/ffa6a84d639b1454b0007158c798692bd3fe9fd2))
+
+### Documentation
+
+* **vlm:** Correct the heading rule docs and comments ([`91a6439`](https://github.com/docling-project/docling/commit/91a64399f8767ec93470869d65c6a25be4a59e2d))
+
+### Performance
+
+* Reduce scalar reads in image classification ([#4918](https://github.com/docling-project/docling/issues/4918)) ([`dae5636`](https://github.com/docling-project/docling/commit/dae5636510612f183fc25f9315e29eb23669cf07))
+* **ocr:** Avoid temporary PNG files in macOS OCR ([#4919](https://github.com/docling-project/docling/issues/4919)) ([`44c4096`](https://github.com/docling-project/docling/commit/44c40967eefe95c7003b1c3186f1c79554fbeae0))
+* **ocr:** Convert PIL crops with numpy.asarray ([#4920](https://github.com/docling-project/docling/issues/4920)) ([`de7a4ea`](https://github.com/docling-project/docling/commit/de7a4ea500772706da59d77d0fdb288c065a6145))
+
+## [v2.141.0](https://github.com/docling-project/docling/releases/tag/v2.141.0) - 2026-10-20
+
+### Feature
+
+* Add `nvidia/Nemotron-3.5-Parse` as supported VLM model ([#4897](https://github.com/docling-project/docling/issues/4897)) ([`2d1d814`](https://github.com/docling-project/docling/commit/2d1d814787e41fdc97b16dfb8b15915ed20034cc))
+* **cli:** Generic engine options for docling convert ([#4729](https://github.com/docling-project/docling/issues/4729)) ([`f57160e`](https://github.com/docling-project/docling/commit/f57160ef69966bf362f70d6d61820a6cd7766d25))
+* **service:** Allow artifact downloads from trusted private origins ([#4892](https://github.com/docling-project/docling/issues/4892)) ([`8df5b6e`](https://github.com/docling-project/docling/commit/8df5b6e84f72f5eb03e1b69d40f2ec1c0759d33c))
+* **forms:** Map form fields with a geometric solver when AcroForm widgets are available ([#4496](https://github.com/docling-project/docling/issues/4496)) ([`2f13b3d`](https://github.com/docling-project/docling/commit/2f13b3d7f2217b457f646450844a9543233dce2f))
+* **asciidoc:** Keep comments in the notes content layer ([#4663](https://github.com/docling-project/docling/issues/4663)) ([`ba458a2`](https://github.com/docling-project/docling/commit/ba458a262487c46e9ead092317e84ce374659dec))
+
+### Fix
+
+* **jats:** Convert the content of sub-articles ([#4826](https://github.com/docling-project/docling/issues/4826)) ([`d01c9c0`](https://github.com/docling-project/docling/commit/d01c9c0991920924cf17f6b8366079ac035ffc38))
+* Flatten transparent pictures onto white before enrichment models ([#4776](https://github.com/docling-project/docling/issues/4776)) ([`0c87ce6`](https://github.com/docling-project/docling/commit/0c87ce6761d9c80a83b3803631f280533581d3f1))
+* **models:** Warn on unpinned revisions for trust_remote_code model specs ([#4227](https://github.com/docling-project/docling/issues/4227)) ([`ae84464`](https://github.com/docling-project/docling/commit/ae84464165be5f3b5a91736dfdb37a786aebd334))
+* **docx:** Read styles with the invalid type "list" ([#4831](https://github.com/docling-project/docling/issues/4831)) ([`0fe65b2`](https://github.com/docling-project/docling/commit/0fe65b2d77b633ec4fc246f11774692e52aa012a))
+* **md:** Keep a heading or list item without text from taking a later block's text ([#4870](https://github.com/docling-project/docling/issues/4870)) ([`145d379`](https://github.com/docling-project/docling/commit/145d3793fac15226d7f6eeaf33018f55a243fe5a))
+* **vlm:** Avoid PIL warning on palette P+tRNS images ([#4392](https://github.com/docling-project/docling/issues/4392)) ([`2bdc46d`](https://github.com/docling-project/docling/commit/2bdc46dc001574923cfc4ee975c32e1032f2366d))
+* **iwork:** Apply page_range to Keynote slides ([#4871](https://github.com/docling-project/docling/issues/4871)) ([`e84e9aa`](https://github.com/docling-project/docling/commit/e84e9aa80d8fb2e5c604e4ba24e4c723f2bc3d63))
+* **docx,iwork:** Put a sub-list under the list item above it ([#4863](https://github.com/docling-project/docling/issues/4863)) ([`d54d4b8`](https://github.com/docling-project/docling/commit/d54d4b89ea37114c72da9e4b0c6b23cdb4008781))
+* **msexcel:** Read the series of every chart plot ([#4812](https://github.com/docling-project/docling/issues/4812)) ([`399b983`](https://github.com/docling-project/docling/commit/399b98347a45658a41d6786917fb1e77522e155e))
+* **latex:** Convert accent and letter macros in body text ([#4517](https://github.com/docling-project/docling/issues/4517)) ([`b845ce6`](https://github.com/docling-project/docling/commit/b845ce6e576a6c925c1251e1425b46128c897c50))
+* **service:** Connect artifact downloads to the validated address ([#4889](https://github.com/docling-project/docling/issues/4889)) ([`97dfad6`](https://github.com/docling-project/docling/commit/97dfad6403e4825bdfbd167626ce3505d68a9cae))
+* **odf:** Keep the speaker notes of ODP slides in the notes layer ([#4869](https://github.com/docling-project/docling/issues/4869)) ([`0c75567`](https://github.com/docling-project/docling/commit/0c7556748c410e01f67537d4a82423e1385fdf12))
+
+### Documentation
+
+* Fix dead LlamaIndex DoclingReader guide link ([#4885](https://github.com/docling-project/docling/issues/4885)) ([`7a25855`](https://github.com/docling-project/docling/commit/7a25855efcf68d841c173c2ea66d46608daf374e))
+
+### Performance
+
+* **odt:** Index automatic styles for style lookups (1.6x-3.2x on Word-exported ODT) ([#4881](https://github.com/docling-project/docling/issues/4881)) ([`0b62ddd`](https://github.com/docling-project/docling/commit/0b62ddd297657424d7969b14e3993ff8de116c46))
+* **docx:** Cache style chains and reuse paragraph content (1.6x faster) ([#4867](https://github.com/docling-project/docling/issues/4867)) ([`7bb935a`](https://github.com/docling-project/docling/commit/7bb935ab106ab75027a954490ce80f14c386ff6f))
+* **docx:** Memoize python-docx style lookups ([#4862](https://github.com/docling-project/docling/issues/4862)) ([`25a644d`](https://github.com/docling-project/docling/commit/25a644d571b28f41ab38b567b463d111910c7a14))
+
+## [v2.140.0](https://github.com/docling-project/docling/releases/tag/v2.140.0) - 2026-10-16
+
+### Feature
+
+* **asr:** Prefetch the native Distil-Whisper presets with docling-tools ([#4825](https://github.com/docling-project/docling/issues/4825)) ([`483cf13`](https://github.com/docling-project/docling/commit/483cf138be2fb236483adc359bd881fec74108b2))
+* **asciidoc:** Parse bold, italic and monospace in paragraphs ([#4824](https://github.com/docling-project/docling/issues/4824)) ([`fd24b9e`](https://github.com/docling-project/docling/commit/fd24b9ebc0079822f0644009a2dbeeb5906b4f3c))
+* **asr:** Transcribe with a remote OpenAI-compatible server ([#4853](https://github.com/docling-project/docling/issues/4853)) ([`b246052`](https://github.com/docling-project/docling/commit/b246052fe845e1f8a6ef68dfc088faa6da20e53b))
+
+### Fix
+
+* **odf:** Move hidden ODT sections to the invisible content layer ([#4860](https://github.com/docling-project/docling/issues/4860)) ([`f690a52`](https://github.com/docling-project/docling/commit/f690a5232c505c787a1e952216b431134b4d7c94))
+* **reading-order:** Bound page-separator candidate work and honor document_timeout ([#4633](https://github.com/docling-project/docling/issues/4633)) ([`5f45097`](https://github.com/docling-project/docling/commit/5f4509767647721a8ec011ce6a3a6a39b19bb1f0))
+* **asciidoc:** Don't take a line that starts with an abbreviation for a list item ([#4827](https://github.com/docling-project/docling/issues/4827)) ([`6275f29`](https://github.com/docling-project/docling/commit/6275f29acd00406f5faf7d41297acc875304e243))
+* **email:** Escape the text of an HTML body only once ([#4828](https://github.com/docling-project/docling/issues/4828)) ([`d0c51d0`](https://github.com/docling-project/docling/commit/d0c51d08dacf21d109d9b894859670be0b76d8b0))
+* **pptx:** Map grouped shape boxes through the group transform ([#4859](https://github.com/docling-project/docling/issues/4859)) ([`04eefdd`](https://github.com/docling-project/docling/commit/04eefdd3dfc1ff2e9bf27536abe60f9f3881b1cb))
+* **service:** Align ConfidenceScores.pages to ConfidenceReport.pages ([#4850](https://github.com/docling-project/docling/issues/4850)) ([`f6750c4`](https://github.com/docling-project/docling/commit/f6750c4061d6911cfaaa48d7cbd9aeb1509fd2fb))
+* **ocr:** Do not OCR an enclosed region twice ([#4748](https://github.com/docling-project/docling/issues/4748)) ([`6fadbae`](https://github.com/docling-project/docling/commit/6fadbae317b09c4dd4051c0f1fc1746c6baf04bc))
+
+## [v2.139.0](https://github.com/docling-project/docling/releases/tag/v2.139.0) - 2026-10-14
+
+### Feature
+
+* Expose max_concurrent_results on ThreadedDoclingParseBackendOptions ([#4804](https://github.com/docling-project/docling/issues/4804)) ([`ce5621b`](https://github.com/docling-project/docling/commit/ce5621b5e5569cfda1a010566247c93faa7d7032))
+* Expose per-page confidence breakdown in ConfidenceScores ([#4233](https://github.com/docling-project/docling/issues/4233)) ([`5bdabb9`](https://github.com/docling-project/docling/commit/5bdabb917617d0ff434f676d537bda80cd19615f))
+* **progress:** Add conversion progress bars and an event callback ([#4560](https://github.com/docling-project/docling/issues/4560)) ([`fdb6321`](https://github.com/docling-project/docling/commit/fdb6321046b4cdd75cde8ed804bf76dd1968b7cf))
+* **iwork:** Read pictures in Numbers table cells ([#4736](https://github.com/docling-project/docling/issues/4736)) ([`dd477a9`](https://github.com/docling-project/docling/commit/dd477a9f5feb3c505caeb6e73931bf93cecc79f4))
+* Allow docling-tools to download whisper artifacts and for docling to run ASR from an artifactory directory ([#4760](https://github.com/docling-project/docling/issues/4760)) ([`765dc86`](https://github.com/docling-project/docling/commit/765dc86182b56ac3ad5baba1a68bd330d11108cf))
+* **pptx:** Read every plot of a combination chart ([#4773](https://github.com/docling-project/docling/issues/4773)) ([`070a6d3`](https://github.com/docling-project/docling/commit/070a6d390e5c94e279937b69babb02f23e0af62f))
+
+### Fix
+
+* **md:** Keep pictures through HTML conversion ([#4777](https://github.com/docling-project/docling/issues/4777)) ([`774387e`](https://github.com/docling-project/docling/commit/774387e7507e9be80b6f081bace13f2c5418719e))
+* **vlm:** Report the stop reason of streaming requests ([#4778](https://github.com/docling-project/docling/issues/4778)) ([`fd346c7`](https://github.com/docling-project/docling/commit/fd346c7fc8884c59ee4f8e846fd6ffb588d34720))
+* **docx:** Read the active branch of a body-level mc:AlternateContent ([#4615](https://github.com/docling-project/docling/issues/4615)) ([`b35ad57`](https://github.com/docling-project/docling/commit/b35ad57af3a9311d5da8c20ede17865c40b87870))
+* **docx:** Keep table rows after a list resumes in a cell ([#4674](https://github.com/docling-project/docling/issues/4674)) ([`0f23355`](https://github.com/docling-project/docling/commit/0f233559b364d779d2ce945b32a44267755ee904))
+* **odf:** Keep ODS pictures anchored to the sheet ([#4678](https://github.com/docling-project/docling/issues/4678)) ([`f3eda5f`](https://github.com/docling-project/docling/commit/f3eda5f3e9a32a3850c2d7c1f5b2796980b05171))
+* **pptx:** Move footer placeholders to the furniture layer ([#4746](https://github.com/docling-project/docling/issues/4746)) ([`3acd5ca`](https://github.com/docling-project/docling/commit/3acd5ca3be5fb34f525e365acc1426baf140a780))
+* **html:** Decode a rendered stream with the encoding the document declares ([#4468](https://github.com/docling-project/docling/issues/4468)) ([`85dcebc`](https://github.com/docling-project/docling/commit/85dcebc7726487193add4dd419e5b05619370774))
+* **pptx:** Keep a hyperlink attached to a whole shape ([#4787](https://github.com/docling-project/docling/issues/4787)) ([`8508141`](https://github.com/docling-project/docling/commit/85081410b9f53d65eec244fce9e8ad738ba8d66f))
+* **md:** Keep the hyperlink of autolinks outside table cells ([#4791](https://github.com/docling-project/docling/issues/4791)) ([`4757220`](https://github.com/docling-project/docling/commit/475722097f45f69c9c7fbde3ef5b30ef6479d157))
+* **pypdfium2:** Keep letters of adjacent lines out of text cells ([#4802](https://github.com/docling-project/docling/issues/4802)) ([`006c098`](https://github.com/docling-project/docling/commit/006c098d322a1fd709ec53fd7e798ca6fe7fbcd1))
+* **email:** Route an Outlook .msg that filetype reports as XLS to the email backend ([#4798](https://github.com/docling-project/docling/issues/4798)) ([`385ddd4`](https://github.com/docling-project/docling/commit/385ddd4fc2e448f88904c5f189ba24d478224fdd))
+* **markdown:** Resolve relative images for local sources ([#4816](https://github.com/docling-project/docling/issues/4816)) ([`8119cdc`](https://github.com/docling-project/docling/commit/8119cdceef7494dc361b9d30b40458d287a06a34))
+* **asciidoc:** Nest lists with different bullet markers ([#4822](https://github.com/docling-project/docling/issues/4822)) ([`f1d1725`](https://github.com/docling-project/docling/commit/f1d17255b649938c5f9d68ea2c6c5f64cca42b3d))
+* **asciidoc:** Stop an unclosed block delimiter from hanging the parser ([#4662](https://github.com/docling-project/docling/issues/4662)) ([`2104df5`](https://github.com/docling-project/docling/commit/2104df53e9c49c59db16d2404e54432e4e0ff8dc))
+* **odf:** Keep image references out of list item text ([#4693](https://github.com/docling-project/docling/issues/4693)) ([`4b8231f`](https://github.com/docling-project/docling/commit/4b8231f10cfb7747e28b8d3e64a66e4ebff02589))
+* **vlm:** Report streaming request failures as per-page inference errors ([#4561](https://github.com/docling-project/docling/issues/4561)) ([`ab4419b`](https://github.com/docling-project/docling/commit/ab4419b8129ffd3dd90f5da85138e5d356f20d5b))
+* **asciidoc:** Strengthen the parsing of nested lists ([#4721](https://github.com/docling-project/docling/issues/4721)) ([`c0be875`](https://github.com/docling-project/docling/commit/c0be875615f1c2fadb10bf20f760c7d3dc4b1059))
+* **html:** Resolve the line break sentinel outside paragraphs ([#4675](https://github.com/docling-project/docling/issues/4675)) ([`7be1913`](https://github.com/docling-project/docling/commit/7be1913a2c0b93f8b756644fe682d0515d0b667f))
+* **docx:** Resolve linked style numbering ([#4727](https://github.com/docling-project/docling/issues/4727)) ([`ffce191`](https://github.com/docling-project/docling/commit/ffce191795f9c576d73dfd544ed8587a42285bc2))
+* **pdf:** Run threaded pipeline models on long-lived threads ([#4707](https://github.com/docling-project/docling/issues/4707)) ([`cb1df98`](https://github.com/docling-project/docling/commit/cb1df981e0b49906d638c652a27bfeeeb13ec5d1))
+* **cli:** Keep convert-remote working on docling-client installs ([#4803](https://github.com/docling-project/docling/issues/4803)) ([`711fc47`](https://github.com/docling-project/docling/commit/711fc47c451d28597fdb445a593bf34a5231f5e1))
+* **csv:** Rewind content before repeated dialect detection ([#4754](https://github.com/docling-project/docling/issues/4754)) ([`f0d9098`](https://github.com/docling-project/docling/commit/f0d90989b461656102da5d449db98e6be9285f93))
+* **email:** Decode the HTML body once when a meta tag declares a charset ([#4756](https://github.com/docling-project/docling/issues/4756)) ([`ff2342c`](https://github.com/docling-project/docling/commit/ff2342c551aeccd6aedd37bdc608e39386b6904c))
+* **asciidoc:** Keep a table whole across blank and wrapped lines ([#4761](https://github.com/docling-project/docling/issues/4761)) ([`78d1251`](https://github.com/docling-project/docling/commit/78d12518e21706a797e4db9b6ba7ee588fb6015e))
+* **html:** Don't spread one run's formatting or link to a whole heading ([#4670](https://github.com/docling-project/docling/issues/4670)) ([`930bf20`](https://github.com/docling-project/docling/commit/930bf2041651ac12b3ebc89fb7e8093f87cbc20f))
+* **html:** Parse the start of an ordered list by the HTML rules for integers ([#4713](https://github.com/docling-project/docling/issues/4713)) ([`a057e8d`](https://github.com/docling-project/docling/commit/a057e8d846ca27fac981c0188fc84cac33067b28))
+* **ebcdic:** Preserve scaled numbers without context rounding ([#4759](https://github.com/docling-project/docling/issues/4759)) ([`3807f7f`](https://github.com/docling-project/docling/commit/3807f7f8a2e4fada02f0165cb112ad05eca91e56))
+
+### Documentation
+
+* **pdf:** Document parser thread configuration ([#4303](https://github.com/docling-project/docling/issues/4303)) ([`f951b83`](https://github.com/docling-project/docling/commit/f951b832d29a6f9e38d454f31e4743b9c56e7b1a))
+
+### Performance
+
+* **odf:** Cache get_style() lookups in the OpenDocument backend ([#4763](https://github.com/docling-project/docling/issues/4763)) ([`6329eea`](https://github.com/docling-project/docling/commit/6329eeaaf73064123415148a9cdb4d233211bdeb))
+* **layout:** Move detections to the CPU once before building the output ([#4764](https://github.com/docling-project/docling/issues/4764)) ([`7e16edc`](https://github.com/docling-project/docling/commit/7e16edc966fb0e048d7ef6976ea7907d6b377a97))
+
+## [v2.138.0](https://github.com/docling-project/docling/releases/tag/v2.138.0) - 2026-10-12
+
+### Feature
+
+* **iwork:** Read pictures placed on a Numbers sheet ([#4700](https://github.com/docling-project/docling/issues/4700)) ([`88fbc05`](https://github.com/docling-project/docling/commit/88fbc055771161464463bbd1537747d3ccd0ec5e))
+
+### Fix
+
+* **docx:** Emit textboxes in table cells once inside their cell ([#4757](https://github.com/docling-project/docling/issues/4757)) ([`6bc5770`](https://github.com/docling-project/docling/commit/6bc57702be64a487736178938c10b5c11f4604b1))
+* **jats:** Parse ordered lists and list item labels ([#4770](https://github.com/docling-project/docling/issues/4770)) ([`ad2e0e1`](https://github.com/docling-project/docling/commit/ad2e0e1a4fd3d5b0e709f450befa64811bff14cb))
+* **mlx:** Pass the sampling temperature as `temperature` to mlx-vlm ([#4769](https://github.com/docling-project/docling/issues/4769)) ([`fb0818e`](https://github.com/docling-project/docling/commit/fb0818e3fb9bd24145731de1df18d50de9a715e0))
+* **odf:** Move hidden ODP slides to the invisible content layer ([#4767](https://github.com/docling-project/docling/issues/4767)) ([`807f6df`](https://github.com/docling-project/docling/commit/807f6df69ff8aabf69584a4b6cc2ed0287780ac7))
+* **pptx:** Move hidden shapes to the invisible content layer ([#4733](https://github.com/docling-project/docling/issues/4733)) ([`21588f5`](https://github.com/docling-project/docling/commit/21588f5261d0a5a051102356d9babb35e790f33e))
+* **iwork:** Keep the transparency of pictures ([#4686](https://github.com/docling-project/docling/issues/4686)) ([`3f8384f`](https://github.com/docling-project/docling/commit/3f8384fd7ab34510a66c41ad5ec4fa3897bed7fa))
+* **docx:** Keep footnote text that is not a plain paragraph ([#4735](https://github.com/docling-project/docling/issues/4735)) ([`a8c01dc`](https://github.com/docling-project/docling/commit/a8c01dc6ac269d0232214735819d529cb666e0dd))
+* **html:** Skip the inert content of template tags ([#4715](https://github.com/docling-project/docling/issues/4715)) ([`ed04377`](https://github.com/docling-project/docling/commit/ed04377eae16c84be1aefe8b9bfe42af9ecb2a5b))
+
+## [v2.137.0](https://github.com/docling-project/docling/releases/tag/v2.137.0) - 2026-10-09
+
+### Feature
+
+* Adding enrichments after the VLM pipeline ([#4469](https://github.com/docling-project/docling/issues/4469)) ([`45b187e`](https://github.com/docling-project/docling/commit/45b187e7b28c3bca15cd73986c03c40afae3023d))
+
+### Fix
+
+* **ocr:** Read PP-OCRv6 languages through rapidocr's list_supported_langs ([`0e1567b`](https://github.com/docling-project/docling/commit/0e1567bbb8a543b364aec234fc1abe2ff9aff7ba))
+
+## [v2.136.0](https://github.com/docling-project/docling/releases/tag/v2.136.0) - 2026-10-09
+
+### Feature
+
+* **heading_hierarchy:** Recognize Division/Subdivision heading markers in hierarchy inference ([#4473](https://github.com/docling-project/docling/issues/4473)) ([`8a6155b`](https://github.com/docling-project/docling/commit/8a6155b269b456d849cf3785d820e11ef3050b16))
+* **mlx:** Add repetition penalty options ([#4616](https://github.com/docling-project/docling/issues/4616)) ([`dd7c035`](https://github.com/docling-project/docling/commit/dd7c03577d60867ed345037d51a358c00d6dbed4))
+
+### Fix
+
+* **ocr:** Do not OCR programmatic text because a vector shape crosses it ([#4209](https://github.com/docling-project/docling/issues/4209)) ([`c6ef3c4`](https://github.com/docling-project/docling/commit/c6ef3c413b5bdb98bd2ae81a0a3d62ce711f58ec))
+* **latex:** Resolve \input and \includegraphics for str sources ([#4697](https://github.com/docling-project/docling/issues/4697)) ([`b2a59b9`](https://github.com/docling-project/docling/commit/b2a59b9fa1a31ae6584d4dd18cd0c2bb3ca285b6))
+* **latex:** Keep CMYK JPEG figures ([#4696](https://github.com/docling-project/docling/issues/4696)) ([`9943158`](https://github.com/docling-project/docling/commit/9943158bfc58f7659c6f79557f6d1a65e06a7006))
+* **pptx:** Move hidden slides to the invisible content layer ([#4647](https://github.com/docling-project/docling/issues/4647)) ([`3181d9f`](https://github.com/docling-project/docling/commit/3181d9fcbb8b7568ceba14b7ed5cd21f66b221e7))
+* **odf:** Remove the repeated padding of ODS sheets before converting them ([#4660](https://github.com/docling-project/docling/issues/4660)) ([`3312ed7`](https://github.com/docling-project/docling/commit/3312ed7ded624fe010f5039b0cd235852c09499c))
+* **slim:** Defer the rtree import so DocumentConverter imports without convert-core ([#4637](https://github.com/docling-project/docling/issues/4637)) ([`d9fa989`](https://github.com/docling-project/docling/commit/d9fa989df2a98a8966a92fc30d0e6691d2fb4c29))
+* **xlsx:** Keep CMYK pictures instead of dropping or re-rendering them ([#4664](https://github.com/docling-project/docling/issues/4664)) ([`4854af7`](https://github.com/docling-project/docling/commit/4854af7d760615c6692a7c1a55c5fdc86360aab9))
+* **odf:** Keep CMYK pictures instead of dropping them ([#4666](https://github.com/docling-project/docling/issues/4666)) ([`bb862e2`](https://github.com/docling-project/docling/commit/bb862e277940bd286c125b8e5068264f17755db5))
+* **latex:** Flush text at every \item and drop empty item terms ([#4644](https://github.com/docling-project/docling/issues/4644)) ([`560bb54`](https://github.com/docling-project/docling/commit/560bb54af7c2508a87be30eb64a7c967c1a0b940))
+* **html:** Read list item markers set by a string list-style-type ([#4669](https://github.com/docling-project/docling/issues/4669)) ([`cf51376`](https://github.com/docling-project/docling/commit/cf51376e24696e9603ff45a85358c8950aa928e1))
+* **pptx:** Respect layout bullet styles ([#4581](https://github.com/docling-project/docling/issues/4581)) ([`638c43a`](https://github.com/docling-project/docling/commit/638c43a54d4de7e8c0f4423917b5cb994669953d))
+* **html:** Keep the image of a table cell with one plain text run ([#4638](https://github.com/docling-project/docling/issues/4638)) ([`4f839fe`](https://github.com/docling-project/docling/commit/4f839fea61874711c025d0b5c36714b558bb84df))
+* **odf:** Keep ODT comments out of the body text ([#4436](https://github.com/docling-project/docling/issues/4436)) ([`8aef089`](https://github.com/docling-project/docling/commit/8aef08919d2060c57f3b8b6589e9e308f45e755d))
+* **docx:** Follow-up on dangling fragment hyperlinks ([#4613](https://github.com/docling-project/docling/issues/4613)) ([`9228eca`](https://github.com/docling-project/docling/commit/9228ecadaaf6a83cb2cf3e8982c7dac6bbe0d7ee))
+
+## [v2.135.0](https://github.com/docling-project/docling/releases/tag/v2.135.0) - 2026-10-07
+
+### Feature
+
+* **iwork:** Render Numbers chart images and read iWork '09 chart kinds ([#4630](https://github.com/docling-project/docling/issues/4630)) ([`f95402a`](https://github.com/docling-project/docling/commit/f95402a0f0e44ac17e4315ae2fde6ce4a456b131))
+* **md:** Preserve inline formatting in Markdown table cells ([#4488](https://github.com/docling-project/docling/issues/4488)) ([`1a264db`](https://github.com/docling-project/docling/commit/1a264dbf269369ad237f6597d956f452ea3e8544))
+
+### Fix
+
+* **vlm:** Map DOTS Markdown emphasis to styled spans ([#4631](https://github.com/docling-project/docling/issues/4631)) ([`0d604da`](https://github.com/docling-project/docling/commit/0d604da3abf47437aa673eca9b5bf4bf6c621e1d))
+* **html:** Keep the table or image of a list item without text ([#4617](https://github.com/docling-project/docling/issues/4617)) ([`97307ec`](https://github.com/docling-project/docling/commit/97307ecf99bbd53d07b1c20a49d8f433e63694d3))
+* **pdf:** Keep failed-page sizes on the conversion, not on the pipeline ([#4486](https://github.com/docling-project/docling/issues/4486)) ([`a183c15`](https://github.com/docling-project/docling/commit/a183c1501bb3ff08a0f11fe06b94467314cea3f7))
+* **ocr:** Keep tesseract CLI words like "N/A" and numbers verbatim ([#4536](https://github.com/docling-project/docling/issues/4536)) ([`4faef5b`](https://github.com/docling-project/docling/commit/4faef5bcf50b182d15c0036cb0b765f754eec261))
+* **pypdfium2:** Place cells relative to the visible page box ([#4538](https://github.com/docling-project/docling/issues/4538)) ([`9506220`](https://github.com/docling-project/docling/commit/950622056fc89bfdba2f3016a97c0862767f4fb2))
+* **html:** Keep description lists with nested divs or inner headings ([#4578](https://github.com/docling-project/docling/issues/4578)) ([`13714e7`](https://github.com/docling-project/docling/commit/13714e72b2a27efcd62a76689919b49b2f29fa75))
+* **html:** Keep converting when a link or image points outside the base directory ([#4601](https://github.com/docling-project/docling/issues/4601)) ([`f5107ee`](https://github.com/docling-project/docling/commit/f5107eecd1fa2cb56bc5a6d72c4761cd1e115d17))
+* **epub:** Resolve single-quoted and percent-escaped image sources ([#4602](https://github.com/docling-project/docling/issues/4602)) ([`1286e99`](https://github.com/docling-project/docling/commit/1286e998a1784ff0ca6af9fde86dfd79bd6c61ec))
+* **docx:** Preserve duplicate paragraphs in textboxes ([#4606](https://github.com/docling-project/docling/issues/4606)) ([`035cdd4`](https://github.com/docling-project/docling/commit/035cdd4bef23152b1203ac880471b4f29784e5da))
+* **pptx:** Trim chart data tables to populated rows and cap cell count ([#4608](https://github.com/docling-project/docling/issues/4608)) ([`e5e109c`](https://github.com/docling-project/docling/commit/e5e109c3a2c3cef45811afc1ab9978d6b7fb5038))
+* **docx:** Extract even-page headers and footers ([#4614](https://github.com/docling-project/docling/issues/4614)) ([`fdd4e4b`](https://github.com/docling-project/docling/commit/fdd4e4b7596135863a49eb96f0498fcf55260b68))
+* **html:** Keep HTML comments out of table cell text ([#4624](https://github.com/docling-project/docling/issues/4624)) ([`3b8db62`](https://github.com/docling-project/docling/commit/3b8db62d00ed934c809f45a35791c4c971233ae2))
+* **asciidoc:** Keep a backslash-escaped pipe inside its table cell ([#4378](https://github.com/docling-project/docling/issues/4378)) ([`8f6c9ab`](https://github.com/docling-project/docling/commit/8f6c9abf244a51301329d38572169e38d023ef83))
+* **docx:** Nest a list that is indented under an open list ([#4465](https://github.com/docling-project/docling/issues/4465)) ([`2093131`](https://github.com/docling-project/docling/commit/20931312564a8f84f622acf5878fb6f691f18a1f))
+* **models:** Defer the scipy import in the OCR base model ([#4449](https://github.com/docling-project/docling/issues/4449)) ([`4d4f6f7`](https://github.com/docling-project/docling/commit/4d4f6f7d123d221195fb64775c796c4de1f81c3b))
+* **ocr:** Scale tesserocr cell confidence to the 0-1 range ([#4534](https://github.com/docling-project/docling/issues/4534)) ([`64e0737`](https://github.com/docling-project/docling/commit/64e0737c588e937e1f6bf41ff26ff8c59274c7e6))
+* **docs:** Point advanced chunking example link to its generated path ([#4550](https://github.com/docling-project/docling/issues/4550)) ([`575d891`](https://github.com/docling-project/docling/commit/575d8918b7577ab3521a84ca2501376139e3cf63))
+* **pptx:** Preserve native Office Math equations ([#4625](https://github.com/docling-project/docling/issues/4625)) ([`a85f04d`](https://github.com/docling-project/docling/commit/a85f04d3cf1fe6875e9608637c97c4b696fe1759))
+* **asciidoc:** Consolidated fixes in AsciiDoc ([#4431](https://github.com/docling-project/docling/issues/4431)) ([`826a9af`](https://github.com/docling-project/docling/commit/826a9afced4e651f2209bf3d9184676c4d19fe66))
+* **html:** Keep non-li children of lists in document order ([#4440](https://github.com/docling-project/docling/issues/4440)) ([`c64119d`](https://github.com/docling-project/docling/commit/c64119d26b43cf9efe10bd282fc3bdf2576957c3))
+* **xbrl:** Report period dates as declared in instance contexts ([#4483](https://github.com/docling-project/docling/issues/4483)) ([`ecb200f`](https://github.com/docling-project/docling/commit/ecb200f3e9038d8f784cc353e39f91e4b37b55f6))
+* **jats:** Preserve styling in abstracts and footnotes ([#4361](https://github.com/docling-project/docling/issues/4361)) ([`893fdd1`](https://github.com/docling-project/docling/commit/893fdd1885717647f852bcbc3ebdc9ee56ec1f5d))
+* **pptx:** Extract pictures from picture placeholders ([#4594](https://github.com/docling-project/docling/issues/4594)) ([`930ab48`](https://github.com/docling-project/docling/commit/930ab48a9cee1ecf3b13c049dcb998a05e0cbca1))
+* **latex:** Preserve description list item terms ([#4579](https://github.com/docling-project/docling/issues/4579)) ([`0d08287`](https://github.com/docling-project/docling/commit/0d08287acdd5b565f240d2728b999de6ce686930))
+* **xbrl:** Keep the denominator of divide units in the unit cell ([#4568](https://github.com/docling-project/docling/issues/4568)) ([`aa1c7e1`](https://github.com/docling-project/docling/commit/aa1c7e181d006e193cef3d1f7744a8e2d9fcc2e0))
+* **html:** Close omitted end tags of list items and table cells ([#4591](https://github.com/docling-project/docling/issues/4591)) ([`1b0db45`](https://github.com/docling-project/docling/commit/1b0db458bdc3d54bdf4edbc628ebcfa06d87b4d5))
+* **office:** Preserve CMYK pictures with ICC-aware PNG conversion ([#4598](https://github.com/docling-project/docling/issues/4598)) ([`36cebd1`](https://github.com/docling-project/docling/commit/36cebd151676d94c23377ca69f2c4e014710d463))
+
+### Documentation
+
+* Fix OpenContracts GIF and remove dead Semantica notebook ([#4460](https://github.com/docling-project/docling/issues/4460)) ([`f80a79b`](https://github.com/docling-project/docling/commit/f80a79b08d13cc1c9f37106e9aaf689cf9f76e4f))
+* **examples:** Write plain text with export_to_text ([#4582](https://github.com/docling-project/docling/issues/4582)) ([`83ccdba`](https://github.com/docling-project/docling/commit/83ccdba7e2eded0a9a82c7937195abd1f86c5bb0))
+
+## [v2.134.0](https://github.com/docling-project/docling/releases/tag/v2.134.0) - 2026-10-06
+
+### Feature
+
+* **iwork:** Add Apple Numbers (.numbers) support ([#4113](https://github.com/docling-project/docling/issues/4113)) ([`8d7cc9f`](https://github.com/docling-project/docling/commit/8d7cc9f7f42b9d85f48e953f281e228acf3f6ea8))
+* **vlm:** Expose logprobs on the streaming API path ([#4528](https://github.com/docling-project/docling/issues/4528)) ([`3073a27`](https://github.com/docling-project/docling/commit/3073a27187f22166f8045fa8ac7db1d34be99afc))
+
+### Fix
+
+* **docx:** Preserve text from dangling fragment hyperlinks ([#4563](https://github.com/docling-project/docling/issues/4563)) ([`d15cf10`](https://github.com/docling-project/docling/commit/d15cf10c26cf33c54ef2779a1fd9d4e3066d07e0))
+* **html:** Keep text placed directly inside a figure ([#4574](https://github.com/docling-project/docling/issues/4574)) ([`caba660`](https://github.com/docling-project/docling/commit/caba660f6ff3a2ee8df39bd39d478046749f815c))
+* **docx:** Keep hyperlink runs nested in a wrapper ([#4576](https://github.com/docling-project/docling/issues/4576)) ([`7833b32`](https://github.com/docling-project/docling/commit/7833b326991902e1cd2d6da187059a4bc3a561ec))
+* **docx:** Add use_outline_level_for_headings option to backend ([#4480](https://github.com/docling-project/docling/issues/4480)) ([`b38ed49`](https://github.com/docling-project/docling/commit/b38ed495f016e5cbd90cb888d5d4b35b89fdec01))
+* **html:** Separate inline text from a following block tag in get_text ([#4484](https://github.com/docling-project/docling/issues/4484)) ([`d451d71`](https://github.com/docling-project/docling/commit/d451d71e204eca90b05314da207af9f25778fd11))
+* **md:** Drop whitespace-only lines before code block content ([#4543](https://github.com/docling-project/docling/issues/4543)) ([`eda5b5f`](https://github.com/docling-project/docling/commit/eda5b5fc86d10b2b79a900ff3e69fc159d5f6014))
+* **datamodel:** Let the extension pick between OLE2 legacy Office formats ([#4476](https://github.com/docling-project/docling/issues/4476)) ([`58f1f8d`](https://github.com/docling-project/docling/commit/58f1f8d907fdc4610cd8dca20da6ef53a4550ee8))
+* **xbrl:** Tolerate open taxonomy packages during temp dir cleanup ([#4482](https://github.com/docling-project/docling/issues/4482)) ([`d65cbd6`](https://github.com/docling-project/docling/commit/d65cbd64d024a39438fe4a1d71f91dd7d4a251d5))
+* **cli:** Write plain text for --to text ([#4508](https://github.com/docling-project/docling/issues/4508)) ([`e34b74d`](https://github.com/docling-project/docling/commit/e34b74d26feb0e089c15857ef30f8063c4f2e33a))
+* **cli:** Detect LaTeX documents by content when the name gives no format ([#4551](https://github.com/docling-project/docling/issues/4551)) ([`93ce581`](https://github.com/docling-project/docling/commit/93ce581b12f3876c74b68b963557d62c6857e7b4))
+* **code-formula:** Stop repetition loops and make the crop margin configurable ([#4548](https://github.com/docling-project/docling/issues/4548)) ([`012b611`](https://github.com/docling-project/docling/commit/012b6110cdab50badef3087783887f6f15c79032))
+* **cli:** Keep local LaTeX sources in place so included files resolve ([#4532](https://github.com/docling-project/docling/issues/4532)) ([`734e8f0`](https://github.com/docling-project/docling/commit/734e8f0d69071355c0aea98bed33a7f397eba1b6))
+* **latex:** Keep the first-line indentation of code environments ([#4502](https://github.com/docling-project/docling/issues/4502)) ([`51fe9ff`](https://github.com/docling-project/docling/commit/51fe9ff4578e9f150ef3bc6246433e6092a8ebfb))
+* **email:** Keep Cc recipients in the converted document ([#4505](https://github.com/docling-project/docling/issues/4505)) ([`53eec17`](https://github.com/docling-project/docling/commit/53eec17c5cc81e68a1f2d7430562c905a44247b2))
+* **image:** Flatten transparent images onto white instead of black ([#4511](https://github.com/docling-project/docling/issues/4511)) ([`0cd61e0`](https://github.com/docling-project/docling/commit/0cd61e0050a9ef68e5e10495b87e41d31acd79c9))
+* **odf:** Respect page_range in ODS and ODP ([#4512](https://github.com/docling-project/docling/issues/4512)) ([`7bfbdb9`](https://github.com/docling-project/docling/commit/7bfbdb95ee179128879677ba1c2a5902cafbc821))
+* **mets-gbs:** Rewind the stream so archives passed as DocumentStream load ([#4521](https://github.com/docling-project/docling/issues/4521)) ([`31aca0f`](https://github.com/docling-project/docling/commit/31aca0ff9b7b58a141ee36839deb5b39bd925171))
+* **cli:** Apply the video options to videos found in a directory ([#4523](https://github.com/docling-project/docling/issues/4523)) ([`1cd56d8`](https://github.com/docling-project/docling/commit/1cd56d87b4117eefe09d233d95b77ec5120d946a))
+* **md:** Reset pending line breaks at block boundaries ([#4525](https://github.com/docling-project/docling/issues/4525)) ([`dd7e1ef`](https://github.com/docling-project/docling/commit/dd7e1ef4c79f8edf1a62e98f192a5a33113282d5))
+* **html,jats,boxnote:** Count the columns a rowspan shifts cells into ([#4527](https://github.com/docling-project/docling/issues/4527)) ([`c87c9ce`](https://github.com/docling-project/docling/commit/c87c9cefb43bfb7d5fa2d10214ec54067e1a0288))
+* **opendocument:** Emit the embedded chart title as a caption ([#4529](https://github.com/docling-project/docling/issues/4529)) ([`dfa8728`](https://github.com/docling-project/docling/commit/dfa87284be91927ec59c9bb46e9e7347b375c17f))
+* **md:** Keep text after a line break out of a code span ([#4509](https://github.com/docling-project/docling/issues/4509)) ([`5c5a8c1`](https://github.com/docling-project/docling/commit/5c5a8c1b3fdf4d3cb02b18a152e577dac2d7eef1))
+
+### Documentation
+
+* **agents:** Require simplified technical English ([#4552](https://github.com/docling-project/docling/issues/4552)) ([`b91e6b2`](https://github.com/docling-project/docling/commit/b91e6b22b3fac9c15f3cb78b8db573c7c54f4d64))
+
+## [v2.133.0](https://github.com/docling-project/docling/releases/tag/v2.133.0) - 2026-10-03
+
+### Feature
+
+* **ocr:** Allow configuring RapidOCR model size ([#4500](https://github.com/docling-project/docling/issues/4500)) ([`a1c5ff2`](https://github.com/docling-project/docling/commit/a1c5ff2a8c5ab2bf87d7c1eb896b5bc351f51220))
+
+### Fix
+
+* **opendocument:** Read the chart object's own title ([#4463](https://github.com/docling-project/docling/issues/4463)) ([`4c109c2`](https://github.com/docling-project/docling/commit/4c109c255f3655af2c6f2c0be8c8677adee41a8a))
+* **code-formula:** Keep the extracted text when a batch fails ([#4495](https://github.com/docling-project/docling/issues/4495)) ([`a25aa1d`](https://github.com/docling-project/docling/commit/a25aa1dedccf74572df0385cde0cf02fb059b92c))
+* **latex:** Decode Windows-1252 sources and 8-bit TikZ dependencies ([#4475](https://github.com/docling-project/docling/issues/4475)) ([`b5aa0ef`](https://github.com/docling-project/docling/commit/b5aa0ef38aa5577b812496d70b1ca9f6d0142b00))
+* **md:** Keep the first-line indentation of code blocks ([#4487](https://github.com/docling-project/docling/issues/4487)) ([`cc937ec`](https://github.com/docling-project/docling/commit/cc937ec6c07b2ae5a71b7e3b726cade46083086b))
+* **html:** Keep dt/dd groups wrapped in div elements in description lists ([#4390](https://github.com/docling-project/docling/issues/4390)) ([`f1c42e3`](https://github.com/docling-project/docling/commit/f1c42e394e3f5c40375c83edf01f8de762bb64f9))
+* **latex:** Decode \input files the same way as the main file ([#4441](https://github.com/docling-project/docling/issues/4441)) ([`bba2ec5`](https://github.com/docling-project/docling/commit/bba2ec58fe58af1be630fea5cc0d35b0ad2a472e))
+* **docx:** Read w:numPr from the paragraph's own properties (#4456) ([#4457](https://github.com/docling-project/docling/issues/4457)) ([`1d4b9ae`](https://github.com/docling-project/docling/commit/1d4b9ae17b8a18ed723a0c9fc6e01bef080b3387))
+* **csv:** Sniff dialect after leading empty lines ([#4467](https://github.com/docling-project/docling/issues/4467)) ([`2dd8c53`](https://github.com/docling-project/docling/commit/2dd8c533cdefeb77ccefaf3f47fe3be9714ff782))
+* Detect the format of path inputs with an upper-case extension ([#4430](https://github.com/docling-project/docling/issues/4430)) ([`89935d5`](https://github.com/docling-project/docling/commit/89935d50fa378f1b32f576a40d9acbe7ab4e209e))
+
+## [v2.132.0](https://github.com/docling-project/docling/releases/tag/v2.132.0) - 2026-10-01
+
+### Feature
+
+* **pdf, reading-order:** Updating the reading-order algoirthm ([#4276](https://github.com/docling-project/docling/issues/4276)) ([`42de1e2`](https://github.com/docling-project/docling/commit/42de1e20fe2783c0c30c5b3c0f9c60ab5eef9e16))
+
+### Fix
+
+* Preserve fidelity when mapping external VLM output (Chandra, dots, MinerU) ([#4470](https://github.com/docling-project/docling/issues/4470)) ([`20ba847`](https://github.com/docling-project/docling/commit/20ba84719e1c9e29f7ddfb731eca7ad00488180d))
+* **csv:** Validate first-line dialect before accepting a sniff ([#4453](https://github.com/docling-project/docling/issues/4453)) ([`d6f0307`](https://github.com/docling-project/docling/commit/d6f03078ad364108df3e7e82e8f0dcc3fd7f39ea))
+* **docx:** Exclude '<w:bCs>' from bold detection ([#4366](https://github.com/docling-project/docling/issues/4366)) ([`bf836f2`](https://github.com/docling-project/docling/commit/bf836f244d92dc001d68230a44a4afa23926df17))
+* **image:** Recognize .gif files as images ([#4326](https://github.com/docling-project/docling/issues/4326)) ([`cd05bef`](https://github.com/docling-project/docling/commit/cd05bef2837c879cb636b5e8e61b03405bfdf7b8))
+* **cli:** Skip Excel and PowerPoint lock files in directories ([#4324](https://github.com/docling-project/docling/issues/4324)) ([`6864fb3`](https://github.com/docling-project/docling/commit/6864fb314475b3aab8acb254e9c5f2c795fd5b13))
+* **csv:** Unescape doubled quotes in quoted fields ([#4362](https://github.com/docling-project/docling/issues/4362)) ([`e53ce5d`](https://github.com/docling-project/docling/commit/e53ce5dfd2e7705dd06855eefa62e404ac59f0ac))
+* **md:** Keep inline code spans inside GFM table cells ([#4327](https://github.com/docling-project/docling/issues/4327)) ([`ae8db9a`](https://github.com/docling-project/docling/commit/ae8db9a2f1379875f1a74ad7935f58a70b5183c9))
+* **latex:** Run Tectonic without shell escape and skip TikZ that references outside files ([#4419](https://github.com/docling-project/docling/issues/4419)) ([`38b6fa0`](https://github.com/docling-project/docling/commit/38b6fa0a465d46fdacbbec333f50fa19c4f6b342))
+* **html:** Validate every resolved address and scope fetch headers to the source origin ([#4420](https://github.com/docling-project/docling/issues/4420)) ([`5e46913`](https://github.com/docling-project/docling/commit/5e469137f275ffc443306a30d12a3a45bceb80fb))
+* **video:** Limit ffmpeg input protocols and add subprocess timeouts ([#4421](https://github.com/docling-project/docling/issues/4421)) ([`efaf9ed`](https://github.com/docling-project/docling/commit/efaf9edd61363ef7239a49ba8e6b349ee219268f))
+
+## [v2.131.0](https://github.com/docling-project/docling/releases/tag/v2.131.0) - 2026-09-29
+
+### Feature
+
+* **iwork:** Parse Keynote charts as classified pictures with data ([#4376](https://github.com/docling-project/docling/issues/4376)) ([`9da6935`](https://github.com/docling-project/docling/commit/9da693562ea817109d703c997f091ab3806dd074))
+* **iwork:** Add Apple Keynote (`.key`) support ([#4330](https://github.com/docling-project/docling/issues/4330)) ([`87c6ea0`](https://github.com/docling-project/docling/commit/87c6ea0caddff2751b97accc9811b650eb714927))
+
+### Fix
+
+* **pypdfium2:** Build the page object index once to avoid quadratic scans ([#4226](https://github.com/docling-project/docling/issues/4226)) ([`b93af46`](https://github.com/docling-project/docling/commit/b93af46c6aeb01d4d357a068881e7f8aa5040c00))
+* **pipeline:** Skip enrichment after timeout ([#4396](https://github.com/docling-project/docling/issues/4396)) ([`152f9ba`](https://github.com/docling-project/docling/commit/152f9ba9358444294f9cdd3a406cd3524d47294f))
+* **vlm:** Report failed remote API calls as INFERENCE_ERROR instead of empty success ([#4332](https://github.com/docling-project/docling/issues/4332)) ([`2b2fb85`](https://github.com/docling-project/docling/commit/2b2fb851624f34df881cd90d744f8da2c4f8e37a))
+* **mets:** Enforce the member limit while iterating the archive ([#4412](https://github.com/docling-project/docling/issues/4412)) ([`ebae65c`](https://github.com/docling-project/docling/commit/ebae65cd71c37c88b36185b406a449b92d8f7ffa))
+* **plugins:** Skip external entry points before importing them ([#4413](https://github.com/docling-project/docling/issues/4413)) ([`0f443b3`](https://github.com/docling-project/docling/commit/0f443b3786e98688a2da3b7c8f56fe5e46af876c))
+* Clamp oversized table rowspan/colspan to the table size ([#4414](https://github.com/docling-project/docling/issues/4414)) ([`c5b4429`](https://github.com/docling-project/docling/commit/c5b4429cc6500a344c13edeb22e67610c2159b09))
+* **uspto:** Extract tables in linear time ([#4411](https://github.com/docling-project/docling/issues/4411)) ([`19e4519`](https://github.com/docling-project/docling/commit/19e45195edd658877ee3e0a8524caddc38260c5a))
+* **html:** Keep the source text in orig ([#4434](https://github.com/docling-project/docling/issues/4434)) ([`04e9b04`](https://github.com/docling-project/docling/commit/04e9b04bc4ee905715400f94f735824210f831ab))
+* **json:** Don't load local image files referenced by Docling JSON input ([#4417](https://github.com/docling-project/docling/issues/4417)) ([`d4bb776`](https://github.com/docling-project/docling/commit/d4bb776884aba9aa3132f54773f420853cf7afe4))
+* **pptx:** Start numbered lists at their startAt value ([#4415](https://github.com/docling-project/docling/issues/4415)) ([`e478006`](https://github.com/docling-project/docling/commit/e4780063bb4c33b2b48222d2106ce9ba45eaf453))
+* **ocr:** Require enable_remote_services for the KServe v2 OCR engine ([#4418](https://github.com/docling-project/docling/issues/4418)) ([`7d6d0c4`](https://github.com/docling-project/docling/commit/7d6d0c4810dff4885017c53890be6dc5a22ca68b))
+* **pptx:** Repair test failures introduced by the LibreOffice hardening ([#4425](https://github.com/docling-project/docling/issues/4425)) ([`98d78ef`](https://github.com/docling-project/docling/commit/98d78ef87bbe4eb88b3212e3ef2a5cbe4dd4729c))
+* **asciidoc:** Flush pending text at section headers ([#4428](https://github.com/docling-project/docling/issues/4428)) ([`e2f942e`](https://github.com/docling-project/docling/commit/e2f942ef57acbfa6f7b3925354727d95d653bf73))
+* **docx:** Keep lists in their section after a numbered heading ([#4282](https://github.com/docling-project/docling/issues/4282)) ([`68732ff`](https://github.com/docling-project/docling/commit/68732ff4dad9c56543de54ad4e9776ad9a6b0f3d))
+* **md:** Preserve whitespace around inline emphasis in table cells ([#4318](https://github.com/docling-project/docling/issues/4318)) ([`d453bb0`](https://github.com/docling-project/docling/commit/d453bb0451950199dfe0ddf83c4782c445c93ab5))
+* **epub:** Rewrite internal links for every content-document extension ([#4293](https://github.com/docling-project/docling/issues/4293)) ([`ec3dc7c`](https://github.com/docling-project/docling/commit/ec3dc7c50256b9a80d88ece7cdfce542a201b95c))
+* **latex:** Parse tabular*, tabularx and longtable as tables ([#4325](https://github.com/docling-project/docling/issues/4325)) ([`20f474b`](https://github.com/docling-project/docling/commit/20f474b08619645c97e1ce8ec2825a5d1a24e02b))
+* Preserve mixed and numeric chart headers ([#4367](https://github.com/docling-project/docling/issues/4367)) ([`c14c373`](https://github.com/docling-project/docling/commit/c14c373faa8139f3ec3c710dd481e54efba86445))
+* **docx:** Read footnote/endnote body text from the separate OPC parts ([#4374](https://github.com/docling-project/docling/issues/4374)) ([`6167240`](https://github.com/docling-project/docling/commit/616724033d10f211681bc4c08524cb28afa4cdb5))
+* **odf:** Stop splicing footnote/endnote body text into the citing paragraph`\ ([#4375](https://github.com/docling-project/docling/issues/4375)) ([`bf734d1`](https://github.com/docling-project/docling/commit/bf734d1fcd54a57e4b63a5dac422838b11e03c92))
+* **uspto:** Rewind a stream input before reading it ([#4379](https://github.com/docling-project/docling/issues/4379)) ([`e100e6d`](https://github.com/docling-project/docling/commit/e100e6d9a135489acaccf022bb7c36ab2f60d773))
+* **pptx:** Nest list items by paragraph level ([#4397](https://github.com/docling-project/docling/issues/4397)) ([`fc8a093`](https://github.com/docling-project/docling/commit/fc8a093c3cf05d2c33d7c3726cf05026548a022d))
+* **asciidoc:** Turn listing blocks into code items ([#4400](https://github.com/docling-project/docling/issues/4400)) ([`8060f3f`](https://github.com/docling-project/docling/commit/8060f3f1f00e048832b3b4535e91acdd23a5f7d3))
+* **docx:** Render East Asian w:numFmt values in list markers ([#4336](https://github.com/docling-project/docling/issues/4336)) ([`2682193`](https://github.com/docling-project/docling/commit/268219388f54b32e536c741e45c13591794142cd))
+* **xlsx:** Keep every message of a threaded comment ([#4353](https://github.com/docling-project/docling/issues/4353)) ([`62594ff`](https://github.com/docling-project/docling/commit/62594ffe8cc241695e2a1a8c80c2957e589ac0e1))
+* **asciidoc:** Parse nested bullet list items ([#4403](https://github.com/docling-project/docling/issues/4403)) ([`1d28495`](https://github.com/docling-project/docling/commit/1d284951e3dcf9e57298a4f4494875239a5fec33))
+* **html:** Render GFM task lists as checkbox items with their text ([#4401](https://github.com/docling-project/docling/issues/4401)) ([`4d37c64`](https://github.com/docling-project/docling/commit/4d37c64566f2ccfcde657f1cdcbee2734aa0321e))
+* **md:** Keep every character-reference spelling of a pipe inside its table cell ([#4371](https://github.com/docling-project/docling/issues/4371)) ([`2d5c590`](https://github.com/docling-project/docling/commit/2d5c590c34b6378fd8a47c65b534b280aa40c93c))
+* **jats:** Tolerate partial citation names and empty article titles ([#4272](https://github.com/docling-project/docling/issues/4272)) ([`25ad1d5`](https://github.com/docling-project/docling/commit/25ad1d5fcc0eb088187fedac89cd4f3c3140cbbf))
+* **backend:** Translate line endings when decoding text from a stream ([#4354](https://github.com/docling-project/docling/issues/4354)) ([`7928e30`](https://github.com/docling-project/docling/commit/7928e3096922a0a78e4b6f07093859905d60b63a))
+* **latex:** Keep spacing and paragraph of text around inline macros ([#4340](https://github.com/docling-project/docling/issues/4340)) ([`dcea997`](https://github.com/docling-project/docling/commit/dcea997ce85cc9b48df521b0405940b47a6b5eaf))
+* **asciidoc:** Skip empty tables after incomplete rows ([#4300](https://github.com/docling-project/docling/issues/4300)) ([`7e361ab`](https://github.com/docling-project/docling/commit/7e361ab016282115eaef1bc43cc18caead414a19))
+* **ocr:** Use configured Tesseract tessdata path ([#4141](https://github.com/docling-project/docling/issues/4141)) ([`54a6ca4`](https://github.com/docling-project/docling/commit/54a6ca42fb950682c92a1ab834a96411eb26bbe6))
+* **csv:** Drop blank lines instead of turning them into empty rows ([#4316](https://github.com/docling-project/docling/issues/4316)) ([`61fe339`](https://github.com/docling-project/docling/commit/61fe339da4e64e5f0cb80da0bd3a558f673917ea))
+* Load granite-vision-4.1-4b natively on transformers>=5.8 ([#4208](https://github.com/docling-project/docling/issues/4208)) ([`804e806`](https://github.com/docling-project/docling/commit/804e8069c4965bc0f164a837a2fea13b94e838f4))
+* **epub:** Decode a UTF-16 content document instead of dropping it ([#4351](https://github.com/docling-project/docling/issues/4351)) ([`cc32d17`](https://github.com/docling-project/docling/commit/cc32d17b836ad849c227345c4212373b0ab14f92))
+* **ocr:** Check ocrmac languages against the configured recognition level ([#4345](https://github.com/docling-project/docling/issues/4345)) ([`fc4aa7f`](https://github.com/docling-project/docling/commit/fc4aa7fb780847fde32c3b1b60780e1ddec3fd6e))
+
+### Documentation
+
+* Example with PaddleOCR-VL structured result adapter ([#3942](https://github.com/docling-project/docling/issues/3942)) ([`eb17f57`](https://github.com/docling-project/docling/commit/eb17f57cfe8fe31f2e1003dfe4ab46344068b1a2))
+* Fix picture description preset example to use engine options ([#4385](https://github.com/docling-project/docling/issues/4385)) ([`e207804`](https://github.com/docling-project/docling/commit/e20780467dc24cf49d578e76030b16c71b8c9fb3))
+* Add missing imports to the custom VLM example ([#4360](https://github.com/docling-project/docling/issues/4360)) ([`3d4c553`](https://github.com/docling-project/docling/commit/3d4c553691979e4e3c1ced959ea598a6c7fbccd9))
+
+## [v2.130.0](https://github.com/docling-project/docling/releases/tag/v2.130.0) - 2026-09-22
+
+### Feature
+
+* Add Mineru 2.5 Pro to the supported VLMs ([#4322](https://github.com/docling-project/docling/issues/4322)) ([`9a2c3e7`](https://github.com/docling-project/docling/commit/9a2c3e775051f2e19de7f70b04b7241ac95c70fc))
+
+### Fix
+
+* **service client:** Omit only unset arguments but keep values set equal to defaults ([#4349](https://github.com/docling-project/docling/issues/4349)) ([`35c6af5`](https://github.com/docling-project/docling/commit/35c6af53b58849aafbf491968fd68363cdf732ff))
+* Remove double preset registration of chart extraction ([#4348](https://github.com/docling-project/docling/issues/4348)) ([`878831c`](https://github.com/docling-project/docling/commit/878831c786cf2ac5b0d726a8cb30906b84d09a2d))
+* **md:** Honor backslash-escaped pipes in Markdown tables ([#4313](https://github.com/docling-project/docling/issues/4313)) ([`52e52fd`](https://github.com/docling-project/docling/commit/52e52fd738fc04f73b4566d2a4ce0dee7cbd848e))
+* Fix the VLM end token stripping. Extend the unit tests ([`7748f6e`](https://github.com/docling-project/docling/commit/7748f6e581c366ac39398f50a12b805ae8e018d6))
+* **docx:** Keep list items when a list starts above indent level 0 ([#4188](https://github.com/docling-project/docling/issues/4188)) ([`b078ea3`](https://github.com/docling-project/docling/commit/b078ea34921eafe181141e6179e87885196497c3))
+* **backend:** Defer the docling-parse import in the PDF backend ([#4286](https://github.com/docling-project/docling/issues/4286)) ([`1b40928`](https://github.com/docling-project/docling/commit/1b4092810c364e1fdc0b5d358faf353f9ca9447e))
+* **html:** Emit the <caption> of a table and link it to the TableItem ([#4289](https://github.com/docling-project/docling/issues/4289)) ([`d6d9da0`](https://github.com/docling-project/docling/commit/d6d9da076a4f87da969af109bfa89e5d2a097a1e))
+* Force eager attention for Nemotron Parse v2 (#4307) ([#4328](https://github.com/docling-project/docling/issues/4328)) ([`54c7cf2`](https://github.com/docling-project/docling/commit/54c7cf2e3f7217c16525eb9fb7001a9fb890af5c))
+* **ebcdic:** Keep fixed-point notation for scaled numbers ([#4296](https://github.com/docling-project/docling/issues/4296)) ([`244042a`](https://github.com/docling-project/docling/commit/244042af9d97bfb73e31883698857def94056db8))
+* **docx:** Don't reuse a list group across an intervening table ([#4305](https://github.com/docling-project/docling/issues/4305)) ([`4141a99`](https://github.com/docling-project/docling/commit/4141a9963a2537f83146be6ed240c46ad16cafa5))
+* **afp:** Follow PTOCA control sequence chaining ([#4297](https://github.com/docling-project/docling/issues/4297)) ([`df6b341`](https://github.com/docling-project/docling/commit/df6b341c8b4de1e88e2d6188830cf36ae0534e6d))
+* **pptx:** Record slide positions as TOPLEFT, the origin python-pptx reports ([#4294](https://github.com/docling-project/docling/issues/4294)) ([`dd05464`](https://github.com/docling-project/docling/commit/dd05464edf7ba736f732be6aaa6dbf996419b111))
+* **office:** Harden the LibreOffice profile, flags, and timeout kill ([#4228](https://github.com/docling-project/docling/issues/4228)) ([`14789f2`](https://github.com/docling-project/docling/commit/14789f2c2c542f8d127a0aac85eb779d5bba554e))
+* **docx:** Clamp heading levels to the OOXML 1-9 range ([#4319](https://github.com/docling-project/docling/issues/4319)) ([`1c2dbec`](https://github.com/docling-project/docling/commit/1c2dbec06fb6d8f55885bd2b135bbe0484fb175c))
+* **xlsx:** Avoid duplicate sparse table fragments ([#4302](https://github.com/docling-project/docling/issues/4302)) ([`891de07`](https://github.com/docling-project/docling/commit/891de07317f4bff5769ed7a46882ecc4d75797e8))
+* **email:** Fall back to the HTML body when the plain part is blank ([#4295](https://github.com/docling-project/docling/issues/4295)) ([`8e37971`](https://github.com/docling-project/docling/commit/8e37971218f2af9184273b692cf255466f149bca))
+* Skip already downloaded EasyOCR models unless force is set ([#4317](https://github.com/docling-project/docling/issues/4317)) ([`8522eb7`](https://github.com/docling-project/docling/commit/8522eb7553acf896240f4a0e39c3ee9f4d85125f))
+* **backend:** Defer pypdfium2 import in office and LaTeX backends ([#4285](https://github.com/docling-project/docling/issues/4285)) ([`abca4be`](https://github.com/docling-project/docling/commit/abca4be4d1de5fc6b89062250f6b31cb6d1fcb22))
+* Recognize .markdown files ([#4306](https://github.com/docling-project/docling/issues/4306)) ([`557f0fa`](https://github.com/docling-project/docling/commit/557f0fa60f67a30030fd5c8392fb47470a6d6e81))
+
+### Documentation
+
+* **ocr:** Fix the dead same-page anchor in OCR.md ([#4310](https://github.com/docling-project/docling/issues/4310)) ([`6e22317`](https://github.com/docling-project/docling/commit/6e22317ca3217ef26a95648160dff16146767ba5))
+* **examples:** Fix stale paths in the VLM pipeline example comments ([#4311](https://github.com/docling-project/docling/issues/4311)) ([`490fa64`](https://github.com/docling-project/docling/commit/490fa646e2b73af1ad5b506c434549c8b75dd9af))
+
+## [v2.129.0](https://github.com/docling-project/docling/releases/tag/v2.129.0) - 2026-09-18
+
+### Feature
+
+* Refactor chart extraction with generic engine options ([#4246](https://github.com/docling-project/docling/issues/4246)) ([`0e6c2ca`](https://github.com/docling-project/docling/commit/0e6c2ca3324a9691d528b9f5bb8d2b21b0380814))
+* Allow ambient credentials for S3 ([#4212](https://github.com/docling-project/docling/issues/4212)) ([`e689393`](https://github.com/docling-project/docling/commit/e6893934792920bcca6528ea1a5a76071a5340a5))
+
+### Fix
+
+* More improvements for chandra ocr parsing ([#4277](https://github.com/docling-project/docling/issues/4277)) ([`a83926c`](https://github.com/docling-project/docling/commit/a83926cfbecdf6568ee083797cab2d5626eee7a4))
+* **asciidoc:** Recognise a rowspan-only cell specifier ([#4290](https://github.com/docling-project/docling/issues/4290)) ([`815f34a`](https://github.com/docling-project/docling/commit/815f34ab665851e080f7a518ebedde553f3d150d))
+* **html:** Default a zero colspan or rowspan to 1 in HTML tables ([#4287](https://github.com/docling-project/docling/issues/4287)) ([`6cb036c`](https://github.com/docling-project/docling/commit/6cb036c9d79a432a662688c63ef64637f879c498))
+* **csv:** Wrap strict quote errors as DocumentLoadError ([#4260](https://github.com/docling-project/docling/issues/4260)) ([`ddf05ff`](https://github.com/docling-project/docling/commit/ddf05ff894192ef0d13822d8875a144a1cd89c40))
+* **heading-hierarchy:** Support colon, dash, bracket and parenthesized numbering markers ([#4204](https://github.com/docling-project/docling/issues/4204)) ([`3b5f61c`](https://github.com/docling-project/docling/commit/3b5f61c0c520250d581173336148a2c1ca876386))
+* **epub:** Resolve manifest hrefs that step out of the package directory ([#4261](https://github.com/docling-project/docling/issues/4261)) ([`2b6a7ff`](https://github.com/docling-project/docling/commit/2b6a7ffd5049cc01c40cf2302ed7d46e892d3434))
+* **backend:** Decode text documents that are not UTF-8 ([#4202](https://github.com/docling-project/docling/issues/4202)) ([`cea4b45`](https://github.com/docling-project/docling/commit/cea4b4500c0277684c98697ead406838081060c6))
+* **picture-description:** Propagate token usage from vlm engine output ([#4250](https://github.com/docling-project/docling/issues/4250)) ([`629440e`](https://github.com/docling-project/docling/commit/629440ee795fda854a9f9667ca8c54b0013a5ad6))
+* **email:** Normalise CRLF and lone CR in message bodies ([#4248](https://github.com/docling-project/docling/issues/4248)) ([`1ceca30`](https://github.com/docling-project/docling/commit/1ceca3073e499dcc9da2dc802ac1f18bce672978))
+* **pptx:** Keep charts nested in a group when isolating for rendering ([#4232](https://github.com/docling-project/docling/issues/4232)) ([`e80fa80`](https://github.com/docling-project/docling/commit/e80fa8054f52520119605cb111af86f82ee854e2))
+* **cache:** Fall back safely when serialize_as_any detects false circular reference ([#4240](https://github.com/docling-project/docling/issues/4240)) ([`d4fa979`](https://github.com/docling-project/docling/commit/d4fa979af44a878700f8576eaba7e27dd9330005))
+* Recognize bare Arabic chapter numbering ([#4179](https://github.com/docling-project/docling/issues/4179)) ([`b5cfca0`](https://github.com/docling-project/docling/commit/b5cfca0d206913f7d105a636e36b6a1fe269faeb))
+
+### Documentation
+
+* Fix notebook links that resolve above docs/ ([#4196](https://github.com/docling-project/docling/issues/4196)) ([`52137a1`](https://github.com/docling-project/docling/commit/52137a1f9718045ee4d3a7f3ee2d771960791895))
+* Fix the API-reference relative paths in the confidence scores guide ([#4195](https://github.com/docling-project/docling/issues/4195)) ([`56a041a`](https://github.com/docling-project/docling/commit/56a041a05c9288a2e21f6701cbf3ab7cd1aaedc4))
+
+## [v2.128.0](https://github.com/docling-project/docling/releases/tag/v2.128.0) - 2026-09-16
+
+### Feature
+
+* Add minimal AFP document support ([#4177](https://github.com/docling-project/docling/issues/4177)) ([`1cdae27`](https://github.com/docling-project/docling/commit/1cdae2749e89853a0c6d7896ced6cdfddcb76721))
+* Add nvidia/NVIDIA-Nemotron-Parse-2.0 as vlm model ([#4253](https://github.com/docling-project/docling/issues/4253)) ([`01b5738`](https://github.com/docling-project/docling/commit/01b57389a33c5b2eac974b41344fb957a1e80838))
+* **pdf:** Refactor the docling-parse backend to remove pypdfium ([#4244](https://github.com/docling-project/docling/issues/4244)) ([`ca0ecd4`](https://github.com/docling-project/docling/commit/ca0ecd413e5902bb423d5224b02969edf2561971))
+
+### Fix
+
+* **asciidoc:** Block titles, picture parenting, skipped headings, and list dedent ([#4171](https://github.com/docling-project/docling/issues/4171)) ([`7fe1b3c`](https://github.com/docling-project/docling/commit/7fe1b3c602105b2f3fb7b6a75d0c529e4a4da4b2))
+* **image:** Apply the EXIF orientation when loading image frames ([#4247](https://github.com/docling-project/docling/issues/4247)) ([`77ab16d`](https://github.com/docling-project/docling/commit/77ab16d8a6510572d8c720d3df2ad1bc99c7fd92))
+* Improve Chandra OCR parsing and preserve document structure ([#4239](https://github.com/docling-project/docling/issues/4239)) ([`b322564`](https://github.com/docling-project/docling/commit/b32256402addc02452697805ee25f38b5e8abffb))
+* **email:** Keep rendered display names parseable and single-line ([#4242](https://github.com/docling-project/docling/issues/4242)) ([`e8c6092`](https://github.com/docling-project/docling/commit/e8c6092fe6ee995ce0719a71352b9f1fad5350cf))
+* **docx:** Sanitize fragment-only relationship targets in DOCX archives before parsing ([#4243](https://github.com/docling-project/docling/issues/4243)) ([`1aec03f`](https://github.com/docling-project/docling/commit/1aec03f1c3326584e8a7b97b2d0ed2ad95d946b4))
+
+### Documentation
+
+* Fix stale TransformersModelType enum member in vision models guide ([#4251](https://github.com/docling-project/docling/issues/4251)) ([`bbdaeda`](https://github.com/docling-project/docling/commit/bbdaeda1d8a749b9dafe16d701cbacf495435c11))
+
+## [v2.127.0](https://github.com/docling-project/docling/releases/tag/v2.127.0) - 2026-09-14
+
+### Feature
+
+* Addition of 'region' to S3Coordinates ([#4221](https://github.com/docling-project/docling/issues/4221)) ([`5ea6490`](https://github.com/docling-project/docling/commit/5ea6490ffdc57b2fd7de5cc436f2d0a22f2214d4))
+* **mhtml:** Add MHTML input backend ([#4184](https://github.com/docling-project/docling/issues/4184)) ([`7e05ed6`](https://github.com/docling-project/docling/commit/7e05ed60f203ee4c1890e7e63846239dc68f4a50))
+* Add RTF input support via LibreOffice ([`be443e8`](https://github.com/docling-project/docling/commit/be443e8d158223c3aff55fb0e33c6ba6a434d848))
+* **jats:** Embed local figure images ([#4041](https://github.com/docling-project/docling/issues/4041)) ([`3d33038`](https://github.com/docling-project/docling/commit/3d330388b8f37291964a613274fd24b357edcc3b))
+* Canonicalize the OCR languages across all engines according to the BCP-47 standard ([#4075](https://github.com/docling-project/docling/issues/4075)) ([`9a2d947`](https://github.com/docling-project/docling/commit/9a2d947b70e093e301a5328d114760d8e86d61e9))
+
+### Fix
+
+* **html:** Flag pivot-table row headers as row_header, not column_header ([#4216](https://github.com/docling-project/docling/issues/4216)) ([`5ef4f92`](https://github.com/docling-project/docling/commit/5ef4f9283ed8810350ac9730a1b135db41cd8f47))
+* **jats:** Preserve structured abstract sections and fix nested list parent ([#4172](https://github.com/docling-project/docling/issues/4172)) ([`5eef82b`](https://github.com/docling-project/docling/commit/5eef82b9e042c916c01dd1799463da3657fec035))
+* **pptx:** Correct paragraph provenance, subtitle labels, and chart caption parenting ([#4190](https://github.com/docling-project/docling/issues/4190)) ([`1c46705`](https://github.com/docling-project/docling/commit/1c46705062a61043f2c944d32fecbf23c39c38f2))
+* **docx:** Parse table cells wrapped in a content control (#3946) ([#3951](https://github.com/docling-project/docling/issues/3951)) ([`78caf0a`](https://github.com/docling-project/docling/commit/78caf0abdbce177ffbdcd9dacd1869159567980e))
+* **iwork:** Drop mimetypes.add_type workaround for Pages MIME type ([#4215](https://github.com/docling-project/docling/issues/4215)) ([`636c9d5`](https://github.com/docling-project/docling/commit/636c9d5c5ed0ba5707919817f97c44e18494c814))
+* **epub:** Decode percent-escaped manifest hrefs ([#4199](https://github.com/docling-project/docling/issues/4199)) ([`c35bb02`](https://github.com/docling-project/docling/commit/c35bb0209266315b0b3da4024cab770c2fafbd6a))
+* **docx:** Avoid per-figure document reload and use bulk body reset ([#4193](https://github.com/docling-project/docling/issues/4193)) ([`82e6361`](https://github.com/docling-project/docling/commit/82e6361224a71caf7ed57f49fe96274f07cae1b1))
+* **webvtt:** Accept CRLF and CR line terminators from a stream ([#4157](https://github.com/docling-project/docling/issues/4157)) ([`3682b16`](https://github.com/docling-project/docling/commit/3682b16bde4e7c5acce838b734bbaf54555edf52))
+* **docx:** Honor w:numFmt when building Word list markers ([#4087](https://github.com/docling-project/docling/issues/4087)) ([`ff764c2`](https://github.com/docling-project/docling/commit/ff764c2853589fc4be753b929d91d23e967d663b))
+* **asciidoc:** Remove dead max_image_data_base64_bytes option ([#4173](https://github.com/docling-project/docling/issues/4173)) ([`97f73ef`](https://github.com/docling-project/docling/commit/97f73efdc145af9cf37c020200fb40d5c87eba1f))
+* **xlsx:** Add missing openpyxl template formats ([#4178](https://github.com/docling-project/docling/issues/4178)) ([`c34fa4d`](https://github.com/docling-project/docling/commit/c34fa4d92ef194387132bc987bcd662b052604f9))
+* **iwork:** Prune sf:ghost-text-ref placeholder text ([#4170](https://github.com/docling-project/docling/issues/4170)) ([`025b27c`](https://github.com/docling-project/docling/commit/025b27ca2c2f040b5b9628dccffd2611246990ca))
+
+### Documentation
+
+* **datamodel:** Fix two pydantic field descriptions ([#4197](https://github.com/docling-project/docling/issues/4197)) ([`2d5560e`](https://github.com/docling-project/docling/commit/2d5560e7f131594c6b27996051fd86919cb2aadf))
+* Add labelstudio integration to docs ([#4191](https://github.com/docling-project/docling/issues/4191)) ([`6bfab1c`](https://github.com/docling-project/docling/commit/6bfab1c9749203fd494465566c50addd39e91e4a))
+* Fix links to moved or out-of-tree targets ([#4187](https://github.com/docling-project/docling/issues/4187)) ([`6ee68fd`](https://github.com/docling-project/docling/commit/6ee68fd3459c695abedd97441c3ceb77e1d07b2b))
+
 ## [v2.126.0](https://github.com/docling-project/docling/releases/tag/v2.126.0) - 2026-09-04
 
 ### Feature

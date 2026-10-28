@@ -145,6 +145,12 @@
       },
       {
         "$ref": "#/texts/1312"
+      },
+      {
+        "$ref": "#/texts/1376"
+      },
+      {
+        "$ref": "#/texts/1378"
       }
     ],
     "content_layer": "body",
@@ -6192,7 +6198,14 @@
       "parent": {
         "$ref": "#/groups/188"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/1375"
+        },
+        {
+          "$ref": "#/texts/1377"
+        }
+      ],
       "content_layer": "furniture",
       "name": "list",
       "label": "list"
@@ -10817,8 +10830,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Pacific black duck displaying the characteristic upending \"duck\"",
-      "text": "Pacific black duck displaying the characteristic upending \"duck\"",
-      "hyperlink": "/wiki/Pacific_black_duck"
+      "text": "Pacific black duck displaying the characteristic upending \"duck\""
     },
     {
       "self_ref": "#/texts/308",
@@ -11569,8 +11581,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Male mallard .",
-      "text": "Male mallard .",
-      "hyperlink": "/wiki/Mallard"
+      "text": "Male mallard ."
     },
     {
       "self_ref": "#/texts/359",
@@ -11582,8 +11593,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Wood ducks .",
-      "text": "Wood ducks .",
-      "hyperlink": "/wiki/Wood_duck"
+      "text": "Wood ducks ."
     },
     {
       "self_ref": "#/texts/360",
@@ -12029,8 +12039,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Mallard landing in approach",
-      "text": "Mallard landing in approach",
-      "hyperlink": "/wiki/Mallard"
+      "text": "Mallard landing in approach"
     },
     {
       "self_ref": "#/texts/390",
@@ -12073,7 +12082,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The largest of these, the Anatini, contains the 'dabbling' or 'river' ducks - named for their method of feeding primarily at the surface of fresh water.",
+      "orig": "The largest of these, the Anatini, contains the 'dabbling' or 'river' ducks – named for their method of feeding primarily at the surface of fresh water.",
       "text": "The largest of these, the Anatini, contains the 'dabbling' or 'river' ducks - named for their method of feeding primarily at the surface of fresh water."
     },
     {
@@ -12868,8 +12877,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Male Mandarin duck",
-      "text": "Male Mandarin duck",
-      "hyperlink": "/wiki/Mandarin_duck"
+      "text": "Male Mandarin duck"
     },
     {
       "self_ref": "#/texts/445",
@@ -13259,8 +13267,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Flying steamer ducks in Ushuaia , Argentina",
-      "text": "Flying steamer ducks in Ushuaia , Argentina",
-      "hyperlink": "/wiki/Flying_steamer_ducks"
+      "text": "Flying steamer ducks in Ushuaia , Argentina"
     },
     {
       "self_ref": "#/texts/475",
@@ -13645,8 +13652,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Female mallard in Cornwall , England",
-      "text": "Female mallard in Cornwall , England",
-      "hyperlink": "/wiki/Cornwall"
+      "text": "Female mallard in Cornwall , England"
     },
     {
       "self_ref": "#/texts/503",
@@ -13754,8 +13760,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Pecten along the bill",
-      "text": "Pecten along the bill",
-      "hyperlink": "/wiki/Pecten_(biology)"
+      "text": "Pecten along the bill"
     },
     {
       "self_ref": "#/texts/508",
@@ -13767,8 +13772,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Mallard duckling preening",
-      "text": "Mallard duckling preening",
-      "hyperlink": "/wiki/Mallard"
+      "text": "Mallard duckling preening"
     },
     {
       "self_ref": "#/texts/509",
@@ -14170,8 +14174,7 @@
       "label": "caption",
       "prov": [],
       "orig": "A Muscovy duckling",
-      "text": "A Muscovy duckling",
-      "hyperlink": "/wiki/Muscovy_duck"
+      "text": "A Muscovy duckling"
     },
     {
       "self_ref": "#/texts/539",
@@ -14751,7 +14754,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "- which are",
+      "orig": "– which are",
       "text": "- which are"
     },
     {
@@ -14776,7 +14779,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "- make a noise like \"scaup\" (hence their name). Calls may be loud displaying calls or quieter contact calls.",
+      "orig": "– make a noise like \"scaup\" (hence their name). Calls may be loud displaying calls or quieter contact calls.",
       "text": "- make a noise like \"scaup\" (hence their name). Calls may be loud displaying calls or quieter contact calls."
     },
     {
@@ -15418,7 +15421,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in California dating to 7800 - 6400",
+      "orig": "in California dating to 7800 – 6400",
       "text": "in California dating to 7800 - 6400"
     },
     {
@@ -16096,8 +16099,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Indian Runner ducks , a common breed of domestic ducks",
-      "text": "Indian Runner ducks , a common breed of domestic ducks",
-      "hyperlink": "/wiki/Indian_Runner_duck"
+      "text": "Indian Runner ducks , a common breed of domestic ducks"
     },
     {
       "self_ref": "#/texts/675",
@@ -16407,15 +16409,7 @@
       "label": "caption",
       "prov": [],
       "orig": "Three black-colored ducks in the coat of arms of Maaninka [ 49 ]",
-      "text": "Three black-colored ducks in the coat of arms of Maaninka [ 49 ]",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "super"
-      },
-      "hyperlink": "/wiki/Maaninka"
+      "text": "Three black-colored ducks in the coat of arms of Maaninka [ 49 ]"
     },
     {
       "self_ref": "#/texts/696",
@@ -17657,7 +17651,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". K. Dictionaries Ltd. 2000-2006 . Retrieved 2015-05-22 .",
+      "orig": ". K. Dictionaries Ltd. 2000–2006 . Retrieved 2015-05-22 .",
       "text": ". K. Dictionaries Ltd. 2000-2006 . Retrieved 2015-05-22 ."
     },
     {
@@ -18095,7 +18089,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", pp. 737-738.",
+      "orig": ", pp. 737–738.",
       "text": ", pp. 737-738."
     },
     {
@@ -18221,7 +18215,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", pp. 353-354.",
+      "orig": ", pp. 353–354.",
       "text": ", pp. 353-354."
     },
     {
@@ -18585,7 +18579,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", p. 622-623.",
+      "orig": ", p. 622–623.",
       "text": ", p. 622-623."
     },
     {
@@ -19316,7 +19310,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", pp. 98-107.",
+      "orig": ", pp. 98–107.",
       "text": ", pp. 98-107."
     },
     {
@@ -19379,7 +19373,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", pp. 52-3.",
+      "orig": ", pp. 52–3.",
       "text": ", pp. 52-3."
     },
     {
@@ -19735,7 +19729,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". pp. 187-221.",
+      "orig": ". pp. 187–221.",
       "text": ". pp. 187-221."
     },
     {
@@ -19960,7 +19954,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(1): 201-205.",
+      "orig": "(1): 201–205.",
       "text": "(1): 201-205."
     },
     {
@@ -23072,7 +23066,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(3): 339-356.",
+      "orig": "(3): 339–356.",
       "text": "(3): 339-356."
     },
     {
@@ -23471,7 +23465,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Vol. I: A-K. Santa Barbara: ABC-CLIO.",
+      "orig": ". Vol. I: A–K. Santa Barbara: ABC-CLIO.",
       "text": ". Vol. I: A-K. Santa Barbara: ABC-CLIO."
     },
     {
@@ -24186,7 +24180,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(4): 737-754.",
+      "orig": "(4): 737–754.",
       "text": "(4): 737-754."
     },
     {
@@ -24378,7 +24372,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(3): 452-459.",
+      "orig": "(3): 452–459.",
       "text": "(3): 452-459."
     },
     {
@@ -26526,6 +26520,68 @@
       "hyperlink": "//en.m.wikipedia.org/w/index.php?title=Duck&mobileaction=toggle_view_mobile",
       "enumerated": false,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1375",
+      "parent": {
+        "$ref": "#/groups/192"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/25"
+        }
+      ],
+      "content_layer": "furniture",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1376",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "caption",
+      "prov": [],
+      "orig": "Wikimedia Foundation",
+      "text": "Wikimedia Foundation",
+      "hyperlink": "https://wikimediafoundation.org/"
+    },
+    {
+      "self_ref": "#/texts/1377",
+      "parent": {
+        "$ref": "#/groups/192"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/26"
+        }
+      ],
+      "content_layer": "furniture",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/1378",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "caption",
+      "prov": [],
+      "orig": "Powered by MediaWiki",
+      "text": "Powered by MediaWiki",
+      "hyperlink": "https://www.mediawiki.org/"
     }
   ],
   "pictures": [
@@ -26941,6 +26997,42 @@
       "captions": [
         {
           "$ref": "#/texts/1312"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/25",
+      "parent": {
+        "$ref": "#/texts/1375"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/1376"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/26",
+      "parent": {
+        "$ref": "#/texts/1377"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/1378"
         }
       ],
       "references": [],

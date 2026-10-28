@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from pathlib import Path
 from typing import Iterable, Optional, Type
 
@@ -61,6 +62,9 @@ class TesseractOcrModel(BaseOcrModel):
         self.scale = self.options.scale
         self._reader = None
         self._script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
+        # Conversions that run at the same time share this model. A tesserocr
+        # reader is not thread-safe, so only one page uses the readers at a time.
+        self._readers_lock = threading.Lock()
         self._tesseract_vocabulary: list[str] = []
         self._native_codes: list[str] = []
 
@@ -90,7 +94,10 @@ class TesseractOcrModel(BaseOcrModel):
             except Exception:
                 raise ImportError(install_errmsg)
 
-            _, codes = tesserocr.get_languages()
+            if self.options.path is not None:
+                _, codes = tesserocr.get_languages(path=self.options.path)
+            else:
+                _, codes = tesserocr.get_languages()
             self._tesseract_vocabulary = tesseract_vocabulary(codes)
             if not self._tesseract_vocabulary:
                 raise ImportError(missing_langs_errmsg)
@@ -171,7 +178,7 @@ class TesseractOcrModel(BaseOcrModel):
             if not page._backend.is_valid():
                 yield page
             else:
-                with TimeRecorder(conv_res, "ocr"):
+                with self._readers_lock, TimeRecorder(conv_res, "ocr"):
                     assert self._reader is not None
                     assert self._osd_reader is not None
                     assert self._tesseract_vocabulary is not None
@@ -254,7 +261,8 @@ class TesseractOcrModel(BaseOcrModel):
 
                             # Extract text within the bounding box
                             text = local_reader.GetUTF8Text().strip()
-                            confidence = local_reader.MeanTextConf()
+                            # tesserocr reports 0-100; cell confidences are 0-1
+                            confidence = local_reader.MeanTextConf() / 100.0
                             left, top = box["x"], box["y"]
                             right = left + box["w"]
                             bottom = top + box["h"]

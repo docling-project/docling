@@ -3,8 +3,12 @@
 
 """Unit tests for extraction model prompt style dispatch."""
 
+from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
 from docling.datamodel.vlm_model_specs import (
@@ -64,3 +68,55 @@ def test_build_extraction_prompt() -> None:
     assert "Extract structured data" in prompt
     assert "Return ONLY valid JSON" in prompt
     assert "Return null for fields" in prompt
+
+
+@pytest.mark.parametrize(
+    ("transformers_version", "expected_trust_remote_code"),
+    [("5.7.0", True), ("5.8.0", False), ("5.16.1", False)],
+)
+def test_extraction_model_loads_granite_vision_4_natively(
+    monkeypatch, transformers_version, expected_trust_remote_code
+) -> None:
+    """Granite Vision 4 skips its bundled code where transformers ships it."""
+    import docling.models.extraction.transformers_extraction_model as ext_model
+
+    processor_kwargs = {}
+    model_kwargs = {}
+
+    class FakeProcessor:
+        tokenizer = None
+
+    class FakeModel:
+        @classmethod
+        def from_pretrained(cls, *args, **kwargs):
+            model_kwargs.update(kwargs)
+            return cls()
+
+        def eval(self):
+            return None
+
+    def fake_processor_from_pretrained(*args, **kwargs):
+        processor_kwargs.update(kwargs)
+        return FakeProcessor()
+
+    monkeypatch.setattr(
+        ext_model.importlib.metadata,
+        "version",
+        lambda package: transformers_version if package == "transformers" else "0.0.0",
+    )
+    monkeypatch.setattr(
+        ext_model.AutoProcessor, "from_pretrained", fake_processor_from_pretrained
+    )
+    monkeypatch.setattr(ext_model, "AutoModelForImageTextToText", FakeModel)
+
+    ext_model.TransformersExtractionModel(
+        enabled=True,
+        artifacts_path=Path("artifacts"),
+        accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+        vlm_options=GRANITE_VISION_4_1_TRANSFORMERS,
+        prompt_style=ExtractionPromptStyle.GRANITE_VISION,
+    )
+
+    assert processor_kwargs["trust_remote_code"] is expected_trust_remote_code
+    assert model_kwargs["trust_remote_code"] is expected_trust_remote_code
+    assert model_kwargs["_attn_implementation"] is None

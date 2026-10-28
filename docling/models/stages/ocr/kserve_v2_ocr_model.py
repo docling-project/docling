@@ -24,6 +24,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.datamodel.pipeline_options import KserveV2OcrOptions, OcrOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import OperationNotAllowed
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
 from docling.utils.profiling import TimeRecorder
@@ -53,6 +54,7 @@ class KserveV2OcrModel(BaseOcrModel):
         options: KserveV2OcrOptions,
         accelerator_options: AcceleratorOptions,
         default_language: str = "en",
+        enable_remote_services: bool = False,
     ):
         """Initialize the KServe v2 OCR model.
 
@@ -62,6 +64,9 @@ class KserveV2OcrModel(BaseOcrModel):
             options: KServe v2 OCR configuration options.
             accelerator_options: Accelerator configuration (not used for remote inference).
             default_language: Language sent when `options.lang` is empty.
+            enable_remote_services: Whether connections to remote services are
+                allowed. The model sends page crops to a remote inference server
+                and raises ``OperationNotAllowed`` if enabled while this is ``False``.
         """
         super().__init__(
             enabled=enabled,
@@ -73,6 +78,13 @@ class KserveV2OcrModel(BaseOcrModel):
         self._kserve_client: Optional[KserveV2Client] = None
 
         if self.enabled:
+            # Checked before the client is created.
+            if not enable_remote_services:
+                raise OperationNotAllowed(
+                    "Connections to remote services are only allowed when set explicitly. "
+                    "pipeline_options.enable_remote_services=True."
+                )
+
             self._initialize_client()
 
             # Keep only the first language and warn

@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
@@ -66,6 +67,8 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
     __call__(self, doc, element_batch)
         Processes the given batch of elements and enriches them with predictions.
     """
+
+    progress_step = EnrichmentStep.CODE_FORMULA
 
     _model_repo_folder = "docling-project--CodeFormulaV2"
     elements_batch_size = 5

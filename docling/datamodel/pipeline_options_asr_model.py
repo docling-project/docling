@@ -9,8 +9,13 @@ This module defines the option classes that configure how audio is transcribed.
 - ``InlineAsrNativeWhisperOptions``: OpenAI's native ``whisper`` (PyTorch), the
   default backend, supported on CPU and CUDA.
 - ``InlineAsrMlxWhisperOptions``: ``mlx-whisper``, optimized for Apple Silicon.
+- ``InlineAsrTransformersOptions``: Transformers checkpoints for speech models.
 - ``InlineAsrWhisperS2TOptions``: WhisperS2T (CTranslate2), an optional,
   experimental high-throughput backend installed via the ``format-audio`` extra.
+
+``ApiAsrOptions`` is the alternative to all of them: nothing runs locally, the audio
+is sent to an OpenAI-compatible ``/v1/audio/transcriptions`` endpoint (a Whisper
+server that is deployed on its own, or a hosted service).
 
 The concrete model presets, the ``AsrModelType`` enum, and the hardware-based
 auto-selection live in ``docling.datamodel.asr_model_specs``. The auto-selecting
@@ -49,9 +54,102 @@ class BaseAsrOptions(BaseModel):
 
 class InferenceAsrFramework(str, Enum):
     MLX = "mlx"
-    # TRANSFORMERS = "transformers" # disabled for now
+    TRANSFORMERS = "transformers"
     WHISPER = "whisper"
     WHISPER_S2T = "whisper_s2t"
+
+
+class ApiAsrOptions(BaseAsrOptions):
+    """Configuration for transcription by a remote, OpenAI-compatible service.
+
+    The audio file is posted as ``multipart/form-data`` to an
+    ``/audio/transcriptions`` endpoint with ``response_format=verbose_json``, and the
+    timed segments of the answer become the text items of the document. No model is
+    loaded in the Docling process, and FFmpeg is not needed for audio files (the
+    server decodes them).
+
+    Notes:
+        Requires ``enable_remote_services=True`` on the parent pipeline options to
+        permit external API calls.
+    """
+
+    kind: Literal["api_model_options"] = "api_model_options"
+    url: Annotated[
+        AnyUrl,
+        Field(
+            description=(
+                "Transcription endpoint of an OpenAI-compatible server, for example "
+                "`http://whisper:8000/v1/audio/transcriptions`. The default points to a "
+                "local server; update it for a deployed or cloud service."
+            ),
+        ),
+    ] = AnyUrl("http://localhost:8000/v1/audio/transcriptions")
+    headers: Annotated[
+        dict[str, str],
+        Field(
+            description=(
+                "HTTP headers to include in the request. Use for authentication."
+            ),
+            examples=[{"Authorization": "Bearer TOKEN"}],
+        ),
+    ] = {}
+    model: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Value of the `model` form field, for servers that serve several "
+                "models. Omitted when empty."
+            ),
+            examples=["whisper-1", "Systran/faster-whisper-small"],
+        ),
+    ] = None
+    language: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "ISO 639-1 language code of the audio (`en`, `fr`...). Omitted when "
+                "empty, so that the server detects the language."
+            ),
+            examples=["en", "fr", "de"],
+        ),
+    ] = None
+    initial_prompt: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Text sent as the `prompt` form field, to condition the transcription "
+                "style or give domain vocabulary (names, call-signs, jargon)."
+            )
+        ),
+    ] = None
+    word_timestamps: Annotated[
+        bool,
+        Field(
+            description=(
+                "Ask for word-level timestamps (`timestamp_granularities[]=word`). "
+                "The server must support them."
+            )
+        ),
+    ] = False
+    params: Annotated[
+        dict[str, Any],
+        Field(
+            description=(
+                "Additional form fields to send, for service-specific settings that "
+                "are not covered above (for example `temperature` or `vad_filter`)."
+            ),
+            examples=[{"temperature": 0.0}],
+        ),
+    ] = {}
+    timeout: Annotated[
+        float,
+        Field(
+            description=(
+                "Seconds to wait for the answer. Transcribing a long recording on a "
+                "busy server can take minutes."
+            )
+        ),
+    ] = 600.0
 
 
 class InlineAsrOptions(BaseAsrOptions):
@@ -61,10 +159,7 @@ class InlineAsrOptions(BaseAsrOptions):
     repo_id: Annotated[
         str,
         Field(
-            description=(
-                "HuggingFace model repository ID for the ASR model. Must be a "
-                "Whisper-compatible model for automatic speech recognition."
-            ),
+            description=("Hugging Face model repository ID for the ASR model."),
             examples=["openai/whisper-tiny", "openai/whisper-base"],
         ),
     ]
@@ -217,6 +312,34 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
             )
         ),
     ] = None
+
+
+AsrModelFamily = Literal[
+    "whisper",
+    "granite",
+    "granite_ctc",
+    "parakeet",
+    "nemotron",
+]
+
+
+class InlineAsrTransformersOptions(InlineAsrOptions):
+    """ASR with a Hugging Face Transformers checkpoint."""
+
+    inference_framework: Literal[InferenceAsrFramework.TRANSFORMERS] = (
+        InferenceAsrFramework.TRANSFORMERS
+    )
+    revision: str = "main"
+    model_family: AsrModelFamily = "whisper"
+    prompt: str | None = None
+    language: str | None = None
+    task: Literal["transcribe", "translate"] = "transcribe"
+    supported_devices: list[AcceleratorDevice] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ]
 
 
 class InlineAsrMlxWhisperOptions(InlineAsrOptions):

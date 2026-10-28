@@ -36,6 +36,7 @@ from docling.models.utils.hf_model_download import (
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
 _log = logging.getLogger(__name__)
 
@@ -113,7 +114,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
             if artifacts_path is None:
                 artifacts_path = self.download_models(
-                    self.vlm_options.repo_id, revision=self.vlm_options.revision
+                    self.vlm_options.repo_id,
+                    revision=self.vlm_options.revision,
+                    trust_remote_code=self.vlm_options.trust_remote_code,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
@@ -416,14 +419,12 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         # -- Clip off pad tokens from decoded texts
         pad_token = self.processor.tokenizer.pad_token
         if pad_token:
-            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+            decoded_texts = strip_trailing_token(decoded_texts, pad_token)
 
         if (
             self.vlm_options.extra_generation_config.get("strip_stop_strings", False)
             and self.vlm_options.stop_strings
         ):
-            from docling.utils.vlm_utils import strip_stop_strings
-
             decoded_texts = strip_stop_strings(
                 decoded_texts, self.vlm_options.stop_strings
             )

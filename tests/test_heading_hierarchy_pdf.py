@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc.document import SectionHeaderItem
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -38,7 +38,7 @@ def test_pdf_pipeline_assigns_heading_levels_from_existing_fixture(
     input_document = InputDocument(
         path_or_stream=Path("tests/data/pdf/sources/2203.01017v2.pdf"),
         format=InputFormat.PDF,
-        backend=DoclingParseDocumentBackend,
+        backend=ThreadedDoclingParseDocumentBackend,
         limits=DocumentLimits(page_range=(1, 6)),
     )
 

@@ -291,6 +291,8 @@ class EasyOcrModel(BaseOcrModel):
 
         # Download models
         for model_details in download_list:
+            if (local_dir / model_details["filename"]).exists() and not force:
+                continue
             buf = download_url_with_progress(model_details["url"], progress=progress)
             with zipfile.ZipFile(buf, "r") as zip_ref:
                 for member in zip_ref.infolist():
@@ -326,7 +328,7 @@ class EasyOcrModel(BaseOcrModel):
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
                         )
-                        im = numpy.array(high_res_image)
+                        im = numpy.asarray(high_res_image)
 
                         with warnings.catch_warnings():
                             if self.options.suppress_mps_warnings:

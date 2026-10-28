@@ -15,6 +15,7 @@ document, the status, the exception type -- not the exact bytes exchanged.
 
 from __future__ import annotations
 
+import ipaddress
 from collections.abc import Iterator
 
 import pytest
@@ -72,15 +73,19 @@ def client(service: FakeService) -> Iterator[DoclingServiceClient]:
         yield remote
 
 
+def _resolve_to_loopback(host: str) -> list[ipaddress.IPv4Address]:
+    return [ipaddress.IPv4Address("127.0.0.1")]
+
+
 @pytest.fixture
 def allow_loopback_artifacts(monkeypatch: pytest.MonkeyPatch) -> None:
     """Let artifact downloads reach the loopback fake.
 
-    ``_is_safe_artifact_url`` is an SSRF guard that rejects non-routable hosts
-    by design, which includes the test server. The guard itself is covered by
-    ``test_presigned_artifact_on_a_loopback_host_is_refused``.
+    ``resolve_public_addresses`` is an SSRF guard that rejects non-routable
+    hosts by design, which includes the test server. The guard itself is
+    covered by ``test_presigned_artifact_on_a_loopback_host_is_refused``.
     """
-    monkeypatch.setattr(client_module, "_is_safe_artifact_url", lambda url: True)
+    monkeypatch.setattr(client_module, "resolve_public_addresses", _resolve_to_loopback)
 
 
 # -- basic endpoints -----------------------------------------------------
@@ -151,6 +156,96 @@ def test_presigned_artifact_on_a_loopback_host_is_refused(client):
     assert any("non-public URL" in item.error_message for item in result.errors), (
         result.errors
     )
+
+
+def test_presigned_artifact_on_an_allowlisted_private_origin_is_downloaded(
+    service,
+):
+    with DoclingServiceClient(
+        url=service.base_url,
+        status_watcher=StatusWatcherKind.POLLING,
+        poll_server_wait=0.01,
+        poll_client_interval=0.01,
+        artifact_url_allowlist=[service.base_url],
+    ) as remote:
+        result = remote.convert(SOURCE)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert service.requests_for("GET", r"/artifacts/.*/json")
+
+
+def test_redirect_from_an_allowlisted_origin_to_a_private_host_is_refused(
+    serve, service
+):
+    """The allowlist applies to each redirect hop, not only to the first URL."""
+    port = service.base_url.rsplit(":", 1)[1]
+    service.respond_once(
+        "GET",
+        r"/artifacts/.*/json",
+        Response(
+            status=302,
+            headers={"Location": f"http://localhost:{port}/artifacts/x/json"},
+        ),
+    )
+
+    with DoclingServiceClient(
+        url=service.base_url,
+        status_watcher=StatusWatcherKind.POLLING,
+        poll_server_wait=0.01,
+        poll_client_interval=0.01,
+        artifact_url_allowlist=[service.base_url],
+    ) as remote:
+        result = remote.convert(SOURCE, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    assert any(
+        "non-public URL: http://localhost:" in item.error_message
+        for item in result.errors
+    ), result.errors
+
+
+@pytest.mark.parametrize("many", [False, True], ids=["convert", "convert_all"])
+def test_presigned_artifact_is_fetched_from_the_validated_address(
+    client, serve, service, allow_loopback_artifacts, many
+):
+    """The download connects to the address the guard validated.
+
+    ``.invalid`` never resolves, so the download succeeds only if the client
+    connects to the validated address instead of resolving the hostname again.
+    The hostname is still sent in the Host header.
+    """
+    port = service.base_url.rsplit(":", 1)[1]
+    serve.base_url = f"http://artifacts.invalid:{port}"
+
+    if many:
+        results = list(client.convert_all([SOURCE]))
+    else:
+        results = [client.convert(SOURCE)]
+
+    assert [r.status for r in results] == [ConversionStatus.SUCCESS]
+    artifact_requests = service.requests_for("GET", r"/artifacts/.*")
+    assert artifact_requests
+    assert {r.headers["host"] for r in artifact_requests} == {
+        f"artifacts.invalid:{port}"
+    }
+
+
+def test_presigned_artifact_in_no_proxy_is_fetched_directly(
+    client, serve, service, allow_loopback_artifacts, monkeypatch
+):
+    """A host in ``NO_PROXY`` is fetched directly, also after address pinning.
+
+    ``NO_PROXY`` names the hostname, not the validated address. The download
+    must not match the address against the proxy settings again, or it is sent
+    to the proxy. The sync service client already exists, so it keeps no proxy.
+    """
+    monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalid:9")
+    monkeypatch.setenv("NO_PROXY", "artifacts.invalid")
+    monkeypatch.delenv("no_proxy", raising=False)
+    port = service.base_url.rsplit(":", 1)[1]
+    serve.base_url = f"http://artifacts.invalid:{port}"
+
+    assert client.convert(SOURCE).status == ConversionStatus.SUCCESS
 
 
 def test_convert_falls_back_to_inbody_when_presigned_is_unsupported(client, service):

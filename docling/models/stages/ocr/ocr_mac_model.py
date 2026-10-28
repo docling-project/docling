@@ -3,7 +3,6 @@
 
 import logging
 import sys
-import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional, Type
@@ -31,10 +30,12 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
-def _get_vision_languages() -> list[str]:
-    """The recognition languages the running macOS reports.
+def _get_vision_languages(recognition: str) -> list[str]:
+    """The recognition languages the running macOS reports for a recognition level.
 
     The list is OS-version dependent, so it is always queried rather than hardcoded.
+    The `fast` level ships far fewer languages than `accurate`, and ocrmac rejects
+    a language the requested level does not support.
     """
     errmsg = (
         "Apple Vision did not report any recognition language. "
@@ -45,6 +46,8 @@ def _get_vision_languages() -> list[str]:
 
         # pyobjc exposes the ObjC classes dynamically, so ty cannot see them.
         request = Vision.VNRecognizeTextRequest.alloc().init()  # ty: ignore[unresolved-attribute]
+        # Same mapping as ocrmac: 1 is fast, 0 (the default) is accurate.
+        request.setRecognitionLevel_(1 if recognition == "fast" else 0)
         languages, error = request.supportedRecognitionLanguagesAndReturnError_(None)
     except Exception as exc:  # pyobjc/Vision availability varies by OS version
         raise RuntimeError(errmsg) from exc
@@ -92,7 +95,7 @@ class OcrMacModel(BaseOcrModel):
 
             self.reader_RIL = ocrmac.OCR
 
-            self._vision_languages = _get_vision_languages()
+            self._vision_languages = _get_vision_languages(self.options.recognition)
             self._native_codes = self.resolve_ocr_languages()
 
     def supported_ocr_languages(self) -> OcrLanguageSupport:
@@ -168,18 +171,12 @@ class OcrMacModel(BaseOcrModel):
                             scale=self.scale, cropbox=ocr_rect
                         )
 
-                        with tempfile.NamedTemporaryFile(
-                            suffix=".png", mode="w"
-                        ) as image_file:
-                            fname = image_file.name
-                            high_res_image.save(fname)
-
-                            boxes = self.reader_RIL(
-                                fname,
-                                recognition_level=self.options.recognition,
-                                framework=self.options.framework,
-                                language_preference=self._native_codes or None,
-                            ).recognize()
+                        boxes = self.reader_RIL(
+                            high_res_image,
+                            recognition_level=self.options.recognition,
+                            framework=self.options.framework,
+                            language_preference=self._native_codes or None,
+                        ).recognize()
 
                         im_width, im_height = high_res_image.size
                         cells = []

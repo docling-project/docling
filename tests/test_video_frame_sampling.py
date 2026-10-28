@@ -10,16 +10,19 @@ pixel-diff tests run without ffmpeg using synthetic PIL images.
 
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from PIL import Image
 
 from docling.utils.video_frame_sampling import (
+    FfmpegRunner,
     FixedIntervalFrameSampler,
     SimpleSceneChangeFrameSampler,
     VideoFrame,
     VideoScene,
+    probe_duration,
 )
 
 _HAS_FFMPEG = shutil.which("ffmpeg") is not None
@@ -205,3 +208,112 @@ def test_scene_change_respects_min_duration(three_scene_video: Path):
     )
     scenes = sampler.detect_scenes(three_scene_video)
     assert len(scenes) == 1
+
+
+# --- ffmpeg input handling and time limits (requires ffmpeg) -----------------
+
+
+def _encode_clip(path: Path, video_codec: str) -> None:
+    """Render a 2s test pattern with a sine audio track into ``path``."""
+    proc = subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=s=96x64:d=2:r=10",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=d=2",
+            "-c:v",
+            video_codec,
+            "-shortest",
+            str(path),
+        ],
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        pytest.skip(f"ffmpeg cannot encode {video_codec} into {path.suffix}")
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+@pytest.mark.parametrize(
+    ("filename", "video_codec"),
+    [
+        ("clip.mp4", "mpeg4"),
+        ("clip.mov", "mpeg4"),
+        ("clip.mkv", "mpeg4"),
+        ("clip.webm", "libvpx"),
+        ("clip.avi", "mpeg4"),
+        pytest.param(
+            "take:1.mp4",
+            "mpeg4",
+            marks=pytest.mark.skipif(
+                sys.platform == "win32", reason="':' not allowed in file names"
+            ),
+        ),
+    ],
+)
+def test_every_container_samples_frames(tmp_path: Path, filename: str, video_codec):
+    video = tmp_path / filename
+    _encode_clip(video, video_codec)
+
+    frames = FixedIntervalFrameSampler(interval_seconds=0.5).sample(video)
+    assert len(frames) >= 4
+    assert frames[0].image.size == (96, 64)
+    assert len(SimpleSceneChangeFrameSampler().sample(video)) >= 1
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+@pytest.mark.parametrize(
+    "script",
+    [
+        "ffconcat version 1.0\nfile real.mkv\n",
+        "#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2.0,\nreal.mkv\n#EXT-X-ENDLIST\n",
+    ],
+    ids=["concat", "hls"],
+)
+def test_text_script_named_mp4_is_not_followed(tmp_path: Path, script: str):
+    """A script saved as .mp4 must not be read as a list of other media files."""
+    _encode_clip(tmp_path / "real.mkv", "mpeg4")
+    disguised = tmp_path / "clip.mp4"
+    disguised.write_text(script)
+
+    runner = FfmpegRunner()
+    assert probe_duration(disguised, runner) == 0.0
+    assert FixedIntervalFrameSampler(runner=runner).sample(disguised) == []
+    assert SimpleSceneChangeFrameSampler(runner=runner).sample(disguised) == []
+
+
+def test_unknown_container_extension_is_refused(tmp_path: Path):
+    with pytest.raises(ValueError, match="Unsupported video container"):
+        FixedIntervalFrameSampler().sample(tmp_path / "clip.ts")
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+def test_runner_stops_decode_at_time_limit():
+    """An endless decode is killed at the call limit and reported."""
+    runner = FfmpegRunner(call_timeout=0.5)
+    received = bytearray()
+    argv = ["ffmpeg", "-nostdin", "-f", "lavfi", "-i", "testsrc", "-f", "rawvideo", "-"]
+
+    assert runner.run(argv, "Endless decode", received.extend) is False
+    assert len(runner.timeouts) == 1
+    assert received  # output produced before the limit was kept
+
+
+@pytest.mark.skipif(not _HAS_FFMPEG, reason="ffmpeg not available")
+def test_runner_stops_decode_at_output_limit():
+    runner = FfmpegRunner()
+    received = bytearray()
+    argv = ["ffmpeg", "-nostdin", "-f", "lavfi", "-i", "testsrc", "-f", "rawvideo", "-"]
+
+    assert (
+        runner.run(argv, "Endless decode", received.extend, max_output_bytes=10**6)
+        is False
+    )
+    assert len(received) <= 10**6
+    assert runner.timeouts == []

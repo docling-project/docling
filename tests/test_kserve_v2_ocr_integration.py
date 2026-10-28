@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
@@ -58,6 +58,7 @@ def test_kserve_v2_ocr_conversion() -> None:
             pipeline_options = PdfPipelineOptions()
             pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
             pipeline_options.do_table_structure = False
+            pipeline_options.enable_remote_services = True
             pipeline_options.ocr_options = KserveV2OcrOptions(
                 url=url,
                 transport=transport,
@@ -70,7 +71,7 @@ def test_kserve_v2_ocr_conversion() -> None:
                 format_options={
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=pipeline_options,
-                        backend=DoclingParseDocumentBackend,
+                        backend=ThreadedDoclingParseDocumentBackend,
                     )
                 }
             )

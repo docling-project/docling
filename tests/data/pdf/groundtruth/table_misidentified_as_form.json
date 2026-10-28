@@ -24,25 +24,25 @@
         "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/pictures/0"
+        "$ref": "#/texts/2"
       },
       {
         "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/texts/59"
-      },
-      {
-        "$ref": "#/texts/60"
+        "$ref": "#/texts/46"
       },
       {
         "$ref": "#/groups/5"
       },
       {
-        "$ref": "#/texts/61"
+        "$ref": "#/groups/6"
       },
       {
-        "$ref": "#/texts/62"
+        "$ref": "#/pictures/3"
+      },
+      {
+        "$ref": "#/texts/50"
       }
     ],
     "content_layer": "body",
@@ -57,10 +57,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/texts/3"
         },
         {
-          "$ref": "#/texts/6"
+          "$ref": "#/texts/4"
         },
         {
           "$ref": "#/groups/1"
@@ -82,6 +82,12 @@
         },
         {
           "$ref": "#/groups/4"
+        },
+        {
+          "$ref": "#/texts/14"
+        },
+        {
+          "$ref": "#/texts/15"
         },
         {
           "$ref": "#/texts/16"
@@ -132,7 +138,13 @@
           "$ref": "#/texts/31"
         },
         {
+          "$ref": "#/pictures/0"
+        },
+        {
           "$ref": "#/texts/32"
+        },
+        {
+          "$ref": "#/pictures/1"
         },
         {
           "$ref": "#/texts/33"
@@ -171,52 +183,10 @@
           "$ref": "#/texts/44"
         },
         {
-          "$ref": "#/texts/45"
-        },
-        {
-          "$ref": "#/texts/46"
-        },
-        {
-          "$ref": "#/texts/47"
-        },
-        {
-          "$ref": "#/texts/48"
-        },
-        {
-          "$ref": "#/texts/49"
-        },
-        {
-          "$ref": "#/texts/50"
-        },
-        {
-          "$ref": "#/texts/51"
-        },
-        {
-          "$ref": "#/texts/52"
-        },
-        {
-          "$ref": "#/texts/53"
-        },
-        {
-          "$ref": "#/pictures/1"
-        },
-        {
           "$ref": "#/pictures/2"
         },
         {
-          "$ref": "#/pictures/3"
-        },
-        {
-          "$ref": "#/texts/55"
-        },
-        {
-          "$ref": "#/texts/56"
-        },
-        {
-          "$ref": "#/texts/57"
-        },
-        {
-          "$ref": "#/pictures/4"
+          "$ref": "#/texts/45"
         }
       ],
       "content_layer": "body",
@@ -230,7 +200,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/7"
+          "$ref": "#/texts/5"
         }
       ],
       "content_layer": "body",
@@ -244,6 +214,12 @@
       },
       "children": [
         {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
           "$ref": "#/texts/8"
         },
         {
@@ -254,12 +230,6 @@
         },
         {
           "$ref": "#/texts/11"
-        },
-        {
-          "$ref": "#/texts/12"
-        },
-        {
-          "$ref": "#/texts/13"
         }
       ],
       "content_layer": "body",
@@ -273,7 +243,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/14"
+          "$ref": "#/texts/12"
         }
       ],
       "content_layer": "body",
@@ -287,7 +257,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/15"
+          "$ref": "#/texts/13"
         }
       ],
       "content_layer": "body",
@@ -296,6 +266,16 @@
     },
     {
       "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "name": "group",
+      "label": "key_value_area"
+    },
+    {
+      "self_ref": "#/groups/6",
       "parent": {
         "$ref": "#/body"
       },
@@ -339,8 +319,35 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
-      "label": "page_header",
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 82.39,
+            "t": 53.66,
+            "r": 152.46,
+            "b": 44.82,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            15
+          ]
+        }
+      ],
+      "orig": "K Medical Corp.",
+      "text": "K Medical Corp."
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
       "prov": [
         {
           "page_no": 1,
@@ -358,91 +365,11 @@
         }
       ],
       "orig": "aaaaaaaaas$",
-      "text": "aaaaaaaaas$"
-    },
-    {
-      "self_ref": "#/texts/2",
-      "parent": {
-        "$ref": "#/pictures/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 569.33,
-            "t": 762.71,
-            "r": 600.03,
-            "b": 753.34,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            2
-          ]
-        }
-      ],
-      "orig": "YY",
-      "text": "YY"
+      "text": "aaaaaaaaas$",
+      "level": 1
     },
     {
       "self_ref": "#/texts/3",
-      "parent": {
-        "$ref": "#/pictures/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 575.46,
-            "t": 729.31,
-            "r": 587.88,
-            "b": 721.12,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            2
-          ]
-        }
-      ],
-      "orig": "~!",
-      "text": "~!"
-    },
-    {
-      "self_ref": "#/texts/4",
-      "parent": {
-        "$ref": "#/pictures/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 580.68,
-            "t": 713.85,
-            "r": 586.44,
-            "b": 708.61,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            2
-          ]
-        }
-      ],
-      "orig": "AN",
-      "text": "AN"
-    },
-    {
-      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -469,7 +396,7 @@
       "text": "aaaa aaaaaaa aaaaaa aaaaaaaaa aaa aaaaa aAaaaAaAAaaaaaaa AAAAAAAaAaaAa aaaaaaaa"
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -488,15 +415,15 @@
           },
           "charspan": [
             0,
-            34
+            33
           ]
         }
       ],
-      "orig": "aaaa. aaa. # aaa-aa-0000000000  \\.",
-      "text": "aaaa. aaa. # aaa-aa-0000000000  \\."
+      "orig": "aaaa. aaa. # aaa-aa-0000000000 \\.",
+      "text": "aaaa. aaa. # aaa-aa-0000000000 \\."
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -509,18 +436,76 @@
           "bbox": {
             "l": 55.57,
             "t": 697.6,
-            "r": 430.94,
+            "r": 428.22,
             "b": 652.92,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            213
+            212
           ]
         }
       ],
-      "orig": "22  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa (aaaa aaaa aa aaaaa aaaaa, aaa aaaa aaa aa aaaaaa, aaaaaaaaa aaaaaaaaaa aaa aaaaaaaaaa aaaaa aa aaa aaaaaaaa aaaaaa: aaaaa aaaaaa) aaa aaaaaa aaa aaaaaaa aaaaa aaa aaaaaaaaaa:",
-      "text": "22  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa (aaaa aaaa aa aaaaa aaaaa, aaa aaaa aaa aa aaaaaa, aaaaaaaaa aaaaaaaaaa aaa aaaaaaaaaa aaaaa aa aaa aaaaaaaa aaaaaa: aaaaa aaaaaa) aaa aaaaaa aaa aaaaaaa aaaaa aaa aaaaaaaaaa:",
+      "orig": "22 | aaaaa aaa aaaaaaaaa aaaaaaaaaaa (aaaa aaaa aa aaaaa aaaaa, aaa aaaa aaa aa aaaaaa, aaaaaaaaa aaaaaaaaaa aaa aaaaaaaaaa aaaaa aa aaa aaaaaaaa aaaaaa: aaaaa aaaaaa) aaa aaaaaa aaa aaaaaaa aaaaa aaa aaaaaaaaaa:",
+      "text": "22 | aaaaa aaa aaaaaaaaa aaaaaaaaaaa (aaaa aaaa aa aaaaa aaaaa, aaa aaaa aaa aa aaaaaa, aaaaaaaaa aaaaaaaaaa aaa aaaaaaaaaa aaaaa aa aaa aaaaaaaa aaaaaa: aaaaa aaaaaa) aaa aaaaaa aaa aaaaaaa aaaaa aaa aaaaaaaaaa:",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 54.54,
+            "t": 517.24,
+            "r": 426.42,
+            "b": 497.19,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            85
+          ]
+        }
+      ],
+      "orig": "23 | aaaaaa aaaa aaa aaaaaaaa aaaa aaaaaaa aaaaaaa 00.00, 00.00, aaa 00.00 00 aa/aaaa",
+      "text": "23 | aaaaaa aaaa aaa aaaaaaaa aaaa aaaaaaa aaaaaaa 00.00, 00.00, aaa 00.00 00 aa/aaaa",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 54.36,
+            "t": 492.71,
+            "r": 405.36,
+            "b": 471.66,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            103
+          ]
+        }
+      ],
+      "orig": "24 | aaaaa 00% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa",
+      "text": "24 | aaaaa 00% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa",
       "enumerated": false,
       "marker": ""
     },
@@ -536,20 +521,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 54.54,
-            "t": 517.24,
-            "r": 429.12,
-            "b": 497.19,
+            "l": 54.18,
+            "t": 466.4,
+            "r": 430.02,
+            "b": 445.86,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            86
+            101
           ]
         }
       ],
-      "orig": "23  | aaaaaa aaaa aaa aaaaaaaa aaaa aaaaaaa aaaaaaa 00.00, 00.00, aaa 00.00 00 aa/aaaa",
-      "text": "23  | aaaaaa aaaa aaa aaaaaaaa aaaa aaaaaaa aaaaaaa 00.00, 00.00, aaa 00.00 00 aa/aaaa",
+      "orig": "25 | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa aaa aaa aaaaaaa aaaaaaaaaaa aa 00.00 00 aa/aaaa aaaa",
+      "text": "25 | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa aaa aaa aaaaaaa aaaaaaaaaaa aa 00.00 00 aa/aaaa aaaa",
       "enumerated": false,
       "marker": ""
     },
@@ -565,20 +550,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 54.36,
-            "t": 492.71,
-            "r": 408.09,
-            "b": 471.66,
+            "l": 54.18,
+            "t": 442.05,
+            "r": 416.88,
+            "b": 419.63,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            104
+            109
           ]
         }
       ],
-      "orig": "24  | aaaaa 00% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa",
-      "text": "24  | aaaaa 00% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa",
+      "orig": "26 | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa, aaa aaa aaa aaaa aaaa aaaaa aaa aaaaaa aaa aaaaaa aa aaaaaa",
+      "text": "26 | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa, aaa aaa aaa aaaa aaaa aaaaa aaa aaaaaa aaa aaaaaa aa aaaaaa",
       "enumerated": false,
       "marker": ""
     },
@@ -594,10 +579,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 54.18,
-            "t": 466.4,
-            "r": 432.81,
-            "b": 445.86,
+            "l": 54.0,
+            "t": 416.05,
+            "r": 398.88,
+            "b": 393.68,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -606,71 +591,13 @@
           ]
         }
       ],
-      "orig": "25  | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa aaa aaa aaaaaaa aaaaaaaaaaa aa 00.00 00 aa/aaaa aaaa",
-      "text": "25  | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa aaa aaa aaaaaaa aaaaaaaaaaa aa 00.00 00 aa/aaaa aaaa",
+      "orig": "27 | aaaaa 0% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa",
+      "text": "27 | aaaaa 0% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa",
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/11",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 54.18,
-            "t": 442.05,
-            "r": 419.63,
-            "b": 419.63,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            110
-          ]
-        }
-      ],
-      "orig": "26  | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa, aaa aaa aaa aaaa aaaa aaaaa aaa aaaaaa aaa aaaaaa aa aaaaaa",
-      "text": "26  | aaaaaa aaaa aaa aaaaaaaa aaaa aaa aaa aaaaa, aaa aaa aaa aaaa aaaa aaaaa aaa aaaaaa aaa aaaaaa aa aaaaaa",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/12",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 54.0,
-            "t": 416.05,
-            "r": 401.61,
-            "b": 393.68,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            103
-          ]
-        }
-      ],
-      "orig": "27  | aaaaa 0% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa",
-      "text": "27  | aaaaa 0% aa aaa aaaaa aaa aaa aaaa aaaaaaaaaa aa aaa aaaa aaaaaaa aaaa aaa, aaaaaa aaaaaa aaaaaaa",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -689,17 +616,17 @@
           },
           "charspan": [
             0,
-            38
+            37
           ]
         }
       ],
-      "orig": "28  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
-      "text": "28  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
+      "orig": "28 | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
+      "text": "28 | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -718,17 +645,17 @@
           },
           "charspan": [
             0,
-            38
+            37
           ]
         }
       ],
-      "orig": "29  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
-      "text": "29  | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
+      "orig": "29 | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
+      "text": "29 | aaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -747,17 +674,17 @@
           },
           "charspan": [
             0,
-            95
+            94
           ]
         }
       ],
-      "orig": "30  | aaaaaa aaaa aaa aaaaaaaaa aaaaaaaa aaaaaa aaaaa aaa aaaaaaaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
-      "text": "30  | aaaaaa aaaa aaa aaaaaaaaa aaaaaaaa aaaaaa aaaaa aaa aaaaaaaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
+      "orig": "30 | aaaaaa aaaa aaa aaaaaaaaa aaaaaaaa aaaaaa aaaaa aaa aaaaaaaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
+      "text": "30 | aaaaaa aaaa aaa aaaaaaaaa aaaaaaaa aaaaaa aaaaa aaa aaaaaaaaaa aaa aaaaaaaaa aaaaaaaaaaa:",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -770,7 +697,7 @@
           "bbox": {
             "l": 85.68,
             "t": 153.97,
-            "r": 136.71,
+            "r": 133.92,
             "b": 133.01,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -784,7 +711,7 @@
       "text": "aaaaaaaa"
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -797,7 +724,61 @@
           "bbox": {
             "l": 208.8,
             "t": 153.97,
-            "r": 216.65,
+            "r": 214.2,
+            "b": 133.01,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "0",
+      "text": "0"
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 294.66,
+            "t": 153.97,
+            "r": 306.36,
+            "b": 133.01,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
+      "orig": "00",
+      "text": "00"
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 388.08,
+            "t": 153.97,
+            "r": 393.48,
             "b": 133.01,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -822,20 +803,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 294.66,
-            "t": 153.97,
-            "r": 309.02,
-            "b": 133.01,
+            "l": 445.68,
+            "t": 492.71,
+            "r": 447.3,
+            "b": 483.7,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            2
+            1
           ]
         }
       ],
-      "orig": "00",
-      "text": "00"
+      "orig": "'",
+      "text": "'"
     },
     {
       "self_ref": "#/texts/19",
@@ -849,412 +830,7 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 388.08,
-            "t": 153.97,
-            "r": 395.93,
-            "b": 133.01,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "0",
-      "text": "0"
-    },
-    {
-      "self_ref": "#/texts/20",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 460.21,
-            "t": 695.58,
-            "r": 515.69,
-            "b": 687.6,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "aaa-aa-000",
-      "text": "aaa-aa-000"
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 460.26,
-            "t": 684.74,
-            "r": 518.3,
-            "b": 677.37,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "aaa-aa-000",
-      "text": "aaa-aa-000"
-    },
-    {
-      "self_ref": "#/texts/22",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 579.96,
-            "t": 684.74,
-            "r": 586.26,
-            "b": 677.37,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            2
-          ]
-        }
-      ],
-      "orig": "ny",
-      "text": "ny"
-    },
-    {
-      "self_ref": "#/texts/23",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 460.21,
-            "t": 671.85,
-            "r": 518.1,
-            "b": 662.39,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "aaa-aa-000",
-      "text": "aaa-aa-000"
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 580.42,
-            "t": 671.25,
-            "r": 583.71,
-            "b": 662.06,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "4",
-      "text": "4"
-    },
-    {
-      "self_ref": "#/texts/25",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 552.42,
-            "t": 648.3,
-            "r": 584.28,
-            "b": 634.39,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            3
-          ]
-        }
-      ],
-      "orig": "P\\s",
-      "text": "P\\s"
-    },
-    {
-      "self_ref": "#/texts/26",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 554.22,
-            "t": 632.16,
-            "r": 554.75,
-            "b": 626.43,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "|",
-      "text": "|"
-    },
-    {
-      "self_ref": "#/texts/27",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 577.98,
-            "t": 632.16,
-            "r": 580.32,
-            "b": 626.43,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "5",
-      "text": "5"
-    },
-    {
-      "self_ref": "#/texts/28",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 529.92,
-            "t": 623.39,
-            "r": 559.55,
-            "b": 612.09,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            2
-          ]
-        }
-      ],
-      "orig": "KF",
-      "text": "KF"
-    },
-    {
-      "self_ref": "#/texts/29",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 576.18,
-            "t": 623.39,
-            "r": 581.4,
-            "b": 612.09,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "\u00bb",
-      "text": "\u00bb"
-    },
-    {
-      "self_ref": "#/texts/30",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 577.8,
-            "t": 608.01,
-            "r": 581.04,
-            "b": 600.48,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": ")",
-      "text": ")"
-    },
-    {
-      "self_ref": "#/texts/31",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 572.4,
-            "t": 594.87,
-            "r": 581.94,
-            "b": 587.34,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "<",
-      "text": "<"
-    },
-    {
-      "self_ref": "#/texts/32",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 570.42,
-            "t": 585.41,
-            "r": 582.66,
-            "b": 574.11,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "~",
-      "text": "~"
-    },
-    {
-      "self_ref": "#/texts/33",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
             "l": 459.18,
-            "t": 517.24,
-            "r": 517.22,
-            "b": 509.54,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "aaa-aa-000",
-      "text": "aaa-aa-000"
-    },
-    {
-      "self_ref": "#/texts/34",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 538.56,
             "t": 517.24,
             "r": 547.74,
             "b": 509.54,
@@ -1262,15 +838,15 @@
           },
           "charspan": [
             0,
-            1
+            12
           ]
         }
       ],
-      "orig": "p",
-      "text": "p"
+      "orig": "aaa-aa-000 p",
+      "text": "aaa-aa-000 p"
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1297,34 +873,7 @@
       "text": "aaa-aa-000"
     },
     {
-      "self_ref": "#/texts/36",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 445.68,
-            "t": 492.71,
-            "r": 449.17,
-            "b": 483.7,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "'",
-      "text": "'"
-    },
-    {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1351,7 +900,7 @@
       "text": "/"
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1378,453 +927,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/39",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 458.82,
-            "t": 466.4,
-            "r": 517.05,
-            "b": 457.89,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "aaa-aa-000",
-      "text": "aaa-aa-000"
-    },
-    {
-      "self_ref": "#/texts/40",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 539.82,
-            "t": 466.4,
-            "r": 552.96,
-            "b": 457.89,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "/",
-      "text": "/"
-    },
-    {
-      "self_ref": "#/texts/41",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 458.82,
-            "t": 442.05,
-            "r": 517.02,
-            "b": 432.23,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "aaa-da-000",
-      "text": "aaa-da-000"
-    },
-    {
-      "self_ref": "#/texts/42",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 541.44,
-            "t": 442.05,
-            "r": 551.7,
-            "b": 432.23,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "/",
-      "text": "/"
-    },
-    {
-      "self_ref": "#/texts/43",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 468.18,
-            "t": 429.45,
-            "r": 477.54,
-            "b": 419.63,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "/",
-      "text": "/"
-    },
-    {
-      "self_ref": "#/texts/44",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 458.64,
-            "t": 416.05,
-            "r": 469.08,
-            "b": 406.56,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "7",
-      "text": "7"
-    },
-    {
-      "self_ref": "#/texts/45",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 458.1,
-            "t": 266.57,
-            "r": 468.72,
-            "b": 248.23,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "/",
-      "text": "/"
-    },
-    {
-      "self_ref": "#/texts/46",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 462.96,
-            "t": 153.97,
-            "r": 521.38,
-            "b": 133.01,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "aaa-aa-000",
-      "text": "aaa-aa-000"
-    },
-    {
-      "self_ref": "#/texts/47",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 85.68,
-            "t": 129.83,
-            "r": 158.22,
-            "b": 124.26,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            14
-          ]
-        }
-      ],
-      "orig": "aaaaaa:  aaaaa",
-      "text": "aaaaaa:  aaaaa"
-    },
-    {
-      "self_ref": "#/texts/48",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 52.56,
-            "t": 84.31,
-            "r": 101.93,
-            "b": 65.64,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "Tested By:",
-      "text": "Tested By:"
-    },
-    {
-      "self_ref": "#/texts/49",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 118.8,
-            "t": 84.31,
-            "r": 146.71,
-            "b": 65.64,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            6
-          ]
-        }
-      ],
-      "orig": "id  /M",
-      "text": "id  /M"
-    },
-    {
-      "self_ref": "#/texts/50",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 187.02,
-            "t": 84.31,
-            "r": 212.08,
-            "b": 65.64,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            5
-          ]
-        }
-      ],
-      "orig": "Date:",
-      "text": "Date:"
-    },
-    {
-      "self_ref": "#/texts/51",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 221.04,
-            "t": 84.31,
-            "r": 273.07,
-            "b": 65.64,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            9
-          ]
-        }
-      ],
-      "orig": "If  -7-25",
-      "text": "If  -7-25"
-    },
-    {
-      "self_ref": "#/texts/52",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 282.6,
-            "t": 84.31,
-            "r": 344.39,
-            "b": 65.64,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            12
-          ]
-        }
-      ],
-      "orig": "Approved By:",
-      "text": "Approved By:"
-    },
-    {
-      "self_ref": "#/texts/53",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 358.92,
-            "t": 84.31,
-            "r": 389.31,
-            "b": 65.64,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            4
-          ]
-        },
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 412.92,
-            "t": 84.31,
-            "r": 437.77,
-            "b": 65.64,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            5,
-            10
-          ]
-        }
-      ],
-      "orig": "D ke Date:",
-      "text": "D ke Date:"
-    },
-    {
-      "self_ref": "#/texts/54",
-      "parent": {
-        "$ref": "#/pictures/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 447.3,
-            "t": 84.31,
-            "r": 513.18,
-            "b": 65.64,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "WA  OSS 2S",
-      "text": "WA  OSS 2S"
-    },
-    {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1851,7 +954,7 @@
       "text": "VV"
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1878,7 +981,7 @@
       "text": "V"
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1899,15 +1002,29 @@
             0,
             3
           ]
+        },
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 458.82,
+            "t": 466.4,
+            "r": 552.96,
+            "b": 457.89,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            4,
+            16
+          ]
         }
       ],
-      "orig": "iv,",
-      "text": "iv,"
+      "orig": "iv, aaa-aa-000 /",
+      "text": "iv, aaa-aa-000 /"
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/26",
       "parent": {
-        "$ref": "#/pictures/4"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -1916,10 +1033,37 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 539.28,
-            "t": 153.97,
-            "r": 554.4,
-            "b": 133.01,
+            "l": 458.82,
+            "t": 442.05,
+            "r": 551.7,
+            "b": 432.23,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            12
+          ]
+        }
+      ],
+      "orig": "aaa-da-000 /",
+      "text": "aaa-da-000 /"
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 468.18,
+            "t": 429.45,
+            "r": 477.54,
+            "b": 419.63,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1928,13 +1072,13 @@
           ]
         }
       ],
-      "orig": "F",
-      "text": "F"
+      "orig": "/",
+      "text": "/"
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -1943,23 +1087,482 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 82.39,
-            "t": 53.68,
-            "r": 154.88,
-            "b": 44.82,
+            "l": 458.64,
+            "t": 416.05,
+            "r": 469.08,
+            "b": 406.56,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            15
+            1
           ]
         }
       ],
-      "orig": "K Medical Corp.",
-      "text": "K Medical Corp."
+      "orig": "7",
+      "text": "7"
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 458.1,
+            "t": 266.57,
+            "r": 468.72,
+            "b": 248.23,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "/",
+      "text": "/"
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 462.96,
+            "t": 153.97,
+            "r": 554.4,
+            "b": 133.01,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            12
+          ]
+        }
+      ],
+      "orig": "aaa-aa-000 F",
+      "text": "aaa-aa-000 F"
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 85.68,
+            "t": 129.83,
+            "r": 158.22,
+            "b": 124.26,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
+      "orig": "aaaaaa: aaaaa",
+      "text": "aaaaaa: aaaaa"
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 52.56,
+            "t": 84.31,
+            "r": 513.18,
+            "b": 65.64,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            65
+          ]
+        }
+      ],
+      "orig": "Tested By: id /M Date: If -7-25 Approved By: D ke Date: WA OSS 2S",
+      "text": "Tested By: id /M Date: If -7-25 Approved By: D ke Date: WA OSS 2S"
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 460.21,
+            "t": 695.58,
+            "r": 515.69,
+            "b": 687.6,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
+      "orig": "aaa-aa-000",
+      "text": "aaa-aa-000"
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 460.26,
+            "t": 684.74,
+            "r": 515.52,
+            "b": 677.37,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
+      "orig": "aaa-aa-000",
+      "text": "aaa-aa-000"
+    },
+    {
+      "self_ref": "#/texts/35",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 579.96,
+            "t": 684.74,
+            "r": 586.26,
+            "b": 677.37,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
+      "orig": "ny",
+      "text": "ny"
+    },
+    {
+      "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 460.21,
+            "t": 671.85,
+            "r": 515.33,
+            "b": 662.4,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
+      "orig": "aaa-aa-000",
+      "text": "aaa-aa-000"
+    },
+    {
+      "self_ref": "#/texts/37",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 580.42,
+            "t": 671.25,
+            "r": 583.71,
+            "b": 662.06,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "4",
+      "text": "4"
+    },
+    {
+      "self_ref": "#/texts/38",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 552.42,
+            "t": 648.3,
+            "r": 584.28,
+            "b": 634.39,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            3
+          ]
+        }
+      ],
+      "orig": "P\\s",
+      "text": "P\\s"
+    },
+    {
+      "self_ref": "#/texts/39",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 554.22,
+            "t": 632.16,
+            "r": 554.58,
+            "b": 626.43,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "|",
+      "text": "|"
+    },
+    {
+      "self_ref": "#/texts/40",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 577.98,
+            "t": 632.16,
+            "r": 580.32,
+            "b": 626.43,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "5",
+      "text": "5"
+    },
+    {
+      "self_ref": "#/texts/41",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 529.92,
+            "t": 623.39,
+            "r": 581.4,
+            "b": 612.09,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
+      "orig": "KF \u00bb",
+      "text": "KF \u00bb"
+    },
+    {
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 577.8,
+            "t": 608.01,
+            "r": 581.04,
+            "b": 600.48,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": ")",
+      "text": ")"
+    },
+    {
+      "self_ref": "#/texts/43",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 572.4,
+            "t": 594.87,
+            "r": 581.94,
+            "b": 587.34,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "<",
+      "text": "<"
+    },
+    {
+      "self_ref": "#/texts/44",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 570.42,
+            "t": 585.41,
+            "r": 582.66,
+            "b": 574.11,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "~",
+      "text": "~"
+    },
+    {
+      "self_ref": "#/texts/45",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 520.56,
+            "t": 54.54,
+            "r": 570.78,
+            "b": 47.66,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            11
+          ]
+        }
+      ],
+      "orig": "Page 3 of 8",
+      "text": "Page 3 of 8"
+    },
+    {
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/body"
       },
@@ -1986,34 +1589,88 @@
       "text": "CONFIDENTIAL"
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/47",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/pictures/3"
       },
       "children": [],
-      "content_layer": "furniture",
-      "label": "page_footer",
+      "content_layer": "body",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 520.56,
-            "t": 54.54,
-            "r": 570.78,
-            "b": 47.66,
+            "l": 569.33,
+            "t": 762.71,
+            "r": 600.03,
+            "b": 753.34,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            11
+            2
           ]
         }
       ],
-      "orig": "Page 3 of 8",
-      "text": "Page 3 of 8"
+      "orig": "YY",
+      "text": "YY"
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/48",
+      "parent": {
+        "$ref": "#/pictures/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 575.46,
+            "t": 729.31,
+            "r": 587.88,
+            "b": 721.12,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
+      "orig": "~!",
+      "text": "~!"
+    },
+    {
+      "self_ref": "#/texts/49",
+      "parent": {
+        "$ref": "#/pictures/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 580.68,
+            "t": 713.85,
+            "r": 586.44,
+            "b": 708.61,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
+      "orig": "AN",
+      "text": "AN"
+    },
+    {
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/body"
       },
@@ -2032,41 +1689,31 @@
           },
           "charspan": [
             0,
-            128
+            122
           ]
         }
       ],
-      "orig": "Document No.: 2152167.9.55  -  Version:  5.0  - Document ID:  ESIG-CORP-2152167 Date/Time Printed/Viewed: 2025-06-10  14:50/CET)",
-      "text": "Document No.: 2152167.9.55  -  Version:  5.0  - Document ID:  ESIG-CORP-2152167 Date/Time Printed/Viewed: 2025-06-10  14:50/CET)"
+      "orig": "Document No.: 2152167.9.55 - Version: 5.0 - Document ID: ESIG-CORP-2152167 Date/Time Printed/Viewed: 2025-06-10 14:50/CET)",
+      "text": "Document No.: 2152167.9.55 - Version: 5.0 - Document ID: ESIG-CORP-2152167 Date/Time Printed/Viewed: 2025-06-10 14:50/CET)"
     }
   ],
   "pictures": [
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
-      "children": [
-        {
-          "$ref": "#/texts/2"
-        },
-        {
-          "$ref": "#/texts/3"
-        },
-        {
-          "$ref": "#/texts/4"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "picture",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 568.45,
-            "t": 765.83,
-            "r": 600.98,
-            "b": 698.96,
+            "l": 118.13,
+            "t": 90.55,
+            "r": 144.78,
+            "b": 70.23,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2092,10 +1739,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 118.09,
-            "t": 90.69,
-            "r": 144.83,
-            "b": 69.8,
+            "l": 444.98,
+            "t": 86.78,
+            "r": 513.93,
+            "b": 68.33,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2121,10 +1768,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 357.96,
-            "t": 89.56,
-            "r": 386.38,
-            "b": 72.02,
+            "l": 538.36,
+            "t": 162.04,
+            "r": 554.98,
+            "b": 135.19,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2141,11 +1788,17 @@
     {
       "self_ref": "#/pictures/3",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/54"
+          "$ref": "#/texts/47"
+        },
+        {
+          "$ref": "#/texts/48"
+        },
+        {
+          "$ref": "#/texts/49"
         }
       ],
       "content_layer": "body",
@@ -2154,43 +1807,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 444.84,
-            "t": 87.04,
-            "r": 513.89,
-            "b": 68.39,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            0
-          ]
-        }
-      ],
-      "captions": [],
-      "references": [],
-      "footnotes": [],
-      "annotations": []
-    },
-    {
-      "self_ref": "#/pictures/4",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/58"
-        }
-      ],
-      "content_layer": "body",
-      "label": "picture",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 538.21,
-            "t": 162.03,
-            "r": 555.2,
-            "b": 135.2,
+            "l": 568.67,
+            "t": 765.7,
+            "r": 600.95,
+            "b": 699.33,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2218,10 +1838,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 79.07,
-            "t": 639.73,
-            "r": 437.87,
-            "b": 524.4,
+            "l": 79.55,
+            "t": 639.58,
+            "r": 437.79,
+            "b": 524.51,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2877,10 +2497,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 77.6,
-            "t": 366.3,
-            "r": 435.74,
-            "b": 327.56,
+            "l": 77.21,
+            "t": 366.38,
+            "r": 436.22,
+            "b": 327.34,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -3212,10 +2832,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 78.75,
-            "t": 289.79,
-            "r": 436.55,
-            "b": 211.8,
+            "l": 78.86,
+            "t": 289.92,
+            "r": 436.7,
+            "b": 212.03,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

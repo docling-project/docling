@@ -50,9 +50,13 @@ docling convert [OPTIONS] source
 | `--image-export-mode` | `placeholder`, `embedded`, `referenced` | `embedded` | Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document. |
 | `--html-image-fetch` | `none`, `local`, `remote`, `all` | `none` | Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all. |
 | `--pipeline` | `legacy`, `standard`, `native`, `vlm`, `asr` | `standard` | Choose the pipeline to process PDF or image files. |
-| `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, unlimited_ocr, dots_ocr, dots_mocr |
+| `--vlm-model` | `text` | `granite_docling` | Choose the VLM preset to use with PDF or image files. Available presets: smoldocling, granite_docling, deepseek_ocr, granite_vision, pixtral, got_ocr, phi4, qwen, nanonets_ocr2, nemotron_parse_v2, nemotron_parse_v3_5, mineru2_pro, gemma_12b, gemma_27b, dolphin, glm_ocr, lightonocr, falcon_ocr, chandra_ocr2, unlimited_ocr, dots_ocr, dots_mocr |
 | `--vlm-max-new-tokens` | `integer` |  | Override max_new_tokens for VLM conversion generation. |
-| `--asr-model` | `whisper_tiny`, `whisper_small`, `whisper_medium`, `whisper_base`, `whisper_large`, `whisper_turbo`, `whisper_tiny_mlx`, `whisper_small_mlx`, `whisper_medium_mlx`, `whisper_base_mlx`, `whisper_large_mlx`, `whisper_turbo_mlx`, `whisper_tiny_native`, `whisper_small_native`, `whisper_medium_native`, `whisper_base_native`, `whisper_large_native`, `whisper_turbo_native`, `whisper_tiny_en_native`, `whisper_base_en_native`, `whisper_small_en_native`, `whisper_medium_en_native`, `whisper_distil_small_en_native`, `whisper_distil_medium_en_native`, `whisper_distil_large_v3_native`, `whisper_distil_large_v3_5_native`, `whisper_tiny_s2t`, `whisper_tiny_en_s2t`, `whisper_base_s2t`, `whisper_base_en_s2t`, `whisper_small_s2t`, `whisper_small_en_s2t`, `whisper_distil_small_en_s2t`, `whisper_medium_s2t`, `whisper_medium_en_s2t`, `whisper_distil_medium_en_s2t`, `whisper_large_v3_s2t`, `whisper_distil_large_v3_s2t`, `whisper_distil_large_v3_5_s2t`, `whisper_large_v3_turbo_s2t` | `whisper_tiny` | Choose the ASR model to use with audio/video files. |
+| `--trust-remote-code` | `boolean` | `false` | Allow the local VLM engine to run code from the model repository. Some --vlm-model presets require it. Review the model's code at the preset's pinned revision first. |
+| `--vlm-write-native-output` | `boolean` | `false` | Write each page's unparsed VLM response under `<output>/<document>.vlm-native/`. |
+| `--extract-form-fields` / `--no-extract-form-fields` | flag | `false` | If enabled, native PDF form widgets (AcroForm) become fillable field values with field keys from printed text. Standard and legacy pipelines with the docling-parse backend only. |
+| `--asr-model` | `granite_speech_5_0_2b`, `granite_speech_5_0_470m_turboctc`, `granite_speech_5_0_470m_turboctc_nc`, `granite_speech_4_1_2b`, `granite_speech_4_1_2b_plus`, `nemotron_speech_streaming_en_0_6b`, `parakeet_ctc_1_1b`, `granite_4_0_1b_speech`, `nemotron_3_5_asr_streaming`, `whisper_tiny`, `whisper_small`, `whisper_medium`, `whisper_base`, `whisper_large`, `whisper_turbo`, `whisper_tiny_transformers`, `whisper_base_transformers`, `whisper_small_transformers`, `whisper_medium_transformers`, `whisper_large_transformers`, `whisper_turbo_transformers`, `whisper_tiny_mlx`, `whisper_small_mlx`, `whisper_medium_mlx`, `whisper_base_mlx`, `whisper_large_mlx`, `whisper_turbo_mlx`, `whisper_tiny_native`, `whisper_small_native`, `whisper_medium_native`, `whisper_base_native`, `whisper_large_native`, `whisper_turbo_native`, `whisper_tiny_en_native`, `whisper_base_en_native`, `whisper_small_en_native`, `whisper_medium_en_native`, `whisper_distil_small_en_native`, `whisper_distil_medium_en_native`, `whisper_distil_large_v3_native`, `whisper_distil_large_v3_5_native`, `whisper_tiny_s2t`, `whisper_tiny_en_s2t`, `whisper_base_s2t`, `whisper_base_en_s2t`, `whisper_small_s2t`, `whisper_small_en_s2t`, `whisper_distil_small_en_s2t`, `whisper_medium_s2t`, `whisper_medium_en_s2t`, `whisper_distil_medium_en_s2t`, `whisper_large_v3_s2t`, `whisper_distil_large_v3_s2t`, `whisper_distil_large_v3_5_s2t`, `whisper_large_v3_turbo_s2t` | `whisper_tiny` | Choose the ASR model to use with audio/video files. |
+| `--asr-language` | `text` |  | Source language for Transformers ASR. |
 | `--video-sampling-mode` | `fixed`, `scene` | `fixed` | frame sampling mode. |
 | `--video-frame-interval` | `float` | `10.0` | Seconds between frames in fixed interval mode. |
 | `--video-cuts-per-minute` | `float` | `0.0` | Target cuts per minute in scene mode (overrides prominence). |
@@ -67,7 +71,7 @@ docling convert [OPTIONS] source
 | `--ocr-engine` | `text` | `auto` | The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: auto, easyocr, kserve_v2_ocr, nemotron-ocr, ocrmac, rapidocr, tesserocr, tesseract. Use the option --show-external-plugins to see the options allowed with external plugins. |
 | `--ocr-lang` | `text` |  | Comma-separated list of OCR languages. The OCR language can be provided in 2 ways: As a 'native' tag, which is specific to the selected OCR engine/backend, or as a canonicalized BCP-47 tag (e.g. 'en,de' or 'zh-Hant'). By default the language is handled as a native tag and is passed through verbatim to the OCR engine. For example '--ocr-engine rapidocr --ocr-lang ch' is PP-OCR's Simplified Chinese, and '--ocr-engine tesseract --ocr-lang deu' is the deu.traineddata. A BCP-47 tag must be prefixed with 'iso:', e.g. '--ocr-engine rapidocr --ocr-lang iso:zh-Hans'. When an empty language is provided (--ocr-lang ''), the OCR engine chooses the language. An empty language triggers the OSD script detection for Tesseract and selects a default language for the other engines. In case of the Kserve engine, there is zero language validation. The entire input is pass through verbatim to the remote OCR engine. To skip OCR entirely use --no-ocr. |
 | `--psm` | `integer` |  | Page Segmentation Mode for the OCR engine (0-13). |
-| `--pdf-backend` | `pypdfium2`, `docling_parse`, `threaded_docling_parse`, `dlparse_v1`, `dlparse_v2`, `dlparse_v4` | `threaded_docling_parse` | The PDF backend to use. |
+| `--pdf-backend` | `pypdfium2`, `docling_parse` | `docling_parse` | The PDF backend to use. The deprecated `dlparse_*` values remain accepted for compatibility but are hidden from CLI help. |
 | `--pdf-password` | `text` |  | Password for protected PDF documents |
 | `--page-range` | `text` |  | Only convert a range of pages, e.g. 1-4 (page numbers start at 1). Honored by the PDF, XLSX and PPTX backends. |
 | `--table-mode` | `fast`, `accurate` | `accurate` | The mode to use in the table structure model. |
@@ -82,6 +86,7 @@ docling convert [OPTIONS] source
 | `--allow-external-plugins` / `--no-allow-external-plugins` | flag | `false` | Must be enabled for loading modules from third-party plugins. |
 | `--show-external-plugins` / `--no-show-external-plugins` | flag | `false` | List the third-party plugins which are available when the option --allow-external-plugins is set. |
 | `--abort-on-error` / `--no-abort-on-error` | flag | `false` | If enabled, the processing will be aborted when the first error is encountered. |
+| `--fail-on` | `never`, `failure`, `partial` | `failure` | Which outcome makes docling exit with code 1: 'failure' (default) if any document fails, 'partial' also if any document is only partially converted, 'never' to always exit 0. |
 | `--output` | `path` | `.` | Output directory where results are saved. |
 | `--verbose` / `-v` | `integer` | `0` | Set the verbosity level. -v for info logging, -vv for debug logging. |
 | `--quiet` / `-q` | flag | `false` | Suppress the per-file progress log emitted at default verbosity, restoring fully silent output (warnings and errors only). Has no effect when -v/--verbose is given. |
@@ -99,6 +104,7 @@ docling convert [OPTIONS] source
 | `--page-batch-size` | `integer` | `4` | Number of pages processed in one batch. Default: 4 |
 | `--profiling` / `--no-profiling` | flag | `false` | If enabled, it summarizes profiling details for all conversion stages. |
 | `--save-profiling` / `--no-save-profiling` | flag | `false` | If enabled, it saves the profiling summaries to json. |
+| `--progress` / `--no-progress` | flag |  | Show progress bars for pages and enrichment on stderr. On by default when stderr is a terminal and --quiet is not given. |
 
 ### `docling convert-remote`
 
@@ -147,6 +153,7 @@ docling convert-remote [OPTIONS] source
 | `--page-range` | `text` |  | Only convert a range of pages, e.g. 1-4 (page numbers start at 1). |
 | `--document-timeout` | `float` |  | Server-side timeout for processing each document, in seconds. |
 | `--abort-on-error` / `--no-abort-on-error` | flag | `false` | If enabled, the service aborts the batch on the first error. |
+| `--fail-on` | `never`, `failure`, `partial` | `failure` | Which outcome makes docling exit with code 1: 'failure' (default) if any document fails, 'partial' also if any document is only partially converted, 'never' to always exit 0. |
 | `--max-concurrency` | `integer` | `8` | Maximum number of documents converted concurrently against the service. |
 | `--timeout` | `float` | `300.0` | Client-side timeout waiting for each job to finish, in seconds. |
 | `--watcher` | `websocket`, `polling` | `websocket` | How the client tracks job status: websocket (default) or polling. |
@@ -228,4 +235,3 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 | `-o` / `--output-dir` | `path` | `$HOME/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
-

@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import re
 import struct
+import sys
 import warnings
+import zipfile
 import zlib
 from collections.abc import Iterable
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from docling_core.types.doc import (
@@ -23,6 +25,11 @@ from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import (
     MsPowerpointDocumentBackend,
     _is_metafile,
+)
+from docling.backend.utils.charts import (
+    MAX_CHART_TABLE_CELLS,
+    _last_populated_row,
+    build_chart_table,
 )
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
@@ -103,11 +110,18 @@ def test_e2e_pptx_conversions():
     converter = get_converter()
 
     for pptx_path in pptx_paths:
-        # print(f"converting {pptx_path}")
-
         gt_path = pptx_path.parent.parent / "groundtruth" / pptx_path.name
 
-        conv_result: ConversionResult = converter.convert(pptx_path)
+        # Two source files intentionally contain picture shapes the backend
+        # cannot decode and skips with a UserWarning
+        if pptx_path.stem in {
+            "powerpoint_malformed_pictures",  # structurally broken <p:pic>
+            "powerpoint_with_image",  # externally linked (r:link) image
+        }:
+            with pytest.warns(UserWarning, match="Skipping malformed picture shape"):
+                conv_result = converter.convert(pptx_path)
+        else:
+            conv_result = converter.convert(pptx_path)
 
         doc: DoclingDocument = conv_result.document
 
@@ -339,9 +353,9 @@ def test_chart_parsed_as_classified_picture_with_data():
           ...
           | 2022    | 175              | 130             |
 
-    * Slide 2 — a 3-D bar chart (``c:bar3DChart``) for which python-pptx has no
-      registered element class. It should degrade gracefully: the chart is
-      emitted as a PictureItem with no tabular data.
+    * Slide 2 — a 3-D column chart (``c:bar3DChart``) for which python-pptx has
+      no plot class. It is still classified as a bar chart and carries its
+      data: one series "2026" over the categories Q1 to Q3.
     """
     converter = get_converter()
     doc = converter.convert(CHART_PPTX).document
@@ -370,12 +384,19 @@ def test_chart_parsed_as_classified_picture_with_data():
     assert grid[(4, 1)] == "175"
     assert grid[(4, 2)] == "130"
 
-    # --- slide 2: 3-D chart degrades gracefully (no tabular data, no crash) ---
+    # --- slide 2: 3-D chart with full data ---
     revenue_pic = next(
         p for p in pictures if p.caption_text(doc) != "Wild Duck Observations by Year"
     )
     assert revenue_pic.meta is not None
-    assert revenue_pic.meta.tabular_chart is None
+    assert (
+        revenue_pic.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert [
+        [cell.text for cell in row]
+        for row in revenue_pic.meta.tabular_chart.chart_data.grid
+    ] == [["", "2026"], ["Q1", "10"], ["Q2", "20"], ["Q3", "30"]]
 
 
 def test_chart_image_not_rendered_by_default():
@@ -392,6 +413,158 @@ def test_chart_image_not_rendered_by_default():
         assert picture.image is None, (
             "chart picture should have no image when render_chart_images is off"
         )
+
+
+def _build_inflated_ptcount_pptx(path: Path, declared: int) -> None:
+    """Build a one-slide deck whose 3-point chart declares ``declared`` categories.
+
+    Mirrors what Excel writes for charts referencing whole columns
+    (``$A$2:$A$1048576``): python-pptx then reports ``declared`` categories
+    while the series hold 3 values. See
+    https://github.com/docling-project/docling/issues/4607.
+    """
+    from pptx import Presentation
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    data = CategoryChartData()
+    data.categories = ["Jan", "Feb", "Mar"]
+    data.add_series("Price", (10.0, 11.5, 12.25))
+    slide.shapes.add_chart(
+        XL_CHART_TYPE.COLUMN_CLUSTERED,
+        Inches(1),
+        Inches(1.5),
+        Inches(8),
+        Inches(5),
+        data,
+    )
+
+    tmp = path.with_suffix(".build.pptx")
+    prs.save(tmp)
+    with zipfile.ZipFile(tmp) as zin:
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                blob = zin.read(item.filename)
+                if re.fullmatch(r"ppt/charts/chart\d+\.xml", item.filename):
+                    xml = blob.decode("utf8")
+                    xml = re.sub(
+                        r'(<c:cat>.*?<c:ptCount val=")\d+(")',
+                        rf"\g<1>{declared}\g<2>",
+                        xml,
+                        flags=re.S,
+                    )
+                    xml = re.sub(
+                        r"(<c:cat>.*?<c:f>[^<]*\$A\$2:\$A\$)\d+(</c:f>)",
+                        rf"\g<1>{declared + 1}\g<2>",
+                        xml,
+                        flags=re.S,
+                    )
+                    blob = xml.encode("utf8")
+                zout.writestr(item, blob)
+    tmp.unlink()
+
+
+def test_chart_with_inflated_category_range_trims_trailing_empty_rows(tmp_path):
+    """A chart whose declared range exceeds its data is trimmed to populated rows.
+
+    Regression test for https://github.com/docling-project/docling/issues/4607:
+    Excel writes whole-column references (``$A$2:$A$1048576``) for such charts,
+    so python-pptx reports thousands of categories for a 3-point chart. The
+    reconstructed table must be sized by populated data (4 rows: 1 header + 3
+    data), not by the declared range.
+    """
+    pptx_path = tmp_path / "chart_inflated_range.pptx"
+    _build_inflated_ptcount_pptx(pptx_path, declared=5000)
+
+    doc = convert_with_pptx_backend(pptx_path)
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1
+
+    tabular_chart = pictures[0].meta.tabular_chart
+    assert tabular_chart is not None
+    chart_data = tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (4, 2)
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert grid[(1, 0)] == "Jan"
+    assert grid[(1, 1)] == "10"
+    assert grid[(3, 0)] == "Mar"
+    assert grid[(3, 1)] == "12.25"
+
+
+def test_last_populated_row_trims_only_trailing_empty_rows():
+    """Only trailing all-empty rows are trimmed; interior gaps are kept."""
+    columns = [("s1", ["1", "", "3", ""]), ("s2", ["", "", "", ""])]
+    # Row 3 is all-empty; the boundary sits at row 2 ("3" in s1).
+    assert _last_populated_row(["a", "b", "c", ""], columns, 4) == 2
+    # An interior empty row does not move the boundary.
+    assert _last_populated_row(["a", "", "c", ""], columns, 4) == 2
+    # A row is populated by its category label alone.
+    assert _last_populated_row(["a", "b", "c", "d"], [("s1", [])], 4) == 3
+    # Nothing populated.
+    assert _last_populated_row(["", ""], [("s1", ["", ""])], 2) == -1
+    # Ragged: indexes past a column's length count as empty for that column.
+    assert _last_populated_row([], [("s1", ["", "", "9"])], 3) == 2
+
+
+def test_chart_with_no_populated_data_returns_no_table():
+    """A chart whose declared range holds no data at all yields no table."""
+    assert build_chart_table(["", "", ""], [("s1", [])]) is None
+
+
+def test_chart_data_table_capped_at_max_cells(caplog):
+    """Genuinely huge charts are truncated at the cell cap with a warning.
+
+    60k populated points in 2 series would emit 180k cells; the table is cut to
+    ``MAX_CHART_TABLE_CELLS`` cells instead of ballooning. The header row counts
+    against the cap, so 3 columns hold at most
+    ``MAX_CHART_TABLE_CELLS // 3 - 1`` data rows.
+    """
+    n_points = 60_000
+    values = [str(i) for i in range(n_points)]
+    categories = [f"c{i}" for i in range(n_points)]
+
+    with caplog.at_level(logging.WARNING, logger="docling.backend.utils.charts"):
+        table_data = build_chart_table(categories, [("s1", values), ("s2", values)])
+
+    assert table_data is not None
+    assert table_data.num_cols == 3
+    capped_rows = MAX_CHART_TABLE_CELLS // 3 - 1
+    assert table_data.num_rows == capped_rows + 1
+    assert len(table_data.table_cells) <= MAX_CHART_TABLE_CELLS
+    assert "cell cap" in caplog.text
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in table_data.table_cells
+    }
+    assert grid[(1, 0)] == "c0"
+    assert grid[(capped_rows, 0)] == f"c{capped_rows - 1}"
+
+
+def test_chart_data_table_cap_reached_exactly(caplog):
+    """A table that lands exactly on the cap is truncated, not left untouched.
+
+    One series over 50k points and 2 columns hold 100,002 cells with the header
+    row; the old data-row-only arithmetic (`100_000 > 100_000` is false) skipped
+    the cap and emitted the header row past it.
+    """
+    n_points = 50_000
+    values = [str(i) for i in range(n_points)]
+    categories = [f"c{i}" for i in range(n_points)]
+
+    with caplog.at_level(logging.WARNING, logger="docling.backend.utils.charts"):
+        table_data = build_chart_table(categories, [("s1", values)])
+
+    assert table_data is not None
+    assert table_data.num_cols == 2
+    assert table_data.num_rows == MAX_CHART_TABLE_CELLS // 2
+    assert len(table_data.table_cells) == MAX_CHART_TABLE_CELLS
+    assert "cell cap" in caplog.text
 
 
 def test_chart_enrichment_skips_image_when_pages_empty():
@@ -446,6 +619,214 @@ def test_chart_image_rendering(libreoffice_available):
     assert image.width > 50 and image.height > 50, (
         f"rendered chart image is implausibly small: {image.size}"
     )
+
+
+def _add_bar_chart(shapes):
+    """Add a small bar chart to a slide or group shape tree."""
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches
+
+    chart_data = CategoryChartData()
+    chart_data.categories = ["a", "b", "c"]
+    chart_data.add_series("s1", (1.0, 2.0, 3.0))
+    return shapes.add_chart(
+        XL_CHART_TYPE.COLUMN_CLUSTERED,
+        Inches(1),
+        Inches(1),
+        Inches(4),
+        Inches(3),
+        chart_data,
+    )
+
+
+def _iter_shapes_recursive(shapes) -> Iterable:
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    for shape in shapes:
+        yield shape
+        if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+            yield from _iter_shapes_recursive(shape.shapes)
+
+
+def test_chart_isolation_keeps_chart_nested_in_a_group(tmp_path: Path):
+    """Isolating a grouped chart must keep the chart, not delete its group.
+
+    Charts inside a group are reached through the recursive shape walk, so the
+    shape_id handed to the isolation step belongs to a nested shape. Pruning
+    only the slide's top-level shapes removed the enclosing group along with
+    the chart, leaving an empty slide that LibreOffice rendered as a blank
+    page. The enclosing groups must survive, since their chOff/chExt define
+    the coordinate space the chart's own position is expressed in.
+    """
+    from pptx import Presentation
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    group = slide.shapes.add_group_shape()
+    chart_frame = _add_bar_chart(group.shapes)
+    group.shapes.add_textbox(
+        Inches(1), Inches(4.2), Inches(3), Inches(0.5)
+    ).text_frame.text = "sibling inside the group"
+    slide.shapes.add_textbox(
+        Inches(0.2), Inches(0.2), Inches(3), Inches(0.5)
+    ).text_frame.text = "sibling outside the group"
+    source = tmp_path / "grouped_chart.pptx"
+    prs.save(source)
+    geometry = (
+        chart_frame.left,
+        chart_frame.top,
+        chart_frame.width,
+        chart_frame.height,
+    )
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+    backend.pptx_obj = Presentation(str(source))
+    isolated_path = tmp_path / "isolated.pptx"
+    assert backend._isolate_chart_presentation(0, chart_frame.shape_id, isolated_path)
+
+    isolated = Presentation(str(isolated_path))
+    shapes = list(_iter_shapes_recursive(isolated.slides[0].shapes))
+    charts = [shape for shape in shapes if shape.has_chart]
+    assert len(charts) == 1, "the grouped chart was deleted along with its group"
+    assert [shape.shape_type for shape in isolated.slides[0].shapes] == [
+        MSO_SHAPE_TYPE.GROUP
+    ]
+    assert len(shapes) == 2, "sibling shapes should have been pruned"
+    assert (
+        charts[0].left,
+        charts[0].top,
+        charts[0].width,
+        charts[0].height,
+    ) == geometry
+    plot = charts[0].chart.plots[0]
+    assert list(plot.categories) == ["a", "b", "c"]
+
+
+def test_chart_isolation_prunes_siblings_at_every_group_level(tmp_path: Path):
+    """Only the chart and the groups enclosing it survive the isolation."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    outer = slide.shapes.add_group_shape()
+    inner = outer.shapes.add_group_shape()
+    chart_frame = _add_bar_chart(inner.shapes)
+    inner.shapes.add_textbox(Inches(1), Inches(4.2), Inches(2), Inches(0.4))
+    outer.shapes.add_textbox(Inches(5), Inches(1), Inches(2), Inches(0.4))
+    slide.shapes.add_textbox(Inches(0.2), Inches(0.2), Inches(2), Inches(0.4))
+    source = tmp_path / "nested_chart.pptx"
+    prs.save(source)
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+    backend.pptx_obj = Presentation(str(source))
+    isolated_path = tmp_path / "isolated_nested.pptx"
+    assert backend._isolate_chart_presentation(0, chart_frame.shape_id, isolated_path)
+
+    isolated = Presentation(str(isolated_path))
+    shapes = list(_iter_shapes_recursive(isolated.slides[0].shapes))
+    assert [shape.has_chart for shape in shapes] == [False, False, True]
+
+
+def test_chart_isolation_fails_when_shape_id_is_unknown(tmp_path: Path, caplog):
+    """An id matching no graphic frame yields no image rather than a screenshot.
+
+    Rendering the untouched slide would attach a picture of the whole slide as
+    the chart's image, which misleads picture classification and enrichment
+    more than having no image at all. The caller keeps the chart data.
+    """
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    _add_bar_chart(slide.shapes)
+    slide.shapes.add_textbox(Inches(0.2), Inches(0.2), Inches(2), Inches(0.4))
+    source = tmp_path / "chart.pptx"
+    prs.save(source)
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+    backend.pptx_obj = Presentation(str(source))
+    isolated_path = tmp_path / "isolated_unknown.pptx"
+
+    with caplog.at_level(
+        logging.WARNING, logger="docling.backend.mspowerpoint_backend"
+    ):
+        assert backend._isolate_chart_presentation(0, 9999, isolated_path) is False
+
+    assert not isolated_path.exists()
+    assert "9999" in caplog.text
+
+
+def test_chart_isolation_ignores_alternate_content_with_a_duplicate_id(
+    tmp_path: Path,
+):
+    """A shape id reused inside mc:AlternateContent must not shadow the chart.
+
+    Shape ids are not reliably unique on a slide: an mc:AlternateContent block
+    repeats the same shape with the same cNvPr/@id in its mc:Choice and
+    mc:Fallback, and some generators emit duplicates outright. An unscoped
+    lookup taking the first match in document order would keep that shape and
+    delete the real chart, attaching a picture of an unrelated shape.
+    """
+    from lxml import etree
+    from pptx import Presentation
+    from pptx.oxml.ns import nsdecls
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart_frame = _add_bar_chart(slide.shapes)
+    duplicate_id = chart_frame.shape_id
+
+    # An AlternateContent block ahead of the chart whose fallback reuses the
+    # chart's id, as a SmartArt or ink shape written by PowerPoint would.
+    alternate = etree.fromstring(
+        f"""<mc:AlternateContent {nsdecls("p", "a")}
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+             <mc:Choice Requires="a14">
+               <p:graphicFrame>
+                 <p:nvGraphicFramePr>
+                   <p:cNvPr id="{duplicate_id}" name="Decoy choice"/>
+                   <p:cNvGraphicFramePr/>
+                   <p:nvPr/>
+                 </p:nvGraphicFramePr>
+                 <p:xfrm><a:off x="0" y="0"/><a:ext cx="100" cy="100"/></p:xfrm>
+                 <a:graphic><a:graphicData uri="decoy"/></a:graphic>
+               </p:graphicFrame>
+             </mc:Choice>
+             <mc:Fallback>
+               <p:graphicFrame>
+                 <p:nvGraphicFramePr>
+                   <p:cNvPr id="{duplicate_id}" name="Decoy fallback"/>
+                   <p:cNvGraphicFramePr/>
+                   <p:nvPr/>
+                 </p:nvGraphicFramePr>
+                 <p:xfrm><a:off x="0" y="0"/><a:ext cx="100" cy="100"/></p:xfrm>
+                 <a:graphic><a:graphicData uri="decoy"/></a:graphic>
+               </p:graphicFrame>
+             </mc:Fallback>
+           </mc:AlternateContent>"""
+    )
+    sp_tree = slide.shapes._spTree
+    sp_tree.insert(list(sp_tree).index(chart_frame._element), alternate)
+    source = tmp_path / "alternate_content.pptx"
+    prs.save(source)
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+    backend.pptx_obj = Presentation(str(source))
+    isolated_path = tmp_path / "isolated_alternate.pptx"
+    assert backend._isolate_chart_presentation(0, duplicate_id, isolated_path)
+
+    isolated = Presentation(str(isolated_path))
+    shapes = list(_iter_shapes_recursive(isolated.slides[0].shapes))
+    assert [shape.has_chart for shape in shapes] == [True], (
+        "the decoy was kept instead of the chart"
+    )
+    assert list(shapes[0].chart.plots[0].categories) == ["a", "b", "c"]
 
 
 def test_pptx_shapes_are_sorted_by_visual_position():
@@ -612,6 +993,10 @@ def test_metafile_detection(image_bytes: bytes, expected: bool):
     assert _is_metafile(image_bytes) is expected
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="Pillow 12 stores the WMF handler on the module, not the image class",
+)
 def test_pptx_emf_picture_survives_without_pillow_metafile_support(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ):
@@ -622,17 +1007,20 @@ def test_pptx_emf_picture_survives_without_pillow_metafile_support(
     load. Dropping the shape there loses the picture -- commonly a chart pasted
     in from Excel -- from an otherwise successful conversion, and does so on
     Linux only. Clearing the handler reproduces a non-Windows Pillow, and
-    emptying PATH reproduces a machine without LibreOffice, so the picture has
-    to survive on structure alone.
+    patching get_libreoffice_cmd to return None reproduces a machine without
+    LibreOffice, so the picture has to survive on structure alone.
     """
     from PIL import WmfImagePlugin
 
-    # The plugin registers a GDI-backed handler at import time on Windows only;
-    # on other platforms this attribute is already None.
-    monkeypatch.setattr(WmfImagePlugin, "_handler", None)
-    # LibreOffice is found with shutil.which, so an empty PATH hides it whether
-    # or not the machine running the tests happens to have it installed.
-    monkeypatch.setenv("PATH", str(tmp_path))
+    import docling.backend.mspowerpoint_backend as _pptx_backend
+
+    # The plugin registers a GDI-backed handler on Windows only. Pillow stores
+    # it on the image class; on other platforms the value is already None.
+    monkeypatch.setattr(WmfImagePlugin.WmfStubImageFile, "_handler", None)
+    # Patch get_docx_to_pdf_converter in the pptx backend's own namespace so
+    # LibreOffice is reported as unavailable regardless of PATH, environment
+    # variables, or hardcoded install paths on the test machine.
+    monkeypatch.setattr(_pptx_backend, "get_docx_to_pdf_converter", lambda: None)
 
     deck_path = _deck_with_picture(tmp_path, _emf_bytes(), ".emf")
 
@@ -686,6 +1074,10 @@ def test_pptx_undecodable_raster_picture_is_still_skipped(tmp_path: Path):
     assert "Quarterly results" in [t.text for t in doc.texts]
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="Pillow 12 stores the WMF handler on the module, not the image class",
+)
 def test_pptx_emf_picture_rasterized_via_libreoffice(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, libreoffice_available: bool
 ):
@@ -702,7 +1094,7 @@ def test_pptx_emf_picture_rasterized_via_libreoffice(
 
     from PIL import WmfImagePlugin
 
-    monkeypatch.setattr(WmfImagePlugin, "_handler", None)
+    monkeypatch.setattr(WmfImagePlugin.WmfStubImageFile, "_handler", None)
 
     deck_path = _deck_with_picture(tmp_path, _emf_bytes(drawable=True), ".emf")
     doc = get_converter().convert(deck_path).document
@@ -713,3 +1105,391 @@ def test_pptx_emf_picture_rasterized_via_libreoffice(
     assert image.width > 50 and image.height > 20, (
         f"rasterized metafile is implausibly small: {image.size}"
     )
+
+
+def test_chart_caption_is_parented_to_its_slide():
+    """A chart caption belongs to the slide holding the chart, not the body root.
+
+    ``add_picture`` only records the caption in the picture's ``captions``
+    list; it does not reparent it. Adding the caption without an explicit
+    parent therefore left it as a child of ``body``, so it surfaced as a stray
+    item between the slide groups and carried no provenance.
+    """
+    doc = get_converter().convert(CHART_PPTX).document
+
+    slide = doc.pictures[0].parent.resolve(doc)
+    caption = doc.pictures[0].captions[0].resolve(doc)
+
+    assert caption.parent.cref == slide.self_ref, (
+        f"caption is parented to {caption.parent.cref}, expected {slide.self_ref}"
+    )
+    assert caption.self_ref in [child.cref for child in slide.children]
+    assert caption.self_ref not in [child.cref for child in doc.body.children]
+
+    assert len(caption.prov) == 1
+    assert caption.prov[0].charspan == (0, len(caption.text))
+
+
+def test_paragraph_provenance_spans_its_own_text():
+    """Each paragraph of a shape gets a charspan for its own text.
+
+    The provenance used to be built once per shape from the whole shape text,
+    so every paragraph and list item of a multi-paragraph shape reported the
+    same charspan.
+    """
+    doc = (
+        get_converter()
+        .convert(Path("./tests/data/pptx/sources/powerpoint_sample.pptx"))
+        .document
+    )
+
+    texts = [t for t in doc.texts if t.text.strip()]
+    assert len(texts) > 1
+
+    for item in texts:
+        for prov in item.prov:
+            assert prov.charspan == (0, len(item.text)), (
+                f"{item.self_ref} ({item.label}) spans {prov.charspan} "
+                f"but its text is {len(item.text)} characters"
+            )
+
+
+def test_pptx_shape_bbox_is_not_vertically_mirrored(tmp_path: Path):
+    """python-pptx reports positions from the slide's top-left, y growing down.
+
+    Tagging those coordinates BOTTOMLEFT does not convert them. A consumer that
+    un-flips a BOTTOMLEFT box, which ``BoundingBox.to_top_left_origin`` does by
+    computing ``page_height - t``, then mirrors every box that is not centred
+    vertically onto the wrong half of the slide.
+    """
+    from docling_core.types.doc import CoordOrigin
+    from pptx import Presentation
+    from pptx.util import Emu
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.shapes.add_textbox(
+        Emu(100000), Emu(100000), Emu(2000000), Emu(400000)
+    ).text_frame.text = "Near top"
+    slide.shapes.add_textbox(
+        Emu(100000), Emu(6000000), Emu(2000000), Emu(400000)
+    ).text_frame.text = "Near bottom"
+
+    pptx_path = tmp_path / "vertical_order.pptx"
+    prs.save(pptx_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
+    doc = converter.convert(pptx_path, raises_on_error=True).document
+
+    tops = {
+        item.text: item.prov[0].bbox
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.prov
+    }
+
+    assert set(tops) == {"Near top", "Near bottom"}
+    for text, bbox in tops.items():
+        assert bbox.coord_origin == CoordOrigin.TOPLEFT, text
+        assert bbox.t < bbox.b, f"{text}: top edge must sit above the bottom edge"
+
+    assert tops["Near top"].t < tops["Near bottom"].t
+
+
+def test_pptx_indented_paragraphs_become_nested_lists(tmp_path: Path):
+    """Paragraph levels (``a:pPr/@lvl``) nest list items under their parent item.
+
+    Every list paragraph of a shape used to land in one flat list, so sub-bullets
+    lost their parent and numbered sub-items continued the outer numbering.
+    """
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[1])
+    slide.shapes.title.text = "Agenda"
+    body = slide.placeholders[1].text_frame
+    body.text = "Intro"
+    for text, level in [("Background", 1), ("Motivation", 1), ("Method", 0)]:
+        paragraph = body.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+
+    steps = slide.shapes.add_textbox(Inches(1), Inches(5), Inches(4), Inches(2))
+    steps.text_frame.text = "Step one"
+    for text, level in [("Sub a", 1), ("Sub b", 1), ("Step two", 0)]:
+        paragraph = steps.text_frame.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+    for paragraph in steps.text_frame.paragraphs:
+        paragraph._p.get_or_add_pPr().append(
+            paragraph._p.makeelement(qn("a:buAutoNum"), {"type": "arabicPeriod"})
+        )
+
+    pptx_path = tmp_path / "nested_lists.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert doc.export_to_markdown() == (
+        "# Agenda\n\n"
+        "- Intro\n"
+        "    - Background\n"
+        "    - Motivation\n"
+        "- Method\n\n"
+        "1. Step one\n"
+        "    1. Sub a\n"
+        "    2. Sub b\n"
+        "2. Step two"
+    )
+    sub_item = next(t for t in doc.texts if t.text == "Background")
+    intro = next(t for t in doc.texts if t.text == "Intro")
+    assert sub_item.parent.resolve(doc).parent.cref == intro.self_ref
+
+
+def test_pptx_numbered_list_honors_start_at(tmp_path: Path):
+    """A numbered list starts from its ``a:buAutoNum/@startAt`` value.
+
+    A list continued from a previous slide is numbered from "Start at" in
+    PowerPoint, but its items used to be renumbered from 1.
+    """
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    steps = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(2))
+    steps.text_frame.text = "Step four"
+    for text, level in [("Sub a", 1), ("Step five", 0)]:
+        paragraph = steps.text_frame.add_paragraph()
+        paragraph.text = text
+        paragraph.level = level
+    for paragraph in steps.text_frame.paragraphs:
+        attrs = {"type": "arabicPeriod"}
+        if paragraph.level == 0:
+            attrs["startAt"] = "4"
+        paragraph._p.get_or_add_pPr().append(
+            paragraph._p.makeelement(qn("a:buAutoNum"), attrs)
+        )
+
+    pptx_path = tmp_path / "start_at.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert doc.export_to_markdown() == "4. Step four\n    1. Sub a\n5. Step five"
+
+
+def test_pptx_picture_in_placeholder(tmp_path: Path):
+    """A picture inserted into a picture placeholder is extracted.
+
+    PowerPoint layouts like "Picture with Caption" contain a picture placeholder
+    (`PP_PLACEHOLDER.PICTURE`). When a user inserts a picture into it,
+    python-pptx returns a `PlaceholderPicture` whose `shape_type` is
+    `MSO_SHAPE_TYPE.PLACEHOLDER`, not `MSO_SHAPE_TYPE.PICTURE`. The backend
+    must still extract the picture because `PlaceholderPicture` subclasses
+    `pptx.shapes.picture.Picture`.
+    """
+    from io import BytesIO
+
+    from PIL import Image
+    from pptx import Presentation
+    from pptx.enum.shapes import PP_PLACEHOLDER
+
+    png = BytesIO()
+    Image.new("RGB", (200, 100), (200, 30, 30)).save(png, format="PNG")
+    png.seek(0)
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[8])
+    placeholder = next(
+        p
+        for p in slide.placeholders
+        if p.placeholder_format.type == PP_PLACEHOLDER.PICTURE
+    )
+    placeholder.insert_picture(png)
+
+    pptx_path = tmp_path / "placeholder_picture.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert len(doc.pictures) == 1
+    picture = doc.pictures[0]
+    assert picture.image is not None
+    assert picture.image.mimetype == "image/png"
+    assert picture.image.size.width == 200.0
+    assert picture.image.size.height == 100.0
+
+
+def test_pptx_hidden_slide_goes_to_invisible_layer(tmp_path: Path):
+    """A slide hidden in PowerPoint (``show="0"``) is left out of the default export.
+
+    Its content stays available in ``ContentLayer.INVISIBLE``, like a hidden
+    Excel sheet, and speaker notes keep the notes layer.
+    """
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    for title, body, hidden in [
+        ("Visible slide", "Presented text", False),
+        ("Hidden slide", "Backup text", True),
+    ]:
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        slide.shapes.title.text = title
+        box = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
+        box.text_frame.text = body
+        if hidden:
+            slide._element.set("show", "0")
+        slide.notes_slide.notes_text_frame.text = f"Notes for {title}"
+
+    pptx_path = tmp_path / "hidden.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    def texts(layer: ContentLayer) -> list[str]:
+        return [
+            item.text
+            for item, _ in doc.iterate_items(included_content_layers={layer})
+            if isinstance(item, TextItem)
+        ]
+
+    assert doc.export_to_markdown() == "# Visible slide\n\nPresented text"
+    assert texts(ContentLayer.INVISIBLE) == ["Hidden slide", "Backup text"]
+    assert texts(ContentLayer.NOTES) == [
+        "Notes for Visible slide",
+        "Notes for Hidden slide",
+    ]
+
+
+def test_pptx_footer_placeholders_go_to_furniture_layer(tmp_path: Path):
+    """Footer, date and slide-number placeholders are slide chrome, not body text."""
+    from lxml import etree
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    ns = (
+        'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+    )
+
+    prs = Presentation()
+    for body, hidden in [("Presented text", False), ("Backup text", True)]:
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+        box.text_frame.text = body
+        for idx, (ph_type, text) in enumerate(
+            [("dt", "10 October 2026"), ("ftr", "Confidential"), ("sldNum", "1")],
+            start=10,
+        ):
+            slide.shapes._spTree.append(
+                etree.fromstring(
+                    f'<p:sp {ns}><p:nvSpPr><p:cNvPr id="{idx}" name="{ph_type}"/>'
+                    "<p:cNvSpPr/><p:nvPr>"
+                    f'<p:ph type="{ph_type}" idx="{idx}"/></p:nvPr></p:nvSpPr>'
+                    f"<p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>{text}</a:t>"
+                    "</a:r></a:p></p:txBody></p:sp>"
+                )
+            )
+        if hidden:
+            slide._element.set("show", "0")
+
+    pptx_path = tmp_path / "footer.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    def texts(layer: ContentLayer) -> list[str]:
+        return [
+            item.text
+            for item, _ in doc.iterate_items(included_content_layers={layer})
+            if isinstance(item, TextItem)
+        ]
+
+    assert doc.export_to_markdown() == "Presented text"
+    assert texts(ContentLayer.FURNITURE) == ["10 October 2026", "Confidential", "1"]
+    assert texts(ContentLayer.INVISIBLE) == [
+        "Backup text",
+        "10 October 2026",
+        "Confidential",
+        "1",
+    ]
+
+
+def test_pptx_whitespace_only_shapes_are_skipped(tmp_path: Path):
+    """A shape whose text is only whitespace does not become a blank text item."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])  # "Title Only"
+    slide.shapes.title.text_frame.text = " "
+    blank = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
+    blank.text_frame.text = "   "
+    real = slide.shapes.add_textbox(Inches(1), Inches(4), Inches(4), Inches(1))
+    real.text_frame.text = "Real line"
+
+    pptx_path = tmp_path / "whitespace-shapes.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        ("paragraph", "Real line")
+    ]
+
+
+@pytest.mark.parametrize(
+    ("layout_marker", "override_layer", "expected"),
+    [
+        ("buNone", None, "Item one\n\nItem two"),
+        ("buAutoNum", None, "1. Item one\n2. Item two"),
+        (None, None, "- Item one\n- Item two"),
+        ("buNone", "shape", "- Item one\n- Item two"),
+        ("buNone", "paragraph", "- Item one\n- Item two"),
+    ],
+)
+def test_pptx_layout_list_marker_precedence(
+    tmp_path: Path,
+    layout_marker: str | None,
+    override_layer: str | None,
+    expected: str,
+) -> None:
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+
+    presentation = Presentation()
+    layout = presentation.slide_layouts[1]
+    layout_body = layout.placeholders[1]
+    layout_style = layout_body._element.find(".//" + qn("a:lstStyle"))
+    assert layout_style is not None
+    if layout_marker is not None:
+        level = layout_style.makeelement(qn("a:lvl1pPr"))
+        attrs = {"type": "arabicPeriod"} if layout_marker == "buAutoNum" else {}
+        level.append(level.makeelement(qn("a:" + layout_marker), attrs))
+        layout_style.append(level)
+
+    slide = presentation.slides.add_slide(layout)
+    slide.shapes.title.text = "Agenda"
+    body = slide.placeholders[1]
+    body.text_frame.text = "Item one"
+    body.text_frame.add_paragraph().text = "Item two"
+    if override_layer == "shape":
+        style = body._element.find(".//" + qn("a:lstStyle"))
+        assert style is not None
+        level = style.makeelement(qn("a:lvl1pPr"))
+        level.append(level.makeelement(qn("a:buChar"), {"char": "•"}))
+        style.append(level)
+    elif override_layer == "paragraph":
+        for paragraph in body.text_frame.paragraphs:
+            properties = paragraph._p.get_or_add_pPr()
+            properties.append(properties.makeelement(qn("a:buChar"), {"char": "•"}))
+
+    path = tmp_path / "layout_bullets.pptx"
+    presentation.save(path)
+    document = get_converter().convert(path).document
+
+    assert document.export_to_markdown() == "# Agenda\n\n" + expected

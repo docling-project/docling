@@ -8,13 +8,16 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import BoundingBox, DocItemLabel
 from pydantic import AnyUrl, BaseModel, ValidationError
 
 from docling.datamodel.base_models import (
     AssembledUnit,
+    Cluster,
     ContainerElement,
+    FieldRegionElement,
     FigureElement,
+    FormFieldPrediction,
     Page,
     PageElement,
     Table,
@@ -30,6 +33,7 @@ from docling.models.base_layout_model import (
 )
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_normalization import normalize_arabic_presentation_forms
 
 _log = logging.getLogger(__name__)
 
@@ -174,6 +178,9 @@ class PageAssembleModel(BasePageModel):
             ),
             sanitized_text,
         )
+        # Arabic shaping normalization: fold contextual presentation forms back to
+        # their canonical Arabic letters, so the extracted text is searchable.
+        sanitized_text = normalize_arabic_presentation_forms(sanitized_text)
 
         return sanitized_text.strip()  # Strip any leading or trailing whitespace
 
@@ -193,6 +200,7 @@ class PageAssembleModel(BasePageModel):
                     elements: List[PageElement] = []
                     headers: List[PageElement] = []
                     body: List[PageElement] = []
+                    form_fields = page.predictions.form_fields or FormFieldPrediction()
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
@@ -204,6 +212,11 @@ class PageAssembleModel(BasePageModel):
                             ]
                             text = self.sanitize_text(textlines)
                             hyperlink = self._match_hyperlink(cluster.bbox, page)
+                            # A paragraph that inlines AcroForm widgets carries a
+                            # single keyed field item; attach it so it materializes
+                            # as a field_item in place (see TextElement.field_item)
+                            # instead of being pulled into a separate field_region.
+                            field_item = form_fields.inline_items.get(cluster.id)
                             text_el = TextElement(
                                 label=cluster.label,
                                 id=cluster.id,
@@ -211,6 +224,7 @@ class PageAssembleModel(BasePageModel):
                                 hyperlink=hyperlink,
                                 page_no=page.page_no,
                                 cluster=cluster,
+                                field_item=field_item,
                             )
                             elements.append(text_el)
 
@@ -234,7 +248,6 @@ class PageAssembleModel(BasePageModel):
                                     cluster=cluster,
                                     page_no=page.page_no,
                                 )
-
                             elements.append(tbl)
                             body.append(tbl)
                         elif cluster.label == FIGURE_LABEL:
@@ -255,12 +268,22 @@ class PageAssembleModel(BasePageModel):
                             elements.append(fig)
                             body.append(fig)
                         elif cluster.label in CONTAINER_LABELS:
-                            container_el = ContainerElement(
-                                label=cluster.label,
-                                id=cluster.id,
-                                page_no=page.page_no,
-                                cluster=cluster,
-                            )
+                            field_items = form_fields.form_items.get(cluster.id)
+                            if field_items is None:
+                                container_el = ContainerElement(
+                                    label=cluster.label,
+                                    id=cluster.id,
+                                    page_no=page.page_no,
+                                    cluster=cluster,
+                                )
+                            else:
+                                container_el = FieldRegionElement(
+                                    label=DocItemLabel.FIELD_REGION,
+                                    id=cluster.id,
+                                    page_no=page.page_no,
+                                    cluster=cluster,
+                                    items=field_items,
+                                )
                             elements.append(container_el)
                             body.append(container_el)
 

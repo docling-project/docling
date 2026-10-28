@@ -199,9 +199,9 @@ def main():
     with (output_dir / f"{doc_filename}.json").open("w", encoding="utf-8") as fp:
         fp.write(json.dumps(conv_result.document.export_to_dict()))
 
-    # Export Text format (plain text via Markdown export):
+    # Export Text format:
     with (output_dir / f"{doc_filename}.txt").open("w", encoding="utf-8") as fp:
-        fp.write(conv_result.document.export_to_markdown(strict_text=True))
+        fp.write(conv_result.document.export_to_text())
 
     # Export Markdown format:
     with (output_dir / f"{doc_filename}.md").open("w", encoding="utf-8") as fp:

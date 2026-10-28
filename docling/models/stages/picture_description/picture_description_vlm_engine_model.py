@@ -15,6 +15,7 @@ from typing import Optional, Type, Union
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import ApiImageRequestResult, VlmStopReason
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmEngineOptions,
@@ -153,14 +154,16 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             for image in image_list
         ]
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageRequestResult]:
         """Generate descriptions for a batch of images.
 
         Args:
             images: Iterable of PIL images to describe
 
         Yields:
-            Description text for each image
+            ApiImageRequestResult for each image
         """
         if self.engine is None:
             raise RuntimeError("Engine not initialized")
@@ -183,13 +186,25 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             for output in outputs:
                 description = output.text.strip()
                 _log.debug(f"Generated description: {description[:100]}...")
-                yield description
+                yield ApiImageRequestResult(
+                    text=description,
+                    num_tokens=output.metadata.get("num_tokens"),
+                    stop_reason=_map_stop_reason(output.stop_reason),
+                    usage=output.metadata.get("usage"),
+                    logprobs=output.metadata.get("logprobs"),
+                    error=output.metadata.get("error"),
+                )
 
         except Exception as e:
             _log.error(f"Error generating picture descriptions: {e}")
-            # Yield empty strings on error to maintain batch alignment
+            # Yield one failed result per image to keep the batch aligned
             for _ in image_list:
-                yield ""
+                yield ApiImageRequestResult(
+                    text="",
+                    num_tokens=0,
+                    stop_reason=VlmStopReason.INFERENCE_ERROR,
+                    error=f"{type(e).__name__}: {e}",
+                )
 
     def __del__(self):
         """Cleanup engine resources."""
@@ -198,3 +213,23 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
                 self.engine.cleanup()
             except Exception as e:
                 _log.warning(f"Error cleaning up engine: {e}")
+
+
+def _map_stop_reason(stop_reason: str | VlmStopReason | None) -> VlmStopReason:
+    if isinstance(stop_reason, VlmStopReason):
+        return stop_reason
+    if not stop_reason:
+        return VlmStopReason.UNSPECIFIED
+    try:
+        return VlmStopReason(stop_reason)
+    except ValueError:
+        pass
+    if stop_reason == "content_filter":
+        return VlmStopReason.CONTENT_FILTERED
+    if stop_reason == "length":
+        return VlmStopReason.LENGTH
+    if stop_reason in ("stop", "end_of_sequence"):
+        return VlmStopReason.END_OF_SEQUENCE
+    if stop_reason == "stop_sequence":
+        return VlmStopReason.STOP_SEQUENCE
+    return VlmStopReason.UNSPECIFIED

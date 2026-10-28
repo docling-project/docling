@@ -222,7 +222,13 @@ Recommended configs by use case:
 | Lecture recordings | `frame_sampling_mode=SCENE_CHANGE, cuts_per_minute=2.0` |
 | General video | `frame_sampling_mode=FIXED_INTERVAL, frame_interval_seconds=10.0` |
 
-`max_sampled_frames` caps the total number of frames sampled regardless of mode. Set `generate_frame_images=False` to skip frame sampling entirely and transcribe only.
+`max_sampled_frames` caps the total number of frames sampled regardless of mode (default `200`, about 33 minutes at the default 10 s interval; set `None` for no limit). Set `generate_frame_images=False` to skip frame sampling entirely and transcribe only.
+
+### Container handling and time limits
+
+The video pipeline reads each file with the FFmpeg demuxer that matches its extension (`.mp4`/`.mov` as MP4/QuickTime, `.mkv`/`.webm` as Matroska, `.avi` as AVI) and only from the local file itself. A file whose content does not match its extension fails to open instead of being interpreted as another format.
+
+FFmpeg calls share the document's `document_timeout` budget when it is set. Without it, each call is limited to 5 minutes or the video duration, whichever is longer. If a call runs out of time, the frames and transcript gathered so far are kept, the result status is `PARTIAL_SUCCESS`, and a `TIMEOUT` error is recorded in `ConversionResult.errors` (see `ConversionResult.has_timeout_errors()`).
 
 ### Speaker diarization
 
@@ -248,12 +254,14 @@ docling --to md --video-sampling-mode scene --video-diarization video.mp4
 | `--video-cuts-per-minute` | `0.0` (unset) | Target scene cuts per minute; overrides `--video-prominence` when set. |
 | `--video-prominence` | `0.0` (auto) | Scene-change sensitivity threshold. `0` auto-calibrates to the video's motion. |
 | `--video-diarization` | disabled | Enable speaker diarization. Requires `resemblyzer`. |
+| `--document-timeout` | unset | Time budget in seconds for each video, shared by all FFmpeg calls. |
 
 See the [CLI reference](../reference/cli.md) for the complete flag list.
 
 ## Choosing an ASR model and backend
 
-Docling ships three interchangeable ASR backends, all installed by the `asr` extra shown above:
+Docling includes three Whisper backends installed by the `asr` extra shown above.
+The optional Transformers backend supports additional speech model families.
 
 | Backend | Library | Hardware | Notes |
 |---------|---------|----------|-------|
@@ -346,6 +354,56 @@ pipeline_options.asr_options = InlineAsrWhisperS2TOptions(
 !!! note "WhisperS2T is not available on Apple Silicon"
     The `whisper-s2t-reborn` dependency installs only on non-Apple-Silicon platforms, so `_S2T` presets can't be used on M-series Macs — use the native or MLX backends there. On Linux with CUDA, see the [cuBLAS note](#installation) above if model loading fails.
 
+### Transcribing with a remote Whisper server
+
+Instead of loading a model in the Docling process, the ASR pipeline can send the audio to an OpenAI-compatible
+`/v1/audio/transcriptions` endpoint — a Whisper server that is deployed on its own (for example faster-whisper-server,
+whisper.cpp's server or vLLM) or a hosted service. This keeps the model, and its GPU, out of the process that converts
+documents, and lets several services share one transcription server.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import AsrPipelineOptions
+from docling.datamodel.pipeline_options_asr_model import ApiAsrOptions
+from docling.document_converter import AudioFormatOption, DocumentConverter
+from docling.pipeline.asr_pipeline import AsrPipeline
+
+pipeline_options = AsrPipelineOptions(
+    asr_options=ApiAsrOptions(
+        url="http://whisper:8000/v1/audio/transcriptions",
+        model="Systran/faster-whisper-small",
+        language="en",
+        initial_prompt="Columbus flight control loop: COL FLIGHT, COL SYSTEMS",
+        headers={"Authorization": "Bearer TOKEN"},
+    ),
+    enable_remote_services=True,  # required: the audio leaves this process
+)
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.AUDIO: AudioFormatOption(
+            pipeline_cls=AsrPipeline, pipeline_options=pipeline_options
+        )
+    }
+)
+result = converter.convert("recording.mp3")
+```
+
+The file is posted as `multipart/form-data` with `response_format=verbose_json`, and every timed segment of the answer
+becomes a text item with a `TrackSource` (start and end time), like with the local backends. Words are added to each
+segment when `word_timestamps=True` and the server supports `timestamp_granularities[]=word`. Settings that are specific to a
+server go in `params`, which are sent as additional form fields.
+
+Notes:
+
+- `enable_remote_services=True` is required, as for remote picture description: without it the pipeline raises
+  `OperationNotAllowed` and nothing is sent.
+- FFmpeg is not needed for audio files, the server decodes them. (The video pipeline still uses it to extract the
+  audio track.)
+- The server must return timed segments (`verbose_json`). An answer without them fails the conversion with a message
+  saying so. Speaker labels are not part of the OpenAI transcription API, so the items have no speaker.
+- The request waits up to `timeout` seconds (600 by default), which long recordings may need to exceed.
+
 ### From the command line
 
 The `docling` CLI selects any preset with `--asr-model` (values are the lower-case preset names). Audio inputs route to the ASR pipeline and video inputs to the video pipeline automatically based on file extension, so no extra flag is required to pick a pipeline — `--asr-model` controls the transcription backend for both:
@@ -362,6 +420,89 @@ docling --to md --asr-model whisper_distil_large_v3_s2t recording.mp3
 ```
 
 See the [CLI reference](../reference/cli.md) for the complete list of `--asr-model` values.
+
+### Transformers speech models
+
+Install the optional backend:
+
+```bash
+pip install "docling-slim[feat-asr-transformers]"
+```
+
+The following additional presets use Transformers. The SDK constants are in
+`docling.datamodel.asr_model_specs`; the CLI names are their lower-case names.
+
+| SDK constant | Hugging Face repository |
+|---|---|
+| `GRANITE_SPEECH_5_0_2B` | [`ibm-granite/granite-speech-5.0-2b`](https://huggingface.co/ibm-granite/granite-speech-5.0-2b) |
+| `GRANITE_SPEECH_5_0_470M_TURBOCTC` | [`ibm-granite/granite-speech-5.0-470m-turboctc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc) |
+| `GRANITE_SPEECH_5_0_470M_TURBOCTC_NC` | [`ibm-granite/granite-speech-5.0-470m-turboctc-nc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc-nc) |
+| `GRANITE_SPEECH_4_1_2B` | [`ibm-granite/granite-speech-4.1-2b`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b) |
+| `GRANITE_SPEECH_4_1_2B_PLUS` | [`ibm-granite/granite-speech-4.1-2b-plus`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b-plus) |
+| `NEMOTRON_SPEECH_STREAMING_EN_0_6B` | [`nvidia/nemotron-speech-streaming-en-0.6b`](https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b) |
+| `PARAKEET_CTC_1_1B` | [`nvidia/parakeet-ctc-1.1b`](https://huggingface.co/nvidia/parakeet-ctc-1.1b) |
+
+```python
+from docling.datamodel import asr_model_specs
+
+options = asr_model_specs.GRANITE_SPEECH_5_0_2B.model_copy(deep=True)
+# Override the checkpoint revision when needed.
+# options.revision = "branch-tag-or-commit"
+pipeline_options.asr_options = options
+```
+
+On Apple MPS, Granite and TurboCTC load weights in FP32 to avoid a BF16
+normalization failure. Allow more memory than for BF16 weights.
+
+With `artifacts_path`, provide the local checkpoint or its parent directory.
+The loader does not download missing weights.
+
+```bash
+docling recording.wav --asr-model granite_speech_5_0_2b --to md
+docling recording.wav --asr-model parakeet_ctc_1_1b --to md
+```
+
+These models currently produce one transcript segment covering the full audio
+duration. Plus uses plain transcription by default; its speaker and timestamp
+tags are not mapped to structured Docling tracks. Streaming model names identify
+the checkpoints; this pipeline performs file transcription.
+
+The `TURBOCTC_NC` preset uses CC-BY-NC-SA-4.0.
+
+### Validate real model decoding
+
+From a repository checkout, run the separate script against one short speech
+fragment. It is outside pytest collection and never runs in the normal test suite.
+
+```bash
+# Select several models. Repeat --model for each preset.
+uv run python scripts/validate_asr_models.py \\
+  --audio tests/data/audio/sources/sample_10s.mp3 \\
+  --model granite_speech_5_0_2b \\
+  --model granite_speech_5_0_470m_turboctc \\
+  --output /tmp/asr-validation
+
+# List choices, or run every preset against the default ten-second fragment.
+uv run python scripts/validate_asr_models.py --list-models
+uv run python scripts/validate_asr_models.py --device auto
+```
+
+Each model runs in a separate process. The script checks conversion status and
+requires a nonempty transcript. It saves `transcript.txt`, `transcript.md`,
+`document.dclx`, `options.json`, and `run.log` in each model directory.
+The shared `report.json` records the audio SHA-256, elapsed time, and failures.
+It returns a nonzero exit code if any model fails, including missing dependencies
+or unsupported hardware, and continues with the other models.
+
+The default run selects every ASR preset, including native Whisper, MLX, and
+WhisperS2T variants. Install the required backends or select a subset suitable
+for your machine. Models download weights unless `--artifacts-path` is set.
+Use `--language` for the source language (default: English), `--revision` to
+override Transformers revisions, and `--timeout` to change the per-model limit
+(default: 900 seconds, including download time).
+
+Compare the saved transcripts to the spoken fragment to assess recognition
+accuracy. Decoding success alone does not measure transcription accuracy.
 
 ## Limitations
 

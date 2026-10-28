@@ -3,6 +3,7 @@
 
 import logging
 import math
+import threading
 from collections.abc import Iterable
 from io import BytesIO
 from pathlib import Path
@@ -16,7 +17,7 @@ from docling_core.types.doc.page import (
     SegmentedPdfPage,
     TextCell,
 )
-from PIL import Image
+from PIL import Image, ImageOps
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
@@ -24,6 +25,7 @@ from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.image_utils import check_image_pixels, to_rgb
 
 _log = logging.getLogger(__name__)
 
@@ -50,7 +52,25 @@ def _validate_dpi(dpi: tuple[SupportsFloat, SupportsFloat]) -> tuple[float, floa
 
 def _get_frame_dpi(image: Image.Image) -> tuple[float, float]:
     dpi = image.info.get("dpi")
-    return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1)) else dpi)
+    # (1, 1) and (0, 0) carry no resolution: some writers store (1, 1) as a
+    # placeholder, and a PNG pHYs chunk with zero pixels per unit reads as (0, 0).
+    return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1), (0, 0)) else dpi)
+
+
+def _oriented_frame(image: Image.Image) -> tuple[Image.Image, tuple[float, float]]:
+    """Apply the EXIF orientation to a frame and return it with its DPI axes.
+
+    A camera stores the sensor readout and an orientation tag rather than
+    rotated pixels, so a portrait photo reaches OCR and layout on its side
+    unless the tag is honoured. ``exif_transpose`` swaps width and height for
+    the quarter-turn orientations but leaves ``info["dpi"]`` alone, so the axes
+    are swapped here whenever it actually rotated the frame.
+    """
+    dpi_x, dpi_y = _get_frame_dpi(image)
+    oriented = ImageOps.exif_transpose(image)
+    if oriented.size != image.size:
+        dpi_x, dpi_y = dpi_y, dpi_x
+    return oriented, (dpi_x, dpi_y)
 
 
 class _ImagePageBackend(PdfPageBackend):
@@ -183,8 +203,10 @@ class ImageDocumentBackend(PdfDocumentBackend):
         - Subclasses PdfDocumentBackend to satisfy pipeline type checks.
         - Intentionally avoids calling PdfDocumentBackend.__init__ to skip
           the image→PDF conversion and any pypdfium2 usage.
-        - Handles multi-page TIFF by extracting frames eagerly to separate
-          Image objects to keep thread-safety when pages process in parallel.
+        - Reads only the frame count when opened, so the page limits are
+          checked before any pixel data is decoded. Each page decodes its
+          frame on ``load_page`` into a separate Image object, which keeps
+          pages thread-safe when they process in parallel.
     """
 
     def __init__(
@@ -204,45 +226,52 @@ class ImageDocumentBackend(PdfDocumentBackend):
                 f"Incompatible file format {self.input_format} was passed to ImageDocumentBackend."
             )
 
-        # Load frames eagerly for thread-safety across pages
-        self._frames: list[Image.Image] = []
-        self._frame_dpi: list[tuple[float, float]] = []
+        # The source stays open until unload(); the lock serializes the seeks
+        # on it, because pages can load from several threads.
+        self._lock = threading.Lock()
+        self._source: Image.Image | None = None
+        self._frame_count = 0
         try:
-            with Image.open(self.path_or_stream) as img:  # type: ignore[arg-type]
-                # Handle multi-frame and single-frame images
-                # - multiframe formats: TIFF, GIF, ICO
-                # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC
-                frame_count = getattr(img, "n_frames", 1)
-
-                if frame_count > 1:
-                    for i in range(frame_count):
-                        img.seek(i)
-                        self._frame_dpi.append(_get_frame_dpi(img))
-                        self._frames.append(img.copy().convert("RGB"))
-                else:
-                    self._frame_dpi.append(_get_frame_dpi(img))
-                    self._frames.append(img.convert("RGB"))
+            self._source = Image.open(self.path_or_stream)  # type: ignore[arg-type]
+            # Multi-frame formats: TIFF, GIF, ICO, animated WEBP/PNG. Other
+            # formats have no n_frames attribute and hold one frame.
+            self._frame_count = getattr(self._source, "n_frames", 1)
+            # The first frame is the current one after open (and after
+            # n_frames, which seeks back): reject a bad first frame here,
+            # without decoding it.
+            check_image_pixels(self._source.size, self.options.max_image_pixels)
+            _get_frame_dpi(self._source)
         except Exception as e:
-            for frame in self._frames:
-                frame.close()
-            self._frames = []
-            self._frame_dpi = []
+            self._close_source()
             raise DocumentLoadError(
-                f"Could not load image for document {self.file}"
+                f"Could not load image for document {self.file}: {e}"
             ) from e
 
+    def _close_source(self) -> None:
+        if self._source is not None:
+            self._source.close()
+        self._source = None
+        self._frame_count = 0
+
     def is_valid(self) -> bool:
-        return len(self._frames) > 0
+        return self._frame_count > 0
 
     def page_count(self) -> int:
-        return len(self._frames)
+        return self._frame_count
 
     def load_page(self, page_no: int) -> _ImagePageBackend:
-        if not (0 <= page_no < len(self._frames)):
+        if not (0 <= page_no < self._frame_count):
             raise IndexError(f"Page index out of range: {page_no}")
-        return _ImagePageBackend(
-            self._frames[page_no], page_no, self._frame_dpi[page_no]
-        )
+        with self._lock:
+            assert self._source is not None
+            if self._source.tell() != page_no:
+                self._source.seek(page_no)
+            # Frames of a multi-page TIFF have their own size, so each one is
+            # checked before it is decoded.
+            check_image_pixels(self._source.size, self.options.max_image_pixels)
+            frame, dpi = _oriented_frame(self._source)
+            image = to_rgb(frame)
+        return _ImagePageBackend(image, page_no, dpi)
 
     @classmethod
     def supported_formats(cls) -> set[InputFormat]:
@@ -254,8 +283,6 @@ class ImageDocumentBackend(PdfDocumentBackend):
         return True
 
     def unload(self):
-        for frame in self._frames:
-            frame.close()
-        self._frames = []
-        self._frame_dpi = []
+        with self._lock:
+            self._close_source()
         super().unload()

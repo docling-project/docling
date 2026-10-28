@@ -4,6 +4,7 @@
 from enum import Enum
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
+from urllib.parse import urlparse
 
 from pydantic import (
     AnyUrl,
@@ -15,8 +16,14 @@ from pydantic import (
     PrivateAttr,
     SecretStr,
     conint,
+    field_validator,
     model_validator,
 )
+
+# Default limit on the pixels of one decoded image or image frame. It is the
+# default of Pillow's ``Image.MAX_IMAGE_PIXELS`` (about 268 MB once decoded to
+# RGB), fixed here so that the limit does not depend on global Pillow state.
+DEFAULT_MAX_IMAGE_PIXELS = 89_478_485
 
 
 class BaseBackendOptions(BaseModel):
@@ -36,7 +43,27 @@ class DeclarativeBackendOptions(BaseBackendOptions):
     kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
 
 
-class AsciiDocBackendOptions(BaseBackendOptions):
+class TextBackendOptions(BaseBackendOptions):
+    """Options common to the backends that decode a whole file as plain text."""
+
+    encoding: Optional[str] = Field(
+        None,
+        description=(
+            "Character encoding of the document, as a Python codec name such as "
+            '"shift_jis" or "koi8-r". When set, the file is decoded with it and '
+            "nothing is guessed. When unset, a byte-order mark is honoured, then "
+            "UTF-8 is tried, then cp1252; anything else raises."
+        ),
+    )
+
+
+class CsvBackendOptions(TextBackendOptions):
+    """Options specific to the CSV backend."""
+
+    kind: Literal["csv"] = Field("csv", exclude=True, repr=False)
+
+
+class AsciiDocBackendOptions(TextBackendOptions):
     """Options specific to the AsciiDoc backend."""
 
     kind: Literal["asciidoc"] = Field("asciidoc", exclude=True, repr=False)
@@ -58,6 +85,16 @@ class AsciiDocBackendOptions(BaseBackendOptions):
             ),
         ),
     ] = None
+    capture_comments: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to keep AsciiDoc comments (`//` lines and `////` blocks) in "
+                "the notes content layer, which exports leave out by default. When "
+                "disabled, comments are dropped."
+            )
+        ),
+    ] = True
 
 
 class HTMLBackendOptions(BaseBackendOptions):
@@ -129,10 +166,25 @@ class HTMLBackendOptions(BaseBackendOptions):
             description=(
                 "HTTP headers to include when fetching remote images. Use for "
                 "authentication (e.g., API keys, bearer tokens) or custom headers "
-                "required by image servers."
+                "required by image servers. They are only sent to the origins in "
+                "`headers_allowed_origins`, and are dropped on redirects to other "
+                "origins."
             ),
             examples=[{"Authorization": "Bearer TOKEN"}, {"X-API-Key": "your-api-key"}],
             repr=False,
+        ),
+    ] = None
+    headers_allowed_origins: Annotated[
+        list[str] | None,
+        Field(
+            description=(
+                "Origins (scheme, host and optional port, e.g. "
+                "`https://cdn.example.com`) that receive `headers`. When None, "
+                "headers are only sent to the origin of the source document "
+                "(`source_uri`); for local files and streams without a remote "
+                "`source_uri` they are then not sent at all."
+            ),
+            examples=[["https://example.com", "https://cdn.example.com:8443"]],
         ),
     ] = None
     add_title: bool = Field(
@@ -149,13 +201,32 @@ class HTMLBackendOptions(BaseBackendOptions):
         20 * 1024 * 1024,  # 20 MB
         description="The maximum number of bytes for remote image downloads.",
     )
+    max_image_pixels: PositiveInt = Field(
+        DEFAULT_MAX_IMAGE_PIXELS,
+        description=(
+            "The maximum number of pixels (width x height) of an embedded or "
+            "fetched image. Larger images are skipped with a warning."
+        ),
+    )
     max_redirects: Annotated[int, Field(ge=0)] = Field(
         5,
         description="Maximum number of HTTP redirects to follow when fetching remote resources. Set to 0 to disable redirects.",
     )
 
+    @field_validator("headers_allowed_origins")
+    @classmethod
+    def _check_origins(cls, value: list[str] | None) -> list[str] | None:
+        for origin in value or []:
+            parsed = urlparse(origin)
+            if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+                raise ValueError(
+                    f"Invalid origin {origin!r}: expected an http(s) URL such as "
+                    "'https://cdn.example.com'"
+                )
+        return value
 
-class MarkdownBackendOptions(BaseBackendOptions):
+
+class MarkdownBackendOptions(TextBackendOptions):
     """Options specific to the Markdown backend."""
 
     kind: Literal["md"] = Field("md", exclude=True, repr=False)
@@ -176,6 +247,13 @@ class MarkdownBackendOptions(BaseBackendOptions):
     max_image_data_base64_bytes: PositiveInt = Field(
         20 * 1024 * 1024,  # 20 MB
         description="The maximum number of base64 data bytes that the backend will accept.",
+    )
+    max_image_pixels: PositiveInt = Field(
+        DEFAULT_MAX_IMAGE_PIXELS,
+        description=(
+            "The maximum number of pixels (width x height) of an embedded or "
+            "fetched image. Larger images are skipped with a warning."
+        ),
     )
 
 
@@ -209,13 +287,20 @@ class EpubBackendOptions(BaseBackendOptions):
     max_total_bytes: Annotated[
         PositiveInt,
         Field(
-            description="Maximum cumulative size in bytes of all data extracted from the EPUB archive during processing"
+            description=(
+                "Maximum cumulative size in bytes of the content documents read "
+                "from the EPUB archive, and of all data extracted from it for "
+                "image processing"
+            )
         ),
     ] = 100 * 1024 * 1024  # 100 MB
     max_file_bytes: Annotated[
         PositiveInt,
         Field(
-            description="Maximum size in bytes for any single file extracted from the EPUB archive"
+            description=(
+                "Maximum size in bytes for any single file read or extracted "
+                "from the EPUB archive"
+            )
         ),
     ] = 10 * 1024 * 1024  # 10 MB
     max_member_count: Annotated[
@@ -247,6 +332,14 @@ class PdfBackendOptions(BaseBackendOptions):
             "decoding costs time and memory, so it is off by default."
         ),
     )
+    max_image_pixels: PositiveInt = Field(
+        DEFAULT_MAX_IMAGE_PIXELS,
+        description=(
+            "The maximum number of pixels (width x height) of one page of an "
+            "image input, such as one frame of a multi-page TIFF. Used by the "
+            "image backend; an image with a larger page is rejected."
+        ),
+    )
 
 
 class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
@@ -260,6 +353,15 @@ class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
         description=(
             "Number of parser threads to use for the threaded docling-parse backend. "
             "If unset, the backend falls back to global accelerator thread settings."
+        ),
+    )
+    max_concurrent_results: Optional[PositiveInt] = Field(
+        None,
+        description=(
+            "Maximum number of decoded pages the threaded docling-parse backend buffers "
+            "ahead of the pipeline before its workers pause. Each buffered page holds its "
+            "decoded content and rendered image in memory, so lowering this bounds peak "
+            "memory on large or image-heavy PDFs. If unset, the docling-parse default is used."
         ),
     )
     render_pages: bool = Field(
@@ -328,6 +430,37 @@ class IWorkBackendOptions(BaseBackendOptions):
     max_member_count: Annotated[
         PositiveInt, Field(description="Maximum number of archive members to inspect")
     ] = 5000
+    sheet_names: Annotated[
+        Optional[list[str]],
+        Field(
+            description=(
+                "An optional list of sheet names to include when converting a "
+                "Numbers spreadsheet. When set, only sheets whose names appear "
+                "in this list will be processed. Sheet names are matched "
+                "case-sensitively. Set to None (default) to include all sheets. "
+                "Ignored by the Pages backend, which has no sheets."
+            )
+        ),
+    ] = None
+    render_chart_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to render an image for each chart in a Keynote "
+                "presentation or a Numbers spreadsheet and attach it to the "
+                "chart PictureItem. Neither app stores a picture of a chart, so "
+                "the chart is rebuilt from the data read out of the document as "
+                "a single-chart Office document and "
+                "rasterized with LibreOffice, the route the Office backends "
+                "render their charts by. The image has the chart's kind, data "
+                "and title but not its colours or fonts, and a chart with no "
+                "Office equivalent (mixed, two-axis, bubble or interactive) "
+                "gets none. Opt-in (default False) because it requires "
+                "LibreOffice and inflates the output size. Charts always keep "
+                "their classification and data regardless of this option."
+            )
+        ),
+    ] = False
 
 
 class MsExcelBackendOptions(BaseBackendOptions):
@@ -380,6 +513,28 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "Set to None (default) to include all sheets."
         ),
     )
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum cumulative decompressed size in bytes of all members of "
+                "the XLSX archive. The archive is checked before it is parsed."
+            )
+        ),
+    ] = 512 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum decompressed size in bytes of any single member of the "
+                "XLSX archive."
+            )
+        ),
+    ] = 128 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt,
+        Field(description="Maximum number of members in the XLSX archive"),
+    ] = 10_000
 
 
 class MsPowerpointBackendOptions(BaseBackendOptions):
@@ -418,6 +573,42 @@ class MsWordBackendOptions(BaseBackendOptions):
             "reconstructed tabular data regardless of this option."
         ),
     )
+
+    use_outline_level_for_headings: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use `w:outlineLvl` as a heading signal when no name-based signal "
+                "exists (e.g. localized styles such as `Nadpis1`). Known limitation: "
+                "styles that carry an outline level only for TOC participation are "
+                "also promoted to headings. Set to `False` to disable. Note: for "
+                "styles already identified as headings by name, the level is still "
+                "read from `w:outlineLvl` regardless of this option."
+            )
+        ),
+    ] = True
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum cumulative decompressed size in bytes of all members of "
+                "the DOCX archive. The archive is checked before it is parsed."
+            )
+        ),
+    ] = 512 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum decompressed size in bytes of any single member of the "
+                "DOCX archive."
+            )
+        ),
+    ] = 128 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt,
+        Field(description="Maximum number of members in the DOCX archive"),
+    ] = 10_000
 
 
 class OdsBackendOptions(BaseBackendOptions):
@@ -459,6 +650,14 @@ class LatexBackendOptions(BaseBackendOptions):
     """Options specific to the LaTeX backend."""
 
     kind: Literal["latex"] = Field("latex", exclude=True, repr=False)
+    source_uri: Optional[PurePath] = Field(
+        None,
+        description=(
+            "The local path of the LaTeX document. If provided and the document "
+            "is read from a stream, the backend resolves relative \\input, "
+            "\\include and \\includegraphics paths against its directory."
+        ),
+    )
     parse_timeout: Optional[float] = Field(
         30.0,
         description=(
@@ -470,7 +669,20 @@ class LatexBackendOptions(BaseBackendOptions):
         None,
         description=(
             "The engine to use for rendering Tikz diagrams into images. "
-            "Set to 'tectonic' to enable asynchronous image generation."
+            "Set to 'tectonic' to enable asynchronous image generation. "
+            "Tectonic can read and write files outside the working directory, "
+            "so it runs only when tikz_engine_trusted_input is True. Otherwise "
+            "diagrams are kept as TikZ code."
+        ),
+    )
+    tikz_engine_trusted_input: bool = Field(
+        False,
+        description=(
+            "Confirm that the LaTeX input is trusted, which is required to "
+            "render TikZ diagrams with Tectonic. Tectonic can read and write "
+            "files that the process can access, and the source pre-check is "
+            "not a security boundary. Enable only for trusted input, or run the "
+            "conversion in an isolated environment."
         ),
     )
     tikz_engine_timeout: float = Field(
@@ -481,8 +693,8 @@ class LatexBackendOptions(BaseBackendOptions):
         False,
         description=(
             "Allow Tectonic TikZ rendering to enable shell escape during "
-            "compilation. Disabled by default for safer rendering of untrusted "
-            "LaTeX."
+            "compilation. Has no effect unless tikz_engine_trusted_input is "
+            "True; enable only for trusted input."
         ),
     )
 
@@ -711,6 +923,7 @@ BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
         AsciiDocBackendOptions,
+        CsvBackendOptions,
         EbcdicBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,

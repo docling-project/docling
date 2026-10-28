@@ -18,6 +18,10 @@ Both return ``VideoFrame`` objects carrying the frame image and its timestamp.
 import logging
 import shutil
 import subprocess
+import tempfile
+import threading
+import time
+from collections.abc import Callable
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
@@ -43,6 +47,199 @@ MISSING_FFMPEG_MESSAGE: Final[str] = (
     "on macOS, 'apt-get install ffmpeg' on Linux, 'winget install ffmpeg' on "
     "Windows)."
 )
+
+# Container demuxer forced for each accepted file extension. Without ``-f``,
+# ffmpeg/ffprobe pick the demuxer from the file content, so a text playlist or
+# concat script saved as ``.mp4`` would be followed to other files. Forcing the
+# demuxer that matches the extension makes such inputs fail to open instead.
+# Only the extensions accepted for ``InputFormat.VIDEO`` are mapped; any other
+# suffix is refused rather than falling back to content detection.
+FFMPEG_DEMUXER_BY_SUFFIX: Final[dict[str, str]] = {
+    ".mp4": "mov",
+    ".mov": "mov",
+    ".mkv": "matroska",
+    ".webm": "matroska",
+    ".avi": "avi",
+}
+
+# Default wall-clock limit for one ffmpeg/ffprobe call when no document budget
+# applies. Full-decode calls get at least the media duration (see
+# ``FfmpegRunner.scale_to_duration``).
+FFMPEG_CALL_TIMEOUT_SECONDS: Final[float] = 300.0
+
+# Upper bound on the encoded bytes accepted for one full-resolution PNG frame.
+_MAX_PNG_FRAME_BYTES: Final[int] = 128 * 1024 * 1024
+
+# Only the tail of ffmpeg's diagnostics is kept for logging.
+_STDERR_TAIL_BYTES: Final[int] = 4096
+
+_READ_CHUNK_BYTES: Final[int] = 1024 * 1024
+
+
+def ffmpeg_demuxer_for(video_path: Path) -> str | None:
+    """Return the ffmpeg demuxer forced for ``video_path``, or None if unsupported."""
+    return FFMPEG_DEMUXER_BY_SUFFIX.get(video_path.suffix.lower())
+
+
+def unsupported_container_message(video_path: Path) -> str:
+    """Describe why ``video_path`` cannot be read as a video container."""
+    return (
+        f"Unsupported video container extension {video_path.suffix!r}; "
+        f"expected one of {sorted(FFMPEG_DEMUXER_BY_SUFFIX)}."
+    )
+
+
+def ffmpeg_input_args(video_path: Path) -> list[str]:
+    """Build the input options shared by every ffmpeg/ffprobe call.
+
+    Only the ``file`` protocol is allowed, the demuxer is forced from the file
+    extension, and the path is passed as a ``file:`` URL so that a ``:`` in the
+    name is never read as a protocol prefix.
+
+    Raises:
+        ValueError: If the file extension has no known container demuxer.
+    """
+    demuxer = ffmpeg_demuxer_for(video_path)
+    if demuxer is None:
+        raise ValueError(unsupported_container_message(video_path))
+    return [
+        "-protocol_whitelist",
+        "file",
+        "-f",
+        demuxer,
+        "-i",
+        f"file:{video_path.resolve()}",
+    ]
+
+
+class FfmpegRunner:
+    """Run ffmpeg/ffprobe calls for one document under a shared time budget.
+
+    Each call is limited to ``call_timeout`` seconds and, when a document
+    deadline is set, to the time left until that deadline. Calls that run out
+    of time are killed and recorded in ``timeouts`` so the caller can report
+    them; the sampling helpers then return what they collected so far.
+    Captured output is bounded: stdout is streamed to a caller-provided sink
+    with a byte cap, and only the tail of stderr is kept for logging.
+    """
+
+    def __init__(
+        self,
+        document_timeout: float | None = None,
+        call_timeout: float = FFMPEG_CALL_TIMEOUT_SECONDS,
+    ):
+        self._deadline = (
+            None if document_timeout is None else time.monotonic() + document_timeout
+        )
+        self.call_timeout = call_timeout
+        self.timeouts: list[str] = []
+
+    def scale_to_duration(self, duration: float) -> None:
+        """Allow each call at least real-time decoding of ``duration`` seconds."""
+        self.call_timeout = max(self.call_timeout, duration)
+
+    def _call_budget(self) -> float:
+        if self._deadline is None:
+            return self.call_timeout
+        return min(self.call_timeout, self._deadline - time.monotonic())
+
+    def run(
+        self,
+        argv: list[str],
+        what: str,
+        sink: Callable[[bytes], None] | None = None,
+        max_output_bytes: int | None = None,
+        chunk_size: int = _READ_CHUNK_BYTES,
+    ) -> bool:
+        """Run ``argv``, streaming stdout chunks to ``sink``.
+
+        Args:
+            argv: Command line to execute.
+            what: Short description used in log and timeout messages.
+            sink: Receives stdout in chunks; stdout is discarded when None.
+            max_output_bytes: Stop and fail once stdout exceeds this size.
+            chunk_size: Read size for stdout chunks.
+
+        Returns:
+            True if the process exited with status 0 within its time budget
+            and output limit.
+        """
+        budget = self._call_budget()
+        if budget <= 0:
+            self._record_timeout(what, 0.0)
+            return False
+
+        timed_out = threading.Event()
+        with tempfile.TemporaryFile() as stderr_file:
+            try:
+                proc = subprocess.Popen(
+                    argv,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE if sink is not None else subprocess.DEVNULL,
+                    stderr=stderr_file,
+                )
+            except OSError as exc:
+                _log.warning("%s could not start %s: %s", what, argv[0], exc)
+                return False
+
+            def _kill() -> None:
+                timed_out.set()
+                proc.kill()
+
+            watchdog = threading.Timer(budget, _kill)
+            watchdog.start()
+            over_limit = False
+            try:
+                if sink is not None and proc.stdout is not None:
+                    total = 0
+                    while chunk := proc.stdout.read(chunk_size):
+                        total += len(chunk)
+                        if max_output_bytes is not None and total > max_output_bytes:
+                            over_limit = True
+                            proc.kill()
+                            break
+                        sink(chunk)
+                proc.wait()
+            finally:
+                watchdog.cancel()
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait()
+                if proc.stdout is not None:
+                    proc.stdout.close()
+
+            if timed_out.is_set():
+                self._record_timeout(what, budget)
+                return False
+            if over_limit:
+                _log.warning(
+                    "%s stopped: output exceeded %d bytes", what, max_output_bytes
+                )
+                return False
+            if proc.returncode != 0:
+                size = stderr_file.seek(0, 2)
+                stderr_file.seek(max(0, size - _STDERR_TAIL_BYTES))
+                _log.debug(
+                    "%s failed (rc=%s): %s",
+                    what,
+                    proc.returncode,
+                    stderr_file.read().decode("utf-8", "replace"),
+                )
+                return False
+        return True
+
+    def _record_timeout(self, what: str, budget: float) -> None:
+        if budget <= 0:
+            message = f"{what} skipped: document time budget exhausted"
+        else:
+            message = f"{what} stopped after its time limit of {budget:.3g}s"
+        _log.warning(message)
+        self.timeouts.append(message)
+
+
+def ffmpeg_base_args() -> list[str]:
+    """Leading ffmpeg options: no stdin, and diagnostics limited to errors."""
+    return ["ffmpeg", "-nostdin", "-hide_banner", "-nostats", "-v", "error"]
 
 
 class VideoFrame(BaseModel):
@@ -106,175 +303,148 @@ def _auto_prominence(diffs: np.ndarray) -> float:
     return max(_AUTO_PROMINENCE_FLOOR, median + _AUTO_PROMINENCE_K * mad)
 
 
-def _probe_duration(video_path: Path) -> float:
-    """Return the video duration in seconds using ffprobe, or 0.0 on failure."""
+def probe_duration(video_path: Path, runner: FfmpegRunner) -> float:
+    """Return the video duration in seconds using ffprobe, or 0.0 if unknown."""
     if shutil.which("ffprobe") is None:
         return 0.0
+    out = bytearray()
+    argv = [
+        "ffprobe",
+        "-v",
+        "error",
+        *ffmpeg_input_args(video_path),
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+    ]
+    if not runner.run(argv, "ffprobe duration", out.extend, max_output_bytes=4096):
+        return 0.0
     try:
-        out = subprocess.run(
-            [
-                "ffprobe",
-                "-v",
-                "error",
-                "-show_entries",
-                "format=duration",
-                "-of",
-                "default=noprint_wrappers=1:nokey=1",
-                str(video_path),
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return float(out.stdout.strip())
-    except (subprocess.CalledProcessError, ValueError):
+        return float(out.decode("ascii", "replace").strip())
+    except ValueError:
         return 0.0
 
 
-def _extract_frame(video_path: Path, timestamp: float) -> Image.Image | None:
+def _decode_png(data: bytes, what: str) -> Image.Image | None:
+    try:
+        return Image.open(BytesIO(data)).convert("RGB")
+    except Exception as exc:  # pragma: no cover - defensive
+        _log.debug("Failed to decode %s: %s", what, exc)
+        return None
+
+
+def _extract_frame(
+    video_path: Path, timestamp: float, runner: FfmpegRunner
+) -> Image.Image | None:
     """Extract a single frame at ``timestamp`` as a PIL image via ffmpeg.
 
     Returns None if ffmpeg produced no output (e.g. timestamp past end).
     """
-    proc = subprocess.run(
-        [
-            "ffmpeg",
-            "-nostdin",
-            "-ss",
-            f"{timestamp:.3f}",
-            "-i",
-            str(video_path),
-            "-frames:v",
-            "1",
-            "-f",
-            "image2pipe",
-            "-vcodec",
-            "png",
-            "-",
-        ],
-        capture_output=True,
-        check=False,
-    )
-    if proc.returncode != 0 or not proc.stdout:
-        _log.debug(
-            "Frame extraction at %.3fs produced no output (rc=%s): %s",
-            timestamp,
-            proc.returncode,
-            proc.stderr.decode("utf-8", "replace")[-200:],
-        )
+    what = f"Frame extraction at {timestamp:.3f}s"
+    out = bytearray()
+    argv = [
+        *ffmpeg_base_args(),
+        "-ss",
+        f"{timestamp:.3f}",
+        *ffmpeg_input_args(video_path),
+        "-frames:v",
+        "1",
+        "-f",
+        "image2pipe",
+        "-vcodec",
+        "png",
+        "-",
+    ]
+    if not runner.run(argv, what, out.extend, _MAX_PNG_FRAME_BYTES) or not out:
         return None
-    try:
-        return Image.open(BytesIO(proc.stdout)).convert("RGB")
-    except Exception as exc:  # pragma: no cover - defensive
-        _log.debug("Failed to decode extracted frame at %.3fs: %s", timestamp, exc)
-        return None
+    return _decode_png(bytes(out), what)
 
 
 def _extract_frames_range(
-    video_path: Path, start: float, duration: float, fps: float
+    video_path: Path, start: float, duration: float, fps: float, runner: FfmpegRunner
 ) -> list[tuple[float, Image.Image]]:
     """Decode ``[start, start + duration]`` once at ``fps``, full resolution.
 
     Single ffmpeg spawn per call, seeking to ``start`` before decoding
     (fast input seek) rather than spawning one process per timestamp.
     """
-    proc = subprocess.run(
-        [
-            "ffmpeg",
-            "-nostdin",
-            "-ss",
-            f"{start:.3f}",
-            "-i",
-            str(video_path),
-            "-t",
-            f"{duration:.3f}",
-            "-vf",
-            f"fps={fps}",
-            "-f",
-            "image2pipe",
-            "-vcodec",
-            "png",
-            "-",
-        ],
-        capture_output=True,
-        check=False,
-    )
-    if proc.returncode != 0 or not proc.stdout:
-        _log.debug(
-            "Range frame probe at %.3fs produced no output (rc=%s): %s",
-            start,
-            proc.returncode,
-            proc.stderr.decode("utf-8", "replace")[-200:],
-        )
+    max_frames = int(duration * fps) + 1
+    out = bytearray()
+    argv = [
+        *ffmpeg_base_args(),
+        "-ss",
+        f"{start:.3f}",
+        *ffmpeg_input_args(video_path),
+        "-t",
+        f"{duration:.3f}",
+        "-vf",
+        f"fps={fps}",
+        "-frames:v",
+        str(max_frames),
+        "-f",
+        "image2pipe",
+        "-vcodec",
+        "png",
+        "-",
+    ]
+    what = f"Range frame probe at {start:.3f}s"
+    if not runner.run(argv, what, out.extend, max_frames * _MAX_PNG_FRAME_BYTES):
         return []
 
     frames: list[tuple[float, Image.Image]] = []
-    buf = proc.stdout
+    buf = bytes(out)
     # PNGs concatenated in the image2pipe stream; split on the PNG signature.
     sig = b"\x89PNG\r\n\x1a\n"
-    offsets = [i for i in range(len(buf)) if buf.startswith(sig, i)]
+    offsets: list[int] = []
+    pos = buf.find(sig)
+    while pos != -1:
+        offsets.append(pos)
+        pos = buf.find(sig, pos + 1)
     for idx, off in enumerate(offsets):
         end = offsets[idx + 1] if idx + 1 < len(offsets) else len(buf)
-        try:
-            img = Image.open(BytesIO(buf[off:end])).convert("RGB")
-        except Exception as exc:  # pragma: no cover - defensive
-            _log.debug("Failed to decode frame %d in range probe: %s", idx, exc)
-            continue
-        frames.append((start + idx / fps, img))
+        img = _decode_png(buf[off:end], f"frame {idx} of {what}")
+        if img is not None:
+            frames.append((start + idx / fps, img))
     return frames
 
 
-def _extract_frames_grid(
-    video_path: Path, fps: float, size: int
-) -> list[tuple[float, Image.Image]]:
-    """Decode the whole video once at ``fps``, returning ``(timestamp, image)`` pairs.
+def _iter_grid_frames(
+    video_path: Path,
+    fps: float,
+    size: int,
+    runner: FfmpegRunner,
+    on_frame: Callable[[Image.Image], None],
+) -> None:
+    """Decode the whole video once at ``fps`` and pass each thumbnail to ``on_frame``.
 
     Uses a single ffmpeg pass emitting downscaled raw RGB frames, which is far
     cheaper than spawning one ffmpeg process per timestamp (each spawn re-opens
     and re-seeks the file). Frames are square ``size`` x ``size`` thumbnails;
-    the timestamp of frame ``i`` is ``i / fps``.
-
-    Args:
-        video_path: Path to the source video.
-        fps: Sampling rate for the decode pass.
-        size: Width and height, in pixels, of the square thumbnails.
-
-    Returns:
-        ``(timestamp, image)`` pairs in chronological order.
+    the timestamp of frame ``i`` is ``i / fps``. Frames are streamed, so memory
+    use does not grow with the video length.
     """
-    proc = subprocess.run(
-        [
-            "ffmpeg",
-            "-nostdin",
-            "-i",
-            str(video_path),
-            "-vf",
-            f"fps={fps},scale={size}:{size}",
-            "-f",
-            "rawvideo",
-            "-pix_fmt",
-            "rgb24",
-            "-",
-        ],
-        capture_output=True,
-        check=False,
-    )
-    if proc.returncode != 0 or not proc.stdout:
-        _log.debug(
-            "Batch frame probe produced no output (rc=%s): %s",
-            proc.returncode,
-            proc.stderr.decode("utf-8", "replace")[-200:],
-        )
-        return []
-
     frame_bytes = size * size * 3
-    buf = proc.stdout
-    count = len(buf) // frame_bytes
-    frames: list[tuple[float, Image.Image]] = []
-    for i in range(count):
-        chunk = buf[i * frame_bytes : (i + 1) * frame_bytes]
-        frames.append((i / fps, Image.frombytes("RGB", (size, size), chunk)))
-    return frames
+    pending = bytearray()
+
+    def _sink(chunk: bytes) -> None:
+        pending.extend(chunk)
+        while len(pending) >= frame_bytes:
+            on_frame(Image.frombytes("RGB", (size, size), bytes(pending[:frame_bytes])))
+            del pending[:frame_bytes]
+
+    argv = [
+        *ffmpeg_base_args(),
+        *ffmpeg_input_args(video_path),
+        "-vf",
+        f"fps={fps},scale={size}:{size}",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgb24",
+        "-",
+    ]
+    runner.run(argv, "Scene-change probe decode", _sink, chunk_size=frame_bytes)
 
 
 class FixedIntervalFrameSampler:
@@ -284,6 +454,7 @@ class FixedIntervalFrameSampler:
         self,
         interval_seconds: float = 10.0,
         max_frames: int | None = None,
+        runner: FfmpegRunner | None = None,
     ):
         if interval_seconds <= 0:
             raise ValueError("interval_seconds must be > 0")
@@ -291,18 +462,20 @@ class FixedIntervalFrameSampler:
             raise ValueError("max_frames must be > 0 when set")
         self.interval_seconds = interval_seconds
         self.max_frames = max_frames
+        self.runner = runner if runner is not None else FfmpegRunner()
 
     def sample(self, video_path: Path) -> list[VideoFrame]:
         _require_ffmpeg()
-        duration = _probe_duration(video_path)
+        duration = probe_duration(video_path, self.runner)
 
         frames: list[VideoFrame] = []
         t = 0.0
         # If duration is unknown (0.0), rely on extraction returning None at EOF.
         while duration == 0.0 or t < duration:
             if self.max_frames is not None and len(frames) >= self.max_frames:
+                _log.info("Stopped frame sampling at max_frames=%d", self.max_frames)
                 break
-            image = _extract_frame(video_path, t)
+            image = _extract_frame(video_path, t, self.runner)
             if image is None:
                 break
             frames.append(VideoFrame(timestamp=t, image=image))
@@ -334,6 +507,7 @@ class SimpleSceneChangeFrameSampler:
         probe_size: int = 64,
         smooth_window: int = 1,
         sharpness_candidates: int = 5,
+        runner: FfmpegRunner | None = None,
     ):
         if probe_fps <= 0:
             raise ValueError("probe_fps must be > 0")
@@ -351,10 +525,31 @@ class SimpleSceneChangeFrameSampler:
         self.probe_size = probe_size
         self.smooth_window = smooth_window
         self.sharpness_candidates = sharpness_candidates
+        self.runner = runner if runner is not None else FfmpegRunner()
 
-    def _probe_frames(self, video_path: Path) -> list[tuple[float, Image.Image]]:
-        """Extract downscaled RGB probe frames at probe_fps in a single decode pass."""
-        return _extract_frames_grid(video_path, self.probe_fps, self.probe_size)
+    def _probe_diffs(self, video_path: Path) -> tuple[list[float], np.ndarray]:
+        """Decode probe thumbnails at ``probe_fps`` and diff consecutive frames.
+
+        Returns:
+            The probe timestamps and the difference between each pair of
+            consecutive probe frames (one fewer entry than timestamps).
+        """
+        diffs: list[float] = []
+        previous: Image.Image | None = None
+        count = 0
+
+        def _on_frame(image: Image.Image) -> None:
+            nonlocal previous, count
+            if previous is not None:
+                diffs.append(self._mean_abs_diff(previous, image))
+            previous = image
+            count += 1
+
+        _iter_grid_frames(
+            video_path, self.probe_fps, self.probe_size, self.runner, _on_frame
+        )
+        timestamps = [i / self.probe_fps for i in range(count)]
+        return timestamps, np.array(diffs)
 
     @staticmethod
     def _mean_abs_diff(a: Image.Image, b: Image.Image) -> float:
@@ -404,7 +599,7 @@ class SimpleSceneChangeFrameSampler:
         n = self.sharpness_candidates
 
         if window_duration == 0.0 or n <= 1:
-            img = _extract_frame(video_path, mid)
+            img = _extract_frame(video_path, mid, self.runner)
             return (
                 VideoFrame(timestamp=mid, image=img, scene_id=scene_id) if img else None
             )
@@ -412,7 +607,7 @@ class SimpleSceneChangeFrameSampler:
         # fps chosen so the range decode yields ~n evenly spaced frames.
         fps = (n - 1) / window_duration
         candidates = _extract_frames_range(
-            video_path, window_start, window_duration, fps
+            video_path, window_start, window_duration, fps, self.runner
         )
 
         best_frame: VideoFrame | None = None
@@ -426,17 +621,9 @@ class SimpleSceneChangeFrameSampler:
 
     def detect_scenes(self, video_path: Path) -> list[VideoScene]:
         """Detect scene boundaries using local peak detection on frame diffs."""
-        probes = self._probe_frames(video_path)
-        if len(probes) < 2:
+        timestamps, diffs = self._probe_diffs(video_path)
+        if len(timestamps) < 2:
             return []
-
-        timestamps = [p[0] for p in probes]
-        diffs = np.array(
-            [
-                self._mean_abs_diff(probes[i][1], probes[i + 1][1])
-                for i in range(len(probes) - 1)
-            ]
-        )
 
         w = max(1, self.smooth_window)
         smoothed = np.convolve(diffs, np.ones(w) / w, mode="same")
@@ -492,6 +679,7 @@ class SimpleSceneChangeFrameSampler:
         frames: list[VideoFrame] = []
         for scene in scenes:
             if self.max_frames is not None and len(frames) >= self.max_frames:
+                _log.info("Stopped frame sampling at max_frames=%d", self.max_frames)
                 break
             frame = self._best_frame(
                 video_path, scene.start_time, scene.end_time, scene.scene_id

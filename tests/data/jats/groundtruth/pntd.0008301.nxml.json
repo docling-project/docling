@@ -21,25 +21,25 @@
         "$ref": "#/texts/0"
       },
       {
-        "$ref": "#/texts/16"
+        "$ref": "#/texts/20"
       },
       {
-        "$ref": "#/texts/76"
-      },
-      {
-        "$ref": "#/texts/77"
+        "$ref": "#/texts/80"
       },
       {
         "$ref": "#/texts/81"
       },
       {
-        "$ref": "#/texts/84"
+        "$ref": "#/texts/85"
       },
       {
-        "$ref": "#/texts/98"
+        "$ref": "#/texts/88"
       },
       {
-        "$ref": "#/texts/100"
+        "$ref": "#/texts/102"
+      },
+      {
+        "$ref": "#/texts/104"
       }
     ],
     "content_layer": "body",
@@ -50,17 +50,17 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/3"
       },
       "children": [
         {
-          "$ref": "#/texts/21"
+          "$ref": "#/texts/4"
         },
         {
-          "$ref": "#/texts/22"
+          "$ref": "#/texts/5"
         },
         {
-          "$ref": "#/texts/23"
+          "$ref": "#/texts/6"
         }
       ],
       "content_layer": "body",
@@ -70,21 +70,49 @@
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/texts/26"
+        "$ref": "#/texts/7"
       },
       "children": [
         {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/texts/23"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/25"
+        },
+        {
+          "$ref": "#/texts/26"
+        },
+        {
           "$ref": "#/texts/27"
-        },
-        {
-          "$ref": "#/texts/28"
-        },
-        {
-          "$ref": "#/texts/29"
-        },
-        {
-          "$ref": "#/texts/30"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
+        "$ref": "#/texts/30"
+      },
+      "children": [
         {
           "$ref": "#/texts/31"
         },
@@ -141,64 +169,18 @@
         },
         {
           "$ref": "#/texts/49"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/2",
-      "parent": {
-        "$ref": "#/texts/50"
-      },
-      "children": [
+        },
+        {
+          "$ref": "#/texts/50"
+        },
+        {
+          "$ref": "#/texts/51"
+        },
         {
           "$ref": "#/texts/52"
         },
         {
           "$ref": "#/texts/53"
-        },
-        {
-          "$ref": "#/texts/54"
-        },
-        {
-          "$ref": "#/texts/55"
-        },
-        {
-          "$ref": "#/texts/56"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/3",
-      "parent": {
-        "$ref": "#/texts/65"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/67"
-        },
-        {
-          "$ref": "#/texts/68"
-        },
-        {
-          "$ref": "#/texts/69"
-        },
-        {
-          "$ref": "#/texts/70"
-        },
-        {
-          "$ref": "#/texts/71"
-        },
-        {
-          "$ref": "#/texts/72"
-        },
-        {
-          "$ref": "#/texts/73"
         }
       ],
       "content_layer": "body",
@@ -208,17 +190,23 @@
     {
       "self_ref": "#/groups/4",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/54"
       },
       "children": [
         {
-          "$ref": "#/texts/78"
+          "$ref": "#/texts/56"
         },
         {
-          "$ref": "#/texts/79"
+          "$ref": "#/texts/57"
         },
         {
-          "$ref": "#/texts/80"
+          "$ref": "#/texts/58"
+        },
+        {
+          "$ref": "#/texts/59"
+        },
+        {
+          "$ref": "#/texts/60"
         }
       ],
       "content_layer": "body",
@@ -228,21 +216,61 @@
     {
       "self_ref": "#/groups/5",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/69"
       },
       "children": [
         {
-          "$ref": "#/texts/85"
+          "$ref": "#/texts/71"
         },
         {
-          "$ref": "#/texts/86"
+          "$ref": "#/texts/72"
         },
         {
-          "$ref": "#/texts/87"
+          "$ref": "#/texts/73"
         },
         {
-          "$ref": "#/texts/88"
+          "$ref": "#/texts/74"
         },
+        {
+          "$ref": "#/texts/75"
+        },
+        {
+          "$ref": "#/texts/76"
+        },
+        {
+          "$ref": "#/texts/77"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/texts/78"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/82"
+        },
+        {
+          "$ref": "#/texts/83"
+        },
+        {
+          "$ref": "#/texts/84"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/7",
+      "parent": {
+        "$ref": "#/texts/78"
+      },
+      "children": [
         {
           "$ref": "#/texts/89"
         },
@@ -269,6 +297,18 @@
         },
         {
           "$ref": "#/texts/97"
+        },
+        {
+          "$ref": "#/texts/98"
+        },
+        {
+          "$ref": "#/texts/99"
+        },
+        {
+          "$ref": "#/texts/100"
+        },
+        {
+          "$ref": "#/texts/101"
         }
       ],
       "content_layer": "body",
@@ -276,29 +316,9 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/6",
+      "self_ref": "#/groups/8",
       "parent": {
-        "$ref": "#/texts/101"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/102"
-        },
-        {
-          "$ref": "#/texts/103"
-        },
-        {
-          "$ref": "#/texts/104"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/7",
-      "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/texts/105"
       },
       "children": [
         {
@@ -316,14 +336,11 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/8",
+      "self_ref": "#/groups/9",
       "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/texts/105"
       },
       "children": [
-        {
-          "$ref": "#/texts/109"
-        },
         {
           "$ref": "#/texts/110"
         },
@@ -332,7 +349,18 @@
         },
         {
           "$ref": "#/texts/112"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/10",
+      "parent": {
+        "$ref": "#/texts/105"
+      },
+      "children": [
         {
           "$ref": "#/texts/113"
         },
@@ -341,18 +369,7 @@
         },
         {
           "$ref": "#/texts/115"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/9",
-      "parent": {
-        "$ref": "#/texts/101"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/116"
         },
@@ -364,7 +381,18 @@
         },
         {
           "$ref": "#/texts/119"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/texts/105"
+      },
+      "children": [
         {
           "$ref": "#/texts/120"
         },
@@ -379,6 +407,18 @@
         },
         {
           "$ref": "#/texts/124"
+        },
+        {
+          "$ref": "#/texts/125"
+        },
+        {
+          "$ref": "#/texts/126"
+        },
+        {
+          "$ref": "#/texts/127"
+        },
+        {
+          "$ref": "#/texts/128"
         }
       ],
       "content_layer": "body",
@@ -386,23 +426,11 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/10",
+      "self_ref": "#/groups/12",
       "parent": {
-        "$ref": "#/texts/131"
+        "$ref": "#/texts/135"
       },
       "children": [
-        {
-          "$ref": "#/texts/132"
-        },
-        {
-          "$ref": "#/texts/133"
-        },
-        {
-          "$ref": "#/texts/134"
-        },
-        {
-          "$ref": "#/texts/135"
-        },
         {
           "$ref": "#/texts/136"
         },
@@ -549,6 +577,18 @@
         },
         {
           "$ref": "#/texts/184"
+        },
+        {
+          "$ref": "#/texts/185"
+        },
+        {
+          "$ref": "#/texts/186"
+        },
+        {
+          "$ref": "#/texts/187"
+        },
+        {
+          "$ref": "#/texts/188"
         }
       ],
       "content_layer": "body",
@@ -573,25 +613,25 @@
           "$ref": "#/texts/3"
         },
         {
-          "$ref": "#/texts/5"
-        },
-        {
           "$ref": "#/texts/7"
         },
         {
-          "$ref": "#/texts/13"
+          "$ref": "#/texts/11"
         },
         {
-          "$ref": "#/texts/74"
+          "$ref": "#/texts/17"
         },
         {
-          "$ref": "#/texts/101"
+          "$ref": "#/texts/78"
         },
         {
-          "$ref": "#/texts/129"
+          "$ref": "#/texts/105"
         },
         {
-          "$ref": "#/texts/131"
+          "$ref": "#/texts/133"
+        },
+        {
+          "$ref": "#/texts/135"
         }
       ],
       "content_layer": "body",
@@ -631,7 +671,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/4"
+          "$ref": "#/groups/0"
         }
       ],
       "content_layer": "body",
@@ -644,23 +684,54 @@
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/texts/3"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Achieving elimination of lymphatic filariasis (LF) as a public health problem requires a minimum of five effective rounds of mass drug administration (MDA) and demonstrating low prevalence in subsequent assessments. The first assessments recommended by the World Health Organization (WHO) are sentinel and spot-check sites—referred to as pre-transmission assessment surveys (pre-TAS)—in each implementation unit after MDA. If pre-TAS shows that prevalence in each site has been lowered to less than 1% microfilaremia or less than 2% antigenemia, the implementation unit conducts a TAS to determine whether MDA can be stopped. Failure to pass pre-TAS means that further rounds of MDA are required. This study aims to understand factors influencing pre-TAS results using existing programmatic data from 554 implementation units, of which 74 (13%) failed, in 13 countries. Secondary data analysis was completed using existing data from Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. Additional covariate data were obtained from spatial raster data sets. Bivariate analysis and multilinear regression were performed to establish potential relationships between variables and the pre-TAS result. Higher baseline prevalence and lower elevation were significant in the regression model. Variables statistically significantly associated with failure (p-value ≤0.05) in the bivariate analyses included baseline prevalence at or above 5% or 10%, use of Filariasis Test Strips (FTS), primary vector of Culex, treatment with diethylcarbamazine-albendazole, higher elevation, higher population density, higher enhanced vegetation index (EVI), higher annual rainfall, and 6 or more rounds of MDA. This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. This information can help countries more effectively forecast program activities, such as the potential need for more rounds of MDA, and prioritize resources to ensure adequate coverage of all persons in areas at highest risk of failing pre-TAS.",
-      "text": "Achieving elimination of lymphatic filariasis (LF) as a public health problem requires a minimum of five effective rounds of mass drug administration (MDA) and demonstrating low prevalence in subsequent assessments. The first assessments recommended by the World Health Organization (WHO) are sentinel and spot-check sites—referred to as pre-transmission assessment surveys (pre-TAS)—in each implementation unit after MDA. If pre-TAS shows that prevalence in each site has been lowered to less than 1% microfilaremia or less than 2% antigenemia, the implementation unit conducts a TAS to determine whether MDA can be stopped. Failure to pass pre-TAS means that further rounds of MDA are required. This study aims to understand factors influencing pre-TAS results using existing programmatic data from 554 implementation units, of which 74 (13%) failed, in 13 countries. Secondary data analysis was completed using existing data from Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. Additional covariate data were obtained from spatial raster data sets. Bivariate analysis and multilinear regression were performed to establish potential relationships between variables and the pre-TAS result. Higher baseline prevalence and lower elevation were significant in the regression model. Variables statistically significantly associated with failure (p-value ≤0.05) in the bivariate analyses included baseline prevalence at or above 5% or 10%, use of Filariasis Test Strips (FTS), primary vector of Culex, treatment with diethylcarbamazine-albendazole, higher elevation, higher population density, higher enhanced vegetation index (EVI), higher annual rainfall, and 6 or more rounds of MDA. This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. This information can help countries more effectively forecast program activities, such as the potential need for more rounds of MDA, and prioritize resources to ensure adequate coverage of all persons in areas at highest risk of failing pre-TAS."
+      "orig": "Achieving elimination of lymphatic filariasis (LF) as a public health problem requires a minimum of five effective rounds of mass drug administration (MDA) and demonstrating low prevalence in subsequent assessments. The first assessments recommended by the World Health Organization (WHO) are sentinel and spot-check sites—referred to as pre-transmission assessment surveys (pre-TAS)—in each implementation unit after MDA. If pre-TAS shows that prevalence in each site has been lowered to less than 1% microfilaremia or less than 2% antigenemia, the implementation unit conducts a TAS to determine whether MDA can be stopped. Failure to pass pre-TAS means that further rounds of MDA are required. This study aims to understand factors influencing pre-TAS results using existing programmatic data from 554 implementation units, of which 74 (13%) failed, in 13 countries. Secondary data analysis was completed using existing data from Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. Additional covariate data were obtained from spatial raster data sets. Bivariate analysis and multilinear regression were performed to establish potential relationships between variables and the pre-TAS result. Higher baseline prevalence and lower elevation were significant in the regression model. Variables statistically significantly associated with failure (p-value ≤0.05) in the bivariate analyses included baseline prevalence at or above 5% or 10%, use of Filariasis Test Strips (FTS), primary vector of",
+      "text": "Achieving elimination of lymphatic filariasis (LF) as a public health problem requires a minimum of five effective rounds of mass drug administration (MDA) and demonstrating low prevalence in subsequent assessments. The first assessments recommended by the World Health Organization (WHO) are sentinel and spot-check sites—referred to as pre-transmission assessment surveys (pre-TAS)—in each implementation unit after MDA. If pre-TAS shows that prevalence in each site has been lowered to less than 1% microfilaremia or less than 2% antigenemia, the implementation unit conducts a TAS to determine whether MDA can be stopped. Failure to pass pre-TAS means that further rounds of MDA are required. This study aims to understand factors influencing pre-TAS results using existing programmatic data from 554 implementation units, of which 74 (13%) failed, in 13 countries. Secondary data analysis was completed using existing data from Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. Additional covariate data were obtained from spatial raster data sets. Bivariate analysis and multilinear regression were performed to establish potential relationships between variables and the pre-TAS result. Higher baseline prevalence and lower elevation were significant in the regression model. Variables statistically significantly associated with failure (p-value ≤0.05) in the bivariate analyses included baseline prevalence at or above 5% or 10%, use of Filariasis Test Strips (FTS), primary vector of"
     },
     {
       "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Culex",
+      "text": "Culex",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ", treatment with diethylcarbamazine-albendazole, higher elevation, higher population density, higher enhanced vegetation index (EVI), higher annual rainfall, and 6 or more rounds of MDA. This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. This information can help countries more effectively forecast program activities, such as the potential need for more rounds of MDA, and prioritize resources to ensure adequate coverage of all persons in areas at highest risk of failing pre-TAS.",
+      "text": ", treatment with diethylcarbamazine-albendazole, higher elevation, higher population density, higher enhanced vegetation index (EVI), higher annual rainfall, and 6 or more rounds of MDA. This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. This information can help countries more effectively forecast program activities, such as the potential need for more rounds of MDA, and prioritize resources to ensure adequate coverage of all persons in areas at highest risk of failing pre-TAS."
+    },
+    {
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/6"
+          "$ref": "#/groups/1"
         }
       ],
       "content_layer": "body",
@@ -671,37 +742,68 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/texts/5"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Achieving elimination of lymphatic filariasis (LF) as a public health problem requires a minimum of five rounds of mass drug administration (MDA) and being able to demonstrate low prevalence in several subsequent assessments. LF elimination programs implement sentinel and spot-check site assessments, called pre-TAS, to determine whether districts are eligible to implement more rigorous population-based surveys to determine whether MDA can be stopped or if further rounds are required. Reasons for failing pre-TAS are not well understood and have not previously been examined with data compiled from multiple countries. For this analysis, we analyzed data from routine USAID and WHO reports from Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. In a model that included multiple variables, high baseline prevalence and lower elevation were significant. In models comparing only one variable to the outcome, the following were statistically significantly associated with failure: higher baseline prevalence at or above 5% or 10%, use of the FTS, primary vector of Culex, treatment with diethylcarbamazine-albendazole, lower elevation, higher population density, higher Enhanced Vegetation Index, higher annual rainfall, and six or more rounds of mass drug administration. These results can help national programs plan MDA more effectively, e.g., by focusing resources on areas with higher baseline prevalence and/or lower elevation.",
-      "text": "Achieving elimination of lymphatic filariasis (LF) as a public health problem requires a minimum of five rounds of mass drug administration (MDA) and being able to demonstrate low prevalence in several subsequent assessments. LF elimination programs implement sentinel and spot-check site assessments, called pre-TAS, to determine whether districts are eligible to implement more rigorous population-based surveys to determine whether MDA can be stopped or if further rounds are required. Reasons for failing pre-TAS are not well understood and have not previously been examined with data compiled from multiple countries. For this analysis, we analyzed data from routine USAID and WHO reports from Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. In a model that included multiple variables, high baseline prevalence and lower elevation were significant. In models comparing only one variable to the outcome, the following were statistically significantly associated with failure: higher baseline prevalence at or above 5% or 10%, use of the FTS, primary vector of Culex, treatment with diethylcarbamazine-albendazole, lower elevation, higher population density, higher Enhanced Vegetation Index, higher annual rainfall, and six or more rounds of mass drug administration. These results can help national programs plan MDA more effectively, e.g., by focusing resources on areas with higher baseline prevalence and/or lower elevation."
+      "orig": "Achieving elimination of lymphatic filariasis (LF) as a public health problem requires a minimum of five rounds of mass drug administration (MDA) and being able to demonstrate low prevalence in several subsequent assessments. LF elimination programs implement sentinel and spot-check site assessments, called pre-TAS, to determine whether districts are eligible to implement more rigorous population-based surveys to determine whether MDA can be stopped or if further rounds are required. Reasons for failing pre-TAS are not well understood and have not previously been examined with data compiled from multiple countries. For this analysis, we analyzed data from routine USAID and WHO reports from Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. In a model that included multiple variables, high baseline prevalence and lower elevation were significant. In models comparing only one variable to the outcome, the following were statistically significantly associated with failure: higher baseline prevalence at or above 5% or 10%, use of the FTS, primary vector of",
+      "text": "Achieving elimination of lymphatic filariasis (LF) as a public health problem requires a minimum of five rounds of mass drug administration (MDA) and being able to demonstrate low prevalence in several subsequent assessments. LF elimination programs implement sentinel and spot-check site assessments, called pre-TAS, to determine whether districts are eligible to implement more rigorous population-based surveys to determine whether MDA can be stopped or if further rounds are required. Reasons for failing pre-TAS are not well understood and have not previously been examined with data compiled from multiple countries. For this analysis, we analyzed data from routine USAID and WHO reports from Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. In a model that included multiple variables, high baseline prevalence and lower elevation were significant. In models comparing only one variable to the outcome, the following were statistically significantly associated with failure: higher baseline prevalence at or above 5% or 10%, use of the FTS, primary vector of"
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Culex",
+      "text": "Culex",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ", treatment with diethylcarbamazine-albendazole, lower elevation, higher population density, higher Enhanced Vegetation Index, higher annual rainfall, and six or more rounds of mass drug administration. These results can help national programs plan MDA more effectively, e.g., by focusing resources on areas with higher baseline prevalence and/or lower elevation.",
+      "text": ", treatment with diethylcarbamazine-albendazole, lower elevation, higher population density, higher Enhanced Vegetation Index, higher annual rainfall, and six or more rounds of mass drug administration. These results can help national programs plan MDA more effectively, e.g., by focusing resources on areas with higher baseline prevalence and/or lower elevation."
+    },
+    {
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/8"
-        },
-        {
-          "$ref": "#/texts/9"
-        },
-        {
-          "$ref": "#/texts/10"
-        },
-        {
-          "$ref": "#/texts/11"
-        },
-        {
           "$ref": "#/texts/12"
+        },
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        },
+        {
+          "$ref": "#/texts/15"
+        },
+        {
+          "$ref": "#/texts/16"
         }
       ],
       "content_layer": "body",
@@ -712,9 +814,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/texts/7"
+        "$ref": "#/texts/11"
       },
       "children": [],
       "content_layer": "body",
@@ -724,9 +826,9 @@
       "text": "Lymphatic filariasis (LF), a disease caused by parasitic worms transmitted to humans by mosquito bite, manifests in disabling and stigmatizing chronic conditions including lymphedema and hydrocele. To eliminate LF as a public health problem, the World Health Organization (WHO) recommends two strategies: reducing transmission through annual mass drug administration (MDA) and reducing suffering through ensuring the availability of morbidity management and disability prevention services to all patients [1]. For the first strategy, eliminating LF as a public health problem is defined as a ‘reduction in measurable prevalence in infection in endemic areas below a target threshold at which further transmission is considered unlikely even in the absence of MDA’ [2]. As of 2018, 14 countries have eliminated LF as a public health problem while 58 countries remain endemic for LF [3]."
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/13",
       "parent": {
-        "$ref": "#/texts/7"
+        "$ref": "#/texts/11"
       },
       "children": [],
       "content_layer": "body",
@@ -736,9 +838,9 @@
       "text": "The road to elimination as a public health problem has several milestones. First, where LF prevalence at baseline has exceeded 1% as measured either through microfilaremia (Mf) or antigenemia (Ag), MDA is implemented and treatment coverage is measured in all implementation units, which usually correspond to districts. Implementation units must complete at least five rounds of ‘effective’ treatment, i.e. treatment with a minimum coverage of 65% of the total population. Then, WHO recommends sentinel and spot-check site assessments—referred to as pre-transmission assessment surveys (pre-TAS)—in each implementation unit to determine whether prevalence in each site is less than 1% Mf or less than 2% Ag [4]. Next, if these thresholds are met, national programs can progress to the first transmission assessment survey (TAS). The TAS is a population-based cluster or systematic survey of six- and seven-year-old children to assess whether transmission has fallen below the threshold at which infection is believed to persist. TAS is conducted at least three times, with two years between each survey. TAS 1 results determine if it is appropriate to stop MDA or whether further rounds are required. Finally, when TAS 2 and 3 also fall below the set threshold in every endemic implementation unit nationwide and morbidity criteria have been fulfilled, the national program submits a dossier to WHO requesting that elimination be officially validated."
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/texts/7"
+        "$ref": "#/texts/11"
       },
       "children": [],
       "content_layer": "body",
@@ -748,9 +850,9 @@
       "text": "Pre-TAS include at least one sentinel and one spot-check site per one million population. Sentinel sites are established at the start of the program in villages where LF prevalence was believed to be relatively high. Spot-check sites are villages not previously tested but purposively selected as potentially high-risk areas due to original high prevalence, low coverage during MDA, high vector density, or other factors [4]. At least six months after MDA implementation, data are collected from a convenience sample of at least 300 people over five years old in each site. Originally, Mf was recommended as the indicator of choice for pre-TAS, assessed by blood smears taken at the time of peak parasite periodicity [4]. WHO later recommended the use of circulating filarial antigen rapid diagnostic tests, BinaxNow immunochromatographic card tests (ICTs), and after 2016, Alere Filariasis Test Strips (FTS), because they are more sensitive, easier to implement, and more flexible about time of day that blood can be taken [5]."
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/texts/7"
+        "$ref": "#/texts/11"
       },
       "children": [],
       "content_layer": "body",
@@ -760,9 +862,9 @@
       "text": "When a country fails to meet the established thresholds in a pre-TAS, they must implement at least two more rounds of MDA. National programs need to forecast areas that might fail pre-TAS and need repeated MDA, so that they can inform the community and district decision-makers of the implications of pre-TAS failure, including the need for continued MDA to lower prevalence effectively. In addition, financial and human resources must be made available for ordering drugs, distributing drugs, supervision and monitoring to implement the further MDA rounds. Ordering drugs and providing MDA budgets often need to be completed before the pre-TAS are implemented, so contingency planning and funding are important to ensure rounds of MDA are not missed."
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/texts/7"
+        "$ref": "#/texts/11"
       },
       "children": [],
       "content_layer": "body",
@@ -772,31 +874,31 @@
       "text": "This study aims to understand which factors are associated with the need for additional rounds of MDA as identified by pre-TAS results using programmatic data from 13 countries. The factors associated with failing pre-TAS are not well understood and have not previously been examined at a multi-country scale in the literature. We examine the association between pre-TAS failure and baseline prevalence, parasites, environmental factors, MDA implementation, and pre-TAS implementation. Understanding determinants of pre-TAS failure will help countries identify where elimination may be most difficult and prioritize the use of limited LF elimination resources."
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/14"
-        },
-        {
-          "$ref": "#/texts/15"
-        },
-        {
-          "$ref": "#/tables/0"
-        },
-        {
-          "$ref": "#/texts/17"
+          "$ref": "#/texts/18"
         },
         {
           "$ref": "#/texts/19"
         },
         {
-          "$ref": "#/texts/63"
+          "$ref": "#/tables/0"
         },
         {
-          "$ref": "#/texts/65"
+          "$ref": "#/texts/21"
+        },
+        {
+          "$ref": "#/texts/23"
+        },
+        {
+          "$ref": "#/texts/67"
+        },
+        {
+          "$ref": "#/texts/69"
         }
       ],
       "content_layer": "body",
@@ -807,9 +909,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/17"
       },
       "children": [],
       "content_layer": "body",
@@ -819,9 +921,9 @@
       "text": "This is a secondary data analysis using existing data, collected for programmatic purposes. Data for this analysis come from 568 districts in 13 countries whose LF elimination programs were supported by the United States Agency for International Development (USAID) through the ENVISION project, led by RTI International, and the END in Africa and END in Asia projects, led by FHI 360. These countries are Bangladesh, Benin, Burkina Faso, Cameroon, Ghana, Haiti, Indonesia, Mali, Nepal, Niger, Sierra Leone, Tanzania, and Uganda. The data represent all pre-TAS funded by USAID from 2012 to 2017 and, in some cases, surveys funded by host government or other non-United States government funders. Because pre-TAS data were collected as part of routine program activities in most countries, in general, ethical clearance was not sought for these surveys. Our secondary analysis only included the aggregated survey results and therefore did not constitute human subjects research; no ethical approval was required."
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/17"
       },
       "children": [],
       "content_layer": "body",
@@ -831,7 +933,7 @@
       "text": "Building on previous work, we delineated five domains of variables that could influence pre-TAS outcomes: prevalence, agent, environment, MDA, and pre-TAS implementation (Table 1) [6–8]. We prioritized key concepts that could be measured through our data or captured through publicly available global geospatial data sets."
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/body"
       },
@@ -843,13 +945,13 @@
       "text": "Table 1 Categorization of potential factors influencing pre-TAS results."
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/21",
       "parent": {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/17"
       },
       "children": [
         {
-          "$ref": "#/texts/18"
+          "$ref": "#/texts/22"
         }
       ],
       "content_layer": "body",
@@ -860,9 +962,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/22",
       "parent": {
-        "$ref": "#/texts/17"
+        "$ref": "#/texts/21"
       },
       "children": [],
       "content_layer": "body",
@@ -872,31 +974,31 @@
       "text": "Information on baseline prevalence, MDA coverage, the number of MDA rounds, and pre-TAS information (month and year of survey, district, site name, and outcome) was gathered through regular reporting for the USAID-funded NTD programs (ENVISION, END in Africa, and END in Asia). These data were augmented by other reporting data such as the country’s dossier data annexes, the WHO Preventive Chemotherapy and Transmission Control Databank, and WHO reporting forms. Data were then reviewed by country experts, including the Ministry of Health program staff and implementing program staff, and updated as necessary. Data on vectors were also obtained from country experts. The district geographic boundaries were matched to geospatial shapefiles from the ENVISION project geospatial data repository, while other geospatial data were obtained through publicly available sources (Table 1)."
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/23",
       "parent": {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/17"
       },
       "children": [
-        {
-          "$ref": "#/texts/20"
-        },
-        {
-          "$ref": "#/groups/0"
-        },
         {
           "$ref": "#/texts/24"
         },
         {
-          "$ref": "#/texts/26"
+          "$ref": "#/groups/2"
         },
         {
-          "$ref": "#/texts/50"
+          "$ref": "#/texts/28"
         },
         {
-          "$ref": "#/texts/58"
+          "$ref": "#/texts/30"
         },
         {
-          "$ref": "#/texts/61"
+          "$ref": "#/texts/54"
+        },
+        {
+          "$ref": "#/texts/62"
+        },
+        {
+          "$ref": "#/texts/65"
         }
       ],
       "content_layer": "body",
@@ -907,9 +1009,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/24",
       "parent": {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/23"
       },
       "children": [],
       "content_layer": "body",
@@ -919,9 +1021,9 @@
       "text": "The outcome of interest for this analysis was whether a district passed or failed the pre-TAS. Failure was defined as any district that had at least one sentinel or spot-check site with a prevalence higher than or equal to 1% Mf or 2% Ag [4]."
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/25",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -931,9 +1033,9 @@
       "text": "Potential covariates were derived from the available data for each factor in the domain groups listed in Table 1. New dichotomous variables were created for all variables that had multiple categories or were continuous for ease of interpretation in models and use in program decision-making. Cut-points for continuous variables were derived from either"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/26",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -950,9 +1052,9 @@
       }
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/27",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -962,13 +1064,13 @@
       "text": "knowledge or through exploratory analysis considering the mean or median value of the dataset, looking to create two groups of similar size with logical cut-points (e.g. rounding numbers to whole numbers). All the variables derived from publicly available global spatial raster datasets were summarized to the district level in ArcGIS Pro using the “zonal statistics” tool. The final output used the continuous value measuring the mean pixel value for the district for all variables except geographic area. Categories for each variable were determined by selecting the mean or median dataset value or cut-off used in other relevant literature [7]. The following section describes the variables that were included in the final analysis and the final categorizations used."
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/23"
       },
       "children": [
         {
-          "$ref": "#/texts/25"
+          "$ref": "#/texts/29"
         }
       ],
       "content_layer": "body",
@@ -979,9 +1081,9 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/29",
       "parent": {
-        "$ref": "#/texts/24"
+        "$ref": "#/texts/28"
       },
       "children": [],
       "content_layer": "body",
@@ -991,13 +1093,13 @@
       "text": "Baseline prevalence can be assumed as a proxy for local transmission conditions [14] and correlates with prevalence after MDA [14–20]. Baseline prevalence for each district was measured by either blood smears to measure Mf or rapid diagnostic tests to measure Ag. Other studies have modeled Mf and Ag prevalence separately, due to lack of a standardized correlation between the two, especially at pre-MDA levels [21,22]. However, because WHO mapping guidance states that MDA is required if either Mf or Ag is ≥1% and there were not enough data to model each separately, we combined baseline prevalence values regardless of diagnostic test used. We created two variables for use in the analysis (1) using the cut-off of <5% or ≥5% (dataset median value of 5%) and (2) using the cut-off of <10% or ≥10%."
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/30",
       "parent": {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/23"
       },
       "children": [
         {
-          "$ref": "#/groups/1"
+          "$ref": "#/groups/3"
         }
       ],
       "content_layer": "body",
@@ -1008,9 +1110,9 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/31",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1020,9 +1122,9 @@
       "text": "In terms of differences in transmission dynamics by agent, research has shown that"
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/32",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1039,9 +1141,9 @@
       }
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/33",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1051,9 +1153,9 @@
       "text": "spp. are more susceptible to the anti-filarial drug regimens than"
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/34",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1070,9 +1172,9 @@
       }
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/35",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1082,71 +1184,9 @@
       "text": "parasites [23]. Thus, we combined districts reporting"
     },
     {
-      "self_ref": "#/texts/32",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "B",
-      "text": "B",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/33",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".",
-      "text": "."
-    },
-    {
-      "self_ref": "#/texts/34",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "malayi",
-      "text": "malayi",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/35",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
       "self_ref": "#/texts/36",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1165,7 +1205,7 @@
     {
       "self_ref": "#/texts/37",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1177,7 +1217,69 @@
     {
       "self_ref": "#/texts/38",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "malayi",
+      "text": "malayi",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/39",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "and",
+      "text": "and"
+    },
+    {
+      "self_ref": "#/texts/40",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "B",
+      "text": "B",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/41",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1194,9 +1296,9 @@
       }
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/43",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1206,9 +1308,9 @@
       "text": "and compared them to areas with"
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1225,9 +1327,9 @@
       }
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/45",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1237,9 +1339,9 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/46",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1256,9 +1358,9 @@
       }
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/47",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1268,9 +1370,9 @@
       "text": "or mixed parasites. Two variables from other domains were identified in exploratory analyses to be highly colinear with the parasite, and thus we considered them in the same group of variables for the final regression models. These were variables delineating vectors ("
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/48",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1287,9 +1389,9 @@
       }
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/49",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1299,9 +1401,9 @@
       "text": "or"
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/50",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1318,9 +1420,9 @@
       }
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/51",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1330,9 +1432,9 @@
       "text": "compared to"
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/52",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1349,9 +1451,9 @@
       }
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/53",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1361,19 +1463,19 @@
       "text": ") from the environmental domain and drug package [ivermectin-albendazole (IVM-ALB) compared to diethylcarbamazine-albendazole (DEC-ALB)] from the MDA domain."
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/54",
       "parent": {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/23"
       },
       "children": [
         {
-          "$ref": "#/texts/51"
+          "$ref": "#/texts/55"
         },
         {
-          "$ref": "#/groups/2"
+          "$ref": "#/groups/4"
         },
         {
-          "$ref": "#/texts/57"
+          "$ref": "#/texts/61"
         }
       ],
       "content_layer": "body",
@@ -1384,9 +1486,9 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/55",
       "parent": {
-        "$ref": "#/texts/50"
+        "$ref": "#/texts/54"
       },
       "children": [],
       "content_layer": "body",
@@ -1396,9 +1498,9 @@
       "text": "LF transmission intensity is influenced by differing vector transmission dynamics, including vector biting rates and competence, and the number of individuals with microfilaria [21,24,25]. Since vector data are not always available, previous studies have explored whether environmental variables associated with vector density, such as elevation, rainfall, and temperature, can be used to predict LF prevalence [8,21,26–31]. We included the district area and elevation in meters as geographic variables potentially associated with transmission intensity. In addition, within the climate factor, we included Enhanced Vegetation Index (EVI) and rainfall variables. EVI measures vegetation levels, or “greenness,” where a higher index value indicates a higher level of “greenness.”"
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/56",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1408,9 +1510,9 @@
       "text": "We included the socio-economic variable of population density, as it has been positively associated with LF prevalence in some studies [8,27,29], but no significant association has been found in others [30]. Population density could be correlated with vector, as in eastern African countries LF is mostly transmitted by"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/57",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1427,9 +1529,9 @@
       }
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/58",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1439,9 +1541,9 @@
       "text": "in urban areas and by"
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/59",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1458,9 +1560,9 @@
       }
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/60",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1470,9 +1572,9 @@
       "text": "in rural areas [32]. Additionally, inclusion of the satellite imagery of nighttime lights data is another a proxy for socio-economic status [33]."
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/61",
       "parent": {
-        "$ref": "#/texts/50"
+        "$ref": "#/texts/54"
       },
       "children": [],
       "content_layer": "body",
@@ -1482,16 +1584,16 @@
       "text": "Finally, all or parts of districts that are co-endemic with onchocerciasis may have received multiple rounds of MDA with ivermectin before LF MDA started, which may have lowered LF prevalence in an area [34–36]. Thus, we included a categorical variable to distinguish if districts were co-endemic with onchocerciasis."
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/62",
       "parent": {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/23"
       },
       "children": [
         {
-          "$ref": "#/texts/59"
+          "$ref": "#/texts/63"
         },
         {
-          "$ref": "#/texts/60"
+          "$ref": "#/texts/64"
         }
       ],
       "content_layer": "body",
@@ -1502,9 +1604,9 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/63",
       "parent": {
-        "$ref": "#/texts/58"
+        "$ref": "#/texts/62"
       },
       "children": [],
       "content_layer": "body",
@@ -1514,9 +1616,9 @@
       "text": "Treatment effectiveness depends upon both drug efficacy (ability to kill adult worms, ability to kill Mf, drug resistance, drug quality) and implementation of MDA (coverage, compliance, number of rounds) [14,16]. Ivermectin is less effective against adult worms than DEC, and therefore it is likely that Ag reduction is slower in areas using ivermectin instead of DEC in MDA [37]. Models also have shown that MDA coverage affects prevalence, although coverage has been defined in various ways, such as median coverage, number of rounds, or individual compliance [14–16,20,38–40]. Furthermore, systematic non-compliance, or population sub-groups which consistently refuse to take medicines, has been shown to represent a threat to elimination [41,42]."
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/64",
       "parent": {
-        "$ref": "#/texts/58"
+        "$ref": "#/texts/62"
       },
       "children": [],
       "content_layer": "body",
@@ -1526,13 +1628,13 @@
       "text": "We considered three approaches when analyzing the MDA data: median MDA coverage in the most recent 5 rounds, number of rounds with sufficient coverage in the most recent 5 rounds, and count of the total number of rounds. MDA coverage is considered sufficient at or above 65% of the total population who were reported to have ingested the drugs; this was used as the cut point for MDA median coverage for the most recent 5 rounds. The ‘rounds of sufficient coverage’ variable was categorized as having 2 or fewer rounds compared to 3 or more sufficient rounds. The ‘total number of MDA rounds’ variable was categorized at 5 or fewer rounds compared to 6 or more rounds ever documented in that district."
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/65",
       "parent": {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/23"
       },
       "children": [
         {
-          "$ref": "#/texts/62"
+          "$ref": "#/texts/66"
         }
       ],
       "content_layer": "body",
@@ -1543,9 +1645,9 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/66",
       "parent": {
-        "$ref": "#/texts/61"
+        "$ref": "#/texts/65"
       },
       "children": [],
       "content_layer": "body",
@@ -1555,13 +1657,13 @@
       "text": "Pre-TAS results can be influenced by the implementation of the survey itself, including the use of a particular diagnostic test, the selection of sites, the timing of survey, and the appropriate application of methods for population recruitment and diagnostic test adminstration. We included two variables in the pre-TAS implementation domain: `type of diagnostic method used’ and `diagnostic test used.’ The ‘type of diagnostic method used’ variable categorized districts by either using Mf or Ag. The ‘diagnostic test used’ variable examined Mf (reference category) compared to ICT and compared to FTS (categorical variable with 3 values). This approach was used to compare each test to each other. Countries switched from ICT to FTS during 2016, while Mf testing continued to be used throughout the time period of study."
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/67",
       "parent": {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/17"
       },
       "children": [
         {
-          "$ref": "#/texts/64"
+          "$ref": "#/texts/68"
         }
       ],
       "content_layer": "body",
@@ -1572,9 +1674,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/68",
       "parent": {
-        "$ref": "#/texts/63"
+        "$ref": "#/texts/67"
       },
       "children": [],
       "content_layer": "body",
@@ -1584,16 +1686,16 @@
       "text": "The dataset, summarized at the district level, included information from 568 districts where a pre-TAS was being implemented for the first time. A total of 14 districts were removed from the final analysis due to missing data related to the following points: geospatial boundaries (4), baseline prevalence (4), and MDA coverage (6). The final analysis dataset had 554 districts."
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/69",
       "parent": {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/17"
       },
       "children": [
         {
-          "$ref": "#/texts/66"
+          "$ref": "#/texts/70"
         },
         {
-          "$ref": "#/groups/3"
+          "$ref": "#/groups/5"
         }
       ],
       "content_layer": "body",
@@ -1604,9 +1706,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/70",
       "parent": {
-        "$ref": "#/texts/65"
+        "$ref": "#/texts/69"
       },
       "children": [],
       "content_layer": "body",
@@ -1616,9 +1718,9 @@
       "text": "Statistical analysis and modeling were done with Stata MP 15.1 (College Station, TX). Descriptive statistics comparing various variables to the principle outcome were performed. Significant differences were identified using a chi-square test. A generalized linear model (GLM) with a log link and binomial error distribution—which estimates relative risks—was developed using forward stepwise modeling methods (called log-binomial model). Models with higher pseudo-r-squared and lower Akaike information criterion (AIC) were retained at each step. Pseudo-r-squared is a value between 0 and 1 with the higher the value, the better the model is at predicting the outcome of interest. AIC values are used to compare the relative quality of models compared to each other; in general, a lower value indicates a better model. Variables were tested by factor group. Once a variable was selected from the group, no other variable in that same group was eligible to be included in the final model due to issues of collinearity and small sample sizes. Interaction between terms in the model was tested after model selection, and interaction terms that modified the original terms’ significance were included in the final model. Overall, the number of potential variables able to be included in the model remained low due to the relatively small number of failure results (13%) in the dataset. Furthermore, the models with more than 3 variables and one interaction term either were unstable (indicated by very large confidence interval widths) or did not improve the model by being significant predictors or by modifying other parameters already in the model. These models were at heightened risk of non-convergence; we limited the number of variables accordingly."
     },
     {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/71",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1628,9 +1730,9 @@
       "text": "Sensitivity analysis was performed for the final log-binomial model to test for the validity of results under different parameters by excluding some sub-sets of districts from the dataset and rerunning the model. This analysis was done to understand the robustness of the model when (1) excluding all districts in Cameroon, (2) including only districts in Africa, (3) including only districts with"
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/72",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1647,9 +1749,9 @@
       }
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/73",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1659,9 +1761,9 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/74",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1678,9 +1780,9 @@
       }
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/75",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1690,9 +1792,9 @@
       "text": "parasite, and (4) including only districts with"
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/76",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1709,9 +1811,9 @@
       }
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/77",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1721,13 +1823,13 @@
       "text": "as the primary vector. The sensitivity analysis excluding Cameroon was done for two reasons. First, Cameroon had the most pre-TAS results included, but no failures. Second, 70% of the Cameroon districts included in the analysis are co-endemic for loiasis. Given that diagnostic tests used in LF mapping have since been shown to cross-react with loiasis, there is some concern that these districts might not have been truly LF-endemic [43,44]."
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/78",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/75"
+          "$ref": "#/texts/79"
         },
         {
           "$ref": "#/pictures/0"
@@ -1736,28 +1838,28 @@
           "$ref": "#/pictures/1"
         },
         {
-          "$ref": "#/groups/4"
+          "$ref": "#/groups/6"
         },
         {
           "$ref": "#/pictures/2"
         },
         {
-          "$ref": "#/texts/82"
+          "$ref": "#/texts/86"
         },
         {
-          "$ref": "#/texts/83"
+          "$ref": "#/texts/87"
         },
         {
           "$ref": "#/pictures/3"
         },
         {
-          "$ref": "#/groups/5"
+          "$ref": "#/groups/7"
         },
         {
           "$ref": "#/tables/1"
         },
         {
-          "$ref": "#/texts/99"
+          "$ref": "#/texts/103"
         },
         {
           "$ref": "#/pictures/4"
@@ -1771,9 +1873,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/79",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -1783,7 +1885,7 @@
       "text": "The overall pre-TAS pass rate for the districts included in this analysis was 87% (74 failures in 554 districts). Nearly 40% of the 554 districts were from Cameroon (134) and Tanzania (87) (Fig 1). No districts in Bangladesh, Cameroon, Mali, or Uganda failed a pre-TAS in this data set; over 25% of districts in Burkina Faso, Ghana, Haiti, Nepal, and Sierra Leone failed pre-TAS in this data set. Baseline prevalence varied widely within and between the 13 countries. Fig 2 shows the highest, lowest, and median baseline prevalence in the study districts by country. Burkina Faso had the highest median baseline prevalence at 52% and Burkina Faso, Tanzania, and Ghana all had at least one district with a very high baseline of over 70%. In Mali, Indonesia, Benin, and Bangladesh, all districts had baseline prevalences below 20%."
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/80",
       "parent": {
         "$ref": "#/body"
       },
@@ -1795,7 +1897,7 @@
       "text": "Fig 1 Number of pre-TAS by country."
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/body"
       },
@@ -1807,9 +1909,9 @@
       "text": "Fig 2 District-level baseline prevalence by country."
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/82",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -1819,9 +1921,9 @@
       "text": "Fig 3 shows the unadjusted analysis for key variables by pre-TAS result. Variables statistically significantly associated with failure (p-value ≤0.05) included higher baseline prevalence at or above 5% or 10%, FTS diagnostic test, primary vector of"
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/83",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -1838,9 +1940,9 @@
       }
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/84",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -1850,7 +1952,7 @@
       "text": ", treatment with DEC-ALB, higher elevation, higher population density, higher EVI, higher annual rainfall, and six or more rounds of MDA. Variables that were not significantly associated with pre-TAS failure included diagnostic method used (Ag or Mf), parasite, co-endemicity for onchocerciasis, median MDA coverage, and sufficient rounds of MDA."
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/85",
       "parent": {
         "$ref": "#/body"
       },
@@ -1862,9 +1964,9 @@
       "text": "Fig 3 Percent pre-TAS failure by each characteristic (unadjusted)."
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/86",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -1874,9 +1976,9 @@
       "text": "The final log-binomial model included the variables of baseline prevalence ≥10%, the diagnostic test used (FTS and ICT), and elevation. The final model also included a significant interaction term between high baseline and diagnostic test used."
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/87",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -1886,7 +1988,7 @@
       "text": "Fig 4 shows the risk ratio results with their corresponding confidence intervals. In a model with interaction between baseline and diagnostic test the baseline parameter was significant while diagnostic test and the interaction term were not. Districts with high baseline had a statistically significant (p-value ≤0.05) 2.52 times higher risk of failure (95% CI 1.37–4.64) compared to those with low baseline prevalence. The FTS diagnostic test or ICT diagnostic test alone were not significant nor was the interaction term. Additionally, districts with an elevation below 350 meters had a statistically significant (p-value ≤0.05) 3.07 times higher risk of failing pre-TAS (95% CI 1.95–4.83)."
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/88",
       "parent": {
         "$ref": "#/body"
       },
@@ -1898,9 +2000,9 @@
       "text": "Fig 4 Adjusted risk ratios for pre-TAS failure with 95% Confidence Interval from log-binomial model."
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/89",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -1910,9 +2012,9 @@
       "text": "Sensitivity analyses were conducted using the same model with different subsets of the dataset including (1) all districts except for districts in Cameroon (134 total with no failures), (2) only districts in Africa, (3) only districts with"
     },
     {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/90",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -1920,68 +2022,6 @@
       "prov": [],
       "orig": "W",
       "text": "W",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/87",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".",
-      "text": "."
-    },
-    {
-      "self_ref": "#/texts/88",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "bancrofti",
-      "text": "bancrofti",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/89",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", and (4) only districts with",
-      "text": ", and (4) only districts with"
-    },
-    {
-      "self_ref": "#/texts/90",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Anopheles",
-      "text": "Anopheles",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -1993,38 +2033,7 @@
     {
       "self_ref": "#/texts/91",
       "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "as primary vector. The results of the sensitivity models (Table 2) indicate an overall robust model. High baseline and lower elevation remained significant across all the models. The ICT diagnostic test used remains insignificant across all models. The FTS diagnostic test was positively significant in model 1 and negatively significant in model 4. The interaction term of baseline prevalence and FTS diagnostic test was significant in three models though the estimate was unstable in the",
-      "text": "as primary vector. The results of the sensitivity models (Table 2) indicate an overall robust model. High baseline and lower elevation remained significant across all the models. The ICT diagnostic test used remains insignificant across all models. The FTS diagnostic test was positively significant in model 1 and negatively significant in model 4. The interaction term of baseline prevalence and FTS diagnostic test was significant in three models though the estimate was unstable in the"
-    },
-    {
-      "self_ref": "#/texts/92",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "W",
-      "text": "W",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/93",
-      "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -2034,9 +2043,9 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/94",
+      "self_ref": "#/texts/92",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -2053,21 +2062,21 @@
       }
     },
     {
-      "self_ref": "#/texts/95",
+      "self_ref": "#/texts/93",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-only and",
-      "text": "-only and"
+      "orig": ", and (4) only districts with",
+      "text": ", and (4) only districts with"
     },
     {
-      "self_ref": "#/texts/96",
+      "self_ref": "#/texts/94",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -2084,9 +2093,102 @@
       }
     },
     {
+      "self_ref": "#/texts/95",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "as primary vector. The results of the sensitivity models (Table 2) indicate an overall robust model. High baseline and lower elevation remained significant across all the models. The ICT diagnostic test used remains insignificant across all models. The FTS diagnostic test was positively significant in model 1 and negatively significant in model 4. The interaction term of baseline prevalence and FTS diagnostic test was significant in three models though the estimate was unstable in the",
+      "text": "as primary vector. The results of the sensitivity models (Table 2) indicate an overall robust model. High baseline and lower elevation remained significant across all the models. The ICT diagnostic test used remains insignificant across all models. The FTS diagnostic test was positively significant in model 1 and negatively significant in model 4. The interaction term of baseline prevalence and FTS diagnostic test was significant in three models though the estimate was unstable in the"
+    },
+    {
+      "self_ref": "#/texts/96",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "W",
+      "text": "W",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
       "self_ref": "#/texts/97",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/98",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bancrofti",
+      "text": "bancrofti",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/99",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "-only and",
+      "text": "-only and"
+    },
+    {
+      "self_ref": "#/texts/100",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Anopheles",
+      "text": "Anopheles",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/101",
+      "parent": {
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -2096,7 +2198,7 @@
       "text": "-only models (models 3 and 4 respectively), as signified by large confidence intervals."
     },
     {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/102",
       "parent": {
         "$ref": "#/body"
       },
@@ -2108,9 +2210,9 @@
       "text": "Table 2 Adjusted risk ratios for pre-TAS failure from log-binomial model sensitivity analysis."
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/103",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -2120,7 +2222,7 @@
       "text": "Overall 74 districts in the dataset failed pre-TAS. Fig 5 summarizes the likelihood of failure by variable combinations identified in the log-binomial model. For those districts with a baseline prevalence ≥10% that used a FTS diagnostic test and have an average elevation below 350 meters (Combination C01), 87% of the 23 districts failed. Of districts with high baseline that used an ICT diagnostic test and have a low average elevation (C02) 45% failed. Overall, combinations with high baseline and low elevation C01, C02, and C04 accounted for 51% of all the failures (38 of 74)."
     },
     {
-      "self_ref": "#/texts/100",
+      "self_ref": "#/texts/104",
       "parent": {
         "$ref": "#/body"
       },
@@ -2132,37 +2234,37 @@
       "text": "Fig 5 Analysis of failures by model combinations."
     },
     {
-      "self_ref": "#/texts/101",
+      "self_ref": "#/texts/105",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/groups/6"
-        },
-        {
-          "$ref": "#/texts/105"
-        },
-        {
-          "$ref": "#/groups/7"
-        },
-        {
           "$ref": "#/groups/8"
+        },
+        {
+          "$ref": "#/texts/109"
         },
         {
           "$ref": "#/groups/9"
         },
         {
-          "$ref": "#/texts/125"
+          "$ref": "#/groups/10"
         },
         {
-          "$ref": "#/texts/126"
+          "$ref": "#/groups/11"
         },
         {
-          "$ref": "#/texts/127"
+          "$ref": "#/texts/129"
         },
         {
-          "$ref": "#/texts/128"
+          "$ref": "#/texts/130"
+        },
+        {
+          "$ref": "#/texts/131"
+        },
+        {
+          "$ref": "#/texts/132"
         }
       ],
       "content_layer": "body",
@@ -2173,9 +2275,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/102",
+      "self_ref": "#/texts/106",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "body",
@@ -2185,64 +2287,9 @@
       "text": "This paper reports for the first time factors associated with pre-TAS results from a multi-country analysis. Variables significantly associated with failure were higher baseline prevalence and lower elevation. Districts with a baseline prevalence of 10% or more were at 2.52 times higher risk to fail pre-TAS in the final log-binomial model. In the bivariate analysis, baseline prevalence above 5% was also significantly more likely to fail compared to lower baselines, which indicates that the threshold for higher baseline prevalence may be as little as 5%, similar to what was found in Goldberg"
     },
     {
-      "self_ref": "#/texts/103",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "et al",
-      "text": "et al",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/104",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "., which explored ecological and socioeconomic factors associated with TAS failure [7].",
-      "text": "., which explored ecological and socioeconomic factors associated with TAS failure [7]."
-    },
-    {
-      "self_ref": "#/texts/105",
-      "parent": {
-        "$ref": "#/texts/101"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Though diagnostic test used was selected for the final log-binomial model, neither category (FTS or ICT) were significant after interaction with high baseline. FTS alone is significant in the bivariate analysis compared to ICT or Mf. This result is not surprising given previous research which found that FTS was more sensitive than ICT [45].",
-      "text": "Though diagnostic test used was selected for the final log-binomial model, neither category (FTS or ICT) were significant after interaction with high baseline. FTS alone is significant in the bivariate analysis compared to ICT or Mf. This result is not surprising given previous research which found that FTS was more sensitive than ICT [45]."
-    },
-    {
-      "self_ref": "#/texts/106",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Elevation was the only environmental domain variable selected for the final log-binomial model during the model selection process, with areas of lower elevation (<350m) found to be at 3.07 times higher risk to fail pre-TAS compared to districts with a higher elevation. Similar results related to elevation were found in previous studies [8,31], including Goldberg",
-      "text": "Elevation was the only environmental domain variable selected for the final log-binomial model during the model selection process, with areas of lower elevation (<350m) found to be at 3.07 times higher risk to fail pre-TAS compared to districts with a higher elevation. Similar results related to elevation were found in previous studies [8,31], including Goldberg"
-    },
-    {
       "self_ref": "#/texts/107",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "body",
@@ -2261,7 +2308,62 @@
     {
       "self_ref": "#/texts/108",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "., which explored ecological and socioeconomic factors associated with TAS failure [7].",
+      "text": "., which explored ecological and socioeconomic factors associated with TAS failure [7]."
+    },
+    {
+      "self_ref": "#/texts/109",
+      "parent": {
+        "$ref": "#/texts/105"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Though diagnostic test used was selected for the final log-binomial model, neither category (FTS or ICT) were significant after interaction with high baseline. FTS alone is significant in the bivariate analysis compared to ICT or Mf. This result is not surprising given previous research which found that FTS was more sensitive than ICT [45].",
+      "text": "Though diagnostic test used was selected for the final log-binomial model, neither category (FTS or ICT) were significant after interaction with high baseline. FTS alone is significant in the bivariate analysis compared to ICT or Mf. This result is not surprising given previous research which found that FTS was more sensitive than ICT [45]."
+    },
+    {
+      "self_ref": "#/texts/110",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Elevation was the only environmental domain variable selected for the final log-binomial model during the model selection process, with areas of lower elevation (<350m) found to be at 3.07 times higher risk to fail pre-TAS compared to districts with a higher elevation. Similar results related to elevation were found in previous studies [8,31], including Goldberg",
+      "text": "Elevation was the only environmental domain variable selected for the final log-binomial model during the model selection process, with areas of lower elevation (<350m) found to be at 3.07 times higher risk to fail pre-TAS compared to districts with a higher elevation. Similar results related to elevation were found in previous studies [8,31], including Goldberg"
+    },
+    {
+      "self_ref": "#/texts/111",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "et al",
+      "text": "et al",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/112",
+      "parent": {
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -2271,9 +2373,9 @@
       "text": ". [7], who used a cutoff of 200 meters. Elevation likely also encompasses some related environmental concepts, such as vector habitat, greenness (EVI), or rainfall, which impact vector chances of survival."
     },
     {
-      "self_ref": "#/texts/109",
+      "self_ref": "#/texts/113",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2283,9 +2385,9 @@
       "text": "The small number of failures overall prevented the inclusion of a large number of variables in the final log-binomial model. However, other variables that are associated with failure as identified in the bivariate analyses, such as"
     },
     {
-      "self_ref": "#/texts/110",
+      "self_ref": "#/texts/114",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2302,9 +2404,9 @@
       }
     },
     {
-      "self_ref": "#/texts/111",
+      "self_ref": "#/texts/115",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2314,9 +2416,9 @@
       "text": "vector, higher population density, higher EVI, higher rainfall and more rounds of MDA, should not be discounted when making programmatic decisions. Other models have shown that"
     },
     {
-      "self_ref": "#/texts/112",
+      "self_ref": "#/texts/116",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2333,9 +2435,9 @@
       }
     },
     {
-      "self_ref": "#/texts/113",
+      "self_ref": "#/texts/117",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2345,9 +2447,9 @@
       "text": "as the predominant vector in a district, compared to"
     },
     {
-      "self_ref": "#/texts/114",
+      "self_ref": "#/texts/118",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2364,9 +2466,9 @@
       }
     },
     {
-      "self_ref": "#/texts/115",
+      "self_ref": "#/texts/119",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -2376,9 +2478,9 @@
       "text": ", results in more intense interventions needed to reach elimination [24,41]. Higher population density, which was also found to predict TAS failure [7], could be related to different vector species’ transmission dynamics in urban areas, as well as the fact that MDAs are harder to conduct and to accurately measure in urban areas [46,47]. Both higher enhanced vegetation index (>0.3) and higher rainfall (>700 mm per year) contribute to expansion of vector habitats and population. Additionally, having more than five rounds of MDA before pre-TAS was also statistically significantly associated with higher failure in the bivariate analysis. It is unclear why higher number of rounds is associated with first pre-TAS failure given that other research has shown the opposite [15,16]."
     },
     {
-      "self_ref": "#/texts/116",
+      "self_ref": "#/texts/120",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -2388,9 +2490,9 @@
       "text": "All other variables included in this analysis were not significantly associated with pre-TAS failure in our analysis. Goldberg"
     },
     {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/121",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -2398,68 +2500,6 @@
       "prov": [],
       "orig": "et al",
       "text": "et al",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/118",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ". found",
-      "text": ". found"
-    },
-    {
-      "self_ref": "#/texts/119",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Brugia",
-      "text": "Brugia",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/120",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "spp. to be significantly associated with failure, but our results did not. This is likely due in part to the small number of districts with",
-      "text": "spp. to be significantly associated with failure, but our results did not. This is likely due in part to the small number of districts with"
-    },
-    {
-      "self_ref": "#/texts/121",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Brugia",
-      "text": "Brugia",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -2471,7 +2511,69 @@
     {
       "self_ref": "#/texts/122",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ". found",
+      "text": ". found"
+    },
+    {
+      "self_ref": "#/texts/123",
+      "parent": {
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Brugia",
+      "text": "Brugia",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/124",
+      "parent": {
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "spp. to be significantly associated with failure, but our results did not. This is likely due in part to the small number of districts with",
+      "text": "spp. to be significantly associated with failure, but our results did not. This is likely due in part to the small number of districts with"
+    },
+    {
+      "self_ref": "#/texts/125",
+      "parent": {
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Brugia",
+      "text": "Brugia",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/126",
+      "parent": {
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -2481,9 +2583,9 @@
       "text": "spp. in our dataset (6%) compared to 46% in the Goldberg"
     },
     {
-      "self_ref": "#/texts/123",
+      "self_ref": "#/texts/127",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -2500,9 +2602,9 @@
       }
     },
     {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/128",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -2512,9 +2614,9 @@
       "text": ". article [7]. MDA coverage levels were not significantly associated with pre-TAS failure, likely due to the lack of variance in the coverage data since WHO guidance dictates a minimum of five rounds of MDA with ≥65% epidemiological coverage to be eligible to implement pre-TAS. It should not be interpreted as evidence that high MDA coverage levels are not necessary to lower prevalence."
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/129",
       "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/texts/105"
       },
       "children": [],
       "content_layer": "body",
@@ -2524,9 +2626,9 @@
       "text": "Limitations to this study include data sources, excluded data, unreported data, misassigned data, and aggregation of results at the district level. The main data sources for this analysis were programmatic data, which may be less accurate than data collected specifically for research purposes. This is particularly true of the MDA coverage data, where some countries report data quality challenges in areas of instability or frequent population migration. Even though risk factors such as age, sex, compliance with MDA, and use of bednets have been shown to influence infection in individuals [40,48–50], we could not include factors from the human host domain in our analysis, as data sets were aggregated at site level and did not include individual information. In addition, vector control data were not universally available across the 13 countries and thus were not included in the analysis, despite studies showing that vector control has an impact on reducing LF prevalence [41,48,51–53]."
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/130",
       "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/texts/105"
       },
       "children": [],
       "content_layer": "body",
@@ -2536,9 +2638,9 @@
       "text": "Fourteen districts were excluded from the analysis because we were not able to obtain complete data for baseline prevalence, MDA coverage, or geographic boundaries. One of these districts had failed pre-TAS. It is likely these exclusions had minimal impact on the conclusions, as they represented a small number of districts and were similar to other included districts in terms of key variables. Unreported data could have occurred if a country conducted a pre-TAS that failed and then chose not to report it or reported it as a mid-term survey instead. Anecdotally, we know this has occurred occasionally, but we do not believe the practice to be widespread. Another limitation in the analysis is a potential misassignment of key variable values to a district due to changes in the district over time. Redistricting, changes in district size or composition, was pervasive in many countries during the study period; however, we expect the impact on the study outcome to be minimal, as the historical prevalence and MDA data from the “mother” districts are usually flowed down to these new “daughter” districts. However, it is possible that the split created an area of higher prevalence or lower MDA coverage than would have been found on average in the overall larger original “mother” district. Finally, the aggregation or averaging of results to the district level may mask heterogeneity within districts. Though this impact could be substantial in districts with considerable heterogeneity, the use of median values and binomial variables mitigated the likelihood of skewing the data to extreme outliners in a district."
     },
     {
-      "self_ref": "#/texts/127",
+      "self_ref": "#/texts/131",
       "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/texts/105"
       },
       "children": [],
       "content_layer": "body",
@@ -2548,9 +2650,9 @@
       "text": "As this analysis used data across a variety of countries and epidemiological situations, the results are likely relevant for other districts in the countries examined and in countries with similar epidemiological backgrounds. In general, as more data become available at site level through the increased use of electronic data collection tools, further analysis of geospatial variables and associations will be possible. For example, with the availability of GPS coordinates, it may become possible to analyze outcomes by site and to link the geospatial environmental domain variables at a smaller scale. Future analyses also might seek to include information from coverage surveys or qualitative research studies on vector control interventions such as bed net usage, MDA compliance, population movement, and sub-populations that might be missed during MDA. Future pre-TAS using electronic data collection could include sex and age of individuals included in the survey."
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/132",
       "parent": {
-        "$ref": "#/texts/101"
+        "$ref": "#/texts/105"
       },
       "children": [],
       "content_layer": "body",
@@ -2560,13 +2662,13 @@
       "text": "This paper provides evidence from analysis of 554 districts and 13 countries on the factors associated with pre-TAS results. Baseline prevalence, elevation, vector, population density, EVI, rainfall, and number of MDA rounds were all significant in either bivariate or multivariate analyses. This information along with knowledge of local context can help countries more effectively plan pre-TAS and forecast program activities, such as the potential need for more than five rounds of MDA in areas with high baseline and/or low elevation."
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/texts/130"
+          "$ref": "#/texts/134"
         }
       ],
       "content_layer": "body",
@@ -2577,9 +2679,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/134",
       "parent": {
-        "$ref": "#/texts/129"
+        "$ref": "#/texts/133"
       },
       "children": [],
       "content_layer": "body",
@@ -2589,13 +2691,13 @@
       "text": "The authors would like to thank all those involved from the Ministries of Health, volunteers and community members in the sentinel and spot-check site surveys for their tireless commitment to ridding the world of LF. In addition, gratitude is given to Joseph Koroma and all the partners, including USAID, RTI International, FHI 360, IMA World Health, and Helen Keller International, who supported the surveys financially and technically."
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/texts/0"
       },
       "children": [
         {
-          "$ref": "#/groups/10"
+          "$ref": "#/groups/12"
         }
       ],
       "content_layer": "body",
@@ -2606,9 +2708,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/136",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2620,9 +2722,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/137",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2634,9 +2736,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/138",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2648,9 +2750,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/139",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2662,9 +2764,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/140",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2676,9 +2778,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/141",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2690,9 +2792,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/142",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2704,9 +2806,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/143",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2718,9 +2820,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/144",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2732,9 +2834,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/145",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2746,9 +2848,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/146",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2760,9 +2862,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/143",
+      "self_ref": "#/texts/147",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2774,9 +2876,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/148",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2788,9 +2890,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/145",
+      "self_ref": "#/texts/149",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2802,9 +2904,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/150",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2816,9 +2918,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/151",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2830,9 +2932,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/152",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2844,9 +2946,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/153",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2858,9 +2960,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/154",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2872,9 +2974,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/155",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2886,9 +2988,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/156",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2900,9 +3002,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/157",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2914,9 +3016,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/158",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2928,9 +3030,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/159",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2942,9 +3044,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/160",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2956,9 +3058,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/161",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2970,9 +3072,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/162",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2984,9 +3086,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/163",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -2998,9 +3100,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/164",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3012,9 +3114,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/165",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3026,9 +3128,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/166",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3040,9 +3142,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/167",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3054,9 +3156,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/168",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3068,9 +3170,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/169",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3082,9 +3184,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/170",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3096,9 +3198,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/171",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3110,9 +3212,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/172",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3124,9 +3226,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/173",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3138,9 +3240,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/174",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3152,9 +3254,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/175",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3166,9 +3268,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/176",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3180,9 +3282,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/177",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3194,9 +3296,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/178",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3208,9 +3310,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/179",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3222,9 +3324,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/180",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3236,9 +3338,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/181",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3250,9 +3352,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/182",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3264,9 +3366,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/183",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3278,9 +3380,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/184",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3292,9 +3394,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/185",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3306,9 +3408,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/186",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3320,9 +3422,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/187",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3334,9 +3436,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/188",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -3352,7 +3454,7 @@
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -3360,7 +3462,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/76"
+          "$ref": "#/texts/80"
         }
       ],
       "references": [],
@@ -3370,25 +3472,7 @@
     {
       "self_ref": "#/pictures/1",
       "parent": {
-        "$ref": "#/texts/74"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "picture",
-      "prov": [],
-      "captions": [
-        {
-          "$ref": "#/texts/77"
-        }
-      ],
-      "references": [],
-      "footnotes": [],
-      "annotations": []
-    },
-    {
-      "self_ref": "#/pictures/2",
-      "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -3404,9 +3488,9 @@
       "annotations": []
     },
     {
-      "self_ref": "#/pictures/3",
+      "self_ref": "#/pictures/2",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -3414,7 +3498,25 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/84"
+          "$ref": "#/texts/85"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/3",
+      "parent": {
+        "$ref": "#/texts/78"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/88"
         }
       ],
       "references": [],
@@ -3424,7 +3526,7 @@
     {
       "self_ref": "#/pictures/4",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -3432,7 +3534,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/100"
+          "$ref": "#/texts/104"
         }
       ],
       "references": [],
@@ -3444,7 +3546,7 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/17"
       },
       "children": [],
       "content_layer": "body",
@@ -3452,7 +3554,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/16"
+          "$ref": "#/texts/20"
         }
       ],
       "references": [],
@@ -7251,7 +7353,7 @@
     {
       "self_ref": "#/tables/1",
       "parent": {
-        "$ref": "#/texts/74"
+        "$ref": "#/texts/78"
       },
       "children": [],
       "content_layer": "body",
@@ -7259,7 +7361,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/98"
+          "$ref": "#/texts/102"
         }
       ],
       "references": [],

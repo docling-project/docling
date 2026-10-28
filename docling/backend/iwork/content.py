@@ -1,17 +1,18 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""The content a Pages document holds, however its container spells it.
+"""The content an iWork document holds, however its container spells it.
 
 Both container generations describe the same things — paragraphs made of runs,
 lists, tables, pictures, page furniture, comments — so they are modelled once
-here and read into that model by :mod:`docling.backend.iwork.pages_iwa` and
-:mod:`docling.backend.iwork.pages_xml`. Turning the result into a
+here and read into that model by :mod:`docling.backend.iwork.archives` and
+:mod:`docling.backend.iwork.legacy`. Turning the result into a
 :class:`~docling_core.types.doc.DoclingDocument` is the backend's job, which is
 what keeps the two readers from having to agree on anything else.
 """
 
 import re
+from enum import Enum
 from typing import NamedTuple, TypeVar
 
 from docling_core.types.doc import (
@@ -101,6 +102,20 @@ class Paragraph(NamedTuple):
         return "".join(run.text for run in self.runs)
 
 
+class Geometry(NamedTuple):
+    """Where a drawable sits on the page it is placed on, in points.
+
+    Both container generations record this, and both record it for the same
+    reason: a drawable is positioned on the page rather than flowing in the
+    text, so where it sits is the only thing that says when it is read.
+    """
+
+    left: float
+    top: float
+    width: float
+    height: float
+
+
 class Picture(NamedTuple):
     """An image anchored in the text flow.
 
@@ -111,6 +126,61 @@ class Picture(NamedTuple):
 
     data: bytes | None
     name: str
+
+
+class ChartKind(Enum):
+    """What a chart draws, whichever app or container generation it came from.
+
+    A 3D chart is read as the flat kind it extrudes: its data, and what that data
+    means, are the same. ``MIXED`` is a chart whose series are drawn in different
+    ways, against one value axis or two, and ``OTHER`` one this does not know.
+    """
+
+    COLUMN = "column"
+    BAR = "bar"
+    LINE = "line"
+    AREA = "area"
+    PIE = "pie"
+    DONUT = "donut"
+    SCATTER = "scatter"
+    BUBBLE = "bubble"
+    RADAR = "radar"
+    MIXED = "mixed"
+    OTHER = "other"
+
+
+class ChartSeries(NamedTuple):
+    """One series of a chart: its name, and its value in each category.
+
+    A value the chart has no number for is None, which is how a gap in a series
+    stays in its place rather than pulling the values after it forwards.
+    """
+
+    name: str
+    values: tuple[float | None, ...]
+
+
+class Chart(NamedTuple):
+    """A chart, and the data it was last drawn from.
+
+    iWork keeps no picture of a chart, only the model the app draws one from, so
+    this is everything there is to recover: the kind of chart, its title, and
+    its data as categories and the series plotted across them.
+
+    A ``stacked`` chart draws its series on top of each other. An
+    ``interactive`` one holds several data sets and shows one at a time, and its
+    series are all of them. A scatter chart with ``shared_x`` takes the x value
+    of every point from its first series, and otherwise pairs its series up, x
+    before y.
+    """
+
+    kind: ChartKind
+    title: str | None
+    categories: tuple[str, ...]
+    series: tuple[ChartSeries, ...]
+    stacked: bool = False
+    interactive: bool = False
+    shared_x: bool = False
 
 
 class StorageRuns(NamedTuple):
@@ -128,7 +198,7 @@ class StorageRuns(NamedTuple):
     links: list[tuple[int, str | None]] = []
 
 
-Block = Paragraph | Picture | TableData
+Block = Paragraph | Picture | TableData | Chart
 """One piece of document content, in the order Pages lays it out."""
 
 
