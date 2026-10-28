@@ -474,6 +474,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 (slide_size.width, slide_size.height) * 2,
             )
         ]
+        # Nothing of the shape is on the slide: point at the whole slide, as
+        # for shapes without a position, rather than emit a zero-area box.
+        if shape_bbox[0] >= shape_bbox[2] or shape_bbox[1] >= shape_bbox[3]:
+            shape_bbox = [0, 0, slide_size.width, slide_size.height]
         # python-pptx reports left and top as EMU from the slide's top-left, with
         # y growing downward, so the tuple above is in TOPLEFT order. Tagging it
         # BOTTOMLEFT does not convert it: BoundingBox.from_tuple unpacks

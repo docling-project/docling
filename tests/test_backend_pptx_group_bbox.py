@@ -109,7 +109,7 @@ def test_pptx_shape_bbox_is_clamped_to_the_slide(tmp_path: Path):
 
     assert boxes == {
         "bleed": (0, Inches(1), Inches(2) - 190500, Inches(2)),
-        "off-canvas": (width, Inches(1), width, height),
+        "off-canvas": (0, 0, width, height),
     }
     with warnings.catch_warnings():
         warnings.simplefilter("error")
