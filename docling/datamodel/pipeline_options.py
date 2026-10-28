@@ -1942,6 +1942,18 @@ class VideoPipelineOptions(PipelineOptions):
         ),
     ] = False
 
+    diarization_num_speakers: Annotated[
+        int | None,
+        Field(
+            default=None,
+            ge=1,
+            description=(
+                "Known number of speakers for diarization. None estimates it "
+                "from the audio."
+            ),
+        ),
+    ] = None
+
 
 class VlmExtractionPipelineOptions(PipelineOptions):
     """Options for VLM-based structured information extraction pipeline.

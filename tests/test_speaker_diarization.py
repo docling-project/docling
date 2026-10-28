@@ -14,9 +14,13 @@ import builtins
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
+import pytest
+
 from docling.utils.speaker_diarization import (
     DiarizationResult,
     SpeakerSegment,
+    _estimate_num_speakers,
     assign_speakers,
     diarize,
 )
@@ -118,6 +122,31 @@ def test_assign_speakers_keeps_earlier_speaker_on_tied_overlap() -> None:
 
     # Both overlaps are 1.0s; assignment uses strict > so the first winner stays.
     assert items[0].speaker == "SPEAKER_00"
+
+
+# --------------------------------------------------------------------------- #
+# _estimate_num_speakers
+# --------------------------------------------------------------------------- #
+
+
+def _clustered_embeddings(n_speakers: int, noise: float) -> np.ndarray:
+    rng = np.random.default_rng(0)
+    centers = rng.normal(size=(n_speakers, 256))
+    emb = np.repeat(centers / np.linalg.norm(centers, axis=1, keepdims=True), 20, 0)
+    emb = emb + noise * rng.normal(size=emb.shape)
+    return emb / np.linalg.norm(emb, axis=1, keepdims=True)
+
+
+def test_estimate_num_speakers_returns_one_for_single_speaker() -> None:
+    pytest.importorskip("sklearn")
+
+    assert _estimate_num_speakers(_clustered_embeddings(1, 0.01)) == 1
+
+
+def test_estimate_num_speakers_separates_two_speakers() -> None:
+    pytest.importorskip("sklearn")
+
+    assert _estimate_num_speakers(_clustered_embeddings(2, 0.05)) == 2
 
 
 # --------------------------------------------------------------------------- #

@@ -23,6 +23,8 @@ _MIN_SPEAKERS = 2
 """Minimum number of speakers to consider in clustering."""
 _MAX_SPEAKERS = 8
 """Maximum number of speakers to consider in clustering."""
+_MIN_SILHOUETTE = 0.1
+"""Best silhouette score below which no speaker split is meaningful, so the audio is treated as a single speaker."""
 _WINDOW_STEP = 0.5
 """Window step in seconds; 0.5 provides fine-grained speaker boundary detection without excessive computational overhead."""
 
@@ -52,7 +54,8 @@ def _estimate_num_speakers(embeddings: np.ndarray) -> int:
         embeddings: Per-window speaker embeddings.
 
     Returns:
-        The speaker count with the highest silhouette score.
+        The speaker count with the highest silhouette score, or 1 when no
+        count reaches _MIN_SILHOUETTE.
     """
     from sklearn.cluster import AgglomerativeClustering  # type: ignore[import-untyped]
     from sklearn.metrics import silhouette_score  # type: ignore[import-untyped]
@@ -67,6 +70,8 @@ def _estimate_num_speakers(embeddings: np.ndarray) -> int:
         if score > best_score:
             best_score = score
             best_n = n
+    if best_score < _MIN_SILHOUETTE:
+        best_n = 1
     _log.info("Estimated %d speakers (silhouette=%.4f)", best_n, best_score)
     return best_n
 
