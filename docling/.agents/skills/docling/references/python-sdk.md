@@ -11,11 +11,11 @@ controlled by **`PipelineOptions`** subclasses passed per input format.
 from docling.document_converter import DocumentConverter
 
 converter = DocumentConverter()
-result = converter.convert("report.pdf")   # local path or http(s) URL
+result = converter.convert("report.pdf")  # local path or http(s) URL
 
-doc = result.document                       # a DoclingDocument
+doc = result.document  # a DoclingDocument
 print(doc.export_to_markdown())
-data = doc.export_to_dict()                 # structured / lossless
+data = doc.export_to_dict()  # structured / lossless
 ```
 
 `result.status` reports success/failure; `result.document` is always a
@@ -40,11 +40,11 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 
 pipeline_options = PdfPipelineOptions(
-    do_ocr=True,                  # OCR scanned/image regions (False to skip)
-    do_table_structure=True,      # detect table structure (False = faster)
-    do_code_enrichment=False,     # code understanding
+    do_ocr=True,  # OCR scanned/image regions (False to skip)
+    do_table_structure=True,  # detect table structure (False = faster)
+    do_code_enrichment=False,  # code understanding
     do_formula_enrichment=False,  # formula understanding
-    generate_page_images=False,   # keep page raster images on the document
+    generate_page_images=False,  # keep page raster images on the document
 )
 
 converter = DocumentConverter(
@@ -91,18 +91,37 @@ service client, and not supported by the DocTags export.
 
 ```python
 from docling.datamodel.pipeline_options import (
-    PdfPipelineOptions, RapidOcrOptions, TesseractOcrOptions, OcrMacOptions,
+    PdfPipelineOptions,
+    RapidOcrOptions,
+    TesseractOcrOptions,
+    OcrMacOptions,
 )
 
 # Default is EasyOCR:
 opts = PdfPipelineOptions(do_ocr=True)
 # Alternatives:
-opts = PdfPipelineOptions(do_ocr=True, ocr_options=RapidOcrOptions())    # lightweight
-opts = PdfPipelineOptions(do_ocr=True, ocr_options=TesseractOcrOptions())# system Tesseract
-opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())      # macOS only
+opts = PdfPipelineOptions(do_ocr=True, ocr_options=RapidOcrOptions())  # lightweight
+opts = PdfPipelineOptions(
+    do_ocr=True, ocr_options=TesseractOcrOptions()
+)  # system Tesseract
+opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())  # macOS only
 ```
 
 Each engine is an optional dependency — see [slim-packaging.md](slim-packaging.md).
+
+When a PDF looks right but its text copies out as garbage (a font whose glyphs
+were not mapped to real characters), let OCR replace the text of just those pages.
+Off by default; such pages then report `parse_score` 0 in the confidence report:
+
+```python
+opts = PdfPipelineOptions(
+    do_ocr=True, ocr_options=RapidOcrOptions(replace_broken_text_layer=True)
+)
+```
+
+It does not detect text that uses the right alphabet but the wrong letters, or
+the right letters in the wrong order (e.g. `Cartifecita` for `Certificate`).
+Such pages keep their PDF text; `mode=OcrMode.FULL_PAGE` OCRs every page.
 
 OCR can also run on a remote KServe v2 / Triton server. Page crops are sent to
 that server, so `enable_remote_services=True` is required:
@@ -112,7 +131,7 @@ from docling.datamodel.pipeline_options import KserveV2OcrOptions
 
 opts = PdfPipelineOptions(
     do_ocr=True,
-    enable_remote_services=True,   # REQUIRED for KserveV2OcrOptions
+    enable_remote_services=True,  # REQUIRED for KserveV2OcrOptions
     ocr_options=KserveV2OcrOptions(url="localhost:8001", model_name="rapidocr"),
 )
 ```
@@ -131,7 +150,6 @@ from docling.datamodel.pipeline_options import (
 
 opts = PdfPipelineOptions(
     heading_hierarchy_options=HeadingHierarchyOptions(enabled=True),
-    generate_parsed_pages=True,  # required by the font-style signal only
 )
 ```
 
@@ -144,7 +162,9 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 
 opts = PdfPipelineOptions(
-    accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CUDA, num_threads=8),
+    accelerator_options=AcceleratorOptions(
+        device=AcceleratorDevice.CUDA, num_threads=8
+    ),
 )
 ```
 
@@ -223,7 +243,7 @@ tables through the VLM. Reduces hallucination on text-heavy pages.
 ```python
 pipeline_options = VlmPipelineOptions(
     vlm_options=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS,
-    force_backend_text=True,     # hybrid
+    force_backend_text=True,  # hybrid
     generate_page_images=True,
 )
 ```
@@ -252,7 +272,7 @@ vlm_opts = ApiVlmOptions(
 pipeline_options = VlmPipelineOptions(
     vlm_options=vlm_opts,
     generate_page_images=True,
-    enable_remote_services=True,   # REQUIRED — gates all outbound HTTP
+    enable_remote_services=True,  # REQUIRED — gates all outbound HTTP
 )
 converter = DocumentConverter(
     format_options={
@@ -287,9 +307,9 @@ tokenizer = HuggingFaceTokenizer.from_pretrained(
 chunker = HybridChunker(tokenizer=tokenizer, merge_peers=True)
 
 for chunk in chunker.chunk(result.document):
-    embed_text = chunker.contextualize(chunk)   # heading-prefixed text to embed
-    print(chunk.meta.headings)                  # heading breadcrumb
-    print(chunk.meta.origin.page_no)            # source page
+    embed_text = chunker.contextualize(chunk)  # heading-prefixed text to embed
+    print(chunk.meta.headings)  # heading breadcrumb
+    print(chunk.meta.origin.page_no)  # source page
 ```
 
 OpenAI tokenizer (requires `pip install 'docling-core[chunking-openai]'`):
@@ -316,11 +336,11 @@ for item, level in doc.iterate_items():
         print(f"{'#' * level} {item.text}")
 
 for table in doc.tables:
-    print(table.export_to_dataframe())   # pandas DataFrame
+    print(table.export_to_dataframe())  # pandas DataFrame
     print(table.export_to_markdown())
 
 for picture in doc.pictures:
-    print(picture.caption_text(doc))     # caption if present
+    print(picture.caption_text(doc))  # caption if present
 ```
 
 ## Batch conversion & error handling
@@ -333,7 +353,7 @@ from docling.document_converter import DocumentConverter
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 
 converter = DocumentConverter(
-    allowed_formats=[InputFormat.PDF, InputFormat.DOCX],   # reject everything else
+    allowed_formats=[InputFormat.PDF, InputFormat.DOCX],  # reject everything else
 )
 
 sources = ["a.pdf", "b.docx", "https://example.com/c.pdf"]
@@ -391,7 +411,7 @@ converter = DocumentConverter(
     }
 )
 result = converter.convert("interview.wav")
-print(result.document.export_to_markdown())   # timestamped transcript
+print(result.document.export_to_markdown())  # timestamped transcript
 ```
 
 For a Transformers-format Whisper checkpoint, install
@@ -441,7 +461,7 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 opts = PdfPipelineOptions(
     generate_page_images=True,
     generate_picture_images=True,
-    images_scale=2.0,            # higher-resolution rasters
+    images_scale=2.0,  # higher-resolution rasters
 )
 ```
 
@@ -480,11 +500,13 @@ from docling.datamodel.backend_options import DeclarativeBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, DoclingJSONFormatOption
 
-converter = DocumentConverter(format_options={
-    InputFormat.JSON_DOCLING: DoclingJSONFormatOption(
-        backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
-    ),
-})
+converter = DocumentConverter(
+    format_options={
+        InputFormat.JSON_DOCLING: DoclingJSONFormatOption(
+            backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+        ),
+    }
+)
 ```
 
 Or save with `ImageRefMode.EMBEDDED` so the JSON carries its images.
@@ -528,11 +550,13 @@ from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, WordFormatOption
 
-converter = DocumentConverter(format_options={
-    InputFormat.DOCX: WordFormatOption(
-        backend_options=MsWordBackendOptions(max_file_bytes=512 * 1024 * 1024)
-    ),
-})
+converter = DocumentConverter(
+    format_options={
+        InputFormat.DOCX: WordFormatOption(
+            backend_options=MsWordBackendOptions(max_file_bytes=512 * 1024 * 1024)
+        ),
+    }
+)
 ```
 
 ## Offline / air-gapped models
@@ -559,5 +583,6 @@ equivalent is `docling report.pdf --artifacts-path /models`.
 
 ```python
 from importlib.metadata import version
+
 print(version("docling"), version("docling-core"))
 ```

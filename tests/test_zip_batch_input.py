@@ -117,3 +117,33 @@ def test_convert_all_raises_on_first_failed_member_by_default() -> None:
 
     with pytest.raises(ConversionError, match=r"notes\.bin"):
         list(converter.convert_all([source]))
+
+
+def test_macos_archive_metadata_is_skipped() -> None:
+    """Finder adds ``__MACOSX/`` AppleDouble files and ``.DS_Store`` to a ZIP.
+
+    They are not documents, so they are not converted and do not fail the batch.
+    """
+    source = make_zip(
+        ("docs/notes.md", b"# Notes"),
+        ("docs/.DS_Store", b"\x00\x00\x00\x01Bud1"),
+        ("__MACOSX/docs/._notes.md", b"\x00\x05\x16\x07\x00\x02\x00\x00"),
+    )
+    converter = DocumentConverter(allowed_formats=[InputFormat.MD])
+
+    results = list(converter.convert_all([source]))
+
+    assert [result.input.file.as_posix() for result in results] == [
+        "mixed.zip/docs/notes.md"
+    ]
+    assert results[0].status == ConversionStatus.SUCCESS
+
+
+def test_member_with_an_empty_name_does_not_abort_the_batch() -> None:
+    source = make_zip((".", b"# Dot"), ("good.md", b"# Good"))
+    converter = DocumentConverter(allowed_formats=[InputFormat.MD])
+
+    results = list(converter.convert_all([source], raises_on_error=False))
+
+    assert results[-1].input.file.as_posix() == "mixed.zip/good.md"
+    assert results[-1].status == ConversionStatus.SUCCESS

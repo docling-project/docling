@@ -30,11 +30,13 @@ class _PageBackend:
         self.width = width
         self.height = height
         self.unloaded = False
+        self.unload_calls = 0
 
     def is_valid(self) -> bool:
         return not self.unloaded
 
     def unload(self) -> None:
+        self.unload_calls += 1
         self.unloaded = True
 
     def get_page_image(
@@ -137,6 +139,23 @@ def test_enrichment_releases_the_page_backend_after_caching_its_scale() -> None:
     still_cropped = page.get_image(scale=1.67, cropbox=cropbox)
     assert still_cropped is not None
     assert still_cropped.size == cropped.size
+
+
+def test_invalid_page_backend_is_dropped_without_unload() -> None:
+    pipeline = _pipeline(release_after_cache=True, keep_backend=True)
+    page, backend = _page()
+    backend.unloaded = True
+    item = ThreadedItem(
+        payload=page,
+        run_id=1,
+        page_no=1,
+        conv_res=cast(ConversionResult, SimpleNamespace()),
+    )
+
+    pipeline._release_page_resources(item)
+
+    assert backend.unload_calls == 0
+    assert page._backend is None
 
 
 def test_explicit_keep_backend_is_left_alive() -> None:

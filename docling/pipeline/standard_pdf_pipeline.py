@@ -647,6 +647,10 @@ class StandardPdfPipeline(ConvertPipeline):
                 capture_reading_order_separators=(
                     self.pipeline_options.use_reading_order_separators
                 ),
+                detect_broken_text_layer=(
+                    self.pipeline_options.do_ocr
+                    and self.pipeline_options.ocr_options.replace_broken_text_layer
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)
@@ -726,11 +730,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 self.pipeline_options.do_chart_extraction,
             )
         )
-        # Those enrichments crop page images after the page stages finish.
-        # Cache the scales they request, then release the page backend.
-        # Keeping every page backend until the conversion ends is what makes
-        # memory grow with the page count (#1886). A caller that sets
-        # ``keep_backend`` itself still keeps the live backend.
+        # When set, cache each enrichment scale, then unload the page backend.
         self._release_backend_after_image_cache = self.keep_backend
 
     # ---------------------------------------------------------------- helpers
@@ -769,11 +769,16 @@ class StandardPdfPipeline(ConvertPipeline):
         return tuple(scales)
 
     def _release_page_backend(self, page: Page) -> None:
-        """Cache enrichment page images, then drop the page backend.
+        """Cache enrichment page images, then unload the page backend.
 
-        Enrichment crops a cached page image. The PDF page backend is not
-        needed after that, so it does not have to stay alive for the rest of
-        the document.
+        Args:
+            page: Page that may still hold a backend and cached images.
+
+        Side effects:
+            Stores one full-page image for each enrichment scale. Unloads a
+            valid page backend and drops the reference. A caller that keeps
+            the backend, with no enrichment scale, still has a live backend.
+            A later crop of a cached scale uses the cache.
         """
         scales = self._enrichment_image_scales()
         if page._backend is not None and page._backend.is_valid():
@@ -793,7 +798,8 @@ class StandardPdfPipeline(ConvertPipeline):
             return
         if self.keep_backend and not scales:
             return
-        page._backend.unload()
+        if page._backend.is_valid():
+            page._backend.unload()
         page._backend = None
 
     def _release_page_resources(self, item: ThreadedItem) -> None:
@@ -801,8 +807,12 @@ class StandardPdfPipeline(ConvertPipeline):
         if page is None:
             return
         self._release_page_backend(page)
-        if not self.pipeline_options.generate_parsed_pages:
-            page.parsed_page = None
+        self._release_parsed_page(page)
+
+    def _release_parsed_page(self, page: Page) -> None:
+        if page.parsed_page is None or self.pipeline_options.generate_parsed_pages:
+            return
+        page.parsed_page = self.heading_hierarchy_model.retain_parsed_lines(page)
 
     # ────────────────────────────────────────────────────────────────────────
     # Build - thread pipeline
@@ -1183,9 +1193,7 @@ class StandardPdfPipeline(ConvertPipeline):
             conv_res.status = ConversionStatus.SUCCESS
         for p in conv_res.pages:
             self._release_page_backend(p)
-            if not self.pipeline_options.generate_parsed_pages:
-                del p.parsed_page
-                p.parsed_page = None
+            self._release_parsed_page(p)
 
     # ---------------------------------------------------------------- assemble
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
@@ -1212,6 +1220,9 @@ class StandardPdfPipeline(ConvertPipeline):
                 conv_res, time_budget_s=time_budget_s
             )
             conv_res.document = self.heading_hierarchy_model(conv_res)
+            if not self.pipeline_options.generate_parsed_pages:
+                for p in conv_res.pages:
+                    p.parsed_page = None
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:

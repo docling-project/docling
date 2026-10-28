@@ -43,6 +43,8 @@ from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
 
+_POINTS_PER_INCH = 72.0
+
 # Regex for valid Tesseract language identifiers (e.g. "eng", "script/Latin", "eng+deu")
 _VALID_LANG_RE = re.compile(r"^[a-zA-Z0-9_/][a-zA-Z0-9_/+-]*$")
 
@@ -326,6 +328,7 @@ class TesseractOcrCliModel(BaseOcrModel):
             yield from page_batch
             return
 
+        dpi = _POINTS_PER_INCH * self.scale
         for page_i, page in enumerate(page_batch):
             assert page._backend is not None
             if not page._backend.is_valid():
@@ -347,7 +350,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 suffix=".png", mode="w+b", delete=False
                             ) as image_file:
                                 fname = image_file.name
-                                high_res_image.save(image_file)
+                                high_res_image.save(image_file, dpi=(dpi, dpi))
                             doc_orientation = 0
                             df_osd: Optional[pd.DataFrame] = None
                             try:
@@ -371,7 +374,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 high_res_image = high_res_image.rotate(
                                     -doc_orientation, expand=True
                                 )
-                                high_res_image.save(fname)
+                                high_res_image.save(fname, dpi=(dpi, dpi))
                             try:
                                 df_result = self._run_tesseract(fname, df_osd)
                             except subprocess.CalledProcessError as exc:

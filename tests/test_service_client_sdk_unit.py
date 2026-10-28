@@ -1538,6 +1538,66 @@ def test_serialize_convert_options_omits_unset_fields() -> None:
     assert "do_ocr" not in payload
 
 
+def test_resolve_options_does_not_mark_page_range_when_unset() -> None:
+    """Unset page_range must remain omitted from serialized options after resolve_options."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        opts = ConvertDocumentsRequestOptions(do_ocr=True)
+        resolved = client._resolve_options(
+            options=opts,
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=None,
+        )
+        serialized = client._serialize_convert_options(resolved.options)
+
+    assert "page_range" not in serialized
+    assert serialized == {"do_ocr": True}
+    assert resolved.limits.page_range == (1, client_module.sys.maxsize)
+
+
+def test_resolve_options_marks_page_range_when_explicitly_set_or_constrained() -> None:
+    """Explicit page_range or max_num_pages must be reflected in serialized options."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        # Explicitly in options
+        opts_with_range = ConvertDocumentsRequestOptions(page_range=(2, 6))
+        resolved = client._resolve_options(
+            options=opts_with_range,
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=None,
+        )
+        assert client._serialize_convert_options(resolved.options) == {
+            "page_range": [2, 6]
+        }
+        assert resolved.limits.page_range == (2, 6)
+
+        # Via page_range parameter
+        resolved_param = client._resolve_options(
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=(3, 7),
+        )
+        assert client._serialize_convert_options(resolved_param.options) == {
+            "do_ocr": True,
+            "page_range": [3, 7],
+        }
+        assert resolved_param.limits.page_range == (3, 7)
+
+        # Via max_num_pages parameter
+        resolved_pages = client._resolve_options(
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+            max_num_pages=5,
+            max_file_size=None,
+            page_range=None,
+        )
+        assert client._serialize_convert_options(resolved_pages.options) == {
+            "do_ocr": True,
+            "page_range": [1, 5],
+        }
+        assert resolved_pages.limits.page_range == (1, 5)
+
+
 def test_form_encode_options_jsonifies_nested_values() -> None:
     encoded = DoclingServiceClient._form_encode_options(
         {
@@ -1634,6 +1694,38 @@ def test_submit_source_serializes_convert_options_without_defaults() -> None:
     payload = captured["payload"]
     assert isinstance(payload, dict)
     assert payload["options"] == {"page_range": [3, 7]}
+
+
+def test_submit_source_omits_page_range_when_unset() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            json=_status_response("task-source-no-range", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit(
+            source="https://example.org/sample.pdf",
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+        )
+
+    assert job.task_id == "task-source-no-range"
+    payload = captured["payload"]
+    assert isinstance(payload, dict)
+    assert "page_range" not in payload["options"]
+    assert payload["options"] == {"do_ocr": True}
 
 
 def test_submit_local_string_source_uses_file_endpoint(tmp_path: Path) -> None:

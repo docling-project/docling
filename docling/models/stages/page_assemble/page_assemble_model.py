@@ -33,31 +33,12 @@ from docling.models.base_layout_model import (
 )
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_normalization import (
+    cell_text_lines,
+    normalize_extracted_text,
+)
 
 _log = logging.getLogger(__name__)
-
-# Ligature normalization map.
-# Covers the Unicode Alphabetic Presentation Forms block (U+FB00-U+FB06),
-# the Latin capital/small ligature IJ (U+0132/U+0133), and the Private-Use
-# Area character U+F0A0 (emitted by some PDF fonts as a spurious glyph).
-_LIGATURE_MAP: Dict[str, str] = {
-    "\ufb00": "ff",  # ﬀ Latin small ligature ff
-    "\ufb01": "fi",  # ﬁ Latin small ligature fi
-    "\ufb02": "fl",  # ﬂ Latin small ligature fl
-    "\ufb03": "ffi",  # ﬃ Latin small ligature ffi
-    "\ufb04": "ffl",  # ﬄ Latin small ligature ffl
-    "\ufb05": "st",  # ﬅ Latin small ligature long s t
-    "\ufb06": "st",  # ﬆ Latin small ligature st
-    "\u0132": "IJ",  # Ĳ Latin capital ligature IJ (used in Dutch)
-    "\u0133": "ij",  # ĳ Latin small ligature ij (used in Dutch)
-    "\uf0a0": "",  # Private-use glyph emitted by some PDF fonts; discard
-}
-# Matches any ligature character in the map, optionally followed by a spurious
-# space before a word character (to absorb spaces inserted by PDF parsers
-# between a ligature glyph and the rest of the word, e.g. "ﬁ eld" → "field").
-# Note: U+0132/U+0133 and U+F0A0 are listed as alternates (not a range) to
-# avoid an invalid descending range with U+FB06.
-_LIGATURE_RE = re.compile(r"([\ufb00-\ufb06]|\u0132|\u0133|\uf0a0)( (?=\w))?")
 
 
 class PageAssembleOptions(BaseModel):
@@ -156,27 +137,7 @@ class PageAssembleModel(BasePageModel):
 
         sanitized_text = "".join(lines)
 
-        # Text normalization
-        sanitized_text = sanitized_text.replace("⁄", "/")  # noqa: RUF001
-        sanitized_text = sanitized_text.replace("’", "'")  # noqa: RUF001
-        sanitized_text = sanitized_text.replace("‘", "'")  # noqa: RUF001
-        sanitized_text = sanitized_text.replace("“", '"')
-        sanitized_text = sanitized_text.replace("”", '"')
-        sanitized_text = sanitized_text.replace("•", "·")
-        # Ligature expansion: replace ligature characters with their ASCII equivalents.
-        # For the traditional fb00-fb06 ligatures (e.g. ﬁ, ﬂ), any spurious space
-        # inserted by the PDF parser between the glyph and the rest of the word is
-        # absorbed (e.g. "ﬁ eld" → "field").
-        # For U+0132/U+0133 (Dutch IJ/ij) and U+F0A0 (PUA discard glyph), any
-        # captured trailing space is re-emitted so that real word boundaries are
-        # preserved (e.g. "Ĳ is" → "IJ is", "hello\uf0a0 world" → "hello world").
-        sanitized_text = _LIGATURE_RE.sub(
-            lambda m: (
-                _LIGATURE_MAP[m.group(1)]
-                + ("" if "\ufb00" <= m.group(1) <= "\ufb06" else (m.group(2) or ""))
-            ),
-            sanitized_text,
-        )
+        sanitized_text = normalize_extracted_text(sanitized_text)
 
         return sanitized_text.strip()  # Strip any leading or trailing whitespace
 
@@ -201,12 +162,7 @@ class PageAssembleModel(BasePageModel):
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
                         if cluster.label in TEXT_ELEM_LABELS:
-                            textlines = [
-                                cell.text.replace("\x02", "-").strip()
-                                for cell in cluster.cells
-                                if len(cell.text.strip()) > 0
-                            ]
-                            text = self.sanitize_text(textlines)
+                            text = self.sanitize_text(cell_text_lines(cluster.cells))
                             hyperlink = self._match_hyperlink(cluster.bbox, page)
                             # A paragraph that inlines AcroForm widgets carries a
                             # single keyed field item; attach it so it materializes
