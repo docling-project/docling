@@ -17,4 +17,10 @@ Bar chart
 
 <!-- image -->
 
-Other chart
+Bar chart
+
+|    |   2026 |
+|----|--------|
+| Q1 |     10 |
+| Q2 |     20 |
+| Q3 |     30 |

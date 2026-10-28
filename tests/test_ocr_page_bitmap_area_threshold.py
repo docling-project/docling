@@ -56,12 +56,18 @@ class _OcrRectsOnlyModel(BaseOcrModel):
         return OcrOptions
 
 
-def _model(mode: OcrMode, threshold: float | None) -> _OcrRectsOnlyModel:
+def _model(
+    mode: OcrMode, threshold: float | None, replace_broken_text_layer: bool = False
+) -> _OcrRectsOnlyModel:
     return _OcrRectsOnlyModel(
         enabled=True,
         artifacts_path=None,
         options=OcrOptions(
-            kind="test", lang=["en"], mode=mode, page_bitmap_area_threshold=threshold
+            kind="test",
+            lang=["en"],
+            mode=mode,
+            page_bitmap_area_threshold=threshold,
+            replace_broken_text_layer=replace_broken_text_layer,
         ),
         accelerator_options=AcceleratorOptions(),
     )
@@ -141,6 +147,15 @@ def test_programmatic_page_skips_ocr_below_the_threshold():
 
 def test_without_threshold_every_page_is_ocred():
     assert len(_ocr_rects(PROGRAMMATIC_PDF, threshold=None)) == 1
+
+
+def test_broken_text_layer_is_replaced_below_the_threshold():
+    """A broken text layer comes from fonts, so its page is rarely a scan."""
+    page = _first_page(PROGRAMMATIC_PDF)
+    page._broken_text_layer = True
+    model = _model(OcrMode.DEFAULT, threshold=0.97, replace_broken_text_layer=True)
+
+    assert len(model.get_ocr_rects(page)) == 1
 
 
 def test_full_page_ocr_keeps_the_native_text_of_a_skipped_page():

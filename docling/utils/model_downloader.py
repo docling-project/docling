@@ -10,7 +10,11 @@ from typing import Optional
 import requests
 from tqdm import tqdm
 
-from docling.datamodel.asr_model_specs import _DISTIL_WHISPER_OPENAI_CHECKPOINTS
+from docling.datamodel.asr_model_specs import (
+    _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
+    _WHISPER_S2T_PRESETS,
+    _whisper_s2t_compute_type,
+)
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     granite_picture_description,
@@ -146,6 +150,47 @@ def _download_distil_whisper_models(
         )
 
 
+def _download_whisper_s2t_models(
+    model_names: list[str], output_dir: Path, *, force: bool, progress: bool
+) -> None:
+    try:
+        import whisper_s2t  # type: ignore
+    except ImportError as exc:
+        raise ImportError(
+            "WhisperS2T prefetch requires whisper-s2t-reborn. Install it via "
+            "`pip install 'whisper-s2t-reborn>=1.8.0'`."
+        ) from exc
+    from huggingface_hub.utils import disable_progress_bars
+
+    unknown = set(model_names) - _WHISPER_S2T_PRESETS.keys()
+    if unknown:
+        raise ValueError(f"Unknown WhisperS2T models: {sorted(unknown)}")
+    if not progress:
+        disable_progress_bars()
+
+    for model_name in model_names:
+        torch_dtype = _WHISPER_S2T_PRESETS[model_name].torch_dtype
+        compute_types = sorted(
+            {
+                _whisper_s2t_compute_type(torch_dtype, device)
+                for device in ("cuda", "cpu")
+            }
+        )
+        aligner = whisper_s2t.default_word_aligner(model_name)
+        names = [model_name] if aligner is None else [model_name, aligner]
+        for compute_type in compute_types:
+            _log.info(
+                "Downloading WhisperS2T model %s (%s)...", model_name, compute_type
+            )
+            for name in names:
+                whisper_s2t.download_model(
+                    name,
+                    compute_type=compute_type,
+                    cache_dir=str(output_dir),
+                    force_download=force,
+                )
+
+
 def download_models(
     output_dir: Optional[Path] = None,
     *,
@@ -174,6 +219,7 @@ def download_models(
     with_nemotron_ocr: bool = False,
     whisper_models: Optional[list[str]] = None,
     whisper_distil_models: Optional[list[str]] = None,
+    whisper_s2t_models: Optional[list[str]] = None,
 ):
     if easyocr_languages is not None and not with_easyocr:
         raise ValueError("easyocr_languages requires with_easyocr=True")
@@ -200,6 +246,11 @@ def download_models(
     if whisper_distil_models:
         _download_distil_whisper_models(
             whisper_distil_models, output_dir, force=force, progress=progress
+        )
+
+    if whisper_s2t_models:
+        _download_whisper_s2t_models(
+            whisper_s2t_models, output_dir, force=force, progress=progress
         )
 
     if with_layout:

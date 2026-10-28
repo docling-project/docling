@@ -67,7 +67,7 @@ def test_post_process_cells_tolerates_missing_parsed_page() -> None:
     cell = _ocr_cell("part 42-A", confidence=0.9)
     ocr_model = SimpleNamespace(
         options=SimpleNamespace(mode=OcrMode.FULL_PAGE),
-        _has_enough_bitmap_area=lambda page: True,
+        _skips_ocr=lambda page: False,
     )
     conv_res = SimpleNamespace(confidence=ConfidenceReport())
 

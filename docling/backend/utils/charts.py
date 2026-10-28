@@ -89,14 +89,14 @@ def build_chart_table(
         return None
 
     num_cols = 1 + len(columns)
-    if num_data_rows * num_cols > MAX_CHART_TABLE_CELLS:
-        capped_rows = max(1, MAX_CHART_TABLE_CELLS // num_cols)
+    if (num_data_rows + 1) * num_cols > MAX_CHART_TABLE_CELLS:
+        capped_rows = max(1, MAX_CHART_TABLE_CELLS // num_cols - 1)
         _log.warning(
             "Truncating chart data table from %d to %d data rows: "
             "%d cells would exceed the %d-cell cap.",
             num_data_rows,
             capped_rows,
-            num_data_rows * num_cols,
+            (num_data_rows + 1) * num_cols,
             MAX_CHART_TABLE_CELLS,
         )
         num_data_rows = capped_rows

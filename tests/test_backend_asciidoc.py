@@ -14,6 +14,7 @@ from docling_core.types.doc import (
     ContentLayer,
     DocItemLabel,
     DoclingDocument,
+    Formatting,
     ImageRefMode,
     ListItem,
 )
@@ -952,6 +953,31 @@ def test_heading_flushes_pending_paragraph() -> None:
     assert paras == {"body": "S1.1", "body2": "S2"}
 
 
+def test_symmetric_titles_drop_their_closing_marks() -> None:
+    # Asciidoctor accepts titles closed by the marks that open them
+    # ("== Title =="); the closing marks used to end up in the heading text.
+    # Marks of a different length are part of the title, as in Asciidoctor.
+    src = b"= Doc =\n\n== Intro ==\n\ntext\n\n=== Details ==\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="symmetric.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    headings = [
+        (item.label, item.text)
+        for item in doc.texts
+        if item.label in (DocItemLabel.TITLE, DocItemLabel.SECTION_HEADER)
+    ]
+    assert headings == [
+        (DocItemLabel.TITLE, "Doc"),
+        (DocItemLabel.SECTION_HEADER, "Intro"),
+        (DocItemLabel.SECTION_HEADER, "Details =="),
+    ]
+
+
 def test_block_title_without_floating_target_keeps_content() -> None:
     # A block title followed by a paragraph used to absorb every following
     # line as "multiline caption" and drop all of it at EOF.
@@ -998,7 +1024,21 @@ def test_text_before_block_title_is_not_merged_with_text_after() -> None:
     doc = in_doc._backend.convert()
 
     texts = [item.text for item, _ in doc.iterate_items()]
-    assert texts == ["text1", "Caption text2", "text3"]
+    assert texts == ["text1", "Caption", "text2", "text3"]
+
+
+def test_block_title_is_not_merged_into_the_paragraph_it_titles() -> None:
+    # A block title is a single line; the paragraph after it is ordinary text.
+    doc = _convert_adoc(
+        b"Intro.\n\n.Block title\nTitled paragraph,\nsecond line.\n\nAfter.\n"
+    )
+
+    assert [(item.text, item.formatting) for item in doc.texts] == [
+        ("Intro.", None),
+        ("Block title", Formatting(bold=True)),
+        ("Titled paragraph, second line.", None),
+        ("After.", None),
+    ]
 
 
 def test_content_block_delimiters_not_leaked() -> None:
@@ -1184,6 +1224,25 @@ def test_unclosed_comment_block_comments_out_the_rest() -> None:
 
     assert [item.text for item, _ in doc.iterate_items()] == ["visible before"]
     assert _notes(doc) == ["hidden rest\nmore hidden"]
+
+
+def test_three_slashes_are_body_text_not_a_comment() -> None:
+    # only exactly two slashes start a line comment, as in Asciidoctor
+    doc = _convert_adoc(b"/// not a comment\n//// nor this\n\n// a note\n")
+
+    assert [item.text for item, _ in doc.iterate_items()] == [
+        "/// not a comment //// nor this"
+    ]
+    assert _notes(doc) == ["a note"]
+
+
+@pytest.mark.parametrize("delimiter", ["/////", "///////"])
+def test_longer_comment_delimiter_needs_an_identical_closer(delimiter: str) -> None:
+    src = f"before\n\n{delimiter}\nhidden\n////\nstill hidden\n{delimiter}\n\nafter\n"
+    doc = _convert_adoc(src.encode())
+
+    assert [item.text for item, _ in doc.iterate_items()] == ["before", "after"]
+    assert _notes(doc) == ["hidden\n////\nstill hidden"]
 
 
 def _convert_within(src: bytes, seconds: float = 10.0) -> DoclingDocument:

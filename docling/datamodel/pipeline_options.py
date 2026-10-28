@@ -265,6 +265,23 @@ class OcrOptions(BaseOptions):
         ),
     ] = 3.0
 
+    replace_broken_text_layer: Annotated[
+        bool,
+        Field(
+            description=(
+                "Replace a broken PDF text layer with OCR, page by page. When enabled,"
+                " Docling checks the visible text layer of each page. A page whose"
+                " text layer is broken, for example from a font whose glyphs were not"
+                " mapped to real characters, is read with full-page OCR, and its OCR"
+                " text is used instead of its PDF text for that page only. Its"
+                " `parse_score` drops to 0 and keeps describing the PDF text layer. A"
+                " low `parse_score` alone does not replace a page. Other pages, and"
+                " pages without a text layer, keep the usual behavior."
+            ),
+            examples=[False, True],
+        ),
+    ] = False
+
     page_bitmap_area_threshold: Annotated[
         float | None,
         Field(
@@ -273,7 +290,9 @@ class OcrOptions(BaseOptions):
                 "for the page to be processed with OCR. Pages below it skip OCR, "
                 "whatever the `mode`. With `mode=OcrMode.FULL_PAGE`, a high value "
                 "such as 0.97 OCRs only scanned pages and skips programmatic pages "
-                "that only carry logos or photos. `None` processes every page."
+                "that only carry logos or photos. `None` processes every page. A page "
+                "whose broken text layer `replace_broken_text_layer` replaces is "
+                "OCR'd even below the threshold."
             ),
             examples=[None, 0.97],
             ge=0.0,
