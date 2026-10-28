@@ -2736,7 +2736,7 @@ def _write_raw_table_docx(path: Path, table_xml: str) -> None:
         archive.writestr("word/document.xml", document)
 
 
-_ROWS = (
+_THREE_COLUMN_ROWS = (
     "<w:tr>"
     "<w:tc><w:p><w:r><w:t>ant</w:t></w:r></w:p></w:tc>"
     "<w:tc><w:p><w:r><w:t>bee</w:t></w:r></w:p></w:tc>"
@@ -2749,6 +2749,26 @@ _ROWS = (
     "</w:tr>"
 )
 
+# The same rows, with the first row starting one grid column late.
+_THREE_COLUMN_ROWS_STARTING_LATE = _THREE_COLUMN_ROWS.replace(
+    "<w:tr>", '<w:tr><w:trPr><w:gridBefore w:val="1"/></w:trPr>', 1
+)
+
+# Row 0 holds two cells and ends two grid columns early; row 1 holds three.
+_GRID_AFTER_ROWS = (
+    "<w:tr><w:trPr>"
+    '<w:gridAfter w:val="2"/>'
+    "</w:trPr>"
+    "<w:tc><w:p><w:r><w:t>ant</w:t></w:r></w:p></w:tc>"
+    "<w:tc><w:p><w:r><w:t>bee</w:t></w:r></w:p></w:tc>"
+    "</w:tr>"
+    "<w:tr>"
+    "<w:tc><w:p><w:r><w:t>cat</w:t></w:r></w:p></w:tc>"
+    "<w:tc><w:p><w:r><w:t>dog</w:t></w:r></w:p></w:tc>"
+    "<w:tc><w:p><w:r><w:t>eel</w:t></w:r></w:p></w:tc>"
+    "</w:tr>"
+)
+
 
 def test_table_without_tblgrid_keeps_all_cells(tmp_path):
     """A table whose required ``w:tblGrid`` is absent is not dropped.
@@ -2756,12 +2776,14 @@ def test_table_without_tblgrid_keeps_all_cells(tmp_path):
     Generators and converters can omit the grid; Word renders every ``w:tc``.
     """
     docx_path = tmp_path / "no_grid.docx"
-    _write_raw_table_docx(docx_path, f"<w:tbl>{_ROWS}</w:tbl>")
+    _write_raw_table_docx(docx_path, f"<w:tbl>{_THREE_COLUMN_ROWS}</w:tbl>")
     doc = _convert(docx_path)
 
     assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 2
+    assert doc.tables[0].data.num_cols == 3
     texts = {cell.text for cell in doc.tables[0].data.table_cells}
-    assert {"ant", "bee", "cat", "dog", "eel", "fox"}.issubset(texts)
+    assert texts == {"ant", "bee", "cat", "dog", "eel", "fox"}
 
 
 def test_table_with_undeclared_grid_columns_keeps_extra_cells(tmp_path):
@@ -2772,13 +2794,16 @@ def test_table_with_undeclared_grid_columns_keeps_extra_cells(tmp_path):
     """
     narrow_grid = "<w:tblGrid><w:gridCol/><w:gridCol/></w:tblGrid>"
     docx_path = tmp_path / "narrow_grid.docx"
-    _write_raw_table_docx(docx_path, f"<w:tbl>{narrow_grid}{_ROWS}</w:tbl>")
+    _write_raw_table_docx(
+        docx_path, f"<w:tbl>{narrow_grid}{_THREE_COLUMN_ROWS}</w:tbl>"
+    )
     doc = _convert(docx_path)
 
     assert len(doc.tables) == 1
-    texts = {cell.text for cell in doc.tables[0].data.table_cells}
-    assert {"ant", "bee", "cat", "dog", "eel", "fox"}.issubset(texts)
+    assert doc.tables[0].data.num_rows == 2
     assert doc.tables[0].data.num_cols == 3
+    texts = {cell.text for cell in doc.tables[0].data.table_cells}
+    assert texts == {"ant", "bee", "cat", "dog", "eel", "fox"}
 
 
 def test_table_span_cells_count_as_grid_columns(tmp_path):
@@ -2804,6 +2829,85 @@ def test_table_span_cells_count_as_grid_columns(tmp_path):
     doc = _convert(docx_path)
 
     assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 2
     assert doc.tables[0].data.num_cols == 3
+    placed = {
+        (cell.text, cell.start_col_offset_idx, cell.col_span)
+        for cell in doc.tables[0].data.table_cells
+    }
+    assert placed == {("ant", 0, 2), ("bee", 2, 1), ("cat", 0, 1), ("dog", 1, 1)}
+
+
+def test_table_with_grid_before_counts_the_offset(tmp_path):
+    """``w:gridBefore`` contributes to the derived width, like the cell spans.
+
+    Row 0 starts one grid column late, so the table is four columns wide even
+    though no row has more than three ``w:tc``.
+    """
+    docx_path = tmp_path / "grid_before_no_grid.docx"
+    _write_raw_table_docx(
+        docx_path, f"<w:tbl>{_THREE_COLUMN_ROWS_STARTING_LATE}</w:tbl>"
+    )
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 2
+    assert doc.tables[0].data.num_cols == 4
     texts = {cell.text for cell in doc.tables[0].data.table_cells}
-    assert {"ant", "bee", "cat", "dog"}.issubset(texts)
+    assert texts == {"ant", "bee", "cat", "dog", "eel", "fox"}
+
+
+def test_table_with_grid_after_counts_the_trailing_grid_columns(tmp_path):
+    """``w:gridAfter`` contributes to the derived width.
+
+    Word counts a row's width as ``gridBefore`` + cell spans + ``gridAfter``,
+    so this table is four columns wide; without the ``gridAfter`` term the
+    width would be three and the result would depend on whether the (here
+    missing) grid is present.
+    """
+    docx_path = tmp_path / "grid_after_no_grid.docx"
+    _write_raw_table_docx(docx_path, f"<w:tbl>{_GRID_AFTER_ROWS}</w:tbl>")
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 2
+    assert doc.tables[0].data.num_cols == 4
+    texts = {cell.text for cell in doc.tables[0].data.table_cells}
+    assert texts == {"ant", "bee", "cat", "dog", "eel"}
+
+
+def test_single_cell_table_with_grid_after_stays_a_table(tmp_path):
+    """A one-cell row that ends early is a 1x2 table, not furniture.
+
+    Counting ``gridAfter`` makes the row two grid columns wide, so the
+    single-cell shortcut (which treats the cell as body content) no longer
+    applies.
+    """
+    rows = (
+        "<w:tr><w:trPr>"
+        '<w:gridAfter w:val="1"/>'
+        "</w:trPr>"
+        "<w:tc><w:p><w:r><w:t>only</w:t></w:r></w:p></w:tc>"
+        "</w:tr>"
+    )
+    docx_path = tmp_path / "single_cell_grid_after.docx"
+    _write_raw_table_docx(docx_path, f"<w:tbl>{rows}</w:tbl>")
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 1
+    assert doc.tables[0].data.num_cols == 2
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == ["only"]
+
+
+def test_table_without_any_cells_adds_no_table(tmp_path):
+    """A table whose rows hold no ``w:tc`` at all is not emitted.
+
+    With no grid and no cells the derived width is 0, and an empty TableItem
+    would only be noise for downstream consumers.
+    """
+    docx_path = tmp_path / "empty_table.docx"
+    _write_raw_table_docx(docx_path, "<w:tbl><w:tr/></w:tbl>")
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 0

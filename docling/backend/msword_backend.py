@@ -3925,9 +3925,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Cells are emitted in a single pass over the rows. A row may start late
         (``w:gridBefore``) or end early (``w:gridAfter``), so a cell's position
         within its row does not identify its layout-grid column; the grid column
-        is therefore tracked explicitly while walking the row. A cell with
-        ``vMerge="continue"`` holds no content of its own and instead extends the
-        cell still open at the same grid column.
+        is therefore tracked explicitly while walking the row. The column count
+        is likewise derived from the rows, because the layout grid may be missing
+        or narrower than the rows. A cell with ``vMerge="continue"`` holds no
+        content of its own and instead extends the cell still open at the same
+        grid column.
 
         Args:
             element: The ``w:tbl`` element to convert.
@@ -3945,16 +3947,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Some generators and converters omit the required w:tblGrid;
             # Word still renders every w:tc. Derive the width from the rows.
             num_cols = 0
-        # A declared grid can also be narrower than the rows (fewer gridCol
-        # elements than w:tc per row); widen it so no cell is cut off. Width
-        # counts grid columns, not w:tc elements: gridBefore offsets and
-        # gridSpan values each cover more than one cell.
+
+        # The grid can also be narrower than the rows, so widen it. The width is
+        # counted in grid columns (gridBefore, gridSpan and gridAfter), not in
+        # w:tc elements.
         for row in table.rows:
-            row_width = row.grid_cols_before + sum(
-                tc.grid_span for tc in MsWordDocumentBackend._row_cells(row._tr)
+            row_width = (
+                row.grid_cols_before
+                + sum(tc.grid_span for tc in MsWordDocumentBackend._row_cells(row._tr))
+                + row.grid_cols_after
             )
             num_cols = max(num_cols, row_width)
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
+
+        if num_cols == 0:
+            return elem_ref
 
         if num_rows == 1 and num_cols == 1:
             single_row_cells = MsWordDocumentBackend._row_cells(table.rows[0]._tr)
