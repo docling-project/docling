@@ -19,12 +19,30 @@ different kinds, plotted in both directions. Only its charts are pinned.
 
 See https://github.com/apache/tika (``tika-parser-apple-module`` test resources).
 
+No public Numbers document places a picture on a sheet. The picture tests
+therefore move a photo that Keynote placed in the Tika Keynote fixtures
+``keynote_2013.key`` and ``keynote_iwork09.key`` (same corpus, same license)
+onto the first sheet of these documents. Numbers and Keynote share their
+drawable archives, so the picture is real Apple output in either generation.
+
 The cell buffers in :func:`test_version_5_cell_storage_is_decoded` were captured
 from Numbers documents saved by releases newer than either fixture, whose cells
 use a storage layout the fixtures never exercise.
+
+``numbers_cell_pictures.numbers``, ``numbers_cell_fills.numbers``,
+``numbers_cell_pictures_repeated.numbers`` and
+``numbers_cell_pictures_styled.numbers`` are ``issue-43.numbers``,
+``test-package.numbers``, ``issue-69.numbers`` and ``test-styles.numbers`` from
+the numbers-parser test corpus, licensed under the MIT License (Copyright 2021
+Jon Connell). They are Numbers output that fills table cells with images. Only
+the first two have a stored groundtruth: the photos in the other two would make
+it tens of megabytes.
+
+See https://github.com/masaccio/numbers-parser (``tests/data``).
 """
 
 import logging
+import struct
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -35,8 +53,11 @@ from docling_core.types.doc import (
     ContentLayer,
     GroupItem,
     GroupLabel,
+    NodeItem,
     PictureClassificationLabel,
     PictureItem,
+    RichTableCell,
+    TableCell,
     TableItem,
     TextItem,
 )
@@ -45,10 +66,22 @@ from PIL import Image, ImageDraw
 import docling.backend.iwork_backend as iwork_backend
 from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
 from docling.backend.iwork import cells, numbers_xml
+from docling.backend.iwork.archives import (
+    PACKAGE_DATAS_FIELD,
+    TSD_GROUP,
+    TSD_IMAGE,
+    TSP_PACKAGE_METADATA,
+)
 from docling.backend.iwork.chart_image import PALETTE
 from docling.backend.iwork.content import Chart, ChartKind, ChartSeries
+from docling.backend.iwork.iwa import IWAObject, iter_objects, read_fields
 from docling.backend.iwork.legacy import SF_NAMESPACE, SFA_NAMESPACE
-from docling.backend.iwork.numbers_iwa import render
+from docling.backend.iwork.numbers_iwa import (
+    SHEET_DRAWABLES_FIELD,
+    SHEET_NAME_FIELD,
+    TN_SHEET_ARCHIVE,
+    render,
+)
 from docling.backend.iwork_backend import IWorkNumbersDocumentBackend
 from docling.datamodel.backend_options import IWorkBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
@@ -64,10 +97,17 @@ SOURCES = Path("./tests/data/numbers/sources")
 NUMBERS_2013 = SOURCES / "numbers_2013.numbers"
 NUMBERS_IWORK09 = SOURCES / "numbers_iwork09.numbers"
 NUMBERS_IWORK09_CHARTS = SOURCES / "numbers_iwork09_charts.numbers"
+NUMBERS_CELL_PICTURES = SOURCES / "numbers_cell_pictures.numbers"
+NUMBERS_CELL_FILLS = SOURCES / "numbers_cell_fills.numbers"
+NUMBERS_CELL_PICTURES_REPEATED = SOURCES / "numbers_cell_pictures_repeated.numbers"
+NUMBERS_CELL_PICTURES_STYLED = SOURCES / "numbers_cell_pictures_styled.numbers"
 GROUNDTRUTH = Path("./tests/data/numbers/groundtruth")
 
+KEYNOTE_2013 = Path("./tests/data/keynote/sources/keynote_2013.key")
+KEYNOTE_IWORK09 = Path("./tests/data/keynote/sources/keynote_iwork09.key")
+
 # The fixtures whose whole conversion is pinned by a stored groundtruth.
-CONVERTIBLE = [NUMBERS_2013, NUMBERS_IWORK09]
+CONVERTIBLE = [NUMBERS_2013, NUMBERS_IWORK09, NUMBERS_CELL_PICTURES, NUMBERS_CELL_FILLS]
 
 BOTH_GENERATIONS = pytest.mark.parametrize(
     "source", [NUMBERS_2013, NUMBERS_IWORK09], ids=["iwa", "iwork09"]
@@ -572,6 +612,379 @@ def test_a_comment_records_who_left_it_and_when():
 
     assert modern[0].startswith("[author: Author, time: 2016-05-04T13:08:26")
     assert legacy[0].startswith("Try adding your own account transactions")
+
+
+_PHOTO_IMAGE = 4210
+"""The ``TSD.ImageArchive`` of a photo in ``keynote_2013.key``."""
+
+_PHOTO_DATA = (104, 105)
+"""The data files that image names: the full photo and a smaller rendition."""
+
+_PHOTO_MEMBER = "Data/happy_girls-small-105.jpg"
+"""The only one of those that Keynote stored in the container."""
+
+_PHOTO_FRAME = (246.0, 171.0, 533.33, 330.85)
+"""Where Keynote placed the photo, the same in both generations of the deck."""
+
+_GROUP_FRAME = (40.0, 500.0, 300.0, 200.0)
+
+_FIRST_TABLE = '<sf:tabular-info sfa:ID="SFTTableInfo-0"'
+"""The first table of the first sheet of ``numbers_iwork09.numbers``."""
+
+
+def _varint(value: int) -> bytes:
+    out = bytearray()
+    while True:
+        low, value = value & 0x7F, value >> 7
+        out.append(low | 0x80 if value else low)
+        if not value:
+            return bytes(out)
+
+
+def _field(number: int, value: int | bytes) -> bytes:
+    """Encode one protobuf field, as a varint or as length-delimited bytes."""
+    if isinstance(value, int):
+        return _varint(number << 3) + _varint(value)
+    return _varint(number << 3 | 2) + _varint(len(value)) + value
+
+
+def _point(x: float, y: float) -> bytes:
+    """Encode a ``TSP.Point`` or a ``TSP.Size``: two 32-bit float fields."""
+    return b"".join(
+        _varint(number << 3 | 5) + struct.pack("<f", value)
+        for number, value in ((1, x), (2, y))
+    )
+
+
+def _iwa(objects: list[IWAObject]) -> bytes:
+    """Write objects out as an ``.iwa`` member, stored as Snappy literals."""
+    stream = b""
+    for obj in objects:
+        info = _field(1, obj.identifier) + _field(
+            2, _field(1, obj.message_type) + _field(3, len(obj.payload))
+        )
+        stream += _varint(len(info)) + info + obj.payload
+
+    member = b""
+    for start in range(0, len(stream), 1 << 16):
+        chunk = stream[start : start + (1 << 16)]
+        size = len(chunk) - 1
+        width = (size.bit_length() + 7) // 8
+        tag = bytes([size << 2]) if size < 60 else bytes([(59 + width) << 2])
+        extra = b"" if size < 60 else size.to_bytes(width, "little")
+        block = _varint(len(chunk)) + tag + extra + chunk
+        member += b"\x00" + len(block).to_bytes(3, "little") + block
+    return member
+
+
+def _objects(archive: zipfile.ZipFile) -> dict[int, IWAObject]:
+    return {
+        obj.identifier: obj
+        for info in archive.infolist()
+        if info.filename.endswith(".iwa")
+        for obj in iter_objects(archive.read(info))
+    }
+
+
+def _with_picture(target: Path, *, stored: bool = True, grouped: bool = False) -> Path:
+    """Place the photo of ``keynote_2013.key`` on a sheet of ``numbers_2013``.
+
+    The ``TSD.ImageArchive`` of Keynote is copied as it is, under an identifier
+    that the spreadsheet does not use. The sheet gets one more reference in its
+    list of drawables, and the package metadata gets the two ``TSP.DataInfo``
+    entries that the image names. The objects go into an extra member, which
+    replaces the objects with the same identifiers.
+
+    Args:
+        target: Where to write the document.
+        stored: Whether to copy the rendition of the photo that Keynote stored.
+        grouped: Whether to put the image in a ``TSD.GroupArchive`` placed at
+            ``_GROUP_FRAME``.
+
+    Returns:
+        The path of the document.
+    """
+    with zipfile.ZipFile(KEYNOTE_2013) as keynote:
+        donor = _objects(keynote)
+        photo = keynote.read(_PHOTO_MEMBER)
+    assert donor[_PHOTO_IMAGE].message_type == TSD_IMAGE
+    donor_metadata = next(
+        obj for obj in donor.values() if obj.message_type == TSP_PACKAGE_METADATA
+    )
+    data_infos = b"".join(
+        _field(PACKAGE_DATAS_FIELD, entry)
+        for entry in read_fields(donor_metadata.payload)[PACKAGE_DATAS_FIELD]
+        if isinstance(entry, bytes) and read_fields(entry)[1][0] in _PHOTO_DATA
+    )
+
+    with (
+        zipfile.ZipFile(NUMBERS_2013) as source,
+        zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out,
+    ):
+        objects = _objects(source)
+        sheet = next(
+            obj
+            for obj in objects.values()
+            if obj.message_type == TN_SHEET_ARCHIVE
+            and read_fields(obj.payload)[SHEET_NAME_FIELD][0] == b"Checking"
+        )
+        metadata = next(
+            obj for obj in objects.values() if obj.message_type == TSP_PACKAGE_METADATA
+        )
+
+        image = IWAObject(max(objects) + 1, TSD_IMAGE, donor[_PHOTO_IMAGE].payload)
+        placed = [image]
+        if grouped:
+            left, top, width, height = _GROUP_FRAME
+            geometry = _field(1, _point(left, top)) + _field(2, _point(width, height))
+            group = _field(1, _field(1, geometry)) + _field(
+                2, _field(1, image.identifier)
+            )
+            placed.append(IWAObject(image.identifier + 1, TSD_GROUP, group))
+
+        sheet = sheet._replace(
+            payload=sheet.payload
+            + _field(SHEET_DRAWABLES_FIELD, _field(1, placed[-1].identifier))
+        )
+        metadata = metadata._replace(payload=metadata.payload + data_infos)
+
+        for info in source.infolist():
+            out.writestr(info, source.read(info))
+        out.writestr("Index/Picture.iwa", _iwa([sheet, metadata, *placed]))
+        if stored:
+            out.writestr(_PHOTO_MEMBER, photo)
+    return target
+
+
+def _with_legacy_picture(target: Path, *, stored: bool = True) -> Path:
+    """Place the photo of ``keynote_iwork09.key`` on a sheet of ``numbers_iwork09``.
+
+    Both apps write the same ``sf`` vocabulary, so the ``sf:media`` of Keynote
+    is copied as it is into the drawables of the sheet, beside its first table.
+    It names a file that Keynote did not store in the package.
+
+    Args:
+        target: Where to write the document.
+        stored: Whether to store the rendition that ``keynote_2013.key`` keeps
+            of the same photo under the name the element gives.
+
+    Returns:
+        The path of the document.
+    """
+    with zipfile.ZipFile(KEYNOTE_IWORK09) as deck:
+        media = next(
+            ET.fromstring(deck.read("index.apxl")).iter(f"{{{SF_NAMESPACE}}}media")
+        )
+    data = next(media.iter(f"{{{SF_NAMESPACE}}}data"))
+    path = data.get(f"{{{SF_NAMESPACE}}}path")
+    assert path == "Shared/Happy Girls.jpg"
+    with zipfile.ZipFile(KEYNOTE_2013) as keynote:
+        photo = keynote.read(_PHOTO_MEMBER)
+
+    with (
+        zipfile.ZipFile(NUMBERS_IWORK09) as source,
+        zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out,
+    ):
+        index = source.read("index.xml").decode("utf-8")
+        assert index.count(_FIRST_TABLE) == 1
+        index = index.replace(
+            _FIRST_TABLE, ET.tostring(media, encoding="unicode") + _FIRST_TABLE
+        )
+        for info in source.infolist():
+            if info.filename == "index.xml":
+                out.writestr(info, index.encode("utf-8"))
+            else:
+                out.writestr(info, source.read(info))
+        if stored:
+            out.writestr(path, photo)
+    return target
+
+
+_PICTURE_BUILDERS = {NUMBERS_2013: _with_picture, NUMBERS_IWORK09: _with_legacy_picture}
+
+
+def _photos(doc) -> list[PictureItem]:
+    """The pictures that are not charts. A chart carries a classification."""
+    return [picture for picture in doc.pictures if picture.meta is None]
+
+
+@BOTH_GENERATIONS
+def test_a_picture_is_read_where_it_sits_on_its_sheet(tmp_path: Path, source: Path):
+    """A picture on a sheet becomes a picture item on the page of that sheet, in
+    the frame Numbers gave it. It is read in the order the sheet lays it out:
+    below the chart and above the register of transactions."""
+    doc = _backend(_PICTURE_BUILDERS[source](tmp_path / source.name)).convert()
+
+    photos = _photos(doc)
+    assert len(photos) == 1
+    photo = photos[0]
+    assert photo.image is not None
+    assert (photo.image.size.width, photo.image.size.height) == (256, 170)
+
+    prov = photo.prov[0]
+    assert prov.page_no == 1
+    assert (prov.bbox.l, prov.bbox.t, prov.bbox.width, prov.bbox.height) == (
+        pytest.approx(_PHOTO_FRAME, abs=0.01)
+    )
+
+    order = [item.self_ref for item, _ in doc.iterate_items()]
+    chart = next(picture for picture in doc.pictures if picture.meta is not None)
+    register = next(
+        table for table in _tables(doc) if table.caption_text(doc) == "Transactions"
+    )
+    assert (
+        order.index(chart.self_ref)
+        < order.index(photo.self_ref)
+        < order.index(register.self_ref)
+    )
+
+
+@BOTH_GENERATIONS
+def test_a_picture_whose_bytes_are_not_stored_keeps_its_place(
+    tmp_path: Path, source: Path
+):
+    """Keynote names image data that it did not store in the package. Such a
+    picture is still placed on its sheet, without an image."""
+    doc = _backend(
+        _PICTURE_BUILDERS[source](tmp_path / source.name, stored=False)
+    ).convert()
+
+    photos = _photos(doc)
+    assert len(photos) == 1
+    assert photos[0].image is None
+    assert photos[0].prov[0].bbox.t == pytest.approx(_PHOTO_FRAME[1], abs=0.01)
+
+
+def test_a_grouped_picture_takes_the_frame_of_its_group(tmp_path: Path):
+    """Pages and Keynote read the pictures in a group, and Numbers does too. The
+    group is what sits on the sheet, so the picture gets the frame of the group,
+    and the page of the sheet reaches down to it."""
+    doc = _backend(_with_picture(tmp_path / "grouped.numbers", grouped=True)).convert()
+
+    photos = _photos(doc)
+    assert len(photos) == 1
+    assert photos[0].image is not None
+    bbox = photos[0].prov[0].bbox
+    assert (bbox.l, bbox.t, bbox.width, bbox.height) == pytest.approx(_GROUP_FRAME)
+    _, top, _, height = _GROUP_FRAME
+    assert doc.pages[1].size.height == pytest.approx(top + height)
+
+
+def _cells(table: TableItem) -> dict[tuple[int, int], TableCell]:
+    return {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell
+        for cell in table.data.table_cells
+    }
+
+
+def _cell_items(doc, cell: TableCell) -> list[NodeItem]:
+    """The items that a rich cell holds, in order."""
+    assert isinstance(cell, RichTableCell)
+    group = cell.ref.resolve(doc)
+    return [child.resolve(doc) for child in group.children]
+
+
+def test_a_cell_filled_with_a_picture_becomes_a_rich_cell():
+    """Numbers draws the image that fills a cell behind the text of the cell.
+    The cell becomes a rich cell, as a picture in a Word table cell does. Its
+    group holds the text, if there is text, and then the picture. Both are on
+    the page of the sheet, in the frame of the table."""
+    doc = _backend(NUMBERS_CELL_PICTURES).convert()
+    (table,) = _tables(doc)
+    cells = _cells(table)
+
+    (icon,) = _cell_items(doc, cells[(0, 0)])
+    text, laptop = _cell_items(doc, cells[(0, 1)])
+    assert isinstance(text, TextItem)
+    assert text.text == cells[(0, 1)].text == "text "
+    for picture, size in ((icon, (452, 512)), (laptop, (370, 244))):
+        assert isinstance(picture, PictureItem)
+        assert picture.image is not None
+        assert (picture.image.size.width, picture.image.size.height) == size
+        assert picture.prov[0].page_no == 1
+        assert picture.prov[0].bbox == table.prov[0].bbox
+
+    assert not isinstance(cells[(0, 2)], RichTableCell)
+    assert cells[(0, 2)].text == "no image"
+
+
+def test_a_cell_filled_with_a_colour_holds_no_picture():
+    """A cell can be filled with a colour as well as an image. Only an image
+    fill makes a picture."""
+    doc = _backend(NUMBERS_CELL_FILLS).convert()
+    (table,) = _tables(doc)
+    cells = _cells(table)
+
+    (cat,) = _cell_items(doc, cells[(0, 0)])
+    assert isinstance(cat, PictureItem)
+    assert cat.image is not None
+    assert not isinstance(cells[(1, 1)], RichTableCell)
+    assert cells[(1, 1)].text == "No Dog"
+    assert len(doc.pictures) == 1
+
+
+def test_a_photo_that_fills_every_cell_is_in_every_cell():
+    """All 50 cells of this table are filled with the same photo, and Numbers
+    draws it in each of them."""
+    doc = _backend(NUMBERS_CELL_PICTURES_REPEATED).convert()
+    (table,) = _tables(doc)
+
+    assert len(table.data.table_cells) == 50
+    for cell in table.data.table_cells:
+        (photo,) = _cell_items(doc, cell)
+        assert isinstance(photo, PictureItem)
+        assert photo.image is not None
+        assert (photo.image.size.width, photo.image.size.height) == (940, 940)
+
+
+def test_a_picture_whose_name_is_not_ascii_is_found():
+    """Numbers writes the member names of its container in UTF-8, but does not
+    set the flag that says so. zipfile then reads a name as code page 437, so
+    the name that the document gives must be found under that reading."""
+    with zipfile.ZipFile(NUMBERS_CELL_PICTURES_REPEATED) as archive:
+        (member,) = [
+            info for info in archive.infolist() if info.filename.startswith("Data/")
+        ]
+    assert not member.flag_bits & 0x800
+    assert not member.filename.isascii()
+
+    doc = _backend(NUMBERS_CELL_PICTURES_REPEATED).convert()
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 50
+    assert all(picture.image is not None for picture in pictures)
+
+
+def test_a_picture_in_a_header_cell_keeps_the_header():
+    """On the Headers sheet, Numbers fills cells in a header row, in a header
+    column and in a footer row with a photo. A rich cell keeps the header flags
+    that a plain cell in the same place gets."""
+    doc = _backend(
+        NUMBERS_CELL_PICTURES_STYLED, IWorkBackendOptions(sheet_names=["Headers"])
+    ).convert()
+    (table,) = _tables(doc)
+
+    rich = {
+        key: cell
+        for key, cell in _cells(table).items()
+        if isinstance(cell, RichTableCell)
+    }
+    assert {
+        key: (cell.column_header, cell.row_header) for key, cell in rich.items()
+    } == {
+        (1, 3): (True, False),
+        (1, 4): (True, False),
+        (6, 1): (False, True),
+        (6, 2): (False, True),
+        (9, 3): (False, False),
+        (9, 4): (False, False),
+    }
+    for cell in rich.values():
+        text, photo = _cell_items(doc, cell)
+        assert isinstance(text, TextItem)
+        assert text.text == cell.text
+        assert isinstance(photo, PictureItem)
+        assert photo.image is not None
 
 
 def _fake_converter(received: list[bytes]):

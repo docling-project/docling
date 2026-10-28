@@ -62,9 +62,21 @@ def test_chandra_simple_parsing():
             assert prov.bbox.l >= 0 and prov.bbox.t >= 0
 
 
-def test_chandra_br_spacing():
+@pytest.mark.parametrize(
+    ("label", "html", "texts"),
+    [
+        ("Text", "Hello<br/>World", ["Hello\nWorld"]),
+        # A break between runs goes to a plain run; outer breaks are dropped.
+        ("Text", "<br>Hello<br><b>World</b>", ["Hello\n", "World"]),
+        ("Text", "<b>Hello</b><br>World<br>", ["Hello", "\nWorld"]),
+        ("Text", "<b>Hello</b> <br> <b>World</b>", ["Hello", "World"]),
+        ("Section-Header", "<b>Hello</b><br>World", ["", "Hello", "World"]),
+        ("Section-Header", "<b>Hello</b> big<br>World", ["", "Hello", "big World"]),
+    ],
+)
+def test_chandra_br_spacing(label: str, html: str, texts: list[str]):
     """Test that br tags preserve spacing between text."""
-    content = '<div data-bbox="0 0 1000 1000" data-label="Text">Hello<br/>World</div>'
+    content = f'<div data-bbox="0 0 1000 1000" data-label="{label}">{html}</div>'
 
     doc = parse_chandra_html(
         content=content,
@@ -73,8 +85,7 @@ def test_chandra_br_spacing():
         filename="br.html",
     )
 
-    assert len(doc.texts) == 1
-    assert doc.texts[0].text == "Hello\nWorld"
+    assert [item.text for item in doc.texts] == texts
 
 
 def test_chandra_multiblock_parsing():
@@ -332,6 +343,18 @@ def test_chandra_paragraph_list_and_form_controls():
     assert all(not value.prov for value in values)
 
 
+@pytest.mark.parametrize("separator", ["", "\n", "\n    "])
+def test_chandra_paragraph_list_ignores_whitespace_between_items(separator: str):
+    """Test that whitespace between list paragraphs is HTML layout, not an item."""
+    doc = _parse_fragment(
+        separator + separator.join(["<p>One</p>", "<p>Two</p>"]) + separator,
+        "List-Group",
+    )
+
+    items = [t.text for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert items == ["One", "Two"]
+
+
 @pytest.mark.parametrize("kind", ["checkbox", "radio"])
 @pytest.mark.parametrize("checked", [False, True])
 @pytest.mark.parametrize("in_table", [False, True])
@@ -394,7 +417,7 @@ def test_chandra_inline_math_formatting_and_code_whitespace():
         str(next(t.hyperlink for t in doc.texts if t.text == "link"))
         == "https://example.org/"
     )
-    assert doc.texts[-1].level == 3
+    assert doc.texts[-1].level == 2
 
 
 def test_chandra_nested_math_does_not_inherit_table_bbox():

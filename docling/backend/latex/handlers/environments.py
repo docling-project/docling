@@ -45,10 +45,12 @@ class EnvironmentHandlerMixin:
     if TYPE_CHECKING:
         options: BaseBackendOptions
         latex_preamble: str
-        path_or_stream: Any
+        _source_dir: Path | None
         _tectonic_engine: TectonicEngine | None
         _tikz_executor: ThreadPoolExecutor | None
         _tikz_futures: list[Future[Any]]
+        _tikz_untrusted_warned: bool
+        _suppress_image_path_caption: bool
 
         def _process_nodes(
             self,
@@ -60,8 +62,13 @@ class EnvironmentHandlerMixin:
         ) -> None: ...
         def _clean_math(self, latex_str: str, env_name: str) -> str: ...
         def _parse_table(self, node: Any) -> Any: ...
+        def _add_rich_table_cells(self, parsed: Any, doc: Any, table: Any) -> None: ...
         def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str: ...
         def _extract_macro_arg(self, node: Any) -> str: ...
+        def _nodes_to_text(self, nodes: Any) -> str: ...
+        def _add_caption(
+            self, node: Any, doc: Any, parent: Any, formatting: Any = ...
+        ) -> None: ...
 
     def _find_document_env(self, nodes, depth: int = 0):
         if nodes is None or depth > 10:
@@ -132,12 +139,34 @@ class EnvironmentHandlerMixin:
             self._process_list(node, doc, parent, formatting, text_label)
 
         elif node.envname in {"tabular", "tabular*", "tabularx", "longtable"}:
-            table_data = self._parse_table(node)
-            if table_data:
-                doc.add_table(parent=parent, data=table_data)
+            parsed_table = self._parse_table(node)
+            if parsed_table:
+                table = doc.add_table(parent=parent, data=parsed_table.data)
+                self._add_rich_table_cells(parsed_table, doc, table)
+                if node.envname == "longtable":
+                    caption_start = len(doc.texts)
+                    for child in node.nodelist or []:
+                        if (
+                            isinstance(child, LatexMacroNode)
+                            and child.macroname == "caption"
+                        ):
+                            self._add_caption(child, doc, parent, formatting)
+                    table.captions.extend(
+                        caption.get_ref()
+                        for caption in doc.texts[caption_start:]
+                        if caption.label == DocItemLabel.CAPTION
+                    )
 
         elif node.envname in ["table", "table*"]:
+            table_start = len(doc.tables)
+            caption_start = len(doc.texts)
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+            if len(doc.tables) > table_start:
+                doc.tables[table_start].captions.extend(
+                    caption.get_ref()
+                    for caption in doc.texts[caption_start:]
+                    if caption.label == DocItemLabel.CAPTION
+                )
 
         elif node.envname in ["figure", "figure*"]:
             self._process_figure(node, doc, parent, formatting, text_label)
@@ -178,7 +207,9 @@ class EnvironmentHandlerMixin:
             return
 
         opts = cast("LatexBackendOptions", self.options)
-        if opts.tikz_engine == "tectonic":
+        if opts.tikz_engine == "tectonic" and not opts.tikz_engine_trusted_input:
+            self._warn_tikz_untrusted_input()
+        elif opts.tikz_engine == "tectonic":
             try:
                 from docling.backend.latex.engines.tectonic import TectonicEngine
 
@@ -213,9 +244,7 @@ class EnvironmentHandlerMixin:
                         set_code_fallback()
 
                 preamble = self.latex_preamble
-                source_root = None
-                if isinstance(self.path_or_stream, Path):
-                    source_root = self.path_or_stream.parent
+                source_root = self._source_dir
                 if self._tikz_executor:
                     future = self._tikz_executor.submit(
                         render_task,
@@ -240,6 +269,18 @@ class EnvironmentHandlerMixin:
                 text=tikz_raw,
                 language=CodeLanguageLabel.TIKZ,
             )
+        )
+
+    def _warn_tikz_untrusted_input(self) -> None:
+        if self._tikz_untrusted_warned:
+            return
+        self._tikz_untrusted_warned = True
+        _log.warning(
+            "TikZ rendering with Tectonic is skipped because the LaTeX input "
+            "is not marked as trusted. Tectonic can read and write files "
+            "outside the working directory. Set "
+            "LatexBackendOptions(tikz_engine_trusted_input=True) only for "
+            "trusted input, or run the conversion in an isolated environment."
         )
 
     def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> str | None:
@@ -279,7 +320,22 @@ class EnvironmentHandlerMixin:
         figure_group = doc.add_group(
             parent=parent, name="figure", label=GroupLabel.SECTION
         )
-        self._process_nodes(node.nodelist, doc, figure_group, formatting, text_label)
+        picture_start = len(doc.pictures)
+        caption_start = len(doc.texts)
+        previous_suppression = self._suppress_image_path_caption
+        self._suppress_image_path_caption = True
+        try:
+            self._process_nodes(
+                node.nodelist, doc, figure_group, formatting, text_label
+            )
+        finally:
+            self._suppress_image_path_caption = previous_suppression
+        if len(doc.pictures) > picture_start:
+            doc.pictures[picture_start].captions.extend(
+                caption.get_ref()
+                for caption in doc.texts[caption_start:]
+                if caption.label == DocItemLabel.CAPTION
+            )
 
     def _process_list(
         self,
@@ -347,18 +403,10 @@ class EnvironmentHandlerMixin:
             items.append((current_key, current_item))
 
         for key, item_nodes in items:
-            if key:
-                doc.add_text(
+            body = self._nodes_to_text(item_nodes).strip()
+            if body:
+                doc.add_list_item(
                     parent=bib_group,
-                    label=DocItemLabel.LIST_ITEM,
-                    text=f"[{key}] ",
+                    text=f"[{key}] {body}" if key else body,
                     formatting=formatting,
                 )
-
-            self._process_nodes(
-                item_nodes,
-                doc,
-                bib_group,
-                formatting,
-                text_label=DocItemLabel.LIST_ITEM,
-            )

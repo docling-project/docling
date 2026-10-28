@@ -1,0 +1,26 @@
+<doclang version="0.8">
+  <text>
+    <layer value="furniture"/>
+    \documentclass{article}
+  </text>
+  <heading>Sample Document</heading>
+  <text>Test Author</text>
+  <heading level="2">Introduction</heading>
+  <text>This is the first paragraph of the introduction.</text>
+  <heading level="2">Background</heading>
+  <text>Some background information here with bold and italic text.</text>
+  <list>
+    <ldiv/>
+    First item in unordered list
+    <ldiv/>
+    Second item in unordered list
+  </list>
+  <list>
+    <ldiv/>
+    First item in ordered list
+    <ldiv/>
+    Second item in ordered list
+  </list>
+  <heading level="3">Nested Section</heading>
+  <text>A subsection with more content.</text>
+</doclang>

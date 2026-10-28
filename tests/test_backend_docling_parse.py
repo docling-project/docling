@@ -6,10 +6,11 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+import pypdfium2 as pdfium
 import pytest
 from docling_core.types.doc import CoordOrigin
 from docling_core.types.doc.page import PdfCellRenderingMode
-from docling_parse.pdf_parser import ContentLevel
+from docling_parse.pdf_parser import ContentLevel, ThreadedPdfParserConfig
 from PIL import Image, ImageDraw, ImageStat
 
 import docling.backend.docling_parse_backend as docling_parse_backend_module
@@ -539,6 +540,60 @@ def test_threaded_backend_allows_disabling_native_memory_release(
     in_doc._backend.unload()
 
 
+def test_threaded_backend_keeps_parser_default_read_ahead_when_unset(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        backend_options=ThreadedDoclingParseBackendOptions(),
+    )
+
+    parser = _FakeThreadedParser.created
+    assert parser is not None
+    assert parser.parser_config is not None
+    assert (
+        parser.parser_config.max_concurrent_results
+        == ThreadedPdfParserConfig().max_concurrent_results
+    )
+
+    in_doc._backend.unload()
+
+
+def test_threaded_backend_uses_backend_option_max_concurrent_results(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        backend_options=ThreadedDoclingParseBackendOptions(max_concurrent_results=1),
+    )
+
+    parser = _FakeThreadedParser.created
+    assert parser is not None
+    assert parser.parser_config is not None
+    assert parser.parser_config.max_concurrent_results == 1
+
+    in_doc._backend.unload()
+
+
+def test_threaded_backend_rejects_non_positive_max_concurrent_results():
+    with pytest.raises(ValueError):
+        ThreadedDoclingParseBackendOptions(max_concurrent_results=0)
+
+
 def test_threaded_backend_uses_accelerator_thread_count_when_unset(
     test_doc_path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -627,6 +682,7 @@ def test_threaded_page_backend_disables_bitmap_materialization() -> None:
         textline_cells = [_FakeCell()]
         char_cells = [_FakeCell()]
         word_cells = [_FakeCell()]
+        widgets: list = []
         bitmap_resources: list[Any] = []
 
     result = _FakeThreadedResult(page_number=4)
@@ -741,6 +797,56 @@ def test_threaded_backend_reports_shape_geometry_in_top_left_origin(ruled_table_
         doc_backend.unload()
 
 
+def _pdf_with_filled_rectangles() -> bytes:
+    """One 200 x 200 pt page filling a 0.5 pt tall rule and a 20 pt tall bar."""
+    content = b"0 0 0 rg 20 150 160 0.5 re f 20 50 160 20 re f"
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>",
+        b"<< /Length %d >>\nstream\n%s\nendstream" % (len(content), content),
+    ]
+    pdf = b"%PDF-1.4\n"
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(pdf))
+        pdf += b"%d 0 obj\n%s\nendobj\n" % (number, body)
+    xref = len(pdf)
+    pdf += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+    pdf += b"".join(b"%010d 00000 n \n" % offset for offset in offsets)
+    pdf += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (
+        len(objects) + 1,
+        xref,
+    )
+    return pdf
+
+
+def test_threaded_backend_reports_thin_filled_shapes(tmp_path):
+    """A rule drawn as a thin filled rectangle surfaces; a thicker fill does not.
+
+    Stroked segments alone miss such rules, which many forms use for borders.
+    """
+    path = tmp_path / "filled_rules.pdf"
+    path.write_bytes(_pdf_with_filled_rectangles())
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    doc_backend = in_doc._backend
+    assert isinstance(doc_backend, ThreadedDoclingParseDocumentBackend)
+
+    try:
+        page_backend = next(iter(doc_backend.iter_pages()))
+        assert page_backend.get_shape_lines() == []
+
+        (rule,) = page_backend.get_thin_shape_boxes(max_thickness=3.5)
+        assert rule.coord_origin == CoordOrigin.TOPLEFT
+        assert (rule.l, rule.t, rule.r, rule.b) == pytest.approx((20, 49.5, 180, 50))
+    finally:
+        doc_backend.unload()
+
+
 def test_threaded_backend_intersects_only_where_content_is(ruled_table_path):
     """`has_content_in` must discriminate between the ruled table and a blank margin."""
     in_doc = InputDocument(
@@ -819,3 +925,74 @@ def test_threaded_backend_filters_invisible_text_cells():
         }
     finally:
         doc_backend.unload()
+
+
+def _widget_offsets_from_text(backend_cls: Any, pdf_path: Path) -> list[tuple]:
+    """Each widget's top-left corner relative to the page's first word."""
+    in_doc = InputDocument(
+        path_or_stream=pdf_path, format=InputFormat.PDF, backend=backend_cls
+    )
+    doc_backend = in_doc._backend
+    page_backend = next(doc_backend.iter_pages())
+    try:
+        page = page_backend.get_segmented_page()
+        word = next(c for c in page.word_cells if c.text.strip()).rect.to_bounding_box()
+        widgets = [
+            w.rect.to_bounding_box().to_top_left_origin(page.dimension.height)
+            for w in page.widgets
+        ]
+    finally:
+        page_backend.unload()
+        doc_backend.unload()
+    return [(round(b.l - word.l, 2), round(b.t - word.t, 2)) for b in widgets]
+
+
+def test_widgets_move_with_the_text_when_the_crop_box_is_offset(
+    tmp_path: Path,
+) -> None:
+    backend_cls = ThreadedDoclingParseDocumentBackend
+    # Text cells are relative to the visible page (crop box); widget rectangles
+    # must be too, or they sit off their field keys when the crop box does not
+    # start at the PDF origin.
+    source = Path("tests/data/pdf/sources/acroform_sample.pdf")
+    shifted = tmp_path / "shifted_crop.pdf"
+    pdf = pdfium.PdfDocument(source)
+    left, bottom, right, top = pdf[0].get_mediabox()
+    pdf[0].set_cropbox(left + 20, bottom + 30, right, top)
+    pdf.save(shifted)
+    pdf.close()
+
+    expected = _widget_offsets_from_text(backend_cls, source)
+    assert len(expected) == 4
+    assert _widget_offsets_from_text(backend_cls, shifted) == expected
+
+
+def test_docling_parse_exposes_complete_widget_contract_in_native_order() -> None:
+    input_doc = InputDocument(
+        path_or_stream=Path("tests/data/pdf/sources/acroform_sample.pdf"),
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    backend = input_doc._backend
+    page = next(backend.iter_pages())
+    try:
+        segmented_page = page.get_segmented_page()
+        assert segmented_page is not None
+        assert [widget.widget_field_name for widget in segmented_page.widgets] == [
+            "applicant_name",
+            "agree_terms",
+            "newsletter",
+            "mail_optin",
+        ]
+        assert [widget.index for widget in segmented_page.widgets] == [0, 1, 2, 3]
+        assert segmented_page.widgets[0].widget_text == "Ada Lovelace"
+        assert segmented_page.widgets[0].widget_description == "Full legal name"
+        assert segmented_page.widgets[0].widget_field_type == "/Tx"
+        assert segmented_page.widgets[0].widget_field_flags == 2
+        assert segmented_page.widgets[1].widget_appearance_state == "/Yes"
+        assert segmented_page.widgets[2].widget_appearance_state == "/Off"
+        assert segmented_page.widgets[3].widget_text in {None, ""}
+        assert segmented_page.widgets[3].widget_appearance_state == "/On"
+    finally:
+        page.unload()
+        backend.unload()

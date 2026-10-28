@@ -72,6 +72,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 artifacts_path = self.download_models(
                     self.vlm_options.repo_id,
                     revision=self.vlm_options.revision,
+                    trust_remote_code=self.vlm_options.trust_remote_code,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
@@ -251,7 +252,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     [image],  # MLX stream_generate expects list of images
                     max_tokens=self.max_tokens,
                     verbose=False,
-                    temp=self.temperature,
+                    temperature=self.temperature,
                 ):
                     # Collect token information
                     if len(token.logprobs.shape) == 1:

@@ -1,15 +1,122 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Regression tests for chart CSV table header semantics."""
+"""Regression tests for chart extraction presets and CSV table semantics."""
+
+import sys
+from types import ModuleType
 
 import pandas as pd
 import pytest
+from docling_core.types.doc import (
+    DescriptionMetaField,
+    DoclingDocument,
+    PictureClassificationMetaField,
+    PictureMeta,
+    TableData,
+    TabularChartMetaField,
+)
+from docling_core.types.doc.document import PictureClassificationPrediction
+from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+    ChartExtractionVlmEngineOptions,
+)
+from docling.datamodel.vlm_engine_options import (
+    AutoInlineVlmEngineOptions,
+    MlxVlmEngineOptions,
+)
+from docling.models.inference_engines.vlm.auto_inline_engine import (
+    AutoInlineVlmEngine,
+)
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.models.stages.chart_extraction.granite_vision import (
+    ChartExtractionVlmEngineModel,
     _dataframe_to_tabledata,
     _extract_csv_to_dataframe,
 )
+
+
+def test_granite_vision_v4_mlx_preset_uses_official_model() -> None:
+    mlx_options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4_mlx")
+    default_options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4")
+
+    assert isinstance(mlx_options.engine_options, MlxVlmEngineOptions)
+    assert isinstance(default_options.engine_options, AutoInlineVlmEngineOptions)
+    assert mlx_options.model_spec.is_engine_supported(VlmEngineType.MLX)
+    assert mlx_options.model_spec.get_engine_config(VlmEngineType.MLX).repo_id == (
+        "ibm-granite/granite-vision-4.1-4b"
+    )
+    assert mlx_options.model_spec.get_engine_config(VlmEngineType.MLX).revision == (
+        default_options.model_spec.revision
+    )
+    assert mlx_options.output_format == default_options.output_format
+    assert (
+        default_options.model_spec.get_engine_config(
+            VlmEngineType.MLX
+        ).min_engine_version
+        == "0.7.0"
+    )
+    assert "granite_vision_v4_mlx" in ChartExtractionVlmEngineOptions.list_preset_ids()
+
+
+def test_legacy_granite_vision_choice_keeps_v4_checkpoint() -> None:
+    with pytest.warns(DeprecationWarning):
+        options = ChartExtractionModelOptions(
+            model=ChartExtractionModelKind.GRANITE_VISION
+        )
+
+    assert options.model_spec.default_repo_id == "ibm-granite/granite-vision-4.1-4b"
+    assert "granite_vision_v3_3" in ChartExtractionVlmEngineOptions.list_preset_ids()
+
+
+@pytest.mark.parametrize(
+    ("system", "device", "mlx_version_ok", "expected_engine"),
+    [
+        ("Darwin", "mps", True, VlmEngineType.MLX),
+        ("Darwin", "mps", False, VlmEngineType.TRANSFORMERS),
+        ("Darwin", "cpu", True, VlmEngineType.TRANSFORMERS),
+        ("Linux", "cpu", True, VlmEngineType.TRANSFORMERS),
+    ],
+)
+def test_granite_vision_v4_auto_selects_local_engine(
+    monkeypatch: pytest.MonkeyPatch,
+    system: str,
+    device: str,
+    mlx_version_ok: bool,
+    expected_engine: VlmEngineType,
+) -> None:
+    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4")
+    assert isinstance(options.engine_options, AutoInlineVlmEngineOptions)
+    engine = AutoInlineVlmEngine(
+        options=options.engine_options,
+        accelerator_options=AcceleratorOptions(),
+        artifacts_path=None,
+    )
+    engine.model_spec = options.model_spec
+
+    monkeypatch.setattr("platform.system", lambda: system)
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.auto_inline_engine.decide_device",
+        lambda *args, **kwargs: device,
+    )
+    monkeypatch.setitem(sys.modules, "mlx_vlm", ModuleType("mlx_vlm"))
+
+    def version_satisfied(engine_type: VlmEngineType, min_version: str | None) -> bool:
+        assert engine_type == VlmEngineType.MLX
+        assert min_version == "0.7.0"
+        return mlx_version_ok
+
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.auto_inline_engine.engine_version_satisfied",
+        version_satisfied,
+    )
+
+    assert engine._select_engine() == expected_engine
 
 
 @pytest.mark.parametrize(
@@ -94,3 +201,107 @@ def test_empty_chart_table_has_no_headers() -> None:
     assert table.num_rows == 0
     assert table.num_cols == 0
     assert table.table_cells == []
+
+
+def test_chart_enrichment_runs_only_missing_outputs_after_classification() -> None:
+    class Engine:
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def predict_batch(self, inputs):
+            self.prompts = [item.prompt for item in inputs]
+            return [type("Output", (), {"text": "```python\npass\n```"})()]
+
+        def cleanup(self) -> None:
+            pass
+
+    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4")
+    options.chart2summary = True
+    options.chart2code = True
+    model = ChartExtractionVlmEngineModel.__new__(ChartExtractionVlmEngineModel)
+    model.enabled = True
+    model.options = options
+    engine = Engine()
+    model.engine = engine
+
+    chart_data = TabularChartMetaField(
+        chart_data=TableData(num_rows=0, num_cols=0, table_cells=[])
+    )
+    description = DescriptionMetaField(text="Provided by VLM")
+    doc = DoclingDocument(name="chart")
+    picture = doc.add_picture()
+    picture.meta = PictureMeta(tabular_chart=chart_data, description=description)
+    assert not model.is_processable(doc, picture)
+
+    picture.meta.classification = PictureClassificationMetaField(
+        predictions=[PictureClassificationPrediction(class_name="bar_chart")]
+    )
+    assert model.is_processable(doc, picture)
+
+    image = Image.new("RGB", (10, 10), "white")
+    result = list(
+        model(
+            doc,
+            [ItemAndImageEnrichmentElement(item=picture, image=image)],
+        )
+    )
+
+    assert result == [picture]
+    assert engine.prompts == ["<chart2code>"]
+    assert picture.meta.tabular_chart is chart_data
+    assert picture.meta.description is description
+    assert picture.meta.code is not None
+
+
+def test_legacy_chart_preset_uses_its_csv_prompt_and_parser() -> None:
+    class Engine:
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def predict_batch(self, inputs):
+            self.prompts = [item.prompt for item in inputs]
+            return [type("Output", (), {"text": "Category,Value\nNorth,10"})()]
+
+        def cleanup(self) -> None:
+            pass
+
+    options = ChartExtractionVlmEngineOptions.from_preset("granite_vision_v3_3")
+    assert (
+        options.model_spec.default_repo_id
+        == "ibm-granite/granite-vision-3.3-2b-chart2csv-preview"
+    )
+    with pytest.raises(ValueError, match="supports CSV output only"):
+        ChartExtractionVlmEngineOptions.from_preset(
+            "granite_vision_v3_3", chart2summary=True
+        )
+
+    model = ChartExtractionVlmEngineModel.__new__(ChartExtractionVlmEngineModel)
+    model.enabled = True
+    model.options = options
+    engine = Engine()
+    model.engine = engine
+
+    doc = DoclingDocument(name="chart")
+    picture = doc.add_picture()
+    picture.meta = PictureMeta(
+        classification=PictureClassificationMetaField(
+            predictions=[PictureClassificationPrediction(class_name="bar_chart")]
+        )
+    )
+    assert model.is_processable(doc, picture)
+
+    result = list(
+        model(
+            doc,
+            [
+                ItemAndImageEnrichmentElement(
+                    item=picture, image=Image.new("RGB", (10, 10), "white")
+                )
+            ],
+        )
+    )
+
+    assert result == [picture]
+    assert engine.prompts == [options.model_spec.prompt]
+    assert picture.meta.tabular_chart is not None
+    assert picture.meta.tabular_chart.chart_data.num_rows == 2

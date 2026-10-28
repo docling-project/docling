@@ -43,6 +43,33 @@ For running Docling using local models with the `VlmPipeline`:
     doc = converter.convert(source="FILE").document
     ```
 
+To extract chart data after VLM conversion, enable chart enrichment. Docling
+classifies pictures before chart extraction and skips fields already present in
+the VLM output.
+
+```bash
+docling --from image --to dclx IMAGE.png --pipeline vlm \
+    --vlm-model mineru2_pro --enrich-chart-extraction
+```
+
+The Python SDK uses `VlmPipelineOptions(do_chart_extraction=True)` for the same
+behavior. Picture classification is enabled automatically when chart extraction
+is requested. Picture description and classification can also be enabled with
+`--enrich-picture-description` and `--enrich-picture-classes`.
+
+The default chart model is Granite Vision 4.1 4B. On Apple Silicon, it uses
+MLX when `mlx-vlm>=0.7.0` and MPS are available; otherwise it uses Transformers.
+To use the older CSV-only
+`ibm-granite/granite-vision-3.3-2b-chart2csv-preview` model, add
+`--chart-extraction-preset granite_vision_v3_3` to the command. In Python, set
+`chart_extraction_options=ChartExtractionVlmEngineOptions.from_preset("granite_vision_v3_3")`
+on `VlmPipelineOptions` or `PdfPipelineOptions`.
+
+To require MLX explicitly, select `--chart-extraction-preset granite_vision_v4_mlx`.
+This preset loads the same official
+`ibm-granite/granite-vision-4.1-4b` repository. In Python, use
+`ChartExtractionVlmEngineOptions.from_preset("granite_vision_v4_mlx")`.
+
 ## Available local models
 
 By default, the vision-language models are running locally.
@@ -196,3 +223,20 @@ invented coordinates. Invalid bounding boxes also produce a warning while their
 content is retained. Nonempty prose or JSON responses without HTML transcription
 produce a page-specific inference error and `PARTIAL_SUCCESS`, rather than an
 unreported empty result. An explicitly labeled `Blank-Page` may be empty.
+
+## Heading depths in native layout output
+
+For Chandra, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, and PaddleOCR-VL
+output, the layout label alone decides title versus section header. Docling
+exports a title as `#` and a section header one step below it. If no section
+header in the document uses depth 1 (`#` or `<h1>`), each section header exports
+with its source depth: `##` stays `##`. Otherwise each one exports one step
+deeper, so different source depths never share one section level. A section
+header without heading markup counts as `##`. Markdown has no heading deeper than
+`######`, so in a document with depth 1, source depths 5 and 6 both export as
+`######`, but their section levels stay different.
+
+The VLM pipeline applies this rule once to the whole document, so one depth gets
+the same level on all pages. Each mapper function applies it to its own page when
+you call it directly. `parse_paddleocr_vl_result` reads one saved PaddleOCR-VL
+page, so it always applies the rule to that page.

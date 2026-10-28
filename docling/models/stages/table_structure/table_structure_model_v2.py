@@ -31,6 +31,7 @@ from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_normalization import normalize_extracted_text
 
 _log = logging.getLogger(__name__)
 
@@ -513,6 +514,7 @@ class TableStructureModelV2(BaseTableStructureModel):
                             element["bbox"]["token"] = text_piece
                             cell_match_idx += 1
                         tc = TableCell.model_validate(element)
+                        tc.text = normalize_extracted_text(tc.text)
                         table_cells.append(tc)
 
                     tbl = Table(

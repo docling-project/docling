@@ -5,14 +5,26 @@ import copy
 import logging
 import math
 import re
+import time
 from dataclasses import dataclass, field
+from functools import cmp_to_key
 from itertools import islice, takewhile
 from typing import ClassVar, Dict, Iterable, List, Literal, Set, Tuple
 
 from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import RefItem
 from docling_core.types.doc.labels import DocItemLabel
-from rtree import index as rtree_index
+
+_RTREE_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from rtree import index as rtree_index
+except ImportError as e:  # pragma: no cover - import-time guard
+    _RTREE_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'rtree' package is required for rule-based reading order. "
+    "Install it with `pip install 'docling-slim[convert-core]'`."
+)
 
 _log = logging.getLogger(__name__)
 
@@ -77,6 +89,12 @@ _MIN_VERTICAL_SEPARATOR_LENGTH_NORM = 0.05
 _MAX_FILLED_RULE_THICKNESS = 3.5
 _SEPARATOR_MERGE_TOLERANCE = 1.0
 _AXIS_ALIGNMENT_TOLERANCE = 1.0e-3
+# Upper bound on raw separator candidates per page. Merging is quadratic in
+# the candidate count, and pages whose vector geometry yields tens of
+# thousands of tiny segments (e.g. seat maps drawn as small rectangles) can
+# never produce trustworthy page separators. Above this count the page is
+# skipped: reading order falls back to the pre-separator behavior.
+_MAX_SEPARATOR_CANDIDATES = 5000
 
 
 def _as_bottom_left_box(bbox: BoundingBox, page_size: Size) -> BoundingBox:
@@ -146,12 +164,20 @@ def _separator_is_long_enough(separator: SeparatorElement) -> bool:
 
 def _merge_separator_candidates(
     candidates: list[SeparatorElement],
+    *,
+    deadline: float | None = None,
 ) -> list[SeparatorElement]:
     # A merge widens its target, which can make it mergeable with a separator
     # kept earlier in the pass. Repeat until stable: two zero-height
     # separators left overlapping at the same height would each count as
     # strictly above the other and form a cycle in the ordering graph.
     while True:
+        if deadline is not None and time.monotonic() > deadline:
+            _log.warning(
+                "Aborting separator candidate merge: document time budget "
+                "exhausted. Returning no separators for this page."
+            )
+            return []
         merged = _merge_separator_candidates_once(candidates)
         if len(merged) == len(candidates):
             return merged
@@ -297,10 +323,26 @@ def build_page_separators(
     page_elements: list[PageElement],
     shape_lines: list[BoundingBox] | None,
     shape_bounding_boxes: list[BoundingBox] | None,
+    time_limit_s: float | None = None,
 ) -> list[SeparatorElement]:
-    """Build trustworthy reading-order separators from visible PDF geometry."""
+    """Build trustworthy reading-order separators from visible PDF geometry.
+
+    `time_limit_s` bounds the work spent on separator extraction for this
+    page. When the budget is exhausted (or was already exhausted on entry),
+    no separators are returned and reading order falls back to the
+    pre-separator behavior instead of blocking the conversion.
+    """
     if shape_lines is None and shape_bounding_boxes is None:
         return []
+    if time_limit_s is not None and time_limit_s <= 0:
+        _log.warning(
+            "Skipping page separator extraction on page %s: document time "
+            "budget exhausted.",
+            page_no,
+        )
+        return []
+
+    deadline = time.monotonic() + time_limit_s if time_limit_s is not None else None
 
     bottom_left_elements: list[PageElement] = []
     for element in page_elements:
@@ -323,6 +365,13 @@ def build_page_separators(
         (shape_bounding_boxes or [], True),
     ):
         for bbox in boxes:
+            if deadline is not None and time.monotonic() > deadline:
+                _log.warning(
+                    "Skipping page separator extraction on page %s: document "
+                    "time budget exhausted while collecting candidates.",
+                    page_no,
+                )
+                return []
             candidate = _candidate_separator(
                 bbox,
                 page_no=page_no,
@@ -332,9 +381,21 @@ def build_page_separators(
             if candidate is not None:
                 candidates.append(candidate)
 
+    if len(candidates) > _MAX_SEPARATOR_CANDIDATES:
+        _log.warning(
+            "Skipping page separator extraction on page %s: %d separator "
+            "candidates exceed the limit of %d. Such dense vector geometry "
+            "cannot yield trustworthy page separators; reading order falls "
+            "back to the pre-separator behavior.",
+            page_no,
+            len(candidates),
+            _MAX_SEPARATOR_CANDIDATES,
+        )
+        return []
+
     accepted = [
         separator
-        for separator in _merge_separator_candidates(candidates)
+        for separator in _merge_separator_candidates(candidates, deadline=deadline)
         if _separator_is_long_enough(separator)
         and not _separator_crosses_content(separator, bottom_left_elements)
         and not _separator_is_inside_graphic(separator, bottom_left_elements)
@@ -759,6 +820,8 @@ class ReadingOrderPredictor:
             state.dn_map[i] = []
 
         # Build R-tree spatial index
+        if _RTREE_IMPORT_ERROR is not None:
+            raise ImportError(_INSTALL_HINT) from _RTREE_IMPORT_ERROR
         spatial_idx = rtree_index.Index()
         for i, pelem in enumerate(page_elems):
             spatial_idx.insert(i, (pelem.l, pelem.b, pelem.r, pelem.t))
@@ -836,7 +899,7 @@ class ReadingOrderPredictor:
 
     def _has_sequence_interruption(
         self,
-        spatial_idx: rtree_index.Index,
+        spatial_idx: "rtree_index.Index",
         page_elems: List[ReadingOrderNode],
         i: int,
         j: int,
@@ -1039,8 +1102,21 @@ class ReadingOrderPredictor:
             print(f"{l}\t{str(elem)}")
         """
 
-        # this will invoke __lt__ from PageElements
-        head_page_elems = sorted(head_page_elems)
+        if _RTREE_IMPORT_ERROR is not None:
+            raise ImportError(_INSTALL_HINT) from _RTREE_IMPORT_ERROR
+        spatial_idx = rtree_index.Index()
+        for i, pelem in enumerate(page_elems):
+            spatial_idx.insert(i, (pelem.l, pelem.b, pelem.r, pelem.t))
+
+        def compare(lhs: ReadingOrderNode, rhs: ReadingOrderNode) -> int:
+            if self._is_separated_above(spatial_idx, page_elems, lhs, rhs):
+                return -1
+            if self._is_separated_above(spatial_idx, page_elems, rhs, lhs):
+                return 1
+            # this will invoke __lt__ from PageElements
+            return -1 if lhs < rhs else 1
+
+        head_page_elems = sorted(head_page_elems, key=cmp_to_key(compare))
 
         """
         print("after sorting the heads: ")
@@ -1051,6 +1127,42 @@ class ReadingOrderPredictor:
         state.heads = []
         for item in head_page_elems:
             state.heads.append(state.h2i_map[item.cid])
+
+    @staticmethod
+    def _is_separated_above(
+        spatial_idx: "rtree_index.Index",
+        page_elems: List[ReadingOrderNode],
+        upper: ReadingOrderNode,
+        lower: ReadingOrderNode,
+    ) -> bool:
+        """
+        Whether `upper` must be read before `lower` although the two do not
+        share a column: some element lies between them and spans both, so they
+        sit in successive bands of the page rather than in side-by-side columns.
+        """
+        if upper.overlaps_horizontally(lower) or not upper.is_strictly_above(lower):
+            return False
+
+        y_min, y_max = sorted((lower.t, upper.b))
+        query_bbox = (
+            min(upper.l, lower.l),
+            y_min,
+            max(upper.r, lower.r),
+            y_max,
+        )
+        for w in spatial_idx.intersection(query_bbox):
+            pelem_w = page_elems[w]
+            if pelem_w.cid in (upper.cid, lower.cid):
+                continue
+            if (
+                upper.is_strictly_above(pelem_w)
+                and pelem_w.is_strictly_above(lower)
+                and pelem_w.overlaps_horizontally(upper)
+                and pelem_w.overlaps_horizontally(lower)
+            ):
+                return True
+
+        return False
 
     def _sort_ud_maps(
         self, provs: List[ReadingOrderNode], state: _ReadingOrderPredictorState

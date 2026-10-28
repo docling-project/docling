@@ -60,6 +60,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     GroupLabel,
+    ListItem,
     PictureItem,
     TextItem,
 )
@@ -562,6 +563,88 @@ def test_jats_nested_lists_are_preserved():
     sub_item_parent = sub_item.parent.resolve(doc)
     assert sub_item_parent.label == GroupLabel.LIST
     assert sub_item_parent.parent == outer_item.get_ref()
+
+
+def _list_items(doc: DoclingDocument) -> list[ListItem]:
+    return [item for item, _ in doc.iterate_items() if isinstance(item, ListItem)]
+
+
+@pytest.mark.parametrize(
+    ("list_type", "enumerated", "markdown"),
+    [
+        ("order", True, "1. first\n2. second"),
+        ("alpha-lower", True, "1. first\n2. second"),
+        ("alpha-upper", True, "1. first\n2. second"),
+        ("roman-lower", True, "1. first\n2. second"),
+        ("roman-upper", True, "1. first\n2. second"),
+        ("bullet", False, "- first\n- second"),
+        ("simple", False, "- first\n- second"),
+        (None, False, "- first\n- second"),
+    ],
+)
+def test_jats_list_type_sets_enumerated(list_type, enumerated, markdown):
+    attr = f' list-type="{list_type}"' if list_type else ""
+    doc = convert_jats_body(
+        f"""
+        <sec>
+          <title>Steps</title>
+          <list{attr}>
+            <list-item><p>first</p></list-item>
+            <list-item><p>second</p></list-item>
+          </list>
+        </sec>
+        """
+    )
+
+    items = _list_items(doc)
+    assert [item.text for item in items] == ["first", "second"]
+    assert [item.enumerated for item in items] == [enumerated, enumerated]
+    assert [item.marker for item in items] == ["", ""]
+    assert markdown in doc.export_to_markdown()
+
+
+def test_jats_nested_list_takes_its_own_list_type():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Steps</title>
+          <list list-type="bullet">
+            <list-item>
+              <p>outer</p>
+              <list list-type="order">
+                <list-item><p>inner one</p></list-item>
+                <list-item><p>inner two</p></list-item>
+              </list>
+            </list-item>
+          </list>
+        </sec>
+        """
+    )
+
+    enumerated = {item.text: item.enumerated for item in _list_items(doc)}
+    assert enumerated == {"outer": False, "inner one": True, "inner two": True}
+
+
+def test_jats_list_item_label_becomes_marker():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Conditions</title>
+          <list list-type="simple">
+            <list-item><label>(a)</label><p>first</p></list-item>
+            <list-item><label>(b)</label><p>second</p></list-item>
+          </list>
+        </sec>
+        """
+    )
+
+    items = _list_items(doc)
+    assert [(item.marker, item.text) for item in items] == [
+        ("(a)", "first"),
+        ("(b)", "second"),
+    ]
+    assert [item.enumerated for item in items] == [False, False]
+    assert "(a) first" in doc.export_to_markdown()
 
 
 def _inline_group_items(doc: DoclingDocument) -> list[list]:

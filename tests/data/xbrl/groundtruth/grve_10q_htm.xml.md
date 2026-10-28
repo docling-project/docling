@@ -96,13 +96,13 @@ A summary of accrued dividends payable with respect to the Series A and B Prefer
 
 | Schedule of dividends payable, related party |  |  |  |  |  |  |  |  |
 | - | - | - | - | - | - | - | - | - |
-|  |  | **March 31, 2025**  **$** |  |  |  | **December 31, 2025**  **$** |  |  |
+|  |  | **March 31, 2025**  **$** | **March 31, 2025**  **$** |  |  | **December 31, 2025**  **$** | **December 31, 2025**  **$** |  |
 | Dividends payable |  |  | 399,506 |  |  |  | 290,550 |  |
 | Dividends payable, related party |  |  | 201,286 |  |  |  | 146,390 |  |
 
 | Schedule of dividends payable, related party |  |  |  |  |  |  |  |  |
 | - | - | - | - | - | - | - | - | - |
-|  |  | **December 31, 2025**  **$** |  |  |  | **March 31, 2025**  **$** |  |  |
+|  |  | **December 31, 2025**  **$** | **December 31, 2025**  **$** |  |  | **March 31, 2025**  **$** | **March 31, 2025**  **$** |  |
 | Dividends payable |  |  | 399,506 |  |  |  | 290,550 |  |
 | Dividends payable, related party |  |  | 201,286 |  |  |  | 146,390 |  |
 

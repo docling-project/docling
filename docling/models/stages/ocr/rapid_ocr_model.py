@@ -183,18 +183,23 @@ def _ppocr_supported_languages(vocabulary: frozenset[str]) -> OcrLanguageSupport
 def _installed_ppocrv6_codes() -> frozenset[str]:
     """The PP-OCRv6 recognition languages, read from the installed rapidocr.
 
-    `PP_OCRV6_LANGS` is not part of rapidocr's public API, so a version that
-    moves it has to say so rather than leave docling guessing at the vocabulary.
+    Asks `list_supported_langs`, which every rapidocr in the supported range
+    provides; the `PP_OCRV6_LANGS` constant it replaces was removed in 3.10.0.
+    A version that moves it has to say so rather than leave docling guessing
+    at the vocabulary.
     """
+    from rapidocr.utils.typings import OCRVersion, TaskType
+
     try:
-        from rapidocr.utils.model_resolver import PP_OCRV6_LANGS
+        from rapidocr.utils.model_resolver import list_supported_langs
     except ImportError as err:
         raise ImportError(
             f"The installed rapidocr ({safe_version('rapidocr')}) does not expose "
-            "PP_OCRV6_LANGS, which docling needs to resolve PP-OCR recognizers. "
-            "Install a version in the supported range: rapidocr>=3.9.1,<4.0.0."
+            "list_supported_langs, which docling needs to resolve PP-OCR "
+            "recognizers. Install a version in the supported range: "
+            "rapidocr>=3.9.1,<4.0.0."
         ) from err
-    return frozenset(PP_OCRV6_LANGS)
+    return frozenset(list_supported_langs(TaskType.REC, OCRVersion.PPOCRV6))
 
 
 @lru_cache(maxsize=len(_RAPIDOCR_BACKENDS))
@@ -619,13 +624,13 @@ class RapidOcrModel(BaseOcrModel):
                 # Global settings (these are still correct)
                 "Global.text_score": self.options.text_score,
                 "Global.font_path": font_path,
+                "Global.log_level": "info" if self.options.print_verbose else "warning",
                 # Engine-level ONNXRuntime settings
                 "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
                 "EngineConfig.onnxruntime.use_cuda": use_cuda,
                 "EngineConfig.onnxruntime.cuda_ep_cfg.device_id": gpu_id,
                 # Engine-level OpenVINO settings
                 "EngineConfig.openvino.inference_num_threads": intra_op_num_threads,
-                # "Global.verbose": self.options.print_verbose,
                 # Detection model settings
                 "Det.model_path": det_model_path,
                 "Det.use_cuda": use_cuda,
@@ -764,7 +769,7 @@ class RapidOcrModel(BaseOcrModel):
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
                         )
-                        im = numpy.array(high_res_image)
+                        im = numpy.asarray(high_res_image)
                         result = self.reader(
                             im,
                             use_det=self.options.use_det,

@@ -4,8 +4,8 @@
 """The content a Numbers document holds, however its container spells it.
 
 Both container generations describe the same things — sheets of positioned
-tables, charts and notes — so they are modelled once here and read into that
-model by :mod:`docling.backend.iwork.numbers_iwa` and
+tables, charts, pictures and comments — so they are modelled once here and read
+into that model by :mod:`docling.backend.iwork.numbers_iwa` and
 :mod:`docling.backend.iwork.numbers_xml`. Turning the result into a
 :class:`~docling_core.types.doc.DoclingDocument` is the backend's job, which is
 what keeps the two readers from having to agree on anything else.
@@ -20,7 +20,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from typing import NamedTuple
 
-from docling.backend.iwork.content import Chart, Geometry
+from docling.backend.iwork.content import Chart, Geometry, Picture
 
 MAX_TABLE_CELLS = 4_000_000
 """Cells one table may declare before it is rejected as implausible.
@@ -35,12 +35,17 @@ APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 
 
 class Cell(NamedTuple):
-    """One cell of a table, already rendered to text."""
+    """One cell of a table, already rendered to text.
+
+    ``picture`` is the image the cell is filled with. Numbers draws it behind
+    the cell's text, and a cell can hold a picture and no text.
+    """
 
     row: int
     col: int
     text: str
     col_span: int = 1
+    picture: Picture | None = None
 
 
 class Table(NamedTuple):
@@ -73,6 +78,17 @@ class PlacedChart(NamedTuple):
     geometry: Geometry | None
 
 
+class PlacedPicture(NamedTuple):
+    """One picture on a sheet, and where Numbers put it.
+
+    A picture in a group takes the frame of the group, since that is what sits
+    on the sheet.
+    """
+
+    picture: Picture
+    geometry: Geometry | None
+
+
 class Comment(NamedTuple):
     """One comment on a sheet, which Numbers calls a sticky note."""
 
@@ -88,10 +104,11 @@ class Sheet(NamedTuple):
     name: str
     tables: list[Table]
     charts: list[PlacedChart]
+    pictures: list[PlacedPicture]
     comments: list[Comment]
 
 
-Drawable = Table | PlacedChart | Comment
+Drawable = Table | PlacedChart | PlacedPicture | Comment
 """Anything a sheet places on its canvas."""
 
 

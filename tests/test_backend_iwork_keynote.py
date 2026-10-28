@@ -28,6 +28,7 @@ import pytest
 from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel
 from docling_core.types.doc.items.group import GroupItem
 from docling_core.types.doc.items.text import ListItem, TextItem
+from PIL import Image
 
 from docling.backend.iwork.content import Geometry
 from docling.backend.iwork.keynote_content import (
@@ -394,6 +395,20 @@ def test_page_count_is_the_number_of_slides():
     assert backend.page_count() == 3
 
 
+def test_page_range_selects_the_slides_to_convert():
+    """Only the slides in ``page_range`` are converted, as in the PowerPoint and
+    ODP backends, and each keeps its page number and its group name."""
+    doc = DocumentConverter().convert(KEYNOTE_2013, page_range=(2, 3)).document
+
+    assert sorted(doc.pages) == [2, 3]
+    assert [
+        group.name for group in doc.groups if group.label == GroupLabel.CHAPTER
+    ] == ["slide-1", "slide-2"]
+    assert [
+        item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)
+    ] == ["Slide 1", _BODY_SENTENCE, "Slide 3"]
+
+
 def test_keynote_backend_accepts_a_stream():
     stream = BytesIO(KEYNOTE_2013.read_bytes())
     in_doc = InputDocument(
@@ -561,3 +576,52 @@ def test_conversion_matches_the_groundtruth(source: Path):
     assert verify_document(doc, str(groundtruth) + ".json", generate=GEN_TEST_DATA), (
         f"DoclingDocument verification failed on {source}"
     )
+
+
+def _with_image_on_first_slide(tmp_path: Path, png: bytes) -> Path:
+    """Copy the iWork '09 deck with an image placed on its first slide."""
+    media = (
+        "<sf:media><sf:content><sf:image-media><sf:filtered-image><sf:unfiltered>"
+        '<sf:data sf:path="logo.png"/>'
+        "</sf:unfiltered></sf:filtered-image></sf:image-media></sf:content></sf:media>"
+    )
+    target = tmp_path / "logo.key"
+    with (
+        zipfile.ZipFile(KEYNOTE_IWORK09) as source,
+        zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out,
+    ):
+        for info in source.infolist():
+            payload = source.read(info)
+            if info.filename == "index.apxl":
+                xml = payload.decode("utf-8")
+                at = xml.index("<sf:drawables", xml.index("<key:slide "))
+                close = xml.index(">", at)
+                if xml[close - 1] == "/":
+                    xml = f"{xml[: close - 1]}>{media}</sf:drawables>{xml[close + 1 :]}"
+                else:
+                    xml = f"{xml[: close + 1]}{media}{xml[close + 1 :]}"
+                payload = xml.encode("utf-8")
+            out.writestr(info, payload)
+        out.writestr("logo.png", png)
+    return target
+
+
+def test_transparent_image_keeps_its_transparency(tmp_path: Path):
+    """Keynote pictures go through the same path as Pages ones, so a
+    transparent background stays transparent instead of turning black."""
+    image = Image.new("RGBA", (4, 4), (0, 0, 0, 0))
+    image.putpixel((0, 0), (0, 0, 255, 255))
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+
+    doc = _backend(_with_image_on_first_slide(tmp_path, buffer.getvalue())).convert()
+
+    pictures = [
+        picture.image
+        for picture in doc.pictures
+        if picture.image is not None and picture.image.size.width == 4
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].pil_image.mode == "RGBA"
+    assert pictures[0].pil_image.getpixel((3, 3)) == (0, 0, 0, 0)
+    assert pictures[0].pil_image.getpixel((0, 0)) == (0, 0, 255, 255)

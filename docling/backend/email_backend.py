@@ -271,7 +271,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         ]
 
     def _convert_html_part(self, html: str) -> DoclingDocument:
-        html_stream = BytesIO(html.encode("utf-8"))
+        # The part is already decoded, but its markup can still declare the
+        # original charset in a <meta> tag. The UTF-8 byte order mark makes the
+        # HTML parser use UTF-8 and ignore that declaration.
+        html_stream = BytesIO(html.encode("utf-8-sig"))
         in_doc = InputDocument(
             path_or_stream=html_stream,
             format=InputFormat.HTML,
@@ -306,7 +309,12 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             paragraphs = []
             for part in self.mail.text_html:
                 html_doc = self._convert_html_part(part)
-                paragraphs.extend(self._split_paragraphs(html_doc.export_to_markdown()))
+                # The paragraphs become plain text items, and every export of
+                # the email escapes them, so do not escape them here as well.
+                markdown = html_doc.export_to_markdown(
+                    escape_html=False, escape_underscores=False
+                )
+                paragraphs.extend(self._split_paragraphs(markdown))
             if paragraphs:
                 return paragraphs
 

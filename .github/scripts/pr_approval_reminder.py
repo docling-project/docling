@@ -6,7 +6,9 @@
 GitHub holds ``pull_request`` runs from new contributors' forks with the
 conclusion ``action_required`` until a maintainer approves them. These runs
 have an empty ``pull_requests`` list, so they are matched to open PRs by the
-head commit. The message groups the PRs by their AI triage label.
+head commit. The Slack message shows how many PRs wait in each AI triage
+group. The full list goes to the GitHub Actions job summary, and the message
+links to it.
 """
 
 from __future__ import annotations
@@ -19,19 +21,19 @@ import sys
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 APPROVAL_CONCLUSION = "action_required"
 AI_LABEL_PREFIX = "ai:"
-MAX_LISTED_PRS = 40
-MAX_SECTION_CHARS = 2_900
-MAX_TITLE_CHARS = 90
 # (heading, label that selects the group); None collects the rest.
+# The group that needs the most attention comes first.
 GROUPS: tuple[tuple[str, str | None], ...] = (
-    (":white_check_mark: AI triage found no CI concern", "ai:ci-safe"),
-    (":warning: AI triage asks for care", "ai:ci-needs-care"),
+    (":warning: Needs care", "ai:ci-needs-care"),
     (":grey_question: Not triaged", None),
+    (":white_check_mark: No CI concern", "ai:ci-safe"),
 )
+GROUP_LABELS = {label for _, label in GROUPS if label}
 
 
 @dataclass(slots=True)
@@ -97,9 +99,9 @@ def find_waiting_prs(
     return sorted(prs, key=lambda pr: pr.waiting_since)
 
 
-def slack_escape(text: str) -> str:
-    """Escape text for Slack mrkdwn, so it cannot form links or mentions."""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+def markdown_escape(text: str) -> str:
+    """Escape text for a GitHub Markdown table cell."""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace("|", "\\|")
 
 
 def _age(since: datetime, now: datetime) -> str:
@@ -107,83 +109,91 @@ def _age(since: datetime, now: datetime) -> str:
     return f"{hours // 24} d" if hours >= 48 else f"{hours} h"
 
 
-def format_pr(pr: WaitingPr, now: datetime) -> str:
-    title = pr.title if len(pr.title) <= MAX_TITLE_CHARS else pr.title[:89] + "…"
-    title = slack_escape(title).replace("|", "¦")
-    labels = " ".join(
-        f"`{slack_escape(label)}`"
-        for label in pr.ai_labels
-        if label not in {"ai:ci-safe", "ai:ci-needs-care"}
-    )
-    details = [
-        f"by {slack_escape(pr.author)}",
-        f"waiting {_age(pr.waiting_since, now)}",
-    ]
-    if labels:
-        details.append(labels)
-    return f"• <{pr.url}|#{pr.number} {title}>\n      {' · '.join(details)}"
-
-
-def _sections(lines: list[str]) -> list[dict[str, Any]]:
-    blocks: list[dict[str, Any]] = []
-    chunk = ""
-    for line in lines:
-        if chunk and len(chunk) + len(line) + 1 > MAX_SECTION_CHARS:
-            blocks.append(
-                {"type": "section", "text": {"type": "mrkdwn", "text": chunk}}
-            )
-            chunk = ""
-        chunk = f"{chunk}\n{line}" if chunk else line
-    if chunk:
-        blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": chunk}})
-    return blocks
-
-
-def build_message(prs: list[WaitingPr], repo: str, now: datetime) -> dict[str, Any]:
-    count = len(prs)
-    summary = f"{count} PR(s) in {repo} wait for a maintainer to approve CI"
-    blocks: list[dict[str, Any]] = [
-        {"type": "header", "text": {"type": "plain_text", "text": f"🚦 {summary}"}},
-    ]
-    listed = prs[:MAX_LISTED_PRS]
+def group_prs(prs: list[WaitingPr]) -> list[tuple[str, list[WaitingPr]]]:
+    groups: list[tuple[str, list[WaitingPr]]] = []
     for heading, label in GROUPS:
         if label is None:
-            known = {group_label for _, group_label in GROUPS if group_label}
-            members = [pr for pr in listed if not known & set(pr.ai_labels)]
+            members = [pr for pr in prs if not GROUP_LABELS & set(pr.ai_labels)]
         else:
-            members = [pr for pr in listed if label in pr.ai_labels]
-        if not members:
-            continue
-        lines = [f"*{heading}* ({len(members)})"]
-        lines.extend(format_pr(pr, now) for pr in members)
-        blocks.extend(_sections(lines))
-    if count > len(listed):
-        blocks.append(
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": f"… and {count - len(listed)} more. Oldest first.",
-                    }
-                ],
-            }
-        )
-    blocks.append(
+            members = [pr for pr in prs if label in pr.ai_labels]
+        if members:
+            groups.append((heading, members))
+    return groups
+
+
+def build_message(
+    prs: list[WaitingPr], repo: str, now: datetime, summary_url: str | None = None
+) -> dict[str, Any]:
+    count = len(prs)
+    oldest = _age(min(pr.waiting_since for pr in prs), now)
+    counts = "\n".join(
+        f"{heading}: *{len(members)}*" for heading, members in group_prs(prs)
+    )
+    if summary_url:
+        link = f"*<{summary_url}|:point_right: Open the full list of {count} PRs>*"
+    else:
+        link = f"*<https://github.com/{repo}/pulls|:point_right: Open the PRs>*"
+    blocks: list[dict[str, Any]] = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": f"🚦 {count} PR(s) wait for CI approval · oldest {oldest}",
+            },
+        },
+        {"type": "section", "text": {"type": "mrkdwn", "text": counts}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": link}},
         {
             "type": "context",
             "elements": [
                 {
                     "type": "mrkdwn",
                     "text": (
-                        "The `ai:*` labels are advisory. Read the PR before you"
-                        f" approve CI. <https://github.com/{repo}/pulls|Open PRs>"
+                        "The `ai:*` labels are advisory."
+                        " Read the PR before you approve CI."
                     ),
                 }
             ],
-        }
-    )
+        },
+    ]
+    summary = f"{count} PR(s) in {repo} wait for a maintainer to approve CI"
     return {"text": summary, "blocks": blocks}
+
+
+def build_summary(prs: list[WaitingPr], repo: str, now: datetime) -> str:
+    """Render the full list as Markdown for the GitHub Actions job summary."""
+    lines = [f"# {len(prs)} PR(s) in {repo} wait for a maintainer to approve CI", ""]
+    for heading, members in group_prs(prs):
+        lines.extend(
+            [
+                f"## {heading} ({len(members)})",
+                "",
+                "| PR | Title | Author | Waiting | Workflows | Labels |",
+                "| --- | --- | --- | --- | --- | --- |",
+            ]
+        )
+        for pr in members:
+            labels = " ".join(
+                f"`{label}`" for label in pr.ai_labels if label not in GROUP_LABELS
+            )
+            lines.append(
+                f"| [#{pr.number}]({pr.url}) | {markdown_escape(pr.title)}"
+                f" | @{pr.author} | {_age(pr.waiting_since, now)}"
+                f" | {markdown_escape(', '.join(pr.workflows))} | {labels} |"
+            )
+        lines.append("")
+    lines.append("The `ai:*` labels are advisory. Read the PR before you approve CI.")
+    return "\n".join(lines) + "\n"
+
+
+def run_url() -> str | None:
+    """Return the URL of the current GitHub Actions run, if there is one."""
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not run_id or not repo:
+        return None
+    server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+    return f"{server}/{repo}/actions/runs/{run_id}"
 
 
 def post_to_slack(webhook_url: str, payload: dict[str, Any]) -> None:
@@ -215,11 +225,22 @@ def main(argv: list[str] | None = None) -> int:
     if not prs:
         return 0
 
-    payload = build_message(prs, args.repo, datetime.now(timezone.utc))
+    now = datetime.now(timezone.utc)
+    summary = build_summary(prs, args.repo, now)
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    summary_url = None
+    if summary_path:
+        with Path(summary_path).open("a", encoding="utf-8") as handle:
+            handle.write(summary)
+        summary_url = run_url()
+
+    payload = build_message(prs, args.repo, now, summary_url)
     webhook_url = os.environ.get("SLACK_WEBHOOK_URL", "")
     if args.dry_run or not webhook_url:
         if not webhook_url and not args.dry_run:
             print("::warning::SLACK_WEBHOOK_URL is not set. Printing the message only.")
+        if not summary_path:
+            print(summary)
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return 0
     post_to_slack(webhook_url, payload)

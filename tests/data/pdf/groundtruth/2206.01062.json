@@ -7461,8 +7461,8 @@
           ]
         }
       ],
-      "orig": "\u2022 Signs",
-      "text": "\u2022 Signs"
+      "orig": "\u00b7 Signs",
+      "text": "\u00b7 Signs"
     },
     {
       "self_ref": "#/texts/257",
@@ -7920,8 +7920,8 @@
           ]
         }
       ],
-      "orig": "\u2022 Signals",
-      "text": "\u2022 Signals"
+      "orig": "\u00b7 Signals",
+      "text": "\u00b7 Signals"
     },
     {
       "self_ref": "#/texts/274",
@@ -8028,8 +8028,8 @@
           ]
         }
       ],
-      "orig": "\u2022 Road markings",
-      "text": "\u2022 Road markings"
+      "orig": "\u00b7 Road markings",
+      "text": "\u00b7 Road markings"
     },
     {
       "self_ref": "#/texts/278",
@@ -14254,10 +14254,10 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 315.39,
-            "t": 710.85,
-            "r": 564.93,
-            "b": 332.48,
+            "l": 315.4,
+            "t": 710.84,
+            "r": 564.94,
+            "b": 332.47,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -14432,10 +14432,10 @@
         {
           "page_no": 9,
           "bbox": {
-            "l": 53.89,
-            "t": 707.3,
-            "r": 549.06,
-            "b": 343.36,
+            "l": 53.9,
+            "t": 707.26,
+            "r": 549.24,
+            "b": 343.33,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

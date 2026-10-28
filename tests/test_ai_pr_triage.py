@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import string
 import sys
 from pathlib import Path
 
@@ -136,14 +137,100 @@ def test_answer_is_read_from_fenced_final_message() -> None:
     assert result.duplicates[0].verdict == "duplicate"
 
 
-def test_model_text_cannot_mention_users_or_inject_markup() -> None:
+PAYLOADS = (
+    "[Approve CI](//evil.example/phish)",
+    "\\[Approve\\](//evil.example)",
+    "![](https://evil.example/t.png)",
+    "~~~ hide the verdict",
+    "# Maintainer note: pre-approved",
+    "<img src=x> <!-- c -->",
+    "a | b | c",
+    "see https://evil.example and www.evil.example",
+)
+
+
+def _is_escaped(text: str, index: int) -> bool:
+    backslashes = len(text[:index]) - len(text[:index].rstrip("\\"))
+    return backslashes % 2 == 1
+
+
+def test_model_text_is_literal_in_the_comment() -> None:
+    text = " ".join(PAYLOADS) + " Ping @maintainers " + string.punctuation
+    rendered = triage.markdown_text(text)
+    for index, char in enumerate(rendered):
+        if char in string.punctuation and char != "\\":
+            assert _is_escaped(rendered, index), (char, rendered[: index + 1])
+    assert "@\u200bmaintainers" in rendered
+    assert "https:" not in rendered.replace("\\", "")
+    assert "www." not in rendered.replace("\\", "")
+
+    reason = "x | y | z"
+    context = make_context()
     result = triage.parse_triage_result(
-        answer(summary="Ping @maintainers <img src=x> | col\nnext"), {7}
+        answer(
+            summary="# Approved\n\n[Approve](//evil.example)",
+            duplicates=[{"pr": 7, "verdict": "duplicate", "reason": reason}],
+            ci_safety={
+                "verdict": "needs-care",
+                "concerns": [{"path": "a`b.py", "reason": "~~~"}],
+            },
+        ),
+        {7},
     )
-    assert "@​maintainers" in result.summary
-    assert "<img" not in result.summary
-    assert "\\|" in result.summary
-    assert "\n" not in result.summary
+    comment = triage.render_comment(context, result, {triage.LABEL_CI_NEEDS_CARE})
+    lines = comment.splitlines()
+    assert "\\# Approved \\[Approve\\]\\(\\/\\/evil\\.example\\)" in lines
+    assert "- ``a`b.py``: \\~\\~\\~" in lines
+    row = next(line for line in lines if line.startswith("| #7 "))
+    assert row.count("|") - row.count("\\|") == 5
+
+
+def test_model_code_span_cannot_be_closed_early() -> None:
+    assert triage.markdown_code("docling/a_b.py") == "`docling/a_b.py`"
+    assert triage.markdown_code("a``b") == "```a``b```"
+    assert triage.markdown_code("`x") == "`` `x ``"
+
+
+def test_the_answer_is_the_last_complete_object_with_the_answer_keys() -> None:
+    draft, final = answer(summary="Draft."), answer(summary="Final.")
+    message = f"{json.dumps(draft)}\nOn second thought:\n{json.dumps(final)}\nDone."
+    keys = triage.TRIAGE_ANSWER_KEYS
+    assert triage.extract_answer(message, keys)["summary"] == "Final."
+    # A broken answer must not be read from one of its nested objects.
+    broken = '{"summary": "x", "ci_safety": {"verdict": "safe", "concerns": []'
+    with pytest.raises(ValueError, match="no JSON object"):
+        triage.extract_answer(broken, keys)
+
+
+def test_comment_keeps_code_spans_and_table_cells() -> None:
+    context = make_context(
+        candidates=[{"number": 7, "title": "", "state": "open", "url": ""}]
+    )
+    result = triage.parse_triage_result(
+        answer(
+            summary="Fixes `_to_rgb` for [x](//evil.example).",
+            duplicates=[
+                {"pr": 7, "verdict": "related", "reason": "Both edit `a | b`."}
+            ],
+        ),
+        {7},
+    )
+    comment = triage.render_comment(context, result, {triage.LABEL_CI_SAFE})
+    lines = comment.splitlines()
+    assert "Fixes `_to_rgb` for \\[x\\]\\(\\/\\/evil\\.example\\)\\." in lines
+    row = next(line for line in lines if line.startswith("| #7 "))
+    assert "`a \\| b`" in row
+    assert row.count("|") - row.count("\\|") == 5
+
+
+def test_review_labels_of_an_older_commit_are_stale() -> None:
+    current = {triage.LABEL_REVIEW_LGTM, triage.LABEL_CI_SAFE}
+    head = "b" * 40
+    assert triage.stale_review_labels(current, ["a" * 40, head], head) == set()
+    assert triage.stale_review_labels(current, [head, "a" * 40], head) == {
+        triage.LABEL_REVIEW_LGTM
+    }
+    assert triage.stale_review_labels(current, [], head) == {triage.LABEL_REVIEW_LGTM}
 
 
 def test_deterministic_findings_override_a_safe_model_verdict() -> None:
@@ -161,7 +248,7 @@ def test_deterministic_findings_override_a_safe_model_verdict() -> None:
 def test_stored_result_round_trips_through_validation_in_publish() -> None:
     result = triage.parse_triage_result(
         answer(
-            groundtruth={"verdict": "expected", "reason": "Matches the fix."},
+            groundtruth={"verdict": "expected", "reason": "Matches | [the](fix)."},
             topics=["table structure"],
         ),
         {7},

@@ -369,9 +369,6 @@
       "children": [
         {
           "$ref": "#/texts/47"
-        },
-        {
-          "$ref": "#/groups/14"
         }
       ],
       "content_layer": "body",
@@ -381,17 +378,11 @@
     {
       "self_ref": "#/groups/14",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/texts/47"
       },
       "children": [
         {
           "$ref": "#/texts/48"
-        },
-        {
-          "$ref": "#/groups/15"
-        },
-        {
-          "$ref": "#/groups/16"
         }
       ],
       "content_layer": "body",
@@ -401,7 +392,7 @@
     {
       "self_ref": "#/groups/15",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/texts/48"
       },
       "children": [
         {
@@ -415,7 +406,7 @@
     {
       "self_ref": "#/groups/16",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/texts/48"
       },
       "children": [
         {
@@ -441,9 +432,6 @@
         },
         {
           "$ref": "#/texts/57"
-        },
-        {
-          "$ref": "#/groups/17"
         }
       ],
       "content_layer": "body",
@@ -453,7 +441,7 @@
     {
       "self_ref": "#/groups/17",
       "parent": {
-        "$ref": "#/groups/16"
+        "$ref": "#/texts/57"
       },
       "children": [
         {
@@ -1209,7 +1197,11 @@
       "parent": {
         "$ref": "#/groups/13"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/14"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
@@ -1230,7 +1222,14 @@
       "parent": {
         "$ref": "#/groups/14"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/15"
+        },
+        {
+          "$ref": "#/groups/16"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
@@ -1419,7 +1418,11 @@
       "parent": {
         "$ref": "#/groups/16"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/17"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],

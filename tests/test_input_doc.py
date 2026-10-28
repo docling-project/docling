@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import importlib.util
+import zipfile
 from io import BytesIO
 from pathlib import Path
 
@@ -21,7 +22,12 @@ from docling.datamodel.backend_options import (
     HTMLBackendOptions,
 )
 from docling.datamodel.base_models import DocumentStream, InputFormat
-from docling.datamodel.document import InputDocument, _DocumentConversionInput
+from docling.datamodel.document import (
+    _CONTENT_SNIFF_BYTES,
+    _ODF_MIMETYPE_MAX_BYTES,
+    InputDocument,
+    _DocumentConversionInput,
+)
 from docling.datamodel.settings import DocumentLimits
 from docling.document_converter import (
     HTMLFormatOption,
@@ -213,6 +219,69 @@ def test_guess_format_markdown_extension(tmp_path):
     assert dci._guess_format(markdown_path) is InputFormat.MD
 
 
+_HTML_PAST_SNIFF_WINDOW = (
+    b"<!--\n"
+    b"  A licence header comment, longer than the sniff window, that\n"
+    b"  pushes the markup past it.\n" + b"  " + b"x" * 1100 + b"\n"
+    b"-->\n"
+    b"<html><head><title>Report</title></head>"
+    b"<body><h1>Hello</h1></body></html>\n"
+)
+
+_JATS_PAST_SNIFF_WINDOW = (
+    b"<!--\n"
+    b"  A long header comment that pushes the declaration past the\n"
+    b"  sniff window.\n" + b"  " + b"z" * 1100 + b"\n"
+    b"-->\n"
+    b'<?xml version="1.0" encoding="UTF-8"?>\n'
+    b'<!DOCTYPE article PUBLIC "-//NLM//DTD JATS-journalpublishing1.dtd" "x.dtd">\n'
+    b"<article><body><p>Hello</p></body></article>\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "marker", "content", "expected"),
+    [
+        pytest.param(
+            "report.bin",
+            b"<html>",
+            _HTML_PAST_SNIFF_WINDOW,
+            InputFormat.HTML,
+            id="html",
+        ),
+        pytest.param(
+            "article.xml",
+            b"<?xml",
+            _JATS_PAST_SNIFF_WINDOW,
+            InputFormat.XML_JATS,
+            id="jats",
+        ),
+    ],
+)
+def test_guess_format_marker_past_sniff_window(
+    tmp_path, name, marker, content, expected
+):
+    """A format marker beyond the sniff window is still found, from a path too.
+
+    Format sniffing reads a bounded prefix of the document, and a path must
+    read the same prefix as the equivalent `DocumentStream`. A file whose first
+    format marker -- an `<html>` root, an XML declaration -- used to sit past
+    the 1 KiB prefix read for a path was dropped with "does not match any
+    allowed format", while the same bytes converted when they arrived as a
+    stream. Neither name gives the format away, so the content is the only
+    evidence.
+    """
+    assert content.find(marker) > 1024
+    assert content.find(marker) < _CONTENT_SNIFF_BYTES
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
 @pytest.mark.parametrize(
     ("name", "content", "expected"),
     [
@@ -268,13 +337,15 @@ def test_guess_format_upper_case_extension_path(tmp_path, suffix, content, expec
         ("DOC", InputFormat.DOC),
         ("ppt", InputFormat.PPT),
         ("xls", InputFormat.XLS),
+        ("msg", InputFormat.EMAIL),
+        ("MSG", InputFormat.EMAIL),
     ],
 )
 def test_guess_format_ole2_with_fat_first_sector(tmp_path, suffix, expected):
     # An OLE2 container whose first sector after the header is a FAT sector
     # (FD FF FF FF) is reported as Excel by filetype whatever it really holds,
-    # e.g. a Word 6.0 .doc. The extension must then decide between the OLE2
-    # based formats.
+    # e.g. a Word 6.0 .doc or an Outlook .msg (#704 in docling-serve). The
+    # extension must then decide between the OLE2 based formats.
     content = bytearray(1024)
     content[:8] = bytes.fromhex("D0CF11E0A1B11AE1")
     content[512:516] = bytes.fromhex("FDFFFFFF")
@@ -285,6 +356,44 @@ def test_guess_format_ole2_with_fat_first_sector(tmp_path, suffix, expected):
     assert dci._guess_format(doc_path) == expected
     stream = DocumentStream(name=doc_path.name, stream=BytesIO(bytes(content)))
     assert dci._guess_format(stream) == expected
+
+
+def _odf_like_zip(mimetype: bytes) -> bytes:
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("mimetype", mimetype)
+        zf.writestr("content.xml", "<office:document-content/>")
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("mimetype", "expected"),
+    [
+        (b"application/vnd.oasis.opendocument.text", InputFormat.ODT),
+        (b"application/vnd.oasis.opendocument.spreadsheet\n", InputFormat.ODS),
+        # A media type padded past the limit is not taken as OpenDocument, even
+        # though it starts with a valid one.
+        (
+            b"application/vnd.oasis.opendocument.text".ljust(
+                _ODF_MIMETYPE_MAX_BYTES + 1, b" "
+            ),
+            None,
+        ),
+        (b"application/vnd.oasis.opendocument.text" + b"\0" * 4_000_000, None),
+    ],
+    ids=["odt", "ods-newline", "over-limit", "large-member"],
+)
+def test_guess_format_odf_mimetype_member(tmp_path, mimetype, expected):
+    data = _odf_like_zip(mimetype)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    no_ext_path = tmp_path / "upload"
+    no_ext_path.write_bytes(data)
+    assert dci._guess_format(no_ext_path) == expected
+
+    stream = DocumentStream(name="upload", stream=BytesIO(data))
+    assert dci._guess_format(stream) == expected
+    assert stream.stream.tell() == 0
 
 
 def test_guess_format(tmp_path):
@@ -424,10 +533,8 @@ def test_guess_format(tmp_path):
             assert isinstance(docs[0]._backend, backend_cls)
 
     # Plain ZIP (not Office) should not be detected as an Office format
-    import zipfile as _zipfile
-
     plain_zip_path = temp_dir / "archive_no_ext"
-    with _zipfile.ZipFile(plain_zip_path, "w") as zf:
+    with zipfile.ZipFile(plain_zip_path, "w") as zf:
         zf.writestr("data.txt", "hello world")
     assert dci._guess_format(plain_zip_path) is None
 

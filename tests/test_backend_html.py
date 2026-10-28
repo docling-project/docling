@@ -20,6 +20,7 @@ from docling_core.types.doc import (
     RichTableCell,
 )
 from docling_core.types.doc.document import ContentLayer
+from PIL import Image
 from pydantic import AnyUrl, ValidationError
 
 from docling.backend.html_backend import (
@@ -31,7 +32,7 @@ from docling.backend.utils.image_resource_loader import (
     validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -56,6 +57,18 @@ def _create_html_converter(backend_options):
             InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
         },
     )
+
+
+def _convert_html(raw_html: bytes) -> DoclingDocument:
+    """Helper to convert an HTML byte string with the HTML backend."""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(raw_html))
+    return backend.convert()
 
 
 def test_html_backend_options():
@@ -166,6 +179,58 @@ def test_heading_levels():
                 # h3 becomes level 2 because of h1 as title
                 assert item.level == 2
     assert found_lvl_1 and found_lvl_2
+
+
+@pytest.mark.parametrize(
+    ("heading", "bold", "hyperlink"),
+    [
+        # Formatting or a link on one word does not apply to the whole heading
+        ("<h2>Section <strong>bold</strong> heading</h2>", False, None),
+        ("<h2><a href='https://example.com/'>Docs</a> and more</h2>", False, None),
+        # Formatting or a link on all of the text is kept
+        ("<h2><strong>All</strong> <strong>bold</strong></h2>", True, None),
+        (
+            "<h2><a href='https://example.com/'>Docs</a></h2>",
+            False,
+            "https://example.com/",
+        ),
+    ],
+)
+def test_heading_keeps_only_formatting_of_all_its_text(
+    heading: str, bold: bool, hyperlink: str | None
+):
+    html = f"<html><body>{heading}<p>text</p></body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = in_doc._backend.convert()
+    headers = [item for item in doc.texts if isinstance(item, SectionHeaderItem)]
+    assert len(headers) == 1
+    header = headers[0]
+    assert bool(header.formatting and header.formatting.bold) is bold
+    assert (str(header.hyperlink) if header.hyperlink else None) == hyperlink
+
+
+def test_caption_with_partial_link_has_no_hyperlink():
+    html = (
+        b"<html><body><figure><img src='a.png' alt=''>"
+        b"<figcaption>Female mallard in <a href='/wiki/Cornwall'>Cornwall</a>,"
+        b" England</figcaption></figure></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = in_doc._backend.convert()
+    captions = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert len(captions) == 1
+    assert captions[0].text.startswith("Female mallard in Cornwall")
+    assert captions[0].hyperlink is None
 
 
 def test_table_header_rowspan_without_body_does_not_crash():
@@ -652,6 +717,41 @@ def test_ordered_lists():
             "1. 1st item\n2. 2nd item",
         )
     )
+    # A start that is not an HTML integer (superscript two, Roman numeral eight,
+    # Arabic-Indic three, fullwidth nine, empty) or that exceeds the 32-bit range
+    # is ignored, as in browsers. None of these values fails the conversion.
+    for invalid in [
+        "\u00b2",
+        "\u2167",
+        "\u0663",
+        "\uff19",
+        "",
+        "2147483648",
+        "9" * 4300,
+    ]:
+        test_set.append(
+            (
+                f'<html><body><ol start="{invalid}"><li>1st item</li><li>2nd item</li></ol></body></html>'.encode(),
+                "1. 1st item\n2. 2nd item",
+            )
+        )
+    # The HTML rules for parsing integers accept leading whitespace, a plus sign
+    # and leading zeros, and they ignore the text after the digits.
+    for valid, number in [
+        (" 3", 3),
+        ("+3", 3),
+        ("007", 7),
+        ("3 ", 3),
+        ("3.5", 3),
+        ("3abc", 3),
+        ("2147483647", 2147483647),
+    ]:
+        test_set.append(
+            (
+                f'<html><body><ol start="{valid}"><li>1st item</li><li>2nd item</li></ol></body></html>'.encode(),
+                f"{number}. 1st item\n{number + 1}. 2nd item",
+            )
+        )
 
     for idx, pair in enumerate(test_set):
         in_doc = InputDocument(
@@ -1135,6 +1235,101 @@ def test_heading_as_list_child_ends_furniture():
         assert layers["X"] == ContentLayer.BODY
 
 
+@pytest.mark.parametrize(
+    "inert",
+    [
+        "<script>INERTTEXT</script>",
+        "<style>INERTTEXT</style>",
+        "<noscript>INERTTEXT</noscript>",
+        "<template>INERTTEXT</template>",
+        "<template><template>INERTTEXT</template></template>",
+        "<template><template><template>INERTTEXT</template></template></template>",
+        "<noscript><script>INERTTEXT</script></noscript>",
+        '<template id="tpl"><p>INERTTEXT</p><img src="inert.png"/></template>',
+        '<template shadowrootmode="">INERTTEXT</template>',
+        '<template shadowrootmode="foo">INERTTEXT</template>',
+        '<template shadowroot="open">INERTTEXT</template>',
+    ],
+)
+def test_inert_tag_content_is_not_extracted(inert: str):
+    # None of these tags renders its content: <script>/<style> hold metadata,
+    # <noscript> only applies when scripting is disabled, a <template>'s content
+    # is an inert fragment until a script clones it, and a shadow root is
+    # attached only for the values open and closed of shadowrootmode. The old
+    # shadowroot attribute is inert in current browsers.
+    doc = _convert_html(f"<html><body><p>visible</p>{inert}</body></html>".encode())
+    assert [text.text for text in doc.texts] == ["visible"]
+    assert not doc.pictures
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        "<ul><li>visible</li><template><li>INERTTEXT</li></template></ul>",
+        "<ul><li>visible<template><p>INERTTEXT</p></template></li></ul>",
+    ],
+)
+def test_inert_tag_inside_list_is_not_extracted(html: str):
+    # A template also ends up nested in structured content, where its removal
+    # interacts with the list builder.
+    doc = _convert_html(f"<html><body>{html}</body></html>".encode())
+    assert [text.text for text in doc.texts] == ["visible"]
+
+
+def test_inert_tag_inside_table_cell_is_not_extracted():
+    html = (
+        "<table><tbody><tr><td>visible<template><p>INERTTEXT</p>"
+        "</template></td></tr></tbody></table>"
+    )
+    doc = _convert_html(f"<html><body>{html}</body></html>".encode())
+    assert len(doc.tables) == 1
+    markdown = doc.export_to_markdown()
+    assert "visible" in markdown
+    assert "INERTTEXT" not in markdown
+
+
+def test_row_template_in_table_body_is_not_extracted():
+    # A template often holds a row template inside a tbody, as a sibling of the
+    # rows. Its removal must not add a row to the table.
+    html = (
+        "<table><tbody><tr><td>visible</td></tr>"
+        "<template><tr><td>INERTTEXT</td></tr></template></tbody></table>"
+    )
+    doc = _convert_html(f"<html><body>{html}</body></html>".encode())
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 1
+    markdown = doc.export_to_markdown()
+    assert "visible" in markdown
+    assert "INERTTEXT" not in markdown
+
+
+@pytest.mark.parametrize(
+    "template",
+    [
+        '<template shadowrootmode="open"><p>SHADOW</p></template>',
+        '<template shadowrootmode="closed"><p>SHADOW</p></template>',
+        '<template shadowrootmode="OPEN"><p>SHADOW</p></template>',
+    ],
+)
+def test_declarative_shadow_root_template_is_kept(template: str):
+    # A template that declares a shadow root is not inert: the parser attaches
+    # its content to the host element, and browsers render it.
+    raw_html = f"<html><body><div>{template}</div><p>after</p></body></html>".encode()
+    doc = _convert_html(raw_html)
+    assert [text.text for text in doc.texts] == ["SHADOW", "after"]
+
+
+def test_inert_template_inside_shadow_root_template_is_not_extracted():
+    # A kept shadow-root template can hold an inert template. The removal loop
+    # still reaches the nested template.
+    html = (
+        '<div><template shadowrootmode="open"><p>SHADOW</p>'
+        "<template><p>INERTTEXT</p></template></template></div><p>after</p>"
+    )
+    doc = _convert_html(f"<html><body>{html}</body></html>".encode())
+    assert [text.text for text in doc.texts] == ["SHADOW", "after"]
+
+
 def test_unicode_characters():
     raw_html = "<html><body><h1>Hello World!</h1></body></html>".encode()  # noqa: RUF001
     in_doc = InputDocument(
@@ -1295,6 +1490,35 @@ def test_e2e_html_conversion_with_images(mock_local, monkeypatch):
     pred_md: str = res_local.document.export_to_markdown(compact_tables=True)
     assert verify_export(pred_md, gt_path + ".md", generate=GENERATE)
     assert verify_document(res_local.document, gt_path + ".json", GENERATE)
+
+
+def test_local_file_uri_source_resolves_images(tmp_path: Path):
+    """A file URI source must resolve relative HTML images locally."""
+    image_path = tmp_path / "figure.png"
+    image_path.write_bytes(PNG_1X1)
+    html_path = tmp_path / "doc.html"
+    html_path.write_text('<img src="figure.png">', encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(
+                backend_options=HTMLBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=html_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(html_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is not None
 
 
 def test_html_furniture():
@@ -1816,6 +2040,33 @@ def test_load_image_data_enforces_data_uri_size_limit():
         backend._load_image_data(data_uri)
 
 
+def test_image_over_pixel_limit_is_skipped():
+    def png_data_uri(width: int, height: int) -> str:
+        buffer = BytesIO()
+        Image.new("RGB", (width, height), (255, 0, 0)).save(buffer, format="PNG")
+        return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
+    html = (
+        "<html><body><p>Before.</p>"
+        f'<img src="{png_data_uri(8, 8)}"><img src="{png_data_uri(7, 5)}">'
+        "<p>After.</p></body></html>"
+    )
+    converter = _create_html_converter(
+        HTMLBackendOptions(fetch_images=True, max_image_pixels=63)
+    )
+    with pytest.warns(UserWarning, match="exceeds the limit of 63 pixels"):
+        result = converter.convert(
+            DocumentStream(name="test.html", stream=BytesIO(html.encode()))
+        )
+    doc = result.document
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert len(doc.pictures) == 2
+    assert doc.pictures[0].image is None
+    assert doc.pictures[1].get_image(doc).size == (7, 5)
+    assert [text.text for text in doc.texts] == ["Before.", "After."]
+
+
 def test_anchor_fragment_links_with_source_uri():
     """Fragment-only hrefs must not be mangled when source_uri is set."""
     html_path = Path("tests/data/html/sources/hyperlink_06.html")
@@ -1991,6 +2242,52 @@ def _require_chromium() -> None:
             playwright.chromium.launch(headless=True).close()
     except Exception as exc:
         pytest.skip(f"Chromium is not available: {exc}")
+
+
+def _make_stream_backend(src: bytes, name: str) -> HTMLDocumentBackend:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename=name,
+    )
+    return HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(src),
+        options=HTMLBackendOptions(render_page=True),
+    )
+
+
+def test_browser_render_decodes_stream_with_declared_encoding():
+    """A rendered stream keeps the text of a non-UTF-8 document.
+
+    A stream reaches Chromium through `page.set_content`, so the bytes are
+    decoded here instead of by the browser honouring `<meta charset>` the way
+    a `page.goto` on a path does. Decoding as UTF-8 garbled every non-ASCII
+    character of a legacy encoded document while the conversion still
+    reported success.
+    """
+    text = "Привет, мир"
+    src = (
+        '<html><head><meta charset="windows-1251"></head>'
+        f"<body><p>{text}</p></body></html>"
+    ).encode("cp1251")
+
+    backend = _make_stream_backend(src, "page.html")
+
+    rendered = backend._get_render_html_text()
+    assert text in rendered
+    assert BeautifulSoup(rendered, "html.parser").get_text() == text
+
+
+def test_browser_render_decodes_utf8_stream_unchanged():
+    """A UTF-8 document without a charset declaration still decodes as UTF-8."""
+    text = "café"
+    src = f"<html><body><p>{text}</p></body></html>".encode()
+
+    rendered = _make_stream_backend(src, "page.html")._get_render_html_text()
+
+    assert BeautifulSoup(rendered, "html.parser").get_text() == text
 
 
 def test_browser_render_fetches_remote_resources_through_image_loader(
@@ -2272,6 +2569,52 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+def test_html_line_break_outside_paragraphs():
+    # A <br> outside a paragraph or a table cell, e.g. in a heading or a list
+    # item, left the internal sentinel (U+E000) in the text. It is now a line
+    # break, as in a paragraph. The text of a checkbox stays on one line.
+    src = (
+        b"<html><body>"
+        b"<h1>Title<br>line</h1>"
+        b"<h2>Heading<br>line</h2>"
+        b"<ul><li>Item<br>line</li><li><b>Bold</b><br><i>italic</i></li></ul>"
+        b"<dl><dt>Term<br>line</dt><dd>Definition<br>line</dd></dl>"
+        b"<table><caption>Caption<br>line</caption>"
+        b"<tr><td>A</td><td>B</td></tr></table>"
+        b"<figure><img src='a.png'><figcaption>Figure<br>line</figcaption></figure>"
+        b"<pre>Code<br>line</pre>"
+        b"<pre><b>bold</b><br><i>code</i></pre>"
+        b"<ul><li><input type='checkbox' checked>Task<br>line</li></ul>"
+        b"</body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert [item.text for item in doc.texts] == [
+        "Title\nline",
+        "Heading\nline",
+        "Item\nline",
+        "",  # the list item with formatting: its text is in the two runs below
+        "Bold",
+        "italic",
+        "Term\nline",
+        "Definition\nline",
+        "Caption\nline",
+        "Figure\nline",
+        "Code\nline",
+        "bold",
+        "code",
+        "Task line",
+    ]
+    assert not any(_BR_SENTINEL in item.orig for item in doc.texts)
+    assert "## Heading line" in doc.export_to_markdown()
 
 
 def test_gfm_task_list_renders_checkbox_with_text():

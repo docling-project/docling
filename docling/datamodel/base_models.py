@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -425,6 +425,52 @@ class ApiImageStreamingRequestResult:
     num_tokens: int | None
     usage: Any | None = None
     logprobs: Any | None = None
+    error: str | None = None  # set when the request failed and produced no output
+    stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
+
+
+class FieldValuePrediction(BaseModel):
+    text: str
+    orig: str
+    bbox: BoundingBox
+    # Selection state for a checkbox/radio widget; None for text-like fields.
+    # When set, the value is materialized as an empty field value that nests a
+    # CHECKBOX_SELECTED/UNSELECTED child (state lives on the child, not the text).
+    checkbox: (
+        Literal[DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED] | None
+    ) = None
+
+
+class FieldItemPrediction(BaseModel):
+    # A keyed item groups one or more values under one field key chosen from
+    # printed text beside a widget, in its table cell, or in a paragraph that
+    # contains it. key_bbox is the provenance of the key. Keyless items carry
+    # a single value. hint_text is extra context emitted as a field hint:
+    # outside detected tables, an aligned header along the other axis of a
+    # grid of like values. Items in a table cell never carry a hint.
+    key_text: str = ""
+    key_bbox: BoundingBox | None = None
+    values: list[FieldValuePrediction] = []
+    hint_text: str = ""
+
+
+class FormFieldPrediction(BaseModel):
+    # One entry per placement route of the form field stage. Items in table
+    # cells are on Table.field_cells instead.
+    inline_items: dict[int, FieldItemPrediction] = {}  # host paragraph id
+    form_items: dict[int, list[FieldItemPrediction]] = {}  # FORM cluster id
+    loose_items: list[FieldItemPrediction] = []  # placed by geometry
+
+
+class TableFieldPrediction(BaseModel):
+    # Field items that live inside one cell of a structured table. The table's
+    # own row and column headers carry the association, so the items only hold
+    # a key printed in that same cell. Offsets follow TableCell's convention.
+    start_row_offset_idx: int
+    end_row_offset_idx: int
+    start_col_offset_idx: int
+    end_col_offset_idx: int
+    items: list[FieldItemPrediction] = []
 
 
 class ContainerElement(
@@ -433,12 +479,19 @@ class ContainerElement(
     pass
 
 
+class FieldRegionElement(ContainerElement):
+    items: list[FieldItemPrediction] = []
+
+
 class Table(BasePageElement):
     otsl_seq: list[str]
     num_rows: int = 0
     num_cols: int = 0
     orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
+    # AcroForm field items placed in this table's cells (see TableFieldPrediction);
+    # written by the form field stage, empty unless form fields are extracted.
+    field_cells: list[TableFieldPrediction] = []
 
 
 class TableStructurePrediction(BaseModel):
@@ -448,6 +501,12 @@ class TableStructurePrediction(BaseModel):
 class TextElement(BasePageElement):
     text: str
     hyperlink: Optional[Union[AnyUrl, Path]] = None
+    # Set when this paragraph inlines AcroForm widgets (e.g. a sentence with an
+    # inline checkbox and a fillable amount). The paragraph then materializes as
+    # a field_item -- its text becomes the key, the widgets its values -- in the
+    # paragraph's own place in the reading order (its list, its container), rather
+    # than being pulled out into a separate field_region.
+    field_item: Optional["FieldItemPrediction"] = None
 
 
 class FigureElement(BasePageElement):
@@ -479,13 +538,16 @@ class EquationPrediction(BaseModel):
 
 class PagePredictions(BaseModel):
     layout: LayoutPrediction | None = None
+    form_fields: FormFieldPrediction | None = None
     tablestructure: TableStructurePrediction | None = None
     figures_classification: FigureClassificationPrediction | None = None
     equations_prediction: EquationPrediction | None = None
     vlm_response: VlmPrediction | None = None
 
 
-PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
+PageElement = Union[
+    TextElement, Table, FigureElement, ContainerElement, FieldRegionElement
+]
 
 
 class AssembledUnit(BaseModel):
@@ -519,6 +581,9 @@ class Page(BaseModel):
     # conversion results.
     _shape_lines: list[BoundingBox] | None = PrivateAttr(default=None)
     _shape_bounding_boxes: list[BoundingBox] | None = PrivateAttr(default=None)
+    # Whether the page's PDF text layer is broken; read by the OCR stage to replace
+    # it (OcrOptions.replace_broken_text_layer).
+    _broken_text_layer: bool = PrivateAttr(default=False)
     _default_image_scale: float = 1.0  # Default image scale for external usage.
     _image_cache: dict[
         float, Image
@@ -738,6 +803,8 @@ class ConfidenceReport(PageConfidenceScores):
             value.pop("low_score", None)
             value.pop("mean_grade", None)
             value.pop("low_grade", None)
+            if value.get("pages") is None:
+                value.pop("pages", None)
 
         model = handler(value)
         if not model.pages:

@@ -13,7 +13,7 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime
 from enum import Enum
 from io import BytesIO
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -74,6 +74,7 @@ from docling.datamodel.base_models import (
     MimeTypeToFormat,
     Page,
 )
+from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
 from docling.utils.pdf_outline import _PdfOutlineItem
@@ -596,11 +597,18 @@ class ConversionResult(ConversionAssets):
     # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
     # the heading stage resets it to None once consumed.
     _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+    # Set by `BasePipeline.execute` for the duration of one conversion.
+    _progress: ProgressReporter = PrivateAttr(default_factory=ProgressReporter)
     # Page sizes recorded while the PDF pipeline produces pages, so that pages which
     # fail later can still be added to the document with their real size. Kept on the
     # conversion result (not on the pipeline) because one pipeline instance is shared
     # by every conversion made through the same DocumentConverter.
     _page_sizes_by_no: dict[int, Size] = PrivateAttr(default_factory=dict)
+    # Absolute (monotonic-clock) deadline for the whole conversion, derived from
+    # `document_timeout` when set. Private transient plumbing, same rationale as
+    # above: the assembly stage reads it to bound work that runs after the page
+    # stages (e.g. reading-order separator extraction).
+    _conversion_deadline: Optional[float] = PrivateAttr(default=None)
 
 
 class _DummyBackend(AbstractDocumentBackend):
@@ -624,6 +632,23 @@ class _DummyBackend(AbstractDocumentBackend):
 
 _OFFICE_OPEN_XML_ROOT = "application/vnd.openxmlformats-officedocument"
 
+_CONTENT_SNIFF_BYTES = 8192
+"""How much of a document ``_guess_format`` reads to probe its content.
+
+A path and a stream read the same amount: a limit that differed between them
+would make one document's format depend on how it was handed over, and the
+smaller limit silently drops a document whose first format marker -- an
+``<html>`` root, an XML declaration, a LaTeX preamble -- sits past it.
+"""
+
+_ODF_MIMETYPE_MAX_BYTES = 256
+"""Longest ``mimetype`` member that ZIP detection accepts as OpenDocument.
+
+The member holds a short ASCII media type such as
+``application/vnd.oasis.opendocument.text``; a longer one is not ODF and is not
+read in full.
+"""
+
 _ZIP_SUFFIX_MIMETYPES = {
     ".xlsx": _OFFICE_OPEN_XML_ROOT + ".spreadsheetml.sheet",
     ".docx": _OFFICE_OPEN_XML_ROOT + ".wordprocessingml.document",
@@ -638,6 +663,24 @@ _ZIP_SUFFIX_MIMETYPES = {
 its name and confirmed no further; anything else that arrives as a ZIP is looked
 at inside instead.
 """
+
+
+def _is_macos_archive_metadata(path: PurePosixPath) -> bool:
+    """Return True for a ZIP member that macOS adds to an archive, not a document.
+
+    Finder stores resource forks and extended attributes as AppleDouble files
+    named ``._<name>``, under a top-level ``__MACOSX/`` folder, and the view
+    settings of a folder as ``.DS_Store``. A skipped member is logged at debug
+    level.
+    """
+    is_metadata = (
+        path.parts[:1] == ("__MACOSX",)
+        or path.name.startswith("._")
+        or path.name == ".DS_Store"
+    )
+    if is_metadata:
+        _log.debug("Skipping macOS metadata member of a ZIP archive: %s", path)
+    return is_metadata
 
 
 class _DocumentConversionInput(BaseModel):
@@ -704,6 +747,107 @@ class _DocumentConversionInput(BaseModel):
                 obj = item
                 backend_input = item
             format = self._guess_format(obj)
+            if format is None:
+                path_or_stream = obj if isinstance(obj, Path) else obj.stream
+                try:
+                    with zipfile.ZipFile(path_or_stream) as archive:
+                        members = [
+                            info
+                            for info in archive.infolist()
+                            if not info.is_dir()
+                            and not PurePosixPath(info.filename).is_absolute()
+                            and ".." not in PurePosixPath(info.filename).parts
+                            and not _is_macos_archive_metadata(
+                                PurePosixPath(info.filename)
+                            )
+                        ]
+                        if members:
+                            expanded_size = 0
+                            for info in members:
+                                member_name = (
+                                    f"{obj.name}/{PurePosixPath(info.filename)}"
+                                )
+                                if info.file_size > self.limits.max_file_size:
+                                    yield self._build_invalid_input_document(
+                                        name=member_name,
+                                        format_options=format_options,
+                                        file_size=info.file_size,
+                                        rejection=InputRejection(
+                                            message=(
+                                                f"File size {info.file_size} exceeds "
+                                                f"the max_file_size limit of "
+                                                f"{self.limits.max_file_size} bytes."
+                                            ),
+                                            category=FailureCategory.POLICY,
+                                        ),
+                                    )
+                                    continue
+                                if (
+                                    expanded_size + info.file_size
+                                    > self.limits.max_file_size
+                                ):
+                                    yield self._build_invalid_input_document(
+                                        name=member_name,
+                                        format_options=format_options,
+                                        file_size=info.file_size,
+                                        rejection=InputRejection(
+                                            message=(
+                                                "Expanded ZIP contents exceed the "
+                                                f"max_file_size limit of "
+                                                f"{self.limits.max_file_size} bytes."
+                                            ),
+                                            category=FailureCategory.POLICY,
+                                        ),
+                                    )
+                                    continue
+
+                                try:
+                                    member_content = archive.read(info)
+                                except (
+                                    OSError,
+                                    RuntimeError,
+                                    zipfile.BadZipFile,
+                                ) as exc:
+                                    yield self._build_invalid_input_document(
+                                        name=member_name,
+                                        format_options=format_options,
+                                        file_size=info.file_size,
+                                        rejection=InputRejection(
+                                            message=f"Could not read ZIP member: {exc}",
+                                            category=FailureCategory.POLICY,
+                                        ),
+                                    )
+                                    continue
+                                expanded_size += info.file_size
+                                member = DocumentStream(
+                                    name=member_name,
+                                    stream=BytesIO(member_content),
+                                )
+                                member_format = self._guess_format(member)
+                                option = format_options.get(member_format)
+                                member_backend = (
+                                    option.backend
+                                    if option is not None
+                                    else _DummyBackend
+                                )
+                                member_backend_options = (
+                                    option.backend_options_for_input(member)
+                                    if option is not None
+                                    else None
+                                )
+                                yield InputDocument(
+                                    path_or_stream=member.stream,
+                                    format=member_format or next(iter(format_options)),
+                                    filename=member.name,
+                                    limits=self.limits,
+                                    backend=member_backend,
+                                    backend_options=member_backend_options,
+                                )
+                            continue
+                except (OSError, RuntimeError, zipfile.BadZipFile):
+                    # A malformed archive falls through and is reported as an
+                    # unsupported input by the normal conversion path.
+                    pass
             backend: Type[AbstractDocumentBackend]
             backend_options: Optional[BackendOptions] = None
             if not format or format not in format_options:
@@ -814,7 +958,7 @@ class _DocumentConversionInput(BaseModel):
             )
             if needs_content_sniff:
                 with obj.open("rb") as f:
-                    content = f.read(1024)
+                    content = f.read(_CONTENT_SNIFF_BYTES)
             if mime is not None and mime.lower() == "application/zip":
                 named = _ZIP_SUFFIX_MIMETYPES.get(obj.suffix.lower())
                 if named is not None:
@@ -831,7 +975,7 @@ class _DocumentConversionInput(BaseModel):
                 return InputFormat.XML_DOCLANG
             if _DocumentConversionInput._has_dclx_extension(obj.name):
                 return InputFormat.DCLX
-            content = obj.stream.read(8192)
+            content = obj.stream.read(_CONTENT_SNIFF_BYTES)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
             obj_ext = (
@@ -887,11 +1031,12 @@ class _DocumentConversionInput(BaseModel):
 
     @staticmethod
     def _resolve_ole2_mime(mime: Optional[str], ext: Optional[str]) -> Optional[str]:
-        """Let the extension choose between the OLE2 based legacy Office formats.
+        """Let the extension choose between the OLE2 based formats.
 
         ``filetype`` tells .doc, .ppt and .xls apart from a few bytes after the
         OLE2 header, which is not conclusive: a file whose first sector is a FAT
         sector is reported as Excel (or PowerPoint) whatever it really holds.
+        That includes an Outlook .msg, which is an OLE2 container as well.
         """
         if mime is None or ext is None:
             return mime
@@ -902,6 +1047,8 @@ class _DocumentConversionInput(BaseModel):
         for fmt in ole2_formats:
             if ext.lower() in FormatToExtensions[fmt]:
                 return FormatToMimeType[fmt][0]
+        if ext.lower() == "msg":
+            return _DocumentConversionInput._mime_from_extension("msg")
         return mime
 
     @staticmethod
@@ -932,10 +1079,18 @@ class _DocumentConversionInput(BaseModel):
                     return mime_root + ".spreadsheetml.sheet"
                 elif "ppt/presentation.xml" in names:
                     return mime_root + ".presentationml.presentation"
-                if "mimetype" in names:
-                    odf_mime = zf.read("mimetype").decode("ascii", errors="ignore")
-                    if odf_mime.startswith("application/vnd.oasis.opendocument."):
-                        return odf_mime.strip()
+                if (
+                    "mimetype" in names
+                    and zf.getinfo("mimetype").file_size <= _ODF_MIMETYPE_MAX_BYTES
+                ):
+                    # Read one byte past the limit so that a member whose real
+                    # size differs from the declared one is still rejected.
+                    with zf.open("mimetype") as fp:
+                        raw = fp.read(_ODF_MIMETYPE_MAX_BYTES + 1)
+                    if len(raw) <= _ODF_MIMETYPE_MAX_BYTES:
+                        odf_mime = raw.decode("ascii", errors="ignore")
+                        if odf_mime.startswith("application/vnd.oasis.opendocument."):
+                            return odf_mime.strip()
         except (zipfile.BadZipFile, OSError):
             pass
         finally:

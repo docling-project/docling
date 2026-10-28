@@ -99,7 +99,7 @@ def test_api_vlm_model_preserves_usage_on_prediction(
             ),
             "api_image_request_streaming",
             ApiImageStreamingRequestResult("done", 10, {"total_tokens": 10}),
-            "custom_criteria",
+            VlmStopReason.UNSPECIFIED,
         ),
     ],
 )

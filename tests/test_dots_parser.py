@@ -113,21 +113,51 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
 
 
 @pytest.mark.parametrize(
-    "text",
+    ("text", "expected"),
     [
-        "snake_case and a_b_c",
-        r"\*literal\*",
-        "unmatched **bold",
-        "$x_1 * y_2 * z_3$",
-        "______",
+        ("snake_case and a_b_c", "snake_case and a_b_c"),
+        (r"\*literal\*", "*literal*"),
+        (r"a\_b, $x\_1 \* y$, `c\_d` and \\*", r"a_b, $x\_1 \* y$, `c\_d` and \\*"),
+        ("unmatched **bold", "unmatched **bold"),
+        ("$x_1 * y_2 * z_3$", "$x_1 * y_2 * z_3$"),
+        ("______", "______"),
+        ("a *\n=\nb", "a *\n=\nb"),
+        (r"``a\_b` c`` and d\_e", r"``a\_b` c`` and d_e"),
+        # An unclosed run took cubic time before the code-span match was atomic.
+        ("`" * 5000 + r" a\_b", "`" * 5000 + " a_b"),
     ],
 )
-def test_literal_markers_stay_literal(text: str, page_size: Size):
+def test_literal_markers_stay_literal(text: str, expected: str, page_size: Size):
     data = [{"bbox": [10, 20, 300, 50], "category": "Text", "text": text}]
     doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
     assert len(doc.texts) == 1
-    assert doc.texts[0].text == text
+    assert doc.texts[0].text == expected
+    assert doc.texts[0].orig == text
     assert doc.texts[0].formatting is None
+
+
+def test_single_bold_run_and_line_breaks(page_size: Size):
+    data = [
+        {
+            "bbox": [10, 20, 300, 50],
+            "category": "Section-header",
+            "text": "## **Head**",
+        },
+        {"bbox": [10, 60, 300, 90], "category": "Text", "text": "**All bold**"},
+        {"bbox": [10, 100, 300, 130], "category": "Text", "text": "**b**\nline two"},
+    ]
+    doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+    heading, bold = doc.texts[:2]
+    assert (heading.text, heading.orig, heading.formatting.bold) == (
+        "Head",
+        "## **Head**",
+        True,
+    )
+    assert (bold.text, bold.formatting.bold, len(bold.prov)) == ("All bold", True, 1)
+    assert not heading.children and not bold.children
+    # The break moves to the start of the next run to stay valid Markdown.
+    assert [item.text for item in doc.texts[3:]] == ["b", "\nline two"]
+    assert doc.export_to_markdown().startswith("## **Head**\n\n**All bold**\n\n")
 
 
 def test_missing_markdown_dependency_has_install_hint(page_size: Size, monkeypatch):

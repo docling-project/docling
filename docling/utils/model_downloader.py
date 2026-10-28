@@ -1,10 +1,20 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import hashlib
 import logging
+import tempfile
 from pathlib import Path
 from typing import Optional
 
+import requests
+from tqdm import tqdm
+
+from docling.datamodel.asr_model_specs import (
+    _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
+    _WHISPER_S2T_PRESETS,
+    _whisper_s2t_compute_type,
+)
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     granite_picture_description,
@@ -52,6 +62,135 @@ _DEFAULT_RAPIDOCR_MODELS = (
 )
 
 
+def _download_whisper_models(
+    model_names: list[str], output_dir: Path, *, force: bool, progress: bool
+) -> None:
+    """Prefetch OpenAI-format checkpoints into Whisper's download root."""
+    try:
+        from whisper import _MODELS  # type: ignore[attr-defined]
+    except ImportError as exc:
+        raise ImportError(
+            "Native Whisper prefetch requires openai-whisper. Install docling[asr]."
+        ) from exc
+
+    unknown = set(model_names) - _MODELS.keys()
+    if unknown:
+        raise ValueError(f"Unknown native Whisper models: {sorted(unknown)}")
+
+    for model_name in model_names:
+        # Use the installed Whisper release's URLs and expected checksums.
+        url = _MODELS[model_name]
+        expected_sha256 = url.rsplit("/", 2)[-2]
+        checkpoint_path = output_dir / url.rsplit("/", 1)[-1]
+        if (
+            checkpoint_path.is_file()
+            and not force
+            and _sha256_file(checkpoint_path) == expected_sha256
+        ):
+            continue
+
+        _log.info("Downloading native Whisper model %s...", model_name)
+        temp_file = tempfile.NamedTemporaryFile(dir=output_dir, delete=False)
+        temp_path = Path(temp_file.name)
+        digest = hashlib.sha256()
+        try:
+            with temp_file:
+                with requests.get(url, stream=True, timeout=(5, 30)) as response:
+                    response.raise_for_status()
+                    total = int(response.headers.get("content-length", 0))
+                    with tqdm(
+                        total=total,
+                        unit="B",
+                        unit_scale=True,
+                        disable=not progress,
+                    ) as progress_bar:
+                        for chunk in response.iter_content(chunk_size=1024 * 1024):
+                            if chunk:
+                                temp_file.write(chunk)
+                                digest.update(chunk)
+                                progress_bar.update(len(chunk))
+                if digest.hexdigest() != expected_sha256:
+                    raise ValueError(
+                        f"SHA-256 mismatch for native Whisper model {model_name}"
+                    )
+            temp_path.replace(checkpoint_path)
+        finally:
+            temp_path.unlink(missing_ok=True)
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _download_distil_whisper_models(
+    model_names: list[str], output_dir: Path, *, force: bool, progress: bool
+) -> None:
+    from huggingface_hub import hf_hub_download
+    from huggingface_hub.utils import disable_progress_bars
+
+    unknown = set(model_names) - _DISTIL_WHISPER_OPENAI_CHECKPOINTS.keys()
+    if unknown:
+        raise ValueError(f"Unknown Distil-Whisper models: {sorted(unknown)}")
+    if not progress:
+        disable_progress_bars()
+
+    for model_name in model_names:
+        repo_id, filename, revision = _DISTIL_WHISPER_OPENAI_CHECKPOINTS[model_name]
+        _log.info("Downloading Distil-Whisper model %s...", model_name)
+        hf_hub_download(
+            repo_id=repo_id,
+            filename=filename,
+            revision=revision,
+            cache_dir=output_dir,
+            force_download=force,
+        )
+
+
+def _download_whisper_s2t_models(
+    model_names: list[str], output_dir: Path, *, force: bool, progress: bool
+) -> None:
+    try:
+        import whisper_s2t  # type: ignore
+    except ImportError as exc:
+        raise ImportError(
+            "WhisperS2T prefetch requires whisper-s2t-reborn. Install it via "
+            "`pip install 'whisper-s2t-reborn>=1.8.0'`."
+        ) from exc
+    from huggingface_hub.utils import disable_progress_bars
+
+    unknown = set(model_names) - _WHISPER_S2T_PRESETS.keys()
+    if unknown:
+        raise ValueError(f"Unknown WhisperS2T models: {sorted(unknown)}")
+    if not progress:
+        disable_progress_bars()
+
+    for model_name in model_names:
+        torch_dtype = _WHISPER_S2T_PRESETS[model_name].torch_dtype
+        compute_types = sorted(
+            {
+                _whisper_s2t_compute_type(torch_dtype, device)
+                for device in ("cuda", "cpu")
+            }
+        )
+        aligner = whisper_s2t.default_word_aligner(model_name)
+        names = [model_name] if aligner is None else [model_name, aligner]
+        for compute_type in compute_types:
+            _log.info(
+                "Downloading WhisperS2T model %s (%s)...", model_name, compute_type
+            )
+            for name in names:
+                whisper_s2t.download_model(
+                    name,
+                    compute_type=compute_type,
+                    cache_dir=str(output_dir),
+                    force_download=force,
+                )
+
+
 def download_models(
     output_dir: Optional[Path] = None,
     *,
@@ -70,6 +209,7 @@ def download_models(
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
     with_granite_chart_extraction: bool = False,
+    with_granite_chart_extraction_v3_3: bool = False,
     with_granite_chart_extraction_v4: bool = False,
     with_rapidocr: bool = True,
     rapidocr_models: Optional[list[str]] = None,
@@ -77,6 +217,9 @@ def download_models(
     with_easyocr: bool = False,
     easyocr_languages: Optional[list[str]] = None,  # BCP-47 tags
     with_nemotron_ocr: bool = False,
+    whisper_models: Optional[list[str]] = None,
+    whisper_distil_models: Optional[list[str]] = None,
+    whisper_s2t_models: Optional[list[str]] = None,
 ):
     if easyocr_languages is not None and not with_easyocr:
         raise ValueError("easyocr_languages requires with_easyocr=True")
@@ -94,6 +237,21 @@ def download_models(
 
     # Make sure the folder exists
     output_dir.mkdir(exist_ok=True, parents=True)
+
+    if whisper_models:
+        _download_whisper_models(
+            whisper_models, output_dir, force=force, progress=progress
+        )
+
+    if whisper_distil_models:
+        _download_distil_whisper_models(
+            whisper_distil_models, output_dir, force=force, progress=progress
+        )
+
+    if whisper_s2t_models:
+        _download_whisper_s2t_models(
+            whisper_s2t_models, output_dir, force=force, progress=progress
+        )
 
     if with_layout:
         _log.info("Downloading layout model...")
@@ -219,14 +377,24 @@ def download_models(
             progress=progress,
         )
 
-    if with_granite_chart_extraction:
-        _log.warning(
-            "with_granite_chart_extraction=True: the Granite Vision V1 chart extraction "
-            "model (granite-vision-3.3-2b-chart2csv-preview) is no longer supported. "
-            "Use with_granite_chart_extraction_v4=True instead."
+    if with_granite_chart_extraction_v3_3:
+        from docling.datamodel.chart_extraction_options import (
+            ChartExtractionVlmEngineOptions,
         )
 
-    if with_granite_chart_extraction_v4:
+        preset = ChartExtractionVlmEngineOptions.get_preset("granite_vision_v3_3")
+        repo_id = preset.model_spec.get_repo_id(preset.default_engine_type)
+        revision = preset.model_spec.get_revision(preset.default_engine_type)
+        _log.info(f"Downloading Granite Vision 3.3 Chart2CSV model ({repo_id})...")
+        download_hf_model(
+            repo_id=repo_id,
+            revision=revision,
+            local_dir=output_dir / repo_id.replace("/", "--"),
+            force=force,
+            progress=progress,
+        )
+
+    if with_granite_chart_extraction or with_granite_chart_extraction_v4:
         from docling.datamodel.chart_extraction_options import (
             ChartExtractionVlmEngineOptions,
         )

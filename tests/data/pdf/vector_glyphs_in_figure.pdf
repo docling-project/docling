@@ -1,0 +1,74 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 561 >>
+stream
+0.92 g
+30 185 240 85 re f
+0 g
+BT
+/F1 8 Tf
+1 0 0 1 34 188 Tm
+(Fig) Tj
+ET
+130 215 4 24 re f
+144 215 4 24 re f
+134 225 10 4 re f
+156 215 4 24 re f
+0.92 g
+30 140 240 14 re f
+0 g
+BT
+/F1 10 Tf
+1 0 0 1 34 143 Tm
+(Total) Tj
+ET
+0.92 g
+30 30 240 80 re f
+0 g
+BT
+/F1 11 Tf
+1 0 0 1 34 95 Tm
+(Programmatic text line one inside a box) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 34 76 Tm
+(Programmatic text line two inside a box) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 34 57 Tm
+(Programmatic text line three inside box) Tj
+ET
+BT
+/F1 11 Tf
+1 0 0 1 34 38 Tm
+(Programmatic text line four inside a box) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000852 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+922
+%%EOF

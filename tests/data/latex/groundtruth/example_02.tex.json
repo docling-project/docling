@@ -22,16 +22,7 @@
         "$ref": "#/texts/2"
       },
       {
-        "$ref": "#/texts/3"
-      },
-      {
-        "$ref": "#/texts/4"
-      },
-      {
         "$ref": "#/texts/5"
-      },
-      {
-        "$ref": "#/tables/0"
       },
       {
         "$ref": "#/texts/6"
@@ -41,16 +32,58 @@
       },
       {
         "$ref": "#/texts/8"
+      },
+      {
+        "$ref": "#/tables/0"
+      },
+      {
+        "$ref": "#/texts/9"
+      },
+      {
+        "$ref": "#/texts/10"
+      },
+      {
+        "$ref": "#/texts/11"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [],
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/texts/2"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    }
+  ],
   "texts": [
     {
       "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "\\documentclass{article}",
+      "text": "\\documentclass{article}"
+    },
+    {
+      "self_ref": "#/texts/1",
       "parent": {
         "$ref": "#/body"
       },
@@ -63,19 +96,47 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/1",
+      "self_ref": "#/texts/2",
       "parent": {
         "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/0"
+        }
+      ],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Inline math: $E = mc^2$",
-      "text": "Inline math: $E = mc^2$"
+      "orig": "Inline math: ",
+      "text": "Inline math: "
     },
     {
-      "self_ref": "#/texts/2",
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "E = mc^2",
+      "text": "E = mc^2"
+    },
+    {
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/body"
       },
@@ -87,7 +148,7 @@
       "text": "Display math:"
     },
     {
-      "self_ref": "#/texts/3",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/body"
       },
@@ -99,7 +160,7 @@
       "text": "\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}"
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/body"
       },
@@ -107,11 +168,11 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}",
-      "text": "\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}"
+      "orig": "\\begin{equation}\n\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}\n\\end{equation}",
+      "text": "\\begin{equation}\n\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}\n\\end{equation}"
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/body"
       },
@@ -124,19 +185,19 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "caption",
       "prov": [],
       "orig": "Sample table",
       "text": "Sample table"
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/body"
       },
@@ -149,7 +210,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/body"
       },
@@ -172,7 +233,11 @@
       "content_layer": "body",
       "label": "table",
       "prov": [],
-      "captions": [],
+      "captions": [
+        {
+          "$ref": "#/texts/9"
+        }
+      ],
       "references": [],
       "footnotes": [],
       "data": {

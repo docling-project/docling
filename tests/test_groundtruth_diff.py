@@ -48,7 +48,10 @@ def make_doc() -> dict[str, Any]:
 
 def summarize(old: dict[str, Any], new: dict[str, Any]) -> Any:
     return gt.summarize_file(
-        DOC_PATH, json.dumps(old).encode(), json.dumps(new, indent=2).encode()
+        DOC_PATH,
+        json.dumps(old).encode(),
+        json.dumps(new, indent=2).encode(),
+        status="modified",
     )
 
 
@@ -98,13 +101,30 @@ def test_text_table_and_reading_order_changes_are_classified() -> None:
 def test_markdown_whitespace_and_table_rows() -> None:
     path = "tests/data/md/groundtruth/a.md"
     old = b"# T\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"
-    assert gt.summarize_file(path, old, old + b"\n\n").kind == gt.ChangeKind.FORMATTING
-    joined = gt.summarize_file(path, b"one\n\ntwo\n", b"one two\n")
+    formatted = gt.summarize_file(path, old, old + b"\n\n", status="modified")
+    assert formatted.kind == gt.ChangeKind.FORMATTING
+    joined = gt.summarize_file(path, b"one\n\ntwo\n", b"one two\n", status="modified")
     assert joined.kind == gt.ChangeKind.TEXT
     assert joined.details == ["line or paragraph breaks changed"]
-    change = gt.summarize_file(path, old, old.replace(b"| 1 |", b"| 9 |"))
+    change = gt.summarize_file(
+        path, old, old.replace(b"| 1 |", b"| 9 |"), status="modified"
+    )
     assert change.kind == gt.ChangeKind.TABLES
     assert change.details == ["+1 / -1 lines", "Markdown table rows changed"]
+
+
+def test_a_failed_read_of_a_modified_file_is_not_reported_as_added() -> None:
+    # read_blob gives None for any git failure, for example a blob that the
+    # partial clone cannot fetch.
+    doc = json.dumps(make_doc()).encode()
+    for old, new, side in ((None, doc, "base"), (doc, None, "head")):
+        change = gt.summarize_file(DOC_PATH, old, new, status="modified")
+        assert change.kind == gt.ChangeKind.UNPARSABLE
+        assert change.details == [f"cannot read the {side} version"]
+    added = gt.summarize_file(DOC_PATH, None, doc, status="added")
+    assert added.kind == gt.ChangeKind.ADDED
+    renamed = gt.summarize_file(DOC_PATH, None, doc, status="renamed")
+    assert renamed.kind == gt.ChangeKind.UNPARSABLE
 
 
 def test_render_lists_relevant_kinds_first() -> None:

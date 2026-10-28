@@ -223,7 +223,7 @@ jobs:
             TACH_ARGS="--tach-base $TACH_BASE_REF"
           fi
           echo "Running core test suite"
-          uv run pytest -v --durations=0 --cov=docling --cov-branch --cov-report=xml --cov-context=test $TACH_ARGS "${ML_IGNORE_ARGS[@]}"
+          uv run pytest -n auto --dist loadfile -v --durations=0 --cov=docling --cov-branch --cov-report=xml --cov-context=test $TACH_ARGS "${ML_IGNORE_ARGS[@]}"
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
@@ -379,7 +379,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
 
@@ -425,7 +425,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
 
@@ -462,7 +462,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - name: Test pip install across selected Python versions
         run: |
@@ -500,7 +500,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - name: Test pip install without dev headers across selected Python versions
         run: |
@@ -580,7 +580,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -622,7 +622,7 @@ jobs:
           path: dist/
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: ${{ matrix.python-version }}
           activate-environment: true

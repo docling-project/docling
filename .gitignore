@@ -1,6 +1,11 @@
 model_artifacts/
 scratch/
 ds_convert_models/
+/latex-failures.jsonl
+/latex-manifest.jsonl
+/latex-failures/
+/latex-success/
+output/
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,macos,virtualenv,pycharm,visualstudiocode,emacs,vim,jupyternotebooks
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,macos,virtualenv,pycharm,visualstudiocode,emacs,vim,jupyternotebooks
@@ -10,6 +15,7 @@ ds_convert_models/
 *~
 *.dclx
 *.dclg
+!tests/data/latex/groundtruth/*.dclg
 *.xml
 *.zip
 \#*\#
@@ -448,3 +454,6 @@ pip-selfcheck.json
 
 # AI agents
 **/.bob/
+
+# Local ASR model validation output
+/asr-validation/

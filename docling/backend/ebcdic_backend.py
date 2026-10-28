@@ -90,7 +90,9 @@ class _FieldDecoder:
                 f"from {data.hex()!r}."
             ) from exc
         if isinstance(value, int) and field.scale:
-            return Decimal(value).scaleb(-field.scale)
+            # Scaling decodes an implied decimal point, not an arithmetic result.
+            # Decimal.scaleb() would round to the caller's context precision.
+            return Decimal(f"{value}e-{field.scale}")
         return value
 
     def _string(self, data: bytes) -> str:
@@ -192,6 +194,14 @@ class _RecordParser:
         offset = 0
         for field in record.fields:
             chunk = body[offset : offset + field.size]
+            if len(chunk) < field.size:
+                # A record length shorter than the layout leaves this field
+                # partly or wholly absent, and decoding what is left would
+                # report a value the record does not hold.
+                raise EbcdicDecodeError(
+                    f"Record {record.name!r} ends inside {field.name!r}: "
+                    f"{len(chunk)} of {field.size} bytes left."
+                )
             offset += field.size
             if field.type is not EbcdicFieldType.SKIP:
                 value = self._decoder.decode(chunk, field)

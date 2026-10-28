@@ -80,6 +80,14 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
+# `list-type` values that number the items, from the JATS 1.3 tag library.
+_ORDERED_LIST_TYPES: Final[frozenset[str]] = frozenset(
+    {"order", "alpha-lower", "alpha-upper", "roman-lower", "roman-upper"}
+)
+# Elements that hold a whole article inside another one, such as a decision
+# letter or an author reply, from the JATS 1.3 tag library.
+_SUB_ARTICLE_TAGS: Final[tuple[str, ...]] = ("sub-article", "response")
+_NOT_IN_SUB_ARTICLE: Final[str] = "not(ancestor::sub-article or ancestor::response)"
 
 _RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
     ".jpg",
@@ -285,14 +293,24 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             self._add_metadata(doc, xml_components)
 
             # walk over the XML body
-            body = self.tree.xpath("//body")
+            body = self.tree.xpath(f"//body[{_NOT_IN_SUB_ARTICLE}]")
             if self.root and len(body) > 0:
                 self._walk_linear(doc, self.root, body[0])
 
             # walk over the XML back matter
-            back = self.tree.xpath("//back")
+            back = self.tree.xpath(f"//back[{_NOT_IN_SUB_ARTICLE}]")
             if self.root and len(back) > 0:
                 self._walk_linear(doc, self.root, back[0])
+
+            # walk over the sub-articles
+            sub_articles = self.tree.xpath(
+                " | ".join(
+                    f"//{tag}[{_NOT_IN_SUB_ARTICLE}]" for tag in _SUB_ARTICLE_TAGS
+                )
+            )
+            if self.root:
+                for sub_article in sub_articles:
+                    self._add_sub_article(doc, self.root, sub_article)
         except Exception:
             _log.error(traceback.format_exc())
 
@@ -315,6 +333,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             text += child.tail.replace("\n", " ") if child.tail else ""
 
         return text
+
+    @staticmethod
+    def _get_label(node: etree._Element) -> str:
+        """Return the text of the `<label>` child of `node`, or an empty string."""
+        label = node.find("label")
+        return JatsDocumentBackend._get_text(label).strip() if label is not None else ""
 
     @staticmethod
     def _normalize_whitespace(text: str | None) -> str:
@@ -1244,6 +1268,40 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             list_item = doc.add_list_item(parent=footnote_group, text="")
             JatsDocumentBackend._emit_inline(doc, list_item, segments)
 
+    def _add_sub_article(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem,
+        node: etree._Element,
+    ) -> None:
+        """Add the body and back matter of a `<sub-article>` or `<response>`.
+
+        Like a `<sec>`, the content goes under a heading with the title of the
+        sub-article, if it has one. A nested sub-article goes under the
+        heading of the sub-article that contains it.
+        """
+        title = node.xpath(
+            "front-stub/title-group/article-title"
+            " | front/article-meta/title-group/article-title"
+        )
+        text = (
+            JatsDocumentBackend._normalize_whitespace(
+                JatsDocumentBackend._get_text(title[0])
+            )
+            if title
+            else ""
+        )
+        new_parent = parent
+        if text:
+            self.hlevel += 1
+            new_parent = doc.add_heading(text=text, parent=parent, level=self.hlevel)
+        for child in node.iterchildren("body", "back"):
+            self._walk_linear(doc, new_parent, child)
+        for child in node.iterchildren(*_SUB_ARTICLE_TAGS):
+            self._add_sub_article(doc, new_parent, child)
+        if text:
+            self.hlevel -= 1
+
     def _walk_linear(
         self,
         doc: DoclingDocument,
@@ -1295,7 +1353,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "list-item":
                 # TODO: address non-paragraph, non-list content inside list-item
                 #       (e.g. disp-formula, fig, table-wrap)
-                # TODO: address list type and item label
                 text_parts: list[str] = []
                 nested_lists: list[etree._Element] = []
 
@@ -1309,6 +1366,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
                 new_parent = doc.add_list_item(
                     text=text,
+                    enumerated=node.get("list-type", "").strip().lower()
+                    in _ORDERED_LIST_TYPES,
+                    marker=JatsDocumentBackend._get_label(child),
                     parent=parent,
                 )
 

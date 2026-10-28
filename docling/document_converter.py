@@ -15,7 +15,15 @@ from pathlib import Path
 from typing import Optional, Type, Union
 
 from docling_core.types.doc.page import TextCellUnit
-from pydantic import ConfigDict, Field, model_validator, validate_call
+from pydantic import (
+    AnyHttpUrl,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+    validate_call,
+)
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import (
@@ -98,6 +106,11 @@ from docling.datamodel.pipeline_options import (
     NativePdfPipelineOptions,
     PipelineOptions,
 )
+from docling.datamodel.progress import (
+    ConversionPhase,
+    ProgressCallback,
+    ProgressReporter,
+)
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
@@ -112,6 +125,7 @@ from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.video_pipeline import VideoPipeline
 from docling.utils.pipeline_cache import create_pipeline_options_hash
+from docling.utils.progress import ProgressPrinter
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -181,6 +195,21 @@ class MarkdownFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MarkdownDocumentBackend
     backend_options: Optional[MarkdownBackendOptions] = None
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> MarkdownBackendOptions | None:
+        options = self.backend_options
+        if (
+            options is None
+            or options.source_uri is not None
+            or isinstance(source, DocumentStream)
+        ):
+            return options
+
+        return MarkdownBackendOptions.model_validate(
+            {**options.model_dump(), "source_uri": source}
+        )
 
 
 class AsciiDocFormatOption(FormatOption):
@@ -358,6 +387,31 @@ class LatexFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = LatexDocumentBackend
     backend_options: Optional[LatexBackendOptions] = None
 
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> LatexBackendOptions | None:
+        """Keep the location of a local ``str`` source.
+
+        A ``str`` source is read into a stream before it reaches the backend,
+        which then cannot resolve ``\\input``, ``\\include`` or
+        ``\\includegraphics`` relative to the document. ``Path`` sources and
+        streams are passed on unchanged, and so are http(s) URLs, the same way
+        ``resolve_source_to_stream`` tells them apart from local paths.
+        """
+        options = self.backend_options
+        if not isinstance(source, str) or (
+            options is not None and options.source_uri is not None
+        ):
+            return options
+        try:
+            TypeAdapter(AnyHttpUrl).validate_python(source)
+        except ValidationError:
+            base = options.model_dump() if options is not None else {}
+            return LatexBackendOptions.model_validate(
+                {**base, "source_uri": Path(source)}
+            )
+        return options
+
 
 class EmailFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
@@ -455,6 +509,8 @@ class DocumentConverter:
         self,
         allowed_formats: Optional[list[InputFormat]] = None,
         format_options: Optional[dict[InputFormat, FormatOption]] = None,
+        progress_callback: Optional[ProgressCallback] = None,
+        show_progress: bool = False,
     ) -> None:
         """Initialize the converter based on format preferences.
 
@@ -462,6 +518,18 @@ class DocumentConverter:
             allowed_formats: List of allowed input formats. By default, any
                 format supported by Docling is allowed.
             format_options: Dictionary of format-specific options.
+            progress_callback: Optional callable that receives progress events
+                (see `docling.datamodel.progress`) while documents convert:
+                document start and end for every input, pipeline phases, and
+                page and enrichment-item counts where they apply. It receives
+                the events of every call; `convert` and `convert_all` also take
+                a callback for one call. Exceptions it raises are logged and
+                ignored. With
+                `settings.perf.doc_batch_concurrency > 1` it is called from
+                several threads at once and must be thread-safe.
+            show_progress: Print progress to stderr with the built-in
+                `ProgressPrinter`, without writing a callback. Can be combined
+                with `progress_callback`.
 
         Examples:
             Create a converter with default settings (all formats allowed):
@@ -485,9 +553,17 @@ class DocumentConverter:
             ...         ),
             ...     }
             ... )
+
+            Print page and enrichment progress to stderr:
+
+            >>> converter = DocumentConverter(show_progress=True)
         """
         self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
+        )
+        self.progress_callback: Optional[ProgressCallback] = progress_callback
+        self.progress_printer: Optional[ProgressPrinter] = (
+            ProgressPrinter() if show_progress else None
         )
 
         # Normalize format options: ensure IMAGE format uses ImageDocumentBackend
@@ -561,8 +637,13 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> ConversionResult:
         """Convert one document fetched from a file path, URL, or DocumentStream.
+
+        A generic ZIP archive can contain multiple documents. Use ``convert_all``
+        for such archives. This method raises ``ConversionError`` instead of
+        silently returning only the first converted member.
 
         Note: If the document content is given as a string (Markdown or HTML
         content), use the `convert_string` method.
@@ -579,6 +660,10 @@ class DocumentConverter:
                 Documents exceeding this number will not be converted.
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
+            progress_callback: Optional callable that receives the progress
+                events of this call only, on top of the converter-level
+                `progress_callback`. Use it when one converter serves several
+                callers, e.g. the tasks of a service.
 
         Returns:
             The conversion result, which contains a `DoclingDocument` in the `document`
@@ -607,15 +692,27 @@ class DocumentConverter:
             >>> stream = DocumentStream(name="page.html", stream=buf)
             >>> result = converter.convert(stream)
         """
-        all_res = self.convert_all(
-            source=[source],
-            raises_on_error=raises_on_error,
-            max_num_pages=max_num_pages,
-            max_file_size=max_file_size,
-            headers=headers,
-            page_range=page_range,
+        all_res = iter(
+            self.convert_all(
+                source=[source],
+                raises_on_error=raises_on_error,
+                max_num_pages=max_num_pages,
+                max_file_size=max_file_size,
+                headers=headers,
+                page_range=page_range,
+                progress_callback=progress_callback,
+            )
         )
-        return next(all_res)
+        first_result = next(all_res, None)
+        if first_result is None:
+            return next(all_res)
+
+        if next(all_res, None) is not None:
+            raise ConversionError(
+                "The source contains multiple documents. Use convert_all() to "
+                "convert every document in the source."
+            )
+        return first_result
 
     @validate_call(config=ConfigDict(strict=True))
     def convert_all(
@@ -628,6 +725,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> Iterator[ConversionResult]:
         """Convert multiple documents from file paths, URLs, or DocumentStreams.
 
@@ -643,6 +741,10 @@ class DocumentConverter:
             max_file_size: Maximum file size in bytes. Documents exceeding this
                 limit will be skipped.
             page_range: Range of pages to convert in each document.
+            progress_callback: Optional callable that receives the progress
+                events of this call only, on top of the converter-level
+                `progress_callback`. Use it when one converter serves several
+                callers, e.g. the tasks of a service.
 
         Yields:
             The conversion results, each containing a `DoclingDocument` in the
@@ -674,7 +776,11 @@ class DocumentConverter:
         conv_input = _DocumentConversionInput(
             path_or_stream_iterator=source, limits=limits, headers=headers
         )
-        conv_res_iter = self._convert(conv_input, raises_on_error=raises_on_error)
+        conv_res_iter = self._convert(
+            conv_input,
+            raises_on_error=raises_on_error,
+            progress_callback=progress_callback,
+        )
 
         had_result = False
         for conv_res in conv_res_iter:
@@ -710,6 +816,7 @@ class DocumentConverter:
         content: str,
         format: InputFormat,
         name: Optional[str] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> ConversionResult:
         """Convert a document given as a string using the specified format.
 
@@ -723,6 +830,10 @@ class DocumentConverter:
             name: The filename to associate with the document. If not provided, a
                 timestamp-based name is generated. The appropriate file extension is
                 appended if missing.
+            progress_callback: Optional callable that receives the progress
+                events of this call only, on top of the converter-level
+                `progress_callback`. Use it when one converter serves several
+                callers, e.g. the tasks of a service.
 
         Returns:
             The conversion result, which contains a `DoclingDocument` in the `document`
@@ -759,7 +870,7 @@ class DocumentConverter:
             buff = BytesIO(content.encode("utf-8"))
             doc_stream = DocumentStream(name=name, stream=buff)
 
-            return self.convert(doc_stream)
+            return self.convert(doc_stream, progress_callback=progress_callback)
         elif format == InputFormat.HTML:
             if not name.endswith(".html"):
                 name += ".html"
@@ -767,7 +878,7 @@ class DocumentConverter:
             buff = BytesIO(content.encode("utf-8"))
             doc_stream = DocumentStream(name=name, stream=buff)
 
-            return self.convert(doc_stream)
+            return self.convert(doc_stream, progress_callback=progress_callback)
         elif format == InputFormat.XML_DOCLANG:
             if not name.endswith((".dclg", ".dclg.xml")):
                 name += ".dclg.xml"
@@ -775,22 +886,27 @@ class DocumentConverter:
             buff = BytesIO(content.encode("utf-8"))
             doc_stream = DocumentStream(name=name, stream=buff)
 
-            return self.convert(doc_stream)
+            return self.convert(doc_stream, progress_callback=progress_callback)
         else:
             raise ValueError(f"format {format} is not supported in `convert_string`")
 
     def _convert(
-        self, conv_input: _DocumentConversionInput, raises_on_error: bool
+        self,
+        conv_input: _DocumentConversionInput,
+        raises_on_error: bool,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> Iterator[ConversionResult]:
         start_time = time.monotonic()
 
         for input_batch in chunkify(
-            conv_input.docs(self.format_to_options),
+            enumerate(conv_input.docs(self.format_to_options), start=1),
             settings.perf.doc_batch_size,  # pass format_options
         ):
             _log.info("Going to convert document batch...")
             process_func = partial(
-                self._process_document, raises_on_error=raises_on_error
+                self._process_indexed_document,
+                raises_on_error=raises_on_error,
+                progress_callback=progress_callback,
             )
 
             if (
@@ -846,14 +962,47 @@ class DocumentConverter:
 
             return self.initialized_pipelines[cache_key]
 
+    def _process_indexed_document(
+        self,
+        indexed_doc: tuple[int, InputDocument],
+        raises_on_error: bool,
+        progress_callback: Optional[ProgressCallback] = None,
+    ) -> ConversionResult:
+        document_index, in_doc = indexed_doc
+        callbacks = [
+            callback
+            for callback in (
+                self.progress_callback,
+                self.progress_printer,
+                progress_callback,
+            )
+            if callback is not None
+        ]
+        progress = ProgressReporter(callbacks, in_doc.file.name, document_index)
+        progress.document_started()
+        status = ConversionStatus.FAILURE
+        try:
+            conv_res = self._process_document(
+                in_doc, raises_on_error=raises_on_error, progress=progress
+            )
+            status = conv_res.status
+        finally:
+            progress.document_completed(status)
+        return conv_res
+
     def _process_document(
-        self, in_doc: InputDocument, raises_on_error: bool
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        progress: Optional[ProgressReporter] = None,
     ) -> ConversionResult:
         valid = (
             self.allowed_formats is not None and in_doc.format in self.allowed_formats
         )
         if valid:
-            conv_res = self._execute_pipeline(in_doc, raises_on_error=raises_on_error)
+            conv_res = self._execute_pipeline(
+                in_doc, raises_on_error=raises_on_error, progress=progress
+            )
         else:
             error_message = f"File format not allowed: {in_doc.file}"
             error_item = ErrorItem(
@@ -874,15 +1023,22 @@ class DocumentConverter:
             backend.unload()
 
     def _execute_pipeline(
-        self, in_doc: InputDocument, raises_on_error: bool
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        progress: Optional[ProgressReporter] = None,
     ) -> ConversionResult:
         if in_doc.valid:
             pipeline_started = False
             try:
+                if progress is not None:
+                    progress.phase_started(ConversionPhase.INITIALIZE)
                 pipeline = self._get_pipeline(in_doc.format)
                 if pipeline is not None:
                     pipeline_started = True
-                    conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
+                    conv_res = pipeline.execute(
+                        in_doc, raises_on_error=raises_on_error, progress=progress
+                    )
                 else:
                     if raises_on_error:
                         raise ConversionError(
