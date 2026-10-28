@@ -468,6 +468,52 @@ def test_cli_picture_description_max_new_tokens(
     )
 
 
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [([], False), (["--heading-hierarchy"], True)],
+)
+def test_cli_heading_hierarchy_flag(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    args: list[str],
+    expected: bool,
+) -> None:
+    captured_pdf_option: PdfFormatOption | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pdf_option
+            captured_pdf_option = format_options[InputFormat.PDF]
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+            page_range: PageRange = DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(app, [source, "--output", str(tmp_path / "out"), *args])
+
+    assert result.exit_code == 0, result.output
+    assert captured_pdf_option is not None
+    assert (
+        captured_pdf_option.pipeline_options.heading_hierarchy_options.enabled
+        is expected
+    )
+
+
 def test_cli_vlm_max_new_tokens(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

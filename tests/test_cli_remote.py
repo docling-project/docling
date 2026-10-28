@@ -219,6 +219,7 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
             "json",
             "--no-ocr",
             "--no-tables",
+            "--heading-hierarchy",
             "--ocr-lang",
             "iso:en,iso:de",
             "--page-range",
@@ -234,6 +235,7 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
     assert opts.to_formats == [OutputFormat.MARKDOWN, OutputFormat.JSON]
     assert opts.do_ocr is False
     assert opts.do_table_structure is False
+    assert opts.do_pdf_heading_hierarchy is True
     # A tag is canonicalized locally, so the service receives the resolved pair.
     assert opts.ocr_lang == ["iso:en-Latn", "iso:de-Latn"]
     assert opts.page_range == (2, 5)

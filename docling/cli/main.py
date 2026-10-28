@@ -139,6 +139,7 @@ from docling.datamodel.pipeline_options import (
     BaseLayoutOptions,
     BaseTableStructureOptions,
     ConvertPipelineOptions,
+    HeadingHierarchyOptions,
     LayoutObjectDetectionOptions,
     LayoutOptions,
     NativePdfPipelineOptions,
@@ -1119,6 +1120,17 @@ def convert(  # noqa: C901
             ),
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help=(
+                "Infer section-header levels for PDF and image inputs from the PDF "
+                "bookmarks, the heading numbering and the font style. Standard and "
+                "legacy pipelines only."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1818,6 +1830,9 @@ def convert(  # noqa: C901
                 do_table_structure=tables,
                 extract_form_fields=extract_form_fields,
                 use_reading_order_separators=reading_order_separators,
+                heading_hierarchy_options=HeadingHierarchyOptions(
+                    enabled=heading_hierarchy
+                ),
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
