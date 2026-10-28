@@ -1212,8 +1212,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             table_content_node = node.xpath("alternatives/table")[0]
         else:
             table_content_node = None
-        if table_content_node is not None:
-            table["content"] = etree.tostring(table_content_node).decode("utf-8")
+        if table_content_node is None:
+            # A table published as an image, as PMC often does, is kept as a
+            # picture with its label and caption.
+            if node.xpath("graphic | alternatives/graphic"):
+                self._add_figure_captions(doc, parent, node)
+            return
+        table["content"] = etree.tostring(table_content_node).decode("utf-8")
 
         # Caption
         caption_node = node.xpath("caption")
