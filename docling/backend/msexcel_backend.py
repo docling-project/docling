@@ -452,7 +452,7 @@ class _MergedCellIndex:
         )
 
     def contains_at(self, row: int, col: int) -> bool:
-        """Return whether a 0-based coordinate without a cell object is an anchor."""
+        """Return True if (row, col) is a merged-cell anchor."""
         return (row, col) in self._anchor_spans
 
     @staticmethod
@@ -1434,7 +1434,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         threaded_comments = self._parse_threaded_comments(sheet.title)
 
         # Limit scan to actual data bounds
-        # Iterate existing cells only: sheet.iter_rows() creates empty cells
+        # Iterate existing cells only: sheet.iter_rows() creates empty cells.
+        # sorted() keeps row-major order; its O(N log N) cost is accepted, so keep it.
         for row_1, col_1 in sorted(
             coord
             for coord in sheet._cells
