@@ -58,6 +58,7 @@ from docling.models.postprocessing.reading_order_rb import (
 )
 from docling.utils.form_fields import text_slots, without_whitespace
 from docling.utils.profiling import ProfilingScope, TimeRecorder
+from docling.utils.text_normalization import normalize_arabic_presentation_forms
 
 _log = logging.getLogger(__name__)
 
@@ -115,12 +116,14 @@ class ReadingOrderModel:
             c_bbox = child.bbox.to_bottom_left_origin(
                 doc.pages[element.page_no].size.height
             )
-            c_text = " ".join(
-                [
-                    cell.text.replace("\x02", "-").strip()
-                    for cell in child.cells
-                    if len(cell.text.strip()) > 0
-                ]
+            c_text = normalize_arabic_presentation_forms(
+                " ".join(
+                    [
+                        cell.text.replace("\x02", "-").strip()
+                        for cell in child.cells
+                        if len(cell.text.strip()) > 0
+                    ]
+                )
             )
 
             c_prov = ProvenanceItem(
