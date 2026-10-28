@@ -344,7 +344,6 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
-pipeline_options.generate_parsed_pages = True  # required by the font-style signal
 
 doc_converter = DocumentConverter(
     format_options={
