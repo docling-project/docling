@@ -16,6 +16,8 @@ from .test_backend_jats import (
     write_jats_body,
 )
 
+XLINK_NS = 'xmlns:xlink="http://www.w3.org/1999/xlink"'
+
 
 def test_jats_table_published_as_image_keeps_its_caption():
     # PMC often ships a table as a <graphic> instead of a <table>. The table
@@ -23,10 +25,9 @@ def test_jats_table_published_as_image_keeps_its_caption():
     doc = convert_jats_body(
         "<sec><title>Methods</title>"
         "<p>The items are listed in Table 1.</p>"
-        '<table-wrap id="T1"><label>Table 1</label>'
+        f'<table-wrap id="T1" {XLINK_NS}><label>Table 1</label>'
         "<caption><p>Items of data extraction.</p></caption>"
-        '<graphic xmlns:xlink="http://www.w3.org/1999/xlink" '
-        'xlink:href="table1.jpg"/></table-wrap>'
+        '<graphic xlink:href="table1.jpg"/></table-wrap>'
         "<p>Text after the table.</p></sec>"
     )
 
@@ -39,13 +40,42 @@ def test_jats_table_published_as_image_keeps_its_caption():
     assert "Table 1 Items of data extraction." in doc.export_to_markdown()
 
 
+def test_jats_table_published_as_alternative_images_is_one_picture():
+    doc = convert_jats_body(
+        f'<table-wrap id="T1" {XLINK_NS}><label>Table 1</label>'
+        "<caption><p>Two renditions.</p></caption>"
+        '<alternatives><graphic xlink:href="table1.tif"/>'
+        '<graphic xlink:href="table1.jpg"/></alternatives></table-wrap>'
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    caption = pictures[0].captions[0].resolve(doc)
+    assert caption.text == "Table 1 Two renditions."
+
+
+def test_jats_table_with_cells_and_graphic_stays_a_table():
+    # The cell data wins: the table is not also added as a picture.
+    doc = convert_jats_body(
+        f'<table-wrap id="T1" {XLINK_NS}><label>Table 1</label>'
+        "<caption><p>Cells and image.</p></caption>"
+        '<graphic xlink:href="table1.jpg"/>'
+        "<table><tr><td>A</td><td>B</td></tr></table></table-wrap>"
+    )
+
+    assert len(doc.tables) == 1
+    assert get_pictures(doc) == []
+    assert doc.tables[0].captions[0].resolve(doc).text == "Table 1 Cells and image."
+
+
 def test_jats_table_published_as_image_embeds_image_when_enabled(tmp_path: Path):
     image_path = tmp_path / "table1.png"
     Image.new("RGB", (7, 5), color=(0, 0, 255)).save(image_path)
     jats_path = tmp_path / "article.nxml"
     write_jats_body(
         jats_path,
-        '<table-wrap id="T1"><label>Table 1</label>'
+        f'<table-wrap id="T1" {XLINK_NS}><label>Table 1</label>'
         "<caption><p>A blue table.</p></caption>"
         '<graphic xlink:href="table1.png"/></table-wrap>',
     )
