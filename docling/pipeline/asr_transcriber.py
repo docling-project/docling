@@ -328,6 +328,7 @@ class _NativeWhisperModel:
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         # Access the file path from the backend, similar to other pipelines
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
 
         # Handle both Path and BytesIO inputs
@@ -473,6 +474,7 @@ class _MlxWhisperModel:
             self.initial_prompt = asr_options.initial_prompt
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         temp_file_path: Path | None = None
 
@@ -791,6 +793,7 @@ class _WhisperS2TModel:
         return device_str, 0
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
 
         temp_file_path: Path | None = None
@@ -982,6 +985,7 @@ class _ApiAsrModel:
         return self._to_conversation(self._post(fpath.name, fpath.read_bytes()))
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         try:
             if isinstance(path_or_stream, BytesIO):
