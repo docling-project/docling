@@ -1,3 +1,23 @@
+## [v2.144.0](https://github.com/docling-project/docling/releases/tag/v2.144.0) - 2026-10-28
+
+### Feature
+
+* **pdf:** Run the heading style signal without generate_parsed_pages and add --heading-hierarchy ([#5071](https://github.com/docling-project/docling/issues/5071)) ([`6a12963`](https://github.com/docling-project/docling/commit/6a12963a4388edef851a0369367bd12b714284f3))
+* **ocr:** Replace broken PDF text layers with OCR ([#4654](https://github.com/docling-project/docling/issues/4654)) ([`b3b2cd9`](https://github.com/docling-project/docling/commit/b3b2cd976c5a0db3c82738a0297a838e73818acb))
+
+### Fix
+
+* **vlm:** Drop the spaces around Chandra br line breaks ([#4845](https://github.com/docling-project/docling/issues/4845)) ([`7814a4e`](https://github.com/docling-project/docling/commit/7814a4e4326c4f3a1770389c75e33f75aecb5107))
+* **asr:** Import torch lazily in the transformers ASR decoder ([#5072](https://github.com/docling-project/docling/issues/5072)) ([`46504cc`](https://github.com/docling-project/docling/commit/46504cca817be8b53e7a2db62f72ffee2a3b37f5))
+* **asr:** Forward temperature and anti-hallucination options to mlx-whisper ([#5067](https://github.com/docling-project/docling/issues/5067)) ([`8bb0b6c`](https://github.com/docling-project/docling/commit/8bb0b6c07e8cc04b75905d0d1f83cbf28909dec9))
+* Recognise Symbol and Wingdings private-use bullets as list markers ([#5043](https://github.com/docling-project/docling/issues/5043)) ([`26ef35a`](https://github.com/docling-project/docling/commit/26ef35ac26ae9a3f959ce3e9de26e46c82ca1194))
+* Skip macOS metadata members in ZIP inputs ([#5026](https://github.com/docling-project/docling/issues/5026)) ([`da9e947`](https://github.com/docling-project/docling/commit/da9e9472ce977f18ad450ac4399bda0704805905))
+* **vlm:** Ignore whitespace between Chandra list paragraphs ([#5049](https://github.com/docling-project/docling/issues/5049)) ([`2fa79ef`](https://github.com/docling-project/docling/commit/2fa79ef5f980365ffe45d15048aa19af3dd36dcb))
+* **image:** Treat zero DPI metadata as missing ([#4915](https://github.com/docling-project/docling/issues/4915)) ([`2a55ea6`](https://github.com/docling-project/docling/commit/2a55ea62b7c206160bd25cd5dde7eaeedad9bfd3))
+* **pdf:** Normalize Arabic presentation forms in extracted text ([#3929](https://github.com/docling-project/docling/issues/3929)) ([`00352a1`](https://github.com/docling-project/docling/commit/00352a1ff7308c2c0fd86eec426311ea0e36f37d))
+* **reading-order:** Read heads split by a spanning block top-down ([#4438](https://github.com/docling-project/docling/issues/4438)) ([`ecdba67`](https://github.com/docling-project/docling/commit/ecdba6756d4164ab49234dc574d1644cb77a8efb))
+* **ocr:** Stop concurrent conversions from crashing the tesserocr engine ([#4941](https://github.com/docling-project/docling/issues/4941)) ([`868768f`](https://github.com/docling-project/docling/commit/868768fe2cf92086f04c3fb080aa3ded8dbba914))
+
 ## [v2.143.1](https://github.com/docling-project/docling/releases/tag/v2.143.1) - 2026-10-27
 
 ### Fix
