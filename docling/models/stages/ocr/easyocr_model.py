@@ -177,6 +177,7 @@ class EasyOcrModel(BaseOcrModel):
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
         self._native_codes: List[str] = []
+        self._release_gpu_memory = False
 
         if self.enabled:
             try:
@@ -228,6 +229,18 @@ class EasyOcrModel(BaseOcrModel):
                     download_enabled=download_enabled,
                     verbose=False,
                 )
+            if self.options.release_gpu_memory and use_gpu:
+                # `easyocr.Reader(gpu=True)` selects CUDA first, then MPS.
+                # Release the cache only on CUDA.
+                import torch
+
+                self._release_gpu_memory = torch.cuda.is_available()
+
+    @staticmethod
+    def _empty_cuda_cache() -> None:
+        import torch
+
+        torch.cuda.empty_cache()
 
     def supported_ocr_languages(self) -> OcrLanguageSupport:
         r"""Report the native and BCP74 languages without script whenever it is not needed"""
@@ -336,7 +349,18 @@ class EasyOcrModel(BaseOcrModel):
                                     "ignore", message=".*pin_memory.*MPS.*"
                                 )
 
-                            result = self.reader.readtext(im)
+                            if self._release_gpu_memory:
+                                # Same steps as `Reader.readtext()` (checked
+                                # against EasyOCR 1.7.2), but release the large
+                                # detection buffers before the recognition step
+                                # starts.
+                                horizontal_list, free_list = self.reader.detect(im)
+                                self._empty_cuda_cache()
+                                result = self.reader.recognize(
+                                    im, horizontal_list[0], free_list[0]
+                                )
+                            else:
+                                result = self.reader.readtext(im)
 
                         del high_res_image
                         del im
