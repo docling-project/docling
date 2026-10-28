@@ -88,6 +88,27 @@ def test_chandra_br_spacing(label: str, html: str, texts: list[str]):
     assert [item.text for item in doc.texts] == texts
 
 
+@pytest.mark.parametrize("label", ["Text", "Form"])
+def test_chandra_br_ignores_source_indentation(label: str):
+    """Test that whitespace around br tags is HTML layout, not text."""
+    content = (
+        f'<div data-bbox="0 0 1000 1000" data-label="{label}"><p>Contact:  <br/>\n'
+        "    Phone: 555-0100<br/>\n"
+        "    Email: info@example.com</p></div>"
+    )
+
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=1000, height=1000),
+        page_no=1,
+        filename="br.html",
+    )
+
+    assert [item.text for item in doc.texts] == [
+        "Contact:\nPhone: 555-0100\nEmail: info@example.com"
+    ]
+
+
 def test_chandra_multiblock_parsing():
     """Test chandra parsing with a saved figure prediction."""
     path = Path("./tests/data/html_chandra/sources/chandra_multiblock.html")
