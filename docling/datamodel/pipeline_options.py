@@ -333,10 +333,13 @@ class OcrAutoOptions(OcrOptions):
     """Automatic OCR engine selection based on system availability.
 
     When this option is used, Docling probes the runtime environment at
-    pipeline initialization and selects the best available OCR engine
-    (e.g., EasyOCR if GPU is present, Tesseract otherwise). The requested
-    languages are forwarded to whichever engine is chosen, and an engine with
-    no model for them is skipped in favour of the next candidate.
+    pipeline initialization and selects the first available OCR engine, in
+    this order: OcrMac on macOS, Nemotron OCR on Linux with CUDA, RapidOCR
+    with onnxruntime, EasyOCR, and RapidOCR with torch. Tesseract is never
+    selected automatically; use `TesseractOcrOptions` or
+    `TesseractCliOcrOptions` for it. The requested languages are forwarded to
+    whichever engine is chosen, and an engine with no model for them is
+    skipped in favour of the next candidate.
 
     Notes:
         `lang` is forwarded to whichever engine is selected. The default empty

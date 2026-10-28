@@ -22,6 +22,7 @@ pulling heavy packages (torch, OCR engines, VLM stacks) you won't use.
 | Local VLM pipeline | `docling-slim[models-vlm-inline]` |
 | Chunking for RAG | `docling-slim[feat-chunking]` |
 | Everything the default package has | `docling-slim[standard]` |
+| The default package without RapidOCR (e.g. for the Tesseract CLI) | `docling-slim[format-pdf,models-local,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]` plus `opencv-python-headless` |
 | Kitchen sink (all optional features) | `docling-slim[all]` |
 
 Extras compose — combine them with commas:
@@ -64,7 +65,8 @@ Extras compose — combine them with commas:
 **Bundles**
 - `standard` — the default `docling` set: `format-pdf`, `models-local`,
   `feat-ocr-rapidocr`, `format-office`, `format-web`, `format-latex`,
-  `format-email`, `feat-chunking`, `extract-core`, `service-client`, `cli`.
+  `format-email`, `format-iwork`, `feat-chunking`, `extract-core`,
+  `service-client`, `cli`.
 - `all` — `standard` plus VLM, audio, HTML render, all XML, remote/onnx models,
   and the extra OCR engines. (Excludes `format-video`, which needs a compiler.)
 
@@ -75,6 +77,12 @@ Extras compose — combine them with commas:
 ## Notes
 
 - The `docling` CLI requires the `cli` extra (bundled in `standard`/`docling`).
+- The default OCR selection (`OcrAutoOptions`) never picks Tesseract. Without
+  RapidOCR, select an engine explicitly, e.g. `TesseractCliOcrOptions(lang=["eng"])`
+  or `docling --ocr-engine tesseract --ocr-lang eng`; otherwise PDFs are
+  converted without OCR. The table structure model also needs OpenCV, which
+  RapidOCR otherwise brings in, so add `opencv-python-headless` (or
+  `opencv-python`).
 - `models-local` is the heavy one (pulls torch); omit it if you only convert
   non-PDF formats or use a remote service.
 - To convert with zero local models, use `service-client` and point at a
