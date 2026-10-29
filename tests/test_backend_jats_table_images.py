@@ -69,6 +69,28 @@ def test_jats_table_with_cells_and_graphic_stays_a_table():
     assert doc.tables[0].captions[0].resolve(doc).text == "Table 1 Cells and image."
 
 
+def test_jats_table_published_as_image_without_caption_keeps_its_label():
+    doc = convert_jats_body(
+        f'<table-wrap id="T2" {XLINK_NS}><label>Table 2</label>'
+        '<graphic xlink:href="table2.jpg"/></table-wrap>'
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].captions[0].resolve(doc).text == "Table 2"
+
+
+def test_jats_table_wrap_without_table_or_graphic_adds_nothing():
+    doc = convert_jats_body(
+        "<sec><title>S</title>"
+        '<table-wrap id="T3"><label>Table 3</label>'
+        "<caption><p>Only a caption.</p></caption></table-wrap></sec>"
+    )
+
+    assert doc.tables == []
+    assert get_pictures(doc) == []
+
+
 def test_jats_table_published_as_image_embeds_image_when_enabled(tmp_path: Path):
     image_path = tmp_path / "table1.png"
     Image.new("RGB", (7, 5), color=(0, 0, 255)).save(image_path)
