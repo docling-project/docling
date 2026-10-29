@@ -3,6 +3,9 @@
 
 """Detection of PDF text layers that do not match the text drawn on the page."""
 
+import re
+import unicodedata
+
 import pytest
 
 from docling.utils.text_quality import is_broken_text_layer
@@ -181,3 +184,51 @@ def test_unmapped_font_is_detected(name: str) -> None:
 def test_short_or_empty_text_is_left_alone() -> None:
     assert not is_broken_text_layer("")
     assert not is_broken_text_layer("\x01\x02\x03")  # too little text to judge
+
+
+# Indian scripts (opt-in): broken layers with valid letters in the wrong places.
+_HINDI = (
+    "आज सुबह किसान अपने खेत में गए और उन्होंने नई फसल के लिए मिट्टी तैयार की। "
+    "बच्चे स्कूल में किताबें पढ़ते हैं और शिक्षक उन्हें गणित सिखाते हैं। "
+) * 2
+_TAMIL = (
+    "இன்று காலை விவசாயிகள் தங்கள் வயலுக்குச் சென்று புதிய பயிருக்கு மண்ணைத் "
+    "தயார் செய்தனர். குழந்தைகள் பள்ளியில் புத்தகங்களைப் படிக்கிறார்கள். "
+) * 3
+
+
+def _signs_first(text: str, signs: str) -> str:
+    """Vowel signs put before their consonant, in drawing order."""
+    nfd = unicodedata.normalize("NFD", text)
+    return re.sub(rf"(\w)([{signs}])", r"\2\1", nfd)
+
+
+INDIC_ORDINARY = {"hindi": _HINDI, "tamil": _TAMIL}
+INDIC_BROKEN = {
+    "hindi_i_sign_first": _signs_first(_HINDI, "ि"),
+    "tamil_e_signs_first": _signs_first(_TAMIL, "ெேை"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(INDIC_ORDINARY))
+def test_indic_text_layer_is_kept(name: str) -> None:
+    assert not is_broken_text_layer(INDIC_ORDINARY[name], check_indic=True)
+
+
+@pytest.mark.parametrize("name", sorted(INDIC_BROKEN))
+def test_indic_signs_out_of_place_are_detected(name: str) -> None:
+    assert is_broken_text_layer(INDIC_BROKEN[name], check_indic=True)
+    # Off by default.
+    assert not is_broken_text_layer(INDIC_BROKEN[name])
+
+
+@pytest.mark.parametrize("name", sorted(ORDINARY))
+def test_ordinary_text_layer_is_kept_with_indic_check(name: str) -> None:
+    assert not is_broken_text_layer(ORDINARY[name], check_indic=True)
+
+
+def test_indic_check_needs_enough_words_in_mostly_one_script() -> None:
+    few = _signs_first("किसान दिन में खेत लिखना", "ि")
+    assert not is_broken_text_layer(few, check_indic=True)
+    # An English page that quotes a few broken Hindi words is not judged.
+    assert not is_broken_text_layer(_PROSE * 3 + few, check_indic=True)

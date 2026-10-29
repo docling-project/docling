@@ -7,10 +7,15 @@ The checks look only at patterns that broken font mappings produce. Two of them
 apply to every script: characters that do not belong in text, on the page or
 in many of its lines. Two apply to Latin letters only, and use no language
 profile: accented letters that stand for another script, and too few vowels.
+
+An optional check covers Indian scripts, whose broken layers often hold valid
+letters in the wrong places, such as words that start with a vowel sign.
 """
 
+import itertools
 import re
 import unicodedata
+from collections import Counter
 
 _MIN_CHARS = 20  # Less text than this is left alone.
 _JUNK_SHARE = 0.03  # Control, U+FFFD or private-use characters on the page.
@@ -27,6 +32,27 @@ _WORD_LENGTH = range(3, 21)
 # Base vowels, with æ, œ, ø, dotless i and schwa, which have no base letter.
 _VOWELS = frozenset("aeiouy\u00e6\u0153\u00f8\u0131\u0259")
 _GLYPH_PLACEHOLDER = re.compile(r"GLYPH<[^>]*>")  # A parser's unmapped glyph.
+
+# Indian scripts: only judged when the check is on and the page has enough words
+# in mostly one of these scripts (the first word of a character's Unicode name).
+_INDIC_SCRIPTS = frozenset(
+    {
+        "BENGALI",
+        "DEVANAGARI",
+        "GUJARATI",
+        "GURMUKHI",
+        "KANNADA",
+        "MALAYALAM",
+        "ORIYA",
+        "SINHALA",
+        "TAMIL",
+        "TELUGU",
+    }
+)
+_INDIC_LETTER = re.compile("[ऀ-෿]")  # Devanagari to Sinhala.
+_MIN_INDIC_WORDS = 20
+_SCRIPT_SHARE = 0.5  # Of the page's letters and signs.
+_MISSPELLED_SHARE = 0.01  # Real text stays near 0.
 
 
 def _is_junk(ch: str) -> bool:
@@ -93,11 +119,61 @@ def _is_wrong_latin(text: str) -> bool:
     return vowels < _MIN_VOWEL_SHARE * len(words)
 
 
-def is_broken_text_layer(text: str) -> bool:
+def _script(ch: str) -> str:
+    return unicodedata.name(ch, " ").split(" ", 1)[0]
+
+
+def _is_misspelled(word: str) -> bool:
+    """Whether a word starts with a sign or has two vowel signs in a row.
+
+    Both are impossible in real text. A broken layer gives them when the glyphs
+    of a vowel drawn before its consonant are read in drawing order.
+    """
+    if unicodedata.category(word[0]) in ("Mn", "Mc"):
+        return True
+    signs = ["VOWEL SIGN" in unicodedata.name(ch, "") for ch in word]
+    return any(a and b for a, b in itertools.pairwise(signs))
+
+
+def _indic_words(text: str) -> tuple[str | None, list[str]]:
+    """The page's main Indian script and its words in that script."""
+    text = unicodedata.normalize("NFC", text)
+    scripts = Counter(_script(ch) for ch in text if unicodedata.category(ch)[0] in "LM")
+    if not scripts:
+        return None, []
+    script, count = scripts.most_common(1)[0]
+    if script not in _INDIC_SCRIPTS or count < _SCRIPT_SHARE * scripts.total():
+        return None, []
+    words = []
+    for token in text.split():
+        # Strip punctuation and symbols, such as quotes and the danda.
+        start, end = 0, len(token)
+        while start < end and unicodedata.category(token[start])[0] in "PS":
+            start += 1
+        while end > start and unicodedata.category(token[end - 1])[0] in "PS":
+            end -= 1
+        word = token[start:end]
+        if word and any(_script(ch) == script for ch in word):
+            words.append(word)
+    return script, words
+
+
+def _is_wrong_indic(text: str) -> bool:
+    """Whether the text of an Indian script has letters in the wrong places."""
+    if not _INDIC_LETTER.search(text):
+        return False
+    script, words = _indic_words(text)
+    if script is None or len(words) < _MIN_INDIC_WORDS:
+        return False
+    return sum(map(_is_misspelled, words)) >= _MISSPELLED_SHARE * len(words)
+
+
+def is_broken_text_layer(text: str, check_indic: bool = False) -> bool:
     """Whether a page's PDF text does not match the text drawn on the page.
 
     Args:
         text: All text of one page's PDF text layer, cells joined by newlines.
+        check_indic: Also check text in Indian scripts.
 
     Returns:
         ``True`` only for text a broken layer produces. When unsure it returns
@@ -119,4 +195,6 @@ def is_broken_text_layer(text: str) -> bool:
     if junk_lines >= max(_MIN_JUNK_LINES, _JUNK_LINE_SHARE * len(lines)):
         return True
 
-    return _is_wrong_latin(stripped)
+    if _is_wrong_latin(stripped):
+        return True
+    return check_indic and _is_wrong_indic(stripped)
