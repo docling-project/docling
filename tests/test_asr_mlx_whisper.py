@@ -336,7 +336,66 @@ class TestMlxWhisperIntegration:
             no_speech_threshold=0.6,
             logprob_threshold=-1.0,
             compression_ratio_threshold=2.4,
+            temperature=0.0,
         )
+
+    @patch("builtins.__import__")
+    def test_mlx_whisper_transcribe_forwards_decoding_options(self, mock_import):
+        """Temperature and anti-hallucination options must reach mlx_whisper."""
+        mock_mlx_whisper = Mock()
+        mock_import.return_value = mock_mlx_whisper
+        mock_mlx_whisper.transcribe.return_value = {"segments": []}
+
+        accelerator_options = AcceleratorOptions(device=AcceleratorDevice.MPS)
+        asr_options = InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-tiny-mlx",
+            language="en",
+            temperature=0.2,
+            condition_on_previous_text=False,
+            hallucination_silence_threshold=2.0,
+            initial_prompt="Docling terms",
+        )
+
+        model = _MlxWhisperModel(
+            enabled=True,
+            artifacts_path=None,
+            accelerator_options=accelerator_options,
+            asr_options=asr_options,
+        )
+        model.transcribe(Path("test_audio.wav"))
+
+        call_kwargs = mock_mlx_whisper.transcribe.call_args.kwargs
+        assert call_kwargs["temperature"] == 0.2
+        assert call_kwargs["condition_on_previous_text"] is False
+        assert call_kwargs["hallucination_silence_threshold"] == 2.0
+        assert call_kwargs["initial_prompt"] == "Docling terms"
+
+    @patch("builtins.__import__")
+    def test_mlx_whisper_transcribe_omits_unset_decoding_options(self, mock_import):
+        """Unset optional decoding options must not override mlx-whisper defaults."""
+        mock_mlx_whisper = Mock()
+        mock_import.return_value = mock_mlx_whisper
+        mock_mlx_whisper.transcribe.return_value = {"segments": []}
+
+        accelerator_options = AcceleratorOptions(device=AcceleratorDevice.MPS)
+        asr_options = InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-tiny-mlx",
+            language="en",
+        )
+
+        model = _MlxWhisperModel(
+            enabled=True,
+            artifacts_path=None,
+            accelerator_options=accelerator_options,
+            asr_options=asr_options,
+        )
+        model.transcribe(Path("test_audio.wav"))
+
+        call_kwargs = mock_mlx_whisper.transcribe.call_args.kwargs
+        assert call_kwargs["temperature"] == 0.0
+        assert "condition_on_previous_text" not in call_kwargs
+        assert "hallucination_silence_threshold" not in call_kwargs
+        assert "initial_prompt" not in call_kwargs
 
     @patch("builtins.__import__")
     def test_asr_pipeline_with_mlx_whisper(self, mock_import):

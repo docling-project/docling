@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.143.0"  # DO NOT EDIT, updated automatically
+version = "2.144.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -196,7 +196,7 @@ format-video = [
   'resemblyzer>=0.1.4,<0.2.0',
   'soundfile>=0.12.1,<1.0.0',
   'scikit-learn>=1.3.0,<2.0.0',
-  'librosa>=0.10.0,<1.0.0',
+  'librosa>=0.10.0,<2.0.0',
 ]
 
 # ============================================================================
@@ -244,7 +244,7 @@ models-local = [
   # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
   'docling-ibm-models>=4.0.2,<5',
   'accelerate>=1.0.0,<2',
-  'huggingface_hub>=0.23,<2',
+  'huggingface_hub>=0.23,<3',
   'defusedxml>=0.7.1,<0.8.0',
 ]
 
@@ -293,8 +293,8 @@ feat-chunking = [
 
 service-client = [
   'httpx>=0.28,<1.0.0',
-  'websockets>=14.0,<17.0',
-  'typer>=0.19.0,<0.27.0',
+  'websockets>=14.0,<18.0',
+  'typer>=0.19.0,<0.28.0',
   'rich>=13.0.0',
   # Best-effort .env loading for `docling convert-remote`; the command still
   # works (flags + env vars) if this is absent.
@@ -302,7 +302,7 @@ service-client = [
 ]
 
 cli = [
-  'typer>=0.19.0,<0.27.0',
+  'typer>=0.19.0,<0.28.0',
   'rich>=13.0.0',
   # Best-effort .env loading for `docling convert-remote`; the command still
   # works (flags + env vars) if this is absent.
@@ -329,8 +329,8 @@ all = [
 [dependency-groups]
 typecheck = [
   "ty==0.0.33",
-  "types-setuptools~=70.3",
-  "pandas-stubs~=2.1",
+  "types-setuptools>=70.3",
+  "pandas-stubs>=2.1,<4",
   "types-openpyxl~=3.1",
   "types-requests~=2.31",
   "boto3-stubs~=1.37",
@@ -343,11 +343,11 @@ pr-fast-checks = [
   "docling-core[chunking] (>=2.103.1,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
-  "ruff==0.15.12",
+  "ruff==0.17.2",
 ]
 dev = [
   { include-group = "typecheck" },
-  "dprint-py==0.53.1.0",
+  "dprint-py==0.64.3.0",
   # Test fakes serve a real socket so both httpx and requests code paths are
   # covered by one harness; see tests/fakes/.
   "fastapi>=0.115",
@@ -355,12 +355,12 @@ dev = [
   "prek>=0.3.10",
   "tach>=0.34.0,<1",
   "coverage~=7.6",
-  "pytest~=9.0.3",
+  "pytest>=9.0.3,<10",
   "pytest-cov>=6.1.1",
   "pytest-dependency~=0.6",
-  "pytest-durations~=1.6.1",
+  "pytest-durations~=1.6",
   "pytest-xdist~=3.3",
-  "ipykernel~=6.29",
+  "ipykernel>=6.29,<8",
   "ipywidgets~=8.1",
   "nbqa~=1.9",
   "python-semantic-release~=7.32",
@@ -370,12 +370,12 @@ dev = [
 docs = [
   "zensical>=0.0.40,<0.1",
   "mkdocs-redirects~=1.2",
-  "mkdocstrings[python]~=0.27",
+  "mkdocstrings[python]>=0.27,<2",
   "griffe-pydantic~=1.1",
   # pymdown-extensions was previously a transitive dep of mkdocs-material;
   # mkdocs.yml's markdown_extensions list still relies on pymdownx.* and on
   # pymdownx.slugs.slugify, so pin it directly now that material is removed.
-  "pymdown-extensions~=10.0",
+  "pymdown-extensions>=10.0,<13",
   # Used by scripts/render_notebooks.py to convert example notebooks and
   # jupytext percent-format .py scripts to markdown at docs build time. Zensical
   # has no mkdocs-jupyter equivalent on its roadmap, so the example pages are
@@ -385,7 +385,7 @@ docs = [
 ]
 
 examples = [
-  "datasets~=2.21",
+  "datasets>=2.21,<6",
   "python-dotenv~=1.0",
   "langchain-huggingface>=0.0.3",
   "langchain-milvus~=0.1",

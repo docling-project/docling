@@ -139,6 +139,7 @@ from docling.datamodel.pipeline_options import (
     BaseLayoutOptions,
     BaseTableStructureOptions,
     ConvertPipelineOptions,
+    HeadingHierarchyOptions,
     LayoutObjectDetectionOptions,
     LayoutOptions,
     NativePdfPipelineOptions,
@@ -1081,6 +1082,16 @@ def convert(  # noqa: C901
             help="Which document regions are fed to the OCR engine.",
         ),
     ] = OcrMode.DEFAULT,
+    replace_broken_text_layer: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Replace a page's PDF text with OCR when its text layer is broken, "
+                "e.g. from a font whose glyphs were not mapped to real characters."
+            ),
+        ),
+    ] = False,
     tables: Annotated[
         bool,
         typer.Option(
@@ -1109,6 +1120,17 @@ def convert(  # noqa: C901
             ),
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help=(
+                "Infer section-header levels for PDF and image inputs from the PDF "
+                "bookmarks, the heading numbering and the font style. Standard and "
+                "legacy pipelines only."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1697,12 +1719,18 @@ def convert(  # noqa: C901
             "mode": "--ocr-mode",
             "lang": "--ocr-lang",
             "psm": "--psm",
+            "replace_broken_text_layer": "--replace-broken-text-layer",
         }
         # `--ocr-mode` always has a value; count it as set only when it differs
         # from the default, so `--ocr-option mode=...` works on its own.
         explicit_ocr_fields = (
             {"mode"} if force_ocr or ocr_mode != OcrMode.DEFAULT else set()
         )
+        # Like `--ocr-mode`, count the flag as set only when it is on, so
+        # `--ocr-option replace_broken_text_layer=true` works on its own.
+        if replace_broken_text_layer:
+            ocr_kwargs["replace_broken_text_layer"] = True
+            explicit_ocr_fields.add("replace_broken_text_layer")
         ocr_lang_list = _split_list(ocr_lang)
         # `_split_list` returns None only when the option was not given, so an
         # explicitly empty value reaches the engine as `lang=[]`: "your default".
@@ -1802,6 +1830,9 @@ def convert(  # noqa: C901
                 do_table_structure=tables,
                 extract_form_fields=extract_form_fields,
                 use_reading_order_separators=reading_order_separators,
+                heading_hierarchy_options=HeadingHierarchyOptions(
+                    enabled=heading_hierarchy
+                ),
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,

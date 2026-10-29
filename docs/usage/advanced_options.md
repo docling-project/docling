@@ -184,7 +184,7 @@ export.
 ### Image resolution and scale
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
-determines the physical page size; missing DPI and `(1, 1)` DPI are treated as 72 DPI.
+determines the physical page size; missing DPI, `(1, 1)` DPI and `(0, 0)` DPI are treated as 72 DPI.
 Rendering at scale `n` produces `n` pixels per document point.
 
 ### Control PDF table extraction options
@@ -344,7 +344,6 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
-pipeline_options.generate_parsed_pages = True  # required by the font-style signal
 
 doc_converter = DocumentConverter(
     format_options={

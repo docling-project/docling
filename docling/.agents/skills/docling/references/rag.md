@@ -27,9 +27,9 @@ from langchain_docling.loader import ExportType
 
 loader = DoclingLoader(
     file_path=["report.pdf", "https://example.com/paper.pdf"],
-    export_type=ExportType.DOC_CHUNKS,   # chunked; or ExportType.MARKDOWN
+    export_type=ExportType.DOC_CHUNKS,  # chunked; or ExportType.MARKDOWN
 )
-docs = loader.load()                     # list[langchain_core.documents.Document]
+docs = loader.load()  # list[langchain_core.documents.Document]
 # each chunk keeps metadata: source, headings, page numbers
 ```
 
