@@ -45,6 +45,13 @@ _ENCODING = "cp500"
 _INTRODUCER = 0x5A
 _BASE_INTRODUCER_LENGTH = 8
 _MAX_STRUCTURED_FIELD_LENGTH = 32767
+
+# MO:DCA Reference, Table 6 "Structured Field Introducer": in the flag byte,
+# bit 0 announces an SFI extension and bit 4 announces padding data. Bit 2 is
+# the segmentation flag, which this backend does not act on; the rest are
+# reserved.
+_SFI_EXTENSION_FLAG = 0x80
+_SFI_PADDING_FLAG = 0x08
 _CONTROL_SEQUENCE_PREFIX = b"\x2b\xd3"
 
 _BEGIN_PAGE = b"\xd3\xa8\xaf"
@@ -127,7 +134,7 @@ def _iter_structured_fields(content: bytes) -> Iterator[_StructuredField]:
         identifier = content[offset + 3 : offset + 6]
         flags = content[offset + 6]
         data_start = offset + 9
-        if flags & 0x01:  # Structured Field Introducer extension is present.
+        if flags & _SFI_EXTENSION_FLAG:
             if data_start >= end:
                 raise AfpParseError(
                     f"AFP structured field at byte {offset} flags an introducer "
@@ -142,7 +149,7 @@ def _iter_structured_fields(content: bytes) -> Iterator[_StructuredField]:
             data_start += extension_length
 
         data_end = end
-        if flags & 0x10:  # Padding follows the structured-field data.
+        if flags & _SFI_PADDING_FLAG:
             padding_length = content[end - 1]
             if padding_length == 0 and end - data_start >= 3:
                 padding_length = int.from_bytes(
