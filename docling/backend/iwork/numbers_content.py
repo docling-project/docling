@@ -17,7 +17,7 @@ an XML attribute.
 """
 
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal, InvalidOperation
+from decimal import MAX_EMAX, MAX_PREC, MIN_EMIN, Context, Decimal, InvalidOperation
 from typing import NamedTuple
 
 from docling.backend.iwork.content import Chart, Geometry, Picture
@@ -32,6 +32,13 @@ per table, and both readers hold a table to this one.
 
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 """Instant Numbers counts its dates and times from."""
+
+_EXACT_CONTEXT = Context(prec=MAX_PREC, Emax=MAX_EMAX, Emin=MIN_EMIN)
+"""Context wide enough to hold every decimal128 digit unchanged.
+
+``Decimal.normalize`` rounds to the caller's context, which keeps 28 digits by
+default, and a decimal128 holds 34.
+"""
 
 
 class Cell(NamedTuple):
@@ -151,7 +158,7 @@ def format_number(value: Decimal | float) -> str:
             value = Decimal(repr(value))
         except InvalidOperation:  # nan and the infinities
             return repr(value)
-    return f"{value.normalize():f}"
+    return f"{value.normalize(_EXACT_CONTEXT):f}"
 
 
 def format_date(seconds: float) -> str:
