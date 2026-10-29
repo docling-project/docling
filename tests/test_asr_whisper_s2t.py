@@ -187,7 +187,7 @@ class TestWhisperS2TAutoSelection:
             cuda = _CudaOn()
 
         monkeypatch.setitem(sys.modules, "torch", _Torch())
-        monkeypatch.setitem(sys.modules, "mlx_whisper", object())
+        monkeypatch.setattr(specs, "find_spec", lambda name: object())
         monkeypatch.setitem(sys.modules, "whisper_s2t", object())
 
         model = specs._get_whisper_tiny_model()
