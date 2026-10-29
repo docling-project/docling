@@ -253,6 +253,7 @@ Languages are given as BCP-47 tags for every engine; see
 | `qwen` | Qwen2.5-VL-3B | 3B | ✅ | ✅ | ❌ | ❌ | Markdown |
 | `nanonets_ocr2` | Nanonets-OCR2-3B | 3B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ✅ | Markdown |
 | `nemotron_parse_v2` | NVIDIA Nemotron Parse 2.0 | 0.9B | ✅ | ✅ | ❌ | ✅ | Native layout with Markdown text and LaTeX tables |
+| `nemotron_parse_v3_5` | NVIDIA Nemotron 3.5 Parse | 0.6B | ✅ | ❌ | OpenAI-compatible | ❌ | Native layout with Markdown text, LaTeX tables, and chart data |
 | `mineru2_pro` | MinerU2.5-Pro-2604 | 1.2B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ❌ | Native two-step layout, text, formulas, and OTSL tables |
 | `gemma_12b` | Gemma-3-12B | 12B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
@@ -267,6 +268,18 @@ use the official `opendatalab/MinerU2.5-Pro-2604-1.2B` repository. The MLX overr
 community-published `carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16` conversion because no official
 OpenDataLab MLX checkpoint is currently available. Image/chart analysis and cross-page table merging
 are not enabled by this preset.
+
+`nemotron_parse_v3_5` runs code from the `nvidia/Nemotron-3.5-Parse` model repository, pinned to
+revision `e7ea79242a87ea0ad3919b672bfedb429a683206`. Docling does not trust that code by default:
+review it, then set `trust_remote_code=True` on the VLM engine options (for example
+`AutoInlineVlmEngineOptions(trust_remote_code=True)`) or pass `--trust-remote-code` to the CLI.
+Without this opt-in, the Transformers engine stops with an error before it downloads the model.
+In-process vLLM is not supported because the model needs NVIDIA's out-of-tree vLLM plugin. To
+use vLLM, start NVIDIA's server (`vllm serve ... --served-model-name nemotron-parse`, see the
+model card) and use `ApiVlmEngineOptions(engine_type=VlmEngineType.API, url=...)`. The API override
+sends `top_k=1`, `repetition_penalty=1.1`, and `skip_special_tokens=False`. If you set your own
+`params`, the preset parameters are not sent, so include these values yourself. The preset maps
+charts to pictures with a chart class and data table, with one picture for each chart panel.
 
 `unlimited_ocr` is served through an OpenAI-compatible endpoint: point `ApiVlmEngineOptions.url` at your own runtime. Its API override sets `skip_special_tokens=False`, without which the layout annotations are stripped from the completion.
 

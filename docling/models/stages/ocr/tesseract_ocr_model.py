@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from pathlib import Path
 from typing import Iterable, Optional, Type
 
@@ -61,6 +62,9 @@ class TesseractOcrModel(BaseOcrModel):
         self.scale = self.options.scale
         self._reader = None
         self._script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
+        # Conversions that run at the same time share this model. A tesserocr
+        # reader is not thread-safe, so only one page uses the readers at a time.
+        self._readers_lock = threading.Lock()
         self._tesseract_vocabulary: list[str] = []
         self._native_codes: list[str] = []
 
@@ -174,7 +178,7 @@ class TesseractOcrModel(BaseOcrModel):
             if not page._backend.is_valid():
                 yield page
             else:
-                with TimeRecorder(conv_res, "ocr"):
+                with self._readers_lock, TimeRecorder(conv_res, "ocr"):
                     assert self._reader is not None
                     assert self._osd_reader is not None
                     assert self._tesseract_vocabulary is not None

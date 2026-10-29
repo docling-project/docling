@@ -1,7 +1,8 @@
 name: PR Workflow Approval Reminder
 
 # Every morning, list the open PRs whose CI waits for a maintainer to approve
-# it, grouped by their AI triage label, and post the list to Slack.
+# it, grouped by their AI triage label. Post the counts to Slack and write
+# the full list to the job summary, which the Slack message links to.
 on:
   schedule:
     - cron: "0 6 * * *"

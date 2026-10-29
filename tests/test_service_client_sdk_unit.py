@@ -5,6 +5,7 @@ import asyncio
 import io
 import json
 import queue
+import socket
 import tempfile
 import threading
 import time
@@ -1537,6 +1538,66 @@ def test_serialize_convert_options_omits_unset_fields() -> None:
     assert "do_ocr" not in payload
 
 
+def test_resolve_options_does_not_mark_page_range_when_unset() -> None:
+    """Unset page_range must remain omitted from serialized options after resolve_options."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        opts = ConvertDocumentsRequestOptions(do_ocr=True)
+        resolved = client._resolve_options(
+            options=opts,
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=None,
+        )
+        serialized = client._serialize_convert_options(resolved.options)
+
+    assert "page_range" not in serialized
+    assert serialized == {"do_ocr": True}
+    assert resolved.limits.page_range == (1, client_module.sys.maxsize)
+
+
+def test_resolve_options_marks_page_range_when_explicitly_set_or_constrained() -> None:
+    """Explicit page_range or max_num_pages must be reflected in serialized options."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        # Explicitly in options
+        opts_with_range = ConvertDocumentsRequestOptions(page_range=(2, 6))
+        resolved = client._resolve_options(
+            options=opts_with_range,
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=None,
+        )
+        assert client._serialize_convert_options(resolved.options) == {
+            "page_range": [2, 6]
+        }
+        assert resolved.limits.page_range == (2, 6)
+
+        # Via page_range parameter
+        resolved_param = client._resolve_options(
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=(3, 7),
+        )
+        assert client._serialize_convert_options(resolved_param.options) == {
+            "do_ocr": True,
+            "page_range": [3, 7],
+        }
+        assert resolved_param.limits.page_range == (3, 7)
+
+        # Via max_num_pages parameter
+        resolved_pages = client._resolve_options(
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+            max_num_pages=5,
+            max_file_size=None,
+            page_range=None,
+        )
+        assert client._serialize_convert_options(resolved_pages.options) == {
+            "do_ocr": True,
+            "page_range": [1, 5],
+        }
+        assert resolved_pages.limits.page_range == (1, 5)
+
+
 def test_form_encode_options_jsonifies_nested_values() -> None:
     encoded = DoclingServiceClient._form_encode_options(
         {
@@ -1633,6 +1694,38 @@ def test_submit_source_serializes_convert_options_without_defaults() -> None:
     payload = captured["payload"]
     assert isinstance(payload, dict)
     assert payload["options"] == {"page_range": [3, 7]}
+
+
+def test_submit_source_omits_page_range_when_unset() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            json=_status_response("task-source-no-range", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit(
+            source="https://example.org/sample.pdf",
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+        )
+
+    assert job.task_id == "task-source-no-range"
+    payload = captured["payload"]
+    assert isinstance(payload, dict)
+    assert "page_range" not in payload["options"]
+    assert payload["options"] == {"do_ocr": True}
 
 
 def test_submit_local_string_source_uses_file_endpoint(tmp_path: Path) -> None:
@@ -3314,20 +3407,107 @@ def test_convert_all_materializes_presigned_results_in_order(
         assert pictures and str(pictures[0].image.uri).startswith("data:image")
 
 
+def test_artifact_route_pins_a_public_address() -> None:
+    route = client_module._artifact_route(
+        "https://8.8.8.8:8443/artifact.zip", check_public=True
+    )
+
+    assert route.urls == ["https://8.8.8.8:8443/artifact.zip"]
+    assert route.headers == {"Host": "8.8.8.8:8443"}
+    assert route.extensions == {"sni_hostname": "8.8.8.8"}
+
+
 @pytest.mark.parametrize(
-    "url, expected",
+    "url",
     [
-        ("https://8.8.8.8/artifact.zip", True),
-        ("https://127.0.0.1/artifact.zip", False),
-        ("http://10.1.2.3/artifact.zip", False),
-        ("https://169.254.169.254/artifact.zip", False),
-        ("http://[::1]/artifact.zip", False),
-        ("ftp://8.8.8.8/artifact.zip", False),
-        ("not-a-url", False),
+        "https://127.0.0.1/artifact.zip",
+        "http://10.1.2.3/artifact.zip",
+        "https://169.254.169.254/artifact.zip",
+        "http://[::1]/artifact.zip",
+        "http://[::ffff:127.0.0.1]/artifact.zip",
+        "ftp://8.8.8.8/artifact.zip",
+        "not-a-url",
     ],
 )
-def test_is_safe_artifact_url(url: str, expected: bool) -> None:
-    assert client_module._is_safe_artifact_url(url) is expected
+def test_artifact_route_refuses_non_public_urls(url: str) -> None:
+    with pytest.raises(ArtifactDownloadError, match="non-public URL"):
+        client_module._artifact_route(url, check_public=True)
+
+
+def test_artifact_route_refuses_a_host_with_any_private_address(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A public A record must not hide a loopback AAAA record."""
+
+    def fake_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 0)),
+            (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::1", 0, 0, 0)),
+        ]
+
+    monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
+
+    with pytest.raises(ArtifactDownloadError, match="non-public URL"):
+        client_module._artifact_route(
+            "https://artifacts.example/artifact.zip", check_public=True
+        )
+
+
+def test_artifact_route_keeps_the_hostname_behind_a_proxy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.invalid:3128")
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    monkeypatch.delenv("no_proxy", raising=False)
+
+    route = client_module._artifact_route(
+        "https://8.8.8.8/artifact.zip", check_public=True
+    )
+
+    assert route.proxy == "http://proxy.invalid:3128"
+    assert route.urls == ["https://8.8.8.8/artifact.zip"]
+    assert route.headers == {}
+
+
+@pytest.mark.parametrize(
+    ("url", "trusted"),
+    [
+        ("http://localhost:9000/bucket/artifact.zip", True),
+        ("http://LOCALHOST:9000/other/artifact.zip", True),
+        ("https://minio.internal/artifact.zip", True),
+        ("https://minio.internal:443/artifact.zip", True),
+        ("http://localhost:9001/artifact.zip", False),
+        ("https://localhost:9000/artifact.zip", False),
+        ("http://minio.internal/artifact.zip", False),
+        ("http://127.0.0.1:9000/artifact.zip", False),
+    ],
+)
+def test_artifact_route_trusts_only_allowlisted_origins(
+    url: str, trusted: bool
+) -> None:
+    allowlist = client_module._parse_artifact_url_allowlist(
+        ["http://localhost:9000", "https://minio.internal/"]
+    )
+
+    if trusted:
+        route = client_module._artifact_route(
+            url, check_public=True, trusted_origins=allowlist
+        )
+        assert route.urls == [url]
+        assert route.headers == {}
+    else:
+        with pytest.raises(ArtifactDownloadError, match="artifact_url_allowlist"):
+            client_module._artifact_route(
+                url, check_public=True, trusted_origins=allowlist
+            )
+
+
+@pytest.mark.parametrize(
+    "entry", ["minio.internal:9000", "ftp://minio.internal", "http://", ""]
+)
+def test_artifact_url_allowlist_rejects_non_http_origins(entry: str) -> None:
+    with pytest.raises(ValueError, match="artifact_url_allowlist"):
+        DoclingServiceClient(url=TEST_BASE_URL, artifact_url_allowlist=[entry])
 
 
 def test_convert_rejects_private_artifact_url_by_default(tmp_path: Path) -> None:

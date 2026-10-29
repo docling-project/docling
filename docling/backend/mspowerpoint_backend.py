@@ -4,13 +4,27 @@
 from __future__ import annotations
 
 import logging
+import math
+import re
 import shutil
 import warnings
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Any, Callable, Final, Iterable, Iterator, Literal, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Final,
+    Iterable,
+    Iterator,
+    Literal,
+    Optional,
+    Sequence,
+    Union,
+)
+from urllib.parse import urlparse
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -33,10 +47,12 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
     TabularChartMetaField,
+    TextItem,
 )
 from docling_core.types.doc.document import ContentLayer
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -49,6 +65,7 @@ from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.utils.charts import build_chart_table, datetime_to_iso
 from docling.backend.utils.image import normalize_image_for_png
 from docling.backend.utils.media import MediaKind, load_linked_media, set_media_meta
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
@@ -62,6 +79,8 @@ _PPTX_AVAILABLE: bool = False
 _PPTX_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from pptx import Presentation, presentation
+    from pptx.chart.series import BarSeries, XySeries
+    from pptx.enum.action import PP_ACTION
     from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
     from pptx.exc import InvalidXmlError
     from pptx.oxml.ns import qn
@@ -103,14 +122,33 @@ _IMAGE_RENDER_HINT = (
     "image data."
 )
 
-_MAX_CHART_TABLE_CELLS: Final = 100_000
-"""Backstop on the total cells emitted for one chart's reconstructed data table.
+_CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
+    "barChart": PictureClassificationLabel.BAR_CHART,
+    "bar3DChart": PictureClassificationLabel.BAR_CHART,
+    "lineChart": PictureClassificationLabel.LINE_CHART,
+    "line3DChart": PictureClassificationLabel.LINE_CHART,
+    "pieChart": PictureClassificationLabel.PIE_CHART,
+    "pie3DChart": PictureClassificationLabel.PIE_CHART,
+    "doughnutChart": PictureClassificationLabel.PIE_CHART,
+    "scatterChart": PictureClassificationLabel.SCATTER_CHART,
+    "areaChart": PictureClassificationLabel.OTHER_CHART,
+    "area3DChart": PictureClassificationLabel.OTHER_CHART,
+}
+"""Maps the tag-local name of a chart plot element, such as ``"bar3DChart"``, to
+a docling picture-classification label. The Word and Excel backends use the same
+mapping. Plot types not listed fall back to ``OTHER_CHART``."""
 
-Charts whose declared category range far exceeds their plotted data are trimmed
-to populated rows first; this cap only binds genuinely huge charts. 100k cells
-still admit e.g. a 10k-point, 5-series chart while keeping any single chart's
-markdown output to a few megabytes.
-"""
+_XY_PLOT_TAGNAMES: Final = frozenset({"scatterChart", "bubbleChart"})
+"""Plot types whose series keep their values in ``c:yVal`` instead of ``c:val``."""
+
+_EXCEL_EPOCH: Final = datetime(1899, 12, 30)
+_EXCEL_1904_EPOCH: Final = datetime(1904, 1, 1)
+"""Day zero of the date serials in a chart's data cache, for the 1900 and the
+1904 date systems. ``c:date1904`` on the chart selects the second one."""
+
+_NUMBER_FORMAT_LITERALS: Final = re.compile(r'"[^"]*"|\\.|\[[^\]]*\]|[_*].')
+"""Parts of an Excel number format that are not format codes: quoted text,
+escaped characters, bracketed colours, locales and conditions, and padding."""
 
 # Windows metafile signatures. A placeable WMF opens with the Aldus magic and an
 # EMF carries " EMF" in the dSignature field of its EMR_HEADER, 40 bytes in.
@@ -241,31 +279,55 @@ def _is_metafile(image_bytes: bytes) -> bool:
     )
 
 
-def _last_populated_row(
-    categories: list[str], columns: list[tuple[str, list[str]]], num_data_rows: int
-) -> int:
-    """Return the index of the last data row carrying any chart data.
+def _is_date_format(format_code: str) -> bool:
+    """Return True when an Excel number format shows a date.
 
-    A row is populated when its category label or at least one series value is
-    non-empty. The scan runs from the end so declared-but-empty trailing ranges
-    (e.g. whole-column references such as ``$A$2:$A$1048576``) collapse without
-    walking the empty region more than once. Interior gaps are kept: only
-    trailing empty rows are trimmed.
+    A ``d`` or ``y`` code marks a date. An ``m`` code marks a month only when
+    there is no ``h`` or ``s`` code, because ``m`` also means minutes. Time-only
+    formats and ``General`` therefore return False.
 
     Args:
-        categories: Category labels, one per data row (may be shorter or longer
-            than ``num_data_rows``).
-        columns: ``(series name, values)`` pairs, one per chart series.
-        num_data_rows: Untrimmed data-row count.
+        format_code: An Excel number format, such as ``mmm d, yy``.
 
     Returns:
-        The last populated row index, or -1 when no row carries data.
+        True when the format shows a date.
     """
-    for row in range(num_data_rows - 1, -1, -1):
-        category = categories[row] if row < len(categories) else ""
-        if category or any(row < len(values) and values[row] for _, values in columns):
-            return row
-    return -1
+    codes = _NUMBER_FORMAT_LITERALS.sub("", format_code).lower()
+    if "d" in codes or "y" in codes:
+        return True
+    return "m" in codes and "h" not in codes and "s" not in codes
+
+
+def _serial_to_iso(text: str, date1904: bool) -> str:
+    """Write an Excel date serial as an ISO 8601 date, or keep the text.
+
+    A chart caches its date categories as serial numbers, such as ``40909``
+    for 1 January 2012. A whole serial becomes a date (``2012-01-01``). A
+    serial with a time of day becomes a date and time to the second.
+
+    Args:
+        text: A category label from the chart's data cache.
+        date1904: True when the chart uses the 1904 date system.
+
+    Returns:
+        The ISO 8601 text, or ``text`` unchanged when it is not a serial.
+    """
+    try:
+        serial = float(text)
+    except ValueError:
+        return text
+    if not math.isfinite(serial) or serial < 0:
+        return text
+    if date1904:
+        epoch = _EXCEL_1904_EPOCH
+    else:
+        # Excel counts the nonexistent 1900-02-29 as serial 60.
+        epoch = _EXCEL_EPOCH + timedelta(days=1 if serial < 60 else 0)
+    try:
+        moment = epoch + timedelta(seconds=round(serial * 86400))
+    except OverflowError:
+        return text
+    return datetime_to_iso(moment)
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
@@ -426,6 +488,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             width = slide_size.width
             height = slide_size.height
         shape_bbox = [left, top, left + width, top + height]
+        if None not in (shape.left, shape.top, shape.width, shape.height):
+            shape_bbox = self._to_slide_coordinates(shape, shape_bbox)
         # python-pptx reports left and top as EMU from the slide's top-left, with
         # y growing downward, so the tuple above is in TOPLEFT order. Tagging it
         # BOTTOMLEFT does not convert it: BoundingBox.from_tuple unpacks
@@ -439,6 +503,67 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         )
 
         return prov
+
+    @staticmethod
+    def _to_slide_coordinates(shape, bbox: list) -> list:
+        """Map a box in a grouped shape's coordinates to slide coordinates.
+
+        python-pptx reports the position of a shape inside a group in the
+        group's child coordinate space (``a:chOff``/``a:chExt``), which only
+        matches the slide while the group has not been moved, resized or
+        flipped since its shapes were grouped. Each enclosing group maps that
+        space onto its own box (``a:off``/``a:ext``), so the transforms are
+        applied from the innermost group outwards. Group rotation is not
+        applied.
+
+        Args:
+            shape: The shape the box belongs to.
+            bbox: The box as ``[left, top, right, bottom]`` in the shape's own
+                coordinate space.
+
+        Returns:
+            The box as ``[left, top, right, bottom]`` in slide coordinates.
+        """
+        left, top, right, bottom = bbox
+        parent = shape._element.getparent()
+        while parent is not None and parent.tag == qn("p:grpSp"):
+            xfrm = parent.find(f"{qn('p:grpSpPr')}/{qn('a:xfrm')}")
+            parts = (
+                None
+                if xfrm is None
+                else [
+                    xfrm.find(qn(f"a:{name}"))
+                    for name in ("off", "ext", "chOff", "chExt")
+                ]
+            )
+            if parts is not None and None not in parts:
+                off, ext, ch_off, ch_ext = parts
+                try:
+                    off_x, off_y = int(off.get("x")), int(off.get("y"))
+                    ext_x, ext_y = int(ext.get("cx")), int(ext.get("cy"))
+                    ch_x, ch_y = int(ch_off.get("x")), int(ch_off.get("y"))
+                    ch_cx, ch_cy = int(ch_ext.get("cx")), int(ch_ext.get("cy"))
+                except (TypeError, ValueError):
+                    pass
+                else:
+                    scale_x = ext_x / ch_cx if ch_cx else 1.0
+                    scale_y = ext_y / ch_cy if ch_cy else 1.0
+                    left = off_x + (left - ch_x) * scale_x
+                    right = off_x + (right - ch_x) * scale_x
+                    top = off_y + (top - ch_y) * scale_y
+                    bottom = off_y + (bottom - ch_y) * scale_y
+                    if xfrm.get("flipH") in ("1", "true"):
+                        left, right = (
+                            2 * off_x + ext_x - right,
+                            2 * off_x + ext_x - left,
+                        )
+                    if xfrm.get("flipV") in ("1", "true"):
+                        top, bottom = (
+                            2 * off_y + ext_y - bottom,
+                            2 * off_y + ext_y - top,
+                        )
+            parent = parent.getparent()
+        return [left, top, right, bottom]
 
     def _get_paragraph_level(self, paragraph) -> int:
         """Return the indentation level of a paragraph XML element.
@@ -910,6 +1035,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         open_lists: list[_OpenList] = []
         doc_label = DocItemLabel.LIST_ITEM
 
+        # Footer, date and slide-number placeholders are slide chrome, like page
+        # headers and footers in a PDF.
+        content_layer = None
+        if shape.is_placeholder and shape.placeholder_format.type in (
+            PP_PLACEHOLDER.FOOTER,
+            PP_PLACEHOLDER.DATE,
+            PP_PLACEHOLDER.SLIDE_NUMBER,
+        ):
+            content_layer = ContentLayer.FURNITURE
+
         # Iterate through paragraphs to build up text
         for paragraph in shape.text_frame.paragraphs:
             is_a_list, bullet_type = self._is_list_item(paragraph)
@@ -931,7 +1066,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if not open_lists:
                     open_lists.append(
                         _OpenList(
-                            group=doc.add_list_group(name="list", parent=parent_slide),
+                            group=doc.add_list_group(
+                                name="list",
+                                parent=parent_slide,
+                                content_layer=content_layer,
+                            ),
                             level=level,
                         )
                     )
@@ -939,7 +1078,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     open_lists.append(
                         _OpenList(
                             group=doc.add_list_group(
-                                name="list", parent=open_lists[-1].last_item
+                                name="list",
+                                parent=open_lists[-1].last_item,
+                                content_layer=content_layer,
                             ),
                             level=level,
                         )
@@ -958,9 +1099,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     parent=current.group,
                     text="" if has_equations else p_text,
                     prov=prov,
+                    content_layer=content_layer,
                 )
                 if has_equations:
-                    inline_group = doc.add_inline_group(parent=current.last_item)
+                    inline_group = doc.add_inline_group(
+                        parent=current.last_item, content_layer=content_layer
+                    )
                     for label, text in fragments:
                         doc.add_text(
                             label=label,
@@ -969,6 +1113,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             prov=self._generate_prov(
                                 shape, slide_ind, text, slide_size
                             ),
+                            content_layer=content_layer,
                         )
             else:  # is paragraph not a list item
                 open_lists.clear()
@@ -995,7 +1140,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             label=doc_label, parent=parent_slide, text="", prov=prov
                         )
                     parent = (
-                        doc.add_inline_group(parent=fragment_parent)
+                        doc.add_inline_group(
+                            parent=fragment_parent, content_layer=content_layer
+                        )
                         if has_text
                         else fragment_parent
                     )
@@ -1008,6 +1155,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                                 prov=self._generate_prov(
                                     shape, slide_ind, text, slide_size
                                 ),
+                                content_layer=content_layer,
                             )
                 else:
                     doc.add_text(
@@ -1015,6 +1163,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         parent=parent_slide,
                         text=p_text,
                         prov=prov,
+                        content_layer=content_layer,
                     )
         return
 
@@ -1062,14 +1211,50 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def _handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
+    @staticmethod
+    def _picture_fill_rid(shape) -> Optional[str]:
+        """Return the relationship id of a shape's embedded picture fill.
+
+        A shape filled with a picture (Format Shape > Fill > Picture) is a
+        ``p:sp`` whose ``p:spPr`` holds an ``a:blipFill``; python-pptx reads it
+        as an ``Autoshape``, not a ``Picture``. Other fill kinds give ``None``.
+        A picture fill without an embedded image (for example one that only
+        links an external file with ``r:link``) also gives ``None``, with a
+        warning, because its image is not in the package.
+        """
+        sp_pr = shape._element.find(qn("p:spPr"))
+        if sp_pr is None:
+            return None
+        blip = sp_pr.find(f"{qn('a:blipFill')}/{qn('a:blip')}")
+        if blip is None:
+            return None
+        rid = blip.get(qn("r:embed"))
+        if not rid:
+            warnings.warn(
+                "Skipping picture fill without an embedded image",
+                UserWarning,
+                stacklevel=2,
+            )
+            return None
+        return rid
+
+    def _handle_pictures(
+        self, shape, parent_slide, slide_ind, doc, slide_size, fill_rid=None
+    ):
         # Read the picture out of the package. A shape that slips past other
         # tools' parsers can still fail here, and there is nothing to record.
         try:
-            # A video shows its poster frame where a picture shows its image.
-            image = shape.poster_frame if isinstance(shape, Movie) else shape.image
-            if image is None:
-                raise ValueError("video has no poster frame")
+            if fill_rid is not None:
+                # The picture fill of an ordinary shape lives in the image part
+                # its a:blip references.
+                image = shape.part.related_part(fill_rid).image
+            elif isinstance(shape, Movie):
+                # A video shows its poster frame where a picture shows its image.
+                image = shape.poster_frame
+                if image is None:
+                    raise ValueError("video has no poster frame")
+            else:
+                image = shape.image
             image_bytes = image.blob
             im_dpi, _ = image.dpi
             prov = self._generate_prov(shape, slide_ind, "", slide_size)
@@ -1219,34 +1404,51 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return
 
     @staticmethod
-    def _chart_type_to_classification(chart_type: Any) -> PictureClassificationLabel:
-        """Map a python-pptx ``XL_CHART_TYPE`` to a docling classification label.
+    def _chart_classifications(plots: list[Any]) -> list[PictureClassificationLabel]:
+        """Return the classification labels of a chart, one per plot type.
 
-        ``chart.chart_type`` is a granular enum (``COLUMN_CLUSTERED``,
-        ``XY_SCATTER_LINES``, ``THREE_D_PIE``, ...). Rather than enumerate every
-        member, we match on the enum member's name by family, mirroring the
-        Excel backend's tagname mapping: column/bar variants become BAR_CHART,
-        line variants LINE_CHART, pie/doughnut PIE_CHART, scatter SCATTER_CHART,
-        and everything else (area, radar, stock, surface, ...) OTHER_CHART.
-        SCATTER is matched before LINE because ``XY_SCATTER_LINES`` contains both.
+        Each plot is classified by its tag, so a ``c:bar3DChart`` plot is a bar
+        chart. The labels follow the drawing order, so the back-most plot gives
+        the main label. A label is listed once, even when several plots share
+        it.
 
         Args:
-            chart_type: An ``XL_CHART_TYPE`` member, or None when python-pptx
-                cannot determine the type (e.g. combination charts).
+            plots: The chart's plot elements, back-most first.
 
         Returns:
-            The matching PictureClassificationLabel.
+            The labels, or ``[OTHER_CHART]`` when the chart has no plot.
         """
-        name = chart_type.name if chart_type is not None else ""
-        if "PIE" in name or "DOUGHNUT" in name:
-            return PictureClassificationLabel.PIE_CHART
-        if "SCATTER" in name:
-            return PictureClassificationLabel.SCATTER_CHART
-        if "LINE" in name:
-            return PictureClassificationLabel.LINE_CHART
-        if "BAR" in name or "COL" in name:
-            return PictureClassificationLabel.BAR_CHART
-        return PictureClassificationLabel.OTHER_CHART
+        labels: list[PictureClassificationLabel] = []
+        for x_chart in plots:
+            label = _CHART_TAGNAME_TO_CLASSIFICATION.get(
+                etree.QName(x_chart).localname, PictureClassificationLabel.OTHER_CHART
+            )
+            if label not in labels:
+                labels.append(label)
+        return labels or [PictureClassificationLabel.OTHER_CHART]
+
+    @staticmethod
+    def _plot_series(x_chart: Any) -> list[Any]:
+        """Return the series of a plot, in the order of their ``c:order``.
+
+        python-pptx has no plot class for some plot types (3-D bar, line and
+        pie, stock, surface, bar-of-pie) and no series class for 3-D area
+        plots. Their ``c:ser`` elements still have the same structure, so a
+        python-pptx series class reads the series of every plot type.
+
+        Args:
+            x_chart: The plot element, such as ``c:bar3DChart``.
+
+        Returns:
+            One python-pptx series per ``c:ser`` element.
+        """
+        series_class = (
+            XySeries
+            if etree.QName(x_chart).localname in _XY_PLOT_TAGNAMES
+            else BarSeries
+        )
+        sers = sorted(x_chart.iterchildren(qn("c:ser")), key=lambda ser: ser.order.val)
+        return [series_class(ser) for ser in sers]
 
     @staticmethod
     def _chart_title_text(chart: Any) -> Optional[str]:
@@ -1283,122 +1485,157 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return str(int(value))
         return str(value)
 
-    def _chart_to_table_data(self, chart: Any) -> Optional[TableData]:
-        """Reconstruct a chart's underlying data grid as a TableData.
+    @staticmethod
+    def _category_axis(chart: Any, x_chart: Any) -> Any:
+        """Return the category or date axis that a plot is drawn against.
 
-        Layout produced (categories down the first column, one column per series):
-
-            | <blank> | <series 0 name> | <series 1 name> | ...
-            | cat_0   | val_0,0         | val_1,0         | ...
-            | cat_1   | val_0,1         | val_1,1         | ...
-
-        Unlike the Excel backend, python-pptx exposes the plotted numbers
-        directly on each series (``series.values``) and the shared category
-        labels on the plot (``plot.categories``) — no workbook reference
-        resolution is needed.
-
-        The declared category range can far exceed the plotted data (e.g. a
-        chart referencing whole Excel columns declares ~1M categories for a
-        handful of points), so trailing rows whose category label and every
-        series value are empty are trimmed and the table is sized by populated
-        data instead. As a backstop for genuinely huge charts, the emitted
-        table is additionally capped at ``_MAX_CHART_TABLE_CELLS`` cells.
+        The axis is matched by ``c:axId``. ``chart.category_axis`` would return
+        the first ``c:catAx`` even when the plot uses a ``c:dateAx``, so it can
+        pick the hidden axis of a secondary plot.
 
         Args:
             chart: A python-pptx ``Chart`` object.
+            x_chart: The plot element, such as ``c:barChart``.
+
+        Returns:
+            The ``c:catAx`` or ``c:dateAx`` element, or None for a plot without
+            one, such as a pie or a scatter plot.
+        """
+        axis_ids = {
+            axis_id.get("val") for axis_id in x_chart.iterchildren(qn("c:axId"))
+        }
+        for axis in chart.element.chart.plotArea.xpath("./c:catAx | ./c:dateAx"):
+            if axis_ids.intersection(axis.xpath("./c:axId/@val")):
+                return axis
+        return None
+
+    @staticmethod
+    def _categories_are_dates(axis: Any, ser: Any) -> bool:
+        """Return True when an axis shows its categories as dates.
+
+        A date axis always does. A text axis does when its number format is a
+        date format. That format is the axis's own, unless the axis links it to
+        the source data, in which case it is the format of the cached
+        categories.
+
+        Args:
+            axis: The plot's ``c:catAx`` or ``c:dateAx`` element.
+            ser: The first ``c:ser`` element of the plot.
+
+        Returns:
+            True when the categories are dates.
+        """
+        if axis.tag == qn("c:dateAx"):
+            return True
+        number_format = axis.find(qn("c:numFmt"))
+        if number_format is not None and number_format.get("sourceLinked") not in (
+            "1",
+            "true",
+        ):
+            format_code = number_format.get("formatCode", "")
+        else:
+            format_code = "".join(ser.xpath("./c:cat//c:numCache/c:formatCode/text()"))
+        return _is_date_format(format_code)
+
+    @staticmethod
+    def _axis_title_text(axis: Any) -> str:
+        """Return the title text of a chart axis, or "" when it has none.
+
+        The XML is read directly, because python-pptx's ``axis_title`` adds a
+        title element to an axis without one. A title linked to a cell keeps its
+        text in the cell cache instead of in rich text.
+
+        Args:
+            axis: A ``c:catAx``, ``c:dateAx`` or ``c:valAx`` element.
+
+        Returns:
+            The title text, with one space between paragraphs.
+        """
+        paragraphs = [
+            "".join(paragraph.xpath(".//a:t/text()")).strip()
+            for paragraph in axis.xpath("./c:title/c:tx/c:rich/a:p")
+        ]
+        text = " ".join(paragraph for paragraph in paragraphs if paragraph)
+        if not text:
+            text = "".join(axis.xpath("./c:title/c:tx/c:strRef//c:v/text()"))
+        return text.strip()
+
+    def _category_labels(self, chart: Any, axis: Any, x_chart: Any) -> list[str]:
+        """Return the category labels of a plot, with dates in ISO 8601.
+
+        The labels are read from the first series, as python-pptx's
+        ``plot.categories`` reads them, because python-pptx has no plot class
+        for some plot types. A multi-level axis gives the labels of its leaf
+        level. A category without a cached label gives "".
+
+        Args:
+            chart: A python-pptx ``Chart`` object.
+            axis: The plot's category axis, or None.
+            x_chart: The plot element, such as ``c:barChart``.
+
+        Returns:
+            One label per category.
+        """
+        ser = x_chart.find(qn("c:ser"))
+        if ser is None:
+            return []
+        points = ser.xpath("./c:cat//c:lvl[1]/c:pt") or ser.xpath("./c:cat//c:pt")
+        texts = {point.idx: point.v.text or "" for point in points}
+        labels = [texts.get(idx, "") for idx in range(ser.cat_ptCount_val)]
+        if axis is None or not self._categories_are_dates(axis, ser):
+            return labels
+        date1904 = bool(chart.element.date_1904)
+        return [_serial_to_iso(label, date1904) for label in labels]
+
+    def _chart_to_table_data(self, chart: Any, plots: list[Any]) -> Optional[TableData]:
+        """Reconstruct a chart's underlying data grid as a TableData.
+
+        Unlike the Excel backend, python-pptx exposes the plotted numbers
+        directly on each series (``series.values``), and the chart caches the
+        category labels with the first series — no workbook reference
+        resolution is needed. ``build_chart_table`` lays the table out.
+
+        The series of every plot become columns in drawing order, so a
+        combination chart keeps its line series next to its column series.
+        The categories come from the first plot that has them, and the title of
+        that plot's category axis goes in the top-left cell.
+
+        Args:
+            chart: A python-pptx ``Chart`` object.
+            plots: The chart's plot elements, back-most first.
 
         Returns:
             A TableData, or None if the chart exposes no usable series or no
             populated data row.
         """
-        series_list = list(chart.series)
-        if not series_list:
-            return None
-
-        plots = list(chart.plots)
-        categories: list[str] = (
-            [self._cell_text(cat) for cat in plots[0].categories] if plots else []
-        )
-
+        categories: list[str] = []
+        corner = ""
         columns: list[tuple[str, list[str]]] = []
-        for series in series_list:
-            name = self._cell_text(series.name) if series.name is not None else ""
-            values = [self._cell_text(v) for v in series.values]
-            columns.append((name, values))
+        for x_chart in plots:
+            if not categories:
+                axis = self._category_axis(chart, x_chart)
+                categories = self._category_labels(chart, axis, x_chart)
+                corner = self._axis_title_text(axis) if axis is not None else ""
+            for series in self._plot_series(x_chart):
+                name = self._cell_text(series.name) if series.name is not None else ""
+                values = [self._cell_text(v) for v in series.values]
+                columns.append((name, values))
 
-        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
-        if num_data_rows == 0:
+        if not columns:
             return None
-
-        # Trim trailing rows that carry no data at all; interior gaps are kept.
-        num_data_rows = _last_populated_row(categories, columns, num_data_rows) + 1
-        if num_data_rows == 0:
-            return None
-
-        num_cols = 1 + len(columns)
-        if num_data_rows * num_cols > _MAX_CHART_TABLE_CELLS:
-            capped_rows = max(1, _MAX_CHART_TABLE_CELLS // num_cols)
-            _log.warning(
-                "Truncating chart data table from %d to %d data rows: "
-                "%d cells would exceed the %d-cell cap.",
-                num_data_rows,
-                capped_rows,
-                num_data_rows * num_cols,
-                _MAX_CHART_TABLE_CELLS,
-            )
-            num_data_rows = capped_rows
-
-        num_rows = num_data_rows + 1
-        cells: list[TableCell] = []
-
-        header_labels = [""] + [name for name, _ in columns]
-        for col_idx, label in enumerate(header_labels):
-            cells.append(
-                TableCell(
-                    text=label,
-                    row_span=1,
-                    col_span=1,
-                    start_row_offset_idx=0,
-                    end_row_offset_idx=1,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + 1,
-                    column_header=True,
-                    row_header=False,
-                )
-            )
-        for data_row in range(num_data_rows):
-            row_idx = data_row + 1
-            category = categories[data_row] if data_row < len(categories) else ""
-            row_texts = [category] + [
-                (values[data_row] if data_row < len(values) else "")
-                for _, values in columns
-            ]
-            for col_idx, text in enumerate(row_texts):
-                cells.append(
-                    TableCell(
-                        text=text,
-                        row_span=1,
-                        col_span=1,
-                        start_row_offset_idx=row_idx,
-                        end_row_offset_idx=row_idx + 1,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + 1,
-                        column_header=False,
-                        row_header=(col_idx == 0),
-                    )
-                )
-
-        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+        return build_chart_table(categories, columns, corner)
 
     def _handle_chart(self, shape, parent_slide, slide_ind, doc, slide_size):
         """Add a native chart shape as a classified PictureItem with its data.
 
         Each chart becomes a PictureItem whose meta carries (a) the chart-type
         classification and (b) the chart's plotted numbers reconstructed as a
-        TableData. The chart title, if any, becomes the picture caption. When
-        ``render_chart_images`` is enabled and LibreOffice is available, a
-        rendered image is attached; on any rendering failure the picture keeps
-        its classification and data without an image.
+        TableData. A combination chart gets one prediction per plot type, and
+        the back-most plot gives the main one. The chart title, if any, becomes
+        the picture caption. When ``render_chart_images`` is enabled and
+        LibreOffice is available, a rendered image is attached; on any
+        rendering failure the picture keeps its classification and data without
+        an image.
 
         Args:
             shape: The python-pptx graphic-frame shape holding the chart.
@@ -1418,14 +1655,15 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return
 
         try:
-            chart_type = chart.chart_type
-        except (ValueError, NotImplementedError):
-            chart_type = None
-        classification = self._chart_type_to_classification(chart_type)
+            plots = list(chart.element.chart.plotArea.xCharts)
+        except InvalidXmlError as exc:
+            _log.warning("Could not read the plots of a chart: %s", exc)
+            plots = []
+        labels = self._chart_classifications(plots)
         caption_text = self._chart_title_text(chart)
         try:
-            table_data = self._chart_to_table_data(chart)
-        except (AttributeError, ValueError, KeyError) as exc:
+            table_data = self._chart_to_table_data(chart, plots)
+        except (AttributeError, ValueError, KeyError, InvalidXmlError) as exc:
             _log.warning("Could not extract chart data: %s", exc)
             table_data = None
 
@@ -1462,7 +1700,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         )
         picture.meta = PictureMeta(
             classification=PictureClassificationMetaField(
-                predictions=[PictureClassificationPrediction(class_name=classification)]
+                predictions=[
+                    PictureClassificationPrediction(class_name=label)
+                    for label in labels
+                ]
             ),
             tabular_chart=(
                 TabularChartMetaField(chart_data=table_data)
@@ -1738,21 +1979,39 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 # If shape doesn't have any text, move on to the next shape
                 if not isinstance(shape, Shape):
                     return
+                fill_rid = self._picture_fill_rid(shape)
+                if fill_rid is not None:
+                    # A shape filled with a picture: keep the image like a p:pic,
+                    # then any text the shape also carries.
+                    self._handle_pictures(
+                        shape,
+                        parent_slide,
+                        slide_ind,
+                        doc,
+                        slide_size,
+                        fill_rid=fill_rid,
+                    )
                 if shape.text is None:
                     return
                 if not shape.has_text_frame:
                     _log.warning("Warning: shape has text but not text_frame")
                     return
+                # Skip shapes without visible content. A whitespace-only run
+                # is still a fragment, so only count an equation or a fragment
+                # with non-blank text.
                 if not shape.text.strip() and not any(
-                    _paragraph_fragments(paragraph._element)
+                    label == DocItemLabel.FORMULA or text.strip()
                     for paragraph in shape.text_frame.paragraphs
+                    for label, text in _paragraph_fragments(paragraph._element)
                 ):
                     return
                 # Handle other text elements, including lists (bullet lists, numbered
                 # lists)
+                first_new_text = len(doc.texts)
                 self._handle_text_elements(
                     shape, parent_slide, slide_ind, doc, slide_size
                 )
+                self._apply_shape_hyperlink(shape, doc.texts[first_new_text:])
                 return
 
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
@@ -1808,6 +2067,45 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return bool(hidden) and hidden[0] in ("1", "true")
 
     @staticmethod
+    def _shape_hyperlink(shape) -> Optional[Union[AnyUrl, Path]]:
+        """Return the link attached to the whole shape, if it has one.
+
+        PowerPoint stores such a link as ``a:hlinkClick`` under the shape's
+        ``p:cNvPr``. Only a link to a URL or a file is returned: other click
+        actions, such as a jump to another slide, also carry a relationship
+        target (``slide2.xml``), but it is not something a reader can follow.
+        """
+        try:
+            click_action = shape.click_action
+            if click_action.action not in (PP_ACTION.HYPERLINK, PP_ACTION.OPEN_FILE):
+                return None
+            address = click_action.hyperlink.address
+        except (AttributeError, KeyError):
+            # No click action on this shape kind, or its relationship is gone.
+            return None
+        if not address:
+            return None
+        if not urlparse(address).scheme:
+            return Path(address)
+        try:
+            return AnyUrl(address)
+        except ValidationError:
+            _log.warning("Skipping malformed hyperlink address: %r", address)
+            return None
+
+    @classmethod
+    def _apply_shape_hyperlink(cls, shape, items: Sequence[TextItem]) -> None:
+        """Give the shape's link to its text items that have no link of their own."""
+        if not items:
+            return
+        hyperlink = cls._shape_hyperlink(shape)
+        if hyperlink is None:
+            return
+        for item in items:
+            if item.hyperlink is None:
+                item.hyperlink = hyperlink
+
+    @staticmethod
     def _body_item_refs(doc: DoclingDocument, parent_slide: GroupItem) -> set[str]:
         return {
             item.self_ref
@@ -1855,7 +2153,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             for item, _ in doc.iterate_items(
                 root=parent_slide,
                 with_groups=True,
-                included_content_layers={ContentLayer.BODY},
+                included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE},
             )
         ]
         for item in items:

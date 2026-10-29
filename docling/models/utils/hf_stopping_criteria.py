@@ -15,6 +15,11 @@ class HFStoppingCriteriaWrapper(StoppingCriteria):
     """
     Adapts any GenerationStopper to HuggingFace Transformers.
     Decodes exactly min(seq_len, stopper.lookback_tokens()) tokens from the end.
+
+    The wrapper records, for each batch row, the sequence length at which the
+    stopper first fired (``fired_at``). Transformers keeps calling the criteria
+    for rows that already finished, so the engine compares this length with the
+    final length of the row to know whether this stopper ended it.
     """
 
     def __init__(
@@ -27,6 +32,7 @@ class HFStoppingCriteriaWrapper(StoppingCriteria):
         self.tokenizer = tokenizer
         self.stopper = stopper
         self.skip_special_tokens = skip_special_tokens
+        self.fired_at: dict[int, int] = {}
 
     def __call__(self, input_ids, scores, **kwargs) -> torch.BoolTensor:
         """Flag the rows whose decoded tail trips the stopper.
@@ -56,6 +62,7 @@ class HFStoppingCriteriaWrapper(StoppingCriteria):
                         type(self.stopper).__name__,
                     )
                     is_done[row] = True
+                    self.fired_at.setdefault(row, int(seq.shape[-1]))
             except Exception as e:
                 _log.info(f"Error in TextStopper.should_stop: {e}")
                 continue

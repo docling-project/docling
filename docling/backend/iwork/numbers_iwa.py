@@ -8,8 +8,8 @@ each ``TN.SheetArchive`` lists what is drawn on it, and every drawable read is a
 table, a chart, a picture or a sticky note. Tables themselves are the same
 ``TST`` archives Pages embeds, so :mod:`docling.backend.iwork.tables` reads them;
 what is added here is everything around them — the sheets, the frames that
-position them, and the values a spreadsheet cell holds that a Pages cell never
-does.
+position them, and the values and pictures a spreadsheet cell holds that a Pages
+cell never does.
 
 Only the message and field numbers are format knowledge; the container layer
 lives in :mod:`docling.backend.iwork.iwa`.
@@ -95,6 +95,29 @@ Numbers names every table and can freeze columns as well as rows, so both are
 read here rather than in the shared table layer.
 """
 
+STORE_STYLES_FIELD = 5
+"""Field of a table's data store referencing its list of cell styles."""
+
+STYLE_ENTRY_REFERENCE_FIELD = 4
+"""Field of a style list entry referencing the style."""
+
+TST_CELL_STYLE = 6004
+"""Message type of ``TST.CellStyleArchive``, the style of one or more cells."""
+
+CELL_STYLE_PROPERTIES_FIELD = 11
+
+CELL_PROPERTIES_FILL_FIELD = 1
+
+FILL_IMAGE_FIELD = 3
+
+IMAGE_FILL_DATA_FIELD = 6
+"""Fields leading from a cell style to the data of the image it fills cells with.
+
+The route is the cell properties of the style, then their fill, then the image
+fill, then a ``TSP.DataReference``. A fill that is a colour or a gradient has no
+image fill.
+"""
+
 DRAWABLE_GEOMETRY_FIELD = 1
 
 GEOMETRY_POSITION_FIELD = 1
@@ -178,7 +201,7 @@ def read_sheet(
         if drawable is None:
             continue
         if drawable.message_type == archives.TST_TABULAR_INFO:
-            table = read_table(drawable, objects)
+            table = read_table(drawable, objects, reader)
             if table is not None:
                 sheet_tables.append(table)
         elif drawable.message_type == TSCH_CHART_DRAWABLE:
@@ -205,12 +228,15 @@ def read_sheet(
     )
 
 
-def read_table(info: IWAObject, objects: dict[int, IWAObject]) -> Table | None:
+def read_table(
+    info: IWAObject, objects: dict[int, IWAObject], reader: IWAReader
+) -> Table | None:
     """Build one table from the archive placing it on its sheet.
 
     Args:
         info: The ``TST.TableInfoArchive`` for this table.
         objects: Every object in the document, keyed by identifier.
+        reader: The shared reader, which finds the bytes of a cell's picture.
 
     Returns:
         The table, or None when it does not resolve to a readable model.
@@ -247,7 +273,7 @@ def read_table(info: IWAObject, objects: dict[int, IWAObject]) -> Table | None:
         num_cols=num_cols,
         header_rows=count(fields.get(archives.TABLE_HEADER_ROWS_FIELD, [None])[0]),
         header_cols=count(fields.get(TABLE_HEADER_COLS_FIELD, [None])[0]),
-        cells=read_cells(store, objects, values, num_rows, num_cols),
+        cells=read_cells(store, objects, values, num_rows, num_cols, reader),
         geometry=drawable_frame(info_fields.get(INFO_SUPER_FIELD, [None])[0]),
     )
 
@@ -258,6 +284,7 @@ def read_cells(
     values: cells.CellValues,
     num_rows: int,
     num_cols: int,
+    reader: IWAReader,
 ) -> list[Cell]:
     """Read every cell of a table that holds something, in tile order.
 
@@ -267,18 +294,62 @@ def read_cells(
         values: The table's shared value lists.
         num_rows: How many rows the table declares.
         num_cols: How many columns the table declares.
+        reader: The shared reader, which finds the bytes of a cell's picture.
 
     Returns:
-        The cells that hold something, rendered to text.
+        The cells that hold text or a picture, with the text rendered.
     """
+    fills = archives.iwa_value_list(store, STORE_STYLES_FIELD, objects, image_fill)
     placed_cells: list[Cell] = []
     for placed in archives.iwa_placements(store, objects):
         if placed.row >= num_rows or placed.col >= num_cols:
             continue
-        rendered = render(cells.iwa_cell(placed.storage, placed.start, values))
-        if rendered:
-            placed_cells.append(Cell(row=placed.row, col=placed.col, text=rendered))
+        decoded = cells.iwa_cell(placed.storage, placed.start, values)
+        rendered = render(decoded)
+        style = decoded.style if decoded is not None else None
+        data = fills.get(style) if style is not None else None
+        picture = reader.data_picture(data) if data is not None else None
+        if rendered or picture is not None:
+            placed_cells.append(
+                Cell(
+                    row=placed.row,
+                    col=placed.col,
+                    text=rendered or "",
+                    picture=picture,
+                )
+            )
     return placed_cells
+
+
+def image_fill(
+    entry: dict[int, list[int | bytes]], objects: dict[int, IWAObject]
+) -> int | None:
+    """Read the data of the image a style list entry fills its cells with.
+
+    Args:
+        entry: The decoded entry of the table's style list.
+        objects: Every object in the document, keyed by identifier.
+
+    Returns:
+        The data identifier, or None when the style fills its cells with no
+        image.
+    """
+    style = resolve(
+        entry.get(STYLE_ENTRY_REFERENCE_FIELD, [None])[0], objects, TST_CELL_STYLE
+    )
+    if style is None:
+        return None
+    message = style.payload
+    for field in (
+        CELL_STYLE_PROPERTIES_FIELD,
+        CELL_PROPERTIES_FILL_FIELD,
+        FILL_IMAGE_FIELD,
+    ):
+        nested = archives.safe_fields(message).get(field, [None])[0]
+        if not isinstance(nested, bytes):
+            return None
+        message = nested
+    return archives.iwa_reference_field(message, IMAGE_FILL_DATA_FIELD)
 
 
 def render(decoded: cells.Cell | None) -> str | None:

@@ -30,6 +30,11 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PipelineOptions,
 )
+from docling.datamodel.progress import (
+    ENRICHMENT_STEP_LABELS,
+    ConversionPhase,
+    ProgressReporter,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
@@ -73,8 +78,15 @@ class BasePipeline(ABC):
                 "When defined, it must point to a folder containing all models required by the pipeline."
             )
 
-    def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
+    def execute(
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        progress: Optional[ProgressReporter] = None,
+    ) -> ConversionResult:
         conv_res = ConversionResult(input=in_doc)
+        if progress is not None:
+            conv_res._progress = progress
 
         _log.info(f"Processing document {in_doc.file.name}")
         try:
@@ -83,9 +95,12 @@ class BasePipeline(ABC):
             ):
                 # These steps are building and assembling the structure of the
                 # output DoclingDocument.
+                conv_res._progress.phase_started(ConversionPhase.BUILD)
                 conv_res = self._build_document(conv_res)
+                conv_res._progress.phase_started(ConversionPhase.ASSEMBLE)
                 conv_res = self._assemble_document(conv_res)
                 # From this stage, all operations should rely only on conv_res.output
+                conv_res._progress.phase_started(ConversionPhase.ENRICH)
                 conv_res = self._enrich_document(conv_res)
                 conv_res.status = self._determine_status(conv_res)
                 # A document that completed but recorded errors is not a clean
@@ -105,6 +120,8 @@ class BasePipeline(ABC):
                 raise RuntimeError(f"Pipeline {self.__class__.__name__} failed") from e
         finally:
             self._unload(conv_res)
+            # Do not keep the user callback alive (or unpicklable) in the result.
+            conv_res._progress = ProgressReporter()
 
         return conv_res
 
@@ -170,8 +187,19 @@ class BasePipeline(ABC):
                 if prepared_element is not None:
                     yield prepared_element
 
+        progress = conv_res._progress
         with TimeRecorder(conv_res, "doc_enrich", scope=ProfilingScope.DOCUMENT):
             for model in self.enrichment_pipe:
+                step = model.progress_step
+                label = ENRICHMENT_STEP_LABELS.get(step, type(model).__name__)
+                # Counted right before the step runs: a step may depend on the
+                # output of an earlier one (chart extraction on classification).
+                total_items = (
+                    self._count_processable(conv_res, model) if progress.enabled else 0
+                )
+                completed_items = 0
+                if total_items:
+                    progress.enrichment_progress(step, label, 0, total_items)
                 for element_batch in chunkify(
                     _prepare_elements(conv_res, model),
                     model.elements_batch_size,
@@ -180,8 +208,28 @@ class BasePipeline(ABC):
                         doc=conv_res.document, element_batch=element_batch
                     ):  # Must exhaust!
                         pass
+                    if total_items:
+                        completed_items = min(
+                            completed_items + len(element_batch), total_items
+                        )
+                        progress.enrichment_progress(
+                            step, label, completed_items, total_items
+                        )
+                # Items the model could not prepare (e.g. no image) are skipped.
+                if completed_items < total_items:
+                    progress.enrichment_progress(step, label, total_items, total_items)
 
         return conv_res
+
+    @staticmethod
+    def _count_processable(
+        conv_res: ConversionResult, model: GenericEnrichmentModel[Any]
+    ) -> int:
+        return sum(
+            1
+            for element, _level in conv_res.document.iterate_items()
+            if model.is_processable(doc=conv_res.document, element=element)
+        )
 
     @abstractmethod
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
@@ -323,6 +371,12 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     pipeline_pages = self._apply_on_pages(conv_res, init_pages)
 
                     for p in pipeline_pages:  # Must exhaust!
+                        conv_res._progress.page_completed(
+                            p.page_no,
+                            total_pages=len(conv_res.pages),
+                            success=p._backend is not None and p._backend.is_valid(),
+                        )
+
                         # Cleanup cached images
                         if not self.keep_images:
                             p._image_cache = {}
@@ -374,6 +428,11 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     f"{trace}"
                 )
                 raise e
+
+            conv_res._progress.fail_unfinished_pages(
+                [page.page_no for page in conv_res.pages],
+                total_pages=len(conv_res.pages),
+            )
 
             # Filter out uninitialized pages (those with size=None) that may remain
             # after timeout or processing failures to prevent assertion errors downstream

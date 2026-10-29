@@ -37,8 +37,11 @@ from typing_extensions import Annotated, override
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
-from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.markdown_html import (
+    MarkdownHTMLDocumentBackend,
+    serialize_markdown_for_html,
+)
 from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     MarkdownBackendOptions,
@@ -716,6 +719,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if element in visited:
             return
 
+        # The payloads below this size were pushed by enclosing elements.
+        creation_stack_size = len(creation_stack)
+
         # A line break only joins runs of the same paragraph. When no text run
         # follows the break inside it (for example, the paragraph ends in inline
         # HTML or a code span, or the next lines are table rows), the pending
@@ -816,6 +822,23 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         elif isinstance(element, marko.inline.Image):
             _log.debug(" - Image with alt: %s, url: %s", element.title, element.dest)
 
+            # An image without alt text emits no RawText. If it is the content of
+            # a list item or heading, create that item first, with empty text, so
+            # that the picture goes under the list item, as in the HTML backend.
+            if creation_stack and not element.children:
+                parent_item = self._flush_creation_stack(
+                    doc=doc,
+                    creation_stack=creation_stack,
+                    snippet_text="",
+                    parent_item=parent_item,
+                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_start_by_ref=list_start_by_ref,
+                    list_item_counter_by_ref=list_item_counter_by_ref,
+                    list_last_item_by_ref=list_last_item_by_ref,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+
             fig_caption: TextItem | None = None
             if element.title is not None and element.title != "":
                 title = unescape(element.title)
@@ -847,7 +870,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 formatting, strikethrough=True
             )
 
-        elif isinstance(element, marko.inline.Link):
+        elif isinstance(element, marko.inline.Link | marko.inline.AutoLink):
+            # AutoLink covers <https://url> and the GFM bare-URL form (gfm_el.Url
+            # subclasses AutoLink).
             _log.debug(" - Link: %s", element.children)
             hyperlink = MarkdownDocumentBackend._resolve_link_dest(element.dest)
 
@@ -1049,6 +1074,30 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                 )
 
+                # The content of a list item or heading had no text run, e.g.
+                # only inline HTML. Create the item with empty text now, or the
+                # next text run of the document, in a later block, would take it.
+                if len(creation_stack) > creation_stack_size and isinstance(
+                    element,
+                    marko.block.ListItem
+                    | marko.block.Heading
+                    | marko.block.SetextHeading,
+                ):
+                    pending = creation_stack[creation_stack_size:]
+                    del creation_stack[creation_stack_size:]
+                    self._flush_creation_stack(
+                        doc=doc,
+                        creation_stack=pending,
+                        snippet_text="",
+                        parent_item=parent_item,
+                        list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                        list_start_by_ref=list_start_by_ref,
+                        list_item_counter_by_ref=list_item_counter_by_ref,
+                        list_last_item_by_ref=list_last_item_by_ref,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
+
     def _get_image_loader(self) -> ImageResourceLoader:
         """Lazily build the shared image-resource loader.
 
@@ -1063,6 +1112,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 enable_local_fetch=md_options.enable_local_fetch,
                 enable_remote_fetch=md_options.enable_remote_fetch,
                 max_image_data_base64_bytes=md_options.max_image_data_base64_bytes,
+                max_image_pixels=md_options.max_image_pixels,
             )
         return self._image_loader
 
@@ -1078,7 +1128,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         base_path = (
             str(md_options.source_uri) if md_options.source_uri is not None else None
         )
-        return self._get_image_loader().load_image_ref(dest, base_path)
+        try:
+            return self._get_image_loader().load_image_ref(dest, base_path)
+        except ValueError as exc:
+            # Keep the document usable when a relative image escapes its local
+            # source directory. The image is omitted, while the loader still
+            # enforces the confinement check.
+            warnings.warn(f"Could not process an image from {dest}: {exc}")
+            return None
 
     def is_valid(self) -> bool:
         return self.valid
@@ -1126,23 +1183,28 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
 
             if self._html_blocks > 0:
-                html_backend_cls = HTMLDocumentBackend
-                html_str = doc.export_to_html()
+                html_backend_cls = MarkdownHTMLDocumentBackend
+                html_payload = serialize_markdown_for_html(
+                    doc, source_hash=self.document_hash
+                )
+                html_str = html_payload.text
 
-                def _restore_original_html(txt, regex):
-                    _txt, count = re.subn(regex, "", txt)
-                    if count != self._html_blocks:
-                        raise RuntimeError(
-                            "An internal error has occurred during Markdown conversion."
-                        )
-                    return _txt
-
-                # restore original HTML by removing previously added markers
-                for regex in [
-                    rf"<pre>\s*<code>\s*{_START_MARKER}",
-                    rf"{_STOP_MARKER}\s*</code>\s*</pre>",
-                ]:
-                    html_str = _restore_original_html(txt=html_str, regex=regex)
+                # Restore only the marked HTML blocks. The HTML serializer
+                # escapes code content, so decode each block before parsing it.
+                pattern = (
+                    rf"<pre>\s*<code>\s*{re.escape(_START_MARKER)}"
+                    rf"(.*?){re.escape(_STOP_MARKER)}\s*</code>\s*</pre>"
+                )
+                html_str, count = re.subn(
+                    pattern,
+                    lambda match: unescape(match.group(1)),
+                    html_str,
+                    flags=re.DOTALL,
+                )
+                if count != self._html_blocks:
+                    raise RuntimeError(
+                        "An internal error has occurred during Markdown conversion."
+                    )
                 self._html_blocks = 0
                 # delegate to HTML backend
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))
@@ -1166,6 +1228,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     in_doc=in_doc,
                     path_or_stream=stream,
                     options=html_options,
+                    picture_refs=html_payload.picture_refs,
                 )
                 doc = html_backend_obj.convert()
         else:

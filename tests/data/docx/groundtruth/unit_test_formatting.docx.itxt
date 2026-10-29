@@ -23,12 +23,12 @@ item-0 at level 0: unspecified: group _root_
         item-22 at level 4: text: italic
         item-23 at level 4: text: bold
         item-24 at level 4: text: underline
-    item-25 at level 2: list: group list
-      item-26 at level 3: list_item: 
-        item-27 at level 4: inline: group group
-          item-28 at level 5: text: Nested
-          item-29 at level 5: text: italic
-          item-30 at level 5: text: bold
+      item-25 at level 3: list: group list
+        item-26 at level 4: list_item: 
+          item-27 at level 5: inline: group group
+            item-28 at level 6: text: Nested
+            item-29 at level 6: text: italic
+            item-30 at level 6: text: bold
   item-31 at level 1: text: 
   item-32 at level 1: text: 
   item-33 at level 1: text: 

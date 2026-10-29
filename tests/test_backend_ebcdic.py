@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import json
+from decimal import localcontext
 from io import BytesIO
 from pathlib import Path
 
@@ -261,6 +262,32 @@ def test_truncated_record_is_reported(employee_layout):
         _backend(truncated, EbcdicBackendOptions(layout=employee_layout)).convert()
 
 
+def test_record_length_shorter_than_layout_is_reported():
+    layout = EbcdicLayout(
+        record_length_field=EbcdicField(
+            name="length", size=2, type=EbcdicFieldType.UNSIGNED_INTEGER
+        ),
+        records=[
+            EbcdicRecordLayout(
+                name="line",
+                fields=[
+                    EbcdicField(name="sku", size=4),
+                    EbcdicField(
+                        name="quantity", size=3, type=EbcdicFieldType.PACKED_DECIMAL
+                    ),
+                    EbcdicField(name="id", size=4, type=EbcdicFieldType.INTEGER),
+                ],
+            )
+        ],
+    )
+    # The length prefix covers the SKU and two of the three quantity bytes.
+    body = _text("B200", 4) + _packed(12, 3)[:2]
+    data = (2 + len(body)).to_bytes(2, "big") + body
+
+    with pytest.raises(EbcdicDecodeError, match="'line' ends inside 'quantity'"):
+        _backend(data, EbcdicBackendOptions(layout=layout)).convert()
+
+
 def test_unknown_record_type_is_reported():
     layout = EbcdicLayout(
         record_type_field=EbcdicField(name="kind", size=1),
@@ -346,3 +373,51 @@ def test_layout_sources_are_mutually_exclusive(employee_layout, tmp_path: Path):
         EbcdicBackendOptions(
             layout=employee_layout, layout_file=tmp_path / "orders.json"
         )
+
+
+@pytest.mark.parametrize(
+    ("field_type", "size", "encode"),
+    [
+        (EbcdicFieldType.PACKED_DECIMAL, 16, _packed),
+        (EbcdicFieldType.ZONED_DECIMAL, 31, _zoned),
+        (
+            EbcdicFieldType.INTEGER,
+            16,
+            lambda value, size: value.to_bytes(size, "big", signed=True),
+        ),
+        (
+            EbcdicFieldType.UNSIGNED_INTEGER,
+            16,
+            lambda value, size: value.to_bytes(size, "big", signed=False),
+        ),
+    ],
+)
+@pytest.mark.parametrize("precision", [6, 28])
+def test_scaled_numbers_are_independent_of_decimal_precision(
+    field_type, size, encode, precision
+):
+    """Copybook scaling must preserve every digit, even above Decimal's precision."""
+    layout = EbcdicLayout(
+        records=[
+            EbcdicRecordLayout(
+                fields=[EbcdicField(name="amount", size=size, type=field_type, scale=2)]
+            )
+        ]
+    )
+    value = 1234567890123456789012345678901
+    values = [0, value]
+    if field_type != EbcdicFieldType.UNSIGNED_INTEGER:
+        values.append(-value)
+    data = b"".join(encode(number, size) for number in values)
+
+    with localcontext() as context:
+        context.prec = precision
+        result = _convert(data, EbcdicBackendOptions(layout=layout))
+
+    cells = result.document.tables[0].data.grid
+    expected = ["0.00", "12345678901234567890123456789.01"]
+    if field_type != EbcdicFieldType.UNSIGNED_INTEGER:
+        expected.append("-12345678901234567890123456789.01")
+    assert [row[0].text for row in cells[1:]] == expected
+    markdown = result.document.export_to_markdown(compact_tables=True)
+    assert all(amount in markdown for amount in expected)

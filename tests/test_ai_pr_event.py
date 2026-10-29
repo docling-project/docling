@@ -69,6 +69,24 @@ def test_commands_need_a_maintainer_and_an_open_pr() -> None:
     assert not event.resolve("issue_comment", issue_only).run
 
 
+def test_manual_runs_need_the_matching_open_pr() -> None:
+    def dispatch(mode: str = "triage", **pull: Any) -> object:
+        pull_data = {"number": 7, "state": "open", "draft": True}
+        pull_data.update(pull)
+        payload = {"inputs": {"pr": "7", "mode": mode}}
+        return event.resolve("workflow_dispatch", payload, pull_data)
+
+    assert dispatch() == event.Decision(7, True, False, "manual triage")
+    assert dispatch("review").force_review
+    assert not dispatch(state="closed").run
+    with pytest.raises(ValueError, match="does not match"):
+        dispatch(number=8)
+    with pytest.raises(ValueError, match="mode"):
+        dispatch("approve")
+    with pytest.raises(ValueError, match="does not match"):
+        event.resolve("workflow_dispatch", {"inputs": {"pr": "7"}})
+
+
 def test_maintainer_activity_ignores_bots_the_author_and_commands() -> None:
     def item(login: str, association: str, body: str = "Looks off.", kind="User"):
         return {

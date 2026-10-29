@@ -35,12 +35,17 @@ APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 
 
 class Cell(NamedTuple):
-    """One cell of a table, already rendered to text."""
+    """One cell of a table, already rendered to text.
+
+    ``picture`` is the image the cell is filled with. Numbers draws it behind
+    the cell's text, and a cell can hold a picture and no text.
+    """
 
     row: int
     col: int
     text: str
     col_span: int = 1
+    picture: Picture | None = None
 
 
 class Table(NamedTuple):

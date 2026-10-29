@@ -9,7 +9,7 @@ from typing import Any
 
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexwalker import get_default_latex_context_db
-    from pylatexenc.macrospec import EnvironmentSpec
+    from pylatexenc.macrospec import EnvironmentSpec, MacroSpec
 
     _PYLATEXENC_AVAILABLE = True
 except ImportError:  # pragma: no cover - import-time guard
@@ -26,6 +26,29 @@ def _build_context_db() -> Any:
     db.add_context_category(
         "docling-tables",
         environments=[EnvironmentSpec("longtable", "[{")],
+        prepend=True,
+    )
+    db.add_context_category(
+        "docling-metadata-and-bibliography",
+        macros=[
+            MacroSpec("title", "[{"),
+            MacroSpec("affiliation", "{"),
+            MacroSpec("affil", "{"),
+            MacroSpec("address", "{"),
+            MacroSpec("institute", "{"),
+            MacroSpec("email", "{"),
+            MacroSpec("altaffiliation", "[{"),
+            MacroSpec("thanks", "{"),
+            MacroSpec("inst", "{"),
+            MacroSpec("preprint", "{"),
+            MacroSpec("parbox", "[{{"),
+            MacroSpec("caption", "*[{"),
+            MacroSpec("captionof", "{{"),
+            MacroSpec("bibitem", "[{"),
+            MacroSpec("bibliographystyle", "{"),
+            MacroSpec("newtheorem", "*{[{["),
+        ],
+        environments=[EnvironmentSpec("thebibliography", "{")],
         prepend=True,
     )
     return db

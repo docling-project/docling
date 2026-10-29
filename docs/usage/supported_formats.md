@@ -31,6 +31,11 @@ Below you can find a listing of all supported input and output formats.
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 | AFP | IBM Advanced Function Presentation / MO:DCA |
 
+For Markdown, CSV, and AsciiDoc, a byte-order mark (BOM) selects the text encoding
+unless the backend's `encoding` option is set. If the bytes are not valid in the
+BOM-detected encoding, conversion fails with an error that names the encoding
+and retains the decoder error as its cause.
+
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
@@ -39,6 +44,12 @@ or icon. The `docling__video` or `docling__audio` field of the picture `meta` gi
 the path of the media file inside the package, or the link of a linked file. Set
 `do_media_conversion=True` in the pipeline options to also transcribe the media
 (see [Video and audio in slides](processing_audio_media.md#video-and-audio-in-slides)).
+
+For LaTeX input, front matter such as authors, affiliations, institutes, email
+addresses, and dates is stored as text items. Inline formulas remain formula
+children. The `metadata`, `authors`, and `affiliations` groups record source roles.
+`\thanks` and `\altaffiliation` use footnote items in these groups. Retained
+source commands use the furniture layer and do not appear in default Markdown.
 
 Schema-specific support:
 

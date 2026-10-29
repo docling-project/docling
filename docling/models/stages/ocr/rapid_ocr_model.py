@@ -624,13 +624,13 @@ class RapidOcrModel(BaseOcrModel):
                 # Global settings (these are still correct)
                 "Global.text_score": self.options.text_score,
                 "Global.font_path": font_path,
+                "Global.log_level": "info" if self.options.print_verbose else "warning",
                 # Engine-level ONNXRuntime settings
                 "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
                 "EngineConfig.onnxruntime.use_cuda": use_cuda,
                 "EngineConfig.onnxruntime.cuda_ep_cfg.device_id": gpu_id,
                 # Engine-level OpenVINO settings
                 "EngineConfig.openvino.inference_num_threads": intra_op_num_threads,
-                # "Global.verbose": self.options.print_verbose,
                 # Detection model settings
                 "Det.model_path": det_model_path,
                 "Det.use_cuda": use_cuda,
@@ -769,7 +769,7 @@ class RapidOcrModel(BaseOcrModel):
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
                         )
-                        im = numpy.array(high_res_image)
+                        im = numpy.asarray(high_res_image)
                         result = self.reader(
                             im,
                             use_det=self.options.use_det,

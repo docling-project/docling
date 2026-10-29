@@ -4,12 +4,12 @@
 import logging
 import re
 import struct
+import sys
 import warnings
 import zipfile
 import zlib
 from collections.abc import Iterable
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from docling_core.types.doc import (
@@ -23,10 +23,13 @@ from docling_core.types.doc import (
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import (
-    _MAX_CHART_TABLE_CELLS,
     MsPowerpointDocumentBackend,
     _is_metafile,
+)
+from docling.backend.utils.charts import (
+    MAX_CHART_TABLE_CELLS,
     _last_populated_row,
+    build_chart_table,
 )
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
@@ -350,9 +353,9 @@ def test_chart_parsed_as_classified_picture_with_data():
           ...
           | 2022    | 175              | 130             |
 
-    * Slide 2 — a 3-D bar chart (``c:bar3DChart``) for which python-pptx has no
-      registered element class. It should degrade gracefully: the chart is
-      emitted as a PictureItem with no tabular data.
+    * Slide 2 — a 3-D column chart (``c:bar3DChart``) for which python-pptx has
+      no plot class. It is still classified as a bar chart and carries its
+      data: one series "2026" over the categories Q1 to Q3.
     """
     converter = get_converter()
     doc = converter.convert(CHART_PPTX).document
@@ -381,12 +384,19 @@ def test_chart_parsed_as_classified_picture_with_data():
     assert grid[(4, 1)] == "175"
     assert grid[(4, 2)] == "130"
 
-    # --- slide 2: 3-D chart degrades gracefully (no tabular data, no crash) ---
+    # --- slide 2: 3-D chart with full data ---
     revenue_pic = next(
         p for p in pictures if p.caption_text(doc) != "Wild Duck Observations by Year"
     )
     assert revenue_pic.meta is not None
-    assert revenue_pic.meta.tabular_chart is None
+    assert (
+        revenue_pic.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert [
+        [cell.text for cell in row]
+        for row in revenue_pic.meta.tabular_chart.chart_data.grid
+    ] == [["", "2026"], ["Q1", "10"], ["Q2", "20"], ["Q3", "30"]]
 
 
 def test_chart_image_not_rendered_by_default():
@@ -457,17 +467,6 @@ def _build_inflated_ptcount_pptx(path: Path, declared: int) -> None:
     tmp.unlink()
 
 
-def _backend_under_test() -> MsPowerpointDocumentBackend:
-    """Return a backend instance for direct ``_chart_to_table_data`` calls."""
-    in_doc = InputDocument(
-        path_or_stream=CHART_PPTX,
-        format=InputFormat.PPTX,
-        backend=MsPowerpointDocumentBackend,
-    )
-    assert in_doc.valid
-    return in_doc._backend
-
-
 def test_chart_with_inflated_category_range_trims_trailing_empty_rows(tmp_path):
     """A chart whose declared range exceeds its data is trimmed to populated rows.
 
@@ -515,37 +514,29 @@ def test_last_populated_row_trims_only_trailing_empty_rows():
 
 def test_chart_with_no_populated_data_returns_no_table():
     """A chart whose declared range holds no data at all yields no table."""
-    chart = SimpleNamespace(
-        series=[SimpleNamespace(name="s1", values=[])],
-        plots=[SimpleNamespace(categories=["", "", ""])],
-    )
-    assert _backend_under_test()._chart_to_table_data(chart) is None
+    assert build_chart_table(["", "", ""], [("s1", [])]) is None
 
 
 def test_chart_data_table_capped_at_max_cells(caplog):
     """Genuinely huge charts are truncated at the cell cap with a warning.
 
-    A stub chart with 60k populated points in 2 series would emit 180k cells;
-    the table is cut to ``_MAX_CHART_TABLE_CELLS`` cells instead of ballooning.
+    60k populated points in 2 series would emit 180k cells; the table is cut to
+    ``MAX_CHART_TABLE_CELLS`` cells instead of ballooning. The header row counts
+    against the cap, so 3 columns hold at most
+    ``MAX_CHART_TABLE_CELLS // 3 - 1`` data rows.
     """
     n_points = 60_000
-    chart = SimpleNamespace(
-        series=[
-            SimpleNamespace(name="s1", values=[float(i) for i in range(n_points)]),
-            SimpleNamespace(name="s2", values=[float(i) for i in range(n_points)]),
-        ],
-        plots=[SimpleNamespace(categories=[f"c{i}" for i in range(n_points)])],
-    )
+    values = [str(i) for i in range(n_points)]
+    categories = [f"c{i}" for i in range(n_points)]
 
-    with caplog.at_level(
-        logging.WARNING, logger="docling.backend.mspowerpoint_backend"
-    ):
-        table_data = _backend_under_test()._chart_to_table_data(chart)
+    with caplog.at_level(logging.WARNING, logger="docling.backend.utils.charts"):
+        table_data = build_chart_table(categories, [("s1", values), ("s2", values)])
 
     assert table_data is not None
     assert table_data.num_cols == 3
-    capped_rows = _MAX_CHART_TABLE_CELLS // 3
+    capped_rows = MAX_CHART_TABLE_CELLS // 3 - 1
     assert table_data.num_rows == capped_rows + 1
+    assert len(table_data.table_cells) <= MAX_CHART_TABLE_CELLS
     assert "cell cap" in caplog.text
     grid = {
         (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
@@ -553,6 +544,27 @@ def test_chart_data_table_capped_at_max_cells(caplog):
     }
     assert grid[(1, 0)] == "c0"
     assert grid[(capped_rows, 0)] == f"c{capped_rows - 1}"
+
+
+def test_chart_data_table_cap_reached_exactly(caplog):
+    """A table that lands exactly on the cap is truncated, not left untouched.
+
+    One series over 50k points and 2 columns hold 100,002 cells with the header
+    row; the old data-row-only arithmetic (`100_000 > 100_000` is false) skipped
+    the cap and emitted the header row past it.
+    """
+    n_points = 50_000
+    values = [str(i) for i in range(n_points)]
+    categories = [f"c{i}" for i in range(n_points)]
+
+    with caplog.at_level(logging.WARNING, logger="docling.backend.utils.charts"):
+        table_data = build_chart_table(categories, [("s1", values)])
+
+    assert table_data is not None
+    assert table_data.num_cols == 2
+    assert table_data.num_rows == MAX_CHART_TABLE_CELLS // 2
+    assert len(table_data.table_cells) == MAX_CHART_TABLE_CELLS
+    assert "cell cap" in caplog.text
 
 
 def test_chart_enrichment_skips_image_when_pages_empty():
@@ -981,6 +993,10 @@ def test_metafile_detection(image_bytes: bytes, expected: bool):
     assert _is_metafile(image_bytes) is expected
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="Pillow 12 stores the WMF handler on the module, not the image class",
+)
 def test_pptx_emf_picture_survives_without_pillow_metafile_support(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ):
@@ -998,9 +1014,9 @@ def test_pptx_emf_picture_survives_without_pillow_metafile_support(
 
     import docling.backend.mspowerpoint_backend as _pptx_backend
 
-    # The plugin registers a GDI-backed handler at import time on Windows only;
-    # on other platforms this attribute is already None.
-    monkeypatch.setattr(WmfImagePlugin, "_handler", None)
+    # The plugin registers a GDI-backed handler on Windows only. Pillow stores
+    # it on the image class; on other platforms the value is already None.
+    monkeypatch.setattr(WmfImagePlugin.WmfStubImageFile, "_handler", None)
     # Patch get_docx_to_pdf_converter in the pptx backend's own namespace so
     # LibreOffice is reported as unavailable regardless of PATH, environment
     # variables, or hardcoded install paths on the test machine.
@@ -1058,6 +1074,10 @@ def test_pptx_undecodable_raster_picture_is_still_skipped(tmp_path: Path):
     assert "Quarterly results" in [t.text for t in doc.texts]
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="Pillow 12 stores the WMF handler on the module, not the image class",
+)
 def test_pptx_emf_picture_rasterized_via_libreoffice(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, libreoffice_available: bool
 ):
@@ -1074,7 +1094,7 @@ def test_pptx_emf_picture_rasterized_via_libreoffice(
 
     from PIL import WmfImagePlugin
 
-    monkeypatch.setattr(WmfImagePlugin, "_handler", None)
+    monkeypatch.setattr(WmfImagePlugin.WmfStubImageFile, "_handler", None)
 
     deck_path = _deck_with_picture(tmp_path, _emf_bytes(drawable=True), ".emf")
     doc = get_converter().convert(deck_path).document
@@ -1342,6 +1362,83 @@ def test_pptx_hidden_slide_goes_to_invisible_layer(tmp_path: Path):
     assert texts(ContentLayer.NOTES) == [
         "Notes for Visible slide",
         "Notes for Hidden slide",
+    ]
+
+
+def test_pptx_footer_placeholders_go_to_furniture_layer(tmp_path: Path):
+    """Footer, date and slide-number placeholders are slide chrome, not body text."""
+    from lxml import etree
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    ns = (
+        'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+    )
+
+    prs = Presentation()
+    for body, hidden in [("Presented text", False), ("Backup text", True)]:
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+        box.text_frame.text = body
+        for idx, (ph_type, text) in enumerate(
+            [("dt", "10 October 2026"), ("ftr", "Confidential"), ("sldNum", "1")],
+            start=10,
+        ):
+            slide.shapes._spTree.append(
+                etree.fromstring(
+                    f'<p:sp {ns}><p:nvSpPr><p:cNvPr id="{idx}" name="{ph_type}"/>'
+                    "<p:cNvSpPr/><p:nvPr>"
+                    f'<p:ph type="{ph_type}" idx="{idx}"/></p:nvPr></p:nvSpPr>'
+                    f"<p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>{text}</a:t>"
+                    "</a:r></a:p></p:txBody></p:sp>"
+                )
+            )
+        if hidden:
+            slide._element.set("show", "0")
+
+    pptx_path = tmp_path / "footer.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    def texts(layer: ContentLayer) -> list[str]:
+        return [
+            item.text
+            for item, _ in doc.iterate_items(included_content_layers={layer})
+            if isinstance(item, TextItem)
+        ]
+
+    assert doc.export_to_markdown() == "Presented text"
+    assert texts(ContentLayer.FURNITURE) == ["10 October 2026", "Confidential", "1"]
+    assert texts(ContentLayer.INVISIBLE) == [
+        "Backup text",
+        "10 October 2026",
+        "Confidential",
+        "1",
+    ]
+
+
+def test_pptx_whitespace_only_shapes_are_skipped(tmp_path: Path):
+    """A shape whose text is only whitespace does not become a blank text item."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])  # "Title Only"
+    slide.shapes.title.text_frame.text = " "
+    blank = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
+    blank.text_frame.text = "   "
+    real = slide.shapes.add_textbox(Inches(1), Inches(4), Inches(4), Inches(1))
+    real.text_frame.text = "Real line"
+
+    pptx_path = tmp_path / "whitespace-shapes.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        ("paragraph", "Real line")
     ]
 
 

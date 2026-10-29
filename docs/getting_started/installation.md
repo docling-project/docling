@@ -13,7 +13,7 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
 
     The Docling models depend on the [PyTorch](https://pytorch.org/) library.
     Depending on your architecture, you might want to use a different distribution of `torch`.
-    For example, you might want support for different accelerator or for a cpu-only version.
+    For example, you might want support for different accelerators or for a CPU-only version.
     All the different ways for installing `torch` are listed on their website <https://pytorch.org/>.
 
     One common situation is the installation on Linux systems with cpu-only support.
@@ -99,7 +99,7 @@ the following engines.
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
-| [RapidOCR](https://github.com/RapidAI/RapidOCR) | `rapidocr` extra can or via `pip install rapidocr onnxruntime` | `RapidOcrOptions` |
+| [RapidOCR](https://github.com/RapidAI/RapidOCR) | `rapidocr` extra or via `pip install rapidocr onnxruntime` | `RapidOcrOptions` |
 | [OnnxTR](https://github.com/felixdittrich92/OnnxTR) | Can be installed via the plugin system `pip install "docling-ocr-onnxtr[cpu]"`. Please take a look at [docling-OCR-OnnxTR](https://github.com/felixdittrich92/docling-OCR-OnnxTR).| `OnnxtrOcrOptions` |
 
 The Docling `DocumentConverter` allows you to choose the OCR engine with the `ocr_options` settings.
@@ -180,6 +180,40 @@ doc_converter = DocumentConverter(
     ```
 
     Nemotron OCR is currently supported only on Linux x86_64 with Python 3.12 and CUDA 13.x.
+
+??? "Installation without RapidOCR"
+
+    The `docling` package installs `docling-slim[standard]`, which always includes RapidOCR.
+    If you use another OCR engine, for example the Tesseract CLI, which needs no Python OCR
+    package, install `docling-slim` with the extras of `standard` except `feat-ocr-rapidocr`:
+
+    ```console
+    pip install "docling-slim[format-pdf,models-local,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]" opencv-python-headless
+    ```
+
+    The table structure model needs OpenCV, which RapidOCR otherwise brings in. Without an OpenCV
+    package, the conversion of a PDF fails with `ModuleNotFoundError: No module named 'cv2'`.
+    Install either `opencv-python-headless` or `opencv-python`, not both (see the [FAQ](../faq/index.md)).
+
+    Add the extra of the OCR engine you use, for example `feat-ocr-tesserocr` or `feat-ocr-easyocr`.
+    The Tesseract CLI only needs the `tesseract` program, see "Tesseract installation" above.
+
+    Then select the OCR engine explicitly. The default automatic selection (`OcrAutoOptions`) never
+    selects Tesseract, so without an engine that it can select, it logs
+    `No OCR engine found. Please review the install details.` and converts without OCR.
+
+    ```python
+    from docling.datamodel.pipeline_options import PdfPipelineOptions, TesseractCliOcrOptions
+
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.ocr_options = TesseractCliOcrOptions(lang=["eng"])
+    ```
+
+    On the command line, use `docling --ocr-engine tesseract --ocr-lang eng`.
+
+    Set the languages to the Tesseract language data you installed. The default languages of the
+    Tesseract options are `eng`, `spa`, `fra` and `deu`, and the conversion fails if one of them
+    is not installed.
 
 ## Development setup
 

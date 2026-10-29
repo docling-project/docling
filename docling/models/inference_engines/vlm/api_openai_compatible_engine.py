@@ -171,12 +171,8 @@ class ApiVlmEngine(BaseVlmEngine):
                 )
                 generated_text = api_response.text
                 num_tokens = api_response.num_tokens
-
-                # Check if stopped by custom criteria
-                for stopper in custom_stoppers:
-                    if stopper.should_stop(generated_text):
-                        stop_reason = "custom_criteria"
-                        break
+                stop_reason = api_response.stop_reason
+                error = api_response.error
             else:
                 # Non-streaming path
                 api_response = api_image_request(

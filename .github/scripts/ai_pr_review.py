@@ -33,28 +33,33 @@ from typing import Any
 
 from ai_pr_event import is_maintainer_activity, parse_command
 from ai_pr_triage import (
+    BOT_LOGIN,
     COMMENT_MARKER,
     DIFF_EXCLUDED_PATHS,
+    LABEL_REVIEW_CHANGES,
+    LABEL_REVIEW_LGTM,
+    REVIEW_LABELS,
+    REVIEW_MARKER,
+    REVIEW_MARKER_PREFIX,
     ZERO_WIDTH_SPACE,
     TriageContext,
+    ai_reviewed_shas,
+    answer_from_output,
     build_diff,
     clean_text,
+    code_segments,
     extract_answer,
     fetch_pr_commits,
     gh_api,
     gh_write,
     markdown_code,
+    markdown_inline,
     markdown_text,
     matches_any,
     pr_files,
     read_blob,
+    read_bob_output,
 )
-
-REVIEW_MARKER_PREFIX = "<!-- ai-pr-review sha="
-REVIEW_MARKER = re.compile(r"<!-- ai-pr-review sha=([0-9a-f]{40}) -->")
-LABEL_REVIEW_LGTM = "ai:review-lgtm"
-LABEL_REVIEW_CHANGES = "ai:review-changes"
-REVIEW_LABELS = (LABEL_REVIEW_LGTM, LABEL_REVIEW_CHANGES)
 
 MAX_REVIEW_CHANGED_LINES = 2_000
 MAX_REVIEW_FILES = 60
@@ -70,7 +75,7 @@ MAX_QUOTE_CHARS = 300
 # The severity terms of `.agents/skills/review/SKILL.md`, in report order.
 SEVERITIES = ("blocker", "question", "suggestion")
 EARLIER_STATUSES = ("open", "fixed", "answered")
-BOT_LOGIN = "github-actions[bot]"
+REVIEW_ANSWER_KEYS = ("summary", "findings")
 HUNK_HEADER = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
@@ -152,70 +157,6 @@ def _model_text(data: dict[str, Any], key: str, limit: int) -> str:
     return clean_text(value if isinstance(value, str) else str(value), limit)
 
 
-def _closing_run(text: str, start: int, stop: int, length: int) -> int | None:
-    """Return the end of the next run of exactly ``length`` backticks."""
-    index = start
-    while index < stop:
-        if text[index] != "`":
-            index += 1
-            continue
-        end = index
-        while end < stop and text[end] == "`":
-            end += 1
-        if end - index == length:
-            return end
-        index = end
-    return None
-
-
-def code_segments(text: str) -> list[tuple[bool, str]]:
-    """Split Markdown into text and code, as ``(is_code, part)`` pairs.
-
-    The split is conservative. A part is code only when CommonMark also reads
-    it as code: a fenced block (open to the end when it is not closed), or a
-    code span that closes on the same line. Text that CommonMark reads as code
-    but this function does not only gets escaped once too often.
-    """
-    segments: list[tuple[bool, str]] = []
-    start = index = 0
-    while index < len(text):
-        char = text[index]
-        if char == "\\":
-            index += 2
-            continue
-        if char != "`":
-            index += 1
-            continue
-        run_end = index
-        while run_end < len(text) and text[run_end] == "`":
-            run_end += 1
-        run = run_end - index
-        line_start = text.rfind("\n", 0, index) + 1
-        line_end = text.find("\n", run_end)
-        line_end = len(text) if line_end < 0 else line_end
-        is_fence = (
-            run >= 3
-            and index - line_start <= 3
-            and not text[line_start:index].strip(" ")
-            and "`" not in text[run_end:line_end]
-        )
-        end: int | None
-        if is_fence:
-            closing = re.compile(rf"^ {{0,3}}`{{{run},}}[ \t]*$", re.MULTILINE)
-            match = closing.search(text, line_end)
-            end = match.end() if match else len(text)
-        else:
-            end = _closing_run(text, run_end, line_end, run)
-        if end is None:
-            index = run_end
-            continue
-        segments.append((False, text[start:index]))
-        segments.append((True, text[index:end]))
-        start = index = end
-    segments.append((False, text[start:]))
-    return [(is_code, part) for is_code, part in segments if part]
-
-
 def sanitize_markdown(text: str, limit: int = MAX_FINDING_CHARS) -> str:
     """Keep line breaks and code, but drop HTML, comments, and mentions.
 
@@ -240,24 +181,6 @@ def sanitize_markdown(text: str, limit: int = MAX_FINDING_CHARS) -> str:
     return "".join(parts)
 
 
-def _markdown_text_part(part: str) -> str:
-    """Escape a text part and keep its spaces next to the code spans."""
-    stripped = part.strip()
-    if not stripped:
-        return part
-    lead = part[: len(part) - len(part.lstrip())]
-    trail = part[len(part.rstrip()) :]
-    return f"{lead}{markdown_text(stripped)}{trail}"
-
-
-def markdown_inline(text: str) -> str:
-    """Render one line of untrusted text as literal text with code spans."""
-    return "".join(
-        markdown_code(part.strip("`").strip()) if is_code else _markdown_text_part(part)
-        for is_code, part in code_segments(clean_text(text, limit=len(text)))
-    )
-
-
 def resolve_line(
     source: list[str], quote: str, hint: int, anchors: list[int]
 ) -> int | None:
@@ -278,6 +201,18 @@ def resolve_line(
     return min(matches, key=lambda n: (n not in anchored, abs(n - hint)))
 
 
+def _finding_problem(item: dict[str, Any], changed_paths: set[str]) -> str | None:
+    """Say why a finding cannot be posted, or return None."""
+    path, line = item.get("path"), item.get("line")
+    if path not in changed_paths:
+        return f"names a file outside the PR: {path!r}"
+    if not isinstance(line, int) or isinstance(line, bool) or line < 1:
+        return f"has an invalid line for {path}: {line!r}"
+    if item.get("severity") not in SEVERITIES:
+        return f"has an invalid severity: {item.get('severity')!r}"
+    return None
+
+
 def parse_review_result(data: Any, changed_paths: set[str]) -> ReviewResult:
     if not isinstance(data, dict):
         raise ValueError("answer is not a JSON object")
@@ -288,13 +223,12 @@ def parse_review_result(data: Any, changed_paths: set[str]) -> ReviewResult:
     for item in raw_findings[:MAX_FINDINGS]:
         if not isinstance(item, dict):
             raise ValueError("each finding must be an object")
-        path, line, severity = item.get("path"), item.get("line"), item.get("severity")
-        if path not in changed_paths:
-            raise ValueError(f"finding names a file outside the PR: {path!r}")
-        if not isinstance(line, int) or isinstance(line, bool) or line < 1:
-            raise ValueError(f"invalid line for {path}: {line!r}")
-        if severity not in SEVERITIES:
-            raise ValueError(f"invalid severity: {severity!r}")
+        problem = _finding_problem(item, changed_paths)
+        if problem is not None:
+            # One bad finding must not discard the other findings.
+            print(f"::warning::A finding is dropped: it {problem}.")
+            continue
+        path, line, severity = item["path"], item["line"], item["severity"]
         findings.append(
             Finding(
                 path=path,
@@ -438,18 +372,6 @@ def build_review(
 
 # ---------------------------------------------------------------------------
 # Jobs
-
-
-def ai_reviewed_shas(reviews: list[dict[str, Any]]) -> list[str]:
-    """Return the commits of the earlier AI reviews, oldest first."""
-    shas: list[str] = []
-    for review in reviews:
-        if review["user"]["login"] != BOT_LOGIN:
-            continue
-        match = REVIEW_MARKER.search(review.get("body") or "")
-        if match:
-            shas.append(match.group(1))
-    return shas
 
 
 def _role(item: dict[str, Any], pr_author: str) -> str:
@@ -612,15 +534,8 @@ def should_review(result_path: Path, context_path: Path) -> bool:
 
 def extract(bob_output: Path, context_dir: Path, out_path: Path) -> None:
     anchors = json.loads((context_dir / "review/anchors.json").read_text("utf-8"))
-    output = json.loads(bob_output.read_text("utf-8"))
-    print(
-        f"Bob Shell status: {output.get('status')};"
-        f" stats: {json.dumps(output.get('stats'))}"
-    )
-    last_message = output.get("last_message")
-    if not isinstance(last_message, str):
-        raise ValueError("Bob Shell output has no final message")
-    result = parse_review_result(extract_answer(last_message), set(anchors))
+    answer = answer_from_output(read_bob_output(bob_output), REVIEW_ANSWER_KEYS)
+    result = parse_review_result(answer, set(anchors))
     meta = json.loads((context_dir / "review/meta.json").read_text("utf-8"))
     sources = {
         path: (context_dir / "review/files" / stored_name(path))

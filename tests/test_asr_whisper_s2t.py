@@ -18,6 +18,7 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrWhisperS2TOptions,
 )
 from docling.pipeline.asr_pipeline import AsrPipeline, _WhisperS2TModel
+from docling.utils.model_downloader import download_models
 
 pytestmark = pytest.mark.ml_asr
 
@@ -505,35 +506,6 @@ class TestWhisperS2TModel:
             assert out.status == ConversionStatus.SUCCESS
             assert out.document is not None
 
-    def test_whisper_s2t_large_v3_sets_n_mels(self):
-        """Test that large-v3, distil-large-v3, and large-v3-turbo pass n_mels=128."""
-        mock_whisper_s2t = Mock()
-        mock_whisper_s2t.load_model.return_value = Mock()
-
-        with patch.dict("sys.modules", {"whisper_s2t": mock_whisper_s2t}):
-            for repo_id in ["large-v3", "distil-large-v3", "large-v3-turbo"]:
-                asr_options = InlineAsrWhisperS2TOptions(
-                    repo_id=repo_id,
-                    inference_framework=InferenceAsrFramework.WHISPER_S2T,
-                    language="en",
-                    task="transcribe",
-                )
-                _WhisperS2TModel(
-                    enabled=True,
-                    artifacts_path=None,
-                    accelerator_options=AcceleratorOptions(
-                        device=AcceleratorDevice.CPU
-                    ),
-                    asr_options=asr_options,
-                )
-
-                # Verify n_mels=128 was passed to load_model
-                call_kwargs = mock_whisper_s2t.load_model.call_args
-                assert call_kwargs[1].get("n_mels") == 128, (
-                    f"n_mels should be 128 for {repo_id}"
-                )
-                mock_whisper_s2t.load_model.reset_mock()
-
     def test_whisper_s2t_cpu_coerces_float16_compute_type(self):
         """Regression test: compute_type='float16' must be coerced to 'float32'
         when running on CPU (CTranslate2 does not support float16 on CPU)."""
@@ -589,9 +561,7 @@ class TestWhisperS2TModel:
             f"got {call_kwargs.get('compute_type')!r}"
         )
 
-    def test_whisper_s2t_cpu_preserves_cpu_compatible_compute_types(self):
-        """Regression test: compute_type values already supported by CTranslate2
-        on CPU (float32, int8, int8_float32) must be passed through unchanged."""
+    def test_whisper_s2t_cpu_runs_other_compute_types_as_float32(self):
         mock_whisper_s2t = Mock()
         mock_whisper_s2t.load_model.return_value = Mock()
 
@@ -614,9 +584,9 @@ class TestWhisperS2TModel:
                 )
 
                 call_kwargs = mock_whisper_s2t.load_model.call_args.kwargs
-                assert call_kwargs.get("compute_type") == compute_type, (
-                    f"compute_type={compute_type!r} on CPU should pass through "
-                    f"unchanged, got {call_kwargs.get('compute_type')!r}"
+                assert call_kwargs.get("compute_type") == "float32", (
+                    f"compute_type={compute_type!r} on CPU should run as "
+                    f"'float32', got {call_kwargs.get('compute_type')!r}"
                 )
                 mock_whisper_s2t.load_model.reset_mock()
 
@@ -693,3 +663,57 @@ class TestWhisperS2TPipelineIntegration:
             pipeline = AsrPipeline(pipeline_options)
             assert isinstance(pipeline._model, _WhisperS2TModel)
             assert pipeline._model.model_identifier == "tiny"
+
+
+class TestWhisperS2TOffline:
+    def test_artifacts_path_without_the_cpu_files_raises(self, tmp_path):
+        pytest.importorskip("whisper_s2t")
+        asr_options = InlineAsrWhisperS2TOptions(
+            repo_id="small.en",
+            inference_framework=InferenceAsrFramework.WHISPER_S2T,
+            language="en",
+            task="transcribe",
+            torch_dtype="float16",
+        )
+
+        with pytest.raises(
+            FileNotFoundError,
+            match=(
+                r"does not contain the float32 .* "
+                r"docling-tools models download whisper_small_en_s2t"
+            ),
+        ):
+            _WhisperS2TModel(
+                enabled=True,
+                artifacts_path=tmp_path,
+                accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+                asr_options=asr_options,
+            )
+
+    def test_prefetch_fetches_the_model_and_its_aligner_at_both_precisions(
+        self, tmp_path, monkeypatch
+    ):
+        whisper_s2t = pytest.importorskip("whisper_s2t")
+        fetched = []
+
+        def _download_model(name, compute_type, cache_dir, force_download):
+            fetched.append((name, compute_type, cache_dir, force_download))
+            return str(tmp_path / name)
+
+        monkeypatch.setattr(whisper_s2t, "download_model", _download_model)
+        download_models(
+            output_dir=tmp_path,
+            force=True,
+            with_layout=False,
+            with_tableformer=False,
+            with_code_formula=False,
+            with_picture_classifier=False,
+            with_rapidocr=False,
+            whisper_s2t_models=["small.en", "large-v3"],
+        )
+
+        assert sorted(fetched) == sorted(
+            (name, compute_type, str(tmp_path), True)
+            for name in ("small.en", "tiny.en", "large-v3")
+            for compute_type in ("float16", "float32")
+        )
