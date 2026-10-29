@@ -139,8 +139,8 @@ opts = PdfPipelineOptions(
 ### Recovering heading levels
 
 PDF headings all come out at `level=1` unless this stage is enabled. It infers the level from the
-PDF bookmarks, the outline numbering (`PART I` / `1.` / `1.1` / `(a)`) and the font styling, in
-that order of precedence.
+PDF bookmarks, the printed contents pages (when no bookmark matches), the outline numbering
+(`PART I` / `1.` / `1.1` / `(a)`) and the font styling, in that order of precedence.
 
 ```python
 from docling.datamodel.pipeline_options import (

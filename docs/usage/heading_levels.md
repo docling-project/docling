@@ -5,7 +5,7 @@ a flat stack of `#` headings. Everything downstream that leans on the hierarchy 
 Markdown and DocTags exports, hierarchical chunking, and any table of contents you build yourself.
 
 Docling can put those levels back. The heading-hierarchy stage runs right after reading order and
-rewrites `SectionHeaderItem.level` from three signals it reads out of the document itself — no
+rewrites `SectionHeaderItem.level` from four signals it reads out of the document itself — no
 extra model to run, nothing to download. It is **disabled by default**, because a wrong level is
 worse than a missing one for pipelines already tuned around flat headings.
 
@@ -48,15 +48,16 @@ attaches to every chunk. A runnable version of the above lives in
 
 ## Where the levels come from
 
-Three signals are consulted, and the first one that has something to say about a given heading
+Four signals are consulted, and the first one that has something to say about a given heading
 wins. Precedence is applied per heading, not per document, so a half-finished outline or a
 document that numbers only its top sections still gets the best available answer everywhere else.
 
 | Order | Signal | Option | Reads |
 | ----- | ------ | ------ | ----- |
 | 1 | Bookmarks | `use_bookmarks` | the PDF outline / table of contents |
-| 2 | Numbering | `use_numbering` | the marker at the start of the heading text |
-| 3 | Visual style | `use_style` | font size, weight, slant and letter case of the heading |
+| 2 | Printed contents | `use_printed_toc` | the contents pages, when no bookmark matched |
+| 3 | Numbering | `use_numbering` | the marker at the start of the heading text |
+| 4 | Visual style | `use_style` | font size, weight, slant and letter case of the heading |
 
 ### Bookmarks
 
@@ -80,6 +81,26 @@ Two things are worth knowing about this pass:
     vertical position of each bookmark. An entry without a resolvable target page is matched by
     title alone, with a stricter similarity threshold to compensate. Backends with no embedded
     outline, image inputs among them, report nothing and the stage moves on to numbering.
+
+### Printed contents
+
+Many PDFs have no bookmarks but do have a printed table of contents: print-to-PDF output, LaTeX
+without `hyperref`, scanned books, or a range of pages extracted from a larger file. The layout
+model labels such a page as a document index. When no bookmark matches a heading, Docling reads
+the contents entries from the words of those regions and sends them through the same matcher as
+bookmarks, list-item promotion included.
+
+- **Entries.** Dot leaders are removed and the trailing page label (`12`, `xvii`) is split off. A
+  line without a page label continues into the next line, so `Annex D` / `(normative)` /
+  `Character Sets … 649` is one entry.
+- **Levels.** An entry takes its level from its indentation. When all entries share one
+  indentation, as in many standards, they are peers unless a dotted number places one deeper
+  (`2.1` below `2`).
+- **Pages.** Printed page labels rarely equal the physical page numbers. Docling finds the offset
+  from entries whose title equals a detected heading, separately for Arabic and Roman labels. If no
+  offset gets at least two votes, the contents page is ignored, so a contents list that does not
+  fit the document cannot change any level. A region whose page labels mostly fall, such as an
+  alphabetical index, is ignored too.
 
 ### Numbering
 
@@ -158,8 +179,8 @@ levels at all. Levels deeper than `max_level` (6 by default) are clamped.
 
 ## What the stage changes
 
-It rewrites `SectionHeaderItem.level`, and — only through a confident bookmark match — promotes a
-mis-classified list item to a section header. It never adds, removes or reorders anything else,
+It rewrites `SectionHeaderItem.level`, and — only through a confident bookmark or contents match —
+promotes a mis-classified list item to a section header. It never adds, removes or reorders anything else,
 and a heading for which no signal applies keeps the level it already had. Enable the stage on a
 document where nothing is recognizable and the output is exactly what you had before.
 
@@ -172,6 +193,7 @@ All of these live on `HeadingHierarchyOptions`, set as
 | ------ | ------- | ----------- |
 | `enabled` | `False` | Master switch for the stage. |
 | `use_bookmarks` | `True` | Use the PDF outline as the authoritative signal. |
+| `use_printed_toc` | `True` | When no bookmark matches, use the printed contents pages instead. |
 | `use_numbering` | `True` | Use the leading numbering marker of the heading text. |
 | `use_style` | `True` | Fall back to the heading's visual style. |
 | `use_font_style` | `True` | Refine the style fallback with font weight, slant and all-caps detection. Ignored when `use_style` is off. |
@@ -240,4 +262,4 @@ model.assign_heading_levels(doc)  # modifies doc in place
 ```
 
 With no parsed pages and no outline to hand, only numbering can apply, so `use_style=False` simply
-says so explicitly. Pass `parsed_pages=` and `outline=` if you have them.
+says so explicitly. The printed contents also need the parsed pages. Pass `parsed_pages=` and `outline=` if you have them.
