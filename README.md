@@ -52,7 +52,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 - 📄 Parsing of ODF (OpenDocument Format) files for text documents (`.odt`), spreadsheets (`.ods`), and presentations (`.odp`)
 - 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
-- 📅 Parsing of calendar files (`.ics`)
+- 📅 Parsing of calendar files (`.ics`, `.ical`, `.icalendar`, `.ifb`) with events, tasks, journal entries and free/busy times, with attendees, reminders and attachment names
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books
 - 🍎 Parsing of Apple Pages (`.pages`) documents, Numbers (`.numbers`) spreadsheets and Keynote (`.key`) presentations
 - 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)

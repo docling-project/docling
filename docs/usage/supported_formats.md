@@ -30,7 +30,7 @@ Below you can find a listing of all supported input and output formats.
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 | AFP | IBM Advanced Function Presentation / MO:DCA |
-| iCalendar | Calendar files (`.ics`, `.ifb`): events, tasks, journal entries and free/busy times, with attendees, reminders and attachment names |
+| iCalendar | Calendar files |
 
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
