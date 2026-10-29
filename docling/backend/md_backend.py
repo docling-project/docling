@@ -162,8 +162,10 @@ def _only_plain_line_breaks(children: list) -> bool:
     )
 
 
+# As in Pandoc, an opening `---` followed by a blank line is a thematic break,
+# not frontmatter.
 _FRONTMATTER_PATTERN = re.compile(
-    r"\A---[ \t]*\r?\n(.*?)^(?:---|\.\.\.)[ \t]*(?:\r?\n|\Z)",
+    r"\A---[ \t]*\r?\n(?![ \t]*\r?\n)(.*?)^(?:---|\.\.\.)[ \t]*(?:\r?\n|\Z)",
     re.DOTALL | re.MULTILINE,
 )
 

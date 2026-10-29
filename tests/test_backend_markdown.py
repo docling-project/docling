@@ -1220,6 +1220,11 @@ def test_rich_table_cell_no_stray_body_items():
             id="thematic-break-opening",
         ),
         pytest.param(
+            "---\n\nNote: this is important.\n\n---\n\nbody\n",
+            "Note: this is important.\n\nbody",
+            id="thematic-break-then-yaml-like-paragraph",
+        ),
+        pytest.param(
             "---\nJust a sentence\n---\n\nbody\n",
             "## Just a sentence\n\nbody",
             id="setext-block-is-not-frontmatter",
