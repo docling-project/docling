@@ -154,22 +154,34 @@ def format_number(value: Decimal | float) -> str:
     return f"{value.normalize():f}"
 
 
-def format_date(seconds: float) -> str:
-    """Render a date cell, which Numbers stores as seconds from its epoch."""
-    return (APPLE_EPOCH + timedelta(seconds=seconds)).strftime("%Y-%m-%d %H:%M:%S")
+def format_date(seconds: Decimal | float) -> str | None:
+    """Render a date cell, which Numbers stores as seconds from its epoch.
+
+    Returns None when the span lands outside what a datetime can hold, which
+    only a corrupt or hostile document records.
+    """
+    instant = moment(seconds)
+    return None if instant is None else instant.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def format_duration(seconds: float) -> str:
-    """Render a duration cell, which Numbers stores as a span in seconds."""
-    return str(timedelta(seconds=seconds))
+def format_duration(seconds: Decimal | float) -> str | None:
+    """Render a duration cell, which Numbers stores as a span in seconds.
+
+    Returns None when the span lands outside what a timedelta can hold, which
+    only a corrupt or hostile document records.
+    """
+    try:
+        return str(timedelta(seconds=float(seconds)))
+    except (OverflowError, ValueError):
+        return None
 
 
-def format_bool(value: float) -> str:
+def format_bool(value: Decimal | float) -> str:
     """Render a boolean cell, which Numbers stores as a number."""
     return "True" if value > 0 else "False"
 
 
-def moment(seconds: float) -> datetime | None:
+def moment(seconds: Decimal | float) -> datetime | None:
     """Turn a span of seconds from the Apple epoch into an instant.
 
     Args:
@@ -179,6 +191,6 @@ def moment(seconds: float) -> datetime | None:
         The instant, or None when it lands outside what a datetime can hold.
     """
     try:
-        return APPLE_EPOCH + timedelta(seconds=seconds)
+        return APPLE_EPOCH + timedelta(seconds=float(seconds))
     except (OverflowError, OSError, ValueError):
         return None
