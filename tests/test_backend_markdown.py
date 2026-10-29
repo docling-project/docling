@@ -1404,3 +1404,37 @@ def test_rich_table_cell_no_stray_body_items():
     # The only direct body child must be the table itself.
     body_crefs = {ref.cref for ref in doc.body.children}
     assert body_crefs == {"#/tables/0"}
+
+
+def test_backslash_escapes_stay_in_their_text_run():
+    r"""A backslash escape is part of the text around it, not a separate item.
+
+    Marko splits ``\_`` into its own node. Each node became one item of an
+    inline group, and the exporters join those items with a space, so
+    ``snake\_case`` was exported as ``snake _ case``.
+    """
+    opt = MarkdownBackendOptions()
+
+    def items(markdown: str):
+        doc = _convert_markdown(markdown, opt)
+        return [(str(t.label), t.text) for t in doc.texts]
+
+    assert items(r"snake\_case here") == [("text", "snake_case here")]
+    assert items(r"Price is \$5 and 50\% off") == [("text", "Price is $5 and 50% off")]
+    assert items(r"\*not emphasis\*") == [("text", "*not emphasis*")]
+    assert items(r"1\. not a list") == [("text", "1. not a list")]
+    assert items(r"- item with \* star") == [("list_item", "item with * star")]
+    assert items(r"# Head \# x") == [("title", "Head # x")]
+    assert items(r"> quote \* star") == [("text", "quote * star")]
+
+    # An escaped ampersand stays literal text, not an HTML entity
+    assert items(r"a \&amp; b") == [("text", "a &amp; b")]
+
+    # Runs that are really separate (inline code, emphasis) stay separate items
+    assert items(r"Use `x` and snake\_case") == [
+        ("text", "Use"),
+        ("code", "x"),
+        ("text", "and snake_case"),
+    ]
+    doc = _convert_markdown(r"**bold \* star** plain", opt)
+    assert [t.text for t in doc.texts] == ["bold * star", "plain"]

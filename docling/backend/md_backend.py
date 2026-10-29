@@ -164,6 +164,51 @@ def _only_plain_line_breaks(children: list) -> bool:
     )
 
 
+def _merge_adjacent_text_runs(root: marko.element.Element) -> None:
+    """Merge neighbouring RawText/Literal runs of the AST into single RawText runs.
+
+    Marko splits a backslash escape (``snake\\_case``, ``\\$5``, ``1\\.``) out of the
+    surrounding text into its own ``Literal`` node. Each run becomes a separate
+    text item of one inline group, which the exporters join with a space
+    (``snake _ case``). Runs that touch each other in the source are one piece of
+    text, so they are merged here, before the items are created.
+
+    Args:
+        root: The root of the marko AST. Its descendants are changed in place.
+    """
+    if not _MARKO_AVAILABLE:
+        return
+    stack: list = [root]
+    while stack:
+        element = stack.pop()
+        children = getattr(element, "children", None)
+        if not isinstance(children, list):
+            continue
+        merged: list = []
+        for child in children:
+            if (
+                merged
+                and isinstance(child, marko.inline.RawText | marko.inline.Literal)
+                and isinstance(merged[-1], marko.inline.RawText)
+            ):
+                # RawText is HTML-unescaped when the item is created, so an
+                # escaped ampersand must stay an entity to survive that step.
+                piece = (
+                    "&amp;"
+                    if isinstance(child, marko.inline.Literal)
+                    and (child.children == "&")
+                    else child.children
+                )
+                merged[-1].children += piece
+                continue
+            if isinstance(child, marko.inline.Literal):
+                piece = "&amp;" if child.children == "&" else child.children
+                child = marko.inline.RawText(piece)
+            merged.append(child)
+            stack.append(child)
+        element.children = merged
+
+
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _apply_formatting(
@@ -1169,6 +1214,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             # children per cell, enabling RichTableCell for formatted content.
             marko_parser = Markdown(extensions=[_GFM_EXTENSION])
             parsed_ast = marko_parser.parse(self.markdown)
+            _merge_adjacent_text_runs(parsed_ast)
             self._iterate_elements(
                 element=parsed_ast,
                 depth=0,
