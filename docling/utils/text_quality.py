@@ -52,7 +52,8 @@ _INDIC_SCRIPTS = frozenset(
 _INDIC_LETTER = re.compile("[ऀ-෿]")  # Devanagari to Sinhala.
 _MIN_INDIC_WORDS = 20
 _SCRIPT_SHARE = 0.5  # Of the page's letters and signs.
-_MISSPELLED_SHARE = 0.01  # Real text stays near 0.
+_MISSPELLED_SHARE = 0.01  # Real text stays near 0...
+_MIN_MISSPELLED = 3  # ...and one split cell must not flag a page.
 
 
 def _is_junk(ch: str) -> bool:
@@ -165,7 +166,8 @@ def _is_wrong_indic(text: str) -> bool:
     script, words = _indic_words(text)
     if script is None or len(words) < _MIN_INDIC_WORDS:
         return False
-    return sum(map(_is_misspelled, words)) >= _MISSPELLED_SHARE * len(words)
+    misspelled = sum(map(_is_misspelled, words))
+    return misspelled >= max(_MIN_MISSPELLED, _MISSPELLED_SHARE * len(words))
 
 
 def is_broken_text_layer(text: str, check_indic: bool = False) -> bool:

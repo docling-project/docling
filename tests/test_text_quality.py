@@ -232,3 +232,11 @@ def test_indic_check_needs_enough_words_in_mostly_one_script() -> None:
     assert not is_broken_text_layer(few, check_indic=True)
     # An English page that quotes a few broken Hindi words is not judged.
     assert not is_broken_text_layer(_PROSE * 3 + few, check_indic=True)
+
+
+def test_indic_split_cells_on_a_good_page_are_kept() -> None:
+    # A cell break before a vowel sign leaves a fragment that starts with it.
+    one = _HINDI.replace("किसान", "क\nिसान", 1)
+    two = one.replace("किताबें", "क\nिताबें", 1)
+    assert not is_broken_text_layer(one, check_indic=True)
+    assert not is_broken_text_layer(two, check_indic=True)
