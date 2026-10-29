@@ -1987,8 +1987,9 @@ class HeadingHierarchyOptions(BaseModel):
     heading produced by the PDF path defaults to ``level=1`` and the document hierarchy is
     flattened. When ``enabled``, :class:`HeadingHierarchyModel` runs right after the
     reading-order model and assigns ``SectionHeaderItem.level`` from (in precedence order)
-    PDF bookmarks/ToC, numbering and font style. The step changes heading levels and may
-    promote a heading mis-classified as a list-item when it confidently matches a bookmark;
+    PDF bookmarks/ToC, the printed contents pages, numbering and font style. The step changes
+    heading levels and may promote a heading mis-classified as a list-item when it confidently
+    matches a bookmark or a contents entry;
     otherwise it never adds, removes or reorders items, and headings for which no signal
     applies keep their current level.
 
@@ -1997,9 +1998,11 @@ class HeadingHierarchyOptions(BaseModel):
           When a bookmark confidently matches a detected heading it is authoritative; entries
           that match nothing fall back to numbering/style, so partial/noisy outlines never
           degrade the numbering result.
+        - ``use_printed_toc`` reads the words of the regions that the layout model labels as
+          ``DOCUMENT_INDEX``. It acts only when no bookmark matched a heading.
         - ``use_style`` reads the text lines of the headings from the parsed PDF cells. The PDF
-          pipeline keeps those lines until the heading-hierarchy step has run, so
-          ``PdfPipelineOptions.generate_parsed_pages`` is not needed.
+          pipeline keeps those lines, and the contents words, until the heading-hierarchy step
+          has run, so ``PdfPipelineOptions.generate_parsed_pages`` is not needed.
     """
 
     enabled: Annotated[
@@ -2021,6 +2024,18 @@ class HeadingHierarchyOptions(BaseModel):
                 "and page; confident matches win over numbering and style, and a confidently "
                 "matched list-item is promoted to a heading. Unmatched entries fall back to "
                 "numbering/style."
+            )
+        ),
+    ] = True
+    use_printed_toc: Annotated[
+        bool,
+        Field(
+            description=(
+                "When no bookmark matches a heading, read the printed table of contents instead. "
+                "Each entry takes its level from its indentation, or from its dotted number when "
+                "all entries share one indentation, and is matched to a heading by title and by "
+                "its page label. The contents are used only when their page labels can be tied "
+                "to the document's pages."
             )
         ),
     ] = True

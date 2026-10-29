@@ -12,6 +12,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     ProvenanceItem,
+    TableData,
 )
 from docling_core.types.doc.document import SectionHeaderItem
 from docling_core.types.doc.page import (
@@ -29,8 +30,10 @@ from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
     _infer_from_numbering,
     _parse_marker,
+    _printed_toc_outline,
     _strip_marker,
 )
+from docling.utils.pdf_outline import _PdfOutlineItem
 
 
 def _levels(texts: list[str], **opts) -> dict[int, int]:
@@ -336,7 +339,7 @@ def _cell(text, left, top, right, bottom, font_name="Helvetica"):
     )
 
 
-def _segmented_page(cells, width=600, height=800):
+def _segmented_page(cells, width=600, height=800, words=()):
     full = _bbox(0, 0, width, height)
     geometry = PdfPageGeometry(
         angle=0,
@@ -352,9 +355,9 @@ def _segmented_page(cells, width=600, height=800):
         dimension=geometry,
         textline_cells=cells,
         char_cells=[],
-        word_cells=[],
+        word_cells=list(words),
         has_chars=False,
-        has_words=False,
+        has_words=bool(words),
         has_lines=True,
     )
 
@@ -609,8 +612,8 @@ def test_font_names_without_styling_rank_by_size_only():
     assert levels == [1, 2, 2]
 
 
-def _finished_page(cells, clusters) -> Page:
-    page = Page(page_no=1, parsed_page=_segmented_page(cells))
+def _finished_page(cells, clusters, words=()) -> Page:
+    page = Page(page_no=1, parsed_page=_segmented_page(cells, words=words))
     page.predictions.layout = LayoutPrediction(
         clusters=[
             Cluster(id=i, label=label, bbox=_bbox(*box))
@@ -620,7 +623,7 @@ def _finished_page(cells, clusters) -> Page:
     return page
 
 
-def test_retain_parsed_lines_keeps_only_heading_and_list_item_lines():
+def test_retain_parsed_cells_keeps_only_heading_and_list_item_lines():
     page = _finished_page(
         [
             _cell("1. Overview", 100, 50, 300, 70, font_name="Helvetica-Bold"),
@@ -635,7 +638,7 @@ def test_retain_parsed_lines_keeps_only_heading_and_list_item_lines():
     )
     model = HeadingHierarchyModel(options=HeadingHierarchyOptions(enabled=True))
 
-    retained = model.retain_parsed_lines(page)
+    retained = model.retain_parsed_cells(page)
 
     assert retained is not None
     assert [cell.text for cell in retained.textline_cells] == [
@@ -651,13 +654,187 @@ def test_retain_parsed_lines_keeps_only_heading_and_list_item_lines():
     "options",
     [
         HeadingHierarchyOptions(enabled=False),
-        HeadingHierarchyOptions(enabled=True, use_style=False),
+        HeadingHierarchyOptions(enabled=True, use_style=False, use_printed_toc=False),
     ],
 )
-def test_retain_parsed_lines_keeps_nothing_without_the_style_signal(options):
+def test_retain_parsed_cells_keeps_nothing_without_a_signal_that_reads_cells(options):
     page = _finished_page(
         [_cell("1. Overview", 100, 50, 300, 70)],
         [(DocItemLabel.SECTION_HEADER, (100, 50, 300, 70))],
     )
 
-    assert HeadingHierarchyModel(options=options).retain_parsed_lines(page) is None
+    assert HeadingHierarchyModel(options=options).retain_parsed_cells(page) is None
+
+
+def test_retain_parsed_cells_keeps_the_words_of_contents_regions():
+    clusters = [(DocItemLabel.DOCUMENT_INDEX, (50, 100, 550, 300))]
+    words = [
+        _cell("Introduction", 70, 110, 150, 120),
+        _cell("1", 530, 110, 540, 120),
+        _cell("footer", 70, 750, 110, 760),
+    ]
+
+    retained = HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(enabled=True)
+    ).retain_parsed_cells(_finished_page([], clusters, words=words))
+    without = HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(enabled=True, use_printed_toc=False)
+    ).retain_parsed_cells(_finished_page([], clusters, words=words))
+
+    assert retained is not None
+    assert [cell.text for cell in retained.word_cells] == ["Introduction", "1"]
+    assert without is not None
+    assert without.word_cells == []
+
+
+def _toc_document(entries, headings):
+    """A contents region on page 1 and headings on later pages, without bookmarks.
+
+    ``entries`` are ``(text, indent, page label)`` contents lines, a ``None`` label for a line
+    that wraps into the next one. ``headings`` are ``(text, page number)``.
+    """
+    doc = DoclingDocument(name="t")
+    doc.add_table(
+        data=TableData(),
+        prov=ProvenanceItem(page_no=1, charspan=(0, 0), bbox=_bbox(50, 100, 550, 700)),
+        label=DocItemLabel.DOCUMENT_INDEX,
+    )
+    words = []
+    for row, (text, indent, label) in enumerate(entries):
+        top = 110 + 20 * row
+        left = 70 + indent
+        words.append(_cell(text, left, top, left + 6 * len(text), top + 10))
+        if label is not None:
+            words.append(_cell("........", 400, top, 480, top + 10))
+            words.append(_cell(label, 525, top, 540, top + 10))
+    for text, page_no in headings:
+        doc.add_heading(
+            text=text,
+            prov=ProvenanceItem(
+                page_no=page_no, charspan=(0, len(text)), bbox=_bbox(100, 50, 400, 70)
+            ),
+        )
+    return doc, {1: _segmented_page([], words=words)}
+
+
+def _heading_levels(doc) -> list[int]:
+    return [item.level for item in doc.texts if isinstance(item, SectionHeaderItem)]
+
+
+_INDENTED_CONTENTS = (
+    [
+        ("Introduction", 0, "1"),
+        ("Background", 20, "1"),
+        ("Methods", 0, "2"),
+        ("Data collection", 20, "2"),
+        ("Results", 0, "3"),
+    ],
+    # Printed page 1 is physical page 3.
+    [
+        ("Introduction", 3),
+        ("Background", 3),
+        ("Methods", 4),
+        ("Data collection", 4),
+        ("Results", 5),
+    ],
+)
+
+
+def test_printed_contents_set_levels_from_indentation():
+    doc, pages = _toc_document(*_INDENTED_CONTENTS)
+
+    HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(enabled=True)
+    ).assign_heading_levels(doc, parsed_pages=pages)
+
+    assert _heading_levels(doc) == [1, 2, 1, 2, 1]
+
+
+@pytest.mark.parametrize(
+    ("use_printed_toc", "expected"), [(True, [1, 1, 1, 2]), (False, [1, 1, 1, 1])]
+)
+def test_one_indentation_uses_the_dotted_depth(use_printed_toc, expected):
+    doc, pages = _toc_document(
+        [
+            ("Foreword", 0, "1"),
+            ("Introduction", 0, "1"),
+            ("1 Scope", 0, "2"),
+            ("1.1 Purpose", 0, "2"),
+        ],
+        [("Foreword", 3), ("Introduction", 3), ("1 Scope", 4), ("1.1 Purpose", 4)],
+    )
+
+    HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(enabled=True, use_printed_toc=use_printed_toc)
+    ).assign_heading_levels(doc, parsed_pages=pages)
+
+    assert _heading_levels(doc) == expected
+
+
+def test_bookmarks_win_over_printed_contents():
+    doc, pages = _toc_document(*_INDENTED_CONTENTS)
+    outline = [
+        _PdfOutlineItem(title=text, level=0, page_no=page_no)
+        for text, page_no in _INDENTED_CONTENTS[1]
+    ]
+
+    HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(enabled=True)
+    ).assign_heading_levels(doc, parsed_pages=pages, outline=outline)
+
+    assert _heading_levels(doc) == [1, 1, 1, 1, 1]
+
+
+def test_contents_whose_page_labels_do_not_fit_are_ignored():
+    # Only one entry has a heading with the same title, so no page offset can be voted.
+    entries, _ = _INDENTED_CONTENTS
+    doc, pages = _toc_document(
+        entries,
+        [
+            ("Introduction", 3),
+            ("Context", 3),
+            ("Approach", 4),
+            ("Data", 4),
+            ("Outcome", 5),
+        ],
+    )
+
+    assert _printed_toc_outline(doc, pages) == []
+
+
+def test_falling_page_labels_are_not_contents():
+    # An alphabetical index also lists page numbers, but they do not rise.
+    entries = [
+        ("Introduction", 0, "5"),
+        ("Background", 20, "2"),
+        ("Methods", 0, "9"),
+        ("Data collection", 20, "1"),
+        ("Results", 0, "7"),
+    ]
+    headings = [(text, int(label) + 2) for text, _, label in entries]
+    doc, pages = _toc_document(entries, headings)
+
+    HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(enabled=True)
+    ).assign_heading_levels(doc, parsed_pages=pages)
+
+    assert _heading_levels(doc) == [1, 1, 1, 1, 1]
+
+
+def test_wrapped_contents_entries_are_joined():
+    doc, pages = _toc_document(
+        [
+            ("Annex D", 0, None),
+            ("(normative)", 0, None),
+            ("Character Sets", 0, "7"),
+            ("Bibliography", 0, "8"),
+        ],
+        [("Annex D (normative) Character Sets", 9), ("Bibliography", 10)],
+    )
+
+    outline = _printed_toc_outline(doc, pages)
+
+    assert [(item.title, item.page_no) for item in outline] == [
+        ("Annex D (normative) Character Sets", 9),
+        ("Bibliography", 10),
+    ]

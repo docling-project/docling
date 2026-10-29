@@ -1126,8 +1126,8 @@ def convert(  # noqa: C901
             "--heading-hierarchy/--no-heading-hierarchy",
             help=(
                 "Infer section-header levels for PDF and image inputs from the PDF "
-                "bookmarks, the heading numbering and the font style. Standard and "
-                "legacy pipelines only."
+                "bookmarks, the printed contents pages, the heading numbering and the "
+                "font style. Standard and legacy pipelines only."
             ),
         ),
     ] = False,
