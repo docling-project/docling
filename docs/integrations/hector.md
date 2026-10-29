@@ -10,4 +10,4 @@ the [MCP server](../usage/mcp.md) for advanced document parsing capabilities.
 
 [github]: https://github.com/kadirpekel/hector
 [docs]: https://gohector.dev
-[tutorial]: https://gohector.dev/blog/posts/using-docling-with-hector/
+[tutorial]: https://gohector.dev/blog/2026/01/20/using-docling-with-hector-for-advanced-document-parsing/

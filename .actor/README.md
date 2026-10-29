@@ -302,7 +302,7 @@ This wrapper project is under the MIT License, matching the original Docling lic
 
 ## Acknowledgments
 
-- [Docling](https://ds4sd.github.io/docling/) and [docling-serve-cpu](https://quay.io/repository/ds4sd/docling-serve-cpu) by IBM
+- [Docling](https://docling-project.github.io/docling/) and [docling-serve-cpu](https://quay.io/repository/ds4sd/docling-serve-cpu) by IBM
 - [Apify](https://apify.com/?fpr=docling) for the serverless actor environment
 
 ## Security Considerations
