@@ -111,7 +111,7 @@ def _module_level(module, cls):
 
 
 class TestShippedSpecsArePinned:
-    """Every trust_remote_code spec shipped with docling must be commit-pinned."""
+    """Every spec shipped with docling that can run remote code must be pinned."""
 
     def test_stage_presets(self):
         from docling.datamodel import stage_model_specs
@@ -121,7 +121,12 @@ class TestShippedSpecsArePinned:
         assert presets
         for name, preset in presets:
             spec = preset.model_spec
-            if not getattr(spec, "trust_remote_code", False):
+            # Presets with a user opt-in gate also run remote code once enabled.
+            requires_opt_in = any(
+                override.extra_config.get("requires_trust_remote_code")
+                for override in spec.engine_overrides.values()
+            )
+            if not (getattr(spec, "trust_remote_code", False) or requires_opt_in):
                 continue
             assert is_pinned_revision(spec.revision), name
             for engine, override in spec.engine_overrides.items():

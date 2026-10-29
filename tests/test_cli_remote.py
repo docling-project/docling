@@ -137,6 +137,48 @@ def test_remote_converts_local_file(tmp_path, _patch_client):
     assert client.captured_sources == [source]
 
 
+@pytest.mark.parametrize(
+    ("status", "fail_on_args", "exit_code", "written"),
+    [
+        (ConversionStatus.FAILURE, [], 1, False),
+        (ConversionStatus.FAILURE, ["--fail-on", "never"], 0, False),
+        (ConversionStatus.PARTIAL_SUCCESS, [], 0, True),
+        (ConversionStatus.PARTIAL_SUCCESS, ["--fail-on", "partial"], 1, True),
+        (ConversionStatus.SKIPPED, ["--fail-on", "partial"], 0, False),
+    ],
+)
+def test_remote_exit_code_follows_fail_on(
+    tmp_path, monkeypatch, status, fail_on_args, exit_code, written
+):
+    class _StatusClient(_FakeClient):
+        def convert_all(self, source=None, options=None, **kwargs):
+            results = list(super().convert_all(source, options, **kwargs))
+            for res in results:
+                res.status = status
+            return iter(results)
+
+    monkeypatch.setattr("docling.cli.remote.DoclingServiceClient", _StatusClient)
+    source = tmp_path / "report.pdf"
+    source.write_bytes(b"%PDF-1.4")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            "convert-remote",
+            str(source),
+            "--service-url",
+            "https://docling.example.com",
+            "--output",
+            str(output),
+            *fail_on_args,
+        ],
+    )
+
+    assert result.exit_code == exit_code, result.output
+    assert (output / "report.md").exists() == written
+
+
 def test_remote_url_source_stays_string(tmp_path, _patch_client):
     output = tmp_path / "out"
     result = runner.invoke(
@@ -177,6 +219,7 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
             "json",
             "--no-ocr",
             "--no-tables",
+            "--heading-hierarchy",
             "--ocr-lang",
             "iso:en,iso:de",
             "--page-range",
@@ -192,6 +235,7 @@ def test_remote_maps_conversion_options(tmp_path, _patch_client):
     assert opts.to_formats == [OutputFormat.MARKDOWN, OutputFormat.JSON]
     assert opts.do_ocr is False
     assert opts.do_table_structure is False
+    assert opts.do_pdf_heading_hierarchy is True
     # A tag is canonicalized locally, so the service receives the resolved pair.
     assert opts.ocr_lang == ["iso:en-Latn", "iso:de-Latn"]
     assert opts.page_range == (2, 5)

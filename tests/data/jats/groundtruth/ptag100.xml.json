@@ -1794,19 +1794,19 @@
           "$ref": "#/texts/507"
         },
         {
-          "$ref": "#/texts/508"
-        },
-        {
-          "$ref": "#/texts/509"
-        },
-        {
-          "$ref": "#/texts/510"
-        },
-        {
           "$ref": "#/texts/511"
         },
         {
           "$ref": "#/texts/512"
+        },
+        {
+          "$ref": "#/texts/513"
+        },
+        {
+          "$ref": "#/texts/514"
+        },
+        {
+          "$ref": "#/texts/515"
         }
       ],
       "content_layer": "body",
@@ -1816,20 +1816,20 @@
     {
       "self_ref": "#/groups/52",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/texts/507"
       },
       "children": [
         {
-          "$ref": "#/texts/514"
+          "$ref": "#/texts/508"
         },
         {
-          "$ref": "#/texts/515"
+          "$ref": "#/texts/509"
         },
         {
-          "$ref": "#/texts/516"
+          "$ref": "#/texts/510"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "group",
       "label": "inline"
     },
@@ -1844,6 +1844,26 @@
         },
         {
           "$ref": "#/texts/518"
+        },
+        {
+          "$ref": "#/texts/519"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/54",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/520"
+        },
+        {
+          "$ref": "#/texts/521"
         }
       ],
       "content_layer": "furniture",
@@ -1880,13 +1900,13 @@
           "$ref": "#/texts/457"
         },
         {
-          "$ref": "#/texts/513"
-        },
-        {
-          "$ref": "#/groups/52"
+          "$ref": "#/texts/516"
         },
         {
           "$ref": "#/groups/53"
+        },
+        {
+          "$ref": "#/groups/54"
         }
       ],
       "content_layer": "body",
@@ -8603,17 +8623,58 @@
       "parent": {
         "$ref": "#/groups/51"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/52"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] [Search inSPIRE].",
-      "text": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] [Search inSPIRE].",
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/508",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] [",
+      "text": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] ["
+    },
+    {
+      "self_ref": "#/texts/509",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Search inSPIRE",
+      "text": "Search inSPIRE",
+      "hyperlink": "https://inspirehep.net/literature?q=find%20EPRINT%202408.15986v3"
+    },
+    {
+      "self_ref": "#/texts/510",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "].",
+      "text": "]."
+    },
+    {
+      "self_ref": "#/texts/511",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8627,7 +8688,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/509",
+      "self_ref": "#/texts/512",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8641,7 +8702,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/510",
+      "self_ref": "#/texts/513",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8655,7 +8716,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/511",
+      "self_ref": "#/texts/514",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8669,7 +8730,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/512",
+      "self_ref": "#/texts/515",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8683,7 +8744,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/513",
+      "self_ref": "#/texts/516",
       "parent": {
         "$ref": "#/texts/0"
       },
@@ -8695,9 +8756,9 @@
       "text": "© The Author(s) 2026. Published by Oxford University Press on behalf of the Physical Society of Japan."
     },
     {
-      "self_ref": "#/texts/514",
+      "self_ref": "#/texts/517",
       "parent": {
-        "$ref": "#/groups/52"
+        "$ref": "#/groups/53"
       },
       "children": [],
       "content_layer": "furniture",
@@ -8707,9 +8768,9 @@
       "text": "This is an Open Access article distributed under the terms of the Creative Commons Attribution License ("
     },
     {
-      "self_ref": "#/texts/515",
+      "self_ref": "#/texts/518",
       "parent": {
-        "$ref": "#/groups/52"
+        "$ref": "#/groups/53"
       },
       "children": [],
       "content_layer": "furniture",
@@ -8720,9 +8781,9 @@
       "hyperlink": "https://creativecommons.org/licenses/by/4.0/"
     },
     {
-      "self_ref": "#/texts/516",
+      "self_ref": "#/texts/519",
       "parent": {
-        "$ref": "#/groups/52"
+        "$ref": "#/groups/53"
       },
       "children": [],
       "content_layer": "furniture",
@@ -8732,9 +8793,9 @@
       "text": "), which permits unrestricted reuse, distribution, and reproduction in any medium, provided the original work is properly cited."
     },
     {
-      "self_ref": "#/texts/517",
+      "self_ref": "#/texts/520",
       "parent": {
-        "$ref": "#/groups/53"
+        "$ref": "#/groups/54"
       },
       "children": [],
       "content_layer": "furniture",
@@ -8744,9 +8805,9 @@
       "text": "Funded by SCOAP"
     },
     {
-      "self_ref": "#/texts/518",
+      "self_ref": "#/texts/521",
       "parent": {
-        "$ref": "#/groups/53"
+        "$ref": "#/groups/54"
       },
       "children": [],
       "content_layer": "furniture",

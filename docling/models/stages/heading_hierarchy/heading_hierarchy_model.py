@@ -38,10 +38,11 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from statistics import median
 
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import DocItemLabel, DoclingDocument
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 from docling_core.types.doc.page import PdfTextCell, SegmentedPdfPage
 
+from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.utils.font_style import parse_font_style, weight_class
@@ -283,6 +284,9 @@ class _HeadingStyle:
 
 # Share of the heading's characters that must be italic for the heading to count as italic.
 _ITALIC_RATIO = 0.6
+
+# Layout labels whose text lines the style signal reads.
+_STYLE_LABELS = frozenset({DocItemLabel.SECTION_HEADER, DocItemLabel.LIST_ITEM})
 
 
 def _is_all_caps(text: str) -> bool:
@@ -555,6 +559,41 @@ class HeadingHierarchyModel:
 
     def __init__(self, options: HeadingHierarchyOptions):
         self.options = options
+
+    def retain_parsed_lines(self, page: Page) -> SegmentedPdfPage | None:
+        """Return the part of a finished page's ``parsed_page`` that this stage reads later.
+
+        The pipeline releases the parsed pages before assembly to save memory, but the style
+        signal reads the text lines of the headings during assembly. Only the text lines that
+        overlap a section header, or a list item that a bookmark can promote, are kept.
+        """
+        parsed = page.parsed_page
+        layout = page.predictions.layout
+        if not (self.options.enabled and self.options.use_style) or (
+            parsed is None or layout is None
+        ):
+            return None
+        height = parsed.dimension.height
+        boxes = [
+            cluster.bbox.to_top_left_origin(height)
+            for cluster in layout.clusters
+            if cluster.label in _STYLE_LABELS
+        ]
+        lines = [
+            cell
+            for cell in parsed.textline_cells
+            if any(
+                box.overlaps(cell.rect.to_bounding_box().to_top_left_origin(height))
+                for box in boxes
+            )
+        ]
+        return SegmentedPdfPage(
+            dimension=parsed.dimension,
+            char_cells=[],
+            word_cells=[],
+            textline_cells=lines,
+            has_lines=bool(lines),
+        )
 
     def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
         document = conv_res.document

@@ -1375,6 +1375,66 @@ VLM_CONVERT_NEMOTRON_PARSE_V2 = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+# The model needs its own repository code; pin the commit the user reviews and trusts.
+_NEMOTRON_PARSE_V3_5_REVISION = "e7ea79242a87ea0ad3919b672bfedb429a683206"
+_NEMOTRON_PARSE_V3_5_MAX_TOKENS = 8744
+
+VLM_CONVERT_NEMOTRON_PARSE_V3_5 = StageModelPreset(
+    preset_id="nemotron_parse_v3_5",
+    name="Nemotron 3.5 Parse",
+    description=(
+        "NVIDIA Nemotron 3.5 Parse model for document parsing with semantic "
+        "classes, bounding boxes, tables and charts (0.6B parameters). Runs "
+        "code from the pinned model repository: requires trust_remote_code=True"
+    ),
+    model_spec=VlmModelSpec(
+        name="Nemotron-3.5-Parse",
+        default_repo_id="nvidia/Nemotron-3.5-Parse",
+        revision=_NEMOTRON_PARSE_V3_5_REVISION,
+        prompt=(
+            "</s><s><predict_bbox><predict_classes><output_markdown>"
+            "<predict_text_in_pic>"
+        ),
+        response_format=ResponseFormat.NEMOTRON_PARSE_V3_5,
+        # In-process vLLM needs NVIDIA's out-of-tree plugin; use its server via API.
+        supported_engines={VlmEngineType.TRANSFORMERS, VlmEngineType.API},
+        # Never trusted implicitly: the user opts in on the engine options.
+        trust_remote_code=False,
+        max_new_tokens=_NEMOTRON_PARSE_V3_5_MAX_TOKENS,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.14.1",
+                extra_config={
+                    "requires_trust_remote_code": True,
+                    "transformers_model_type": TransformersModelType.AUTOMODEL,
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                    "extra_processor_kwargs": {"add_special_tokens": False},
+                    "extra_generation_config": {
+                        "repetition_penalty": 1.1,
+                        "skip_special_tokens": True,
+                    },
+                },
+            ),
+        },
+        api_overrides={
+            # Matches NVIDIA's `vllm serve --served-model-name nemotron-parse`.
+            VlmEngineType.API: ApiModelConfig(
+                params={
+                    "model": "nemotron-parse",
+                    "max_tokens": _NEMOTRON_PARSE_V3_5_MAX_TOKENS,
+                    "top_k": 1,
+                    "repetition_penalty": 1.1,
+                    "skip_special_tokens": False,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    max_size=2048,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
 VLM_CONVERT_MINERU2_PRO = StageModelPreset(
     preset_id="mineru2_pro",
     name="MinerU2.5-Pro",

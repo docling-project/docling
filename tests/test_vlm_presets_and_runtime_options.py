@@ -741,6 +741,7 @@ class TestPresetEngineIntegration:
             ResponseFormat.CHANDRA_HTML,
             ResponseFormat.DOTS_JSON,
             ResponseFormat.NEMOTRON_PARSE_V2,
+            ResponseFormat.NEMOTRON_PARSE_V3_5,
             ResponseFormat.MINERU2,
         ]
 

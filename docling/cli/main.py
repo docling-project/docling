@@ -10,6 +10,7 @@ import time
 import warnings
 from collections.abc import Iterable
 from contextlib import nullcontext
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
@@ -65,12 +66,16 @@ from docling.cli.export_utils import (
 )
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
+    ADDITIONAL_ASR_PRESETS,
+    GRANITE_4_0_1B_SPEECH,
+    NEMOTRON_3_5_ASR_STREAMING,
     WHISPER_BASE,
     WHISPER_BASE_EN_NATIVE,
     WHISPER_BASE_EN_S2T,
     WHISPER_BASE_MLX,
     WHISPER_BASE_NATIVE,
     WHISPER_BASE_S2T,
+    WHISPER_BASE_TRANSFORMERS,
     WHISPER_DISTIL_LARGE_V3_5_NATIVE,
     WHISPER_DISTIL_LARGE_V3_5_S2T,
     WHISPER_DISTIL_LARGE_V3_NATIVE,
@@ -82,6 +87,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_LARGE,
     WHISPER_LARGE_MLX,
     WHISPER_LARGE_NATIVE,
+    WHISPER_LARGE_TRANSFORMERS,
     WHISPER_LARGE_V3_S2T,
     WHISPER_LARGE_V3_TURBO_S2T,
     WHISPER_MEDIUM,
@@ -90,21 +96,25 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_MEDIUM_MLX,
     WHISPER_MEDIUM_NATIVE,
     WHISPER_MEDIUM_S2T,
+    WHISPER_MEDIUM_TRANSFORMERS,
     WHISPER_SMALL,
     WHISPER_SMALL_EN_NATIVE,
     WHISPER_SMALL_EN_S2T,
     WHISPER_SMALL_MLX,
     WHISPER_SMALL_NATIVE,
     WHISPER_SMALL_S2T,
+    WHISPER_SMALL_TRANSFORMERS,
     WHISPER_TINY,
     WHISPER_TINY_EN_NATIVE,
     WHISPER_TINY_EN_S2T,
     WHISPER_TINY_MLX,
     WHISPER_TINY_NATIVE,
     WHISPER_TINY_S2T,
+    WHISPER_TINY_TRANSFORMERS,
     WHISPER_TURBO,
     WHISPER_TURBO_MLX,
     WHISPER_TURBO_NATIVE,
+    WHISPER_TURBO_TRANSFORMERS,
     AsrModelType,
 )
 from docling.datamodel.backend_options import (
@@ -129,6 +139,7 @@ from docling.datamodel.pipeline_options import (
     BaseLayoutOptions,
     BaseTableStructureOptions,
     ConvertPipelineOptions,
+    HeadingHierarchyOptions,
     LayoutObjectDetectionOptions,
     LayoutOptions,
     NativePdfPipelineOptions,
@@ -147,8 +158,17 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
     normalize_pdf_backend,
 )
-from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrOptions,
+    InlineAsrTransformersOptions,
+)
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
+from docling.datamodel.vlm_engine_options import (
+    AutoInlineVlmEngineOptions,
+    MlxVlmEngineOptions,
+    TransformersVlmEngineOptions,
+    VllmVlmEngineOptions,
+)
 from docling.utils.profiling import ProfilingItem
 from docling.utils.progress import ProgressPrinter
 
@@ -203,6 +223,37 @@ class HtmlImageFetchMode(str, Enum):
 class ChunkerType(str, Enum):
     HYBRID = "hybrid"
     HIERARCHICAL = "hierarchical"
+
+
+class FailOn(str, Enum):
+    """Which conversion outcome makes the CLI exit with a non-zero code."""
+
+    NEVER = "never"  # always exit 0 once the run completes (old behaviour)
+    FAILURE = "failure"  # exit 1 if any document has status FAILURE (default)
+    PARTIAL = "partial"  # also exit 1 if any document is PARTIAL_SUCCESS
+
+
+FAIL_ON_HELP = (
+    "Which outcome makes docling exit with code 1: 'failure' (default) "
+    "if any document fails, 'partial' also if any document is only "
+    "partially converted, 'never' to always exit 0."
+)
+
+
+@dataclass(frozen=True)
+class ExportSummary:
+    """How many documents of a run were converted, partially converted or failed."""
+
+    success: int
+    partial_success: int
+    failure: int
+
+    def should_fail(self, fail_on: FailOn) -> bool:
+        if fail_on == FailOn.NEVER:
+            return False
+        if fail_on == FailOn.PARTIAL:
+            return self.failure > 0 or self.partial_success > 0
+        return self.failure > 0
 
 
 def _is_http_url(source: str) -> bool:
@@ -368,13 +419,23 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
     Shared mapping so both audio and (later) video CLI setup resolve
     ASR presets the same way.
     """
+    if asr_model.value in ADDITIONAL_ASR_PRESETS:
+        return ADDITIONAL_ASR_PRESETS[asr_model.value].to_options()
     mapping: dict[AsrModelType, InlineAsrOptions] = {
+        AsrModelType.GRANITE_4_0_1B_SPEECH: GRANITE_4_0_1B_SPEECH,
+        AsrModelType.NEMOTRON_3_5_ASR_STREAMING: NEMOTRON_3_5_ASR_STREAMING,
         AsrModelType.WHISPER_TINY: WHISPER_TINY,
         AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
         AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
         AsrModelType.WHISPER_BASE: WHISPER_BASE,
         AsrModelType.WHISPER_LARGE: WHISPER_LARGE,
         AsrModelType.WHISPER_TURBO: WHISPER_TURBO,
+        AsrModelType.WHISPER_TINY_TRANSFORMERS: WHISPER_TINY_TRANSFORMERS,
+        AsrModelType.WHISPER_BASE_TRANSFORMERS: WHISPER_BASE_TRANSFORMERS,
+        AsrModelType.WHISPER_SMALL_TRANSFORMERS: WHISPER_SMALL_TRANSFORMERS,
+        AsrModelType.WHISPER_MEDIUM_TRANSFORMERS: WHISPER_MEDIUM_TRANSFORMERS,
+        AsrModelType.WHISPER_LARGE_TRANSFORMERS: WHISPER_LARGE_TRANSFORMERS,
+        AsrModelType.WHISPER_TURBO_TRANSFORMERS: WHISPER_TURBO_TRANSFORMERS,
         AsrModelType.WHISPER_TINY_MLX: WHISPER_TINY_MLX,
         AsrModelType.WHISPER_SMALL_MLX: WHISPER_SMALL_MLX,
         AsrModelType.WHISPER_MEDIUM_MLX: WHISPER_MEDIUM_MLX,
@@ -548,8 +609,14 @@ def export_documents(
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
     debug_vlm_native_output: bool = False,
     output_file: Path | None = None,
-):
+) -> ExportSummary:
+    """Export the conversion results and count the documents per outcome.
+
+    ``SUCCESS`` and ``PARTIAL_SUCCESS`` documents are exported. ``SKIPPED``
+    documents count as neither a failure nor a partial success.
+    """
     success_count = 0
+    partial_success_count = 0
     failure_count = 0
 
     # Initialize chunker once for all documents
@@ -581,7 +648,14 @@ def export_documents(
         if debug_vlm_native_output:
             _write_native_vlm_output(conv_res)
 
-        doc_failed = conv_res.status != ConversionStatus.SUCCESS
+        if conv_res.status == ConversionStatus.SKIPPED:
+            _log.info(f"Document {conv_res.input.file} was skipped.")
+            continue
+
+        doc_failed = conv_res.status not in {
+            ConversionStatus.SUCCESS,
+            ConversionStatus.PARTIAL_SUCCESS,
+        }
         if not doc_failed:
             doc_filename = conv_res.input.file.stem
 
@@ -795,22 +869,47 @@ def export_documents(
 
         if doc_failed:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
-            if _log.isEnabledFor(logging.INFO):
-                for err in conv_res.errors:
-                    _log.info(
-                        f"  [Failure Detail] Component: {err.component_type}, "
-                        f"Module: {err.module_name}, Message: {err.error_message}"
-                    )
+            _log_failure_details(conv_res)
             failure_count += 1
+        elif conv_res.status == ConversionStatus.PARTIAL_SUCCESS:
+            _log.warning(
+                f"Document {conv_res.input.file} was only partially converted."
+            )
+            _log_failure_details(conv_res)
+            partial_success_count += 1
         else:
             success_count += 1
 
+    processed_count = success_count + partial_success_count + failure_count
     _log.info(
-        f"Processed {success_count + failure_count} docs, of which {failure_count} failed"
+        f"Processed {processed_count} docs, of which {failure_count} failed"
+        f" and {partial_success_count} were partially converted"
+    )
+    return ExportSummary(
+        success=success_count,
+        partial_success=partial_success_count,
+        failure=failure_count,
     )
 
 
-@app.command(no_args_is_help=True)
+def _log_failure_details(conv_res: ConversionResult) -> None:
+    if _log.isEnabledFor(logging.INFO):
+        for err in conv_res.errors:
+            _log.info(
+                f"  [Failure Detail] Component: {err.component_type}, "
+                f"Module: {err.module_name}, Message: {err.error_message}"
+            )
+
+
+_CONVERT_EPILOG = """\
+Exit codes:
+  0  success; partially converted documents are written too (see --fail-on)
+  1  a document failed to convert (see --fail-on), or another runtime error
+  2  usage error
+"""
+
+
+@app.command(no_args_is_help=True, epilog=_CONVERT_EPILOG)
 def convert(  # noqa: C901
     source: Annotated[
         list[str],
@@ -900,6 +999,17 @@ def convert(  # noqa: C901
             help="Override max_new_tokens for VLM conversion generation.",
         ),
     ] = None,
+    trust_remote_code: Annotated[
+        bool,
+        typer.Option(
+            "--trust-remote-code",
+            help=(
+                "Allow the local VLM engine to run code from the model "
+                "repository. Some --vlm-model presets require it. Review the "
+                "model's code at the preset's pinned revision first."
+            ),
+        ),
+    ] = False,
     debug_vlm_native_output: Annotated[
         bool,
         typer.Option(
@@ -914,6 +1024,13 @@ def convert(  # noqa: C901
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
     ] = AsrModelType.WHISPER_TINY,
+    asr_language: Annotated[
+        str | None,
+        typer.Option(
+            "--asr-language",
+            help="Source language for Transformers ASR.",
+        ),
+    ] = None,
     video_sampling_mode: Annotated[
         Literal["fixed", "scene"],
         typer.Option(..., help="frame sampling mode."),
@@ -965,6 +1082,16 @@ def convert(  # noqa: C901
             help="Which document regions are fed to the OCR engine.",
         ),
     ] = OcrMode.DEFAULT,
+    replace_broken_text_layer: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Replace a page's PDF text with OCR when its text layer is broken, "
+                "e.g. from a font whose glyphs were not mapped to real characters."
+            ),
+        ),
+    ] = False,
     tables: Annotated[
         bool,
         typer.Option(
@@ -993,6 +1120,17 @@ def convert(  # noqa: C901
             ),
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help=(
+                "Infer section-header levels for PDF and image inputs from the PDF "
+                "bookmarks, the heading numbering and the font style. Standard and "
+                "legacy pipelines only."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1199,6 +1337,10 @@ def convert(  # noqa: C901
             help="If enabled, the processing will be aborted when the first error is encountered.",
         ),
     ] = False,
+    fail_on: Annotated[
+        FailOn,
+        typer.Option("--fail-on", help=FAIL_ON_HELP),
+    ] = FailOn.FAILURE,
     output: Annotated[
         Path, typer.Option(..., help="Output directory where results are saved.")
     ] = Path("."),
@@ -1577,12 +1719,18 @@ def convert(  # noqa: C901
             "mode": "--ocr-mode",
             "lang": "--ocr-lang",
             "psm": "--psm",
+            "replace_broken_text_layer": "--replace-broken-text-layer",
         }
         # `--ocr-mode` always has a value; count it as set only when it differs
         # from the default, so `--ocr-option mode=...` works on its own.
         explicit_ocr_fields = (
             {"mode"} if force_ocr or ocr_mode != OcrMode.DEFAULT else set()
         )
+        # Like `--ocr-mode`, count the flag as set only when it is on, so
+        # `--ocr-option replace_broken_text_layer=true` works on its own.
+        if replace_broken_text_layer:
+            ocr_kwargs["replace_broken_text_layer"] = True
+            explicit_ocr_fields.add("replace_broken_text_layer")
         ocr_lang_list = _split_list(ocr_lang)
         # `_split_list` returns None only when the option was not given, so an
         # explicitly empty value reaches the engine as `lang=[]`: "your default".
@@ -1682,6 +1830,9 @@ def convert(  # noqa: C901
                 do_table_structure=tables,
                 extract_form_fields=extract_form_fields,
                 use_reading_order_separators=reading_order_separators,
+                heading_hierarchy_options=HeadingHierarchyOptions(
+                    enabled=heading_hierarchy
+                ),
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
@@ -1878,6 +2029,17 @@ def convert(  # noqa: C901
                     pipeline_options.vlm_options.model_spec.max_new_tokens = (
                         vlm_max_new_tokens
                     )
+                vlm_engine_options = pipeline_options.vlm_options.engine_options
+                if trust_remote_code and isinstance(
+                    vlm_engine_options,
+                    (
+                        AutoInlineVlmEngineOptions,
+                        TransformersVlmEngineOptions,
+                        MlxVlmEngineOptions,
+                        VllmVlmEngineOptions,
+                    ),
+                ):
+                    vlm_engine_options.trust_remote_code = True
                 _log.info(f"Using VLM preset: {vlm_model}")
             except KeyError:
                 err_console.print(
@@ -1918,6 +2080,12 @@ def convert(  # noqa: C901
 
         # Auto-selecting models (choose best implementation for hardware)
         asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+        if isinstance(asr_pipeline_options.asr_options, InlineAsrTransformersOptions):
+            asr_pipeline_options.asr_options = (
+                asr_pipeline_options.asr_options.model_copy(
+                    update={"language": asr_language}
+                )
+            )
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
@@ -1951,7 +2119,9 @@ def convert(  # noqa: C901
             video_pipeline_options = VideoPipelineOptions()
             video_pipeline_options.enable_diarization = video_diarization
             video_pipeline_options.document_timeout = document_timeout
-            video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+            video_pipeline_options.asr_options = (
+                asr_pipeline_options.asr_options.model_copy(deep=True)
+            )
             if video_sampling_mode == "scene":
                 video_pipeline_options.frame_sampling_mode = (
                     VideoFrameSamplingMode.SCENE_CHANGE
@@ -2002,7 +2172,7 @@ def convert(  # noqa: C901
                 output_file.parent if output_file is not None else output
             )
             export_output_dir.mkdir(parents=True, exist_ok=True)
-            export_documents(
+            summary = export_documents(
                 conv_results,
                 output_dir=export_output_dir,
                 **export_flags,
@@ -2020,6 +2190,9 @@ def convert(  # noqa: C901
         end_time = time.time() - start_time
 
     _log.info(f"All documents were converted in {end_time:.2f} seconds.")
+
+    if summary.should_fail(fail_on):
+        raise typer.Exit(1)
 
 
 class EngineStage(str, Enum):

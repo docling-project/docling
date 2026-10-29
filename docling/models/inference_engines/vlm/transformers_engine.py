@@ -27,6 +27,7 @@ from transformers import (
 )
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.base_models import VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
@@ -35,6 +36,7 @@ from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
     check_min_engine_version,
     extract_generation_stoppers,
+    generation_stopper_stop_reason,
     preprocess_image_batch,
     resolve_model_artifacts_path,
 )
@@ -82,6 +84,33 @@ def _ensure_dots_flash_attn_import() -> None:
             "engine. Install flash-attn in the transformers-v4 environment "
             "before using this model."
         ) from exc
+
+
+def _stopper_stop_reasons(
+    wrappers: list[HFStoppingCriteriaWrapper], row_lengths: list[int]
+) -> list[str]:
+    """The stop reason of each batch row, as declared by the stopper that ended it.
+
+    A stopper ended a row when it fired at the final length of that row.
+    Transformers keeps calling the stoppers for rows that already finished, so a
+    stopper that fired later did not end the row. If several stoppers ended a
+    row at the same step, a cut output wins over a valid end. A row that no
+    stopper ended stays "unspecified".
+    """
+    stop_reasons: list[str] = []
+    for row, row_length in enumerate(row_lengths):
+        reasons = {
+            generation_stopper_stop_reason(wrapper.stopper)
+            for wrapper in wrappers
+            if wrapper.fired_at.get(row) == row_length
+        }
+        if VlmStopReason.STOP_SEQUENCE in reasons:
+            stop_reasons.append(VlmStopReason.STOP_SEQUENCE.value)
+        elif reasons:
+            stop_reasons.append(VlmStopReason.END_OF_SEQUENCE.value)
+        else:
+            stop_reasons.append(VlmStopReason.UNSPECIFIED.value)
+    return stop_reasons
 
 
 class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
@@ -163,6 +192,17 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 TransformersModelType.AUTOMODEL,
             )
             model_type = _coerce_transformers_model_type(model_type)
+
+            if (
+                self.model_config.extra_config.get("requires_trust_remote_code")
+                and not self.options.trust_remote_code
+            ):
+                raise ValueError(
+                    f"{repo_id} (revision {revision}) runs code from its model "
+                    "repository. Review that code, then opt in with "
+                    "trust_remote_code=True on the VLM engine options, or with "
+                    "--trust-remote-code in the docling CLI."
+                )
 
             _log.info(
                 f"Loading model {repo_id} (revision: {revision}, "
@@ -440,11 +480,13 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         custom_stoppers = extract_generation_stoppers(
             first_input.extra_generation_config
         )
+        stopper_wrappers: list[HFStoppingCriteriaWrapper] = []
         for stopper in custom_stoppers:
             wrapped_criteria = HFStoppingCriteriaWrapper(
                 tokenizer,
                 stopper,
             )
+            stopper_wrappers.append(wrapped_criteria)
             stopping_criteria_list.append(wrapped_criteria)
 
         # Also handle any HF StoppingCriteria directly passed
@@ -556,13 +598,20 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.strip_stop_strings and first_input.stop_strings:
             decoded_texts = strip_stop_strings(decoded_texts, first_input.stop_strings)
 
+        stop_reasons = _stopper_stop_reasons(
+            stopper_wrappers,
+            [input_len + count for count in generated_token_counts],
+        )
+
         # Create outputs
         outputs = []
         for i, text in enumerate(decoded_texts):
             outputs.append(
                 VlmEngineOutput(
                     text=text,
-                    stop_reason="unspecified",
+                    stop_reason=stop_reasons[i]
+                    if i < len(stop_reasons)
+                    else "unspecified",
                     metadata={
                         "generation_time": generation_time / len(input_batch),
                         "num_tokens": generated_token_counts[i]

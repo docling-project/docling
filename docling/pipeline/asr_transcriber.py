@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import json
 import logging
 import shutil
+import subprocess
 import sys
 import tempfile
 from io import BytesIO
@@ -26,7 +28,10 @@ from docling.datamodel.accelerator_options import (
 )
 from docling.datamodel.asr_model_specs import (
     _DISTIL_WHISPER_OPENAI_CHECKPOINTS,
+    _WHISPER_S2T_PRESETS,
     _distil_whisper_prefetch_name,
+    _whisper_s2t_compute_type,
+    _whisper_s2t_prefetch_name,
 )
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -42,9 +47,11 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
     InlineAsrOptions,
+    InlineAsrTransformersOptions,
     InlineAsrWhisperS2TOptions,
 )
 from docling.exceptions import OperationNotAllowed
+from docling.pipeline.asr_transformers import TransformersAsrDecoder
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -187,6 +194,41 @@ class _ConversationItem(BaseModel):
         return result
 
 
+def _resolve_asr_artifacts(artifacts_path: Path, repo_id: str) -> Path:
+    """Find a local checkpoint, either directly or under its repo cache folder."""
+    roots = (
+        artifacts_path,
+        artifacts_path / repo_id.replace("/", "--"),
+    )
+    for candidate in roots:
+        if (candidate / "config.json").is_file():
+            return candidate
+    raise FileNotFoundError(
+        f"ASR model {repo_id} was not found in {artifacts_path}. "
+        "Expected config.json in that directory or its repo cache folder."
+    )
+
+
+def _audio_duration_seconds(fpath: Path) -> float:
+    """Read audio duration for ASR models that return text without timestamps."""
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "json",
+            str(fpath),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return float(json.loads(result.stdout)["format"]["duration"])
+
+
 class _NativeWhisperModel:
     def __init__(
         self,
@@ -286,6 +328,7 @@ class _NativeWhisperModel:
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         # Access the file path from the backend, similar to other pipelines
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
 
         # Handle both Path and BytesIO inputs
@@ -403,8 +446,18 @@ class _MlxWhisperModel:
             self.model_name = asr_options.repo_id
             _log.info(f"loading _MlxWhisperModel({self.model_name})")
 
-            # MLX Whisper models are loaded differently - they use HuggingFace repos
-            self.model_path = self.model_name
+            self.model_path = (
+                str(_resolve_asr_artifacts(artifacts_path, self.model_name))
+                if artifacts_path is not None
+                else self.model_name
+            )
+            if artifacts_path is not None and not any(
+                (Path(self.model_path) / name).is_file()
+                for name in ("weights.safetensors", "weights.npz")
+            ):
+                raise FileNotFoundError(
+                    f"MLX Whisper weights are missing from {self.model_path}"
+                )
 
             # Store MLX-specific options
             self.language = asr_options.language
@@ -413,8 +466,15 @@ class _MlxWhisperModel:
             self.no_speech_threshold = asr_options.no_speech_threshold
             self.logprob_threshold = asr_options.logprob_threshold
             self.compression_ratio_threshold = asr_options.compression_ratio_threshold
+            self.temperature = asr_options.temperature
+            self.condition_on_previous_text = asr_options.condition_on_previous_text
+            self.hallucination_silence_threshold = (
+                asr_options.hallucination_silence_threshold
+            )
+            self.initial_prompt = asr_options.initial_prompt
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         temp_file_path: Path | None = None
 
@@ -454,7 +514,7 @@ class _MlxWhisperModel:
             return conv_res
 
         except Exception as exc:
-            _log.error(f"MLX Audio transcription has an error: {exc}")
+            _log.error(f"ASR transcription has an error: {exc}")
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
 
@@ -476,6 +536,20 @@ class _MlxWhisperModel:
         Returns:
             List of conversation items with timestamps
         """
+        # Only forward options that are set, so mlx-whisper keeps its own
+        # defaults when they are None.
+        optional_kwargs: dict[str, bool | float | str] = {}
+        if self.condition_on_previous_text is not None:
+            optional_kwargs["condition_on_previous_text"] = (
+                self.condition_on_previous_text
+            )
+        if self.hallucination_silence_threshold is not None:
+            optional_kwargs["hallucination_silence_threshold"] = (
+                self.hallucination_silence_threshold
+            )
+        if self.initial_prompt is not None:
+            optional_kwargs["initial_prompt"] = self.initial_prompt
+
         result = self.mlx_whisper.transcribe(
             str(fpath),
             path_or_hf_repo=self.model_path,
@@ -485,6 +559,8 @@ class _MlxWhisperModel:
             no_speech_threshold=self.no_speech_threshold,
             logprob_threshold=self.logprob_threshold,
             compression_ratio_threshold=self.compression_ratio_threshold,
+            temperature=self.temperature,
+            **optional_kwargs,
         )
 
         convo: list[_ConversationItem] = []
@@ -514,6 +590,91 @@ class _MlxWhisperModel:
         return convo
 
 
+class _TransformersAsrModel(_MlxWhisperModel):
+    """Transcribe speech with a Transformers ASR pipeline."""
+
+    def __init__(
+        self,
+        enabled: bool,
+        artifacts_path: Path | None,
+        accelerator_options: AcceleratorOptions,
+        asr_options: InlineAsrTransformersOptions,
+    ):
+        self.enabled = enabled
+        if not enabled:
+            return
+        self.asr_options = asr_options
+        self.device = decide_device(
+            accelerator_options.device,
+            supported_devices=asr_options.supported_devices,
+        )
+        model = (
+            str(_resolve_asr_artifacts(artifacts_path, asr_options.repo_id))
+            if artifacts_path is not None
+            else asr_options.repo_id
+        )
+        self.decoder: TransformersAsrDecoder | None = None
+        if asr_options.model_family in {"granite", "granite_ctc"}:
+            self.decoder = TransformersAsrDecoder(
+                asr_options, self.device, model, artifacts_path is not None
+            )
+            return
+
+        try:
+            from transformers import pipeline
+        except ImportError as exc:
+            raise ImportError(
+                "Transformers ASR requires transformers. Install the "
+                "`feat-asr-transformers` extra."
+            ) from exc
+        pipeline_kwargs = {
+            "task": "automatic-speech-recognition",
+            "model": model,
+            "device": self.device,
+        }
+        if artifacts_path is not None:
+            pipeline_kwargs["model_kwargs"] = {"local_files_only": True}
+        else:
+            pipeline_kwargs["revision"] = asr_options.revision
+        if asr_options.torch_dtype is not None:
+            pipeline_kwargs["dtype"] = asr_options.torch_dtype
+        self.asr_pipeline = pipeline(**pipeline_kwargs)
+
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
+        if self.asr_options.model_family == "whisper":
+            generate_kwargs: dict[str, str] = {"task": self.asr_options.task}
+            if self.asr_options.language is not None:
+                generate_kwargs["language"] = self.asr_options.language
+            result = self.asr_pipeline(
+                str(fpath),
+                return_timestamps=True,
+                generate_kwargs=generate_kwargs,
+            )
+            return [
+                _ConversationItem(
+                    start_time=chunk["timestamp"][0],
+                    end_time=chunk["timestamp"][1],
+                    text=chunk["text"].strip(),
+                )
+                for chunk in result["chunks"]
+            ]
+
+        if self.decoder is not None:
+            text = self.decoder.transcribe(fpath)
+        else:
+            result = self.asr_pipeline(str(fpath))
+            text = result["text"].strip()
+        if not text:
+            return []
+        return [
+            _ConversationItem(
+                start_time=0.0,
+                end_time=_audio_duration_seconds(fpath),
+                text=text,
+            )
+        ]
+
+
 class _WhisperS2TModel:
     """Transcriber using WhisperS2T with CTranslate2 backend for high-speed inference."""
 
@@ -535,7 +696,7 @@ class _WhisperS2TModel:
             except ImportError:
                 raise ImportError(
                     "whisper_s2t is not installed. Please install it via "
-                    "`pip install 'whisper-s2t-reborn[pyav]>=1.7.1'`."
+                    "`pip install 'whisper-s2t-reborn>=1.8.0'`."
                 )
 
             self.whisper_s2t = whisper_s2t
@@ -558,13 +719,15 @@ class _WhisperS2TModel:
             # inference. Coerce to float32 when running on CPU so that the
             # explicit *_S2T presets (which default to float16 for CUDA
             # performance) do not fail at model load on CPU-only installs.
-            compute_type = asr_options.torch_dtype
-            if self.device == "cpu" and compute_type in ("float16", "bfloat16"):
+            compute_type = _whisper_s2t_compute_type(
+                asr_options.torch_dtype, self.device
+            )
+            if asr_options.torch_dtype not in (None, compute_type):
                 _log.warning(
-                    f"compute_type='{compute_type}' is not supported by "
-                    f"CTranslate2 on CPU; falling back to 'float32'."
+                    f"compute_type='{asr_options.torch_dtype}' is not supported "
+                    f"by WhisperS2T on {self.device}; falling back to "
+                    f"'{compute_type}'."
                 )
-                compute_type = "float32"
 
             # Build ASR options for whisper_s2t
             asr_opts = {
@@ -581,10 +744,34 @@ class _WhisperS2TModel:
                 "asr_options": asr_opts,
             }
 
-            self.model = whisper_s2t.load_model(
-                model_identifier=self.model_identifier,
-                **model_kwargs,
-            )
+            if artifacts_path is None:
+                self.model = whisper_s2t.load_model(
+                    model_identifier=self.model_identifier,
+                    **model_kwargs,
+                )
+            else:
+                from huggingface_hub.utils import LocalEntryNotFoundError
+
+                try:
+                    self.model = whisper_s2t.load_model(
+                        model_identifier=self.model_identifier,
+                        cache_dir=str(artifacts_path),
+                        local_files_only=True,
+                        **model_kwargs,
+                    )
+                except LocalEntryNotFoundError as err:
+                    message = (
+                        f"artifacts_path ({artifacts_path}) does not contain the "
+                        f"{compute_type} WhisperS2T files required by ASR model "
+                        f"'{self.model_identifier}'."
+                    )
+                    if self.model_identifier in _WHISPER_S2T_PRESETS:
+                        message += (
+                            " Prefetch them with: docling-tools models download "
+                            f"{_whisper_s2t_prefetch_name(self.model_identifier)} "
+                            f'--output-dir "{artifacts_path}"'
+                        )
+                    raise FileNotFoundError(message) from err
 
             # Store options for transcription
             self.language = asr_options.language
@@ -606,6 +793,7 @@ class _WhisperS2TModel:
         return device_str, 0
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
 
         temp_file_path: Path | None = None
@@ -797,6 +985,7 @@ class _ApiAsrModel:
         return self._to_conversation(self._post(fpath.name, fpath.read_bytes()))
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         try:
             if isinstance(path_or_stream, BytesIO):
@@ -836,8 +1025,9 @@ def _merge_into_sentences(
     """Merge Whisper segments into complete sentences.
 
     Consecutive segments are merged until a sentence-ending punctuation
-    mark (. ? !) is found. The merged item spans the full time range
-    of all contributing segments and concatenates their text.
+    mark (. ? ! or its full-width CJK form) is found. The merged item spans
+    the full time range of all contributing segments and concatenates their
+    text.
 
     This produces one block per sentence, which maps cleanly to one
     speaker per block for diarization.
@@ -870,7 +1060,7 @@ def _merge_into_sentences(
                 current.words = (current.words or []) + list(item.words)
 
         # Flush on sentence boundary
-        if current.text.rstrip().endswith((".", "?", "!")):
+        if current.text.rstrip().endswith((".", "?", "!", "。", "？", "！")):  # noqa: RUF001
             merged.append(current)
             current = None
 
@@ -924,6 +1114,13 @@ class _AsrModelFactory:
             )
         elif isinstance(asr_options, InlineAsrMlxWhisperOptions):
             return _MlxWhisperModel(
+                enabled=True,
+                artifacts_path=artifacts_path,
+                accelerator_options=accelerator_options,
+                asr_options=asr_options,
+            )
+        elif isinstance(asr_options, InlineAsrTransformersOptions):
+            return _TransformersAsrModel(
                 enabled=True,
                 artifacts_path=artifacts_path,
                 accelerator_options=accelerator_options,

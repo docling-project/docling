@@ -5,20 +5,25 @@ from io import BytesIO
 
 from PIL import Image, ImageCms
 
-_PNG_MODES = frozenset({"1", "L", "LA", "I", "I;16", "I;16B", "P", "RGB", "RGBA"})
+_PNG_MODES = frozenset({"1", "L", "LA", "I;16", "I;16B", "P", "RGB", "RGBA"})
 
 
 def normalize_image_for_png(image: Image.Image) -> Image.Image:
-    """Convert unsupported modes to RGB or RGBA for PNG serialization.
+    """Convert unsupported image modes for PNG serialization.
 
-    Keep PNG-compatible images unchanged, including their transparency. Use
-    RGBA for PA images to preserve per-pixel alpha. For other unsupported modes,
+    Keep PNG-compatible images unchanged, including their transparency. Convert
+    integer images to PNG's 16-bit range and PA images to RGBA to preserve
+    per-pixel alpha. For other unsupported modes,
     use the embedded ICC profile or Pillow's default RGB conversion if the
     profile is absent or unusable.
     Image decoding and default conversion errors are left to the caller.
     """
     if image.mode in _PNG_MODES:
         return image
+
+    if image.mode == "I":
+        # Pillow 13 requires an explicit conversion to PNG's 16-bit range.
+        return image.convert("I;16")
 
     if image.mode == "PA":
         return image.convert("RGBA")

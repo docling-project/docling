@@ -343,6 +343,58 @@ def test_ptoca_code_points_after_an_unchained_sequence_are_not_a_chain():
     assert _extract_ptoca_text(data, "cp500") == "AB"
 
 
+def _move(function_type: int, displacement: int) -> bytes:
+    """Encode a move control sequence such as AMB (X'D2') or AMI (X'C6')."""
+    return (
+        b"\x2b\xd3\x04"
+        + bytes((function_type,))
+        + displacement.to_bytes(2, "big", signed=True)
+    )
+
+
+def test_ptoca_new_baseline_starts_a_new_line():
+    """Apache FOP places each line with AMB and AMI (X'C6'), not Begin Line."""
+    data = (
+        _move(0xD2, 100)
+        + _move(0xC6, 50)
+        + _trn("Invoice 4711")
+        + _move(0xD2, 120)
+        + _move(0xC6, 50)
+        + _trn("Due 2026-11-01")
+        + _move(0xD2, 140)
+        + _trn("Net 30")
+    )
+
+    assert _extract_ptoca_text(data, "cp500") == "Invoice 4711\nDue 2026-11-01\nNet 30"
+
+
+def test_ptoca_same_baseline_keeps_one_line():
+    data = (
+        _move(0xD2, 100)
+        + _trn("Hello ")
+        + _move(0xD2, 100)
+        + _move(0xC6, 300)
+        + _trn("World")
+    )
+
+    assert _extract_ptoca_text(data, "cp500") == "Hello World"
+
+
+def test_afp_lines_placed_with_amb_become_separate_paragraphs():
+    data = b"".join(
+        (
+            _structured_field(BDT),
+            _page(_move(0xD2, 100) + _trn("First") + _move(0xD2, 120) + _trn("Second")),
+            _structured_field(EDT),
+        )
+    )
+
+    assert [item.text for item in _backend(data).convert().texts] == [
+        "First",
+        "Second",
+    ]
+
+
 def test_begin_page_before_end_page_is_rejected():
     data = _structured_field(BPG) + _structured_field(BPG)
 
