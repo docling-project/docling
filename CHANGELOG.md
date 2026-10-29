@@ -1,3 +1,36 @@
+## [v2.145.0](https://github.com/docling-project/docling/releases/tag/v2.145.0) - 2026-10-29
+
+### Feature
+
+* **ocr:** Detect page orientation for RapidOCR ([#4709](https://github.com/docling-project/docling/issues/4709)) ([`5e72863`](https://github.com/docling-project/docling/commit/5e72863feb2a1664b3aade48f64ba8b49da6ad35))
+* **api:** Add InputDocument.release() ([#3600](https://github.com/docling-project/docling/issues/3600)) ([`761d4cf`](https://github.com/docling-project/docling/commit/761d4cf51c5276bb84c45fb16e523bae92f71eb6))
+
+### Fix
+
+* **pipeline:** Drop page backend references on unload ([#5089](https://github.com/docling-project/docling/issues/5089)) ([`544f368`](https://github.com/docling-project/docling/commit/544f3683c5af90fcd5402a12387839fc1a3c4535))
+* **jats:** Stop rendering the literal text None in figure and table captions ([#4291](https://github.com/docling-project/docling/issues/4291)) ([`dc4693f`](https://github.com/docling-project/docling/commit/dc4693f7f94bbf72a41ef1bf091fe6003ca2eb73))
+* **md:** Strip leading YAML frontmatter instead of misparsing it ([#4596](https://github.com/docling-project/docling/issues/4596)) ([`8f9a971`](https://github.com/docling-project/docling/commit/8f9a97183aa76cb79dd992d808a793e80b8f0627))
+* **asr:** Avoid initializing MLX during preset imports ([#5090](https://github.com/docling-project/docling/issues/5090)) ([`55c1da8`](https://github.com/docling-project/docling/commit/55c1da8aa7d5044c6cc6d6e5f03be5fd3feda2ad))
+* **jats:** Keep the target of an ext-link in a mixed citation ([#4813](https://github.com/docling-project/docling/issues/4813)) ([`d518808`](https://github.com/docling-project/docling/commit/d518808da7520d2e6f865b8499582e641baa58aa))
+* **html:** Keep rows stored in tfoot ([#4323](https://github.com/docling-project/docling/issues/4323)) ([`ad03515`](https://github.com/docling-project/docling/commit/ad03515e80405a7678b2a89e703f9e3703e5ded1))
+* **vlm:** Keep the page when a Chandra table is too large ([#5054](https://github.com/docling-project/docling/issues/5054)) ([`7d62cae`](https://github.com/docling-project/docling/commit/7d62caec96db33cc4e5f288e5f70a14d6d1dd5da))
+* **jats:** Keep tables whose only row is a header row span ([#5041](https://github.com/docling-project/docling/issues/5041)) ([`851dce7`](https://github.com/docling-project/docling/commit/851dce79b1d4e67456fc7be38d3024350d8401e5))
+* **xlsx:** Do not create empty cells while finding tables ([#5024](https://github.com/docling-project/docling/issues/5024)) ([`8f7ae54`](https://github.com/docling-project/docling/commit/8f7ae54409583908f06a2172d260e71b964cc4dd))
+* Preserve native VLM inline math through exports ([#4908](https://github.com/docling-project/docling/issues/4908)) ([`9051777`](https://github.com/docling-project/docling/commit/9051777f9e420fa3a37df77425b08f22d0bf5981))
+* **service_client:** Do not send default page range in request options ([#5056](https://github.com/docling-project/docling/issues/5056)) ([`907dcf2`](https://github.com/docling-project/docling/commit/907dcf2a60b4f4b777bb41c1f5fd2bb9274976ed))
+* **pdf:** Replace NUL from unmapped glyphs with U+FFFD ([#5070](https://github.com/docling-project/docling/issues/5070)) ([`ca26ff1`](https://github.com/docling-project/docling/commit/ca26ff190856d0bc5d2c7d4a977c02232d8a3b5b))
+* **xlsx:** Keep currency, percent, and date number formats ([#4628](https://github.com/docling-project/docling/issues/4628)) ([`25cdd57`](https://github.com/docling-project/docling/commit/25cdd577d756097a576fe3a298de16f1d3cd0a88))
+* **vlm:** Scale DocLang locations to the page size ([#5051](https://github.com/docling-project/docling/issues/5051)) ([`6d1470d`](https://github.com/docling-project/docling/commit/6d1470dd4e9e953428d3503d40fa0484ef0fe603))
+
+### Documentation
+
+* Correct Nemotron OCR installation instructions ([#5083](https://github.com/docling-project/docling/issues/5083)) ([`52aceeb`](https://github.com/docling-project/docling/commit/52aceeb41ae9e523d195263f12ee12a793486388))
+* Document installing docling-slim without RapidOCR ([#5058](https://github.com/docling-project/docling/issues/5058)) ([`38719d4`](https://github.com/docling-project/docling/commit/38719d4008624e92a9f547d7393039a8bbe06055))
+
+### Performance
+
+* **email:** Do not copy .msg attachment content ([#5025](https://github.com/docling-project/docling/issues/5025)) ([`8e6ad96`](https://github.com/docling-project/docling/commit/8e6ad9695e009701fe846ac79194026351d27d11))
+
 ## [v2.144.0](https://github.com/docling-project/docling/releases/tag/v2.144.0) - 2026-10-28
 
 ### Feature
