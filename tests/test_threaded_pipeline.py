@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import gc
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -318,6 +319,35 @@ def test_threaded_pipeline_reuses_model_threads_across_documents():
             _SINGLE_FILE, raises_on_error=True, page_range=(1, 2)
         )
         assert result.status == ConversionStatus.SUCCESS
+
+    assert set(threads_by_stage) == set(_MODEL_ATTRS)
+    for stage, threads in threads_by_stage.items():
+        assert len(threads) == 1, stage
+        assert next(iter(threads)).name.startswith("Model-"), stage
+
+
+def test_threaded_pipeline_reuses_model_threads_across_pipelines():
+    """Regression test for #5096.
+
+    Dropping a pipeline and building a new one must not start a new set of
+    model threads: on CUDA, PyTorch per-thread state is never freed when a
+    thread exits, so a new set per pipeline leaks host memory on every
+    converter rebuild. Sequential conversions from fresh pipelines must
+    therefore reuse the same model thread per stage.
+    """
+    threads_by_stage: dict[str, set[threading.Thread]] = {}
+
+    def record(stage):
+        threads_by_stage.setdefault(stage, set()).add(threading.current_thread())
+
+    for _ in range(3):
+        converter = _intercepting_converter(record)
+        result = converter.convert(
+            _SINGLE_FILE, raises_on_error=True, page_range=(1, 1)
+        )
+        assert result.status == ConversionStatus.SUCCESS
+        del converter
+        gc.collect()
 
     assert set(threads_by_stage) == set(_MODEL_ATTRS)
     for stage, threads in threads_by_stage.items():
