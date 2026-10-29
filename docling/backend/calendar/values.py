@@ -10,7 +10,6 @@ Names of days and months are spelled out here rather than taken from
 import re
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Optional, Union
 
 from docling.backend.calendar.parser import Property
 
@@ -66,21 +65,36 @@ _RRULE_PARTS = frozenset(
 
 @dataclass
 class CalendarTime:
-    """A DATE or DATE-TIME value with the time zone label it was written with."""
+    """A DATE or DATE-TIME value with the time zone label it was written with.
 
-    value: Union[date, datetime]
-    tz: Optional[str] = None
+    Attributes:
+        value: A ``date`` for a DATE value, a ``datetime`` for a DATE-TIME.
+        tz: ``"UTC"``, the TZID as written, or ``None`` for a floating time
+            or a date.
+    """
+
+    value: date | datetime
+    tz: str | None = None
 
     @property
     def all_day(self) -> bool:
+        """Whether the value is a date without a time of day."""
         return not isinstance(self.value, datetime)
 
 
-def parse_time(raw: str, tzid: Optional[str] = None) -> Optional[CalendarTime]:
-    """Read a DATE or DATE-TIME value; ``None`` when it is not one.
+def parse_time(raw: str, tzid: str | None = None) -> CalendarTime | None:
+    """Read a DATE or DATE-TIME value.
 
     The shape of the value decides between the two, as producers often leave
     out ``VALUE=DATE``. A trailing ``Z`` wins over a TZID.
+
+    Args:
+        raw: The value, for example ``20261020`` or ``20261020T090000Z``.
+        tzid: The TZID parameter of the property, if any.
+
+    Returns:
+        The parsed value, or ``None`` if the text is not a valid date or
+        date-time.
     """
     match = _DATE_TIME.fullmatch(raw.strip())
     if match is None:
@@ -97,11 +111,29 @@ def parse_time(raw: str, tzid: Optional[str] = None) -> Optional[CalendarTime]:
     return CalendarTime(value, "UTC" if utc else (tzid or None))
 
 
-def property_time(prop: Property) -> Optional[CalendarTime]:
+def property_time(prop: Property) -> CalendarTime | None:
+    """Read the date or date-time value of a property, with its TZID.
+
+    Args:
+        prop: A property such as DTSTART, DTEND or DUE.
+
+    Returns:
+        The parsed value, or ``None`` if it is not a valid date or date-time.
+    """
     return parse_time(prop.value, prop.param("TZID"))
 
 
 def format_time(time: CalendarTime) -> str:
+    """Format a date or date-time for reading, for example ``2026-10-20 09:00 UTC``.
+
+    Seconds are shown only when they are not zero.
+
+    Args:
+        time: The value to format.
+
+    Returns:
+        The date, the time if any, and the time zone label if any.
+    """
     value = time.value
     text = f"{value.year:04d}-{value.month:02d}-{value.day:02d}"
     if isinstance(value, datetime):
@@ -112,11 +144,28 @@ def format_time(time: CalendarTime) -> str:
 
 
 def format_property_time(prop: Property) -> str:
+    """Format the date or date-time value of a property for reading.
+
+    Args:
+        prop: A property such as DTSTART, DTEND or DUE.
+
+    Returns:
+        The formatted value, or the raw value if it cannot be parsed.
+    """
     time = property_time(prop)
     return format_time(time) if time is not None else prop.value
 
 
-def parse_duration(raw: str) -> Optional[timedelta]:
+def parse_duration(raw: str) -> timedelta | None:
+    """Read a DURATION value such as ``PT1H30M``, ``P1W`` or ``-PT15M``.
+
+    Args:
+        raw: The value, with an optional sign.
+
+    Returns:
+        The duration, negative for a leading ``-``, or ``None`` if the text
+        is not a valid duration.
+    """
     match = _DURATION.fullmatch(raw.strip())
     if match is None or not any(match.groups()[1:]):
         return None
@@ -136,7 +185,14 @@ def _plural(count: int, unit: str) -> str:
 
 
 def format_duration(delta: timedelta) -> str:
-    """Spell out a duration, ignoring its sign; zero gives an empty string."""
+    """Spell out a duration, for example ``1 hour 30 minutes``.
+
+    Args:
+        delta: The duration. Its sign is ignored.
+
+    Returns:
+        The duration in words, or an empty string for zero.
+    """
     total = abs(int(delta.total_seconds()))
     days, rest = divmod(total, 86400)
     hours, rest = divmod(rest, 3600)
@@ -153,6 +209,14 @@ def format_duration(delta: timedelta) -> str:
 
 
 def join_words(words: list[str]) -> str:
+    """Join words as in a sentence, for example ``A, B and C``.
+
+    Args:
+        words: The words to join.
+
+    Returns:
+        The joined words, or an empty string for an empty list.
+    """
     if len(words) <= 1:
         return "".join(words)
     return ", ".join(words[:-1]) + " and " + words[-1]
@@ -174,7 +238,7 @@ def _ordinal_word(number: int) -> str:
     return _ORDINAL_WORDS.get(number, _ordinal(number))
 
 
-def _describe_byday(value: str) -> Optional[str]:
+def _describe_byday(value: str) -> str | None:
     days: list[str] = []
     for token in value.split(","):
         match = _BYDAY.fullmatch(token.strip())
@@ -191,7 +255,7 @@ def _describe_byday(value: str) -> Optional[str]:
     return join_words(days)
 
 
-def _describe_bymonthday(value: str) -> Optional[str]:
+def _describe_bymonthday(value: str) -> str | None:
     days: list[str] = []
     for token in value.split(","):
         try:
@@ -209,7 +273,7 @@ def _describe_bymonthday(value: str) -> Optional[str]:
     return "the " + join_words(days)
 
 
-def _describe_bymonth(value: str) -> Optional[str]:
+def _describe_bymonth(value: str) -> str | None:
     months: list[str] = []
     for token in value.split(","):
         try:
@@ -222,12 +286,19 @@ def _describe_bymonth(value: str) -> Optional[str]:
     return join_words(months)
 
 
-def describe_rrule(raw: str) -> Optional[str]:
-    """Describe a recurrence rule, or return ``None`` to keep the raw rule.
+def describe_rrule(raw: str) -> str | None:
+    """Describe a recurrence rule in words.
 
     A rule with a part this does not describe is left raw as a whole, since
     a description that drops BYSETPOS or BYHOUR would state a different
     schedule.
+
+    Args:
+        raw: The RRULE value, for example ``FREQ=WEEKLY;BYDAY=MO,WE``.
+
+    Returns:
+        A description such as ``Weekly on Monday and Wednesday``, or ``None``
+        to keep the raw rule.
     """
     parts: dict[str, str] = {}
     for item in raw.split(";"):

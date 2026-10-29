@@ -5,7 +5,6 @@
 
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 _FOLD_BYTES = re.compile(rb"\r\n[ \t]|\n[ \t]|\r[ \t]")
 _FOLD_TEXT = re.compile(r"\r\n[ \t]|\n[ \t]|\r[ \t]")
@@ -73,6 +72,13 @@ class Property:
 
     TEXT values are already unescaped, and list properties hold one entry per
     item.
+
+    Attributes:
+        name: The property name in upper case, for example ``DTSTART``.
+        params: The parameters by upper-case name. A parameter with several
+            values keeps them joined by commas.
+        values: The values. Most properties have one; list properties such
+            as CATEGORIES or EXDATE have one per item.
     """
 
     name: str
@@ -81,37 +87,92 @@ class Property:
 
     @property
     def value(self) -> str:
+        """The first value, or an empty string if there is none."""
         return self.values[0] if self.values else ""
 
-    def param(self, name: str) -> Optional[str]:
+    def param(self, name: str) -> str | None:
+        """Return a parameter value.
+
+        Args:
+            name: The parameter name in upper case, for example ``TZID``.
+
+        Returns:
+            The parameter value, or ``None`` if the property does not have it.
+        """
         return self.params.get(name)
 
 
 @dataclass
 class Component:
-    """A BEGIN/END block with its properties and nested components."""
+    """A BEGIN/END block with its properties and nested components.
+
+    Attributes:
+        name: The component name in upper case, for example ``VEVENT``.
+        properties: The properties in file order.
+        components: The nested components in file order, for example the
+            VALARM blocks of an event.
+    """
 
     name: str
     properties: list[Property] = field(default_factory=list)
     components: list["Component"] = field(default_factory=list)
 
-    def get(self, name: str) -> Optional[Property]:
+    def get(self, name: str) -> Property | None:
+        """Return the first property with a name.
+
+        Args:
+            name: The property name in upper case.
+
+        Returns:
+            The first matching property, or ``None`` if there is none.
+        """
         return next((p for p in self.properties if p.name == name), None)
 
     def get_all(self, name: str) -> list[Property]:
+        """Return every property with a name, in file order.
+
+        Args:
+            name: The property name in upper case.
+
+        Returns:
+            The matching properties; empty if there are none.
+        """
         return [p for p in self.properties if p.name == name]
 
     def text(self, name: str) -> str:
+        """Return the first value of a property.
+
+        Args:
+            name: The property name in upper case.
+
+        Returns:
+            The value, or an empty string if the property is missing.
+        """
         prop = self.get(name)
         return prop.value if prop is not None else ""
 
 
 def unfold_bytes(raw: bytes) -> bytes:
-    """Join folded lines before decoding, since a fold may split a UTF-8 character."""
+    """Join folded lines before decoding, since a fold may split a UTF-8 character.
+
+    Args:
+        raw: The file content in an ASCII-compatible encoding.
+
+    Returns:
+        The content with every line break that starts a fold removed.
+    """
     return _FOLD_BYTES.sub(b"", raw)
 
 
 def unfold_text(text: str) -> str:
+    """Join folded lines of text that was decoded before unfolding.
+
+    Args:
+        text: The decoded file content.
+
+    Returns:
+        The text with every line break that starts a fold removed.
+    """
     return _FOLD_TEXT.sub("", text)
 
 
@@ -130,6 +191,12 @@ def parse_components(text: str) -> list[Component]:
     A missing END is recovered from the containment rules: a BEGIN that the
     open component cannot hold closes it first, so one bad block does not
     swallow the entries that follow it. A stray END is ignored.
+
+    Args:
+        text: The unfolded file content.
+
+    Returns:
+        The top-level components in file order, usually one VCALENDAR.
     """
     roots: list[Component] = []
     stack: list[Component] = []
@@ -157,7 +224,7 @@ def parse_components(text: str) -> list[Component]:
     return roots
 
 
-def _parse_line(line: str) -> Optional[Property]:
+def _parse_line(line: str) -> Property | None:
     match = _NAME.match(line)
     if match is None:
         return None

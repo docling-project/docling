@@ -5,7 +5,6 @@
 
 import re
 from datetime import timedelta
-from typing import Optional
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
 
@@ -75,13 +74,19 @@ _FILENAME_PARAMS = ("FILENAME", "X-FILENAME", "X-APPLE-FILENAME", "X-ORACLE-FILE
 def add_calendar_components(
     doc: DoclingDocument,
     components: list[Component],
-    parent: Optional[NodeItem] = None,
+    parent: NodeItem | None = None,
     base_level: int = 1,
 ) -> None:
     """Add calendars, and entries found outside a calendar, in file order.
 
     Each entry gets a heading at ``base_level`` and its attendees, reminders
     and attachments get headings one level below.
+
+    Args:
+        doc: The document to add the items to.
+        components: The top-level components from ``parse_components``.
+        parent: The node to add the items under; the body if ``None``.
+        base_level: The heading level of each entry.
     """
     writer = _Writer(doc, parent, base_level)
     for component in components:
@@ -92,7 +97,7 @@ def add_calendar_components(
 
 
 class _Writer:
-    def __init__(self, doc: DoclingDocument, parent: Optional[NodeItem], level: int):
+    def __init__(self, doc: DoclingDocument, parent: NodeItem | None, level: int):
         self.doc = doc
         self.parent = parent
         self.level = level
@@ -250,7 +255,7 @@ def _list_time(value: str, prop: Property) -> str:
     return format_time(time) if time is not None else value
 
 
-def _period(value: str, tzid: Optional[str] = None) -> str:
+def _period(value: str, tzid: str | None = None) -> str:
     start_raw, sep, end_raw = value.partition("/")
     start = parse_time(start_raw, tzid)
     if not sep or start is None:
@@ -318,7 +323,7 @@ def _attendee(prop: Property) -> str:
     return f"{text} ({', '.join(details)})" if details else text
 
 
-def _alarm(alarm: Component, owner: str) -> Optional[str]:
+def _alarm(alarm: Component, owner: str) -> str | None:
     action = alarm.text("ACTION").strip().upper()
     if action == "NONE":
         return None

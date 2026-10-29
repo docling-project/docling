@@ -6,7 +6,6 @@
 import codecs
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin
 
@@ -34,9 +33,7 @@ _FOLD_SAMPLE = "\r\n \t"
 _CALENDAR_ROOTS = frozenset({"VCALENDAR", "VEVENT", "VTODO", "VJOURNAL", "VFREEBUSY"})
 
 
-def _read_calendar_text(
-    path_or_stream: Union[BytesIO, Path], encoding: Optional[str]
-) -> str:
+def _read_calendar_text(path_or_stream: BytesIO | Path, encoding: str | None) -> str:
     """Decode the file with its folded lines joined.
 
     Folds are removed from the bytes first, because RFC 5545 lets a fold fall
@@ -60,13 +57,25 @@ def _read_calendar_text(
 
 
 class CalendarDocumentBackend(DeclarativeDocumentBackend):
+    """Convert an iCalendar file into a DoclingDocument.
+
+    Each event, task, journal entry and free/busy block becomes a heading
+    followed by its fields, its description, and lists of attendees,
+    reminders and attachment names. The file is read and parsed when the
+    backend is created.
+
+    Raises:
+        DocumentLoadError: If the file cannot be decoded or holds no calendar
+            component.
+    """
+
     components: list[Component]
 
     def __init__(
         self,
         in_doc: "InputDocument",
-        path_or_stream: Union[BytesIO, Path],
-        options: Optional[CalendarBackendOptions] = None,
+        path_or_stream: BytesIO | Path,
+        options: CalendarBackendOptions | None = None,
     ):
         if options is None:
             options = CalendarBackendOptions()
@@ -90,22 +99,31 @@ class CalendarDocumentBackend(DeclarativeDocumentBackend):
         self.valid = True
 
     def is_valid(self) -> bool:
+        """Return whether the file was loaded as a calendar."""
         return self.valid
 
     @classmethod
     def supports_pagination(cls) -> bool:
+        """Return False: a calendar has no pages."""
         return False
 
-    def unload(self):
+    def unload(self) -> None:
+        """Close the input stream and release it."""
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.close()
         self.path_or_stream = None
 
     @classmethod
     def supported_formats(cls) -> set[InputFormat]:
+        """Return the input formats this backend reads."""
         return {InputFormat.CALENDAR}
 
     def convert(self) -> DoclingDocument:
+        """Build the document from the parsed calendar.
+
+        Returns:
+            A document with one heading for each calendar entry.
+        """
         origin = DocumentOrigin(
             filename=self.file.name or "file.ics",
             mimetype="text/calendar",
