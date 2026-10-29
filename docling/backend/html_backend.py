@@ -1914,7 +1914,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for n in reversed(new_nodes):
                 parent.insert(idx, n)
 
-    def _resolve_relative_path(self, loc: str) -> str:
+    def _resolve_relative_path(self, loc: str, *, decode_url_path: bool = False) -> str:
         if self._mhtml_resources is not None:
             archive_location = loc.strip()
             if archive_location.lower().startswith("cid:"):
@@ -1928,7 +1928,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return archive_location
             if self.base_path and self.base_path.startswith(_MHTML_SYNTHETIC_BASE):
                 return archive_location
-        return self._image_loader.resolve_relative_path(loc, self.base_path)
+        return self._image_loader.resolve_relative_path(
+            loc, self.base_path, decode_url_path=decode_url_path
+        )
 
     @staticmethod
     def group_cell_elements(
@@ -5283,7 +5285,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         img_ref: Optional[ImageRef] = None
         try:
-            src_loc = self._resolve_relative_path(src_loc)
+            src_loc = self._resolve_relative_path(
+                src_loc, decode_url_path=self._mhtml_resources is None
+            )
         except ValueError as e:
             # The source is not loaded, but the picture is kept, as for an
             # image file that cannot be read.
