@@ -79,11 +79,12 @@ The following table summarizes the extras available in the `docling` package. Th
 | `asr` | Installs dependencies for running the ASR pipeline. |
 | `vlm` | Installs dependencies for running the VLM pipeline. |
 | `easyocr` | Installs the [EasyOCR](https://github.com/JaidedAI/EasyOCR) OCR engine. |
-| `feat-ocr-nemotron` | Installs NVIDIA Nemotron OCR. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. |
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
 | `ocrmac` | Installs the OcrMac OCR engine. |
 | `htmlrender` | Installs dependencies for HTML page rendering in the HTML backend. |
 | `rapidocr` | Installs the [RapidOCR](https://github.com/RapidAI/RapidOCR) OCR engine with [onnxruntime](https://github.com/microsoft/onnxruntime/) backend. |
+
+For Nemotron OCR, install `docling-slim[feat-ocr-nemotron]` alongside `docling` as shown below.
 
 
 ### OCR engines
@@ -95,7 +96,7 @@ the following engines.
 | Engine | Installation | Usage |
 | ------ | ------------ | ----- |
 | [EasyOCR](https://github.com/JaidedAI/EasyOCR) | `easyocr` extra or via `pip install easyocr`. | `EasyOcrOptions` |
-| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) | `feat-ocr-nemotron` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
+| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) | `docling-slim[feat-ocr-nemotron]`. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
@@ -170,11 +171,12 @@ doc_converter = DocumentConverter(
 ??? "Nemotron OCR installation"
 
     [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) requires the CUDA 13 PyTorch wheels.
-    Install it with the `feat-ocr-nemotron` extra, the CUDA 13 PyTorch index, and the `unsafe-best-match`
-    index strategy so `pip` resolves the CUDA-enabled `torch` packages correctly.
+    Install `docling` together with `docling-slim[feat-ocr-nemotron]` using uv.
+    Use uv's `unsafe-best-match` index strategy to select the CUDA-enabled `torch` wheels.
 
     ```console
-    pip install "docling[feat-ocr-nemotron]" \
+    uv venv --python 3.12
+    uv pip install docling "docling-slim[feat-ocr-nemotron]" \
       --extra-index-url https://download.pytorch.org/whl/cu130 \
       --index-strategy unsafe-best-match
     ```
