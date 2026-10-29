@@ -459,25 +459,7 @@
           "$ref": "#/texts/144"
         },
         {
-          "$ref": "#/texts/145"
-        },
-        {
-          "$ref": "#/texts/146"
-        },
-        {
-          "$ref": "#/texts/147"
-        },
-        {
-          "$ref": "#/texts/148"
-        },
-        {
           "$ref": "#/texts/149"
-        },
-        {
-          "$ref": "#/texts/150"
-        },
-        {
-          "$ref": "#/texts/151"
         },
         {
           "$ref": "#/texts/152"
@@ -589,11 +571,69 @@
         },
         {
           "$ref": "#/texts/188"
+        },
+        {
+          "$ref": "#/texts/189"
+        },
+        {
+          "$ref": "#/texts/190"
+        },
+        {
+          "$ref": "#/texts/191"
+        },
+        {
+          "$ref": "#/texts/192"
+        },
+        {
+          "$ref": "#/texts/193"
+        },
+        {
+          "$ref": "#/texts/194"
         }
       ],
       "content_layer": "body",
       "name": "list",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/13",
+      "parent": {
+        "$ref": "#/texts/144"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/145"
+        },
+        {
+          "$ref": "#/texts/146"
+        },
+        {
+          "$ref": "#/texts/147"
+        },
+        {
+          "$ref": "#/texts/148"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/14",
+      "parent": {
+        "$ref": "#/texts/149"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/150"
+        },
+        {
+          "$ref": "#/texts/151"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -2824,31 +2864,114 @@
       "parent": {
         "$ref": "#/groups/12"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/13"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "CGIAR-CSI. CGIAR-CSI SRTM 90m DEM Digital Elevation Database. In: http://Srtm.Csi.Cgiar.Org/ [Internet]. 2008 [cited 1 May 2018]. Available: http://srtm.csi.cgiar.org/",
-      "text": "CGIAR-CSI. CGIAR-CSI SRTM 90m DEM Digital Elevation Database. In: http://Srtm.Csi.Cgiar.Org/ [Internet]. 2008 [cited 1 May 2018]. Available: http://srtm.csi.cgiar.org/",
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/145",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "CGIAR-CSI. CGIAR-CSI SRTM 90m DEM Digital Elevation Database. In:",
+      "text": "CGIAR-CSI. CGIAR-CSI SRTM 90m DEM Digital Elevation Database. In:"
+    },
+    {
+      "self_ref": "#/texts/146",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "http://Srtm.Csi.Cgiar.Org/",
+      "text": "http://Srtm.Csi.Cgiar.Org/",
+      "hyperlink": "http://srtm.csi.cgiar.org/"
+    },
+    {
+      "self_ref": "#/texts/147",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "[Internet]. 2008 [cited 1 May 2018]. Available:",
+      "text": "[Internet]. 2008 [cited 1 May 2018]. Available:"
+    },
+    {
+      "self_ref": "#/texts/148",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "http://srtm.csi.cgiar.org/",
+      "text": "http://srtm.csi.cgiar.org/",
+      "hyperlink": "http://srtm.csi.cgiar.org/"
+    },
+    {
+      "self_ref": "#/texts/149",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/14"
+        }
+      ],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "USGS NASA. Vegetation indices 16-DAy L3 global 500 MOD13A1 dataset [Internet]. [cited 1 May 2018]. Available: https://lpdaac.usgs.gov/products/myd13a1v006/",
-      "text": "USGS NASA. Vegetation indices 16-DAy L3 global 500 MOD13A1 dataset [Internet]. [cited 1 May 2018]. Available: https://lpdaac.usgs.gov/products/myd13a1v006/",
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": ""
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/150",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "USGS NASA. Vegetation indices 16-DAy L3 global 500 MOD13A1 dataset [Internet]. [cited 1 May 2018]. Available:",
+      "text": "USGS NASA. Vegetation indices 16-DAy L3 global 500 MOD13A1 dataset [Internet]. [cited 1 May 2018]. Available:"
+    },
+    {
+      "self_ref": "#/texts/151",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "https://lpdaac.usgs.gov/products/myd13a1v006/",
+      "text": "https://lpdaac.usgs.gov/products/myd13a1v006/",
+      "hyperlink": "https://lpdaac.usgs.gov/products/myd13a1v006/"
+    },
+    {
+      "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2862,7 +2985,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/153",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2876,7 +2999,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/154",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2890,7 +3013,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/155",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2904,7 +3027,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/156",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2918,7 +3041,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2932,7 +3055,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/158",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2946,7 +3069,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/159",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2960,7 +3083,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/160",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2974,7 +3097,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/161",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -2988,7 +3111,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/162",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3002,7 +3125,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/163",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3016,7 +3139,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/164",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3030,7 +3153,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/165",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3044,7 +3167,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/166",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3058,7 +3181,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/167",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3072,7 +3195,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/168",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3086,7 +3209,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/169",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3100,7 +3223,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/170",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3114,7 +3237,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/171",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3128,7 +3251,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/172",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3142,7 +3265,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/173",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3156,7 +3279,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/174",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3170,7 +3293,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/175",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3184,7 +3307,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/176",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3198,7 +3321,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/177",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3212,7 +3335,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/178",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3226,7 +3349,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/179",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3240,7 +3363,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/180",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3254,7 +3377,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/181",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3268,7 +3391,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/182",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3282,7 +3405,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/183",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3296,7 +3419,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/184",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3310,7 +3433,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/185",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3324,7 +3447,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/186",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3338,7 +3461,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/187",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3352,7 +3475,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/188",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3366,7 +3489,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/189",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3380,7 +3503,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/190",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3394,7 +3517,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/191",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3408,7 +3531,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/192",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3422,7 +3545,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/193",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -3436,7 +3559,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/194",
       "parent": {
         "$ref": "#/groups/12"
       },

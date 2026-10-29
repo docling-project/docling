@@ -120,24 +120,6 @@ def _formatting_tuple(item) -> tuple:
     )
 
 
-def convert_jats_body(body: str) -> DoclingDocument:
-    xml = f"""<!DOCTYPE article
-PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
-<article article-type="research-article">
-  <body>
-    {body}
-  </body>
-</article>
-"""
-    stream = DocumentStream(
-        name="body-test.nxml",
-        stream=BytesIO(xml.encode()),
-    )
-
-    conv_result: ConversionResult = get_converter().convert(stream)
-    return conv_result.document
-
-
 def write_jats_body(path: Path, body: str) -> None:
     path.write_text(
         f"""<!DOCTYPE article
@@ -991,6 +973,20 @@ def test_jats_empty_display_formula_does_not_drop_following_content():
     assert [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA] == []
 
 
+def test_jats_table_header_rowspan_without_body_keeps_the_table():
+    doc = convert_jats_body(
+        "<sec><title>T</title><table-wrap><label>Table 1</label>"
+        '<table><tr><th rowspan="2">h</th></tr></table>'
+        "</table-wrap></sec>"
+    )
+
+    assert len(doc.tables) == 1
+    table = doc.tables[0].data
+    assert (table.num_rows, table.num_cols) == (0, 1)
+    assert [cell.text for cell in table.table_cells] == ["h"]
+    assert "Table 1" in doc.export_to_markdown()
+
+
 def test_jats_table_oversized_spans_clamped_to_table_size():
     # Declared spans far beyond the table must not size the grid: the table
     # keeps the shape of its real cells, and the spans stop at its edges.
@@ -1383,6 +1379,105 @@ def test_jats_element_citation_empty_year_does_not_crash():
     markdown = doc.export_to_markdown()
     assert "Smith Jane" in markdown
     assert "Empty year" in markdown
+
+
+def _citation_runs(doc: DoclingDocument) -> list[list[tuple[str, str | None]]]:
+    """Return the (text, hyperlink) runs of each reference, in document order.
+
+    A reference is a list item, either with its own text or with an inline
+    group of runs as its only child.
+    """
+    citations: list[list[tuple[str, str | None]]] = []
+    for item in _list_items(doc):
+        runs = [item]
+        if item.children:
+            (group,) = [child.resolve(doc) for child in item.children]
+            assert group.label == GroupLabel.INLINE
+            runs = [child.resolve(doc) for child in group.children]
+        citations.append(
+            [
+                (run.text, str(run.hyperlink) if run.hyperlink is not None else None)
+                for run in runs
+            ]
+        )
+    return citations
+
+
+def test_jats_mixed_citation_keeps_external_link_target():
+    doc = convert_jats_body(
+        '<ref-list xmlns:xlink="http://www.w3.org/1999/xlink"><ref id="r1">'
+        '<label>1</label><mixed-citation publication-type="other">'
+        "BRAVO-CITATION. A work. 2020.\n"
+        '<ext-link ext-link-type="uri" xlink:href="https://example.org/c2-citation">'
+        "https://example.org/c2-citation</ext-link></mixed-citation></ref></ref-list>"
+    )
+
+    assert _citation_runs(doc) == [
+        [
+            ("BRAVO-CITATION. A work. 2020.", None),
+            ("https://example.org/c2-citation", "https://example.org/c2-citation"),
+        ]
+    ]
+    assert (
+        "- BRAVO-CITATION. A work. 2020. "
+        "[https://example.org/c2-citation](https://example.org/c2-citation)"
+    ) in doc.export_to_markdown()
+
+
+def test_jats_mixed_citation_keeps_link_target_that_differs_from_its_text():
+    doc = convert_jats_body(
+        '<ref-list xmlns:xlink="http://www.w3.org/1999/xlink"><ref id="r1">'
+        "<mixed-citation>Doe J. Survey data. "
+        '<ext-link ext-link-type="uri" xlink:href="https://doi.org/10.5555/survey">'
+        "doi:10.5555/survey</ext-link>. Accessed 2020.</mixed-citation></ref>"
+        "</ref-list>"
+    )
+
+    assert _citation_runs(doc) == [
+        [
+            ("Doe J. Survey data.", None),
+            ("doi:10.5555/survey", "https://doi.org/10.5555/survey"),
+            (". Accessed 2020.", None),
+        ]
+    ]
+
+
+def test_jats_mixed_citation_with_one_run_stays_a_single_list_item():
+    doc = convert_jats_body(
+        '<ref-list xmlns:xlink="http://www.w3.org/1999/xlink">'
+        '<ref id="r1"><mixed-citation>Roe R. Plain work. 2019.</mixed-citation></ref>'
+        '<ref id="r2"><mixed-citation><ext-link ext-link-type="uri" '
+        'xlink:href="https://example.org/data">Example data set</ext-link>'
+        "</mixed-citation></ref></ref-list>"
+    )
+
+    assert _inline_group_items(doc) == []
+    assert _citation_runs(doc) == [
+        [("Roe R. Plain work. 2019.", None)],
+        [("Example data set", "https://example.org/data")],
+    ]
+
+
+def test_jats_mixed_citation_keeps_inline_styling():
+    doc = convert_jats_body(
+        '<ref-list><ref id="r1"><mixed-citation>Doe J. Growth of '
+        "<italic>Escherichia coli</italic>. <source>Microbiology</source>. "
+        "2020;<bold>12</bold>: 1-9.</mixed-citation></ref></ref-list>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (DocItemLabel.TEXT, "Doe J. Growth of", None),
+        (
+            DocItemLabel.TEXT,
+            "Escherichia coli",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, ". Microbiology. 2020;", None),
+        (DocItemLabel.TEXT, "12", (True, False, False, False, Script.BASELINE)),
+        (DocItemLabel.TEXT, ": 1-9.", None),
+    ]
 
 
 @pytest.mark.parametrize(

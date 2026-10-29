@@ -17,6 +17,7 @@ from docling_core.types.doc import (
     ImageRef,
     PictureItem,
     ProvenanceItem,
+    TableItem,
     TextItem,
 )
 from docling_core.types.doc.base import (
@@ -62,10 +63,6 @@ from docling.datamodel.settings import settings
 # No need to import it separately as it's already imported above
 from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
-from docling.models.vlm_pipeline_models.hf_transformers_model import (
-    HuggingFaceTransformersVlmModel,
-)
-from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import TimeRecorder
@@ -208,6 +205,10 @@ class VlmPipeline(PaginatedPipeline):
         elif isinstance(self.pipeline_options.vlm_options, InlineVlmOptions):
             vlm_options = cast(InlineVlmOptions, self.pipeline_options.vlm_options)
             if vlm_options.inference_framework == InferenceFramework.MLX:
+                from docling.models.vlm_pipeline_models.mlx_model import (
+                    HuggingFaceMlxModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceMlxModel(
                         enabled=True,
@@ -217,6 +218,10 @@ class VlmPipeline(PaginatedPipeline):
                     ),
                 ]
             elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS:
+                from docling.models.vlm_pipeline_models.hf_transformers_model import (
+                    HuggingFaceTransformersVlmModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceTransformersVlmModel(
                         enabled=True,
@@ -668,7 +673,7 @@ class VlmPipeline(PaginatedPipeline):
             return DoclingDocument(name=f"page_{page.page_no}")
 
         try:
-            return DocLangDocDeserializer().deserialize_str(fragment)
+            document = DocLangDocDeserializer().deserialize_str(fragment)
         except Exception as exc:
             conv_res.errors.append(
                 ErrorItem(
@@ -680,6 +685,56 @@ class VlmPipeline(PaginatedPipeline):
                 )
             )
             return DoclingDocument(name=f"page_{page.page_no}")
+        self._scale_doclang_to_page(document, page)
+        return document
+
+    @staticmethod
+    def _scale_doclang_to_page(document: DoclingDocument, page: Page) -> None:
+        """Map DocLang grid locations onto the page.
+
+        The deserializer keeps locations on the DocLang grid (512x512 by
+        default) and sizes the page from that grid. Scale the boxes and the
+        page size to the real page, so that crops and provenance are in page
+        points like the other response formats.
+        """
+        if page.size is None:
+            return
+        scales: dict[int, tuple[float, float]] = {}
+        for page_no, page_item in document.pages.items():
+            grid = page_item.size
+            if grid.width <= 0 or grid.height <= 0:
+                continue
+            scales[page_no] = (
+                page.size.width / grid.width,
+                page.size.height / grid.height,
+            )
+            page_item.size = Size(width=page.size.width, height=page.size.height)
+        if not scales:
+            return
+        for item, _level in document.iterate_items(
+            with_groups=True,
+            traverse_pictures=True,
+            included_content_layers=set(ContentLayer),
+        ):
+            if not isinstance(item, DocItem):
+                continue
+            for provenance in item.prov:
+                scale = scales.get(provenance.page_no)
+                if scale is None:
+                    continue
+                sx, sy = scale
+                provenance.bbox = provenance.bbox.resize_by_scale(
+                    x_scale=sx, y_scale=sy
+                )
+            if isinstance(item, TableItem):
+                page_no = item.prov[0].page_no if item.prov else 1
+                scale = scales.get(page_no)
+                if scale is None:
+                    continue
+                sx, sy = scale
+                for cell in item.data.table_cells:
+                    if cell.bbox is not None:
+                        cell.bbox = cell.bbox.resize_by_scale(x_scale=sx, y_scale=sy)
 
     @staticmethod
     def _doctags_page_document(

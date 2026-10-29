@@ -521,7 +521,9 @@ def test_chart_data_table_capped_at_max_cells(caplog):
     """Genuinely huge charts are truncated at the cell cap with a warning.
 
     60k populated points in 2 series would emit 180k cells; the table is cut to
-    ``MAX_CHART_TABLE_CELLS`` cells instead of ballooning.
+    ``MAX_CHART_TABLE_CELLS`` cells instead of ballooning. The header row counts
+    against the cap, so 3 columns hold at most
+    ``MAX_CHART_TABLE_CELLS // 3 - 1`` data rows.
     """
     n_points = 60_000
     values = [str(i) for i in range(n_points)]
@@ -532,8 +534,9 @@ def test_chart_data_table_capped_at_max_cells(caplog):
 
     assert table_data is not None
     assert table_data.num_cols == 3
-    capped_rows = MAX_CHART_TABLE_CELLS // 3
+    capped_rows = MAX_CHART_TABLE_CELLS // 3 - 1
     assert table_data.num_rows == capped_rows + 1
+    assert len(table_data.table_cells) <= MAX_CHART_TABLE_CELLS
     assert "cell cap" in caplog.text
     grid = {
         (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
@@ -541,6 +544,27 @@ def test_chart_data_table_capped_at_max_cells(caplog):
     }
     assert grid[(1, 0)] == "c0"
     assert grid[(capped_rows, 0)] == f"c{capped_rows - 1}"
+
+
+def test_chart_data_table_cap_reached_exactly(caplog):
+    """A table that lands exactly on the cap is truncated, not left untouched.
+
+    One series over 50k points and 2 columns hold 100,002 cells with the header
+    row; the old data-row-only arithmetic (`100_000 > 100_000` is false) skipped
+    the cap and emitted the header row past it.
+    """
+    n_points = 50_000
+    values = [str(i) for i in range(n_points)]
+    categories = [f"c{i}" for i in range(n_points)]
+
+    with caplog.at_level(logging.WARNING, logger="docling.backend.utils.charts"):
+        table_data = build_chart_table(categories, [("s1", values)])
+
+    assert table_data is not None
+    assert table_data.num_cols == 2
+    assert table_data.num_rows == MAX_CHART_TABLE_CELLS // 2
+    assert len(table_data.table_cells) == MAX_CHART_TABLE_CELLS
+    assert "cell cap" in caplog.text
 
 
 def test_chart_enrichment_skips_image_when_pages_empty():
@@ -1392,6 +1416,29 @@ def test_pptx_footer_placeholders_go_to_furniture_layer(tmp_path: Path):
         "10 October 2026",
         "Confidential",
         "1",
+    ]
+
+
+def test_pptx_whitespace_only_shapes_are_skipped(tmp_path: Path):
+    """A shape whose text is only whitespace does not become a blank text item."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])  # "Title Only"
+    slide.shapes.title.text_frame.text = " "
+    blank = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
+    blank.text_frame.text = "   "
+    real = slide.shapes.add_textbox(Inches(1), Inches(4), Inches(4), Inches(1))
+    real.text_frame.text = "Real line"
+
+    pptx_path = tmp_path / "whitespace-shapes.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert [(item.label, item.text) for item in doc.texts] == [
+        ("paragraph", "Real line")
     ]
 
 
