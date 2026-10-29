@@ -211,25 +211,31 @@ vlm_options = VlmConvertOptions.from_preset(
 
 **Tool calls.** Some models, for example NVIDIA NemoRetriever Parse on NIM,
 answer only in `tool_calls` when the request contains `tools`. Send `tools`
-through `params` and select `TOOL_CALL_ARGUMENTS`. Docling returns the raw
-`arguments` JSON string and does not interpret its schema. Select a
-`response_format` that parses that schema. If no parser exists for it, the page
-text is the raw JSON.
+through the request parameters and select `TOOL_CALL_ARGUMENTS`. Docling
+returns the raw `arguments` JSON string and does not interpret its schema.
+
+No built-in `response_format` parses this JSON. `VlmPipeline` does not accept
+`PLAINTEXT` as a page format, and `MARKDOWN` puts the raw JSON on the page. To
+use such a model, call `api_image_request` and parse the JSON yourself, or add a
+`ResponseFormat` parser for the schema.
 
 ```python
-from docling.datamodel.api_answer_fields import ApiAnswerField
-from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
+import json
 
-vlm_options = ApiVlmOptions(
-    url="http://localhost:8000/v1/chat/completions",
-    params={
-        "model": "nvidia/nemoretriever-parse",
-        "tools": [{"type": "function", "function": {"name": "markdown_no_bbox"}}],
-    },
+from PIL import Image
+
+from docling.datamodel.api_answer_fields import ApiAnswerField
+from docling.utils.api_image_request import api_image_request
+
+result = api_image_request(
+    Image.open("page.png"),
     prompt="",
+    url="http://localhost:8000/v1/chat/completions",
+    model="nvidia/nemoretriever-parse",
+    tools=[{"type": "function", "function": {"name": "markdown_bbox"}}],
     answer_fields=[ApiAnswerField.TOOL_CALL_ARGUMENTS],
-    response_format=ResponseFormat.PLAINTEXT,
 )
+blocks = json.loads(result.text)  # NIM: [{"bbox": ..., "text": ..., "type": ...}]
 ```
 
 ## Native dots inline formatting
