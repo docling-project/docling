@@ -599,7 +599,7 @@ def test_centered_header_precedes_narrow_head_of_wide_body(
 
 
 def test_centered_header_precedes_narrow_head_when_party_column_stops_at_150() -> None:
-    # Every party line can stay left of the seal at x=178pt on the first row only.
+    # The same-row counsel text still spans the party and court columns.
     elements = _issue4913_court_page_elements(party_first_line_right=150.0)
     for index, element in enumerate(elements):
         if element.label == DocItemLabel.TEXT and element.l < 120.0:
@@ -737,16 +737,38 @@ def test_heads_separated_by_full_width_text_are_read_top_down():
     assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5, 6, 7]
 
 
-def test_heads_in_side_by_side_columns_keep_column_order():
+@pytest.mark.parametrize(
+    "head_label",
+    [
+        DocItemLabel.SECTION_HEADER,
+        DocItemLabel.PICTURE,
+        DocItemLabel.TABLE,
+        DocItemLabel.CODE,
+    ],
+)
+@pytest.mark.parametrize("dilate", [False, True])
+@pytest.mark.parametrize("reverse_input", [False, True])
+def test_heads_in_side_by_side_columns_keep_column_order(
+    head_label: DocItemLabel,
+    dilate: bool,
+    reverse_input: bool,
+) -> None:
     # The right column starts higher, and its text sits between the two heads,
     # but only spans the right one: the left column is still read first.
     elements = [
-        _box(0, DocItemLabel.SECTION_HEADER, 700.0, 720.0, l=320.0, r=560.0),
+        _box(0, head_label, 700.0, 720.0, l=320.0, r=560.0),
         _box(1, DocItemLabel.TEXT, 450.0, 680.0, l=320.0, r=560.0),
         _box(2, DocItemLabel.TEXT, 100.0, 400.0, l=50.0, r=290.0),
     ]
 
-    assert _predicted_cids(elements) == [2, 0, 1]
+    if reverse_input:
+        elements.reverse()
+
+    predictor = ReadingOrderPredictor()
+    predictor.dilated_page_element = dilate
+    result = predictor.predict_reading_order(elements)
+
+    assert [element.cid for element in result] == [2, 0, 1]
 
 
 def test_narrow_text_column_and_spanning_block_order_heads_together():

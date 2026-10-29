@@ -1077,10 +1077,6 @@ class ReadingOrderPredictor:
             if len(down_indices) != 1:
                 break
             down_index = down_indices[0]
-            if not ReadingOrderPredictor._is_one_to_one_vertical_edge(
-                state, current, down_index
-            ):
-                break
             down = page_elems[down_index]
             if not isinstance(down, PageElement):
                 break
@@ -1088,8 +1084,23 @@ class ReadingOrderPredictor:
                 break
             if down.label not in _TEXT_COLUMN_SORT_LABELS:
                 break
+            one_to_one = ReadingOrderPredictor._is_one_to_one_vertical_edge(
+                state, current, down_index
+            )
+            if not one_to_one:
+                row_left = page_elems[current]
+                if (
+                    not isinstance(row_left, PageElement)
+                    or row_left.label != DocItemLabel.TEXT
+                    or state.l2r_map.get(current) != down_index
+                    or state.r2l_map.get(down_index) != current
+                ):
+                    break
             left = min(left, down.l)
             right = max(right, down.r)
+            if not one_to_one:
+                # Include the linked text row, not the other parent's column.
+                break
             current = down_index
         return left, right
 
@@ -1183,19 +1194,6 @@ class ReadingOrderPredictor:
             spatial_idx.insert(i, (pelem.l, pelem.b, pelem.r, pelem.t))
 
         def compare(lhs: ReadingOrderNode, rhs: ReadingOrderNode) -> int:
-            if isinstance(lhs, PageElement) and isinstance(rhs, PageElement):
-                if (
-                    _is_graphic(lhs)
-                    and not _is_graphic(rhs)
-                    and lhs.is_strictly_above(rhs)
-                ):
-                    return -1
-                if (
-                    _is_graphic(rhs)
-                    and not _is_graphic(lhs)
-                    and rhs.is_strictly_above(lhs)
-                ):
-                    return 1
             if self._is_separated_above(spatial_idx, page_elems, lhs, rhs):
                 return -1
             if self._is_separated_above(spatial_idx, page_elems, rhs, lhs):
