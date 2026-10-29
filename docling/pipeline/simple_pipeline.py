@@ -3,6 +3,7 @@
 
 import logging
 from io import BytesIO
+from pathlib import Path
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -36,6 +37,10 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline, ConvertPipeline
 from docling.pipeline.video_pipeline import VideoPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
+from docling.utils.video_frame_sampling import (
+    ffmpeg_demuxer_for,
+    unsupported_container_message,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -84,47 +89,71 @@ class SimplePipeline(ConvertPipeline):
         it, and its document goes in a group right after that picture.
         """
         doc = conv_res.document
+        # Several slides can show the same media part: convert each file once.
+        converted: dict[str, DoclingDocument | None] = {}
         for picture in list(doc.pictures):
             media = get_media_meta(picture)
             if media is None:
                 continue
             kind, location = media
-            try:
-                data = backend.load_media(location)
-            except OperationNotAllowed as exc:
-                # The fetch rules of the backend options decide this, as for images.
-                _log.warning("Media file %s is not loaded: %s", location, exc)
-                continue
-            except Exception as exc:
-                self._add_media_error(conv_res, location, f"cannot be loaded: {exc}")
-                continue
-            if not data:
-                continue
-
-            try:
-                pipeline = self._get_media_pipeline(kind)
-            except ImportError as exc:
-                # Like a missing ffmpeg, a missing ASR extra fails the media only.
-                self._add_media_error(conv_res, location, f"cannot be converted: {exc}")
-                continue
-            media_input = InputDocument(
-                path_or_stream=BytesIO(data),
-                format=InputFormat.VIDEO if kind == "video" else InputFormat.AUDIO,
-                backend=NoOpBackend,
-                filename=media_file_name(location),
-                limits=conv_res.input.limits,
-            )
-            result = pipeline.execute(media_input, raises_on_error=False)
-            if result.status not in {
-                ConversionStatus.SUCCESS,
-                ConversionStatus.PARTIAL_SUCCESS,
-            }:
-                reasons = "; ".join(error.error_message for error in result.errors)
-                self._add_media_error(
-                    conv_res, location, f"cannot be converted: {reasons}"
+            if location not in converted:
+                converted[location] = self._convert_media_file(
+                    conv_res, backend, kind, location
                 )
-                continue
-            self._add_media_document(doc, picture, location, result.document)
+            if (media_doc := converted[location]) is not None:
+                self._add_media_document(doc, picture, location, media_doc)
+
+    def _convert_media_file(
+        self,
+        conv_res: ConversionResult,
+        backend: DeclarativeDocumentBackend,
+        kind: MediaKind,
+        location: str,
+    ) -> DoclingDocument | None:
+        """Load and convert one media file; return None when it is not converted."""
+        name = media_file_name(location)
+        if kind == "video" and ffmpeg_demuxer_for(Path(name)) is None:
+            # e.g. the .wmv or .mpg of an older deck: the media stays recorded
+            _log.warning(
+                "Media file %s is not converted: %s",
+                location,
+                unsupported_container_message(Path(name)),
+            )
+            return None
+        try:
+            data = backend.load_media(location)
+        except OperationNotAllowed as exc:
+            # The fetch rules of the backend options decide this, as for images.
+            _log.warning("Media file %s is not loaded: %s", location, exc)
+            return None
+        except Exception as exc:
+            self._add_media_error(conv_res, location, f"cannot be loaded: {exc}")
+            return None
+        if not data:
+            return None
+
+        try:
+            pipeline = self._get_media_pipeline(kind)
+        except ImportError as exc:
+            # Like a missing ffmpeg, a missing ASR extra fails the media only.
+            self._add_media_error(conv_res, location, f"cannot be converted: {exc}")
+            return None
+        media_input = InputDocument(
+            path_or_stream=BytesIO(data),
+            format=InputFormat.VIDEO if kind == "video" else InputFormat.AUDIO,
+            backend=NoOpBackend,
+            filename=name,
+            limits=conv_res.input.limits,
+        )
+        result = pipeline.execute(media_input, raises_on_error=False)
+        if result.status not in {
+            ConversionStatus.SUCCESS,
+            ConversionStatus.PARTIAL_SUCCESS,
+        }:
+            reasons = "; ".join(error.error_message for error in result.errors)
+            self._add_media_error(conv_res, location, f"cannot be converted: {reasons}")
+            return None
+        return result.document
 
     def _get_media_pipeline(self, kind: MediaKind) -> BasePipeline:
         if kind not in self._media_pipelines:

@@ -30,11 +30,17 @@ MAX_LINKED_MEDIA_BYTES: Final = 512 * 1024 * 1024
 
 _MEDIA_KINDS: Final[tuple[MediaKind, ...]] = ("video", "audio")
 
+# Containers that older decks embed, besides those of the audio and video input formats.
+_LEGACY_VIDEO_EXTENSIONS: Final = frozenset({"asf", "flv", "m4v", "mpeg", "mpg", "wmv"})
+_LEGACY_AUDIO_EXTENSIONS: Final = frozenset({"aif", "aiff", "wma"})
+
 
 def media_kind(mimetype: Optional[str], location: str = "") -> Optional[MediaKind]:
     """Tell video from audio by the MIME type, or else by the file extension.
 
-    The extensions are the ones the audio and video input formats accept.
+    The extensions are the ones the audio and video input formats accept, and the
+    containers that older decks embed (e.g. ``.wmv``), which are recorded even though
+    the video pipeline cannot read them.
     """
     major = (mimetype or "").partition("/")[0]
     if major == "video":
@@ -42,9 +48,15 @@ def media_kind(mimetype: Optional[str], location: str = "") -> Optional[MediaKin
     if major == "audio":
         return "audio"
     suffix = PurePosixPath(location).suffix.lower().removeprefix(".")
-    if suffix in FormatToExtensions[InputFormat.VIDEO]:
+    if (
+        suffix in FormatToExtensions[InputFormat.VIDEO]
+        or suffix in _LEGACY_VIDEO_EXTENSIONS
+    ):
         return "video"
-    if suffix in FormatToExtensions[InputFormat.AUDIO]:
+    if (
+        suffix in FormatToExtensions[InputFormat.AUDIO]
+        or suffix in _LEGACY_AUDIO_EXTENSIONS
+    ):
         return "audio"
     return None
 

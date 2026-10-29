@@ -290,6 +290,8 @@ print(result.document.export_to_markdown())
 
 Docling loads a linked media file only when the backend options allow it: `enable_remote_fetch=True` for a URL, and `enable_local_fetch=True` for a local file. A local file must be in the folder of the presentation or below it, and the presentation must be given as a `Path`. PowerPoint stores links to local files as absolute paths, so Docling does not load them.
 
+Each media file is converted once, also when several slides show it. A video in a container that the video pipeline does not read (for example the `.wmv` or `.mpg` of an older deck) keeps its picture and its `docling__video` field, and Docling logs a warning that it is not converted. A video without an audio track gives only its sampled frames.
+
 If a media file cannot be converted, the picture stays, the result status is `PARTIAL_SUCCESS`, and the reason is in `ConversionResult.errors`.
 
 ## Choosing an ASR model and backend

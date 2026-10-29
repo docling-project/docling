@@ -253,6 +253,60 @@ def test_media_that_cannot_be_converted_is_reported(
     assert _media_group(result.document, result.document.pictures[0]) is None
 
 
+def test_media_shown_on_several_slides_is_converted_once(tmp_path: Path, stub):
+    """The slides that show the same media part each get its document, converted once."""
+    from pptx.util import Inches
+
+    prs, _, _ = _deck(tmp_path)
+    second = prs.slides.add_slide(prs.slide_layouts[6])
+    # python-pptx reuses the media part of identical bytes, as PowerPoint does
+    second.shapes.add_movie(
+        str(tmp_path / "clip.mp4"),
+        Inches(1),
+        Inches(2),
+        Inches(4),
+        Inches(2.25),
+        mime_type="video/mp4",
+    )
+    deck = tmp_path / "shared.pptx"
+    prs.save(deck)
+
+    result = _convert(deck)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert stub.calls == [("video", "media1.mp4", _MEDIA_BYTES)]
+    doc = result.document
+    assert len(doc.pictures) == 2
+    for picture in doc.pictures:
+        group = _media_group(doc, picture)
+        assert group is not None
+        assert group.children[0].resolve(doc).text == _TRANSCRIPT
+        assert group.children[0].resolve(doc).prov[0].page_no == picture.prov[0].page_no
+
+
+def test_video_container_the_video_pipeline_cannot_read_is_not_converted(
+    tmp_path: Path, stub
+):
+    """A .wmv of an older deck stays recorded, but is not converted, and is no error.
+
+    The video pipeline reads only some containers, so this video cannot be
+    converted at all; the conversion of the deck still succeeds.
+    """
+    prs, _, _ = _deck(tmp_path, file_name="clip.wmv")
+    deck = tmp_path / "wmv.pptx"
+    prs.save(deck)
+
+    result = _convert(deck)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []
+    assert stub.calls == []
+    picture = result.document.pictures[0]
+    assert picture.meta is not None
+    assert picture.meta.get_custom_part() == {"docling__video": "ppt/media/media1.wmv"}
+    assert _media_group(result.document, picture) is None
+
+
 def test_odp_audio_is_converted(tmp_path: Path, stub):
     """The ODP backend loads its embedded media for the pipeline too."""
     pytest.importorskip("odfdo")

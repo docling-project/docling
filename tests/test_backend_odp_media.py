@@ -58,7 +58,19 @@ def test_odp_embedded_video_records_its_media_path(tmp_path: Path):
     assert picture.meta.get_custom_part() == {"docling__video": media_path}
 
 
-def test_odp_generic_media_type_falls_back_to_the_extension(tmp_path: Path):
+@pytest.mark.parametrize(
+    "href, field",
+    [
+        ("../sounds/tone.mp3", "docling__audio"),
+        # containers of older decks, which the input formats do not list
+        ("Media/clip.wmv", "docling__video"),
+        ("Media/clip.m4v", "docling__video"),
+        ("Media/note.wma", "docling__audio"),
+    ],
+)
+def test_odp_generic_media_type_falls_back_to_the_extension(
+    tmp_path: Path, href: str, field: str
+):
     """LibreOffice's generic media type still gives a kind, from the file name.
 
     A linked file is recorded by its link, and a frame without a preview still
@@ -66,15 +78,13 @@ def test_odp_generic_media_type_falls_back_to_the_extension(tmp_path: Path):
     """
     odf = OdfDocument("presentation")
     frame = Frame(size=("2cm", "2cm"), position=("1cm", "1cm"))
-    frame.append(_plugin("../sounds/tone.mp3", "application/vnd.sun.star.media"))
-    doc = _convert(odf, frame, tmp_path / "audio.odp")
+    frame.append(_plugin(href, "application/vnd.sun.star.media"))
+    doc = _convert(odf, frame, tmp_path / "media.odp")
 
     assert len(doc.pictures) == 1
     assert doc.pictures[0].image is None
     assert doc.pictures[0].meta is not None
-    assert doc.pictures[0].meta.get_custom_part() == {
-        "docling__audio": "../sounds/tone.mp3"
-    }
+    assert doc.pictures[0].meta.get_custom_part() == {field: href}
 
 
 def test_odp_plugin_that_is_not_media_is_ignored(tmp_path: Path):
