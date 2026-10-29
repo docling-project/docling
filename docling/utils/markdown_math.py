@@ -14,8 +14,9 @@ if TYPE_CHECKING:
     import marko
 
 # Markdown escapes literal brackets as `\[` and `\]`. Brackets that hold only
-# words, digits, and citation punctuation (`\[9\]`, `\[3, 5\]`) are text.
-_ESCAPED_BRACKET_TEXT = r"(?:[^\W_]|[\s.,;:'&\u2013\u2014-])*\\\]"
+# words, digits, and citation punctuation (`\[9\]`, `\[3, 5\]`) are text. A
+# hyphen counts only in a digit range (`\[12-14\]`): `\[n - 1\]` is math.
+_ESCAPED_BRACKET_TEXT = r"(?:[^\W_]|[\s.,;:'&\u2013\u2014]|(?<=\d)-(?=\d))*\\\]"
 
 _MATH = re.compile(
     r"(?<!\\)(?:\$\$([\s\S]*?)(?<!\\)\$\$"
