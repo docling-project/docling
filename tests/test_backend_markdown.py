@@ -1404,3 +1404,60 @@ def test_rich_table_cell_no_stray_body_items():
     # The only direct body child must be the table itself.
     body_crefs = {ref.cref for ref in doc.body.children}
     assert body_crefs == {"#/tables/0"}
+
+
+def _md_convert(markdown: str):
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+    return conv_result.document
+
+
+def test_task_list_items_keep_their_markers():
+    """GFM task-list markers stay in the list item text instead of being dropped (#4930)."""
+    doc = _md_convert(
+        "- [x] done item\n- [ ] open item\n- [X] upper case\n- plain item\n"
+    )
+
+    assert [(t.label, t.text) for t in doc.texts] == [
+        (DocItemLabel.LIST_ITEM, "[x] done item"),
+        (DocItemLabel.LIST_ITEM, "[ ] open item"),
+        (DocItemLabel.LIST_ITEM, "[X] upper case"),
+        (DocItemLabel.LIST_ITEM, "plain item"),
+    ]
+    assert doc.export_to_markdown() == (
+        "- [x] done item\n- [ ] open item\n- [X] upper case\n- plain item"
+    )
+    html = doc.export_to_html()
+    assert "<li>[x] done item</li>" in html
+    assert "<li>plain item</li>" in html
+
+
+def test_ordered_task_list_items_keep_their_numbers():
+    doc = _md_convert("7. [x] seven\n8. [ ] eight\n9. nine\n")
+
+    assert all(t.label == DocItemLabel.LIST_ITEM for t in doc.texts)
+    assert doc.export_to_markdown() == "7. [x] seven\n8. [ ] eight\n9. nine"
+
+
+def test_nested_task_list_items_keep_their_markers():
+    doc = _md_convert("- [x] parent\n  - [ ] child\n- plain\n")
+
+    assert doc.export_to_markdown() == "- [x] parent\n    - [ ] child\n- plain"
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected"),
+    [
+        ("[x] I accept the terms\n", "[x] I accept the terms"),
+        ("[ ] Not yet decided\n", "[ ] Not yet decided"),
+        ("> [x] quoted\n", "[x] quoted"),
+        (
+            "- item\n\n  [x] second paragraph of the item\n",
+            "[x] second paragraph of the item",
+        ),
+        ("- # Title\n\n  [x] ordinary second block\n", "[x] ordinary second block"),
+    ],
+)
+def test_task_markers_outside_list_items_are_kept(markdown, expected):
+    """A leading "[x] " / "[ ] " is not dropped from other paragraphs (#4930)."""
+    assert expected in [t.text for t in _md_convert(markdown).texts]

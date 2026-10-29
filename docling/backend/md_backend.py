@@ -63,7 +63,13 @@ try:  # pragma: no cover - import-time guard
     from marko.ext.gfm import elements as _gfm_el
     from marko.helpers import MarkoExtension
 
-    class _GfmParagraph(_gfm_el.Paragraph):
+    class _GfmParagraph(marko.block.Paragraph):
+        # Based on marko's plain Paragraph rather than the GFM one: GFM's strips a
+        # leading task-list marker ("[x] " / "[ ] ") and keeps it only in
+        # `checked`, which a DoclingDocument list item cannot carry, so the marker
+        # was lost. Here it stays part of the text, in list items and elsewhere.
+        override = True
+
         @classmethod
         def break_paragraph(
             cls, source: marko.source.Source, lazy: bool = False
