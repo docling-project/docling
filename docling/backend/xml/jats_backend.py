@@ -1126,6 +1126,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     row_span -= 1
                 while (
                     col_idx < num_cols
+                    and row_idx + start_row_span < num_rows
                     and grid[row_idx + start_row_span][col_idx] is not None
                 ):
                     col_idx += 1
