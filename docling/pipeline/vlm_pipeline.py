@@ -24,7 +24,7 @@ from docling_core.types.doc.base import (
     BoundingBox,
     Size,
 )
-from docling_core.types.doc.document import DocTagsDocument
+from docling_core.types.doc.document import BaseMeta, DocTagsDocument
 from PIL import Image as PILImage
 from typing_extensions import override
 
@@ -377,6 +377,16 @@ class VlmPipeline(PaginatedPipeline):
                 if page_no in page_documents
             ]
         )
+        nemotron_pages = {
+            str(page.page_no): page.predictions.vlm_response.nemotron_parse.model_dump()
+            for page in conv_res.pages
+            if page.predictions.vlm_response is not None
+            and page.predictions.vlm_response.nemotron_parse is not None
+        }
+        if nemotron_pages:
+            conv_res.document.body.meta = BaseMeta.model_validate(
+                {"docling__nemotron_parse": {"pages": nemotron_pages}}
+            )
         return conv_res
 
     def _join_page_documents(

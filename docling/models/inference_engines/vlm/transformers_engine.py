@@ -526,6 +526,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         }
 
         # Generate
+        eos_token_id = getattr(tokenizer, "eos_token_id", None)
         merged_generation_config = build_generation_config(
             self.generation_config,
             overrides=generation_config,
@@ -536,7 +537,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 first_input.temperature if first_input.temperature > 0 else None
             ),
             pad_token_id=getattr(tokenizer, "pad_token_id", None),
-            eos_token_id=getattr(tokenizer, "eos_token_id", None),
+            eos_token_id=eos_token_id,
         )
         gen_kwargs = {
             **inputs,
@@ -585,6 +586,20 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             generated_token_counts = (
                 (trimmed_sequences != pad_token_id).sum(dim=1).tolist()
             )
+        eos_token_ids = merged_generation_config.eos_token_id
+        if eos_token_ids is None:
+            eos_token_ids = eos_token_id
+        ended_with_eos = [False] * len(input_batch)
+        if eos_token_ids is not None:
+            # Finished batch items may have padding after EOS, including EOS as pad.
+            ended_with_eos = (
+                torch.isin(
+                    trimmed_sequences,
+                    torch.tensor(eos_token_ids, device=trimmed_sequences.device),
+                )
+                .any(dim=1)
+                .tolist()
+            )
         total_generated_tokens = sum(generated_token_counts)
 
         _log.info(
@@ -606,12 +621,18 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Create outputs
         outputs = []
         for i, text in enumerate(decoded_texts):
+            stop_reason = stop_reasons[i] if i < len(stop_reasons) else "unspecified"
+            if (
+                stop_reason == "unspecified"
+                and not ended_with_eos[i]
+                and merged_generation_config.max_new_tokens is not None
+                and generated_token_counts[i] >= merged_generation_config.max_new_tokens
+            ):
+                stop_reason = "length"
             outputs.append(
                 VlmEngineOutput(
                     text=text,
-                    stop_reason=stop_reasons[i]
-                    if i < len(stop_reasons)
-                    else "unspecified",
+                    stop_reason=stop_reason,
                     metadata={
                         "generation_time": generation_time / len(input_batch),
                         "num_tokens": generated_token_counts[i]
