@@ -14,6 +14,10 @@ from typing import Any, Dict, Literal, Optional
 from pydantic import AnyUrl, Field, model_validator
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.api_answer_fields import (
+    ANSWER_FIELDS_DESCRIPTION,
+    ApiAnswerField,
+)
 from docling.datamodel.settings import default_compile_model
 from docling.models.inference_engines.vlm.base import (
     BaseVlmEngineOptions,
@@ -245,6 +249,15 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
     timeout: float = Field(default=60.0, description="Request timeout in seconds")
 
     concurrency: int = Field(default=1, description="Number of concurrent requests")
+
+    answer_fields: list[ApiAnswerField] | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            f"{ANSWER_FIELDS_DESCRIPTION} When not set, the model preset value "
+            "is used, else `content`."
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod

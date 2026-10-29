@@ -161,6 +161,77 @@ More examples on how to connect with the remote inference services can be found 
 
 - [vlm_pipeline_api_model.py](./../examples/vlm_pipeline_api_model.py)
 
+### Servers that return the answer outside `content`
+
+The OpenAI Chat Completions contract puts the answer in `message.content`.
+Docling reads only `content` by default. Some servers or models put the answer
+in a different field. Use `answer_fields` to tell Docling where to read it. The
+first field in the list that has text is the answer.
+
+| `ApiAnswerField` | Response field |
+| --- | --- |
+| `CONTENT` | `content` (the default) |
+| `REASONING` | `reasoning`, or `reasoning_content` on older servers |
+| `TOOL_CALL_ARGUMENTS` | the raw `function.arguments` string of the first tool call |
+
+`answer_fields` is available on `ApiVlmEngineOptions`, `ApiVlmOptions`,
+`PictureDescriptionApiOptions`, and on `ApiModelConfig` in a model preset.
+
+When the selected fields are empty, Docling does not return an empty page with
+success. The page gets an error, and the conversion status is
+`PARTIAL_SUCCESS`:
+
+- If another field has text, the error names that field and `answer_fields`.
+- If the model refused, the error contains the refusal text.
+- If the model reached `max_tokens` before it wrote an answer, the page is
+  reported as incomplete. The chain-of-thought does not become page text.
+
+**Reasoning models.** A thinking model writes its chain-of-thought to
+`reasoning` and its answer to `content`. Do not add `REASONING` for these
+models. If the page is cut at `max_tokens`, increase `max_tokens` or turn
+thinking off, for example with
+`params={"chat_template_kwargs": {"enable_thinking": False}}` on vLLM.
+Add `REASONING` only when the server puts the real answer there. For LM Studio,
+first look at the developer setting that separates `reasoning_content` from
+`content`.
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions
+from docling.datamodel.api_answer_fields import ApiAnswerField
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+vlm_options = VlmConvertOptions.from_preset(
+    "chandra_ocr2",
+    engine_options=ApiVlmEngineOptions(
+        engine_type=VlmEngineType.API_LMSTUDIO,
+        answer_fields=[ApiAnswerField.CONTENT, ApiAnswerField.REASONING],
+    ),
+)
+```
+
+**Tool calls.** Some models, for example NVIDIA NemoRetriever Parse on NIM,
+answer only in `tool_calls` when the request contains `tools`. Send `tools`
+through `params` and select `TOOL_CALL_ARGUMENTS`. Docling returns the raw
+`arguments` JSON string and does not interpret its schema. Select a
+`response_format` that parses that schema. If no parser exists for it, the page
+text is the raw JSON.
+
+```python
+from docling.datamodel.api_answer_fields import ApiAnswerField
+from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
+
+vlm_options = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params={
+        "model": "nvidia/nemoretriever-parse",
+        "tools": [{"type": "function", "function": {"name": "markdown_no_bbox"}}],
+    },
+    prompt="",
+    answer_fields=[ApiAnswerField.TOOL_CALL_ARGUMENTS],
+    response_format=ResponseFormat.PLAINTEXT,
+)
+```
+
 ## Native dots inline formatting
 
 Native dots.ocr and dots.mocr JSON text can contain Markdown bold and italic

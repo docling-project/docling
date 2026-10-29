@@ -10,6 +10,7 @@ import pytest
 from PIL import Image
 from requests.adapters import HTTPAdapter
 
+from docling.datamodel.api_answer_fields import ApiAnswerField
 from docling.datamodel.base_models import VlmStopReason
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
@@ -121,26 +122,48 @@ class TestApiImageRequest:
         assert response.text == "Normal completion"
         assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
 
+    @pytest.mark.parametrize(
+        ("answer_fields", "expected_text", "expected_stop_reason"),
+        [
+            pytest.param(
+                (ApiAnswerField.CONTENT,),
+                "",
+                VlmStopReason.INFERENCE_ERROR,
+                id="default",
+            ),
+            pytest.param(
+                (ApiAnswerField.TOOL_CALL_ARGUMENTS,),
+                '[{"text": "Extracted text"}]',
+                VlmStopReason.END_OF_SEQUENCE,
+                id="tool-call-arguments",
+            ),
+        ],
+    )
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_tool_calls_response(
-        self, mock_session_factory, sample_image, mock_response_factory
+        self,
+        mock_session_factory,
+        sample_image,
+        mock_response_factory,
+        answer_fields,
+        expected_text,
+        expected_stop_reason,
     ):
-        """Test that tool calling responses are converted into generated text."""
+        """The raw tool-call arguments are the answer only when selected; the
+        request layer does not interpret their schema (#2440)."""
         mock_session_factory.return_value.__enter__.return_value.post.return_value = (
             mock_response_factory(
                 message={
                     "role": "assistant",
+                    "content": None,
                     "tool_calls": [
                         {
+                            "id": "call_1",
+                            "type": "function",
                             "function": {
                                 "name": "markdown_no_bbox",
-                                "arguments": json.dumps(
-                                    [
-                                        {"text": "Extracted text"},
-                                        {"text": "Second block"},
-                                    ]
-                                ),
-                            }
+                                "arguments": '[{"text": "Extracted text"}]',
+                            },
                         }
                     ],
                 }
@@ -151,40 +174,118 @@ class TestApiImageRequest:
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
+            answer_fields=answer_fields,
         )
 
-        assert response.text == "Extracted text\nSecond block"
-        assert response.num_tokens == 100
-        assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
+        assert response.text == expected_text
+        assert response.stop_reason == expected_stop_reason
+        assert response.tool_calls[0].function.name == "markdown_no_bbox"
+        if expected_stop_reason == VlmStopReason.INFERENCE_ERROR:
+            assert "tool_call_arguments" in response.error
+            assert "answer_fields" in response.error
 
+    @pytest.mark.parametrize("wire_name", ["reasoning", "reasoning_content"])
     @pytest.mark.parametrize(
-        ("content", "reasoning_content", "expected_text"),
+        ("content", "answer_fields", "expected_text", "expected_stop_reason"),
         [
-            (
-                "",
-                "<div data-label='Text'>hello</div>",
-                "<div data-label='Text'>hello</div>",
+            pytest.param(
+                "answer",
+                (ApiAnswerField.CONTENT,),
+                "answer",
+                VlmStopReason.END_OF_SEQUENCE,
+                id="content",
             ),
-            ("answer", "thinking...", "answer"),
+            pytest.param(
+                "",
+                (ApiAnswerField.CONTENT,),
+                "",
+                VlmStopReason.INFERENCE_ERROR,
+                id="reasoning-only-is-reported",
+            ),
+            pytest.param(
+                "",
+                (ApiAnswerField.CONTENT, ApiAnswerField.REASONING),
+                "<div>hello</div>",
+                VlmStopReason.END_OF_SEQUENCE,
+                id="reasoning-opt-in",
+            ),
         ],
     )
     @patch("docling.utils.api_image_request._make_retry_session")
-    def test_content_or_reasoning_content(
+    def test_content_or_reasoning(
         self,
         mock_session_factory,
         sample_image,
         mock_response_factory,
+        wire_name,
         content,
-        reasoning_content,
+        answer_fields,
         expected_text,
+        expected_stop_reason,
     ):
-        """Content wins, unless it is empty and reasoning_content holds the answer."""
+        """Reasoning is the answer only on opt-in, under both wire names; it is
+        kept on the result in every case."""
         mock_session_factory.return_value.__enter__.return_value.post.return_value = (
             mock_response_factory(
                 message={
                     "role": "assistant",
                     "content": content,
-                    "reasoning_content": reasoning_content,
+                    wire_name: "<div>hello</div>",
+                }
+            )
+        )
+
+        response = api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+            answer_fields=answer_fields,
+        )
+
+        assert response.text == expected_text
+        assert response.stop_reason == expected_stop_reason
+        assert response.reasoning == "<div>hello</div>"
+        if expected_stop_reason == VlmStopReason.INFERENCE_ERROR:
+            assert "reasoning has 16 characters" in response.error
+            assert "answer_fields" in response.error
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_thinking_cut_at_the_token_limit_is_not_page_text(
+        self, mock_session_factory, sample_image, mock_response_factory
+    ):
+        """A thinking model that hits max_tokens before it answers gives an
+        incomplete page, not its chain-of-thought."""
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_response_factory(
+                message={
+                    "role": "assistant",
+                    "content": None,
+                    "reasoning": "The user wants OCR. Let me look at the page...",
+                },
+                finish_reason="length",
+            )
+        )
+
+        response = api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+        assert response.text == ""
+        assert response.stop_reason == VlmStopReason.LENGTH
+        assert response.error is None
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_refusal_is_reported_as_an_error(
+        self, mock_session_factory, sample_image, mock_response_factory
+    ):
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_response_factory(
+                message={
+                    "role": "assistant",
+                    "content": None,
+                    "refusal": "I cannot help with that.",
                 }
             )
         )
@@ -195,7 +296,9 @@ class TestApiImageRequest:
             url="http://test.api/v1/chat/completions",
         )
 
-        assert response.text == expected_text
+        assert response.text == ""
+        assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
+        assert response.error == "The model refused: I cannot help with that."
 
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_exposes_full_usage_payload(

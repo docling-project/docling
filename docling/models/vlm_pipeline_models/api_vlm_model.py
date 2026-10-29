@@ -158,6 +158,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     timeout=self.timeout,
                     headers=self.vlm_options.headers,
                     generation_stoppers=instantiated_stoppers,
+                    answer_fields=self.vlm_options.answer_fields,
                     **self.params,
                 )
                 page_tags = api_response.text
@@ -172,6 +173,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     url=self.vlm_options.url,
                     timeout=self.timeout,
                     headers=self.vlm_options.headers,
+                    answer_fields=self.vlm_options.answer_fields,
                     **self.params,
                 )
                 page_tags = api_response.text

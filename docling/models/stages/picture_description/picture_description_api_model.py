@@ -64,6 +64,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                 timeout=self.options.timeout,
                 headers=self.options.headers,
                 usage_response_key=self.options.usage_response_key,
+                answer_fields=self.options.answer_fields,
                 **self.options.params,
             )
 

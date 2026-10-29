@@ -287,6 +287,15 @@ result = converter.convert("report.pdf")
 `enable_remote_services=True` is mandatory for any remote model — Docling blocks
 outbound HTTP by default.
 
+Docling reads the answer only from `message.content`. If the server puts it in
+another field (`reasoning`/`reasoning_content`, or `tool_calls` when you send
+`tools` in `params`), set `answer_fields`, for example
+`answer_fields=[ApiAnswerField.CONTENT, ApiAnswerField.REASONING]` (import
+`ApiAnswerField` from `docling.datamodel.api_answer_fields`). The same
+option exists on `ApiVlmEngineOptions` and `PictureDescriptionApiOptions`. An
+empty answer with text in an unselected field is a page error that names
+`answer_fields`.
+
 > To offload the *entire* conversion to a remote service (rather than just the
 > VLM step), use the Service Client — see [service-client.md](service-client.md).
 

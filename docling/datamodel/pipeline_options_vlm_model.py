@@ -19,6 +19,10 @@ except ImportError:
 
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.api_answer_fields import (
+    ANSWER_FIELDS_DESCRIPTION,
+    ApiAnswerField,
+)
 from docling.models.utils.generation_utils import GenerationStopper
 
 if TYPE_CHECKING:
@@ -419,6 +423,10 @@ class ApiVlmOptions(BaseVlmOptions):
             )
         ),
     ] = 1
+    answer_fields: Annotated[
+        list[ApiAnswerField],
+        Field(min_length=1, description=ANSWER_FIELDS_DESCRIPTION),
+    ] = [ApiAnswerField.CONTENT]
     response_format: Annotated[
         ResponseFormat,
         Field(

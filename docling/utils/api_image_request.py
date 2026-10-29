@@ -4,6 +4,8 @@
 import base64
 import json
 import logging
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from io import BytesIO
 from typing import Any
 
@@ -13,13 +15,16 @@ from pydantic import AnyUrl, ValidationError
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from docling.datamodel.api_answer_fields import ApiAnswerField
 from docling.datamodel.base_models import (
     ApiImageRequestResult,
     ApiImageStreamingRequestResult,
     OpenAiApiResponse,
     OpenAiChatMessage,
+    OpenAiFunctionCall,
     OpenAiResponseLogprobs,
     OpenAiTokenLogprob,
+    OpenAiToolCall,
     VlmStopReason,
 )
 from docling.models.utils.generation_utils import GenerationStopper
@@ -77,51 +82,102 @@ def _failed_streaming_request(reason: str) -> ApiImageStreamingRequestResult:
     )
 
 
-def _extract_text_from_tool_arguments(arguments: str | None) -> str:
-    if arguments is None:
+@dataclass
+class _ResponseFields:
+    """The text fields of one chat response, from a message or from stream deltas."""
+
+    content: str = ""
+    refusal: str = ""
+    reasoning: str = ""
+    # Keyed by the stream `index`, so fragments of one call join together.
+    tool_calls: dict[int, OpenAiToolCall] = field(default_factory=dict)
+
+    @classmethod
+    def from_message(cls, message: OpenAiChatMessage) -> "_ResponseFields":
+        return cls(
+            content=message.content or "",
+            refusal=message.refusal or "",
+            reasoning=message.reasoning or "",
+            tool_calls=dict(enumerate(message.tool_calls or [])),
+        )
+
+    def add_delta(self, delta: dict[str, Any]) -> None:
+        self.content += delta.get("content") or ""
+        self.refusal += delta.get("refusal") or ""
+        self.reasoning += delta.get("reasoning") or delta.get("reasoning_content") or ""
+        for fragment in delta.get("tool_calls") or []:
+            function = fragment.get("function") or {}
+            arguments = function.get("arguments") or ""
+            index = fragment.get("index", 0)
+            if index in self.tool_calls:
+                self.tool_calls[index].function.arguments += arguments
+            else:
+                self.tool_calls[index] = OpenAiToolCall(
+                    id=fragment.get("id"),
+                    type=fragment.get("type") or "function",
+                    function=OpenAiFunctionCall(
+                        name=function.get("name"), arguments=arguments
+                    ),
+                )
+
+    def text_of(self, answer_field: ApiAnswerField) -> str:
+        if answer_field == ApiAnswerField.CONTENT:
+            return self.content
+        if answer_field == ApiAnswerField.REASONING:
+            return self.reasoning
+        # The raw string: its schema belongs to the tool the client sent, and
+        # the selected ResponseFormat parser interprets it.
+        return next(
+            (
+                call.function.arguments
+                for call in self.tool_calls.values()
+                if call.function.arguments.strip()
+            ),
+            "",
+        )
+
+    def select(self, answer_fields: Sequence[ApiAnswerField]) -> str:
+        for answer_field in answer_fields:
+            text = self.text_of(answer_field).strip()
+            if text:
+                return text
         return ""
 
-    try:
-        payload = json.loads(arguments)
-    except json.JSONDecodeError:
-        return arguments.strip()
 
-    fragments: list[str] = []
+def _resolve_answer(
+    fields: _ResponseFields,
+    answer_fields: Sequence[ApiAnswerField],
+    stop_reason: VlmStopReason,
+) -> tuple[str, VlmStopReason, str | None]:
+    """Select the answer, and report an empty answer instead of hiding it.
 
-    def _collect_text(obj: Any) -> None:
-        if isinstance(obj, list):
-            for item in obj:
-                _collect_text(item)
-        elif isinstance(obj, dict):
-            text = obj.get("text")
-            if isinstance(text, str) and text.strip():
-                fragments.append(text.strip())
-            for value in obj.values():
-                _collect_text(value)
+    Returns the text, the stop reason and an error message.
+    """
+    text = fields.select(answer_fields)
+    if text:
+        return text, stop_reason, None
 
-    _collect_text(payload)
-    return "\n".join(fragments)
-
-
-def _extract_generated_text(message: OpenAiChatMessage) -> str:
-    if message.content:
-        return message.content.strip()
-
-    # Fall back to reasoning_content when content is empty: some OpenAI-compatible
-    # servers (e.g. LM Studio serving chandra-ocr-2) route the whole answer there.
-    if message.reasoning_content:
-        return message.reasoning_content.strip()
-
-    for tool_call in message.tool_calls or []:
-        function = tool_call.get("function")
-        if not isinstance(function, dict):
-            continue
-
-        generated_text = _extract_text_from_tool_arguments(function.get("arguments"))
-        if generated_text:
-            return generated_text
-
-    return ""
+    if fields.refusal.strip():
+        error = f"The model refused: {_response_preview(fields.refusal)}"
+    elif stop_reason == VlmStopReason.LENGTH:
+        # The pipeline already reports the output as incomplete.
+        return "", stop_reason, None
+    else:
+        unselected = {
+            answer_field.value: len(fields.text_of(answer_field).strip())
+            for answer_field in ApiAnswerField
+            if answer_field not in answer_fields
+        }
+        found = [f"{name} has {n} characters" for name, n in unselected.items() if n]
+        if not found:
+            return "", stop_reason, None
+        selected = ", ".join(answer_field.value for answer_field in answer_fields)
+        error = (
+            f"No answer in {selected}. {'; '.join(found)}. If the server puts "
+            "the answer there, set answer_fields."
+        )
+    _log.warning(error)
+    return "", VlmStopReason.INFERENCE_ERROR, error
 
 
 def _map_stop_reason(finish_reason: str | None) -> VlmStopReason:
@@ -207,6 +263,7 @@ def api_image_request(
     *,
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
+    answer_fields: Sequence[ApiAnswerField] = (ApiAnswerField.CONTENT,),
     **params,
 ) -> ApiImageRequestResult:
     img_io = BytesIO()
@@ -281,18 +338,24 @@ def api_image_request(
             usage = _extract_response_usage(response_payload, usage_key)
 
             api_resp = OpenAiApiResponse.model_validate(response_payload)
-            generated_text = _extract_generated_text(api_resp.choices[0].message)
+            choice = api_resp.choices[0]
+            fields = _ResponseFields.from_message(choice.message)
+            generated_text, stop_reason, error = _resolve_answer(
+                fields, answer_fields, _map_stop_reason(choice.finish_reason)
+            )
             num_tokens = _extract_total_tokens(usage)
             if num_tokens is None and api_resp.usage is not None:
                 num_tokens = api_resp.usage.total_tokens
-            stop_reason = _map_stop_reason(api_resp.choices[0].finish_reason)
 
             return ApiImageRequestResult(
                 text=generated_text,
                 num_tokens=num_tokens,
                 stop_reason=stop_reason,
                 usage=usage,
-                logprobs=api_resp.choices[0].logprobs,
+                logprobs=choice.logprobs,
+                error=error,
+                reasoning=fields.reasoning or None,
+                tool_calls=tuple(fields.tool_calls.values()),
             )
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
@@ -311,12 +374,14 @@ def api_image_request_streaming(
     generation_stoppers: list[GenerationStopper] = [],
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
+    answer_fields: Sequence[ApiAnswerField] = (ApiAnswerField.CONTENT,),
     **params,
 ) -> ApiImageStreamingRequestResult:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
-    Accumulates text and calls stopper.should_stop(window) as chunks arrive.
+    Accumulates the response fields and calls stopper.should_stop(window) on
+    each field in ``answer_fields`` as chunks arrive.
     If stopper triggers, the HTTP connection is closed to abort server-side generation.
 
     A failed request (HTTP error, timeout, dropped connection) does not raise:
@@ -384,7 +449,7 @@ def api_image_request_streaming(
                             f"HTTP {r.status_code}: {_response_preview(r.text)}"
                         )
 
-                    full_text = []
+                    fields = _ResponseFields()
                     usage_payload = None
                     num_tokens = None
                     finish_reason = None
@@ -406,12 +471,18 @@ def api_image_request_streaming(
                                 content=logprob_content or None,
                                 refusal=logprob_refusal or None,
                             )
+                        text, stop_reason, error = _resolve_answer(
+                            fields, answer_fields, stop_reason
+                        )
                         return ApiImageStreamingRequestResult(
-                            text="".join(full_text),
+                            text=text,
                             num_tokens=num_tokens,
                             usage=usage_payload,
                             logprobs=logprobs,
+                            error=error,
                             stop_reason=stop_reason,
+                            reasoning=fields.reasoning or None,
+                            tool_calls=tuple(fields.tool_calls.values()),
                         )
 
                     for raw_line in r.iter_lines(decode_unicode=True):
@@ -431,20 +502,18 @@ def api_image_request_streaming(
                             _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
                             continue
 
-                        # OpenAI-compatible delta format
-                        # obj["choices"][0]["delta"]["content"] may be None or missing
-                        # (e.g., tool calls)
+                        # OpenAI-compatible delta format; the final usage chunk
+                        # has empty choices.
                         try:
                             choice = obj["choices"][0]
                             delta = choice.get("delta") or {}
-                            piece = delta.get("content") or ""
                             raw_logprobs = choice.get("logprobs")
                             # finish_reason is null until the server stops; keep the
                             # last value it sets.
                             finish_reason = choice.get("finish_reason") or finish_reason
                         except (KeyError, IndexError) as e:
                             _log.debug("Unexpected SSE chunk shape: %s", e)
-                            piece = ""
+                            delta = {}
                             raw_logprobs = None
 
                         usage = _extract_response_usage(obj, usage_key)
@@ -463,13 +532,18 @@ def api_image_request_streaming(
                                 logprob_content.extend(chunk_logprobs.content or [])
                                 logprob_refusal.extend(chunk_logprobs.refusal or [])
 
-                        if piece:
-                            full_text.append(piece)
+                        lengths = [len(fields.text_of(f)) for f in answer_fields]
+                        fields.add_delta(delta)
+                        for answer_field, length in zip(answer_fields, lengths):
+                            text = fields.text_of(answer_field)
+                            if len(text) == length:
+                                continue
                             for stopper in generation_stoppers:
-                                # Respect stopper's lookback window. We use a simple string window
-                                # which works with the GenerationStopper interface.
+                                # Respect stopper's lookback window, one window per
+                                # answer field. A simple string window works with
+                                # the GenerationStopper interface.
                                 lookback = max(1, stopper.lookback_tokens())
-                                window = "".join(full_text)[-lookback:]
+                                window = text[-lookback:]
                                 if stopper.should_stop(window):
                                     # Break out of the loop cleanly. The context manager will handle
                                     # closing the connection when we exit the 'with' block.

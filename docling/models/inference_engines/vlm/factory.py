@@ -60,6 +60,10 @@ def create_vlm_engine(
         if VlmEngineType.is_api_variant(engine_type):
             api_params = model_spec.get_api_params(engine_type)
             model_config.extra_config["api_params"] = api_params
+            api_override = model_spec.api_overrides.get(engine_type)
+            model_config.extra_config["api_answer_fields"] = (
+                api_override.answer_fields if api_override else None
+            )
 
     if engine_type == VlmEngineType.AUTO_INLINE:
         from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
