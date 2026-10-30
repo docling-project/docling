@@ -132,3 +132,8 @@ The client raises typed exceptions from `docling.service_client` — e.g.
 `ConversionError`, `ServiceUnavailableError`, `TaskTimeoutError`,
 `UsageLimitExceededError`, `ResultExpiredError`. Catch
 `DoclingServiceClientError` to handle any of them.
+
+`submit_and_retrieve_each()` returns conversion errors with their input items.
+If the input iterable itself raises an error, such as a failed manifest read,
+the client raises that error to the caller and stops iteration. This applies
+to both clients, with or without ordered results.
