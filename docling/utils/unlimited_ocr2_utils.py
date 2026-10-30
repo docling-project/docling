@@ -39,6 +39,7 @@ from docling_core.types.doc import (
 )
 from PIL import Image as PILImage
 
+from docling.utils.chandra_utils import _add_html_table
 from docling.utils.deepseekocr_utils import _parse_table_html
 from docling.utils.mineru_utils import _CJK_PATTERN
 from docling.utils.vlm_utils import (
@@ -90,9 +91,6 @@ _LEVEL_DIGITS_RE = re.compile(r"LEVEL(\d+)")
 _STRAY_TOKEN_RE = re.compile(
     rf"<[|\uff5c][^<>\n]*[|\uff5c]>|</?(?:BLOCK|CHILD|FORK|MERGE)>|{_LEVEL}"
 )
-_SPAN_RE = re.compile(r'\b(colspan|rowspan)\s*=\s*"([^"]*)"', re.IGNORECASE)
-_SPAN_VALUE_RE = re.compile(r"[1-9]\d{0,3}")
-_CUT_TAG_RE = re.compile(r"<[^>]*\Z")
 
 
 @dataclass(frozen=True)
@@ -169,19 +167,6 @@ def _parse_blocks(segment: str) -> list[_Block]:
     return blocks
 
 
-def _clean_span(match: re.Match[str]) -> str:
-    value = _SPAN_VALUE_RE.search(match.group(2))
-    return f'{match.group(1)}="{value.group() if value else 1}"'
-
-
-def _repair_table_html(html: str) -> str:
-    """Fix what makes ``_parse_table_html`` give an empty table."""
-    html = _SPAN_RE.sub(_clean_span, html)
-    if "</table>" not in html.lower():
-        html = _CUT_TAG_RE.sub("", html) + "</table>"
-    return html
-
-
 def _provenance(block: _Block, page_size: Size, page_no: int) -> ProvenanceItem | None:
     if block.box is None:
         _log.warning("Unlimited-OCR 2 %s block has no valid box", block.label)
@@ -198,6 +183,21 @@ def _provenance(block: _Block, page_size: Size, page_no: int) -> ProvenanceItem 
             coord_origin=CoordOrigin.TOPLEFT,
         ),
     )
+
+
+def _add_table(doc: DoclingDocument, html: str, prov: ProvenanceItem | None) -> bool:
+    """Add a table and return False if the HTML gives no cells."""
+    if prov is not None:
+        try:
+            return _add_html_table(doc, html, prov) is not None
+        except ValueError as exc:
+            # A dense page can pass the grid limit of the shared table mapper.
+            _log.warning("Reading a large Unlimited-OCR 2 table without spans: %s", exc)
+    data = _parse_table_html(html)
+    if not data.table_cells:
+        return False
+    doc.add_table(data=data, prov=prov)
+    return True
 
 
 def _add_block(
@@ -226,9 +226,7 @@ def _add_block(
         doc.add_formula(text=strip_math_delimiters(text), orig=text, prov=prov)
         return None
     if block.label == "table":
-        data = _parse_table_html(_repair_table_html(text))
-        if data.table_cells:
-            doc.add_table(data=data, prov=prov)
+        if _add_table(doc, text, prov):
             return None
         _log.warning("Keeping an unreadable Unlimited-OCR 2 table as text")
     label = _TEXT_LABELS.get(block.label, DocItemLabel.TEXT)

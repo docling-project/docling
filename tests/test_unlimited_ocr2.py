@@ -188,11 +188,62 @@ def test_table_shapes_keep_their_cells(table: str) -> None:
     assert cells[:4] == ["Year", "Total", "2025", "12"]
 
 
-def test_table_without_html_stays_text() -> None:
-    doc = _parse("<PAGE><BLOCK>table[10, 20, 30, 40]<FORK>Year Total")
+def test_table_cell_reads_a_line_break_as_a_space() -> None:
+    doc = _parse(
+        "<PAGE><BLOCK>table[10, 20, 30, 40]<FORK>"
+        "<table><tr><td>first<br>second</td><td>x</td></tr></table>"
+    )
+
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "first second",
+        "x",
+    ]
+
+
+def test_cell_shifted_by_a_rowspan_is_kept() -> None:
+    doc = _parse(
+        "<PAGE><BLOCK>table[10, 20, 30, 40]<FORK><table>"
+        '<tr><td rowspan="2">a</td><td>b</td></tr><tr><td>c</td><td>d</td></tr>'
+        "</table>"
+    )
+
+    data = doc.tables[0].data
+    assert [cell.text for cell in data.table_cells] == ["a", "b", "c", "d"]
+    assert data.num_cols == 3
+
+
+def test_table_above_the_grid_limit_keeps_cells_and_box() -> None:
+    rows = "".join(
+        "<tr>" + "".join(f"<td>{row}.{col}</td>" for col in range(20)) + "</tr>"
+        for row in range(60)
+    )
+
+    doc = _parse(f"<PAGE><BLOCK>table[10, 20, 30, 40]<FORK><table>{rows}</table>")
+
+    assert len(doc.tables[0].data.table_cells) == 1200
+    assert doc.tables[0].prov
+
+
+def test_table_without_a_box_keeps_its_cells() -> None:
+    doc = _parse(f"<PAGE><BLOCK>table<FORK>{TABLE}</table>")
+
+    assert not doc.tables[0].prov
+    assert len(doc.tables[0].data.table_cells) == 4
+
+
+@pytest.mark.parametrize(
+    "block",
+    [
+        "<BLOCK>table[10, 20, 30, 40]<FORK>Year Total",
+        f"<BLOCK>table<FORK>{TABLE}",
+    ],
+    ids=["no_html", "cut_table_without_a_box"],
+)
+def test_table_without_cells_stays_text(block: str) -> None:
+    doc = _parse(f"<PAGE>{block}")
 
     assert not doc.tables
-    assert doc.texts[0].text == "Year Total"
+    assert doc.texts[0].text == block.partition("<FORK>")[2]
 
 
 @pytest.mark.parametrize(
