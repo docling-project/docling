@@ -39,6 +39,12 @@ and retains the decoder error as its cause.
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.
 
+Video and audio on PPTX and ODP slides are kept as pictures of their poster frame
+or icon. The `docling__video` or `docling__audio` field of the picture `meta` gives
+the path of the media file inside the package, or the link of a linked file. Set
+`do_media_conversion=True` in the pipeline options to also transcribe the media
+(see [Video and audio in slides](processing_audio_media.md#video-and-audio-in-slides)).
+
 For LaTeX input, front matter such as authors, affiliations, institutes, email
 addresses, and dates is stored as text items. Inline formulas remain formula
 children. The `metadata`, `authors`, and `affiliations` groups record source roles.
