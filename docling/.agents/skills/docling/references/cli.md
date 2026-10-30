@@ -68,6 +68,12 @@ Docling refuses to load it until you add `--trust-remote-code` (SDK:
 first. For vLLM, run NVIDIA's `vllm serve` server and use the API engine; the
 in-process vLLM engine is not supported for this preset.
 
+`unlimited_ocr` and `unlimited_ocr2` need your own OpenAI-compatible server, and the
+CLI has no option for the API URL. Use the SDK for these presets. See
+[python-sdk.md](python-sdk.md).
+
+`unlimited_ocr2_mlx` runs in-process on Apple Silicon and needs `mlx-vlm>=0.7.11`.
+
 The `lightonocr3_*` presets map charts to the `other_chart` class. JSON, Markdown,
 and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raises
 `ValueError` when a document has a chart block.

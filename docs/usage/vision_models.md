@@ -282,8 +282,9 @@ unreported empty result. An explicitly labeled `Blank-Page` may be empty.
 
 ## Heading depths in native layout output
 
-For Chandra, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, PaddleOCR-VL, and
-LightOnOCR-3 output, the layout label alone decides title versus section header.
+For Chandra, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, Unlimited-OCR 2,
+PaddleOCR-VL, and LightOnOCR-3 output, the layout label alone decides title versus
+section header.
 LightOnOCR-3 has one exception: its `title` label covers all headings, so a `title`
 block with `##` or deeper is a section header. Docling
 exports a title as `#` and a section header one step below it. If no section
@@ -293,6 +294,9 @@ deeper, so different source depths never share one section level. A section
 header without heading markup counts as `##`. Markdown has no heading deeper than
 `######`, so in a document with depth 1, source depths 5 and 6 both export as
 `######`, but their section levels stay different.
+
+Unlimited-OCR 2 has one `title` label. A `title` with `<LEVELn>` is a section header
+of depth `n`, and a `title` without a level is the title.
 
 The VLM pipeline applies this rule once to the whole document, so one depth gets
 the same level on all pages. Each mapper function applies it to its own page when

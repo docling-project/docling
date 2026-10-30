@@ -27,6 +27,7 @@ from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
     DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
+    UNLIMITED_OCR2_PROMPT,
     UNLIMITED_OCR_GROUNDING_PROMPT,
 )
 from docling.models.inference_engines.image_classification.base import (
@@ -1923,6 +1924,64 @@ VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.API_OPENAI,
+)
+
+_UNLIMITED_OCR2_API = ApiModelConfig(
+    params={
+        # Matches `--served-model-name Unlimited-OCR-2` on the vendor server.
+        "model": "Unlimited-OCR-2",
+        "max_tokens": 8000,
+        # `<td>` and `<tr>` are special tokens, so tables need them kept.
+        "skip_special_tokens": False,
+    }
+)
+
+VLM_CONVERT_UNLIMITED_OCR2 = StageModelPreset(
+    preset_id="unlimited_ocr2",
+    name="Unlimited-OCR 2",
+    description="Unlimited-OCR 2 model for document layout parsing with bounding boxes, one page per request (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR-2",
+        default_repo_id="baidu/Unlimited-OCR-2",
+        revision="c14071b549f4fcab10909f3c4acc6a2edb366947",
+        prompt=UNLIMITED_OCR2_PROMPT,
+        response_format=ResponseFormat.UNLIMITED_OCR2,
+        supported_engines={VlmEngineType.API, VlmEngineType.API_OPENAI},
+        max_new_tokens=8000,
+        api_overrides={
+            VlmEngineType.API: _UNLIMITED_OCR2_API,
+            VlmEngineType.API_OPENAI: _UNLIMITED_OCR2_API,
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.API_OPENAI,
+)
+
+# The MLX chat template adds the image token, so the prompt keeps only the instruction.
+# The model writes the page marker itself. This is a separate preset because
+# `EngineModelConfig` has no prompt field. mlx-vlm 0.7.11 added the model.
+VLM_CONVERT_UNLIMITED_OCR2_MLX = StageModelPreset(
+    preset_id="unlimited_ocr2_mlx",
+    name="Unlimited-OCR 2 (MLX)",
+    description="Unlimited-OCR 2 on Apple Silicon, with bounding boxes, one page per request (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR-2",
+        default_repo_id="mlx-community/Unlimited-OCR-2-bf16",
+        revision="850d1e483f5a82a0597f0a45aac31b07ba840df2",
+        prompt="Multi page parsing.",
+        response_format=ResponseFormat.UNLIMITED_OCR2,
+        supported_engines={VlmEngineType.MLX},
+        max_new_tokens=8000,
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/Unlimited-OCR-2-bf16",
+                revision="850d1e483f5a82a0597f0a45aac31b07ba840df2",
+                min_engine_version="0.7.11",
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.MLX,
 )
 
 VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
