@@ -1957,6 +1957,33 @@ VLM_CONVERT_UNLIMITED_OCR2 = StageModelPreset(
     default_engine_type=VlmEngineType.API_OPENAI,
 )
 
+# The MLX chat template adds the image token, so the prompt keeps only the instruction.
+# The model writes the page marker itself. This is a separate preset because
+# `EngineModelConfig` has no prompt field. mlx-vlm 0.7.11 added the model.
+VLM_CONVERT_UNLIMITED_OCR2_MLX = StageModelPreset(
+    preset_id="unlimited_ocr2_mlx",
+    name="Unlimited-OCR 2 (MLX)",
+    description="Unlimited-OCR 2 on Apple Silicon, with bounding boxes, one page per request (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR-2",
+        default_repo_id="mlx-community/Unlimited-OCR-2-bf16",
+        revision="850d1e483f5a82a0597f0a45aac31b07ba840df2",
+        prompt="Multi page parsing.",
+        response_format=ResponseFormat.UNLIMITED_OCR2,
+        supported_engines={VlmEngineType.MLX},
+        max_new_tokens=8000,
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/Unlimited-OCR-2-bf16",
+                revision="850d1e483f5a82a0597f0a45aac31b07ba840df2",
+                min_engine_version="0.7.11",
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.MLX,
+)
+
 VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     preset_id="chandra_ocr2",
     name="Chandra-OCR-2",

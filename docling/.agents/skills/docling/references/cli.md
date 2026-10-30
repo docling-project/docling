@@ -72,6 +72,8 @@ in-process vLLM engine is not supported for this preset.
 CLI has no option for the API URL. Use the SDK for these presets. See
 [python-sdk.md](python-sdk.md).
 
+`unlimited_ocr2_mlx` runs in-process on Apple Silicon and needs `mlx-vlm>=0.7.11`.
+
 The `lightonocr3_*` presets map charts to the `other_chart` class. JSON, Markdown,
 and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raises
 `ValueError` when a document has a chart block.

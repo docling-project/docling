@@ -260,6 +260,7 @@ Languages are given as BCP-47 tags for every engine; see
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
 | `unlimited_ocr` | Unlimited-OCR | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks |
 | `unlimited_ocr2` | Unlimited-OCR 2 | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ❌ | Native layout blocks with HTML tables, one page per request |
+| `unlimited_ocr2_mlx` | Unlimited-OCR 2 (MLX) | 3.34B (MoE) | ❌ | ✅ | ❌ | ❌ | Native layout blocks with HTML tables, one page per request |
 | `lightonocr3_08b` | LightOnOCR-3-0.8B | 0.8B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 | `lightonocr3_4b` | LightOnOCR-3-4B | 4B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 
@@ -344,10 +345,17 @@ or invalid crop generations before merging. Token counts include all stages, and
 `unlimited_ocr` is served through an OpenAI-compatible endpoint: point `ApiVlmEngineOptions.url` at your own runtime. Its API override sets `skip_special_tokens=False`, without which the layout annotations are stripped from the completion.
 
 `unlimited_ocr2` runs through an OpenAI-compatible server that you start yourself. Docling runs
-no model code in-process for this preset. It has no MLX or in-process vLLM configuration. The
+no model code in-process for this preset. It has no in-process vLLM configuration. The
 Transformers engine cannot run it, because the model needs its own generation loop and
 `transformers==4.52.1`. vLLM support needs [vllm-project/vllm#64016](https://github.com/vllm-project/vllm/pull/64016),
 which is not merged yet.
+
+On Apple Silicon, use `unlimited_ocr2_mlx` instead. It runs the community
+`mlx-community/Unlimited-OCR-2-bf16` conversion in-process with the MLX engine, at a pinned
+revision, and needs `mlx-vlm>=0.7.11`. The `docling-slim[models-vlm-inline]` extra allows
+`mlx-vlm>=0.7.0`, so upgrade `mlx-vlm` if your environment has an older release. The preset
+sends the prompt `Multi page parsing.`, and the MLX chat template adds the image token. It does
+not set `trust_remote_code`. Docling still sends one page per request.
 
 Today the server is the customized SGLang wheel from the model repository. It needs an NVIDIA
 GPU. The command below is the model card command at the pinned revision, without

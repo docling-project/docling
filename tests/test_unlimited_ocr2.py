@@ -10,6 +10,7 @@ and its post-processing script. They are not model output.
 """
 
 import logging
+import re
 from pathlib import Path
 
 import pytest
@@ -23,6 +24,7 @@ from docling_core.types.doc import (
 )
 
 from docling.datamodel.pipeline_options import VlmConvertOptions
+from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.utils.unlimited_ocr2_utils import parse_unlimited_ocr2
@@ -416,3 +418,23 @@ def test_preset_keeps_table_tokens_on_both_api_engine_types(
     params = options.model_spec.get_api_params(engine_type)
     assert params["skip_special_tokens"] is False
     assert params["model"] == "Unlimited-OCR-2"
+
+
+def test_mlx_preset_is_pinned_and_needs_a_recent_mlx_vlm() -> None:
+    options = VlmConvertOptions.from_preset("unlimited_ocr2_mlx")
+    spec = options.model_spec
+    config = spec.get_engine_config(VlmEngineType.MLX)
+
+    assert options.engine_options.engine_type == VlmEngineType.MLX
+    assert spec.response_format == ResponseFormat.UNLIMITED_OCR2
+    assert (
+        spec.max_new_tokens
+        == VlmConvertOptions.from_preset(
+            "unlimited_ocr2", engine_options=ApiVlmEngineOptions()
+        ).model_spec.max_new_tokens
+    )
+    assert spec.prompt == "Multi page parsing."
+    assert config.repo_id == "mlx-community/Unlimited-OCR-2-bf16"
+    assert re.fullmatch(r"[0-9a-f]{40}", config.revision or "")
+    assert config.min_engine_version == "0.7.11"
+    assert not options.engine_options.trust_remote_code

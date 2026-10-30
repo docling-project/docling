@@ -272,7 +272,18 @@ pipeline_options = VlmPipelineOptions(
 Docling sends one page per request, so the whole-document mode of the model is not
 used, and tables and text that continue on the next page stay split. If you set
 `params`, also set `model`, `max_tokens`, and `skip_special_tokens=False`, or tables
-lose their cells. Transformers, MLX, and in-process vLLM are not supported.
+lose their cells. Transformers and in-process vLLM are not supported.
+
+On Apple Silicon, use the `unlimited_ocr2_mlx` preset instead. It needs `mlx-vlm>=0.7.11`
+and runs in-process with the default MLX engine. No server is needed:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("unlimited_ocr2_mlx"),
+)
+```
 
 Model presets (`docling.datamodel.vlm_model_specs`):
 
