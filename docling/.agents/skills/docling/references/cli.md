@@ -119,6 +119,7 @@ docling report.pdf --no-ocr --output /tmp/               # skip OCR (faster)
 docling scan.pdf --ocr-lang eng,deu --output /tmp/       # the engine's own codes
 docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `iso:`
 docling scan.pdf --ocr-engine rapidocr --ocr-option model_size=tiny --output /tmp/  # engine-specific field
+docling mixed.pdf --ocr-mode full_page --ocr-option page_bitmap_area_threshold=0.97 --output /tmp/  # OCR only scanned pages
 ```
 
 `--ocr-option KEY=VALUE` (repeatable) sets any field of the selected OCR engine.

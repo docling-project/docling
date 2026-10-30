@@ -65,7 +65,10 @@ def test_post_process_cells_tolerates_missing_parsed_page() -> None:
     assert page.cells == []
 
     cell = _ocr_cell("part 42-A", confidence=0.9)
-    ocr_model = SimpleNamespace(options=SimpleNamespace(mode=OcrMode.FULL_PAGE))
+    ocr_model = SimpleNamespace(
+        options=SimpleNamespace(mode=OcrMode.FULL_PAGE),
+        _skips_ocr=lambda page: False,
+    )
     conv_res = SimpleNamespace(confidence=ConfidenceReport())
 
     BaseOcrModel.post_process_cells(ocr_model, [cell], page, conv_res)

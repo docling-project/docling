@@ -193,12 +193,17 @@ class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
     kind: ClassVar[str] = "granite_vision_table"
 
 
+_BITMAP_AREA_THRESHOLD_DEPRECATION = (
+    "`bitmap_area_threshold` is deprecated; set `page_bitmap_area_threshold` instead."
+)
+
+
 class OcrOptions(BaseOptions):
     """Base configuration for Optical Character Recognition engines.
 
     Defines the common interface shared by all OCR engine implementations.
     Subclasses provide engine-specific parameters while inheriting the shared
-    language selection, full-page OCR toggle, and bitmap area threshold.
+    language selection, OCR mode, and page bitmap area threshold.
 
     See Also:
         `OcrAutoOptions`: Automatic engine selection based on availability.
@@ -277,6 +282,24 @@ class OcrOptions(BaseOptions):
         ),
     ] = False
 
+    page_bitmap_area_threshold: Annotated[
+        float | None,
+        Field(
+            description=(
+                "Minimum fraction of the page area (0.0-1.0) that bitmaps must cover "
+                "for the page to be processed with OCR. Pages below it skip OCR, "
+                "whatever the `mode`. With `mode=OcrMode.FULL_PAGE`, a high value "
+                "such as 0.97 OCRs only scanned pages and skips programmatic pages "
+                "that only carry logos or photos. `None` processes every page. A page "
+                "whose broken text layer `replace_broken_text_layer` replaces is "
+                "OCR'd even below the threshold."
+            ),
+            examples=[None, 0.97],
+            ge=0.0,
+            le=1.0,
+        ),
+    ] = None
+
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,
@@ -310,6 +333,22 @@ class OcrOptions(BaseOptions):
             data["mode"] = OcrMode.FULL_PAGE
         return data
 
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_bitmap_area_threshold(cls, data: Any) -> Any:
+        r"""
+        Accept the deprecated `bitmap_area_threshold` constructor keyword and
+        translate it into `page_bitmap_area_threshold`.
+        """
+        if not isinstance(data, dict) or "bitmap_area_threshold" not in data:
+            return data
+        warnings.warn(
+            _BITMAP_AREA_THRESHOLD_DEPRECATION, DeprecationWarning, stacklevel=3
+        )
+        threshold = data.pop("bitmap_area_threshold")
+        data.setdefault("page_bitmap_area_threshold", threshold)
+        return data
+
     # Deprecated: superseded by `OcrMode.FULL_PAGE`. Kept for backwards
     # compatibility as a view over `mode`, so the two can never drift apart.
     @computed_field(  # type: ignore[prop-decorator]
@@ -327,6 +366,23 @@ class OcrOptions(BaseOptions):
     def force_full_page_ocr(self, value: bool) -> None:
         if value:
             self.mode = OcrMode.FULL_PAGE
+
+    # Deprecated: superseded by `page_bitmap_area_threshold`. A plain property,
+    # not a computed field, so it stays out of dumps.
+    @property
+    def bitmap_area_threshold(self) -> float | None:
+        warnings.warn(
+            _BITMAP_AREA_THRESHOLD_DEPRECATION, DeprecationWarning, stacklevel=2
+        )
+        return self.page_bitmap_area_threshold
+
+    @bitmap_area_threshold.setter
+    def bitmap_area_threshold(self, value: float | None) -> None:
+        # stacklevel=4: pydantic calls the setter through two frames
+        warnings.warn(
+            _BITMAP_AREA_THRESHOLD_DEPRECATION, DeprecationWarning, stacklevel=4
+        )
+        self.page_bitmap_area_threshold = value
 
 
 class OcrAutoOptions(OcrOptions):
