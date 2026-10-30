@@ -371,8 +371,6 @@ def render(decoded: cells.Cell | None) -> str | None:
     if decoded.type in (cells.CELL_TYPE_NUMBER, cells.CELL_TYPE_CURRENCY):
         return format_number(decoded.number)
     if decoded.type == cells.CELL_TYPE_DATE:
-        # The formatters take the value as read: float() here would overflow
-        # first on a decimal128 whose exponent no double can carry.
         return format_date(decoded.number)
     if decoded.type == cells.CELL_TYPE_DURATION:
         return format_duration(decoded.number)

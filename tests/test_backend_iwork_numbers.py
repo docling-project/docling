@@ -1172,12 +1172,12 @@ def test_a_date_no_datetime_can_hold_leaves_its_cell_empty(tmp_path: Path):
         for name in source.namelist():
             out.writestr(name, xml if name == "index.xml" else source.read(name))
 
-    doc = _backend(target).convert()
+    expected = [_grid(table) for table in _tables(_backend(NUMBERS_IWORK09).convert())]
+    assert expected[1].pop((2, 1)) == "2009-10-01 00:00:00"
+    assert expected[1].pop((3, 1)) == "2009-10-15 00:00:00"
 
-    markdown = doc.export_to_markdown()
-    assert "2009-10-16 00:00:00" in markdown, "the untouched dates should survive"
-    assert "1e308" not in markdown
-    assert "nan" not in markdown
+    damaged = [_grid(table) for table in _tables(_backend(target).convert())]
+    assert damaged == expected, "only the two bogus dates should be lost"
 
 
 def test_render_leaves_a_date_or_duration_no_timedelta_can_hold_empty():
