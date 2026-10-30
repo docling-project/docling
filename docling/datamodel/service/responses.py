@@ -145,6 +145,7 @@ class ArtifactRef(BaseModel):
         "doclang",
         "dclx",
         "resource_bundle",
+        "chunks",
     ]
     mime_type: str
     uri: AnyUrl
