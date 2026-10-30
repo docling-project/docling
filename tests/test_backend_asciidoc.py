@@ -247,6 +247,27 @@ def test_source_listing_block_becomes_code_item() -> None:
     assert [item.text for item in doc.texts if item.label != DocItemLabel.CODE] == []
 
 
+def test_delimiter_longer_than_four_characters_opens_the_block() -> None:
+    # A listing block opens on four or more hyphens and a literal block on four
+    # or more dots, so the marker of a valid block is not always four characters
+    # long. Only "----" and "...." opened a block, so the markers of a longer
+    # block stayed in the document as paragraphs and the code became prose.
+    src = b"[source,python]\n-----\nx = 1\n-----\n\n.....\nraw\n.....\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="long-delimiter.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    code_items = [item for item in doc.texts if item.label == DocItemLabel.CODE]
+    assert [item.text for item in code_items] == ["x = 1", "raw"]
+    assert code_items[0].code_language == CodeLanguageLabel.PYTHON
+    # no marker or attribute text may leak into the body
+    assert [item.text for item in doc.texts if item.label != DocItemLabel.CODE] == []
+
+
 def test_listing_block_without_language_stays_code() -> None:
     src = b"----\nplain listing\n----\n"
     in_doc = InputDocument(
