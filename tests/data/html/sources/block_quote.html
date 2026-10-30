@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Block quotes</title>
+</head>
+<body>
+  <h1>Judgment</h1>
+  <p>The provision reads as follows.</p>
+  <blockquote cite="https://example.org/acts/2017/1#section-1">
+    <p>A person commits an offence if the person:</p>
+    <ol>
+      <li>does an act; and</li>
+      <li>intends the result.</li>
+    </ol>
+    <blockquote>
+      <p>A nested quotation inside the provision.</p>
+    </blockquote>
+    <footer>— <cite><a href="https://example.org/acts/2017/1">Example Act 2017</a></cite>, section 1</footer>
+  </blockquote>
+  <p>The court agreed, and quoted the earlier judgment.</p>
+  <figure>
+    <blockquote cite="https://example.org/judgments/2016/12#para-30">
+      <p>The words must be read in their context.</p>
+    </blockquote>
+    <figcaption>Lord Reed, <cite>Example v Example</cite> [2016] UKSC 12, para 30</figcaption>
+  </figure>
+  <ul>
+    <li>First submission:
+      <blockquote><p>A quote inside a list item.</p></blockquote>
+    </li>
+    <li>Second submission.</li>
+  </ul>
+  <blockquote cite="https://example.org/acts/2017/1#section-2">
+    <h2>2 Interpretation</h2>
+    <p>In this Act, an act includes an omission.</p>
+  </blockquote>
+  <p>The judgment under appeal said:</p>
+  <table>
+    <tr>
+      <td>(1)</td>
+      <td>Text:<blockquote><p>First quoted paragraph.</p><p>Second quoted paragraph.</p></blockquote></td>
+    </tr>
+  </table>
+  <blockquote cite="/relative/source"><p>A quote whose relative source cannot be resolved.</p></blockquote>
+  <blockquote><p>A quote without source or attribution.</p></blockquote>
+  <footer>Page footer, outside any quote.</footer>
+</body>
+</html>
