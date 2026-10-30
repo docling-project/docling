@@ -22,17 +22,13 @@ import pytest
 from PIL import Image
 from pydantic import AnyUrl
 
-from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.api_answer_fields import ApiAnswerField
 from docling.datamodel.base_models import VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
-from docling.datamodel.stage_model_specs import ApiModelConfig, VlmModelSpec
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
 from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
     ApiVlmEngine,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineInput
-from docling.models.inference_engines.vlm.factory import create_vlm_engine
 from docling.models.stages.vlm_convert.vlm_convert_model import (
     _prediction_from_engine_output,
 )
@@ -309,7 +305,7 @@ def test_a_reasoning_only_stream_is_reported_and_not_returned(api, endpoint, ima
 
     assert result.text == ""
     assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
-    assert result.error is not None and "answer_fields" in result.error
+    assert result.error is not None and "Configure the server" in result.error
     assert result.reasoning == "Let me think."
 
 
@@ -325,6 +321,18 @@ def test_streamed_tool_call_fragments_are_joined_per_index(api, endpoint, image)
                 }
             ]
         },
+        {
+            "tool_calls": [
+                {
+                    "index": 1,
+                    "id": "call_2",
+                    "function": {
+                        "name": "detection_only",
+                        "arguments": '[{"bbox": [0, 0, 1, 1]}]',
+                    },
+                }
+            ]
+        },
         {"tool_calls": [{"index": 0, "function": {"arguments": '[{"text": '}}]},
         {"tool_calls": [{"index": 0, "function": {"arguments": '"hi"}]'}}]},
     ]
@@ -334,20 +342,34 @@ def test_streamed_tool_call_fragments_are_joined_per_index(api, endpoint, image)
         "describe",
         endpoint,
         model="m",
-        answer_fields=[ApiAnswerField.TOOL_CALL_ARGUMENTS],
     )
 
     assert result.text == '[{"text": "hi"}]'
     assert [(c.id, c.function.name) for c in result.tool_calls] == [
-        ("call_1", "markdown_bbox")
+        ("call_1", "markdown_bbox"),
+        ("call_2", "detection_only"),
     ]
+    assert result.tool_calls[1].function.arguments == '[{"bbox": [0, 0, 1, 1]}]'
 
 
-def test_stoppers_watch_every_answer_field(api, endpoint, image):
-    """When reasoning is an answer field, a loop in it must stop the stream,
-    as a loop in content does."""
+@pytest.mark.parametrize("chunk", [" ", "word "])
+def test_answer_stoppers_receive_trailing_whitespace(api, endpoint, image, chunk):
+    class StopOnSpace(GenerationStopper):
+        def should_stop(self, text: str) -> bool:
+            return text.endswith(" ")
+
+    api.stream_chunks = [chunk, "must not be read"]
+    result = api_image_request_streaming(
+        image, "describe", endpoint, model="m", generation_stoppers=[StopOnSpace()]
+    )
+
+    assert result.text == chunk.strip()
+    assert result.stop_reason == VlmStopReason.STOP_SEQUENCE
+
+
+def test_reasoning_does_not_trigger_answer_stoppers(api, endpoint, image):
     api.completion_field = "reasoning"
-    api.stream_chunks = ["<doctag>"] + ["ab"] * 30
+    api.stream_chunks = ["ab"] * 30
 
     result = api_image_request_streaming(
         image,
@@ -357,11 +379,11 @@ def test_stoppers_watch_every_answer_field(api, endpoint, image):
         generation_stoppers=[
             TailRepetitionStopper(min_repeats=4, min_span=8, max_unit=4)
         ],
-        answer_fields=[ApiAnswerField.CONTENT, ApiAnswerField.REASONING],
     )
 
-    assert result.text == "<doctag>abababab"
-    assert result.stop_reason == VlmStopReason.STOP_SEQUENCE
+    assert result.text == ""
+    assert result.reasoning == "ab" * 30
+    assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
 
 
 # -- the engine layer ----------------------------------------------------
@@ -557,55 +579,3 @@ def test_engine_batches_every_input(api, image):
 
     assert len(outputs) == 2
     assert len(api.service.requests_for("POST", r"/v1/chat/completions")) == 2
-
-
-@pytest.mark.parametrize(
-    ("engine_answer_fields", "expected_text", "expected_stop_reason"),
-    [
-        pytest.param(
-            None, DEFAULT_COMPLETION, VlmStopReason.END_OF_SEQUENCE, id="model-spec"
-        ),
-        pytest.param(
-            [ApiAnswerField.CONTENT],
-            "",
-            VlmStopReason.INFERENCE_ERROR,
-            id="engine-overrides-model-spec",
-        ),
-    ],
-)
-def test_engine_answer_fields_override_the_model_spec(
-    api, image, engine_answer_fields, expected_text, expected_stop_reason
-):
-    """The model spec keeps answer_fields outside params, so non-empty user
-    params do not remove it; the engine option overrides it."""
-    api.completion_field = "reasoning"
-    model_spec = VlmModelSpec(
-        name="thinking-model",
-        default_repo_id="spec-model",
-        prompt="",
-        response_format=ResponseFormat.MARKDOWN,
-        api_overrides={
-            VlmEngineType.API_OPENAI: ApiModelConfig(
-                answer_fields=[ApiAnswerField.CONTENT, ApiAnswerField.REASONING]
-            )
-        },
-    )
-    engine = create_vlm_engine(
-        options=ApiVlmEngineOptions(
-            engine_type=VlmEngineType.API_OPENAI,
-            url=AnyUrl(f"{api.service.base_url}/v1/chat/completions"),
-            params={"model": "user-model"},
-            answer_fields=engine_answer_fields,
-        ),
-        model_spec=model_spec,
-        enable_remote_services=True,
-        artifacts_path=None,
-        accelerator_options=AcceleratorOptions(),
-    )
-
-    (output,) = engine.predict_batch([VlmEngineInput(image=image, prompt="describe")])
-
-    assert _sent_body(api)["model"] == "user-model"
-    assert output.text == expected_text
-    assert output.stop_reason == expected_stop_reason
-    assert output.metadata["reasoning"] == DEFAULT_COMPLETION

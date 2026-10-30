@@ -10,7 +10,6 @@ import pytest
 from PIL import Image
 from requests.adapters import HTTPAdapter
 
-from docling.datamodel.api_answer_fields import ApiAnswerField
 from docling.datamodel.base_models import VlmStopReason
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
@@ -122,95 +121,46 @@ class TestApiImageRequest:
         assert response.text == "Normal completion"
         assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
 
-    @pytest.mark.parametrize(
-        ("answer_fields", "expected_text", "expected_stop_reason"),
-        [
-            pytest.param(
-                (ApiAnswerField.CONTENT,),
-                "",
-                VlmStopReason.INFERENCE_ERROR,
-                id="default",
-            ),
-            pytest.param(
-                (ApiAnswerField.TOOL_CALL_ARGUMENTS,),
-                '[{"text": "Extracted text"}]',
-                VlmStopReason.END_OF_SEQUENCE,
-                id="tool-call-arguments",
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("content", [None, "", " ", "Content answer"])
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_tool_calls_response(
-        self,
-        mock_session_factory,
-        sample_image,
-        mock_response_factory,
-        answer_fields,
-        expected_text,
-        expected_stop_reason,
+        self, mock_session_factory, sample_image, mock_response_factory, content
     ):
-        """The raw tool-call arguments are the answer only when selected; the
-        request layer does not interpret their schema (#2440)."""
+        """Keep raw tool arguments when content is empty; do not scan for text."""
+        arguments = '[{"text": "Extracted text", "type": "Title"}]'
         mock_session_factory.return_value.__enter__.return_value.post.return_value = (
             mock_response_factory(
                 message={
                     "role": "assistant",
-                    "content": None,
+                    "content": content,
                     "tool_calls": [
                         {
                             "id": "call_1",
                             "type": "function",
                             "function": {
                                 "name": "markdown_no_bbox",
-                                "arguments": '[{"text": "Extracted text"}]',
+                                "arguments": arguments,
                             },
                         }
                     ],
                 }
             )
         )
-
         response = api_image_request(
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
-            answer_fields=answer_fields,
         )
-
-        assert response.text == expected_text
-        assert response.stop_reason == expected_stop_reason
+        assert response.text == (
+            content.strip() if content and content.strip() else arguments
+        )
+        assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
+        assert response.error is None
         assert response.tool_calls[0].function.name == "markdown_no_bbox"
-        if expected_stop_reason == VlmStopReason.INFERENCE_ERROR:
-            assert "tool_call_arguments" in response.error
-            assert "answer_fields" in response.error
+        assert response.tool_calls[0].function.arguments == arguments
 
     @pytest.mark.parametrize("wire_name", ["reasoning", "reasoning_content"])
-    @pytest.mark.parametrize(
-        ("content", "answer_fields", "expected_text", "expected_stop_reason"),
-        [
-            pytest.param(
-                "answer",
-                (ApiAnswerField.CONTENT,),
-                "answer",
-                VlmStopReason.END_OF_SEQUENCE,
-                id="content",
-            ),
-            pytest.param(
-                "",
-                (ApiAnswerField.CONTENT,),
-                "",
-                VlmStopReason.INFERENCE_ERROR,
-                id="reasoning-only-is-reported",
-            ),
-            pytest.param(
-                "",
-                (ApiAnswerField.CONTENT, ApiAnswerField.REASONING),
-                "<div>hello</div>",
-                VlmStopReason.END_OF_SEQUENCE,
-                id="reasoning-opt-in",
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("content", ["answer", ""])
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_content_or_reasoning(
         self,
@@ -219,12 +169,8 @@ class TestApiImageRequest:
         mock_response_factory,
         wire_name,
         content,
-        answer_fields,
-        expected_text,
-        expected_stop_reason,
     ):
-        """Reasoning is the answer only on opt-in, under both wire names; it is
-        kept on the result in every case."""
+        """Keep reasoning separate even when it looks like a page answer."""
         mock_session_factory.return_value.__enter__.return_value.post.return_value = (
             mock_response_factory(
                 message={
@@ -234,20 +180,19 @@ class TestApiImageRequest:
                 }
             )
         )
-
         response = api_image_request(
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
-            answer_fields=answer_fields,
         )
-
-        assert response.text == expected_text
-        assert response.stop_reason == expected_stop_reason
+        assert response.text == content
         assert response.reasoning == "<div>hello</div>"
-        if expected_stop_reason == VlmStopReason.INFERENCE_ERROR:
-            assert "reasoning has 16 characters" in response.error
-            assert "answer_fields" in response.error
+        if content:
+            assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
+            assert response.error is None
+        else:
+            assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
+            assert "Configure the server" in response.error
 
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_thinking_cut_at_the_token_limit_is_not_page_text(

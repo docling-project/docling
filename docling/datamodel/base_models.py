@@ -416,7 +416,7 @@ class ApiImageRequestResult:
     usage: Any | None = None
     logprobs: Any | None = None
     error: str | None = None  # set when stop_reason is INFERENCE_ERROR
-    # Kept whatever answer_fields selected, so callers can read them.
+    # Preserve the raw response fields for callers that need their schema.
     reasoning: str | None = None
     tool_calls: tuple["OpenAiToolCall", ...] = ()
 

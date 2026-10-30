@@ -31,10 +31,6 @@ from docling.datamodel import (
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.api_answer_fields import (
-    ANSWER_FIELDS_DESCRIPTION,
-    ApiAnswerField,
-)
 from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
@@ -990,10 +986,6 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
             examples=["Provide a technical description of this diagram"],
         ),
     ] = "Describe this image in a few sentences."
-    answer_fields: Annotated[
-        list[ApiAnswerField],
-        Field(min_length=1, description=ANSWER_FIELDS_DESCRIPTION),
-    ] = [ApiAnswerField.CONTENT]
     provenance: Annotated[
         str,
         Field(

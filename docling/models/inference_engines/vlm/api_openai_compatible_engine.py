@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, List, Optional
 
 from PIL.Image import Image
 
-from docling.datamodel.api_answer_fields import ApiAnswerField
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.inference_engines.vlm._utils import (
@@ -81,16 +80,6 @@ class ApiVlmEngine(BaseVlmEngine):
         # User-supplied params always win; if provided, model-spec defaults are
         # not mixed in (prevents conflicts for vendor-specific keys like model_id).
         self.user_params: dict = self.options.params.copy()
-
-        # Priority: engine option < model spec < the OpenAI contract (`content`).
-        model_answer_fields = None
-        if model_config:
-            model_answer_fields = model_config.extra_config.get("api_answer_fields")
-        self.answer_fields: list[ApiAnswerField] = (
-            self.options.answer_fields
-            or model_answer_fields
-            or [ApiAnswerField.CONTENT]
-        )
 
     def initialize(self) -> None:
         """Initialize the API engine.
@@ -178,7 +167,6 @@ class ApiVlmEngine(BaseVlmEngine):
                     headers=self.options.headers,
                     generation_stoppers=custom_stoppers,
                     timeout=self.options.timeout,
-                    answer_fields=self.answer_fields,
                     **api_params,
                 )
                 generated_text = api_response.text
@@ -193,7 +181,6 @@ class ApiVlmEngine(BaseVlmEngine):
                     prompt=input_data.prompt,
                     headers=self.options.headers,
                     timeout=self.options.timeout,
-                    answer_fields=self.answer_fields,
                     **api_params,
                 )
                 generated_text = api_response.text

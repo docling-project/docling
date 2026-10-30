@@ -17,10 +17,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Set
 
 from pydantic import BaseModel, Field
 
-from docling.datamodel.api_answer_fields import (
-    ANSWER_FIELDS_DESCRIPTION,
-    ApiAnswerField,
-)
 from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
     TransformersModelType,
@@ -121,10 +117,6 @@ class ApiModelConfig(BaseModel):
         default_factory=dict,
         description="API parameters (model name, max_tokens, etc.)",
     )
-    # Kept out of `params`: non-empty user params replace the model params.
-    answer_fields: List[ApiAnswerField] | None = Field(
-        default=None, min_length=1, description=ANSWER_FIELDS_DESCRIPTION
-    )
 
     def merge_with(self, base_params: Dict[str, Any]) -> ApiModelConfig:
         """Merge with base parameters.
@@ -136,7 +128,7 @@ class ApiModelConfig(BaseModel):
             Merged configuration with overrides applied
         """
         merged_params = {**base_params, **self.params}
-        return ApiModelConfig(params=merged_params, answer_fields=self.answer_fields)
+        return ApiModelConfig(params=merged_params)
 
 
 # =============================================================================

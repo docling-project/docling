@@ -4,7 +4,6 @@
 import base64
 import json
 import logging
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 from io import BytesIO
 from typing import Any
@@ -15,7 +14,6 @@ from pydantic import AnyUrl, ValidationError
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from docling.datamodel.api_answer_fields import ApiAnswerField
 from docling.datamodel.base_models import (
     ApiImageRequestResult,
     ApiImageStreamingRequestResult,
@@ -120,62 +118,40 @@ class _ResponseFields:
                     ),
                 )
 
-    def text_of(self, answer_field: ApiAnswerField) -> str:
-        if answer_field == ApiAnswerField.CONTENT:
+    def answer(self) -> str:
+        if self.content.strip():
             return self.content
-        if answer_field == ApiAnswerField.REASONING:
-            return self.reasoning
-        # The raw string: its schema belongs to the tool the client sent, and
-        # the selected ResponseFormat parser interprets it.
+        # Keep the raw schema for a model-specific ResponseFormat parser.
         return next(
             (
                 call.function.arguments
                 for call in self.tool_calls.values()
                 if call.function.arguments.strip()
             ),
-            "",
+            self.content,
         )
-
-    def select(self, answer_fields: Sequence[ApiAnswerField]) -> str:
-        for answer_field in answer_fields:
-            text = self.text_of(answer_field).strip()
-            if text:
-                return text
-        return ""
 
 
 def _resolve_answer(
     fields: _ResponseFields,
-    answer_fields: Sequence[ApiAnswerField],
     stop_reason: VlmStopReason,
 ) -> tuple[str, VlmStopReason, str | None]:
-    """Select the answer, and report an empty answer instead of hiding it.
-
-    Returns the text, the stop reason and an error message.
-    """
-    text = fields.select(answer_fields)
+    """Read content or raw tool arguments; never use reasoning as page text."""
+    text = fields.answer().strip()
     if text:
         return text, stop_reason, None
 
     if fields.refusal.strip():
         error = f"The model refused: {_response_preview(fields.refusal)}"
     elif stop_reason == VlmStopReason.LENGTH:
-        # The pipeline already reports the output as incomplete.
         return "", stop_reason, None
-    else:
-        unselected = {
-            answer_field.value: len(fields.text_of(answer_field).strip())
-            for answer_field in ApiAnswerField
-            if answer_field not in answer_fields
-        }
-        found = [f"{name} has {n} characters" for name, n in unselected.items() if n]
-        if not found:
-            return "", stop_reason, None
-        selected = ", ".join(answer_field.value for answer_field in answer_fields)
+    elif fields.reasoning.strip():
         error = (
-            f"No answer in {selected}. {'; '.join(found)}. If the server puts "
-            "the answer there, set answer_fields."
+            "The model returned reasoning without an answer. Configure the server "
+            "to return the answer in content, or increase the token limit."
         )
+    else:
+        return "", stop_reason, None
     _log.warning(error)
     return "", VlmStopReason.INFERENCE_ERROR, error
 
@@ -263,7 +239,6 @@ def api_image_request(
     *,
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
-    answer_fields: Sequence[ApiAnswerField] = (ApiAnswerField.CONTENT,),
     **params,
 ) -> ApiImageRequestResult:
     img_io = BytesIO()
@@ -341,7 +316,7 @@ def api_image_request(
             choice = api_resp.choices[0]
             fields = _ResponseFields.from_message(choice.message)
             generated_text, stop_reason, error = _resolve_answer(
-                fields, answer_fields, _map_stop_reason(choice.finish_reason)
+                fields, _map_stop_reason(choice.finish_reason)
             )
             num_tokens = _extract_total_tokens(usage)
             if num_tokens is None and api_resp.usage is not None:
@@ -374,14 +349,13 @@ def api_image_request_streaming(
     generation_stoppers: list[GenerationStopper] = [],
     usage_response_key: str | None = "usage",
     token_extract_key: str | None = None,
-    answer_fields: Sequence[ApiAnswerField] = (ApiAnswerField.CONTENT,),
     **params,
 ) -> ApiImageStreamingRequestResult:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
-    Accumulates the response fields and calls stopper.should_stop(window) on
-    each field in ``answer_fields`` as chunks arrive.
+    Accumulates content and raw tool-call arguments. Stoppers watch the answer
+    as chunks arrive; reasoning is kept separately.
     If stopper triggers, the HTTP connection is closed to abort server-side generation.
 
     A failed request (HTTP error, timeout, dropped connection) does not raise:
@@ -471,9 +445,7 @@ def api_image_request_streaming(
                                 content=logprob_content or None,
                                 refusal=logprob_refusal or None,
                             )
-                        text, stop_reason, error = _resolve_answer(
-                            fields, answer_fields, stop_reason
-                        )
+                        text, stop_reason, error = _resolve_answer(fields, stop_reason)
                         return ApiImageStreamingRequestResult(
                             text=text,
                             num_tokens=num_tokens,
@@ -532,26 +504,18 @@ def api_image_request_streaming(
                                 logprob_content.extend(chunk_logprobs.content or [])
                                 logprob_refusal.extend(chunk_logprobs.refusal or [])
 
-                        lengths = [len(fields.text_of(f)) for f in answer_fields]
+                        previous_text = fields.answer()
                         fields.add_delta(delta)
-                        for answer_field, length in zip(answer_fields, lengths):
-                            text = fields.text_of(answer_field)
-                            if len(text) == length:
-                                continue
-                            for stopper in generation_stoppers:
-                                # Respect stopper's lookback window, one window per
-                                # answer field. A simple string window works with
-                                # the GenerationStopper interface.
-                                lookback = max(1, stopper.lookback_tokens())
-                                window = text[-lookback:]
-                                if stopper.should_stop(window):
-                                    # Break out of the loop cleanly. The context manager will handle
-                                    # closing the connection when we exit the 'with' block.
-                                    # vLLM/OpenAI-compatible servers will detect the client
-                                    # disconnect and abort the request server-side.
-                                    if stopper.is_valid_end():
-                                        return _result(VlmStopReason.END_OF_SEQUENCE)
-                                    return _result(VlmStopReason.STOP_SEQUENCE)
+                        text = fields.answer()
+                        if text == previous_text:
+                            continue
+                        for stopper in generation_stoppers:
+                            lookback = max(1, stopper.lookback_tokens())
+                            if stopper.should_stop(text[-lookback:]):
+                                # Closing the connection aborts server-side generation.
+                                if stopper.is_valid_end():
+                                    return _result(VlmStopReason.END_OF_SEQUENCE)
+                                return _result(VlmStopReason.STOP_SEQUENCE)
 
                     return _result(_map_stop_reason(finish_reason))
         except Exception as e:
