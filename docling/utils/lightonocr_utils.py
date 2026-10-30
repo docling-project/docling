@@ -34,6 +34,7 @@ from docling.utils.chandra_utils import (
 )
 from docling.utils.markdown_math import create_markdown_parser
 from docling.utils.vlm_utils import (
+    link_adjacent_captions,
     normalize_section_header_levels,
     strip_math_delimiters,
 )
@@ -121,10 +122,10 @@ def parse_lightonocr_markdown(
 ) -> DoclingDocument:
     """Preserve Markdown/HTML content and assign each block bbox at most once.
 
-    Continuation labels retain their base class. Separate blocks are not merged
-    or associated by proximity. Plain transcription is recovered without boxes.
-    A ``title`` block with ``##`` or deeper is a section header, because the
-    model has one label for all headings.
+    Continuation labels retain their base class, and separate blocks are not
+    merged. A caption links to its one adjacent table or picture. Plain
+    transcription is recovered without boxes. A ``title`` block with ``##`` or
+    deeper is a section header, because the model has one label for all headings.
     Heading depths normalize per page unless the pipeline defers normalization
     until all pages are joined with ``normalize_heading_levels=False``.
     """
@@ -148,7 +149,10 @@ def parse_lightonocr_markdown(
         size=original_page_size,
         image=ImageRef.from_pil(image=page_image, dpi=dpi) if page_image else None,
     )
-    for label, bbox, body in _blocks(_THINK.sub("", content)):
+    block_starts: list[int] = []
+    caption_owners: dict[int, set[DocItemLabel]] = {}
+    for index, (label, bbox, body) in enumerate(_blocks(_THINK.sub("", content))):
+        block_starts.append(len(doc.body.children))
         if not body.strip() and label not in _PICTURE_LABELS:
             continue
         if label not in _LABELS:
@@ -169,6 +173,8 @@ def parse_lightonocr_markdown(
                 for node in parsed.children
             ):
                 layout_label = "Section-Header"
+        if label == "caption":
+            caption_owners[index] = {DocItemLabel.TABLE, DocItemLabel.PICTURE}
         attrs = f'data-bbox="{bbox}" data-label="{layout_label}"' if bbox else ""
         fragment = f"<div {attrs}>{rendered}</div>"
         picture_start = len(doc.pictures)
@@ -192,6 +198,7 @@ def parse_lightonocr_markdown(
                     picture.meta.tabular_chart = TabularChartMetaField(
                         chart_data=chart_data
                     )
+    link_adjacent_captions(doc, block_starts, caption_owners)
     if normalize_heading_levels:
         normalize_section_header_levels(doc)
     return doc

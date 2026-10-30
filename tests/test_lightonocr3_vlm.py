@@ -158,7 +158,8 @@ Annual rent.
     ]
     assert chart.meta.tabular_chart.chart_data.grid[1][1].text == "1000"
     assert doc.texts[-1].label == DocItemLabel.CAPTION
-    assert not chart.captions
+    assert chart.captions == [doc.texts[-1].get_ref()]
+    assert not doc.pictures[0].captions
 
 
 def test_chart_without_table_keeps_its_description():
@@ -192,6 +193,20 @@ def test_documented_block_sequence():
     ]
     assert all(item.prov for item in doc.texts)
     assert doc.texts[-1].content_layer == ContentLayer.FURNITURE
+    assert doc.pictures[0].captions == [doc.texts[0].get_ref()]
+
+
+def test_caption_between_two_owners_stays_unlinked():
+    content = """![table](0,0,1000,250)
+<table><tr><td>1</td></tr></table>
+![caption](0,260,1000,300)
+Which one?
+![image](0,310,1000,600)
+A photo.
+"""
+    doc = parse_lightonocr_markdown(content, PAGE_SIZE, page_no=1)
+    assert not doc.tables[0].captions
+    assert not doc.pictures[0].captions
 
 
 @pytest.mark.parametrize("prefix", ["</think>\n\n", "<think>\n\n</think>\n\n"])
