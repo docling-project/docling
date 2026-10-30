@@ -1950,10 +1950,18 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
                 if _safe_shape_type(shape) == MSO_SHAPE_TYPE.GROUP:
+                    group = doc.add_group(
+                        name=shape.name or "group",
+                        label=GroupLabel.UNSPECIFIED,
+                        parent=parent_slide,
+                    )
                     for groupedshape in self._iter_shapes_by_position(shape.shapes):
-                        handle_shapes(
-                            groupedshape, parent_slide, slide_ind, doc, slide_size
-                        )
+                        handle_shapes(groupedshape, group, slide_ind, doc, slide_size)
+                    # Drop a group without content (lines, connectors). Nothing
+                    # was added under it, so it is the last group and child.
+                    if not group.children and doc.groups[-1] is group:
+                        doc.groups.pop()
+                        parent_slide.children.pop()
 
             # Loop through each shape in the slide
             for shape in self._iter_shapes_by_position(slide.shapes):
