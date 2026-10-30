@@ -29,6 +29,7 @@ from docling.utils.deepseekocr_utils import (
     parse_unlimited_ocr_markdown,
 )
 from docling.utils.dots_utils import parse_dots_json
+from docling.utils.lightonocr_utils import parse_lightonocr_markdown
 from docling.utils.nemotron_parse_utils import parse_nemotron_parse_v2
 from docling.utils.nemotron_parse_v3_5_utils import parse_nemotron_parse_v3_5
 from docling.utils.paddleocr_vl_utils import parse_paddleocr_vl_result
@@ -43,6 +44,7 @@ _FORMATS = {
     "nemotron_v3_5": ResponseFormat.NEMOTRON_PARSE_V3_5,
     "deepseek": ResponseFormat.DEEPSEEKOCR_MARKDOWN,
     "unlimited": ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+    "lighton": ResponseFormat.LIGHTONOCR_MARKDOWN,
 }
 _PARSERS = [*_FORMATS, "paddle"]
 
@@ -86,6 +88,9 @@ def _response(parser: str, blocks: list[_Block]) -> str:
         elif parser == "unlimited":
             label = "title" if is_title else "sub_title"
             parts.append(f"<|det|>{label} [100, {y}, 900, {y + 40}]<|/det|>{text}\n")
+        elif parser == "lighton":
+            label = "title" if is_title else "section"
+            parts.append(f"![{label}](100,{y},900,{y + 40}) {text}\n")
         else:
             raise AssertionError(parser)
     if parser == "dots":
@@ -121,6 +126,8 @@ def _parse(parser: str, blocks: list[_Block], page_no: int = 1) -> DoclingDocume
         return parse_nemotron_parse_v3_5(content, _SIZE, page_no=page_no)
     if parser == "deepseek":
         return parse_deepseekocr_markdown(content, _SIZE, page_no=page_no)
+    if parser == "lighton":
+        return parse_lightonocr_markdown(content, _SIZE, page_no=page_no)
     return parse_unlimited_ocr_markdown(content, _SIZE, page_no=page_no)
 
 
@@ -152,7 +159,8 @@ def test_section_without_markup_is_depth_two(parser: str) -> None:
     assert _levels(_parse(parser, [(False, 1), (False, None)])) == [1, 2]
 
 
-@pytest.mark.parametrize("parser", _PARSERS)
+# LightOnOCR-3 uses `title` for all headings, so its depth decides instead.
+@pytest.mark.parametrize("parser", [p for p in _PARSERS if p != "lighton"])
 def test_layout_label_alone_decides_title(parser: str) -> None:
     doc = _parse(parser, [(True, 2), (False, 1), (False, 2)])
 
@@ -160,6 +168,18 @@ def test_layout_label_alone_decides_title(parser: str) -> None:
     assert doc.texts[0].text == "H0"
     assert _levels(doc) == [1, 2]
     assert doc.export_to_markdown() == "# H0\n\n## H1\n\n### H2"
+
+
+def test_lighton_title_depth_decides_title() -> None:
+    doc = _parse("lighton", [(True, 1), (True, None), (True, 2), (False, 3)])
+
+    assert [type(item) for item in doc.texts] == [
+        TitleItem,
+        TitleItem,
+        SectionHeaderItem,
+        SectionHeaderItem,
+    ]
+    assert doc.export_to_markdown() == "# H0\n\n# H1\n\n## H2\n\n### H3"
 
 
 def test_html_fragment_records_raw_depth() -> None:
