@@ -1738,7 +1738,6 @@ def _lightonocr3_preset(size: str, preset_id: str) -> StageModelPreset:
 
 
 VLM_CONVERT_LIGHTONOCR_3_08B = _lightonocr3_preset("0.8B", "lightonocr3_08b")
-VLM_CONVERT_LIGHTONOCR_3_1B = _lightonocr3_preset("1B", "lightonocr3_1b")
 VLM_CONVERT_LIGHTONOCR_3_4B = _lightonocr3_preset("4B", "lightonocr3_4b")
 
 # -----------------------------------------------------------------------------

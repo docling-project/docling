@@ -123,10 +123,9 @@ doc = converter.convert(source="FILE").document
 
 ### LightOnOCR-3
 
-LightOnOCR-3 has three presets: `lightonocr3_08b`, `lightonocr3_1b`, and
-`lightonocr3_4b`. They use the official
-[LightOnOCR-3 models](https://huggingface.co/lightonai/LightOnOCR-3-1B)
-and require `transformers>=5.5.4` for local inference. The existing `lightonocr`
+LightOnOCR-3 has two presets: `lightonocr3_08b` and `lightonocr3_4b`. They use
+the official [0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) and
+[4B](https://huggingface.co/lightonai/LightOnOCR-3-4B) models and require `transformers>=5.5.4` for local inference. The existing `lightonocr`
 preset continues to use LightOnOCR-2-1B.
 
 For `docling-slim` installations, the parser also requires the Markdown extra:
@@ -143,7 +142,7 @@ docling contract.pdf --pipeline vlm --vlm-model lightonocr3_08b
 from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
 
 pipeline_options = VlmPipelineOptions(
-    vlm_options=VlmConvertOptions.from_preset("lightonocr3_1b"),
+    vlm_options=VlmConvertOptions.from_preset("lightonocr3_08b"),
 )
 ```
 

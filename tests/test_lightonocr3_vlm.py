@@ -31,7 +31,7 @@ from docling.utils.lightonocr_utils import parse_lightonocr_markdown
 PAGE_SIZE = Size(width=600, height=800)
 
 
-@pytest.mark.parametrize("size, suffix", [("0.8B", "08b"), ("1B", "1b"), ("4B", "4b")])
+@pytest.mark.parametrize("size, suffix", [("0.8B", "08b"), ("4B", "4b")])
 def test_preset_runtime_configuration(size: str, suffix: str):
     options = VlmConvertOptions.from_preset(f"lightonocr3_{suffix}")
     spec = options.model_spec
