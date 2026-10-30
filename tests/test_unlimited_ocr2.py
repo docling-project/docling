@@ -10,6 +10,7 @@ and its post-processing script. They are not model output.
 """
 
 import logging
+from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
@@ -148,7 +149,21 @@ def test_merge_joins_text_and_keeps_both_boxes(second: str, joined: str) -> None
     assert [item.text for item in doc.texts] == [joined]
     prov = doc.texts[0].prov
     assert [item.bbox.l for item in prov] == pytest.approx([6.0, 36.0])
-    assert joined[prov[1].charspan[0] : prov[1].charspan[1]] == second
+    assert prov[1].charspan == (len("first part"), len(joined))
+
+
+def test_merged_text_keeps_its_space_after_dclx_reload(tmp_path: Path) -> None:
+    doc = _parse(
+        "<PAGE><BLOCK>text[10, 20, 30, 40]<FORK>a\n<MERGE>\n"
+        "<BLOCK>text[40, 20, 50, 40]<FORK>b\n<MERGE>\n"
+        "<BLOCK>text[60, 20, 90, 40]<FORK>c"
+    )
+    path = tmp_path / "merged.dclx"
+
+    doc.save_as_doclang_archive(path)
+
+    loaded = DoclingDocument.load_from_doclang_archive(path)
+    assert [item.text for item in loaded.texts] == ["a b c"]
 
 
 def test_merge_does_not_cross_a_non_text_block() -> None:

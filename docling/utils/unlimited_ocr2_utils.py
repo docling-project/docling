@@ -41,8 +41,8 @@ from PIL import Image as PILImage
 
 from docling.utils.chandra_utils import _add_html_table
 from docling.utils.deepseekocr_utils import _parse_table_html
-from docling.utils.mineru_utils import _CJK_PATTERN
 from docling.utils.vlm_utils import (
+    append_text_fragment,
     link_adjacent_captions,
     normalize_section_header_levels,
     strip_math_delimiters,
@@ -239,16 +239,6 @@ def _add_block(
     return item if block.label == "text" else None
 
 
-def _append_text(item: TextItem, text: str, prov: ProvenanceItem | None) -> None:
-    separator = "" if _CJK_PATTERN.search(text) else " "
-    start = len(item.text) + len(separator)
-    item.text += separator + text
-    item.orig += separator + text
-    if prov is not None:
-        prov.charspan = (start, start + len(text))
-        item.prov.append(prov)
-
-
 def parse_unlimited_ocr2(
     content: str,
     original_page_size: Size,
@@ -307,7 +297,7 @@ def parse_unlimited_ocr2(
             and block.label == "text"
             and block.text
         ):
-            _append_text(merge_target, block.text, prov)
+            append_text_fragment(merge_target, block.text, block.text, prov)
         else:
             merge_target = _add_block(doc, block, prov)
         merge_requested = block.merge_next
