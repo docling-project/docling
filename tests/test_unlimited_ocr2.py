@@ -67,6 +67,7 @@ def test_real_sample_keeps_labels_and_page_relative_boxes() -> None:
         ("page_footnote", DocItemLabel.FOOTNOTE),
         ("ref_text", DocItemLabel.REFERENCE),
         ("algorithm", DocItemLabel.CODE),
+        ("other", DocItemLabel.TEXT),
         ("not_documented", DocItemLabel.TEXT),
     ],
 )
@@ -74,6 +75,18 @@ def test_text_labels(label: str, expected: DocItemLabel) -> None:
     doc = _parse(f"<PAGE><BLOCK>{label}[10, 20, 30, 40]<FORK>Content")
 
     assert [(item.label, item.text) for item in doc.texts] == [(expected, "Content")]
+
+
+@pytest.mark.parametrize(
+    ("label", "warns"), [("other", False), ("not_documented", True)]
+)
+def test_only_unknown_labels_warn(
+    label: str, warns: bool, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.WARNING):
+        _parse(f"<PAGE><BLOCK>{label}[10, 20, 30, 40]<FORK>Content")
+
+    assert ("unknown" in caplog.text) is warns
 
 
 def test_page_furniture_is_left_out_of_the_body() -> None:

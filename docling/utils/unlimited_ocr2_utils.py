@@ -57,6 +57,7 @@ _TEXT_LABELS = {
     "header": DocItemLabel.PAGE_HEADER,
     "image_caption": DocItemLabel.CAPTION,
     "image_footnote": DocItemLabel.FOOTNOTE,
+    "other": DocItemLabel.TEXT,
     "page_footnote": DocItemLabel.FOOTNOTE,
     "page_number": DocItemLabel.PAGE_FOOTER,
     "ref_text": DocItemLabel.REFERENCE,
