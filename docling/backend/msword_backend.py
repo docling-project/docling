@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Final, NamedTuple
+from typing import Any, Callable, Final, NamedTuple, TypeVar
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
@@ -23,6 +23,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    FloatingItem,
     GroupLabel,
     ImageRef,
     ListGroup,
@@ -53,7 +54,10 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import OMML_NS, oMath2Latex
+from docling.backend.msexcel_backend import MsExcelDocumentBackend
+from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.utils.archive_limits import (
+    ArchiveLimitError,
     ArchiveLimits,
     check_archive_limits,
     read_member,
@@ -158,6 +162,7 @@ _WP_NS: Final[str] = (
 )
 _MC_NS: Final[str] = "http://schemas.openxmlformats.org/markup-compatibility/2006"
 _V_NS: Final[str] = "urn:schemas-microsoft-com:vml"
+_O_NS: Final[str] = "urn:schemas-microsoft-com:office:office"
 _WPS_NS: Final[str] = (
     "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
 )
@@ -175,11 +180,22 @@ _OOXML_NAMESPACES: Final[dict[str, str]] = {
     "wp": _WP_NS,
     "mc": _MC_NS,
     "v": _V_NS,
+    "o": _O_NS,
     "wps": _WPS_NS,
     "w10": _W10_NS,
     "a14": _A14_NS,
     "w14": _W14_NS,
 }
+
+_EMBEDDED_DOCUMENT_FORMATS: Final[dict[str, InputFormat]] = {
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": InputFormat.DOCX,
+    "application/vnd.ms-word.document.macroEnabled.12": InputFormat.DOCX,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": InputFormat.XLSX,
+    "application/vnd.ms-excel.sheet.macroEnabled.12": InputFormat.XLSX,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": InputFormat.PPTX,
+    "application/vnd.ms-powerpoint.presentation.macroEnabled.12": InputFormat.PPTX,
+}
+"""Content types of the embedded OLE packages that are converted, by input format."""
 
 _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
 """OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
@@ -643,6 +659,22 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile, limits: ArchiveLimits) -> 
     return normalized
 
 
+_RefT = TypeVar("_RefT", bound=RefItem)
+
+
+def _remap_refs(refs: list[_RefT], copies: dict[str, NodeItem]) -> list[_RefT]:
+    """Point references at the copies of their targets.
+
+    A reference to an item that was not copied is dropped. A ``FineRef`` keeps
+    its character range.
+    """
+    return [
+        ref.model_copy(update={"cref": copies[ref.cref].self_ref})
+        for ref in refs
+        if ref.cref in copies
+    ]
+
+
 def _normalize_list_style_types(docx_obj: DocxDocument) -> None:
     """Change the style type ``list`` to ``numbering`` in the styles part.
 
@@ -817,6 +849,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.vml_imagedata_xpath_expr = etree.XPath(
             ".//v:imagedata", namespaces=_OOXML_NAMESPACES
         )
+        self.ole_object_xpath_expr = etree.XPath(
+            "ancestor::w:object[1]/o:OLEObject", namespaces=_OOXML_NAMESPACES
+        )
+        # Part names of the embedded documents already converted, so a part that
+        # several objects share is converted only once.
+        self.converted_embedded_parts: set[str] = set()
+        # Embedded documents converted, and their decompressed bytes, including
+        # those of the nested Word documents. They count against the limits.
+        self.embedded_objects_converted: int = 0
+        self.embedded_total_bytes: int = 0
+        self.embedded_objects_skipped: int = 0
         # self.initialise(path_or_stream)
         # Word file:
         self.path_or_stream: BytesIO | Path = path_or_stream
@@ -967,6 +1010,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Reset mappings for a fresh conversion pass
             self.paragraph_comment_map.clear()
             self.paragraph_to_items.clear()
+            self.converted_embedded_parts.clear()
+            self.embedded_objects_converted = 0
+            self.embedded_total_bytes = 0
+            self.embedded_objects_skipped = 0
             self._deferred_empty_paragraphs.clear()
             doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
             self._add_header_footer(self.docx_obj, doc)
@@ -4409,13 +4456,214 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             )
 
                 is_spacer = self._is_invisible_spacer(pil_image)
-                elem_ref.append(
-                    self._add_picture_to_doc(
-                        doc, parent, pil_image, is_spacer=is_spacer
-                    )
+                embedded = (
+                    self._convert_embedded_object(imagedata, self.options)
+                    if isinstance(self.options, MsWordBackendOptions)
+                    and self.options.process_embedded_objects
+                    else None
                 )
+                if embedded is None:
+                    elem_ref.append(
+                        self._add_picture_to_doc(
+                            doc, parent, pil_image, is_spacer=is_spacer
+                        )
+                    )
+                else:
+                    filename, embedded_doc = embedded
+                    object_group = doc.add_group(
+                        label=GroupLabel.SECTION,
+                        name=f"embedded: {filename}",
+                        parent=parent,
+                        content_layer=self.content_layer,
+                    )
+                    elem_ref.append(
+                        self._add_picture_to_doc(
+                            doc, object_group, pil_image, is_spacer=is_spacer
+                        )
+                    )
+                    self._add_embedded_document(doc, embedded_doc, object_group)
 
         return elem_ref
+
+    def _convert_embedded_object(
+        self, imagedata: Any, options: MsWordBackendOptions
+    ) -> tuple[str, DoclingDocument] | None:
+        """Convert the Office document embedded in the OLE object of a VML picture.
+
+        Word stores an embedded Word, Excel or PowerPoint document as a package
+        part, and the ``v:imagedata`` only holds its preview picture.
+
+        The package must pass the archive limits of this Word document before it
+        is opened. ``max_embedded_objects`` and ``max_embedded_total_bytes`` are
+        shared with the nested Word documents, so they bound the work over all
+        nesting levels.
+
+        Args:
+            imagedata: The ``v:imagedata`` element of the preview picture.
+            options: The options of this backend.
+
+        Returns:
+            The file name of the embedded part and its converted document, or
+            ``None`` if the picture is not the preview of an embedded Word, Excel
+            or PowerPoint document, if the part was already converted, if a limit
+            stops it, or if the conversion fails.
+        """
+        ole_objects = self.ole_object_xpath_expr(imagedata)
+        if not ole_objects:
+            return None
+        rel_id = ole_objects[0].get(f"{{{_R_NS}}}id")
+        rels = self.current_part.rels
+        if rel_id is None or rel_id not in rels or rels[rel_id].is_external:
+            return None
+        part = rels[rel_id].target_part
+        input_format = _EMBEDDED_DOCUMENT_FORMATS.get(part.content_type)
+        if input_format is None or part.partname in self.converted_embedded_parts:
+            return None
+        self.converted_embedded_parts.add(part.partname)
+
+        filename = part.partname.filename
+        if self.embedded_objects_converted >= options.max_embedded_objects:
+            self.embedded_objects_skipped += 1
+            if self.embedded_objects_skipped == 1:
+                _log.warning(
+                    f"Embedded document {filename} and the next ones are not "
+                    f"converted: max_embedded_objects ({options.max_embedded_objects}) "
+                    "is reached"
+                )
+            return None
+        try:
+            with zipfile.ZipFile(BytesIO(part.blob)) as archive:
+                check_archive_limits(archive, self._archive_limits)
+                package_bytes = sum(info.file_size for info in archive.infolist())
+        except (zipfile.BadZipFile, ArchiveLimitError) as exc:
+            _log.warning(f"Embedded document {filename} is not converted: {exc}")
+            return None
+        if self.embedded_total_bytes + package_bytes > options.max_embedded_total_bytes:
+            _log.warning(
+                f"Embedded document {filename} is not converted: the embedded "
+                "documents would decompress to more than max_embedded_total_bytes "
+                f"({options.max_embedded_total_bytes})"
+            )
+            return None
+        self.embedded_objects_converted += 1
+        self.embedded_total_bytes += package_bytes
+
+        backend_cls: type[DeclarativeDocumentBackend]
+        backend_options: MsWordBackendOptions | None = None
+        if input_format == InputFormat.XLSX:
+            backend_cls = MsExcelDocumentBackend
+        elif input_format == InputFormat.PPTX:
+            backend_cls = MsPowerpointDocumentBackend
+        else:
+            backend_cls = MsWordDocumentBackend
+            backend_options = options.model_copy(
+                update={
+                    "process_embedded_objects": options.max_embedding_depth > 1,
+                    "max_embedding_depth": max(options.max_embedding_depth - 1, 1),
+                    "max_embedded_objects": options.max_embedded_objects
+                    - self.embedded_objects_converted,
+                    "max_embedded_total_bytes": options.max_embedded_total_bytes
+                    - self.embedded_total_bytes,
+                }
+            )
+
+        # A broken or unsupported embedded document, or a missing format extra,
+        # must not fail the conversion of the Word document. The preview stays.
+        try:
+            in_doc = InputDocument(
+                path_or_stream=BytesIO(part.blob),
+                format=input_format,
+                backend=backend_cls,
+                backend_options=backend_options,
+                filename=filename,
+            )
+        except Exception as exc:
+            _log.warning(f"Embedded document {filename} cannot be opened: {exc}")
+            return None
+        if not in_doc.valid:
+            _log.warning(f"Embedded document {filename} cannot be opened")
+            return None
+        backend = in_doc._backend
+        if not isinstance(backend, DeclarativeDocumentBackend):
+            raise RuntimeError(
+                f"The backend {type(backend).__name__} of embedded document "
+                f"{filename} is not a declarative backend."
+            )
+        try:
+            embedded_doc = backend.convert()
+        except Exception as exc:
+            _log.warning(f"Embedded document {filename} cannot be converted: {exc}")
+            return None
+        finally:
+            backend.unload()
+        if isinstance(backend, MsWordDocumentBackend):
+            self.embedded_objects_converted += backend.embedded_objects_converted
+            self.embedded_total_bytes += backend.embedded_total_bytes
+        return filename, embedded_doc
+
+    def _add_embedded_document(
+        self, doc: DoclingDocument, embedded_doc: DoclingDocument, parent: NodeItem
+    ) -> None:
+        """Copy the body of an embedded document under a node of this document.
+
+        ``DoclingDocument.add_document`` copies the tree, but the captions,
+        footnotes, references, comments and rich table cells of the copies still
+        point at item indexes of the embedded document, so they are remapped
+        here. The page provenance is removed, because a Word document has no
+        pages.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            embedded_doc: The converted embedded document.
+            parent: The node that receives the copied items.
+        """
+        first_copy = len(parent.children)
+        doc.add_document(embedded_doc, parent=parent)
+
+        copies: dict[str, NodeItem] = {}
+        for source_ref, copy_ref in zip(
+            embedded_doc.body.children, parent.children[first_copy:], strict=True
+        ):
+            for (source, _), (copy, _) in zip(
+                embedded_doc.iterate_items(
+                    root=source_ref.resolve(embedded_doc),
+                    with_groups=True,
+                    traverse_pictures=True,
+                    included_content_layers=set(ContentLayer),
+                ),
+                doc.iterate_items(
+                    root=copy_ref.resolve(doc),
+                    with_groups=True,
+                    traverse_pictures=True,
+                    included_content_layers=set(ContentLayer),
+                ),
+                strict=True,
+            ):
+                copies[source.self_ref] = copy
+
+        for item in copies.values():
+            if item.content_layer == ContentLayer.BODY:
+                item.content_layer = self.content_layer
+            if isinstance(item, DocItem):
+                item.prov = []
+                item.comments = _remap_refs(item.comments, copies)
+            if isinstance(item, FloatingItem):
+                item.captions = _remap_refs(item.captions, copies)
+                item.footnotes = _remap_refs(item.footnotes, copies)
+                item.references = _remap_refs(item.references, copies)
+            if isinstance(item, TableItem):
+                cells = item.data.table_cells
+                for index, cell in enumerate(cells):
+                    if not isinstance(cell, RichTableCell):
+                        continue
+                    target = copies.get(cell.ref.cref)
+                    # Like _remap_refs, a cell whose target was not copied loses
+                    # its reference and keeps only its text.
+                    cells[index] = (
+                        cell.model_copy(update={"ref": target.get_ref()})
+                        if target is not None
+                        else TableCell.model_validate(cell.model_dump(exclude={"ref"}))
+                    )
 
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
         """Handle DrawingML elements by converting to image via DOCX->PDF->PNG.

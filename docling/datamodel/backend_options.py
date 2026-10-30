@@ -574,6 +574,53 @@ class MsWordBackendOptions(BaseBackendOptions):
         ),
     )
 
+    process_embedded_objects: bool = Field(
+        False,
+        description=(
+            "Whether to convert the Word, Excel and PowerPoint documents that are "
+            "embedded as OLE objects. The content of each one is added after the "
+            "preview picture of the object, and both are grouped together. An "
+            "embedded Word document is converted with these options, and an "
+            "embedded workbook or presentation with the default options of its "
+            "backend. Each embedded package must pass the archive limits of the "
+            "Word document (max_total_bytes, max_file_bytes and max_member_count). "
+            "Linked objects and other embedded objects keep only their preview "
+            "picture. Opt-in (default False)."
+        ),
+    )
+    max_embedded_objects: Annotated[
+        NonNegativeInt,
+        Field(
+            description=(
+                "Maximum number of embedded documents to convert when "
+                "process_embedded_objects is enabled, counted over all nesting "
+                "levels. The other objects keep only their preview picture."
+            )
+        ),
+    ] = 32
+    max_embedded_total_bytes: Annotated[
+        NonNegativeInt,
+        Field(
+            description=(
+                "Maximum cumulative decompressed size in bytes of the embedded "
+                "documents to convert when process_embedded_objects is enabled, "
+                "counted over all nesting levels. An object that goes above it "
+                "keeps only its preview picture."
+            )
+        ),
+    ] = 512 * 1024 * 1024
+    max_embedding_depth: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum nesting level of the embedded documents to convert when "
+                "process_embedded_objects is enabled. 1 converts only the objects "
+                "of the Word document, 2 also converts the objects of an embedded "
+                "Word document, and so on."
+            )
+        ),
+    ] = 3
+
     use_outline_level_for_headings: Annotated[
         bool,
         Field(
