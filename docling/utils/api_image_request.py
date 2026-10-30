@@ -385,11 +385,6 @@ def api_image_request_streaming(
                         )
 
                     full_text = []
-                    # Servers that route the answer outside `content` (see
-                    # `_extract_generated_text`) stream it as `reasoning_content` or as
-                    # tool-call argument fragments; keep both for the same fallback.
-                    reasoning_text: list[str] = []
-                    tool_call_arguments: dict[int, list[str]] = {}
                     usage_payload = None
                     num_tokens = None
                     finish_reason = None
@@ -411,18 +406,8 @@ def api_image_request_streaming(
                                 content=logprob_content or None,
                                 refusal=logprob_refusal or None,
                             )
-                        text = "".join(full_text)
-                        if not text:
-                            text = "".join(reasoning_text).strip()
-                        if not text:
-                            for index in sorted(tool_call_arguments):
-                                text = _extract_text_from_tool_arguments(
-                                    "".join(tool_call_arguments[index])
-                                )
-                                if text:
-                                    break
                         return ApiImageStreamingRequestResult(
-                            text=text,
+                            text="".join(full_text),
                             num_tokens=num_tokens,
                             usage=usage_payload,
                             logprobs=logprobs,
@@ -474,24 +459,6 @@ def api_image_request_streaming(
                             choice = obj["choices"][0]
                             delta = choice.get("delta") or {}
                             piece = delta.get("content") or ""
-                            reasoning_piece = delta.get("reasoning_content")
-                            if isinstance(reasoning_piece, str):
-                                reasoning_text.append(reasoning_piece)
-                            for tool_call in delta.get("tool_calls") or []:
-                                function = (
-                                    tool_call.get("function")
-                                    if isinstance(tool_call, dict)
-                                    else None
-                                )
-                                arguments = (
-                                    function.get("arguments")
-                                    if isinstance(function, dict)
-                                    else None
-                                )
-                                if isinstance(arguments, str):
-                                    tool_call_arguments.setdefault(
-                                        tool_call.get("index") or 0, []
-                                    ).append(arguments)
                             raw_logprobs = choice.get("logprobs")
                             # finish_reason is null until the server stops; keep the
                             # last value it sets.

@@ -529,8 +529,8 @@ class TestApiImageRequest:
         assert response.usage == {"total_tokens": 3}
 
 
-class TestApiImageRequestStreamingFallbacks:
-    """The streaming path reads the answer from the same places as the non-streaming one."""
+class TestApiImageRequestStreamingErrors:
+    """An error the server sends inside the SSE stream is reported, not read as an empty answer."""
 
     @staticmethod
     def _run(mock_session_factory, lines):
@@ -555,53 +555,6 @@ class TestApiImageRequestStreamingFallbacks:
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
         )
-
-    @patch("docling.utils.api_image_request._make_retry_session")
-    def test_reasoning_content_is_used_when_content_is_empty(
-        self, mock_session_factory
-    ):
-        response = self._run(
-            mock_session_factory,
-            [
-                'data: {"choices": [{"delta": {"reasoning_content": "# Ti"}}]}',
-                'data: {"choices": [{"delta": {"reasoning_content": "tle\\n"}}]}',
-                'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}',
-                "data: [DONE]",
-            ],
-        )
-
-        assert response.text == "# Title"
-        assert response.error is None
-
-    @patch("docling.utils.api_image_request._make_retry_session")
-    def test_content_wins_over_reasoning_content(self, mock_session_factory):
-        response = self._run(
-            mock_session_factory,
-            [
-                'data: {"choices": [{"delta": {"reasoning_content": "thinking"}}]}',
-                'data: {"choices": [{"delta": {"content": "answer"}}]}',
-                "data: [DONE]",
-            ],
-        )
-
-        assert response.text == "answer"
-
-    @patch("docling.utils.api_image_request._make_retry_session")
-    def test_tool_call_arguments_are_used_when_there_is_no_content(
-        self, mock_session_factory
-    ):
-        response = self._run(
-            mock_session_factory,
-            [
-                'data: {"choices": [{"delta": {"tool_calls": [{"index": 0, '
-                '"function": {"name": "emit", "arguments": "{\\"text\\": "}}]}}]}',
-                'data: {"choices": [{"delta": {"tool_calls": [{"index": 0, '
-                '"function": {"arguments": "\\"page text\\"}"}}]}}]}',
-                "data: [DONE]",
-            ],
-        )
-
-        assert response.text == "page text"
 
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_error_chunk_without_choices_is_reported_as_a_failure(
