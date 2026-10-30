@@ -1698,6 +1698,66 @@ VLM_CONVERT_LIGHTONOCR = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+
+def _lightonocr3_preset(size: str, preset_id: str, revision: str) -> StageModelPreset:
+    name = f"LightOnOCR-3-{size}"
+    repo_id = f"lightonai/{name}"
+    max_new_tokens = 12288
+    return StageModelPreset(
+        preset_id=preset_id,
+        name=name,
+        description=f"LightOnOCR-3 OCR with block grounding ({size} parameters)",
+        model_spec=VlmModelSpec(
+            name=name,
+            default_repo_id=repo_id,
+            revision=revision,
+            prompt="grounding",
+            response_format=ResponseFormat.LIGHTONOCR_MARKDOWN,
+            # Upstream advises against greedy decoding for these models.
+            temperature=0.1,
+            max_new_tokens=max_new_tokens,
+            engine_overrides={
+                VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                    min_engine_version="5.5.4",
+                    torch_dtype="bfloat16",
+                    extra_config={
+                        "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                        "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                        # Transformers otherwise applies its own top_k default.
+                        "extra_generation_config": {
+                            "skip_special_tokens": True,
+                            "top_k": 0,
+                        },
+                    },
+                ),
+                # Upstream tests vLLM 0.30.0 and reports loops on 0.27.1.
+                VlmEngineType.VLLM: EngineModelConfig(
+                    min_engine_version="0.30.0",
+                    extra_config={"max_model_len": 18000},
+                ),
+            },
+            api_overrides={
+                VlmEngineType.API: ApiModelConfig(
+                    params={"model": repo_id, "max_tokens": max_new_tokens}
+                ),
+                VlmEngineType.API_OPENAI: ApiModelConfig(
+                    params={"model": repo_id, "max_tokens": max_new_tokens}
+                ),
+            },
+        ),
+        scale=2.0,
+        max_size=2048,
+        default_engine_type=VlmEngineType.AUTO_INLINE,
+    )
+
+
+VLM_CONVERT_LIGHTONOCR_3_08B = _lightonocr3_preset(
+    "0.8B", "lightonocr3_08b", "36d8636925327c671bd8e479c517a004f7566bd9"
+)
+VLM_CONVERT_LIGHTONOCR_3_4B = _lightonocr3_preset(
+    "4B", "lightonocr3_4b", "b71010f095dc3735de7ee6b9969bff8f8f50b39a"
+)
+
 # -----------------------------------------------------------------------------
 # PICTURE_DESCRIPTION PRESETS (for image captioning/description)
 # -----------------------------------------------------------------------------

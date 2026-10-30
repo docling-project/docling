@@ -260,6 +260,8 @@ Languages are given as BCP-47 tags for every engine; see
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
 | `unlimited_ocr` | Unlimited-OCR | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks |
 | `unlimited_ocr2` | Unlimited-OCR 2 | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ❌ | Native layout blocks with HTML tables, one page per request |
+| `lightonocr3_08b` | LightOnOCR-3-0.8B | 0.8B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
+| `lightonocr3_4b` | LightOnOCR-3-4B | 4B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 

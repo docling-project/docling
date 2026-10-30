@@ -56,6 +56,8 @@ docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model lightonocr3_08b --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model lightonocr3_4b --output /tmp/
 docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
@@ -69,6 +71,10 @@ in-process vLLM engine is not supported for this preset.
 `unlimited_ocr` and `unlimited_ocr2` need your own OpenAI-compatible server, and the
 CLI has no option for the API URL. Use the SDK for these presets. See
 [python-sdk.md](python-sdk.md).
+
+The `lightonocr3_*` presets map charts to the `other_chart` class. JSON, Markdown,
+and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raises
+`ValueError` when a document has a chart block.
 
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
 classifies pictures first and adds chart data only where the VLM has not
