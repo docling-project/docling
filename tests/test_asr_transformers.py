@@ -148,4 +148,46 @@ def test_other_transformers_models_keep_text_without_segment_timestamps(
     assert [(item.text, item.start_time, item.end_time) for item in conversation] == [
         ("recognized speech", 0.0, 2.5)
     ]
-    asr_pipeline.assert_called_once_with("sample.wav")
+    if options.model_family == "parakeet":
+        assert asr_pipeline.call_args.args == ("sample.wav",)
+        assert asr_pipeline.call_args.kwargs["return_timestamps"] == "word"
+    else:
+        asr_pipeline.assert_called_once_with("sample.wav")
+
+
+def test_parakeet_groups_word_timestamps_and_splits_on_a_pause(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    checkpoint = tmp_path / PARAKEET_CTC_1_1B.repo_cache_folder
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text("{}")
+    asr_pipeline = Mock(
+        return_value={
+            "text": "hello there good morning",
+            "chunks": [
+                {"text": " hello", "timestamp": (0.10, 0.40)},
+                {"text": " there", "timestamp": (0.45, 0.80)},
+                {"text": " good", "timestamp": (1.70, 2.00)},
+                {"text": " morning", "timestamp": (2.05, 2.40)},
+            ],
+        }
+    )
+    transformers = ModuleType("transformers")
+    transformers.pipeline = Mock(return_value=asr_pipeline)
+    monkeypatch.setitem(sys.modules, "transformers", transformers)
+    monkeypatch.setattr(
+        "docling.pipeline.asr_transcriber.decide_device", lambda *args, **kwargs: "cpu"
+    )
+    monkeypatch.setattr(
+        "docling.pipeline.asr_transcriber._audio_duration_seconds", lambda path: 3.0
+    )
+
+    model = _AsrModelFactory.create(PARAKEET_CTC_1_1B, tmp_path, AcceleratorOptions())
+    conversation = model.transcribe(Path("sample.wav"))
+
+    assert [(item.text, item.start_time, item.end_time) for item in conversation] == [
+        ("hello there", 0.10, 0.80),
+        ("good morning", 1.70, 2.40),
+    ]
+    assert asr_pipeline.call_args.args == ("sample.wav",)
+    assert asr_pipeline.call_args.kwargs["return_timestamps"] == "word"
