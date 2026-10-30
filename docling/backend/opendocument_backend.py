@@ -538,7 +538,11 @@ def _odf_text_runs(
         runs.append(_OdfTextRun(text=text, formatting=formatting, hyperlink=hyperlink))
 
     for child in children:
-        runs.extend(_odf_text_runs(child, odf_obj, formatting, hyperlink))
+        # A text box is a block-level object anchored in this paragraph or
+        # heading. Its contents are emitted as their own document items below;
+        # they must not be flattened into the surrounding inline text.
+        if getattr(child, "tag", None) != "draw:text-box":
+            runs.extend(_odf_text_runs(child, odf_obj, formatting, hyperlink))
         if child.tail:
             runs.append(
                 _OdfTextRun(text=child.tail, formatting=formatting, hyperlink=hyperlink)
@@ -691,6 +695,14 @@ def _add_odf_heading(
     )
     if comments is not None:
         comments.attach(doc, item, [element])
+    _add_odf_textboxes(
+        doc,
+        element,
+        parent=parent,
+        content_layer=content_layer,
+        odf_obj=odf_obj,
+        comments=comments,
+    )
 
 
 def _odf_paragraph_style_names(
@@ -777,6 +789,15 @@ def _add_odf_paragraph(
         )
     if comments is not None:
         comments.attach(doc, item, [element])
+    _add_odf_textboxes(
+        doc,
+        element,
+        parent=parent,
+        content_layer=content_layer,
+        odf_obj=odf_obj,
+        image_loader=image_loader,
+        comments=comments,
+    )
 
 
 def _odf_element_text_lines(element: Any) -> list[str]:
@@ -1212,6 +1233,15 @@ def _add_odf_child(
             image_loader=image_loader,
             skip_object_replacements=chart_count > 0,
         )
+        _add_odf_textboxes(
+            doc,
+            element,
+            parent=parent,
+            content_layer=content_layer,
+            odf_obj=odf_obj,
+            image_loader=image_loader,
+            comments=comments,
+        )
     else:
         get_images = getattr(element, "get_images", None)
         if callable(get_images):
@@ -1265,6 +1295,45 @@ def _add_odf_children(
                 image_loader=image_loader,
                 comments=comments,
             )
+
+
+def _add_odf_textboxes(
+    doc: DoclingDocument,
+    element: Any,
+    *,
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
+    image_loader: ImageResourceLoader | None = None,
+    comments: _OdfComments | None = None,
+) -> None:
+    """Emit block content from text boxes without flattening it into inline text."""
+    for textbox in element.get_elements("descendant::draw:text-box"):
+        ancestor = textbox.parent
+        nested_in_textbox = False
+        while ancestor is not None and ancestor is not element:
+            if getattr(ancestor, "tag", None) == "draw:text-box":
+                nested_in_textbox = True
+                break
+            ancestor = ancestor.parent
+        if nested_in_textbox or not textbox.children:
+            continue
+
+        textbox_group = doc.add_group(
+            label=GroupLabel.SECTION,
+            parent=parent,
+            name="textbox",
+            content_layer=content_layer,
+        )
+        _add_odf_children(
+            doc,
+            textbox.children,
+            parent=textbox_group,
+            content_layer=content_layer,
+            odf_obj=odf_obj,
+            image_loader=image_loader,
+            comments=comments,
+        )
 
 
 def _embedded_odf_content_path(href: str) -> str:

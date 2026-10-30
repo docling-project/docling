@@ -195,6 +195,75 @@ def test_odt_conversion(odt_path: Path):
     assert cell_texts == {(0, 0): "h1", (0, 1): "h2", (1, 0): "v1", (1, 1): "v2"}
 
 
+def test_odt_textboxes_are_extracted_as_blocks(tmp_path: Path):
+    path = tmp_path / "textboxes.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    anchor = Paragraph("Anchor paragraph text.")
+    inline_frame = Frame.text_frame(
+        ["First textbox paragraph", "Second textbox paragraph"],
+        size=("10cm", "2cm"),
+        position=("1cm", "1cm"),
+    )
+    textbox = inline_frame.get_element("draw:text-box")
+    textbox_list = OdfList()
+    textbox_list.append(ListItem("Textbox list item"))
+    textbox.append(textbox_list)
+    textbox_table = Table("Textbox", width=1, height=1)
+    textbox_table.set_value("A1", "Textbox table cell")
+    textbox.append(textbox_table)
+    anchor.append(inline_frame)
+    body.append(anchor)
+    body.append(
+        Frame.text_frame(
+            ["Top-level textbox paragraph"],
+            size=("10cm", "2cm"),
+            position=("1cm", "4cm"),
+        )
+    )
+    source.save(str(path))
+
+    document = (
+        DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path).document
+    )
+    text_by_value = {item.text: item for item in document.texts}
+
+    assert "Anchor paragraph text." in text_by_value
+    assert "First textbox paragraph" in text_by_value
+    assert "Second textbox paragraph" in text_by_value
+    assert "Top-level textbox paragraph" in text_by_value
+    assert any(
+        item.text == "Textbox list item" and item.label == DocItemLabel.LIST_ITEM
+        for item in document.texts
+    )
+    assert len(document.tables) == 1
+    assert [cell.text for cell in document.tables[0].data.table_cells] == [
+        "Textbox table cell"
+    ]
+    assert (
+        "Anchor paragraph text.First textbox paragraphSecond textbox paragraph"
+        not in text_by_value
+    )
+
+    textbox_groups = [
+        item
+        for item, _level in document.iterate_items(with_groups=True)
+        if getattr(item, "label", None) == GroupLabel.SECTION
+        and getattr(item, "name", None) == "textbox"
+    ]
+    assert len(textbox_groups) == 2
+    assert all(
+        text_by_value[value].parent == group.get_ref()
+        for group, value in zip(
+            textbox_groups,
+            ["First textbox paragraph", "Top-level textbox paragraph"],
+            strict=True,
+        )
+    )
+
+
 def test_odt_section_content(tmp_path: Path):
     path = tmp_path / "section.odt"
     source = OdfDocument("text")
