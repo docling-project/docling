@@ -9,15 +9,21 @@ and Retrieval (EDGAR) system.
 """
 
 import os
+import threading
+from collections.abc import Iterator
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import DoclingDocument
 
+from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import XBRLBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult
+from docling.datamodel.document import ConversionResult, InputDocument
 from docling.document_converter import DocumentConverter, XBRLFormatOption
+from docling.exceptions import DocumentLoadError, OperationNotAllowed
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -119,3 +125,95 @@ def test_xbrl_divide_unit_keeps_denominator(documents):
     ):
         assert unit_texts.get(concept) == {"currency: USD / shares"}, concept
     assert unit_texts.get("us-gaap:Assets") == {"currency: USD"}
+
+
+def _instance_with_schema_ref(href: str) -> BytesIO:
+    return BytesIO(
+        b'<xbrli:xbrl xmlns:xbrli="http://www.xbrl.org/2003/instance"'
+        b' xmlns:link="http://www.xbrl.org/2003/linkbase"'
+        b' xmlns:xlink="http://www.w3.org/1999/xlink">'
+        b'<link:schemaRef xlink:type="simple" xlink:href="'
+        + href.encode()
+        + b'"/></xbrli:xbrl>'
+    )
+
+
+def _load_refused(stream: BytesIO, options: XBRLBackendOptions) -> str:
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.XML_XBRL,
+        backend=XBRLDocumentBackend,
+        filename="instance.xbrl",
+    )
+    with pytest.raises(DocumentLoadError) as exc_info:
+        XBRLDocumentBackend(in_doc, stream, options)
+    cause = exc_info.value.__cause__
+    assert isinstance(cause, OperationNotAllowed)
+    return str(cause)
+
+
+@pytest.fixture
+def no_taxonomy_packages() -> None:
+    """Drop the taxonomy packages that earlier loads registered.
+
+    Arelle keeps the packages and their URL mappings in a process-wide registry.
+    The packages of the test data map every http(s) URL to their own files.
+    """
+    from arelle import PackageManager  # type: ignore
+
+    PackageManager.reset()
+
+
+@pytest.fixture
+def local_server() -> Iterator[tuple[str, list[str]]]:
+    requests: list[str] = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            requests.append(self.path)
+            body = b'<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>'
+            self.send_response(200)
+            self.send_header("Content-Type", "application/xml")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args: object) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}", requests
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_xbrl_remote_fetch_refuses_non_public_address(
+    no_taxonomy_packages, local_server
+):
+    base_url, requests = local_server
+    url = f"{base_url}/x.xsd"
+
+    message = _load_refused(
+        _instance_with_schema_ref(url),
+        XBRLBackendOptions(enable_remote_fetch=True),
+    )
+
+    assert url in message
+    assert "restricted IP address" in message
+    assert requests == []
+
+
+def test_xbrl_file_reference_needs_local_fetch(no_taxonomy_packages, tmp_path):
+    schema = tmp_path / "local.xsd"
+    schema.write_text('<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>')
+
+    message = _load_refused(
+        _instance_with_schema_ref(schema.as_uri()),
+        XBRLBackendOptions(enable_remote_fetch=True, enable_local_fetch=False),
+    )
+
+    assert "enable_local_fetch=True" in message

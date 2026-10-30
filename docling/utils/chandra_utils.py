@@ -183,6 +183,10 @@ class _HTMLTreeParser(HTMLParser):
         self.stack[-1].children.append(data)
 
 
+def _has_content(node: _Element) -> bool:
+    return bool(node.text().strip()) or any(True for _ in node.elements())
+
+
 def _span(value: str, maximum: int, default: int = 1) -> int:
     try:
         return min(maximum, max(1, int(value)))
@@ -412,6 +416,9 @@ class _ChandraDocumentBuilder:
             edges = run.text.strip(" \t")
             run.text = run.text.strip()
             is_text = run.label == DocItemLabel.TEXT
+            if is_text:
+                # Like a browser, drop the spaces around a `<br/>` line break.
+                run.text = re.sub(r" *\n *", "\n", run.text)
             line_break = line_break or (is_text and edges.startswith("\n"))
             if not run.text and run.label not in {
                 DocItemLabel.FIELD_VALUE,
@@ -639,14 +646,15 @@ class _ChandraDocumentBuilder:
             pending = _Element("li")
             for child in node.children:
                 if isinstance(child, _Element) and child.tag in {"li", "p", "br"}:
-                    if pending.children:
+                    # Whitespace between the item tags is HTML layout, not an item.
+                    if _has_content(pending):
                         children.append(pending)
                         pending = _Element("li")
                     if child.tag != "br":
                         children.append(child)
                 else:
                     pending.children.append(child)
-            if pending.text().strip() or any(True for _ in pending.elements()):
+            if _has_content(pending):
                 children.append(pending)
         for child in children:
             if isinstance(child, str) and not child.strip():
@@ -672,8 +680,16 @@ class _ChandraDocumentBuilder:
     def _table(
         self, node: _Element, parent: NodeItem | None, prov: _Provenance | None
     ) -> None:
-        parsed = _table_cells(node)
-        if not parsed:
+        parsed: list[tuple[TableCell, _Element]] | None
+        try:
+            parsed = _table_cells(node)
+        except ValueError as exc:
+            # Like the Nemotron Parse mapper: drop the grid, keep the page.
+            _log.warning(
+                "Chandra table is too large to map (%s); preserving an empty table", exc
+            )
+            parsed = None
+        if parsed is not None and not parsed:
             _log.warning("Chandra table contains no cells; preserving its content")
             self.walk(node.children, parent, prov)
             return
@@ -683,7 +699,7 @@ class _ChandraDocumentBuilder:
             prov=prov.take() if prov is not None else None,
         )
         cells: list[TableCell] = []
-        for cell, cell_node in parsed:
+        for cell, cell_node in parsed or []:
             if any(child.tag != "span" for child in cell_node.elements()):
                 group = self.doc.add_group(parent=table)
                 self.walk(cell_node.children, group)

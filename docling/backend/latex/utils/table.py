@@ -20,6 +20,12 @@ from docling.backend.latex.constants import (
     TABLE_MACROS_RULE,
 )
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
+from docling.backend.utils.table_spans import (
+    MAX_COLSPAN,
+    MAX_ROWSPAN,
+    clamp_span,
+    table_width,
+)
 
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexwalker import (
@@ -67,7 +73,7 @@ class TableHelperMixin:
                 args = parse_brace_args_fn(remaining)
                 if len(args) >= 3:
                     try:
-                        num_cols = int(args[0])
+                        num_cols = clamp_span(int(args[0]), MAX_COLSPAN)
                     except (ValueError, TypeError):
                         num_cols = 1
                     content_text = args[2]
@@ -96,7 +102,7 @@ class TableHelperMixin:
                 args = parse_brace_args_fn(remaining)
                 if len(args) >= 3:
                     try:
-                        num_rows = int(args[0])
+                        num_rows = clamp_span(int(args[0]), MAX_ROWSPAN)
                     except (ValueError, TypeError):
                         num_rows = 1
                     content_text = args[2]
@@ -226,7 +232,17 @@ class TableHelperMixin:
             return None
 
         num_rows = len(rows)
-        num_cols = max(len(row) for row in rows) if rows else 0
+        # Columns to the right of the last cell that starts in them hold no
+        # cell of their own, so a span wider than the table does not widen it.
+        num_cols = min(
+            max(len(row) for row in rows),
+            table_width(
+                [
+                    [(entry[1], entry[2]) for entry in row if entry is not None]
+                    for row in rows
+                ]
+            ),
+        )
 
         flat_cells = []
         rich_cells: list[tuple[int, list[Any]]] = []
@@ -251,8 +267,8 @@ class TableHelperMixin:
                 cell.start_row_offset_idx = i
                 cell.start_col_offset_idx = j
 
-                cell.end_row_offset_idx = i + row_span
-                cell.end_col_offset_idx = j + col_span
+                cell.end_row_offset_idx = min(i + row_span, num_rows)
+                cell.end_col_offset_idx = min(j + col_span, num_cols)
 
                 if rich_nodes is not None:
                     rich_cells.append((len(flat_cells), rich_nodes))

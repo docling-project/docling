@@ -86,3 +86,26 @@ def test_scoped_settings_restores_state():
     assert fresh.model_dump(mode="json") == settings_module.settings.model_dump(
         mode="json"
     )
+
+
+def test_page_range_clamped_to_maxsize():
+    import sys
+
+    from pydantic import ValidationError
+
+    from docling.datamodel.settings import DocumentLimits
+
+    # (1, sys.maxsize) after a JavaScript JSON round-trip becomes (1, 2**63)
+    limits = DocumentLimits(page_range=(1, 2**63))
+    assert limits.page_range == (1, sys.maxsize)
+
+    limits = DocumentLimits(page_range=(2**63, 2**64))
+    assert limits.page_range == (sys.maxsize, sys.maxsize)
+
+    limits = DocumentLimits(page_range=(3, 7))
+    assert limits.page_range == (3, 7)
+
+    with pytest.raises(ValidationError):
+        DocumentLimits(page_range=(0, 2**63))
+    with pytest.raises(ValidationError):
+        DocumentLimits(page_range=(5, 4))

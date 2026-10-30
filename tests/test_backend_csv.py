@@ -137,6 +137,200 @@ def test_doubled_quotes_with_non_comma_delimiter():
     assert [cell.text for cell in cells] == ["a", "b", 'say "x"', "2"]
 
 
+@pytest.mark.parametrize(
+    "payload, expected",
+    [
+        (
+            b"Product;Weight (kg, net);Price\nApple;0,2;1,50\nPear;0,35;2\n",
+            [
+                "Product",
+                "Weight (kg, net)",
+                "Price",
+                "Apple",
+                "0,2",
+                "1,50",
+                "Pear",
+                "0,35",
+                "2",
+            ],
+        ),
+        (
+            b"Product,Weight (kg; net),Price\nApple,0.2,1.50\nPear,0.35,2\n",
+            [
+                "Product",
+                "Weight (kg; net)",
+                "Price",
+                "Apple",
+                "0.2",
+                "1.50",
+                "Pear",
+                "0.35",
+                "2",
+            ],
+        ),
+        (
+            b"Date,Time (hh:mm),Value,Note\n2024-01-01,10:30,5,a\n2024-01-02,11:45,6\n",
+            [
+                "Date",
+                "Time (hh:mm)",
+                "Value",
+                "Note",
+                "2024-01-01",
+                "10:30",
+                "5",
+                "a",
+                "2024-01-02",
+                "11:45",
+                "6",
+            ],
+        ),
+        (
+            b"id,ratio (a;b),x,y\n1,2;3,4,5\n2,6;7,8\n",
+            ["id", "ratio (a;b)", "x", "y", "1", "2;3", "4", "5", "2", "6;7", "8"],
+        ),
+        (
+            b"id,ratio (a;b),x,y\n1,0.5,2,3\n2,0.7,4\n",
+            ["id", "ratio (a;b)", "x", "y", "1", "0.5", "2", "3", "2", "0.7", "4"],
+        ),
+        (
+            b"Time (hh:mm:ss),Value\n10:30:00,5\n11:45:00\n",
+            ["Time (hh:mm:ss)", "Value", "10:30:00", "5", "11:45:00"],
+        ),
+        (
+            b"Time (hh:mm),Value\n10:30,5\n11:45\n",
+            ["Time (hh:mm)", "Value", "10:30", "5", "11:45"],
+        ),
+        (
+            b"Name,Time hh:mm:ss,Value\nA,10:30:00,5\nB,11:45:00\n",
+            ["Name", "Time hh:mm:ss", "Value", "A", "10:30:00", "5", "B", "11:45:00"],
+        ),
+        (
+            b"Start: time,Value\n10:30,5\n11:45\n",
+            ["Start: time", "Value", "10:30", "5", "11:45"],
+        ),
+        (
+            b"Date,Time (hh:mm),Note\n2024-01-01,10:30,'n/a'\n2024-01-02,11:45,'90s music\n",
+            [
+                "Date",
+                "Time (hh:mm)",
+                "Note",
+                "2024-01-01",
+                "10:30",
+                "'n/a'",
+                "2024-01-02",
+                "11:45",
+                "'90s music",
+            ],
+        ),
+        (
+            b"id,ratio (a;b),Note\n1,0.5,'n/a'\n2,0.7,'90s music\n",
+            [
+                "id",
+                "ratio (a;b)",
+                "Note",
+                "1",
+                "0.5",
+                "'n/a'",
+                "2",
+                "0.7",
+                "'90s music",
+            ],
+        ),
+        (
+            b"Date,Time (hh:mm),Note\n2024-01-01,10:30,'tbd'\n2024-01-02,11:45,'tbd'\n",
+            [
+                "Date",
+                "Time (hh:mm)",
+                "Note",
+                "2024-01-01",
+                "10:30",
+                "'tbd'",
+                "2024-01-02",
+                "11:45",
+                "'tbd'",
+            ],
+        ),
+        (
+            b"Product;Weight (kg, net);Note\nApple;0,2;'n/a'\nPear;0,35;'90s music\n",
+            [
+                "Product",
+                "Weight (kg, net)",
+                "Note",
+                "Apple",
+                "0,2",
+                "'n/a'",
+                "Pear",
+                "0,35",
+                "'90s music",
+            ],
+        ),
+        (
+            b"Product;Weight (kg, net);Note\nApple;0,2;'tbd'\nPear;0,35;'tbd'\n",
+            [
+                "Product",
+                "Weight (kg, net)",
+                "Note",
+                "Apple",
+                "0,2",
+                "'tbd'",
+                "Pear",
+                "0,35",
+                "'tbd'",
+            ],
+        ),
+        (
+            b'Product;Weight (kg, net);Note\nApple;0,2;"a; b"\nPear;0,35;c\n',
+            [
+                "Product",
+                "Weight (kg, net)",
+                "Note",
+                "Apple",
+                "0,2",
+                "a; b",
+                "Pear",
+                "0,35",
+                "c",
+            ],
+        ),
+    ],
+    ids=[
+        "semicolon_with_comma_in_header",
+        "comma_with_semicolon_in_header",
+        "ragged_comma_with_colon_in_header",
+        "ragged_comma_with_semicolon_in_header",
+        "ragged_comma_sample_not_sniffable",
+        "ragged_comma_with_two_colons_in_header",
+        "ragged_comma_with_one_colon_in_header",
+        "ragged_comma_with_unbracketed_colons_in_header",
+        "ragged_comma_with_colon_label_in_header",
+        "comma_with_unclosed_single_quote",
+        "comma_with_unclosed_single_quote_semicolon_in_header",
+        "comma_keeps_closed_single_quotes",
+        "semicolon_with_unclosed_single_quote",
+        "semicolon_keeps_closed_single_quotes",
+        "semicolon_with_quoted_delimiter",
+    ],
+)
+def test_header_with_second_delimiter_uses_following_rows(payload, expected):
+    """A header holding two candidate delimiters is ambiguous on its own.
+
+    `csv.Sniffer` then picks the first one in its preference order, so a
+    semicolon file whose header contains a comma was split on commas. The
+    following rows disambiguate it (#4895), unless their delimiter splits the
+    header into fewer fields, as in ragged comma files with a `:` or `;` inside
+    a header field.
+    """
+    doc = (
+        get_converter()
+        .convert(
+            DocumentStream(name="ambiguous.csv", stream=BytesIO(payload)),
+            raises_on_error=True,
+        )
+        .document
+    )
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == expected
+
+
 def test_backslash_escaped_quotes_are_a_load_error():
     """A file using backslash-escaped quotes (e.g. MySQL SELECT … INTO OUTFILE) fails to load.
 

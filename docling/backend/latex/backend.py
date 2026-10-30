@@ -94,6 +94,7 @@ class LatexDocumentBackend(
         self._tectonic_engine: TectonicEngine | None = None
         self._tikz_executor: concurrent.futures.ThreadPoolExecutor | None = None
         self._tikz_futures: list[concurrent.futures.Future] = []
+        self._tikz_untrusted_warned = False
         self.latex_text = decode_latex_content(self.path_or_stream)
 
     def is_valid(self) -> bool:

@@ -10,6 +10,7 @@ from docling_core.transforms.serializer.latex import LaTeXDocSerializer, LaTeXPa
 from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel, RichTableCell
 
 from docling.backend.latex_backend import LatexDocumentBackend
+from docling.backend.utils.table_spans import MAX_COLSPAN
 from docling.datamodel.backend_options import LatexBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
@@ -367,6 +368,35 @@ def test_latex_multirow_table():
     assert len(doc.tables) >= 1
     cells = [c.text.strip() for c in doc.tables[0].data.table_cells]
     assert any("Tall Cell" in c for c in cells)
+
+
+def _convert_latex_table(latex_content: bytes) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    return backend.convert()
+
+
+@pytest.mark.parametrize(
+    "latex_content",
+    [
+        rb"\begin{tabular}{c}\multicolumn{1000000}{c}{x}\end{tabular}",
+        rb"\begin{tabular}{c}\multicolumn{" + b"9" * 5000 + rb"}{c}{x}\end{tabular}",
+        rb"\begin{tabular}{cc}\multicolumn{1000000}{c}{x} & y \\ a & b"
+        rb"\end{tabular}",
+    ],
+    ids=["large", "too-many-digits", "before-a-cell"],
+)
+def test_latex_multicolumn_span_is_clamped(latex_content: bytes):
+    doc = _convert_latex_table(latex_content)
+
+    table = doc.tables[0].data
+    assert table.num_cols < 2 * MAX_COLSPAN
+    assert all(c.end_col_offset_idx <= table.num_cols for c in table.table_cells)
 
 
 def test_latex_table_formatting_in_cells():

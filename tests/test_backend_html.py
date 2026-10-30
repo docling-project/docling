@@ -20,6 +20,7 @@ from docling_core.types.doc import (
     RichTableCell,
 )
 from docling_core.types.doc.document import ContentLayer
+from PIL import Image
 from pydantic import AnyUrl, ValidationError
 
 from docling.backend.html_backend import (
@@ -31,7 +32,7 @@ from docling.backend.utils.image_resource_loader import (
     validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -481,6 +482,61 @@ def test_table_row_header_rowspan_keeps_the_row_cells():
     grid_texts = [cell.text for row in data.grid for cell in row if cell.text]
     assert grid_texts == [cell.text for cell in data.table_cells]
     assert "$134" in doc.export_to_markdown()
+
+
+_THEAD = b"<thead><tr><th>Item</th><th>Amount</th></tr></thead>"
+_TFOOT = b"<tfoot><tr><td>Total</td><td>10</td></tr></tfoot>"
+
+
+@pytest.mark.parametrize(
+    "body,expected_grid",
+    [
+        (
+            _THEAD + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>" + _TFOOT,
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+        # HTML 4 placed tfoot before tbody; the table model still ends with it.
+        (
+            _THEAD + _TFOOT + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>",
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+        (
+            b"<tbody><tr><td>Widgets</td><td>4</td></tr></tbody>"
+            + _TFOOT
+            + b"<tbody><tr><td>Gadgets</td><td>6</td></tr></tbody>",
+            [["Widgets", "4"], ["Gadgets", "6"], ["Total", "10"]],
+        ),
+        (
+            _THEAD
+            + b'<tfoot><tr><td rowspan="2">Total</td><td>10</td></tr></tfoot>'
+            + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>",
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+    ],
+    ids=["tfoot_last", "tfoot_first", "tfoot_between", "tfoot_first_rowspan"],
+)
+def test_table_tfoot_rows_are_kept(body, expected_grid):
+    """Regression: <tfoot> is a standard table section, but only thead/tbody
+    were unwrapped before scanning rows. Footer totals then stayed nested
+    inside <tfoot> and were dropped from the grid. Wherever the tfoot sits in
+    the source, its rows come last in the table model.
+    """
+    src = b"<table>" + body + b"</table>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 3
+    grid = [[cell.text for cell in row] for row in doc.tables[0].data.grid]
+    assert grid == expected_grid
+    if b"rowspan=" in body:
+        total = next(c for c in doc.tables[0].data.table_cells if c.text == "Total")
+        assert total.end_row_offset_idx - total.start_row_offset_idx == 1
 
 
 def test_table_inside_figure_is_parsed():
@@ -1491,6 +1547,35 @@ def test_e2e_html_conversion_with_images(mock_local, monkeypatch):
     assert verify_document(res_local.document, gt_path + ".json", GENERATE)
 
 
+def test_local_file_uri_source_resolves_images(tmp_path: Path):
+    """A file URI source must resolve relative HTML images locally."""
+    image_path = tmp_path / "figure.png"
+    image_path.write_bytes(PNG_1X1)
+    html_path = tmp_path / "doc.html"
+    html_path.write_text('<img src="figure.png">', encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(
+                backend_options=HTMLBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=html_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(html_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is not None
+
+
 def test_html_furniture():
     raw_html = (
         b"<html><body><p>Initial content with some <strong>bold text</strong></p>"
@@ -2008,6 +2093,33 @@ def test_load_image_data_enforces_data_uri_size_limit():
 
     with pytest.raises(ValueError, match="exceeds size limit"):
         backend._load_image_data(data_uri)
+
+
+def test_image_over_pixel_limit_is_skipped():
+    def png_data_uri(width: int, height: int) -> str:
+        buffer = BytesIO()
+        Image.new("RGB", (width, height), (255, 0, 0)).save(buffer, format="PNG")
+        return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
+    html = (
+        "<html><body><p>Before.</p>"
+        f'<img src="{png_data_uri(8, 8)}"><img src="{png_data_uri(7, 5)}">'
+        "<p>After.</p></body></html>"
+    )
+    converter = _create_html_converter(
+        HTMLBackendOptions(fetch_images=True, max_image_pixels=63)
+    )
+    with pytest.warns(UserWarning, match="exceeds the limit of 63 pixels"):
+        result = converter.convert(
+            DocumentStream(name="test.html", stream=BytesIO(html.encode()))
+        )
+    doc = result.document
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert len(doc.pictures) == 2
+    assert doc.pictures[0].image is None
+    assert doc.pictures[1].get_image(doc).size == (7, 5)
+    assert [text.text for text in doc.texts] == ["Before.", "After."]
 
 
 def test_anchor_fragment_links_with_source_uri():
