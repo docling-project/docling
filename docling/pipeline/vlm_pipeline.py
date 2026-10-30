@@ -76,6 +76,7 @@ _RAW_HEADING_DEPTH_FORMATS = frozenset(
         ResponseFormat.CHANDRA_HTML,
         ResponseFormat.DEEPSEEKOCR_MARKDOWN,
         ResponseFormat.DOTS_JSON,
+        ResponseFormat.LIGHTONOCR_MARKDOWN,
         ResponseFormat.NEMOTRON_PARSE_V2,
         ResponseFormat.NEMOTRON_PARSE_V3_5,
         ResponseFormat.UNLIMITED_OCR_MARKDOWN,
@@ -567,6 +568,17 @@ class VlmPipeline(PaginatedPipeline):
             from docling.utils.deepseekocr_utils import parse_unlimited_ocr_markdown
 
             document = parse_unlimited_ocr_markdown(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                normalize_heading_levels=False,
+            )
+        elif response_format == ResponseFormat.LIGHTONOCR_MARKDOWN:
+            from docling.utils.lightonocr_utils import parse_lightonocr_markdown
+
+            document = parse_lightonocr_markdown(
                 content=predicted_text,
                 original_page_size=page.size,
                 page_no=page.page_no,
