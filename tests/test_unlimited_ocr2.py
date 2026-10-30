@@ -260,18 +260,21 @@ def test_table_without_a_box_keeps_its_cells() -> None:
 
 
 @pytest.mark.parametrize(
-    "block",
+    ("block", "text"),
     [
-        "<BLOCK>table[10, 20, 30, 40]<FORK>Year Total",
-        f"<BLOCK>table<FORK>{TABLE}",
+        ("<BLOCK>table[10, 20, 30, 40]<FORK>Year Total", "Year Total"),
+        (f"<BLOCK>table<FORK>{TABLE}", "Year Total\n2025 12"),
+        ("<BLOCK>table<FORK><table><tr><td></td><td></td>", None),
     ],
-    ids=["no_html", "cut_table_without_a_box"],
+    ids=["no_html", "cut_table_without_a_box", "cut_empty_table"],
 )
-def test_table_without_cells_stays_text(block: str) -> None:
+def test_table_without_cells_stays_text_without_tags(
+    block: str, text: str | None
+) -> None:
     doc = _parse(f"<PAGE>{block}")
 
     assert not doc.tables
-    assert doc.texts[0].text == block.partition("<FORK>")[2]
+    assert [item.text for item in doc.texts] == ([text] if text else [])
 
 
 @pytest.mark.parametrize(
@@ -364,6 +367,25 @@ def test_repeated_blocks_cut_by_max_tokens_keep_a_valid_document() -> None:
     doc = _parse(f"<PAGE>{repeated}<BLOCK>text[10, 20, 30, 40, 10, 20")
 
     assert [item.text for item in doc.texts] == ["Loop"] * 3
+
+
+def test_loop_leaks_are_removed_but_real_text_stays() -> None:
+    doc = _parse(
+        "<PAGE><BLOCK>text[10, 20, 30, 40]<FORK>[1] Keep\n"
+        "<BLOCK>text[10, 30,\n"
+        "<BLOCK>text[10, 40, 30, 50]<td>\n"
+        "<BLOCK>text[777, 660]<FORK>Name\n"
+        "<BLOCK>text[10, 60,</td><td></td></tr></table>\n"
+        "<BLOCK>text[10, 70, 30, 80]<FORK>See [2, 3] and <Element a at 0x7f>\n"
+        "<BLOCK>algorithm[10, 90, 30, 99]<FORK><td>x</td>"
+    )
+
+    assert [item.text for item in doc.texts] == [
+        "[1] Keep",
+        "Name",
+        "See [2, 3] and <Element a at 0x7f>",
+        "<td>x</td>",
+    ]
 
 
 @pytest.mark.parametrize("engine_type", [VlmEngineType.API, VlmEngineType.API_OPENAI])

@@ -77,9 +77,12 @@ _NUMBER = r"-?\d{1,9}"
 _LEVEL = r"</?LEVEL\d{0,9}[>}]?"
 # `\Z` keeps the box of a block that max_tokens cut before the closing bracket.
 _BOX = rf"\[\s*{_NUMBER}(?:\s*[,\uff0c]\s*{_NUMBER}){{3,}}[\s,\uff0c]*(?:\]|\Z)"
+# A box that a repeating loop cut, such as `[830, 735,`. It must hold a comma and end
+# at a tag or at the end of the reply, so text such as `[1] Smith` stays text.
+_PARTIAL_BOX = r"\[(?=[\d\s-]*[,\uff0c])[\d\s,\uff0c-]*\]?(?=\s*(?:<|\Z))"
 _PAGE_RE = re.compile(r"</?PAGE\d*>")
 _BLOCK_RE = re.compile(
-    rf"(?:<BLOCK>\s*)+(?P<label>[a-zA-Z_]+)(?P<attrs>(?:\s*(?:{_LEVEL}|{_BOX}))*)"
+    rf"(?:<BLOCK>\s*)+(?P<label>[a-zA-Z_]+)(?P<attrs>(?:\s*(?:{_LEVEL}|{_BOX}|{_PARTIAL_BOX}))*)"
     r"\s*(?:<FORK>)?"
 )
 _BARE_BLOCK_RE = re.compile(
@@ -88,6 +91,12 @@ _BARE_BLOCK_RE = re.compile(
     re.MULTILINE,
 )
 _BOX_RE = re.compile(_BOX)
+# Table tags that a loop leaves in a block, or that stay in an unreadable table.
+_TABLE_TAG_RE = re.compile(
+    r"(?:[ \t]*</?(?:table|thead|tbody|tfoot|tr|td|th|br)\b[^<>\n]*(?:>|(?=<)|$))+[ \t]*",
+    re.IGNORECASE | re.MULTILINE,
+)
+_ROW_BREAK_RE = re.compile(r"</?(?:tr|br)\b", re.IGNORECASE)
 _LEVEL_DIGITS_RE = re.compile(r"LEVEL(\d+)")
 _STRAY_TOKEN_RE = re.compile(
     rf"<[|\uff5c][^<>\n]*[|\uff5c]>|</?(?:BLOCK|CHILD|FORK|MERGE)>|{_LEVEL}"
@@ -138,6 +147,16 @@ def _clean_text(text: str) -> str:
     return "" if text.lower() in _NOISE_TEXT else text
 
 
+def _strip_table_tags(text: str) -> str:
+    """Replace table tags with a space, or a line break for a row or ``<br>``.
+
+    shortcut: other tags and character entities stay; add them if real output needs it.
+    """
+    return _TABLE_TAG_RE.sub(
+        lambda tags: "\n" if _ROW_BREAK_RE.search(tags.group()) else " ", text
+    ).strip()
+
+
 def _parse_blocks(segment: str) -> list[_Block]:
     segment = _BARE_BLOCK_RE.sub("<BLOCK>", segment)
     matches = list(_BLOCK_RE.finditer(segment))
@@ -147,15 +166,17 @@ def _parse_blocks(segment: str) -> list[_Block]:
     for match, end in zip(matches, ends):
         raw_text = segment[match.end() : end]
         level = _LEVEL_DIGITS_RE.search(match["attrs"])
+        label = match["label"].lower().removeprefix("cross_").removeprefix("append_")
+        text = _clean_text(raw_text)
         blocks.append(
             _Block(
-                label=match["label"]
-                .lower()
-                .removeprefix("cross_")
-                .removeprefix("append_"),
+                label=label,
                 level=int(level.group(1)) if level else None,
                 box=_parse_box(match["attrs"]),
-                text=_clean_text(raw_text),
+                # A table keeps its HTML for the table mapper. Code may show tags.
+                text=text
+                if label in {"algorithm", "table"}
+                else _strip_table_tags(text),
                 merge_next="<MERGE>" in raw_text,
             )
         )
@@ -230,6 +251,9 @@ def _add_block(
         if _add_table(doc, text, prov):
             return None
         _log.warning("Keeping an unreadable Unlimited-OCR 2 table as text")
+        text = _strip_table_tags(text)
+        if not text:
+            return None
     label = _TEXT_LABELS.get(block.label, DocItemLabel.TEXT)
     item = doc.add_text(
         label=label,
