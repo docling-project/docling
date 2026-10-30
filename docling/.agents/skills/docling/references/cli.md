@@ -68,6 +68,10 @@ Docling refuses to load it until you add `--trust-remote-code` (SDK:
 first. For vLLM, run NVIDIA's `vllm serve` server and use the API engine; the
 in-process vLLM engine is not supported for this preset.
 
+The `lightonocr3_*` presets map charts to the `other_chart` class. JSON, Markdown,
+and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raises
+`ValueError` when a document has a chart block.
+
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
 classifies pictures first and adds chart data only where the VLM has not
 already provided it.

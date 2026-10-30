@@ -199,8 +199,9 @@ def parse_lightonocr_markdown(
             if label in {"header_image", "footer_image"}:
                 picture.content_layer = ContentLayer.FURNITURE
             if label == "chart" and picture.meta is not None:
-                # The model gives no chart type. DocLang keeps chart data only
-                # for chart classes.
+                # shortcut: the model gives no chart type, so the class is OTHER_CHART.
+                # DCLX and DocLang lose its chart data, and export_to_doctags() raises
+                # ValueError. Upgrade when docling-core supports this class in both.
                 picture.meta.classification = PictureClassificationMetaField(
                     predictions=[
                         PictureClassificationPrediction(

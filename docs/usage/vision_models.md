@@ -164,6 +164,11 @@ separate boxes. Continuation blocks keep their base labels without being merged.
 Lists keep their structure, without assigning the block box to individual items.
 A caption links to a table or picture only when it has exactly one adjacent owner.
 
+The model gives no chart type, so `chart` blocks use the `other_chart` class, and
+current docling-core does not fully support that class. JSON, Markdown, and HTML
+keep the chart data. DCLX and DocLang exports lose it, and `export_to_doctags()`
+raises `ValueError` when a document has a `chart` block.
+
 For plain transcription, set `pipeline_options.vlm_options.model_spec.prompt = ""`.
 The parser also accepts that Markdown output, without bounding boxes. Use only
 the empty prompt or `grounding`, as specified in the model cards.
