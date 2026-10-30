@@ -259,6 +259,7 @@ Languages are given as BCP-47 tags for every engine; see
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
 | `unlimited_ocr` | Unlimited-OCR | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks |
+| `unlimited_ocr2` | Unlimited-OCR 2 | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ❌ | Native layout blocks with HTML tables, one page per request |
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 
@@ -339,6 +340,81 @@ or invalid crop generations before merging. Token counts include all stages, and
 `usage` keeps each stage response's provider usage when available.
 
 `unlimited_ocr` is served through an OpenAI-compatible endpoint: point `ApiVlmEngineOptions.url` at your own runtime. Its API override sets `skip_special_tokens=False`, without which the layout annotations are stripped from the completion.
+
+`unlimited_ocr2` runs through an OpenAI-compatible server that you start yourself. Docling runs
+no model code in-process for this preset. It has no MLX or in-process vLLM configuration. The
+Transformers engine cannot run it, because the model needs its own generation loop and
+`transformers==4.52.1`. vLLM support needs [vllm-project/vllm#64016](https://github.com/vllm-project/vllm/pull/64016),
+which is not merged yet.
+
+Today the server is the customized SGLang wheel from the model repository. It needs an NVIDIA
+GPU. The command below is the model card command at the pinned revision, without
+`--enable-custom-logit-processor`, because Docling does not send a logit processor. The model card
+also lists memory settings for the server.
+
+```shell
+hf download baidu/Unlimited-OCR-2 \
+    --revision c14071b549f4fcab10909f3c4acc6a2edb366947 --local-dir Unlimited-OCR-2
+uv venv --python 3.10 && source .venv/bin/activate
+uv pip install Unlimited-OCR-2/wheel/sglang-0.5.20.dev13+g75b9b06b02-py3-none-any.whl \
+    fastokens==0.3.2
+
+python -m sglang.launch_server \
+    --model-path Unlimited-OCR-2 \
+    --served-model-name Unlimited-OCR-2 \
+    --chat-template unlimited-ocr \
+    --tokenizer-backend fastokens \
+    --tokenizer-worker-num 8 \
+    --mem-fraction-static 0.7 \
+    --max-running-requests 64 \
+    --max-prefill-tokens 2048 \
+    --enable-streaming-session \
+    --allow-auto-truncate \
+    --disable-radix-cache \
+    --mm-preprocess-cache-size-mb 0 \
+    --cuda-graph-backend-decode full --cuda-graph-max-bs-decode 64 \
+    --cuda-graph-backend-prefill full \
+    --cuda-graph-max-bs-prefill 16384 \
+    --cuda-graph-bs-prefill 1024 2048 \
+    --cuda-graph-config '{"prefill": {"backend": "full", "full_prefill_max_req": 64}}' \
+    --host 127.0.0.1 \
+    --port 10000
+```
+
+Keep the CUDA Graph flags. The vendor reports that eager mode can repeat box coordinates. Then
+point the preset at the server in the Python SDK. The CLI has no option for the API URL, so
+`--vlm-model unlimited_ocr2` uses the default OpenAI URL and is not useful without the SDK.
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "unlimited_ocr2",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:10000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+Limits of this preset:
+
+- **One page per request.** Docling sends each page alone. The main feature of the model is to
+  read all pages of a document in one request, and Docling does not use this mode yet. The vendor's
+  paper reports only a small gain on single pages: 94.02 against 93.92 for Unlimited-OCR on
+  OmniDocBench.
+- **No merge across pages.** Docling reads `cross_` and `append_` blocks as normal blocks. A table
+  or paragraph that continues on the next page stays split. `<MERGE>` joins text on the same page.
+- **No repetition guard.** The vendor client sends a pickled logit processor, and Docling does not.
+  A page that repeats ends at `max_tokens` (8000) with the `length` stop reason.
+- **Your own `params`.** If you set `params`, the preset parameters are not sent, so include
+  `model`, `max_tokens`, and `skip_special_tokens=False`. Without the last value, the server removes
+  `<td>` and `<tr>` from tables.
 
 #### Picture Description Stage
 

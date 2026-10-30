@@ -66,6 +66,10 @@ Docling refuses to load it until you add `--trust-remote-code` (SDK:
 first. For vLLM, run NVIDIA's `vllm serve` server and use the API engine; the
 in-process vLLM engine is not supported for this preset.
 
+`unlimited_ocr` and `unlimited_ocr2` need your own OpenAI-compatible server, and the
+CLI has no option for the API URL. Use the SDK for these presets. See
+[python-sdk.md](python-sdk.md).
+
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
 classifies pictures first and adds chart data only where the VLM has not
 already provided it.
