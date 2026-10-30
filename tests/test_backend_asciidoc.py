@@ -136,6 +136,69 @@ def test_single_cell_per_line_table_is_not_truncated() -> None:
     assert [item.text for item in doc.texts] == []
 
 
+def _table_rows(src: bytes) -> list[list[str]]:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="table.adoc",
+    )
+    doc = in_doc._backend.convert()
+    assert len(doc.tables) == 1
+    rows: dict[int, list[str]] = {}
+    for cell in doc.tables[0].data.table_cells:
+        rows.setdefault(cell.start_row_offset_idx, []).append(cell.text)
+    return [rows[idx] for idx in sorted(rows)]
+
+
+def test_table_row_written_over_several_lines() -> None:
+    # Asciidoctor takes the column count from the first line and fills each
+    # row with that many cells, so its basic table example writes one cell per
+    # line after a header on one line. Each line used to become its own row.
+    src = (
+        b"|===\n"
+        b"|Column 1, header row |Column 2, header row\n\n"
+        b"|Cell in column 1, row 2\n|Cell in column 2, row 2\n\n"
+        b"|Cell in column 1, row 3\n|Cell in column 2, row 3\n"
+        b"|===\n"
+    )
+    assert _table_rows(src) == [
+        ["Column 1, header row", "Column 2, header row"],
+        ["Cell in column 1, row 2", "Cell in column 2, row 2"],
+        ["Cell in column 1, row 3", "Cell in column 2, row 3"],
+    ]
+
+
+def test_table_rows_over_several_lines_count_spans() -> None:
+    # A column span fills its columns, and a row span fills a column of the
+    # rows below it, so neither pulls the next cell into its row.
+    assert _table_rows(b"|===\n|A |B\n2+|wide\n|x\n|y\n|===\n") == [
+        ["A", "B"],
+        ["wide"],
+        ["x", "y"],
+    ]
+    assert _table_rows(b"|===\n|A |B\n.2+|tall\n|x\n|y\n|z\n|===\n") == [
+        ["A", "B"],
+        ["tall", "x"],
+        ["y"],
+        ["z"],
+    ]
+
+
+def test_table_rows_over_several_lines_count_duplicated_cells() -> None:
+    # "2*|x" writes the cell twice, so a first line "2*|x |y" sets three
+    # columns, as Asciidoctor reads it. A line continuing the cell's text
+    # applies to both copies.
+    assert _table_rows(b"|===\n2*|x |y\n|z\n|p\n|q\n|===\n") == [
+        ["x", "x", "y"],
+        ["z", "p", "q"],
+    ]
+    assert _table_rows(b"|===\n|A |B |C\n2*|x\nmore\n|y\n|===\n") == [
+        ["A", "B", "C"],
+        ["x more", "x more", "y"],
+    ]
+
+
 def test_blank_line_inside_table_does_not_split_it() -> None:
     # Inside |=== ... |=== a blank line only separates rows: Asciidoctor's own
     # examples put one after the header row. It used to end the table, so the
