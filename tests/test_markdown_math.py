@@ -38,6 +38,17 @@ from docling.utils.markdown_math import create_markdown_parser
             '<math display="block">n - 1</math> and '
             '<math display="block">a-b</math>.',
         ),
+        (
+            r"Cite \[Smith-Jones et al., 2020\] and \[RFC-2119\]; \[2n-12\].",
+            "Cite [Smith-Jones et al., 2020] and [RFC-2119]; "
+            '<math display="block">2n-12</math>.',
+        ),
+        (
+            "Use \\[\u03b1\u03b2\\], \\[r\u00b2\\], and \\[\nE\n\\].",
+            'Use <math display="block">\u03b1\u03b2</math>, '
+            '<math display="block">r\u00b2</math>, and '
+            '<math display="block">E</math>.',
+        ),
     ],
 )
 def test_inline_math_preserves_native_text_syntax(source: str, expected: str) -> None:
