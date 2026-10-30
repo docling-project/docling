@@ -5,6 +5,7 @@ import base64
 import os
 import threading
 import time
+from contextlib import nullcontext
 from io import BytesIO
 from pathlib import Path, PurePath
 from unittest.mock import Mock, mock_open, patch
@@ -16,6 +17,7 @@ from bs4 import BeautifulSoup
 from docling_core.types.doc import (
     DocItemLabel,
     GroupLabel,
+    ImageRefMode,
     PictureItem,
     RichTableCell,
 )
@@ -1574,6 +1576,121 @@ def test_local_file_uri_source_resolves_images(tmp_path: Path):
     ]
     assert len(pictures) == 1
     assert pictures[0].get_image(doc) is not None
+
+
+@pytest.mark.parametrize(
+    ("filename", "file_uri"),
+    [
+        ("figure one.png", False),
+        ("图 片.png", True),
+        ("figure%20one.png", False),
+        ("figure#one.png", True),
+    ],
+)
+def test_percent_escaped_local_image(tmp_path: Path, filename: str, file_uri: bool):
+    Image.new("RGB", (7, 5), (0, 255, 0)).save(tmp_path / filename)
+    source = tmp_path / "page.html"
+    source.write_text(
+        f'<p>Before.</p><img src="{quote(filename)}?v=1#preview" alt="Green figure">'
+        "<p>After.</p>",
+        encoding="utf-8",
+    )
+    converter = _create_html_converter(
+        HTMLBackendOptions(
+            fetch_images=True,
+            enable_local_fetch=True,
+            source_uri=source.as_uri() if file_uri else source,
+        )
+    )
+
+    doc = converter.convert(source).document
+
+    assert len(doc.pictures) == 1
+    image = doc.pictures[0].get_image(doc)
+    assert image is not None and image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (0, 255, 0)
+    assert [item.text for item in doc.texts] == ["Before.", "Green figure", "After."]
+    markdown = doc.export_to_markdown(image_mode=ImageRefMode.EMBEDDED)
+    assert markdown.index("Before.") < markdown.index("data:image/png;base64,")
+    assert markdown.index("data:image/png;base64,") < markdown.index("After.")
+
+
+@pytest.mark.parametrize("src", ["%2e%2e/outside.png", "%2F%2Fimages.test/outside.png"])
+def test_percent_escaped_local_image_keeps_confinement(tmp_path: Path, src: str):
+    directory = tmp_path / "article"
+    directory.mkdir()
+    Image.new("RGB", (7, 5)).save(tmp_path / "outside.png")
+    source = directory / "page.html"
+    source.write_text(f'<p>Before.</p><img src="{src}"><p>After.</p>', encoding="utf-8")
+    converter = _create_html_converter(
+        HTMLBackendOptions(
+            fetch_images=True, enable_local_fetch=True, source_uri=source
+        )
+    )
+
+    with pytest.warns(
+        UserWarning, match="Path traversal blocked|Absolute paths are not allowed"
+    ):
+        doc = converter.convert(source).document
+
+    assert len(doc.pictures) == 1 and doc.pictures[0].image is None
+    assert [item.text for item in doc.texts] == ["Before.", "After."]
+
+
+@pytest.mark.parametrize(
+    ("fetch_images", "enable_local_fetch"), [(False, True), (True, False)]
+)
+def test_percent_escaped_local_image_fetch_disabled(
+    tmp_path: Path, fetch_images: bool, enable_local_fetch: bool
+):
+    Image.new("RGB", (7, 5)).save(tmp_path / "figure one.png")
+    source = tmp_path / "page.html"
+    source.write_text('<img src="figure%20one.png">', encoding="utf-8")
+    converter = _create_html_converter(
+        HTMLBackendOptions(
+            fetch_images=fetch_images,
+            enable_local_fetch=enable_local_fetch,
+            source_uri=source,
+        )
+    )
+
+    with (
+        pytest.warns(UserWarning, match="enable_local_fetch")
+        if fetch_images
+        else nullcontext()
+    ):
+        doc = converter.convert(source).document
+
+    assert len(doc.pictures) == 1 and doc.pictures[0].image is None
+
+
+@pytest.mark.parametrize("absolute_url", [False, True])
+def test_percent_escaped_remote_image_keeps_url(
+    monkeypatch, tmp_path: Path, absolute_url: bool
+):
+    use_test_network(monkeypatch, {"images.test": [SERVER_IP]})
+    with local_server() as server:
+        server.files = {"/figure%20one.png": PNG_1X1}
+        src = "figure%20one.png?key=a%20b"
+        base = server.url("images.test", "/page.html")
+        if absolute_url:
+            src = server.url("images.test", "/" + src)
+            base = tmp_path / "page.html"
+        converter = _create_html_converter(
+            HTMLBackendOptions(
+                fetch_images=True, enable_remote_fetch=True, source_uri=base
+            )
+        )
+        doc = converter.convert(
+            DocumentStream(
+                name="page.html", stream=BytesIO(f'<img src="{src}">'.encode())
+            )
+        ).document
+
+        assert len(doc.pictures) == 1 and doc.pictures[0].image is not None
+        assert [request.path for request in server.requests] == [
+            "/figure%20one.png?key=a%20b"
+        ]
 
 
 def test_html_furniture():

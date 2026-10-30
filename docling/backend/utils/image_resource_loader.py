@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
-from urllib.parse import urljoin, urlparse, urlsplit
+from urllib.parse import unquote, urljoin, urlparse, urlsplit
 from urllib.request import url2pathname
 
 import certifi
@@ -325,7 +325,13 @@ class ImageResourceLoader:
             raise ValueError("Invalid file URI: empty path")
         return url2pathname(path)
 
-    def resolve_relative_path(self, loc: str, base_path: Optional[str]) -> str:
+    def resolve_relative_path(
+        self, loc: str, base_path: Optional[str], *, decode_url_path: bool = False
+    ) -> str:
+        """Resolve a resource, optionally decoding local URL paths before confinement.
+
+        Native path callers keep percent characters unchanged by default.
+        """
         loc = loc.strip()
 
         # Strip file:// prefix for validation as local path
@@ -342,7 +348,15 @@ class ImageResourceLoader:
                 if ImageResourceLoader.is_remote_url(base_path):
                     abs_loc = urljoin(base_path, loc)
                 elif ImageResourceLoader.is_local_path(base_path):
-                    if ImageResourceLoader.is_absolute_path(loc):
+                    if decode_url_path and not ImageResourceLoader.is_absolute_path(
+                        loc
+                    ):
+                        parsed_loc = urlsplit(loc)
+                        if not parsed_loc.scheme:
+                            loc = unquote(parsed_loc.path)
+                    if ImageResourceLoader.is_absolute_path(loc) or (
+                        decode_url_path and loc.startswith(("/", "\\"))
+                    ):
                         raise ValueError(
                             f"Absolute paths are not allowed with local base_path: '{loc}'"
                         )
