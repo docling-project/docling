@@ -90,6 +90,7 @@ from docling.datamodel.service.targets import (
     S3Target,
     ZipTarget,
 )
+from docling.datamodel.service.tasks import TaskStatus
 from docling.datamodel.settings import DocumentLimits, PageRange
 from docling.service_client._scheduler import _run_bounded
 from docling.service_client.exceptions import (
@@ -756,10 +757,7 @@ class _BaseDoclingServiceClient:
         task_id: str,
         last_status: TaskStatusResponse | None,
     ) -> None:
-        if (
-            last_status is not None
-            and last_status.task_status == ConversionStatus.CANCELLED
-        ):
+        if last_status is not None and last_status.task_status == TaskStatus.CANCELLED:
             raise TaskCancelledError(f"Task {task_id} was cancelled.", task_id=task_id)
 
     def _raise_if_cancelled_result(
@@ -788,11 +786,11 @@ class _BaseDoclingServiceClient:
             raise TaskNotFoundError(f"Task {task_id} was not found.")
         if detail is not None and detail.startswith("Task result not found"):
             if last_status is not None and is_terminal_task_status(last_status):
-                if last_status.task_status == ConversionStatus.CANCELLED:
+                if last_status.task_status == TaskStatus.CANCELLED:
                     raise TaskCancelledError(
                         f"Task {task_id} was cancelled.", task_id=task_id
                     )
-                if last_status.task_status == ConversionStatus.FAILURE:
+                if last_status.task_status == TaskStatus.FAILURE:
                     message = last_status.error_message or f"Task {task_id} failed."
                     raise TaskExecutionError(message, failure=last_status.failure)
                 raise ResultExpiredError(f"Result for task {task_id} has expired.")

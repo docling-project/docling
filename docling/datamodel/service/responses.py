@@ -18,7 +18,7 @@ from docling.datamodel.base_models import (
     PageConfidenceScores,
     QualityGrade,
 )
-from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
+from docling.datamodel.service.tasks import TaskProcessingMeta, TaskStatus, TaskType
 from docling.utils.profiling import ProfilingItem
 
 
@@ -335,7 +335,7 @@ class ChunkDocumentResponse(BaseModel):
 class TaskStatusResponse(BaseModel):
     task_id: str
     task_type: TaskType
-    task_status: ConversionStatus
+    task_status: TaskStatus
     task_position: Optional[int] = None
     task_meta: Optional[TaskProcessingMeta] = None
     error_message: Optional[str] = None

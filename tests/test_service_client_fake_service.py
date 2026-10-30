@@ -24,6 +24,7 @@ from pydantic import ValidationError
 import docling.service_client.client as client_module
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.service.targets import InBodyTarget, PresignedUrlTarget
+from docling.datamodel.service.tasks import TaskStatus
 from docling.service_client import (
     AsyncDoclingServiceClient,
     ConversionError,
@@ -273,14 +274,14 @@ def test_convert_falls_back_to_inbody_when_presigned_is_unsupported(client, serv
 
 
 def test_task_failure_raises_conversion_error(client, serve):
-    serve.terminal_status = ConversionStatus.FAILURE
+    serve.terminal_status = TaskStatus.FAILURE
 
     with pytest.raises(ConversionError):
         client.convert(SOURCE)
 
 
 def test_task_failure_is_returned_when_raises_on_error_is_false(client, serve):
-    serve.terminal_status = ConversionStatus.FAILURE
+    serve.terminal_status = TaskStatus.FAILURE
 
     result = client.convert(SOURCE, raises_on_error=False)
 
@@ -290,7 +291,7 @@ def test_task_failure_is_returned_when_raises_on_error_is_false(client, serve):
 def test_cancelled_task_raises_task_cancelled_error_without_result_get(
     client, serve, service
 ):
-    serve.terminal_status = ConversionStatus.CANCELLED
+    serve.terminal_status = TaskStatus.CANCELLED
 
     job = client.submit(SOURCE, target=InBodyTarget())
 
@@ -473,7 +474,7 @@ def test_submit_returns_a_job_whose_status_can_be_polled(client, serve):
     job = client.submit(SOURCE, target=InBodyTarget())
     statuses = [update.task_status for update in job.watch(timeout=30)]
 
-    assert statuses[-1] == ConversionStatus.SUCCESS
+    assert statuses[-1] == TaskStatus.SUCCESS
 
 
 # -- the async client ----------------------------------------------------
@@ -524,8 +525,8 @@ async def test_async_watch_yields_every_status_transition(async_client_kwargs, s
         job = await remote.submit(SOURCE, target=InBodyTarget())
         statuses = [update.task_status async for update in job.watch(timeout=30)]
 
-    assert statuses[-1] == ConversionStatus.SUCCESS
-    assert ConversionStatus.STARTED in statuses
+    assert statuses[-1] == TaskStatus.SUCCESS
+    assert TaskStatus.STARTED in statuses
 
 
 @pytest.mark.anyio

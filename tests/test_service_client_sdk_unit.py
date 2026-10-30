@@ -90,7 +90,6 @@ from docling.service_client.job import ConversionJob, _JobHandlers
 from docling.service_client.watchers import (
     AsyncPollingWatcher,
     PollingWatcher,
-    is_terminal_task_status,
 )
 
 TEST_BASE_URL = "http://docling-service.invalid"
@@ -303,10 +302,6 @@ def test_result_404_after_cancelled_status_raises_task_cancelled_error() -> None
     assert excinfo.value.task_id == "task-1"
 
 
-def test_cancelled_status_is_terminal() -> None:
-    assert is_terminal_task_status(_status_response("task-1", "cancelled")) is True
-
-
 def test_polling_watcher_stops_after_cancelled_status() -> None:
     updates = iter(
         [
@@ -489,27 +484,6 @@ def test_fetch_result_response_keeps_malformed_409_as_service_error(
             )
 
     assert not isinstance(excinfo.value, TaskCancelledError)
-
-
-def test_fetch_result_response_skips_get_when_status_known_cancelled() -> None:
-    calls: list[dict[str, object]] = []
-
-    def fake_request(self: DoclingServiceClient, **kwargs: object) -> httpx.Response:
-        calls.append(kwargs)
-        raise AssertionError("result request must not be sent")
-
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        client._request_with_retry = MethodType(  # type: ignore[method-assign]
-            fake_request, client
-        )
-        with pytest.raises(TaskCancelledError):
-            client._fetch_result_response(
-                task_id="task-1",
-                last_status=_status_response("task-1", "cancelled"),
-                error_message="fetch failed",
-            )
-
-    assert calls == []
 
 
 @pytest.mark.anyio

@@ -44,6 +44,7 @@ from docling.datamodel.service.targets import (
     S3Target,
     ZipTarget,
 )
+from docling.datamodel.service.tasks import TaskStatus
 
 S3_MODEL_TYPES = (S3Coordinates, S3SourceRequest, S3Target)
 FAKE_S3_CREDENTIALS = {
@@ -476,8 +477,29 @@ def test_task_status_response_serializes_cancelled_status() -> None:
         }
     )
 
-    assert response.task_status is ConversionStatus.CANCELLED
+    assert response.task_status is TaskStatus.CANCELLED
     assert response.model_dump(mode="json")["task_status"] == "cancelled"
+
+
+def test_task_status_accepts_exactly_the_task_values() -> None:
+    for value in ("pending", "started", "success", "failure", "cancelled"):
+        response = TaskStatusResponse(
+            task_id="task-1", task_type="convert", task_status=value
+        )
+        assert response.task_status is TaskStatus(value)
+
+
+@pytest.mark.parametrize("status", ["partial_success", "skipped"])
+def test_task_status_response_rejects_document_statuses(status: str) -> None:
+    with pytest.raises(ValidationError):
+        TaskStatusResponse(task_id="task-1", task_type="convert", task_status=status)
+
+
+def test_conversion_status_rejects_cancelled_and_keeps_document_values() -> None:
+    with pytest.raises(ValueError):
+        ConversionStatus("cancelled")
+    assert ConversionStatus("partial_success") is ConversionStatus.PARTIAL_SUCCESS
+    assert ConversionStatus("skipped") is ConversionStatus.SKIPPED
 
 
 def test_confidence_scores_from_flat_scores() -> None:

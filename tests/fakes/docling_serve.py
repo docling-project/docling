@@ -47,7 +47,7 @@ from docling.datamodel.service.responses import (
     PresignedUrlConvertResponse,
     TaskStatusResponse,
 )
-from docling.datamodel.service.tasks import TaskType
+from docling.datamodel.service.tasks import TaskStatus, TaskType
 
 DEFAULT_MARKDOWN = "# Fake service result\n\nConverted by the in-process fake.\n"
 
@@ -70,7 +70,7 @@ class FakeTask:
     task_id: str
     task_type: str = "convert"
     polls_before_success: int = 1
-    terminal_status: ConversionStatus = ConversionStatus.SUCCESS
+    terminal_status: TaskStatus = TaskStatus.SUCCESS
     filename: str = "sample.pdf"
     markdown: str = DEFAULT_MARKDOWN
     errors: list[dict[str, Any]] = field(default_factory=list)
@@ -78,11 +78,11 @@ class FakeTask:
     target_kind: str = "inbody"
     source_uri: str = "https://example.com/sample.pdf"
 
-    def status(self) -> ConversionStatus:
+    def status(self) -> TaskStatus:
         if self.polls == 0:
-            return ConversionStatus.PENDING
+            return TaskStatus.PENDING
         if self.polls <= self.polls_before_success:
-            return ConversionStatus.STARTED
+            return TaskStatus.STARTED
         return self.terminal_status
 
 
@@ -96,7 +96,7 @@ class FakeDoclingServe:
         # Applied to tasks created by the submit routes; a test changes these
         # before submitting to script a slow or failing task.
         self.polls_before_success = 1
-        self.terminal_status = ConversionStatus.SUCCESS
+        self.terminal_status = TaskStatus.SUCCESS
         # Set by the fixture once the server is bound, so tests can reach it.
         self.service: Any = None
         self.router = self._build_router()
@@ -135,7 +135,7 @@ class FakeDoclingServe:
             task_position=0,
             error_message=(
                 "conversion failed in the fake service"
-                if task.status() is ConversionStatus.FAILURE
+                if task.status() is TaskStatus.FAILURE
                 else None
             ),
         )
@@ -143,7 +143,7 @@ class FakeDoclingServe:
     def _result(self, task: FakeTask) -> BaseModel:
         """The result envelope the client expects for the requested target."""
         if task.target_kind == "presigned_url":
-            failed = task.terminal_status is ConversionStatus.FAILURE
+            failed = task.terminal_status is TaskStatus.FAILURE
             return PresignedUrlConvertResponse(
                 num_converted=1,
                 num_succeeded=0 if failed else 1,
@@ -154,7 +154,7 @@ class FakeDoclingServe:
                         source_index=0,
                         source_uri=task.source_uri,
                         filename=task.filename,
-                        status=task.terminal_status,
+                        status=ConversionStatus(task.terminal_status.value),
                         artifacts=[
                             ArtifactRef(
                                 artifact_type="json",
@@ -176,7 +176,7 @@ class FakeDoclingServe:
                 md_content=task.markdown,
                 json_content=_fake_document(task.filename),
             ),
-            status=task.terminal_status,
+            status=ConversionStatus(task.terminal_status.value),
             processing_time=0.25,
         )
 
@@ -236,7 +236,7 @@ class FakeDoclingServe:
             task = self.tasks.get(task_id)
             if task is None:
                 return JSONResponse({"detail": "task not found"}, status_code=404)
-            if task.status() is ConversionStatus.CANCELLED:
+            if task.status() is TaskStatus.CANCELLED:
                 return JSONResponse(
                     {
                         "detail": {
