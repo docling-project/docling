@@ -4,7 +4,7 @@ Docling is available as a native integration in [Semantica](https://github.com/H
 
 By combining Docling's high-fidelity structural parsing with Semantica's knowledge engineering, you can transform complex documents into AI-ready, structured knowledge for GraphRAG, AI agents, and multi-agent systems.
 
-- 📖 [Semantica Documentation](https://hawksight-ai.github.io/semantica/)
+- 📖 [Semantica Documentation](https://docs.getsemantica.ai/)
 - 💻 [Semantica GitHub](https://github.com/Hawksight-AI/semantica)
 - 📦 [Semantica PyPI](https://pypi.org/project/semantica/)
 
