@@ -124,7 +124,8 @@ def _page_segment(content: str) -> str:
             "Unlimited-OCR 2 output holds more than one page for one input page; "
             "keeping the first page"
         )
-    return segments[1]
+    # A reply without its opening tag, such as `body</PAGE>`, has an empty segment 1.
+    return segments[1] if segments[1].strip() else segments[0]
 
 
 def _parse_box(attrs: str) -> tuple[float, float, float, float] | None:

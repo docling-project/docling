@@ -388,6 +388,20 @@ def test_loop_leaks_are_removed_but_real_text_stays() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        "<BLOCK>text[10, 20, 30, 40]<FORK>Body</PAGE>",
+        "<BLOCK>text[10, 20, 30, 40]<FORK>Body<PAGE>",
+    ],
+    ids=["closing_tag_only", "opening_tag_at_the_end"],
+)
+def test_page_tag_without_a_page_body_keeps_the_text(content: str) -> None:
+    doc = _parse(content)
+
+    assert [item.text for item in doc.texts] == ["Body"]
+
+
 @pytest.mark.parametrize("engine_type", [VlmEngineType.API, VlmEngineType.API_OPENAI])
 def test_preset_keeps_table_tokens_on_both_api_engine_types(
     engine_type: VlmEngineType,
