@@ -223,6 +223,7 @@ class VideoPipeline(BasePipeline):
                         try:
                             diarization = diarize(
                                 wav_path,
+                                num_speakers=self.pipeline_options.diarization_num_speakers,
                                 accelerator_device=self.pipeline_options.accelerator_options.device,
                             )
                             transcript_items = assign_speakers(

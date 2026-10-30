@@ -232,7 +232,7 @@ FFmpeg calls share the document's `document_timeout` budget when it is set. With
 
 ### Speaker diarization
 
-Set `enable_diarization=True` to attribute transcript segments to speakers. Diarization runs via [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) embedding clustering and auto-detects the number of speakers; it requires the extra dependencies bundled in `format-video` (`resemblyzer`, `soundfile`, `scikit-learn`, `librosa`). If those aren't installed, diarization is silently skipped and a warning is logged — transcription and frame sampling still proceed normally.
+Set `enable_diarization=True` to attribute transcript segments to speakers. Diarization runs via [Resemblyzer](https://github.com/resemble-ai/Resemblyzer) embedding clustering and auto-detects the number of speakers (set `diarization_num_speakers` when you already know it); it requires the extra dependencies bundled in `format-video` (`resemblyzer`, `soundfile`, `scikit-learn`, `librosa`). If those aren't installed, diarization is silently skipped and a warning is logged — transcription and frame sampling still proceed normally.
 
 ### From the command line
 

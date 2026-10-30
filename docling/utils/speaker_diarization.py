@@ -23,6 +23,8 @@ _MIN_SPEAKERS = 2
 """Minimum number of speakers to consider in clustering."""
 _MAX_SPEAKERS = 8
 """Maximum number of speakers to consider in clustering."""
+_SAME_SPEAKER_SIMILARITY = 0.85
+"""Centroid cosine similarity above which all clusters are one voice; silhouette alone cannot tell one voice from two on 1.5 s windows."""
 _WINDOW_STEP = 0.5
 """Window step in seconds; 0.5 provides fine-grained speaker boundary detection without excessive computational overhead."""
 
@@ -52,12 +54,14 @@ def _estimate_num_speakers(embeddings: np.ndarray) -> int:
         embeddings: Per-window speaker embeddings.
 
     Returns:
-        The speaker count with the highest silhouette score.
+        The speaker count with the highest silhouette score, or 1 when even the
+        least similar pair of its cluster centroids exceeds
+        _SAME_SPEAKER_SIMILARITY.
     """
     from sklearn.cluster import AgglomerativeClustering  # type: ignore[import-untyped]
     from sklearn.metrics import silhouette_score  # type: ignore[import-untyped]
 
-    best_n, best_score = _MIN_SPEAKERS, -1.0
+    best_n, best_score, best_labels = _MIN_SPEAKERS, -1.0, None
     for n in range(_MIN_SPEAKERS, min(_MAX_SPEAKERS + 1, len(embeddings))):
         labels = AgglomerativeClustering(n_clusters=n).fit_predict(embeddings)
         if len(set(labels)) < 2:
@@ -67,6 +71,17 @@ def _estimate_num_speakers(embeddings: np.ndarray) -> int:
         if score > best_score:
             best_score = score
             best_n = n
+            best_labels = labels
+    if best_labels is not None:
+        centroids = np.array(
+            [embeddings[best_labels == k].mean(axis=0) for k in range(best_n)]
+        )
+        centroids /= np.linalg.norm(centroids, axis=1, keepdims=True)
+        # The diagonal is 1, so the minimum is the least similar pair.
+        min_similarity = float((centroids @ centroids.T).min())
+        _log.debug("N=%d min centroid similarity=%.4f", best_n, min_similarity)
+        if min_similarity > _SAME_SPEAKER_SIMILARITY:
+            best_n = 1
     _log.info("Estimated %d speakers (silhouette=%.4f)", best_n, best_score)
     return best_n
 
