@@ -555,6 +555,29 @@ class MsPowerpointBackendOptions(BaseBackendOptions):
         ),
     )
 
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum cumulative decompressed size in bytes of all members of "
+                "the PPTX archive. The archive is checked before it is parsed."
+            )
+        ),
+    ] = 512 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum decompressed size in bytes of any single member of the "
+                "PPTX archive."
+            )
+        ),
+    ] = 128 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt,
+        Field(description="Maximum number of members in the PPTX archive"),
+    ] = 10_000
+
 
 class MsWordBackendOptions(BaseBackendOptions):
     """Options specific to the MS Word backend."""
