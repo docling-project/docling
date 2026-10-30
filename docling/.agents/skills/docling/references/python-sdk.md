@@ -594,15 +594,15 @@ converter = DocumentConverter(
     format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
 )
 ```
-## DOCX, XLSX and EPUB size limits
+## DOCX, XLSX, PPTX and EPUB size limits
 
 These formats are ZIP archives. Docling checks the decompressed sizes before it
 parses them and fails the file with `ArchiveLimitError` (a `DocumentLoadError`)
-when one is too large. Defaults: DOCX/XLSX 128 MiB per member, 512 MiB in total,
-10,000 members; EPUB content documents 10 MB each, 100 MB in total. Raise them
-for large trusted files with `max_file_bytes`, `max_total_bytes` and
-`max_member_count` on `MsWordBackendOptions`, `MsExcelBackendOptions` or
-`EpubBackendOptions`:
+when one is too large. Defaults: DOCX/XLSX/PPTX 128 MiB per member, 512 MiB in
+total, 10,000 members; EPUB content documents 10 MB each, 100 MB in total. Raise
+them for large trusted files with `max_file_bytes`, `max_total_bytes` and
+`max_member_count` on `MsWordBackendOptions`, `MsExcelBackendOptions`,
+`MsPowerpointBackendOptions` or `EpubBackendOptions`:
 
 ```python
 from docling.datamodel.backend_options import MsWordBackendOptions

@@ -25,6 +25,7 @@ from typing import (
     Union,
 )
 from urllib.parse import urlparse
+from zipfile import ZipFile
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -64,6 +65,11 @@ from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.backend.utils.archive_limits import (
+    ArchiveLimitError,
+    ArchiveLimits,
+    check_archive_limits,
+)
 from docling.backend.utils.charts import build_chart_table, datetime_to_iso
 from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
@@ -373,6 +379,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         super().__init__(in_doc, path_or_stream, options)
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
         self.page_range = in_doc.limits.page_range
+        self._archive_limits = ArchiveLimits.from_options(options)
 
         self.pptx_to_pdf_converter: Optional[Callable] = None
         self.pptx_to_pdf_converter_init: bool = False
@@ -382,18 +389,36 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.pptx_obj: Optional[presentation.Presentation] = None
         self.valid: bool = False
         try:
+            self._check_archive_limits()
             if isinstance(self.path_or_stream, BytesIO):
                 self.pptx_obj = Presentation(self.path_or_stream)
             elif isinstance(self.path_or_stream, Path):
                 self.pptx_obj = Presentation(str(self.path_or_stream))
 
             self.valid = True
+        except ArchiveLimitError:
+            self.valid = False
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"MsPowerpointDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
 
         return
+
+    def _check_archive_limits(self) -> None:
+        """Check the decompressed sizes the PPTX archive declares.
+
+        python-pptx decompresses the presentation members while it loads them,
+        so the check runs before Presentation is read.
+
+        Raises:
+            ArchiveLimitError: If the archive exceeds the configured limits.
+        """
+        with ZipFile(self.path_or_stream, "r") as zip_file:
+            check_archive_limits(zip_file, self._archive_limits)
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
 
     def page_count(self) -> int:
         if self.is_valid():
