@@ -371,11 +371,11 @@ def render(decoded: cells.Cell | None) -> str | None:
     if decoded.type in (cells.CELL_TYPE_NUMBER, cells.CELL_TYPE_CURRENCY):
         return format_number(decoded.number)
     if decoded.type == cells.CELL_TYPE_DATE:
-        return format_date(float(decoded.number))
+        return format_date(decoded.number)
     if decoded.type == cells.CELL_TYPE_DURATION:
-        return format_duration(float(decoded.number))
+        return format_duration(decoded.number)
     if decoded.type == cells.CELL_TYPE_BOOL:
-        return format_bool(float(decoded.number))
+        return format_bool(decoded.number)
     return None
 
 
