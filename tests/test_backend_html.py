@@ -853,6 +853,53 @@ def test_ordered_list_item_marker_from_list_style_string(items: str, expected: s
     assert doc.export_to_markdown() == expected
 
 
+@pytest.mark.parametrize(
+    ("items", "expected"),
+    [
+        # The `type` attribute sets the kind of marker
+        ('<ol type="a"><li>x</li><li>y</li></ol>', ["a.", "b."]),
+        ('<ol type="A" start="26"><li>x</li><li>y</li></ol>', ["Z.", "AA."]),
+        ('<ol type="i" start="3"><li>x</li><li>y</li></ol>', ["iii.", "iv."]),
+        (
+            '<ol type="I" start="3999"><li>x</li><li>y</li></ol>',
+            ["MMMCMXCIX.", "4000."],
+        ),
+        # A `list-style-type` keyword in the inline style wins over the `type`
+        ('<ol style="list-style-type: lower-alpha;"><li>x</li></ol>', ["a."]),
+        (
+            '<ol type="a" style="list-style-type: upper-roman"><li>x</li></ol>',
+            ["I."],
+        ),
+        # A reversed list counts down, by default from its number of items
+        ("<ol reversed><li>x</li><li>y</li><li>z</li></ol>", ["3.", "2.", "1."]),
+        ('<ol reversed start="10" type="a"><li>x</li><li>y</li></ol>', ["j.", "i."]),
+        # The `value` attribute sets the number of an item and of the items after it
+        ('<ol><li>x</li><li value="5">y</li><li>z</li></ol>', ["1.", "5.", "6."]),
+        (
+            '<ol reversed><li>x</li><li value="10">y</li><li>z</li></ol>',
+            ["3.", "10.", "9."],
+        ),
+        # The numbering continues after content that interrupts the list
+        ('<ol type="a"><li>x</li><p>between</p><li>y</li></ol>', ["a.", "b."]),
+        # An unknown type is ignored, as in browsers
+        ('<ol type="b"><li>x</li><li>y</li></ol>', ["", ""]),
+    ],
+)
+def test_ordered_list_item_marker_from_attributes(items: str, expected: list[str]):
+    html = f"<html><body>{items}</body></html>".encode()
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = in_doc._backend.convert()
+    markers = [
+        item.marker for item in doc.texts if item.label == DocItemLabel.LIST_ITEM
+    ]
+    assert markers == expected
+
+
 def test_list_item_markers_survive_html_export_round_trip():
     # Docling's HTML export writes the original list item markers as a CSS
     # string list-style-type. Converting that HTML again must keep them.

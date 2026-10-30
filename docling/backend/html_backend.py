@@ -280,6 +280,66 @@ def _parse_ol_start(value: str) -> Optional[int]:
     return start if start <= _OL_START_MAX else None
 
 
+# The marker kinds of the `type` attribute of an `<ol>` (case-sensitive).
+_OL_TYPES: Final = frozenset({"1", "a", "A", "i", "I"})
+# The CSS `list-style-type` keywords with the `type` of the same marker kind.
+_LIST_STYLE_TYPES: Final = {
+    "decimal": "1",
+    "lower-alpha": "a",
+    "lower-latin": "a",
+    "upper-alpha": "A",
+    "upper-latin": "A",
+    "lower-roman": "i",
+    "upper-roman": "I",
+}
+_LIST_STYLE_KEYWORD_RE: Final = re.compile(
+    r"list-style(?:-type)?\s*:\s*(?P<value>[^;]*)", re.IGNORECASE
+)
+_ROMAN_NUMERALS: Final = (
+    (1000, "m"),
+    (900, "cm"),
+    (500, "d"),
+    (400, "cd"),
+    (100, "c"),
+    (90, "xc"),
+    (50, "l"),
+    (40, "xl"),
+    (10, "x"),
+    (9, "ix"),
+    (5, "v"),
+    (4, "iv"),
+    (1, "i"),
+)
+
+
+def _format_ol_marker(ordinal: int, list_type: str) -> str:
+    """Return the marker of an ordered list item, as a browser renders it.
+
+    Letters count a, ..., z, aa, ab, ... and Roman numerals cover 1 to 3999, as the
+    CSS `lower-alpha` and `lower-roman` counter styles. Outside that range, the
+    marker is a decimal number.
+
+    Args:
+        ordinal: The ordinal value of the list item.
+        list_type: The `type` attribute of the list, one of `_OL_TYPES`.
+
+    Returns:
+        The marker, e.g. `"c."` for the ordinal 3 and the type `"a"`.
+    """
+    label = str(ordinal)
+    if list_type in ("a", "A") and ordinal >= 1:
+        label = ""
+        while ordinal:
+            ordinal, rest = divmod(ordinal - 1, 26)
+            label = chr(ord("a") + rest) + label
+    elif list_type in ("i", "I") and 1 <= ordinal <= 3999:
+        label = ""
+        for value, numeral in _ROMAN_NUMERALS:
+            count, ordinal = divmod(ordinal, value)
+            label += numeral * count
+    return f"{label.upper() if list_type.isupper() else label}."
+
+
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
 _CHECKBOX_MARK_TEXTS: Final = {"x", "✓", "✔", "☑"}
 _CHECKBOX_CONTAINER_CLASSES: Final = {
@@ -3073,6 +3133,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         added_refs: list[RefItem] = []
         tag_name = tag.name.lower()
         start: Optional[int] = None
+        list_type = "1"
+        step = 1
         name: str = ""
         is_ordered = tag_name == "ol"
         is_description = tag_name == "dl"
@@ -3083,6 +3145,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             start_attr = tag.get("start")
             if isinstance(start_attr, str):
                 start = _parse_ol_start(start_attr)
+            list_type = self._get_ol_type(tag)
+            if tag.has_attr("reversed"):
+                step = -1
+            items = tag.find_all("li", recursive=False)
+            if start is None and (
+                list_type != "1"
+                or step == -1
+                or any(li.has_attr("value") for li in items)
+            ):
+                # A reversed list counts down from its number of items
+                start = len(items) if step == -1 else 1
             name = "ordered list" + (f" start {start}" if start is not None else "")
         else:
             name = "list"
@@ -3124,6 +3197,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         # Track the number of list items added (not all children)
         list_item_counter: int = 0
+        # The ordinal value of the next list item, if the list has numbers
+        ordinal = start
 
         # Handle description lists (<dl> with <dt> and <dd>)
         if is_description:
@@ -3226,17 +3301,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             else:
                 if list_group is None:
-                    if is_ordered and start is None:
-                        start = 1
-                    list_group = open_list_group(
-                        start + list_item_counter if start is not None else None
-                    )
+                    if is_ordered and ordinal is None:
+                        ordinal = list_item_counter + 1
+                    list_group = open_list_group(ordinal)
+
+                # The `value` attribute of an item sets its ordinal value, and
+                # the items after it continue from there
+                value_attr = li.get("value")
+                if (
+                    ordinal is not None
+                    and isinstance(value_attr, str)
+                    and (value := _parse_ol_start(value_attr)) is not None
+                ):
+                    ordinal = value
 
                 # 1) determine the marker: an explicit marker set on the item
                 # wins, otherwise use the counter
                 marker: str = self._get_list_style_marker(li) or (
-                    f"{start + list_item_counter}."
-                    if is_ordered and start is not None
+                    _format_ol_marker(ordinal, list_type)
+                    if is_ordered and ordinal is not None
                     else ""
                 )
 
@@ -3292,6 +3375,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 # Increment counter only when a list item is actually added
                 if list_item:
                     list_item_counter += 1
+                    if ordinal is not None:
+                        ordinal += step
                     prev_item = list_item
 
                 if list_item or inputs_in_li or custom_checkboxes_in_li:
@@ -3328,6 +3413,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[self.level + 1] = None
             self.level -= 1
         return added_refs
+
+    @staticmethod
+    def _get_ol_type(tag: Tag) -> str:
+        """Return the kind of marker of the items of an `<ol>`, one of `_OL_TYPES`.
+
+        A `list-style-type` keyword in the inline style wins over the `type`
+        attribute, as in browsers. Other keywords and stylesheets are ignored.
+        """
+        style = tag.get("style")
+        matches = (
+            list(_LIST_STYLE_KEYWORD_RE.finditer(style))
+            if isinstance(style, str)
+            else []
+        )
+        if matches:
+            for keyword in matches[-1].group("value").lower().split():
+                if keyword in _LIST_STYLE_TYPES:
+                    return _LIST_STYLE_TYPES[keyword]
+        type_attr = tag.get("type")
+        return (
+            type_attr if isinstance(type_attr, str) and type_attr in _OL_TYPES else "1"
+        )
 
     @staticmethod
     def _get_list_style_marker(li: Tag) -> str:
