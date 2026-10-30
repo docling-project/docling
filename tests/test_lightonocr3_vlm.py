@@ -1,7 +1,11 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""LightOnOCR-3 preset and grounded response tests, without model downloads."""
+"""LightOnOCR-3 preset and grounded response tests, without model downloads.
+
+The model replies below are written by hand from the upstream model card, README
+and grounding code. They are not captured model output.
+"""
 
 from pathlib import PurePath
 from types import SimpleNamespace
@@ -14,6 +18,7 @@ from docling_core.types.doc import (
     FormulaItem,
     SectionHeaderItem,
     Size,
+    TitleItem,
 )
 from PIL import Image
 
@@ -105,7 +110,7 @@ Continued block.
     assert doc.texts[3].prov
 
 
-def test_inline_markers_from_model_prediction():
+def test_inline_markers():
     content = (
         "![title](51,110,448,180) # LEASE AGREEMENT\n\n"
         "![text](51,297,527,542) Tenant: Example AB Monthly rent: SEK 1000 "
@@ -148,6 +153,74 @@ Annual rent.
     assert not doc.tables[1].prov
     assert doc.texts[-1].label == DocItemLabel.CAPTION
     assert not doc.pictures[1].captions
+
+
+def test_documented_block_sequence():
+    content = (
+        "![image](309,90,691,516) Diagram of the model.\n"
+        "![caption](400,555,591,566) Figure 1: The model.\n"
+        "![title](113,608,263,623) ## 2.2 Overview\n"
+        "![aside_text](10,640,50,698) Draft\n"
+        "![text](112,640,882,698) The first version set the design.\n"
+        "![page_number](491,935,505,950) 3\n"
+    )
+    doc = parse_lightonocr_markdown(content, PAGE_SIZE, page_no=1)
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.CAPTION, "Figure 1: The model."),
+        (DocItemLabel.SECTION_HEADER, "2.2 Overview"),
+        (DocItemLabel.TEXT, "Draft"),
+        (DocItemLabel.TEXT, "The first version set the design."),
+        (DocItemLabel.PAGE_FOOTER, "3"),
+    ]
+    assert all(item.prov for item in doc.texts)
+    assert doc.texts[-1].content_layer == ContentLayer.FURNITURE
+
+
+@pytest.mark.parametrize("prefix", ["</think>\n\n", "<think>\n\n</think>\n\n"])
+def test_leaked_think_tag_is_removed(prefix: str):
+    doc = parse_lightonocr_markdown(
+        f"{prefix}![text](100,200,900,300) Rent", PAGE_SIZE, page_no=1
+    )
+    assert [item.text for item in doc.texts] == ["Rent"]
+    assert doc.texts[0].prov
+
+
+def test_two_markers_on_one_line():
+    doc = parse_lightonocr_markdown(
+        "![text](0,0,500,100) Left ![text+](500,0,1000,100) Right",
+        PAGE_SIZE,
+        page_no=1,
+    )
+    assert [item.text for item in doc.texts] == ["Left", "Right"]
+    assert doc.texts[1].prov[0].bbox.l == 300
+
+
+def test_cut_off_marker_stays_text():
+    text = "Cut off here ![text](100,200"
+    doc = parse_lightonocr_markdown(
+        f"![text](0,0,1000,100) {text}", PAGE_SIZE, page_no=1
+    )
+    assert [item.text for item in doc.texts] == [text]
+    assert not doc.pictures
+
+
+@pytest.mark.parametrize("image", ["![logo](https://example.com/a.png)", "![a](1,2,3)"])
+def test_markdown_image_is_not_a_marker(image: str):
+    doc = parse_lightonocr_markdown(
+        f"![text](0,0,1000,100) See {image} here", PAGE_SIZE, page_no=1
+    )
+    assert doc.texts[0].text == "See"
+    assert [item for item in doc.texts if item.prov] == [doc.texts[0]]
+
+
+def test_unknown_label_keeps_its_text():
+    doc = parse_lightonocr_markdown(
+        "![stamp](0,0,1000,100) Approved", PAGE_SIZE, page_no=1
+    )
+    assert [(item.label, item.text) for item in doc.texts] == [
+        (DocItemLabel.TEXT, "Approved")
+    ]
+    assert doc.texts[0].prov
 
 
 def test_furniture_and_invalid_coordinates():
@@ -315,6 +388,35 @@ def test_inline_code_fence_preserves_following_block(fence: str, code: str):
     assert doc.texts[0].prov[0].bbox.b == 400
     assert doc.texts[1].prov[0].bbox.t == 400
     assert doc.export_to_markdown() == f"```\n{code}\n```\n\nAfter code."
+
+
+@pytest.mark.parametrize("heading", ["Contract", "# Contract"])
+def test_title_without_section_markup_is_the_title(heading: str):
+    doc = parse_lightonocr_markdown(
+        f"![title](100,100,900,200) {heading}", PAGE_SIZE, page_no=1
+    )
+    assert isinstance(doc.texts[0], TitleItem)
+    assert doc.texts[0].text == "Contract"
+    assert doc.export_to_markdown() == "# Contract"
+
+
+@pytest.mark.parametrize(
+    "heading, item_type, export",
+    [
+        ("## Theorem $x_1$", SectionHeaderItem, "## Theorem $x_1$"),
+        ("# Theorem $x_1$", TitleItem, "# Theorem $x_1$"),
+    ],
+)
+def test_heading_with_math_keeps_its_text(heading: str, item_type: type, export: str):
+    doc = parse_lightonocr_markdown(
+        f"![title](100,100,900,200) {heading}", PAGE_SIZE, page_no=1
+    )
+    # Like the other mappers, the heading holds rich text in child items.
+    assert isinstance(doc.texts[0], item_type)
+    assert doc.texts[0].prov
+    assert [item.text for item in doc.texts[1:]] == ["Theorem", "x_1"]
+    assert isinstance(doc.texts[-1], FormulaItem)
+    assert doc.export_to_markdown() == export
 
 
 def test_formatted_section_heading_owns_its_coordinates_once():

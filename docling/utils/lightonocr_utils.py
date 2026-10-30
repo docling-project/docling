@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import html
+import logging
 import re
 from collections.abc import Iterator
 from pathlib import Path
@@ -27,11 +28,19 @@ from docling.utils.vlm_utils import (
     strip_math_delimiters,
 )
 
+_log = logging.getLogger(__name__)
+
 _MARKER = re.compile(
-    r"^ {0,3}!\[([a-z_]+)\+?\]\(([^)\n]*,[^)\n]*,[^)\n]*,[^)\n]*)\)[ \t]*(.*)$"
+    r"!\[([A-Za-z_][\w-]*?)\+?\]"
+    r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)[ \t]*"
 )
+# Upstream reports replies that start with the closing tag of the empty think block.
+_THINK = re.compile(r"\A\s*(?:<think>.*?)?</think>\s*", re.DOTALL)
 _LABELS = {
+    "text": "Text",
+    "aside_text": "Text",
     "title": "Title",
+    "section": "Section-Header",
     "header": "Page-Header",
     "footer": "Page-Footer",
     "page_number": "Page-Footer",
@@ -46,6 +55,7 @@ _LABELS = {
     "header_image": "Image",
     "footer_image": "Image",
 }
+_PICTURE_LABELS = {"image", "chart", "header_image", "footer_image"}
 
 
 def _blocks(content: str) -> Iterator[tuple[str, str, str]]:
@@ -53,13 +63,11 @@ def _blocks(content: str) -> Iterator[tuple[str, str, str]]:
     lines: list[str] = []
     fence = ""
     for line in content.splitlines(keepends=True):
-        marker = _MARKER.fullmatch(line.rstrip("\r\n")) if not fence else None
-        if marker is not None:
-            if lines or bbox:
-                yield label, bbox, "".join(lines)
-            label, bbox, inline_body = marker.groups()
-            lines = []
-            line = inline_body + "\n" if inline_body else ""
+        while not fence and (marker := _MARKER.search(line)) is not None:
+            yield label, bbox, "".join(lines) + line[: marker.start()]
+            label, *box = marker.groups()
+            bbox, lines = " ".join(box), []
+            line = line[marker.end() :]
 
         # Check the block body too: a fence can start on the marker's line.
         fence_match = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
@@ -74,8 +82,7 @@ def _blocks(content: str) -> Iterator[tuple[str, str, str]]:
             ):
                 fence = ""
         lines.append(line)
-    if lines or bbox:
-        yield label, bbox, "".join(lines)
+    yield label, bbox, "".join(lines)
 
 
 def parse_lightonocr_markdown(
@@ -91,6 +98,8 @@ def parse_lightonocr_markdown(
 
     Continuation labels retain their base class. Separate blocks are not merged
     or associated by proximity. Plain transcription is recovered without boxes.
+    A ``title`` block with ``##`` or deeper is a section header, because the
+    model has one label for all headings.
     Heading depths normalize per page unless the pipeline defers normalization
     until all pages are joined with ``normalize_heading_levels=False``.
     """
@@ -114,18 +123,15 @@ def parse_lightonocr_markdown(
         size=original_page_size,
         image=ImageRef.from_pil(image=page_image, dpi=dpi) if page_image else None,
     )
-    for label, bbox, body in _blocks(content):
-        if not body.strip() and label not in {
-            "image",
-            "chart",
-            "header_image",
-            "footer_image",
-        }:
+    for label, bbox, body in _blocks(_THINK.sub("", content)):
+        if not body.strip() and label not in _PICTURE_LABELS:
             continue
+        if label not in _LABELS:
+            _log.warning("Unknown LightOnOCR label %r; keeping it as text", label)
         layout_label = _LABELS.get(label, "Text")
         if label == "formula":
             rendered = f'<math display="block">{html.escape(strip_math_delimiters(body))}</math>'
-        elif label in {"image", "header_image", "footer_image"}:
+        elif label in _PICTURE_LABELS - {"chart"}:
             rendered = f'<img alt="{html.escape(body.strip(), quote=True)}">'
         else:
             parsed = markdown.parse(body)
@@ -135,13 +141,7 @@ def parse_lightonocr_markdown(
                 for node in parsed.children
             ):
                 layout_label = "Section-Header"
-        attrs = (
-            f'data-bbox="{html.escape(bbox.replace(",", " "), quote=True)}"'
-            if bbox
-            else ""
-        )
-        if bbox:
-            attrs += f' data-label="{layout_label}"'
+        attrs = f'data-bbox="{bbox}" data-label="{layout_label}"' if bbox else ""
         fragment = f"<div {attrs}>{rendered}</div>"
         picture_start = len(doc.pictures)
         _add_html_fragment(doc, fragment, label=DocItemLabel.TEXT)
