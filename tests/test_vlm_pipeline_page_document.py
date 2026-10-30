@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""DocLang responses in VlmPipeline are mapped from the DocLang grid to the page."""
+"""Page documents built by VlmPipeline from the VLM response of each format."""
 
 from pathlib import PurePath
 from types import SimpleNamespace
@@ -40,7 +40,9 @@ _DOCLANG = (
 )
 
 
-def _pipeline(images_scale: float) -> VlmPipeline:
+def _pipeline(
+    images_scale: float, response_format: ResponseFormat = ResponseFormat.DOCLANG
+) -> VlmPipeline:
     pipeline = VlmPipeline.__new__(VlmPipeline)
     pipeline.pipeline_options = SimpleNamespace(
         generate_page_images=False,
@@ -49,7 +51,7 @@ def _pipeline(images_scale: float) -> VlmPipeline:
         vlm_options=InlineVlmOptions(
             prompt="",
             repo_id="test",
-            response_format=ResponseFormat.DOCLANG,
+            response_format=response_format,
             inference_framework=InferenceFramework.TRANSFORMERS,
             scale=images_scale,
         ),
@@ -58,15 +60,15 @@ def _pipeline(images_scale: float) -> VlmPipeline:
     return pipeline
 
 
-def _page(images_scale: float) -> Page:
+def _page(images_scale: float, size: Size = _PAGE, text: str = _DOCLANG) -> Page:
     page = Page(
         page_no=1,
-        size=_PAGE,
-        predictions=PagePredictions(vlm_response=VlmPrediction(text=_DOCLANG)),
+        size=size,
+        predictions=PagePredictions(vlm_response=VlmPrediction(text=text)),
     )
     image = PILImage.new(
         "RGB",
-        (round(_PAGE.width * images_scale), round(_PAGE.height * images_scale)),
+        (round(size.width * images_scale), round(size.height * images_scale)),
         "white",
     )
     page._image_cache = {images_scale: image}
@@ -115,6 +117,58 @@ def test_doclang_locations_are_scaled_to_the_page(images_scale: float) -> None:
     text = next(item for item in doc.texts if isinstance(item, TextItem))
     bbox = text.prov[0].bbox
     assert (bbox.l, bbox.t, bbox.r, bbox.b) == pytest.approx((0, 0, 153, 99))
+
+
+# Each response puts a picture over [20%, 60%] of the page width and [20%, 40%]
+# of its height. DocTags locations are on a 500 grid over the page image, and
+# Chandra locations are on a 1000 grid over the page.
+@pytest.mark.parametrize(
+    ("response_format", "text"),
+    [
+        pytest.param(
+            ResponseFormat.DOCTAGS,
+            "<doctag><picture><loc_100><loc_100><loc_300><loc_200></picture></doctag>",
+            id="doctags",
+        ),
+        pytest.param(
+            ResponseFormat.CHANDRA_HTML,
+            '<div data-label="Image" data-bbox="200 200 600 400">'
+            '<img src="x" alt="fig"/></div>',
+            id="chandra",
+        ),
+    ],
+)
+@pytest.mark.parametrize("images_scale", [1.0, 2.0])
+def test_picture_crop_matches_picture_in_page_image(
+    response_format: ResponseFormat, text: str, images_scale: float
+) -> None:
+    page = _page(images_scale, size=Size(width=500, height=1000), text=text)
+    assert page.image is not None
+    page.image.paste(
+        "red",
+        (
+            round(100 * images_scale),
+            round(200 * images_scale),
+            round(300 * images_scale),
+            round(400 * images_scale),
+        ),
+    )
+    conv_res = SimpleNamespace(
+        input=SimpleNamespace(file=PurePath("test.pdf")), errors=[]
+    )
+
+    doc = _pipeline(images_scale, response_format)._finalize_page_document(
+        conv_res, page
+    )
+
+    assert not conv_res.errors
+    picture = doc.pictures[0]
+    assert picture.image is not None
+    crop = picture.image.pil_image
+    assert crop is not None
+    side = round(200 * images_scale)
+    assert crop.size == (side, side)
+    assert crop.getcolors() == [(side * side, (255, 0, 0))]
 
 
 @pytest.mark.parametrize("grid", [None, Size(width=1024, height=2048)])
