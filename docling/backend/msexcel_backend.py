@@ -406,6 +406,7 @@ class _MergedCellIndex:
 
     def __init__(self, sheet: Worksheet) -> None:
         self._anchor_spans: dict[tuple[int, int], tuple[int, int]] = {}
+        blank_ranges: list[DataRegion] = []
 
         min_row: int | None = None
         min_col: int | None = None
@@ -421,6 +422,18 @@ class _MergedCellIndex:
                     merged_range.max_col - merged_range.min_col + 1,
                 ),
             )
+            if (
+                sheet.cell(row=merged_range.min_row, column=merged_range.min_col).value
+                is None
+            ):
+                blank_ranges.append(
+                    DataRegion(
+                        merged_range.min_row,
+                        merged_range.max_row,
+                        merged_range.min_col,
+                        merged_range.max_col,
+                    )
+                )
             min_row = (
                 merged_range.min_row
                 if min_row is None
@@ -438,6 +451,34 @@ class _MergedCellIndex:
             DataRegion(min_row, max_row, min_col, max_col)
             if min_row is not None and min_col is not None
             else None
+        )
+        self._separators = self._find_separators(sheet, blank_ranges)
+
+    @staticmethod
+    def _find_separators(
+        sheet: Worksheet, blank_ranges: list[DataRegion]
+    ) -> list[DataRegion]:
+        """Return the blank merged ranges whose rows hold no value at all."""
+        if not blank_ranges:
+            return []
+        rows_with_values = {
+            cell.row for cell in sheet._cells.values() if cell.value is not None
+        }
+        return [
+            region
+            for region in blank_ranges
+            if rows_with_values.isdisjoint(range(region.min_row, region.max_row + 1))
+        ]
+
+    def is_separator(self, cell: Cell | MergedCell) -> bool:
+        """Return whether a cell is part of a blank merged range that separates rows.
+
+        The range holds no value, and no other cell in its rows holds a value.
+        """
+        return any(
+            region.min_row <= cell.row <= region.max_row
+            and region.min_col <= cell.column <= region.max_col
+            for region in self._separators
         )
 
     def contains(self, cell: Cell | MergedCell) -> bool:
@@ -1547,8 +1588,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if cell.value is not None:
                 return True
 
-            # 2. Check the worksheet-level merged-cell index.
-            return merged_cell_index.contains(cell)
+            # 2. Check the worksheet-level merged-cell index. A blank merged
+            # separator row does not connect the tables above and below it.
+            return merged_cell_index.contains(
+                cell
+            ) and not merged_cell_index.is_separator(cell)
 
         # --- Phase 1: Flood Fill (Connectivity Check) ---
         while queue:

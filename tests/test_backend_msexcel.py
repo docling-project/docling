@@ -1205,6 +1205,42 @@ def test_sparse_table_cells_inside_bbox_are_not_duplicated(tmp_path: Path) -> No
     assert texts.count("bar") == 1
 
 
+@pytest.mark.parametrize(
+    ("note", "expected_shapes"),
+    [
+        # The blank merged row A4:C4 only separates the two tables.
+        (None, [(3, 3), (2, 3)]),
+        # A value in the same row makes A4:C4 part of one table.
+        ("note", [(6, 4)]),
+    ],
+)
+def test_blank_merged_separator_row_splits_tables(
+    tmp_path: Path, note: str | None, expected_shapes: list[tuple[int, int]]
+) -> None:
+    """Regression test for #4965."""
+    workbook = Workbook()
+    sheet = workbook.active
+    for row in [
+        ["", "2025", "2026"],
+        ["GDP", 1.5, 2],
+        ["CPI", 3.1, 2.9],
+        [None, None, None, note],
+        ["", "Q1", "Q2"],
+        ["Profits", 384, 276.9],
+    ]:
+        sheet.append(row)
+    sheet.merge_cells("A4:C4")
+    file_path = tmp_path / "separator.xlsx"
+    workbook.save(file_path)
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(file_path).document
+
+    assert [
+        (table.data.num_rows, table.data.num_cols) for table in doc.tables
+    ] == expected_shapes
+
+
 def test_gap_tolerance_comparison() -> None:
     """Test the effect of gap_tolerance on table detection.
 
