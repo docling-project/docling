@@ -161,24 +161,6 @@ More examples on how to connect with the remote inference services can be found 
 
 - [vlm_pipeline_api_model.py](./../examples/vlm_pipeline_api_model.py)
 
-### API response fields
-
-Docling reads the answer from `message.content`. Configure LM Studio and other
-servers to put the final answer there. `reasoning` and `reasoning_content` stay
-separate and never become document text. If a model returns only reasoning,
-Docling reports a page error. If it reached the token limit, the page is
-reported as incomplete. A refusal is also reported as a page error.
-
-When `content` is empty and the response contains tool calls, Docling reads the
-raw `function.arguments` string of the first call with non-empty arguments.
-The request results also retain typed `tool_calls`. Streaming joins argument
-fragments by tool-call index. Docling does not scan the JSON for `text` keys.
-A future model-specific `ResponseFormat` parser can interpret this schema.
-
-No built-in page parser currently accepts the NemoRetriever Parse tool-call
-schema. Selecting `MARKDOWN` puts raw JSON into the document. To use these
-arguments now, call `api_image_request` and parse `result.tool_calls` directly.
-
 ## Native dots inline formatting
 
 Native dots.ocr and dots.mocr JSON text can contain Markdown bold and italic

@@ -22,7 +22,7 @@ import pytest
 from PIL import Image
 from pydantic import AnyUrl
 
-from docling.datamodel.base_models import VlmStopReason
+from docling.datamodel.base_models import OpenAiChatMessage, VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
 from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
@@ -295,32 +295,11 @@ def test_a_stream_that_stalls_midway_is_reported_and_its_partial_text_dropped(
     assert result.error is not None
 
 
-def test_a_reasoning_only_stream_is_reported_and_not_returned(api, endpoint, image):
-    """A thinking model that never writes content must not give an empty
-    page with success, and its chain-of-thought must not become page text."""
-    api.completion_field = "reasoning"
-    api.stream_chunks = ["Let me ", "think."]
-
-    result = api_image_request_streaming(image, "describe", endpoint, model="m")
-
-    assert result.text == ""
-    assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
-    assert result.error is not None and "Configure the server" in result.error
-    assert result.reasoning == "Let me think."
-
-
-def test_streamed_tool_call_fragments_are_joined_per_index(api, endpoint, image):
+@pytest.mark.parametrize("content", [None, "Content answer"])
+def test_streamed_tool_call_fragments_are_joined_per_index(
+    api, endpoint, image, content
+):
     api.stream_deltas = [
-        {
-            "tool_calls": [
-                {
-                    "index": 0,
-                    "id": "call_1",
-                    "type": "function",
-                    "function": {"name": "markdown_bbox", "arguments": ""},
-                }
-            ]
-        },
         {
             "tool_calls": [
                 {
@@ -333,8 +312,30 @@ def test_streamed_tool_call_fragments_are_joined_per_index(api, endpoint, image)
                 }
             ]
         },
-        {"tool_calls": [{"index": 0, "function": {"arguments": '[{"text": '}}]},
+        {
+            "tool_calls": [
+                {
+                    "index": 0,
+                    "id": "call_",
+                    "type": "function",
+                    "function": {"name": "markdown_", "arguments": ""},
+                }
+            ]
+        },
+        {
+            "tool_calls": [
+                {
+                    "index": 0,
+                    "id": "1",
+                    "function": {
+                        "name": "bbox",
+                        "arguments": '[{"text": ',
+                    },
+                }
+            ]
+        },
         {"tool_calls": [{"index": 0, "function": {"arguments": '"hi"}]'}}]},
+        {"content": content},
     ]
 
     result = api_image_request_streaming(
@@ -344,7 +345,7 @@ def test_streamed_tool_call_fragments_are_joined_per_index(api, endpoint, image)
         model="m",
     )
 
-    assert result.text == '[{"text": "hi"}]'
+    assert result.text == (content or '[{"text": "hi"}]')
     assert [(c.id, c.function.name) for c in result.tool_calls] == [
         ("call_1", "markdown_bbox"),
         ("call_2", "detection_only"),
@@ -367,10 +368,143 @@ def test_answer_stoppers_receive_trailing_whitespace(api, endpoint, image, chunk
     assert result.stop_reason == VlmStopReason.STOP_SEQUENCE
 
 
-def test_reasoning_does_not_trigger_answer_stoppers(api, endpoint, image):
-    api.completion_field = "reasoning"
-    api.stream_chunks = ["ab"] * 30
+@pytest.mark.parametrize(
+    (
+        "message",
+        "finish_reason",
+        "expected_text",
+        "expected_stop_reason",
+        "expected_error",
+    ),
+    [
+        (
+            {"content": "  Answer  "},
+            "stop",
+            "Answer",
+            VlmStopReason.END_OF_SEQUENCE,
+            None,
+        ),
+        (
+            {
+                "content": "",
+                "tool_calls": [
+                    {
+                        "function": {
+                            "name": "parse",
+                            "arguments": '{"text":"Answer","type":"Title"}',
+                        }
+                    }
+                ],
+            },
+            "tool_calls",
+            '{"text":"Answer","type":"Title"}',
+            VlmStopReason.END_OF_SEQUENCE,
+            None,
+        ),
+        (
+            {
+                "content": "Content answer",
+                "tool_calls": [
+                    {
+                        "function": {
+                            "name": "parse",
+                            "arguments": '{"text":"Tool answer"}',
+                        }
+                    }
+                ],
+            },
+            "stop",
+            "Content answer",
+            VlmStopReason.END_OF_SEQUENCE,
+            None,
+        ),
+        (
+            {
+                "content": " ",
+                "tool_calls": [
+                    {"function": {"arguments": " "}},
+                    {"function": {"arguments": '{"text":"Second call"}'}},
+                ],
+            },
+            "tool_calls",
+            '{"text":"Second call"}',
+            VlmStopReason.END_OF_SEQUENCE,
+            None,
+        ),
+        (
+            {"content": None, "refusal": "Cannot comply."},
+            "stop",
+            "",
+            VlmStopReason.INFERENCE_ERROR,
+            "The model refused: Cannot comply.",
+        ),
+        ({"content": ""}, "length", "", VlmStopReason.LENGTH, None),
+        ({"content": "Partial"}, "length", "Partial", VlmStopReason.LENGTH, None),
+        ({"content": ""}, "content_filter", "", VlmStopReason.CONTENT_FILTERED, None),
+        ({"content": ""}, "stop", "", VlmStopReason.END_OF_SEQUENCE, None),
+    ],
+    ids=[
+        "content",
+        "tool-arguments",
+        "content-precedence",
+        "first-nonempty-call",
+        "refusal",
+        "empty-token-limit",
+        "partial-token-limit",
+        "filtered",
+        "empty",
+    ],
+)
+def test_full_and_streaming_responses_match(
+    api,
+    endpoint,
+    image,
+    message,
+    finish_reason,
+    expected_text,
+    expected_stop_reason,
+    expected_error,
+):
+    api.message = OpenAiChatMessage(role="assistant", **message)
+    api.finish_reason = finish_reason
+    api.stream_deltas = [
+        {
+            "content": message.get("content"),
+            "refusal": message.get("refusal"),
+            "tool_calls": [
+                {"index": index, **call}
+                for index, call in enumerate(message.get("tool_calls", []))
+            ],
+        }
+    ]
 
+    full = api_image_request(image, "describe", endpoint, model="m")
+    streamed = api_image_request_streaming(image, "describe", endpoint, model="m")
+
+    for result in (full, streamed):
+        assert result.text == expected_text
+        assert result.stop_reason == expected_stop_reason
+        assert result.error == expected_error
+        assert result.num_tokens == api.prompt_tokens + api.completion_tokens
+    assert full.tool_calls == streamed.tool_calls
+    assert full.usage == streamed.usage
+
+
+def test_stoppers_watch_raw_tool_arguments(api, endpoint, image):
+    api.stream_deltas = [
+        {
+            "tool_calls": [
+                {
+                    "index": 0,
+                    "function": {
+                        "name": "parse",
+                        "arguments": '{"text":"',
+                    },
+                }
+            ]
+        },
+        *[{"tool_calls": [{"index": 0, "function": {"arguments": "ab"}}]}] * 30,
+    ]
     result = api_image_request_streaming(
         image,
         "describe",
@@ -380,10 +514,26 @@ def test_reasoning_does_not_trigger_answer_stoppers(api, endpoint, image):
             TailRepetitionStopper(min_repeats=4, min_span=8, max_unit=4)
         ],
     )
+    assert result.text == '{"text":"abababab'
+    assert result.tool_calls[0].function.arguments == result.text
+    assert result.stop_reason == VlmStopReason.STOP_SEQUENCE
 
-    assert result.text == ""
-    assert result.reasoning == "ab" * 30
-    assert result.stop_reason == VlmStopReason.INFERENCE_ERROR
+
+@pytest.mark.parametrize("wire_name", ["reasoning", "reasoning_content"])
+def test_non_answer_deltas_are_ignored(api, endpoint, image, wire_name):
+    api.stream_deltas = [{wire_name: "ab" * 30}, {"content": "Final answer"}]
+    result = api_image_request_streaming(
+        image,
+        "describe",
+        endpoint,
+        model="m",
+        generation_stoppers=[
+            TailRepetitionStopper(min_repeats=4, min_span=8, max_unit=4)
+        ],
+    )
+    assert result.text == "Final answer"
+    assert result.stop_reason == VlmStopReason.END_OF_SEQUENCE
+    assert result.error is None
 
 
 # -- the engine layer ----------------------------------------------------

@@ -287,12 +287,6 @@ result = converter.convert("report.pdf")
 `enable_remote_services=True` is mandatory for any remote model — Docling blocks
 outbound HTTP by default.
 
-Configure API servers to return the final answer in `message.content`.
-Reasoning stays separate from document text. When `content` is empty, Docling
-can return raw tool-call arguments; the request results retain `tool_calls`
-for schema-specific parsing. No built-in page parser accepts the NemoRetriever
-Parse tool-call schema yet.
-
 > To offload the *entire* conversion to a remote service (rather than just the
 > VLM step), use the Service Client — see [service-client.md](service-client.md).
 

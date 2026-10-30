@@ -40,9 +40,8 @@ class FakeOpenAiApi:
     """State plus an ``APIRouter`` serving ``/v1/chat/completions``."""
 
     completion: str = DEFAULT_COMPLETION
-    #: The message (and delta) field that carries the completion. "reasoning"
-    #: imitates a thinking model that never writes ``content``.
-    completion_field: str = "content"
+    #: Override the full response for tool-call and refusal cases.
+    message: OpenAiChatMessage | None = None
     #: Emitted one SSE chunk at a time when the caller asks for a stream.
     stream_chunks: list[str] = field(default_factory=list)
     #: Raw ``delta`` objects sent instead of ``stream_chunks``, for example
@@ -92,9 +91,8 @@ class FakeOpenAiApi:
             choices=[
                 OpenAiResponseChoice(
                     index=0,
-                    message=OpenAiChatMessage.model_validate(
-                        {"role": "assistant", self.completion_field: self.completion}
-                    ),
+                    message=self.message
+                    or OpenAiChatMessage(role="assistant", content=self.completion),
                     finish_reason=self.finish_reason,
                 )
             ],
@@ -106,7 +104,7 @@ class FakeOpenAiApi:
         if self.stream_deltas:
             return self.stream_deltas
         chunks = self.stream_chunks or [self.completion]
-        return [{self.completion_field: piece} for piece in chunks]
+        return [{"content": piece} for piece in chunks]
 
     async def _sse(self, model: str | None) -> AsyncIterator[bytes]:
         """Emit the OpenAI streaming delta format, terminated by [DONE]."""
@@ -117,7 +115,7 @@ class FakeOpenAiApi:
                 await asyncio.sleep(self.delay_seconds)
             choice: dict[str, Any] = {"index": 0, "delta": delta}
             if i < len(self.stream_logprobs):
-                piece = delta[self.completion_field]
+                piece = delta["content"]
                 choice["logprobs"] = {
                     "content": [
                         {

@@ -26,7 +26,6 @@ from docling_core.types.io import (
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
 from pydantic import (
-    AliasChoices,
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
@@ -416,8 +415,6 @@ class ApiImageRequestResult:
     usage: Any | None = None
     logprobs: Any | None = None
     error: str | None = None  # set when stop_reason is INFERENCE_ERROR
-    # Preserve the raw response fields for callers that need their schema.
-    reasoning: str | None = None
     tool_calls: tuple["OpenAiToolCall", ...] = ()
 
 
@@ -431,7 +428,6 @@ class ApiImageStreamingRequestResult:
     logprobs: Any | None = None
     error: str | None = None  # set when the request failed and produced no output
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
-    reasoning: str | None = None
     tool_calls: tuple["OpenAiToolCall", ...] = ()
 
 
@@ -657,12 +653,6 @@ class OpenAiChatMessage(BaseModel):
     role: str
     content: str | None = None
     refusal: str | None = None
-    # Chain-of-thought, not the answer. vLLM >= 0.9 names it `reasoning`;
-    # DeepSeek, LM Studio and older vLLM use `reasoning_content`.
-    reasoning: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("reasoning", "reasoning_content"),
-    )
     tool_calls: list[OpenAiToolCall] | None = None
 
 

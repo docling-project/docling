@@ -4,7 +4,7 @@
 import base64
 import json
 import logging
-from dataclasses import dataclass, field
+from collections.abc import Iterable
 from io import BytesIO
 from typing import Any
 
@@ -18,7 +18,6 @@ from docling.datamodel.base_models import (
     ApiImageRequestResult,
     ApiImageStreamingRequestResult,
     OpenAiApiResponse,
-    OpenAiChatMessage,
     OpenAiFunctionCall,
     OpenAiResponseLogprobs,
     OpenAiTokenLogprob,
@@ -80,80 +79,15 @@ def _failed_streaming_request(reason: str) -> ApiImageStreamingRequestResult:
     )
 
 
-@dataclass
-class _ResponseFields:
-    """The text fields of one chat response, from a message or from stream deltas."""
-
-    content: str = ""
-    refusal: str = ""
-    reasoning: str = ""
-    # Keyed by the stream `index`, so fragments of one call join together.
-    tool_calls: dict[int, OpenAiToolCall] = field(default_factory=dict)
-
-    @classmethod
-    def from_message(cls, message: OpenAiChatMessage) -> "_ResponseFields":
-        return cls(
-            content=message.content or "",
-            refusal=message.refusal or "",
-            reasoning=message.reasoning or "",
-            tool_calls=dict(enumerate(message.tool_calls or [])),
-        )
-
-    def add_delta(self, delta: dict[str, Any]) -> None:
-        self.content += delta.get("content") or ""
-        self.refusal += delta.get("refusal") or ""
-        self.reasoning += delta.get("reasoning") or delta.get("reasoning_content") or ""
-        for fragment in delta.get("tool_calls") or []:
-            function = fragment.get("function") or {}
-            arguments = function.get("arguments") or ""
-            index = fragment.get("index", 0)
-            if index in self.tool_calls:
-                self.tool_calls[index].function.arguments += arguments
-            else:
-                self.tool_calls[index] = OpenAiToolCall(
-                    id=fragment.get("id"),
-                    type=fragment.get("type") or "function",
-                    function=OpenAiFunctionCall(
-                        name=function.get("name"), arguments=arguments
-                    ),
-                )
-
-    def answer(self) -> str:
-        if self.content.strip():
-            return self.content
-        # Keep the raw schema for a model-specific ResponseFormat parser.
-        return next(
-            (
-                call.function.arguments
-                for call in self.tool_calls.values()
-                if call.function.arguments.strip()
-            ),
-            self.content,
-        )
-
-
-def _resolve_answer(
-    fields: _ResponseFields,
-    stop_reason: VlmStopReason,
-) -> tuple[str, VlmStopReason, str | None]:
-    """Read content or raw tool arguments; never use reasoning as page text."""
-    text = fields.answer().strip()
-    if text:
-        return text, stop_reason, None
-
-    if fields.refusal.strip():
-        error = f"The model refused: {_response_preview(fields.refusal)}"
-    elif stop_reason == VlmStopReason.LENGTH:
-        return "", stop_reason, None
-    elif fields.reasoning.strip():
-        error = (
-            "The model returned reasoning without an answer. Configure the server "
-            "to return the answer in content, or increase the token limit."
-        )
-    else:
-        return "", stop_reason, None
-    _log.warning(error)
-    return "", VlmStopReason.INFERENCE_ERROR, error
+def _extract_generated_text(
+    content: str | None, tool_calls: Iterable[OpenAiToolCall]
+) -> str:
+    if content and content.strip():
+        return content
+    for call in tool_calls:
+        if call.function.arguments.strip():
+            return call.function.arguments
+    return content or ""
 
 
 def _map_stop_reason(finish_reason: str | None) -> VlmStopReason:
@@ -314,10 +248,15 @@ def api_image_request(
 
             api_resp = OpenAiApiResponse.model_validate(response_payload)
             choice = api_resp.choices[0]
-            fields = _ResponseFields.from_message(choice.message)
-            generated_text, stop_reason, error = _resolve_answer(
-                fields, _map_stop_reason(choice.finish_reason)
-            )
+            message = choice.message
+            generated_text = _extract_generated_text(
+                message.content, message.tool_calls or []
+            ).strip()
+            stop_reason = _map_stop_reason(choice.finish_reason)
+            error = None
+            if not generated_text and message.refusal and message.refusal.strip():
+                error = f"The model refused: {_response_preview(message.refusal)}"
+                stop_reason = VlmStopReason.INFERENCE_ERROR
             num_tokens = _extract_total_tokens(usage)
             if num_tokens is None and api_resp.usage is not None:
                 num_tokens = api_resp.usage.total_tokens
@@ -329,8 +268,7 @@ def api_image_request(
                 usage=usage,
                 logprobs=choice.logprobs,
                 error=error,
-                reasoning=fields.reasoning or None,
-                tool_calls=tuple(fields.tool_calls.values()),
+                tool_calls=tuple(message.tool_calls or []),
             )
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
@@ -355,7 +293,7 @@ def api_image_request_streaming(
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
     Accumulates content and raw tool-call arguments. Stoppers watch the answer
-    as chunks arrive; reasoning is kept separately.
+    as chunks arrive.
     If stopper triggers, the HTTP connection is closed to abort server-side generation.
 
     A failed request (HTTP error, timeout, dropped connection) does not raise:
@@ -423,7 +361,10 @@ def api_image_request_streaming(
                             f"HTTP {r.status_code}: {_response_preview(r.text)}"
                         )
 
-                    fields = _ResponseFields()
+                    content = ""
+                    refusal = ""
+                    tool_calls: dict[int, OpenAiToolCall] = {}
+                    text = ""
                     usage_payload = None
                     num_tokens = None
                     finish_reason = None
@@ -445,16 +386,19 @@ def api_image_request_streaming(
                                 content=logprob_content or None,
                                 refusal=logprob_refusal or None,
                             )
-                        text, stop_reason, error = _resolve_answer(fields, stop_reason)
+                        generated_text = text.strip()
+                        error = None
+                        if not generated_text and refusal.strip():
+                            error = f"The model refused: {_response_preview(refusal)}"
+                            stop_reason = VlmStopReason.INFERENCE_ERROR
                         return ApiImageStreamingRequestResult(
-                            text=text,
+                            text=generated_text,
                             num_tokens=num_tokens,
                             usage=usage_payload,
                             logprobs=logprobs,
                             error=error,
                             stop_reason=stop_reason,
-                            reasoning=fields.reasoning or None,
-                            tool_calls=tuple(fields.tool_calls.values()),
+                            tool_calls=tuple(tool_calls[i] for i in sorted(tool_calls)),
                         )
 
                     for raw_line in r.iter_lines(decode_unicode=True):
@@ -504,9 +448,30 @@ def api_image_request_streaming(
                                 logprob_content.extend(chunk_logprobs.content or [])
                                 logprob_refusal.extend(chunk_logprobs.refusal or [])
 
-                        previous_text = fields.answer()
-                        fields.add_delta(delta)
-                        text = fields.answer()
+                        content += delta.get("content") or ""
+                        refusal += delta.get("refusal") or ""
+                        for fragment in delta.get("tool_calls") or []:
+                            index = fragment.get("index", 0)
+                            if index not in tool_calls:
+                                tool_calls[index] = OpenAiToolCall(
+                                    function=OpenAiFunctionCall()
+                                )
+                            call = tool_calls[index]
+                            function = fragment.get("function") or {}
+                            if fragment.get("id"):
+                                call.id = (call.id or "") + fragment["id"]
+                            if fragment.get("type"):
+                                call.type = fragment["type"]
+                            if function.get("name"):
+                                call.function.name = (
+                                    call.function.name or ""
+                                ) + function["name"]
+                            call.function.arguments += function.get("arguments") or ""
+
+                        previous_text = text
+                        text = _extract_generated_text(
+                            content, (tool_calls[i] for i in sorted(tool_calls))
+                        )
                         if text == previous_text:
                             continue
                         for stopper in generation_stoppers:

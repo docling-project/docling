@@ -199,7 +199,6 @@ class ApiVlmEngine(BaseVlmEngine):
                     "usage": api_response.usage,
                     "logprobs": api_response.logprobs,
                     "error": error,
-                    "reasoning": api_response.reasoning,
                 },
             )
 

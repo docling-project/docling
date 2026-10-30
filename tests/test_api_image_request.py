@@ -170,7 +170,7 @@ class TestApiImageRequest:
         wire_name,
         content,
     ):
-        """Keep reasoning separate even when it looks like a page answer."""
+        """Ignore non-answer fields, including text that looks like page output."""
         mock_session_factory.return_value.__enter__.return_value.post.return_value = (
             mock_response_factory(
                 message={
@@ -186,13 +186,8 @@ class TestApiImageRequest:
             url="http://test.api/v1/chat/completions",
         )
         assert response.text == content
-        assert response.reasoning == "<div>hello</div>"
-        if content:
-            assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
-            assert response.error is None
-        else:
-            assert response.stop_reason == VlmStopReason.INFERENCE_ERROR
-            assert "Configure the server" in response.error
+        assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
+        assert response.error is None
 
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_thinking_cut_at_the_token_limit_is_not_page_text(
