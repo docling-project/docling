@@ -47,6 +47,9 @@ _MARKER = re.compile(
     r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)[ \t]*"
 )
 _CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`).+?(?<!`)\1(?!`)")
+# A reply cut off inside a marker ends with `![label](12,34,5`. Without the closing
+# parenthesis, it is no Markdown image, so it is never real text.
+_PARTIAL_MARKER = re.compile(r"!\[[A-Za-z_][\w-]*?\+?\]\(\s*[\d,\s]*\Z")
 # Upstream reports replies that start with the closing tag of the empty think block.
 _THINK = re.compile(r"\A\s*(?:<think>.*?)?</think>\s*", re.DOTALL)
 _LABELS = {
@@ -177,7 +180,7 @@ def parse_lightonocr_markdown(
     block_starts: list[int] = []
     caption_owners: dict[int, set[DocItemLabel]] = {}
     invalid_boxes = 0
-    content = _THINK.sub("", content)
+    content = _PARTIAL_MARKER.sub("", _THINK.sub("", content))
     for index, (label, bbox, body) in enumerate(_blocks(content)):
         block_starts.append(len(doc.body.children))
         if not body.strip() and label not in _PICTURE_LABELS:

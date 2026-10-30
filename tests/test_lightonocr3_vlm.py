@@ -251,13 +251,23 @@ def test_marker_after_inline_code_starts_a_block():
     assert not doc.pictures
 
 
-def test_cut_off_marker_stays_text():
-    text = "Cut off here ![text](100,200"
+@pytest.mark.parametrize(
+    "partial", ["![text](100,200", "![text+](100,200,300,", "![text]("]
+)
+def test_cut_off_marker_at_reply_end_is_removed(partial: str):
     doc = parse_lightonocr_markdown(
-        f"![text](0,0,1000,100) {text}", PAGE_SIZE, page_no=1
+        f"![text](0,0,1000,100) Cut off here {partial}", PAGE_SIZE, page_no=1
     )
-    assert [item.text for item in doc.texts] == [text]
+    assert [item.text for item in doc.texts] == ["Cut off here"]
     assert not doc.pictures
+
+
+@pytest.mark.parametrize(
+    "text", ["Wow ![note](see below", "Wow ![note]", "Wow ![note] (12"]
+)
+def test_text_with_image_syntax_at_reply_end_stays(text: str):
+    doc = parse_lightonocr_markdown(f"![text](0,0,1000,100) {text}", PAGE_SIZE, 1)
+    assert [item.text for item in doc.texts] == [text]
 
 
 @pytest.mark.parametrize("image", ["![logo](https://example.com/a.png)", "![a](1,2,3)"])
