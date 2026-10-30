@@ -32,6 +32,7 @@ from docling.backend.abstract_backend import (
 from docling.backend.afp_backend import AfpDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.boxnote_backend import BoxNoteDocumentBackend
+from docling.backend.calendar_backend import CalendarDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
@@ -68,6 +69,7 @@ from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     AsciiDocBackendOptions,
     BackendOptions,
+    CalendarBackendOptions,
     CsvBackendOptions,
     DeclarativeBackendOptions,
     EbcdicBackendOptions,
@@ -419,6 +421,12 @@ class EmailFormatOption(FormatOption):
     backend_options: Optional[EmailBackendOptions] = None
 
 
+class CalendarFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = CalendarDocumentBackend
+    backend_options: Optional[CalendarBackendOptions] = None
+
+
 class EpubFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = EpubDocumentBackend
@@ -478,6 +486,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
         InputFormat.AFP: AfpFormatOption(),
+        InputFormat.CALENDAR: CalendarFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

@@ -32,7 +32,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 
 ## Features
 
-- 🗂️ Parsing of [multiple document formats][supported_formats] including PDF, DOCX, PPTX, XLSX, HTML, EPUB, Apple Pages, Numbers & Keynote, WAV, MP3, WebVTT, Box Notes, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, DocLang, plain text, and more
+- 🗂️ Parsing of [multiple document formats][supported_formats] including PDF, DOCX, PPTX, XLSX, HTML, EPUB, Apple Pages, Numbers & Keynote, WAV, MP3, WebVTT, Box Notes, email formats (EML, MSG), iCalendar (ICS), images (PNG, TIFF, JPEG, ...), LaTeX, DocLang, plain text, and more
 - 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 - 🧬 A unified, expressive [DoclingDocument][docling_document] representation format
 - ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, DocLang, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
@@ -52,6 +52,7 @@ Docling simplifies document processing by parsing diverse formats — including 
 - 📄 Parsing of ODF (OpenDocument Format) files for text documents (`.odt`), spreadsheets (`.ods`), and presentations (`.odp`)
 - 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
+- 📅 Parsing of calendar files (`.ics`, `.ical`, `.icalendar`, `.ifb`) with events, tasks, journal entries and free/busy times, with attendees, reminders and attachment names
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books
 - 🍎 Parsing of Apple Pages (`.pages`) documents, Numbers (`.numbers`) spreadsheets and Keynote (`.key`) presentations
 - 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)

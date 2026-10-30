@@ -1,0 +1,37 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Home
+  item-2 at level 1: section_header: File the tax return
+  item-3 at level 1: text: Due: 2026-10-31
+  item-4 at level 1: text: Progress: 40%
+  item-5 at level 1: text: Status: In process
+  item-6 at level 1: text: Priority: High
+  item-7 at level 1: text: Collect the receipts first.
+  item-8 at level 1: section_header: Reminders
+  item-9 at level 1: list: group reminders
+    item-10 at level 2: list_item: Display, 1 day before due
+  item-11 at level 1: section_header: Renew passport
+  item-12 at level 1: text: Completed: 2026-10-02 16:45 UTC
+  item-13 at level 1: text: Status: Completed
+  item-14 at level 1: section_header: Dentist
+  item-15 at level 1: text: Start: 2026-10-21 08:30 America/New_York
+  item-16 at level 1: text: Duration: 45 minutes
+  item-17 at level 1: text: Location: Main Street Dental, 12 Main Street, Springfield
+  item-18 at level 1: text: Visibility: Private
+  item-19 at level 1: text: URL: https://dental.example.com/appointments/42
+  item-20 at level 1: section_header: Reminders
+  item-21 at level 1: list: group reminders
+    item-22 at level 2: list_item: Sound, at 2026-10-21 12:00 UTC
+  item-23 at level 1: section_header: Garden notes
+  item-24 at level 1: text: Date: 2026-10-16
+  item-25 at level 1: text: Categories: Garden
+  item-26 at level 1: text: Planted the tulip bulbs.
+  item-27 at level 1: text: Next: cover the beds before the first frost.
+  item-28 at level 1: section_header: Free/busy
+  item-29 at level 1: text: Start: 2026-10-20 08:00 UTC
+  item-30 at level 1: text: End: 2026-10-20 17:00 UTC
+  item-31 at level 1: text: Organizer: alice@example.com
+  item-32 at level 1: section_header: Free/busy periods
+  item-33 at level 1: list: group free/busy periods
+    item-34 at level 2: list_item: Busy: 2026-10-20 09:00 UTC to 2026-10-20 10:00 UTC
+    item-35 at level 2: list_item: Busy: 2026-10-20 13:00 UTC for 1 hour 30 minutes
+    item-36 at level 2: list_item: Tentative: 2026-10-20 15:00 UTC to 2026-10-20 16:00 UTC

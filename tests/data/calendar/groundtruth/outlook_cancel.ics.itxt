@@ -1,0 +1,13 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: text: Message type: Cancellation
+  item-2 at level 1: section_header: Canceled: Vendor demo
+  item-3 at level 1: text: Start: 2026-11-12 10:00 (UTC+01: ...  Berlin, Bern, Rome, Stockholm, Vienna
+  item-4 at level 1: text: End: 2026-11-12 11:00 (UTC+01:00 ...  Berlin, Bern, Rome, Stockholm, Vienna
+  item-5 at level 1: text: Location: Room Atlas
+  item-6 at level 1: text: Organizer: "Martin, Carla" <carla.martin@example.com>
+  item-7 at level 1: text: Status: Cancelled
+  item-8 at level 1: text: Priority: High
+  item-9 at level 1: text: The vendor moved the demo to next quarter.
+  item-10 at level 1: section_header: Attendees
+  item-11 at level 1: list: group attendees
+    item-12 at level 2: list_item: Dan Moreau <dan.moreau@example.com>
