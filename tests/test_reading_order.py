@@ -525,6 +525,160 @@ def _box(
     return _el(cid, label).model_copy(update={"l": l, "r": r, "t": t, "b": b})
 
 
+def _issue4913_court_page_elements(
+    *,
+    narrow_head_label: DocItemLabel = DocItemLabel.SECTION_HEADER,
+    party_first_line_right: float = 181.34,
+) -> List[PageElement]:
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 651.05, 661.14, l=284.09, r=321.31),
+        _box(1, DocItemLabel.TEXT, 623.40, 633.74, l=180.62, r=428.85),
+        _box(2, DocItemLabel.TEXT, 540.57, 606.14, l=228.29, r=381.27),
+        _box(3, DocItemLabel.SECTION_HEADER, 513.02, 523.11, l=180.26, r=429.32),
+        _box(4, DocItemLabel.TEXT, 499.17, 509.51, l=167.78, r=441.61),
+        _box(5, narrow_head_label, 457.77, 468.11, l=85.10, r=93.77),
+        _box(6, DocItemLabel.TEXT, 443.97, 454.31, l=85.10, r=party_first_line_right),
+        _box(7, DocItemLabel.TEXT, 443.97, 454.31, l=316.15, r=450.08),
+        _box(8, DocItemLabel.TEXT, 416.37, 426.71, l=85.10, r=103.78),
+        _box(9, DocItemLabel.TEXT, 388.75, 399.09, l=85.10, r=93.11),
+        _box(10, DocItemLabel.TEXT, 388.75, 399.09, l=316.15, r=490.44),
+        _box(11, DocItemLabel.TEXT, 361.15, 371.49, l=85.10, r=211.09),
+        _box(12, DocItemLabel.TEXT, 347.35, 371.49, l=316.15, r=490.43),
+        _box(13, DocItemLabel.PICTURE, 704.05, 808.58, l=177.78, r=432.11),
+    ]
+    for element in elements:
+        element.page_size = Size(width=595.32, height=841.92)
+    return elements
+
+
+@pytest.mark.parametrize("origin", [CoordOrigin.BOTTOMLEFT, CoordOrigin.TOPLEFT])
+@pytest.mark.parametrize("reverse_input", [False, True])
+@pytest.mark.parametrize("merged_party_row", [False, True])
+@pytest.mark.parametrize(
+    "narrow_head_label",
+    [DocItemLabel.SECTION_HEADER, DocItemLabel.TITLE, DocItemLabel.TEXT],
+)
+@pytest.mark.parametrize("party_first_line_right", [181.34, 150.0])
+def test_centered_header_precedes_narrow_head_of_wide_body(
+    origin: CoordOrigin,
+    reverse_input: bool,
+    merged_party_row: bool,
+    narrow_head_label: DocItemLabel,
+    party_first_line_right: float,
+) -> None:
+    # A short party name starts a separate chain below a centered court header.
+    elements = _issue4913_court_page_elements(
+        narrow_head_label=narrow_head_label,
+        party_first_line_right=party_first_line_right,
+    )
+    if merged_party_row:
+        # Layout models can return the party and counsel as one wide text box.
+        elements[6].r = elements[7].r
+        elements.pop(7)
+        for cid, element in enumerate(elements):
+            element.cid = cid
+    expected = [elements[-1].cid, *range(len(elements) - 1)]
+    if origin == CoordOrigin.TOPLEFT:
+        elements = [
+            element.model_copy(
+                update=element.to_top_left_origin(
+                    page_height=element.page_size.height
+                ).model_dump()
+            )
+            for element in elements
+        ]
+    if reverse_input:
+        elements.reverse()
+
+    result = ReadingOrderPredictor().predict_reading_order(elements)
+
+    assert [element.cid for element in result] == expected
+    # Dilation must affect ordering only, not the returned source boxes.
+    assert result[6].l == 85.10
+    assert result[6].r == 93.77
+
+
+def test_centered_header_precedes_narrow_head_when_party_column_stops_at_150() -> None:
+    # The same-row counsel text still spans the party and court columns.
+    elements = _issue4913_court_page_elements(party_first_line_right=150.0)
+    for index, element in enumerate(elements):
+        if element.label == DocItemLabel.TEXT and element.l < 120.0:
+            elements[index] = element.model_copy(update={"r": min(element.r, 150.0)})
+
+    expected = [elements[-1].cid, *range(len(elements) - 1)]
+    result = ReadingOrderPredictor().predict_reading_order(elements)
+
+    assert [element.cid for element in result] == expected
+
+
+@pytest.mark.parametrize("origin", [CoordOrigin.BOTTOMLEFT, CoordOrigin.TOPLEFT])
+@pytest.mark.parametrize("reverse_input", [False, True])
+def test_author_columns_precede_narrow_abstract_heading(
+    origin: CoordOrigin, reverse_input: bool
+) -> None:
+    # Page 1 of 2206.01062.pdf: the abstract must not split the author row.
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 672.39, 708.39, l=108.83, r=504.72),
+        _box(1, DocItemLabel.TEXT, 611.76, 658.29, l=91.08, r=193.70),
+        _box(2, DocItemLabel.TEXT, 612.52, 658.29, l=255.23, r=357.85),
+        _box(3, DocItemLabel.TEXT, 612.52, 658.29, l=419.37, r=522.00),
+        _box(4, DocItemLabel.TEXT, 579.52, 599.91, l=182.28, r=265.23),
+        _box(5, DocItemLabel.TEXT, 554.13, 574.61, l=172.65, r=275.28),
+        _box(6, DocItemLabel.TEXT, 554.13, 599.43, l=336.80, r=439.43),
+        _box(7, DocItemLabel.SECTION_HEADER, 536.41, 543.69, l=53.81, r=111.88),
+        _box(8, DocItemLabel.TEXT, 257.67, 529.07, l=53.49, r=295.20),
+    ]
+    for element in elements:
+        element.page_size = Size(width=612, height=792)
+    if origin == CoordOrigin.TOPLEFT:
+        elements = [
+            element.model_copy(
+                update=element.to_top_left_origin(page_height=792).model_dump()
+            )
+            for element in elements
+        ]
+    if reverse_input:
+        elements.reverse()
+
+    result = ReadingOrderPredictor().predict_reading_order(elements)
+
+    assert [element.cid for element in result] == list(range(9))
+
+
+def test_heading_above_form_does_not_reorder_other_reading_chains() -> None:
+    # A form is a container, not the text column below a narrow heading.
+    elements = [
+        _box(0, DocItemLabel.TEXT, 44.82, 53.66, l=82.39, r=152.46),
+        _box(1, DocItemLabel.SECTION_HEADER, 734.58, 748.41, l=479.44, r=592.00),
+        _box(2, DocItemLabel.FORM, 50.00, 720.02, l=54.86, r=590.00),
+    ]
+    for element in elements:
+        element.page_size = Size(width=612, height=792)
+
+    result = ReadingOrderPredictor().predict_reading_order(elements)
+
+    assert [element.cid for element in result] == [0, 1, 2]
+
+
+@pytest.mark.parametrize("dilate", [False, True])
+def test_staggered_columns_keep_left_to_right_order_before_shared_footer(
+    dilate: bool,
+) -> None:
+    elements = [
+        _box(0, DocItemLabel.TEXT, 450, 600, l=50, r=290),
+        _box(1, DocItemLabel.TEXT, 250, 400, l=50, r=290),
+        _box(2, DocItemLabel.SECTION_HEADER, 700, 720, l=320, r=560),
+        _box(3, DocItemLabel.TEXT, 250, 680, l=320, r=560),
+        _box(4, DocItemLabel.TEXT, 100, 200, l=50, r=560),
+    ]
+
+    predictor = ReadingOrderPredictor()
+    predictor.dilated_page_element = dilate
+    result = predictor.predict_reading_order(elements)
+
+    assert [element.cid for element in result] == [0, 1, 2, 3, 4]
+
+
 def test_caption_binds_below_when_the_graphic_below_is_nearer():
     # Doc 01030000000128, "Figure 13.3. Graph of Projection Estimates": a table
     # sits 49.7 above the caption, the figure it names 24.9 below. Ranking by
@@ -583,16 +737,63 @@ def test_heads_separated_by_full_width_text_are_read_top_down():
     assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5, 6, 7]
 
 
-def test_heads_in_side_by_side_columns_keep_column_order():
+@pytest.mark.parametrize(
+    "head_label",
+    [
+        DocItemLabel.SECTION_HEADER,
+        DocItemLabel.PICTURE,
+        DocItemLabel.TABLE,
+        DocItemLabel.CODE,
+    ],
+)
+@pytest.mark.parametrize("dilate", [False, True])
+@pytest.mark.parametrize("reverse_input", [False, True])
+def test_heads_in_side_by_side_columns_keep_column_order(
+    head_label: DocItemLabel,
+    dilate: bool,
+    reverse_input: bool,
+) -> None:
     # The right column starts higher, and its text sits between the two heads,
     # but only spans the right one: the left column is still read first.
     elements = [
-        _box(0, DocItemLabel.SECTION_HEADER, 700.0, 720.0, l=320.0, r=560.0),
+        _box(0, head_label, 700.0, 720.0, l=320.0, r=560.0),
         _box(1, DocItemLabel.TEXT, 450.0, 680.0, l=320.0, r=560.0),
         _box(2, DocItemLabel.TEXT, 100.0, 400.0, l=50.0, r=290.0),
     ]
 
-    assert _predicted_cids(elements) == [2, 0, 1]
+    if reverse_input:
+        elements.reverse()
+
+    predictor = ReadingOrderPredictor()
+    predictor.dilated_page_element = dilate
+    result = predictor.predict_reading_order(elements)
+
+    assert [element.cid for element in result] == [2, 0, 1]
+
+
+def test_narrow_text_column_and_spanning_block_order_heads_together():
+    # The centred header (0) and the narrow section header (2) do not share a
+    # column, and nothing between them spans both. Sorting (2) by the wide
+    # text under it keeps (0) first.
+    # The centred heading (6) has only a narrow text column, so that sort does
+    # not reach the left-hand line (10). The full-width block (8) spans both,
+    # so (6) stays above (10).
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 740, 752, l=284, r=321),
+        _box(1, DocItemLabel.TEXT, 700, 730, l=180, r=430),
+        _box(2, DocItemLabel.SECTION_HEADER, 650, 665, l=85, r=94),
+        _box(3, DocItemLabel.TEXT, 610, 640, l=85, r=400),
+        _box(4, DocItemLabel.LIST_ITEM, 561.8, 570.1, l=67.4, r=482.7),
+        _box(5, DocItemLabel.TEXT, 521.4, 528.8, l=67.4, r=194.5),
+        _box(6, DocItemLabel.SECTION_HEADER, 500, 512, l=278.0, r=317.3),
+        _box(7, DocItemLabel.TEXT, 470, 490, l=278.0, r=317.3),
+        _box(8, DocItemLabel.TEXT, 322.0, 387.9, l=67.4, r=529.9),
+        _box(9, DocItemLabel.SECTION_HEADER, 263.5, 272.1, l=274.6, r=320.7),
+        _box(10, DocItemLabel.TEXT, 237.4, 245.8, l=67.4, r=202.0),
+        _box(11, DocItemLabel.LIST_ITEM, 190.4, 219.7, l=67.4, r=529.9),
+    ]
+
+    assert _predicted_cids(elements) == list(range(12))
 
 
 """

@@ -424,6 +424,16 @@ class _ReadingOrderPredictorState:
 
 GRAPHIC_LABELS = {DocItemLabel.TABLE, DocItemLabel.PICTURE, DocItemLabel.CODE}
 
+_CHAIN_HEAD_COLUMN_SORT_LABELS = frozenset(
+    {
+        DocItemLabel.SECTION_HEADER,
+        DocItemLabel.TITLE,
+        DocItemLabel.TEXT,
+    }
+)
+
+_TEXT_COLUMN_SORT_LABELS = frozenset({DocItemLabel.TEXT})
+
 
 def _is_graphic(element: PageElement) -> bool:
     return element.label in GRAPHIC_LABELS
@@ -687,6 +697,7 @@ class ReadingOrderPredictor:
         )
 
         self._init_ud_maps(page_elements, state)
+        column_span_state = copy.deepcopy(state)
 
         if self.dilated_page_element:
             dilated_page_elements: List[ReadingOrderNode] = copy.deepcopy(
@@ -703,7 +714,12 @@ class ReadingOrderPredictor:
             # redo with dilated provs
             self._init_ud_maps(dilated_page_elements, state)
 
-        self._find_heads(page_elements, state)
+        self._find_heads(
+            page_elements,
+            state,
+            column_span_state=column_span_state,
+            vertical_separators=vertical_separators,
+        )
 
         self._sort_ud_maps(page_elements, state)
 
@@ -1045,6 +1061,50 @@ class ReadingOrderPredictor:
         ) == [upper_index]
 
     @staticmethod
+    def _text_chain_horizontal_span(
+        head_index: int,
+        page_elems: List[ReadingOrderNode],
+        state: _ReadingOrderPredictorState,
+    ) -> tuple[float, float]:
+        head = page_elems[head_index]
+        if not isinstance(head, PageElement):
+            return head.l, head.r
+
+        left, right = head.l, head.r
+        current = head_index
+        while True:
+            down_indices = state.dn_map.get(current, [])
+            if len(down_indices) != 1:
+                break
+            down_index = down_indices[0]
+            down = page_elems[down_index]
+            if not isinstance(down, PageElement):
+                break
+            if down.label == DocItemLabel.FORM:
+                break
+            if down.label not in _TEXT_COLUMN_SORT_LABELS:
+                break
+            one_to_one = ReadingOrderPredictor._is_one_to_one_vertical_edge(
+                state, current, down_index
+            )
+            if not one_to_one:
+                row_left = page_elems[current]
+                if (
+                    not isinstance(row_left, PageElement)
+                    or row_left.label != DocItemLabel.TEXT
+                    or state.l2r_map.get(current) != down_index
+                    or state.r2l_map.get(down_index) != current
+                ):
+                    break
+            left = min(left, down.l)
+            right = max(right, down.r)
+            if not one_to_one:
+                # Include the linked text row, not the other parent's column.
+                break
+            current = down_index
+        return left, right
+
+    @staticmethod
     def _has_vertical_separator_between(
         lhs: ReadingOrderNode,
         rhs: ReadingOrderNode,
@@ -1089,12 +1149,37 @@ class ReadingOrderPredictor:
         return x0, x1
 
     def _find_heads(
-        self, page_elems: List[ReadingOrderNode], state: _ReadingOrderPredictorState
+        self,
+        page_elems: List[ReadingOrderNode],
+        state: _ReadingOrderPredictorState,
+        *,
+        column_span_state: _ReadingOrderPredictorState,
+        vertical_separators: List[SeparatorElement] | None,
     ) -> None:
         head_page_elems = []
         for key, vals in state.up_map.items():
-            if len(vals) == 0:
-                head_page_elems.append(page_elems[key])
+            if vals:
+                continue
+            head = page_elems[key]
+            if (
+                self.dilated_page_element
+                and isinstance(head, PageElement)
+                and head.label in _CHAIN_HEAD_COLUMN_SORT_LABELS
+                and state.dn_map.get(key)
+            ):
+                left, right = self._text_chain_horizontal_span(
+                    key, page_elems, column_span_state
+                )
+                if right - left > head.r - head.l + head.eps:
+                    left, right = self._clamp_dilation_to_vertical_separators(
+                        head,
+                        x0=left,
+                        x1=right,
+                        vertical_separators=vertical_separators,
+                    )
+                    # Use the text column to sort heads, not to create new edges.
+                    head = head.model_copy(update={"l": left, "r": right})
+            head_page_elems.append(head)
 
         """
         print("before sorting the heads: ")
