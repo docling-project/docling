@@ -28,6 +28,7 @@ from PIL import Image as PILImage
 
 from docling.utils.chandra_utils import (
     _add_html_fragment,
+    _Element,
     _HTMLTreeParser,
     _table_cells,
     _table_data,
@@ -110,6 +111,11 @@ def _blocks(content: str) -> Iterator[tuple[str, str, str]]:
     yield label, bbox, "".join(lines)
 
 
+def _html_table(body: str) -> _Element | None:
+    root = _HTMLTreeParser(body).root
+    return next((node for node in root.elements() if node.tag == "table"), None)
+
+
 def _has_area(bbox: str) -> bool:
     """Tell if a normalized ``x0 y0 x1 y1`` box lies on the 0-1000 grid and has area."""
     x0, y0, x1, y1 = (int(value) for value in bbox.split())
@@ -118,8 +124,7 @@ def _has_area(bbox: str) -> bool:
 
 def _chart_data(body: str) -> TableData | None:
     """Read the HTML table of a chart block. Other bodies describe the chart."""
-    root = _HTMLTreeParser(body).root
-    table = next((node for node in root.elements() if node.tag == "table"), None)
+    table = _html_table(body)
     if table is None:
         return None
     try:
@@ -177,6 +182,9 @@ def parse_lightonocr_markdown(
         block_starts.append(len(doc.body.children))
         if not body.strip() and label not in _PICTURE_LABELS:
             continue
+        if label == "image" and _html_table(body) is not None:
+            # The model sometimes puts a table in an image block. Keep it as a table.
+            label = "table"
         if label not in _LABELS:
             _log.warning("Unknown LightOnOCR label %r; keeping it as text", label)
         layout_label = _LABELS.get(label, "Text")

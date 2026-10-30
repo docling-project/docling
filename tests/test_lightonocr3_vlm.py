@@ -339,6 +339,22 @@ Valid
     assert "Chandra" not in messages[0]
 
 
+def test_table_in_image_block_becomes_a_table():
+    content = """![image](100,200,900,500)
+Skills
+<table><tr><th>Skill</th><th>Level</th></tr><tr><td>Layout</td><td>90</td></tr></table>
+Source: self-rated
+"""
+    doc = parse_lightonocr_markdown(content, PAGE_SIZE, page_no=1)
+    assert not doc.pictures
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.grid[1][0].text == "Layout"
+    assert doc.tables[0].prov[0].bbox.l == 60
+    assert "Skills" in [t.text for t in doc.texts]
+    assert "Source: self-rated" in [t.text for t in doc.texts]
+    assert not any("<table" in t.text for t in doc.texts)
+
+
 def test_plain_transcription_and_code_markers():
     content = """# Heading
 
