@@ -352,25 +352,35 @@ def _inline_runs(
 
 
 class _ChandraDocumentBuilder:
-    def __init__(self, doc: DoclingDocument, size: Size, page_no: int):
+    def __init__(
+        self,
+        doc: DoclingDocument,
+        size: Size,
+        page_no: int,
+        warn_bbox: bool = True,
+    ):
         self.doc = doc
         self.size = size
         self.page_no = page_no
+        self.warn_bbox = warn_bbox
 
     def _provenance(self, node: _Element) -> ProvenanceItem | None:
         raw = node.attrs.get("data-bbox", "")
         try:
             x0, y0, x1, y1 = (float(c) for c in raw.split())
         except ValueError:
-            _log.warning(
-                "Missing or invalid Chandra bbox %r; preserving content without coordinates",
-                raw,
-            )
+            if self.warn_bbox:
+                _log.warning(
+                    "Missing or invalid Chandra bbox %r; preserving content without coordinates",
+                    raw,
+                )
             return None
         if not (0 <= x0 <= x1 <= 1000 and 0 <= y0 <= y1 <= 1000):
-            _log.warning(
-                "Invalid Chandra bbox %r; preserving content without coordinates", raw
-            )
+            if self.warn_bbox:
+                _log.warning(
+                    "Invalid Chandra bbox %r; preserving content without coordinates",
+                    raw,
+                )
             return None
         return ProvenanceItem(
             page_no=self.page_no,
@@ -778,14 +788,18 @@ def _add_html_fragment(
     label: DocItemLabel,
     prov: ProvenanceItem | None = None,
     parent: NodeItem | None = None,
+    warn_bbox: bool = True,
 ) -> bool:
-    """Add an HTML fragment using Chandra's dependency-free rich tree mapping."""
+    """Add an HTML fragment using Chandra's dependency-free rich tree mapping.
+
+    Set ``warn_bbox`` to False when the caller reports bad boxes in its own words.
+    """
     root = _HTMLTreeParser(html_content).root
     if not any(True for _ in root.elements()):
         return False
     page_no = prov.page_no if prov is not None else next(iter(doc.pages))
     size = doc.pages[page_no].size
-    _ChandraDocumentBuilder(doc, size, page_no).walk(
+    _ChandraDocumentBuilder(doc, size, page_no, warn_bbox).walk(
         root.children,
         parent=parent,
         prov=_Provenance(prov, text_owner=True) if prov is not None else None,

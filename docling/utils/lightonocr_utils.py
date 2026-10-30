@@ -110,6 +110,12 @@ def _blocks(content: str) -> Iterator[tuple[str, str, str]]:
     yield label, bbox, "".join(lines)
 
 
+def _has_area(bbox: str) -> bool:
+    """Tell if a normalized ``x0 y0 x1 y1`` box lies on the 0-1000 grid and has area."""
+    x0, y0, x1, y1 = (int(value) for value in bbox.split())
+    return 0 <= x0 < x1 <= 1000 and 0 <= y0 < y1 <= 1000
+
+
 def _chart_data(body: str) -> TableData | None:
     """Read the HTML table of a chart block. Other bodies describe the chart."""
     root = _HTMLTreeParser(body).root
@@ -165,7 +171,9 @@ def parse_lightonocr_markdown(
     )
     block_starts: list[int] = []
     caption_owners: dict[int, set[DocItemLabel]] = {}
-    for index, (label, bbox, body) in enumerate(_blocks(_THINK.sub("", content))):
+    invalid_boxes = 0
+    content = _THINK.sub("", content)
+    for index, (label, bbox, body) in enumerate(_blocks(content)):
         block_starts.append(len(doc.body.children))
         if not body.strip() and label not in _PICTURE_LABELS:
             continue
@@ -189,10 +197,16 @@ def parse_lightonocr_markdown(
                 layout_label = "Section-Header"
         if label == "caption":
             caption_owners[index] = {DocItemLabel.TABLE, DocItemLabel.PICTURE}
-        attrs = f'data-bbox="{bbox}" data-label="{layout_label}"' if bbox else ""
+        attrs = ""
+        if bbox:
+            attrs = f'data-label="{layout_label}"'
+            if _has_area(bbox):
+                attrs = f'data-bbox="{bbox}" {attrs}'
+            else:
+                invalid_boxes += 1
         fragment = f"<div {attrs}>{rendered}</div>"
         picture_start = len(doc.pictures)
-        _add_html_fragment(doc, fragment, label=DocItemLabel.TEXT)
+        _add_html_fragment(doc, fragment, label=DocItemLabel.TEXT, warn_bbox=False)
         for picture in doc.pictures[picture_start:]:
             if picture.meta is not None and picture.meta.description is not None:
                 picture.meta.description.created_by = "lightonocr"
@@ -213,6 +227,13 @@ def parse_lightonocr_markdown(
                     picture.meta.tabular_chart = TabularChartMetaField(
                         chart_data=chart_data
                     )
+    if invalid_boxes:
+        _log.warning(
+            "LightOnOCR page %d has %d block(s) with a box outside the 0-1000 grid "
+            "or without area; keeping their content without coordinates",
+            page_no,
+            invalid_boxes,
+        )
     link_adjacent_captions(doc, block_starts, caption_owners)
     if normalize_heading_levels:
         normalize_section_header_levels(doc)

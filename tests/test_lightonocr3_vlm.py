@@ -7,7 +7,7 @@ The model replies below are written by hand from the upstream model card, README
 and grounding code. They are not captured model output.
 """
 
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from types import SimpleNamespace
 
 import pytest
@@ -296,6 +296,47 @@ Retain this despite the reversed box.
     assert doc.pictures[0].content_layer == ContentLayer.FURNITURE
     assert doc.texts[-1].text == "Retain this despite the reversed box."
     assert not doc.texts[-1].prov
+
+
+@pytest.mark.parametrize("bbox", ["24,1000,238,1000", "0,0,0,0", "5,5,5,50"])
+def test_zero_area_picture_has_no_box_and_can_be_saved(bbox: str, tmp_path: Path):
+    image = Image.new("RGB", (600, 800), "white")
+    doc = parse_lightonocr_markdown(
+        f"![image]({bbox})\nA small logo.", PAGE_SIZE, page_no=1, page_image=image
+    )
+    assert doc.pictures[0].meta.description.text == "A small logo."
+    assert not doc.pictures[0].prov
+    doc.save_as_doclang_archive(tmp_path / "doc.dclx")
+
+
+@pytest.mark.parametrize("bbox", ["0,900,500,1200", "100,300,50,400", "900,10,100,20"])
+def test_out_of_grid_and_inverted_boxes_keep_text(bbox: str):
+    doc = parse_lightonocr_markdown(f"![text]({bbox}) Kept text", PAGE_SIZE, 1)
+    assert [item.text for item in doc.texts] == ["Kept text"]
+    assert not doc.texts[0].prov
+
+
+def test_invalid_boxes_warn_once_per_page(caplog: pytest.LogCaptureFixture):
+    content = """![header](1,2,24,1)
+Top
+
+![text](0,900,500,1200)
+One
+
+![text](0,0,1000,100)
+Valid
+"""
+    doc = parse_lightonocr_markdown(content, PAGE_SIZE, page_no=3)
+    assert [t.label for t in doc.texts] == [
+        DocItemLabel.PAGE_HEADER,
+        DocItemLabel.TEXT,
+        DocItemLabel.TEXT,
+    ]
+    assert [bool(t.prov) for t in doc.texts] == [False, False, True]
+    messages = [r.getMessage() for r in caplog.records]
+    assert len(messages) == 1
+    assert "page 3 has 2 block(s)" in messages[0]
+    assert "Chandra" not in messages[0]
 
 
 def test_plain_transcription_and_code_markers():
