@@ -31,14 +31,27 @@ from docling.utils.lightonocr_utils import parse_lightonocr_markdown
 PAGE_SIZE = Size(width=600, height=800)
 
 
-@pytest.mark.parametrize("size, suffix", [("0.8B", "08b"), ("4B", "4b")])
-def test_preset_runtime_configuration(size: str, suffix: str):
+@pytest.mark.parametrize(
+    "size, suffix, revision",
+    [
+        ("0.8B", "08b", "36d8636925327c671bd8e479c517a004f7566bd9"),
+        ("4B", "4b", "b71010f095dc3735de7ee6b9969bff8f8f50b39a"),
+    ],
+)
+def test_preset_runtime_configuration(size: str, suffix: str, revision: str):
     options = VlmConvertOptions.from_preset(f"lightonocr3_{suffix}")
     spec = options.model_spec
     config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
     runtime = spec.get_runtime_input_extra_config(VlmEngineType.TRANSFORMERS)
     assert config.repo_id == f"lightonai/LightOnOCR-3-{size}"
+    assert config.revision == revision
     assert config.min_engine_version == "5.5.4"
+    assert not spec.trust_remote_code
+    assert spec.temperature == 0.1
+    assert spec.max_new_tokens == 12288
+    vllm_config = spec.get_engine_config(VlmEngineType.VLLM)
+    assert vllm_config.revision == revision
+    assert vllm_config.min_engine_version == "0.30.0"
     assert config.torch_dtype == "bfloat16"
     assert (
         config.extra_config["transformers_model_type"]
@@ -46,14 +59,16 @@ def test_preset_runtime_configuration(size: str, suffix: str):
     )
     assert runtime["transformers_prompt_style"] == TransformersPromptStyle.CHAT
     assert runtime["skip_special_tokens"] is True
+    assert runtime["top_k"] == 0
     assert "extra_generation_config" not in runtime
     assert spec.prompt == "grounding"
     assert spec.response_format == ResponseFormat.LIGHTONOCR_MARKDOWN
-    assert options.max_size == 1540
+    assert options.scale == 2.0
+    assert options.max_size == 2048
     for engine in (VlmEngineType.API, VlmEngineType.API_OPENAI):
         assert spec.get_api_params(engine) == {
             "model": config.repo_id,
-            "max_tokens": 4096,
+            "max_tokens": 12288,
         }
     assert not spec.has_explicit_engine_export(VlmEngineType.MLX)
 
