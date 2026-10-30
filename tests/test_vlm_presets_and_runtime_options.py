@@ -257,6 +257,78 @@ class TestRuntimeOptions:
         )
 
     @pytest.mark.parametrize(
+        ("explicit_dtype", "expected"),
+        [
+            # The CodeFormulaV2 preset bfloat16 falls back on a CPU that emulates it.
+            (None, "float32"),
+            # An explicit engine option dtype is never changed.
+            ("bfloat16", "bfloat16"),
+        ],
+    )
+    def test_transformers_engine_resolves_preset_dtype_for_device(
+        self, monkeypatch, explicit_dtype, expected
+    ):
+        """Only the preset dtype goes through the device fallback."""
+        import torch
+
+        import docling.models.inference_engines.vlm.transformers_engine as tf_engine
+        from docling.datamodel.stage_model_specs import CODE_FORMULA_CODEFORMULAV2
+
+        monkeypatch.setattr(torch.backends.cpu, "get_cpu_capability", lambda: "AVX2")
+
+        captured_kwargs = {}
+
+        class FakeProcessor:
+            tokenizer = None
+
+        class FakeModel:
+            @classmethod
+            def from_pretrained(cls, *args, **kwargs):
+                captured_kwargs.update(kwargs)
+                return cls()
+
+            def eval(self):
+                return None
+
+        monkeypatch.setattr(
+            tf_engine,
+            "resolve_model_artifacts_path",
+            lambda **kwargs: "artifacts",
+        )
+        monkeypatch.setattr(
+            tf_engine.AutoProcessor,
+            "from_pretrained",
+            lambda *args, **kwargs: FakeProcessor(),
+        )
+        monkeypatch.setattr(tf_engine, "AutoModelForImageTextToText", FakeModel)
+        monkeypatch.setattr(
+            tf_engine.GenerationConfig,
+            "from_pretrained",
+            lambda *args, **kwargs: object(),
+        )
+
+        engine = TransformersVlmEngine(
+            options=TransformersVlmEngineOptions(
+                torch_dtype=explicit_dtype,
+                compile_model=False,
+            ),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            artifacts_path=None,
+        )
+        engine.device = "cpu"
+        engine.model_config = CODE_FORMULA_CODEFORMULAV2.model_spec.get_engine_config(
+            VlmEngineType.TRANSFORMERS
+        )
+
+        engine._load_model_for_repo(
+            "docling-project/CodeFormulaV2",
+            model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+        )
+
+        (dtype_arg_name,) = tf_engine.transformers_dtype_kwargs(None)
+        assert captured_kwargs[dtype_arg_name] == expected
+
+    @pytest.mark.parametrize(
         ("transformers_version", "expected_trust_remote_code"),
         [("5.7.0", True), ("5.8.0", False), ("5.16.1", False)],
     )
