@@ -42,6 +42,11 @@ def _parse(content: str) -> DoclingDocument:
     return parse_unlimited_ocr2(content, PAGE_SIZE, page_no=3, filename="doc.pdf")
 
 
+def _page_box(x1: int, y1: int, x2: int, y2: int) -> tuple[float, float, float, float]:
+    width, height = PAGE_SIZE.width / 999, PAGE_SIZE.height / 999
+    return x1 * width, y1 * height, x2 * width, y2 * height
+
+
 def test_real_sample_keeps_labels_and_page_relative_boxes() -> None:
     doc = _parse(REAL_SAMPLE)
 
@@ -51,7 +56,7 @@ def test_real_sample_keeps_labels_and_page_relative_boxes() -> None:
     assert isinstance(title, TitleItem)
     assert title.text == "Attention Is All You Need"
     box = title.prov[0].bbox
-    assert (box.l, box.t, box.r, box.b) == pytest.approx((205.8, 148.8, 393.0, 167.2))
+    assert (box.l, box.t, box.r, box.b) == pytest.approx(_page_box(343, 186, 655, 209))
     assert title.prov[0].page_no == 3
 
 
@@ -163,7 +168,9 @@ def test_merge_joins_text_and_keeps_both_boxes(second: str, joined: str) -> None
 
     assert [item.text for item in doc.texts] == [joined]
     prov = doc.texts[0].prov
-    assert [item.bbox.l for item in prov] == pytest.approx([6.0, 36.0])
+    assert [item.bbox.l for item in prov] == pytest.approx(
+        [_page_box(10, 20, 30, 40)[0], _page_box(60, 20, 90, 40)[0]]
+    )
     assert prov[1].charspan == (len("first part"), len(joined))
 
 
@@ -312,14 +319,14 @@ def test_malformed_headers_give_the_same_item(content: str) -> None:
     assert [item.text for item in doc.texts] == ["Method"]
     assert isinstance(doc.texts[0], SectionHeaderItem)
     box = doc.texts[0].prov[0].bbox
-    assert (box.l, box.t, box.r, box.b) == pytest.approx((6.0, 16.0, 18.0, 32.0))
+    assert (box.l, box.t, box.r, box.b) == pytest.approx(_page_box(10, 20, 30, 40))
 
 
 def test_box_is_clamped_and_ordered() -> None:
     doc = _parse("<PAGE><BLOCK>text[1200, 40, -5, 20]<FORK>Content")
 
     box = doc.texts[0].prov[0].bbox
-    assert (box.l, box.t, box.r, box.b) == pytest.approx((0.0, 16.0, 600.0, 32.0))
+    assert (box.l, box.t, box.r, box.b) == pytest.approx(_page_box(0, 20, 999, 40))
 
 
 @pytest.mark.parametrize(

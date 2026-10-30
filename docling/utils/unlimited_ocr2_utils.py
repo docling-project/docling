@@ -10,7 +10,7 @@ The model does not emit Markdown. A page is one string of blocks::
     <MERGE>
     <BLOCK>text[x1, y1, x2, y2]<FORK>start of the right column
 
-Boxes are integers on a 0-1000 grid, in x1, y1, x2, y2 order, relative to the page.
+Boxes are integers on a 0-999 grid, in x1, y1, x2, y2 order, relative to the page.
 Prefixes ``cross_`` and ``append_`` mark content that continues on another page.
 Docling sends one page per request, so these prefixes are ignored and nothing is
 merged across pages.
@@ -133,7 +133,7 @@ def _parse_box(attrs: str) -> tuple[float, float, float, float] | None:
     if match is None:
         return None
     x1, y1, x2, y2 = (
-        min(max(int(value), 0), 1000) / 1000
+        min(max(int(value), 0), 999) / 999
         for value in re.findall(_NUMBER, match.group())[:4]
     )
     x1, x2 = sorted((x1, x2))
