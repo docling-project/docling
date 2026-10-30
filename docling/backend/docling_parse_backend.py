@@ -291,6 +291,43 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         return None
 
 
+def _pdfium_reports_password_error(
+    path_or_stream: Union[BytesIO, Path], password: Optional[str]
+) -> bool:
+    """Classify a failed PDF load with PDFium when that backend is installed.
+
+    The normal ``docling`` installation includes both PDF backends, but
+    ``format-pdf-docling`` can be installed on its own. In the latter case we
+    preserve docling-parse's original error instead of guessing from PDF bytes.
+    """
+    try:
+        import pypdfium2 as pdfium
+    except ImportError:
+        return False
+
+    stream_position: int | None = None
+    if isinstance(path_or_stream, BytesIO):
+        stream_position = path_or_stream.tell()
+        path_or_stream.seek(0)
+
+    try:
+        document = pdfium.PdfDocument(
+            path_or_stream,
+            password=password,
+            autoclose=False,
+        )
+    except pdfium.PdfiumError as exc:
+        return exc.err_code == pdfium.raw.FPDF_ERR_PASSWORD
+    except (OSError, TypeError, ValueError):
+        return False
+    else:
+        document.close()
+        return False
+    finally:
+        if stream_position is not None:
+            path_or_stream.seek(stream_position)
+
+
 class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
     supports_random_page_access = False
 
@@ -374,6 +411,17 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         except (RuntimeError, ValueError) as e:
             # The threaded parser surfaces native parse failures on unreadable bytes
             # as RuntimeError or ValueError. Tag both as load failures.
+            if _pdfium_reports_password_error(self.path_or_stream, password):
+                # Released docling-parse versions report an encrypted PDF with
+                # the same generic load failure as a corrupt file. Ask a real
+                # PDF parser to classify the failure rather than inferring it
+                # from the document's byte layout.
+                raise DocumentLoadError(
+                    f"docling-parse could not load document {self.document_hash}: "
+                    "the PDF document appears to be password-protected "
+                    "(encrypted). Provide the correct password via "
+                    "PdfBackendOptions to convert it."
+                ) from e
             detail = str(e).strip()
             if detail:
                 raise DocumentLoadError(
