@@ -618,6 +618,32 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
+    def _add_mixed_citation(
+        self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
+    ) -> None:
+        """Add a `<mixed-citation>` with the styling and links of a paragraph.
+
+        A citation with one text run stays a single list item. A citation with
+        more runs, such as text and an `<ext-link>`, becomes an empty list item
+        with an inline group of the runs.
+        """
+        segments = JatsDocumentBackend._trim_segment_edges(
+            self._walk_linear(doc, parent, node)
+        )
+        if not (isinstance(parent, GroupItem) and parent.label == GroupLabel.LIST):
+            JatsDocumentBackend._emit_inline(doc, parent, segments)
+        elif len(segments) == 1 and segments[0].label == DocItemLabel.TEXT:
+            doc.add_list_item(
+                text=segments[0].text,
+                enumerated=False,
+                formatting=segments[0].formatting,
+                hyperlink=segments[0].hyperlink,
+                parent=parent,
+            )
+        else:
+            list_item = doc.add_list_item(text="", enumerated=False, parent=parent)
+            JatsDocumentBackend._emit_inline(doc, list_item, segments)
+
     def _parse_element_citation(self, node: etree._Element) -> str:
         citation: Citation = {
             "author_names": "",
@@ -956,16 +982,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
 
         caption_node = node.xpath("caption")
-        caption: str | None
+        caption: str = ""
         if len(caption_node) > 0:
-            caption = ""
             for caption_par in list(caption_node[0]):
                 if caption_par.xpath(".//supplementary-material"):
                     continue
                 caption += JatsDocumentBackend._get_text(caption_par).strip() + " "
             caption = caption.strip()
-        else:
-            caption = None
 
         # TODO: format label vs caption once styling is supported
         fig_text: str = f"{label}{' ' if label and caption else ''}{caption}"
@@ -1149,6 +1172,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     row_span -= 1
                 while (
                     col_idx < num_cols
+                    and row_idx + start_row_span < num_rows
                     and grid[row_idx + start_row_span][col_idx] is not None
                 ):
                     col_idx += 1
@@ -1231,7 +1255,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Label
         if len(node.xpath("label")) > 0:
-            table["label"] = node.xpath("label")[0].text
+            # lxml sets .text to None for an empty element; fall back to "".
+            table["label"] = node.xpath("label")[0].text or ""
 
         try:
             self._add_table(doc, parent, table)
@@ -1434,8 +1459,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 self._add_citation(doc, parent, text)
                 stop_walk = True
             elif child.tag == "mixed-citation":
-                text = JatsDocumentBackend._get_text(child).strip()
-                self._add_citation(doc, parent, text)
+                self._add_mixed_citation(doc, parent, child)
                 stop_walk = True
             elif child.tag == "tex-math":
                 self._add_equation(doc, parent, child)

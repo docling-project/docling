@@ -56,6 +56,8 @@ docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model lightonocr3_08b --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model lightonocr3_4b --output /tmp/
 docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
@@ -65,6 +67,16 @@ Docling refuses to load it until you add `--trust-remote-code` (SDK:
 `AutoInlineVlmEngineOptions(trust_remote_code=True)`). Review the model code
 first. For vLLM, run NVIDIA's `vllm serve` server and use the API engine; the
 in-process vLLM engine is not supported for this preset.
+
+`unlimited_ocr` and `unlimited_ocr2` need your own OpenAI-compatible server, and the
+CLI has no option for the API URL. Use the SDK for these presets. See
+[python-sdk.md](python-sdk.md).
+
+`unlimited_ocr2_mlx` runs in-process on Apple Silicon and needs `mlx-vlm>=0.7.11`.
+
+The `lightonocr3_*` presets map charts to the `other_chart` class. JSON, Markdown,
+and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raises
+`ValueError` when a document has a chart block.
 
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
 classifies pictures first and adds chart data only where the VLM has not
@@ -90,6 +102,7 @@ Decision guide:
 | Document | Use |
 |---|---|
 | Born-digital PDF (text selectable) | Standard (fast, no GPU) |
+| Text looks right on the page but copies out as garbage | Standard with `--replace-broken-text-layer` |
 | Scanned / image-only PDF | Standard with OCR, or `--pipeline vlm` for best quality |
 | Complex/multi-column layout, dense tables | `--pipeline vlm` |
 | Handwriting or formulas | `--pipeline vlm` (standard OCR won't handle these) |
@@ -107,6 +120,7 @@ docling scan.pdf --ocr-engine rapidocr --output /tmp/    # lightweight
 docling scan.pdf --ocr-engine tesserocr --output /tmp/   # needs system Tesseract
 docling scan.pdf --ocr-engine ocrmac --output /tmp/      # macOS Vision (mac only)
 docling scan.pdf --force-ocr --output /tmp/              # re-OCR even extractable text
+docling report.pdf --replace-broken-text-layer --output /tmp/  # OCR only pages whose text layer is broken
 docling report.pdf --no-ocr --output /tmp/               # skip OCR (faster)
 docling scan.pdf --ocr-lang eng,deu --output /tmp/       # the engine's own codes
 docling scan.pdf --ocr-lang iso:en,iso:de --output /tmp/ # BCP-47 tags behind `iso:`

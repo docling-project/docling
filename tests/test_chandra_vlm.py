@@ -133,6 +133,27 @@ def test_chandra_br_spacing(label: str, html: str, texts: list[str], markdown: s
     assert doc.export_to_markdown() == markdown
 
 
+@pytest.mark.parametrize("label", ["Text", "Form"])
+def test_chandra_br_ignores_source_indentation(label: str):
+    """Test that whitespace around br tags is HTML layout, not text."""
+    content = (
+        f'<div data-bbox="0 0 1000 1000" data-label="{label}"><p>Contact:  <br/>\n'
+        "    Phone: 555-0100<br/>\n"
+        "    Email: info@example.com</p></div>"
+    )
+
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=1000, height=1000),
+        page_no=1,
+        filename="br.html",
+    )
+
+    assert [item.text for item in doc.texts] == [
+        "Contact:\nPhone: 555-0100\nEmail: info@example.com"
+    ]
+
+
 def test_chandra_multiblock_parsing():
     """Test chandra parsing with a saved figure prediction."""
     path = Path("./tests/data/html_chandra/sources/chandra_multiblock.html")
@@ -394,6 +415,18 @@ def test_chandra_paragraph_list_and_form_controls():
     assert all(not value.prov for value in values)
 
 
+@pytest.mark.parametrize("separator", ["", "\n", "\n    "])
+def test_chandra_paragraph_list_ignores_whitespace_between_items(separator: str):
+    """Test that whitespace between list paragraphs is HTML layout, not an item."""
+    doc = _parse_fragment(
+        separator + separator.join(["<p>One</p>", "<p>Two</p>"]) + separator,
+        "List-Group",
+    )
+
+    items = [t.text for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert items == ["One", "Two"]
+
+
 @pytest.mark.parametrize("kind", ["checkbox", "radio"])
 @pytest.mark.parametrize("checked", [False, True])
 @pytest.mark.parametrize("in_table", [False, True])
@@ -603,11 +636,24 @@ def test_chandra_table_row_groups_and_optional_end_tags():
     assert table.table_cells[-2].start_col_offset_idx == 0
 
 
-def test_chandra_rejects_runaway_table_grids():
-    with pytest.raises(ValueError, match="exceeds 1000 grid cells"):
-        _parse_fragment(
-            "<table><tr><td>Header</td></tr><tr>" + "<td></td>" * 501 + "</tr></table>"
-        )
+def test_chandra_runaway_table_grid_keeps_the_page(caplog):
+    """Test that an oversized table grid is not built, without losing the page."""
+    doc = parse_chandra_html(
+        "<div data-label='Text' data-bbox='0 0 1000 100'><p>Before</p></div>"
+        "<div data-label='Table' data-bbox='0 100 1000 900'><table>"
+        "<caption>Cap</caption><tr><td>Header</td></tr><tr>"
+        + "<td></td>" * 501
+        + "</tr></table></div>",
+        Size(width=1000, height=1000),
+        page_no=3,
+    )
+
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (0, 0)
+    assert table.prov[0].bbox.t == 100
+    assert [c.resolve(doc).text for c in table.captions] == ["Cap"]
+    assert [t.text for t in doc.texts if t.label == DocItemLabel.TEXT] == ["Before"]
+    assert "exceeds 1000 grid cells" in caplog.text
 
 
 def test_chandra_malformed_overlapping_spans_do_not_shift_the_grid():

@@ -680,9 +680,13 @@ g_{\rm int}&=&\ ... ight) ^{2\upsilon }dz .
         item-557 at level 4: list_item: R. P. Feynman, Phys. Rev. 56, 340 (1939).10.1103/PhysRev.56.340
         item-558 at level 4: list_item: I. S. Gradshteyn, I. M. Ryzhik,  ... .380(1)) or p. 315 (formula 3.191(3)).
         item-559 at level 4: list_item: S. Banerjee, M. Dorband, J. Erdm ... 23, 026 (2023).10.1007/JHEP10(2023)026
-        item-560 at level 4: list_item: T. Asselmeyer-Maluga, M. Lulli,  ... 408.15986v3 [hep-th] [Search inSPIRE].
-        item-561 at level 4: list_item: M. Alberg, G. A. Miller, Phys. R ... 01 (2024).10.1103/PhysRevC.110.L042201
-        item-562 at level 4: list_item: G. Ganbold, EPJ Web Conf. 3, 03014 (2010).10.1051/epjconf/20100303014
-        item-563 at level 4: list_item: G. F. de Téramond, S. J. Brodsky ... . J. Mod. Phys. A. 39, 2441007 (2024).
-        item-564 at level 4: list_item: N. Hüsken, E. S. Norella, I. Pol ... od. Phys. Lett. A. 40, 2530002 (2025).
-        item-565 at level 4: list_item: ALICE Collaboration, Eur. Phys. J. C. 84, 813 (2024).
+        item-560 at level 4: list_item: 
+          item-561 at level 5: inline: group group
+            item-562 at level 6: text: T. Asselmeyer-Maluga, M. Lulli,  ... Zappala, arXiv:2408.15986v3 [hep-th] [
+            item-563 at level 6: text: Search inSPIRE
+            item-564 at level 6: text: ].
+        item-565 at level 4: list_item: M. Alberg, G. A. Miller, Phys. R ... 01 (2024).10.1103/PhysRevC.110.L042201
+        item-566 at level 4: list_item: G. Ganbold, EPJ Web Conf. 3, 03014 (2010).10.1051/epjconf/20100303014
+        item-567 at level 4: list_item: G. F. de Téramond, S. J. Brodsky ... . J. Mod. Phys. A. 39, 2441007 (2024).
+        item-568 at level 4: list_item: N. Hüsken, E. S. Norella, I. Pol ... od. Phys. Lett. A. 40, 2530002 (2025).
+        item-569 at level 4: list_item: ALICE Collaboration, Eur. Phys. J. C. 84, 813 (2024).

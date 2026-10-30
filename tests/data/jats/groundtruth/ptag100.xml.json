@@ -1794,6 +1794,32 @@
           "$ref": "#/texts/507"
         },
         {
+          "$ref": "#/texts/511"
+        },
+        {
+          "$ref": "#/texts/512"
+        },
+        {
+          "$ref": "#/texts/513"
+        },
+        {
+          "$ref": "#/texts/514"
+        },
+        {
+          "$ref": "#/texts/515"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/52",
+      "parent": {
+        "$ref": "#/texts/507"
+      },
+      "children": [
+        {
           "$ref": "#/texts/508"
         },
         {
@@ -1801,17 +1827,11 @@
         },
         {
           "$ref": "#/texts/510"
-        },
-        {
-          "$ref": "#/texts/511"
-        },
-        {
-          "$ref": "#/texts/512"
         }
       ],
       "content_layer": "body",
-      "name": "list",
-      "label": "list"
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -8557,17 +8577,58 @@
       "parent": {
         "$ref": "#/groups/51"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/52"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] [Search inSPIRE].",
-      "text": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] [Search inSPIRE].",
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/508",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] [",
+      "text": "T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] ["
+    },
+    {
+      "self_ref": "#/texts/509",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Search inSPIRE",
+      "text": "Search inSPIRE",
+      "hyperlink": "https://inspirehep.net/literature?q=find%20EPRINT%202408.15986v3"
+    },
+    {
+      "self_ref": "#/texts/510",
+      "parent": {
+        "$ref": "#/groups/52"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "].",
+      "text": "]."
+    },
+    {
+      "self_ref": "#/texts/511",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8581,7 +8642,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/509",
+      "self_ref": "#/texts/512",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8595,7 +8656,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/510",
+      "self_ref": "#/texts/513",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8609,7 +8670,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/511",
+      "self_ref": "#/texts/514",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -8623,7 +8684,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/512",
+      "self_ref": "#/texts/515",
       "parent": {
         "$ref": "#/groups/51"
       },

@@ -671,6 +671,8 @@ def test_threaded_page_backend_delegates_image_access() -> None:
 
 def test_threaded_page_backend_disables_bitmap_materialization() -> None:
     class _FakeCell:
+        text = orig = "text"
+
         def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
             return self
 
@@ -693,6 +695,35 @@ def test_threaded_page_backend_disables_bitmap_materialization() -> None:
     cells = list(page_backend.get_text_cells())
 
     assert len(cells) == 1
+
+
+def test_threaded_page_backend_replaces_nul_with_replacement_char() -> None:
+    """An unmapped glyph (U+0000) becomes U+FFFD, so the loss stays visible."""
+
+    class _FakeCell:
+        def __init__(self) -> None:
+            self.text = self.orig = "mg.mL \x00 1"
+
+        def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
+            return self
+
+    class _FakeDimension:
+        height = 200.0
+
+    class _FakeSegmentedPage:
+        dimension = _FakeDimension()
+        textline_cells = [_FakeCell()]
+        char_cells = [_FakeCell()]
+        word_cells = [_FakeCell()]
+
+    result = _FakeThreadedResult(page_number=1)
+    result.get_page = lambda: _FakeSegmentedPage()
+
+    seg_page = ThreadedDoclingParsePageBackend(result).get_segmented_page()
+
+    assert seg_page is not None
+    for cell in (*seg_page.textline_cells, *seg_page.char_cells, *seg_page.word_cells):
+        assert cell.text == cell.orig == "mg.mL \ufffd 1"
 
 
 def _create_black_square_pdf(path: Path) -> None:

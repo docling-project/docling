@@ -487,7 +487,7 @@ under the conditions ${\rm Re}a_1\gt 0$ and ${\rm Re}a_2\gt 0$. The two shape pa
 - R. P. Feynman, Phys. Rev. 56, 340 (1939).10.1103/PhysRev.56.340
 - I. S. Gradshteyn, I. M. Ryzhik, Table of Integrals, Series, and Products (Elsevier, Amsterdam, 2007), 7th ed., p. 908 (formula 3.380(1)) or p. 315 (formula 3.191(3)).
 - S. Banerjee, M. Dorband, J. Erdmenger, A.-L. Weigel, J. High Energy Phys. 2023, 026 (2023).10.1007/JHEP10(2023)026
-- T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] [Search inSPIRE].
+- T. Asselmeyer-Maluga, M. Lulli, A. Marcianò, R. Pasechnik, E. Zappala, arXiv:2408.15986v3 [hep-th] [[Search inSPIRE](https://inspirehep.net/literature?q=find%20EPRINT%202408.15986v3)].
 - M. Alberg, G. A. Miller, Phys. Rev. C. 110, L042201 (2024).10.1103/PhysRevC.110.L042201
 - G. Ganbold, EPJ Web Conf. 3, 03014 (2010).10.1051/epjconf/20100303014
 - G. F. de Téramond, S. J. Brodsky, Int. J. Mod. Phys. A. 39, 2441007 (2024).

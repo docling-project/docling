@@ -103,7 +103,13 @@ def _decode_bytes(raw: bytes, encoding: Optional[str] = None) -> str:
 
     for bom, bom_encoding in _BOM_ENCODINGS:
         if raw.startswith(bom):
-            return raw.decode(bom_encoding)
+            try:
+                return raw.decode(bom_encoding)
+            except UnicodeDecodeError as error:
+                raise DocumentLoadError(
+                    f"Could not decode the document with the BOM-detected encoding "
+                    f"{bom_encoding!r}: {error}"
+                ) from error
 
     try:
         return raw.decode("utf-8")
@@ -148,6 +154,10 @@ def decode_text(
 
     Line endings are translated as text-mode ``open()`` does, so a document
     converts the same way whether it arrives as a path or as a stream.
+
+    Raises:
+        DocumentLoadError: If the document cannot be decoded with its requested
+            or BOM-detected encoding, or the UTF-8/cp1252 fallback fails.
     """
     raw = (
         path_or_stream.getvalue()

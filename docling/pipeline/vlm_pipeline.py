@@ -17,13 +17,14 @@ from docling_core.types.doc import (
     ImageRef,
     PictureItem,
     ProvenanceItem,
+    TableItem,
     TextItem,
 )
 from docling_core.types.doc.base import (
     BoundingBox,
     Size,
 )
-from docling_core.types.doc.document import DocTagsDocument
+from docling_core.types.doc.document import BaseMeta, DocTagsDocument
 from PIL import Image as PILImage
 from typing_extensions import override
 
@@ -62,10 +63,6 @@ from docling.datamodel.settings import settings
 # No need to import it separately as it's already imported above
 from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
-from docling.models.vlm_pipeline_models.hf_transformers_model import (
-    HuggingFaceTransformersVlmModel,
-)
-from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import TimeRecorder
@@ -79,9 +76,11 @@ _RAW_HEADING_DEPTH_FORMATS = frozenset(
         ResponseFormat.CHANDRA_HTML,
         ResponseFormat.DEEPSEEKOCR_MARKDOWN,
         ResponseFormat.DOTS_JSON,
+        ResponseFormat.LIGHTONOCR_MARKDOWN,
         ResponseFormat.NEMOTRON_PARSE_V2,
         ResponseFormat.NEMOTRON_PARSE_V3_5,
         ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+        ResponseFormat.UNLIMITED_OCR2,
     }
 )
 
@@ -208,6 +207,10 @@ class VlmPipeline(PaginatedPipeline):
         elif isinstance(self.pipeline_options.vlm_options, InlineVlmOptions):
             vlm_options = cast(InlineVlmOptions, self.pipeline_options.vlm_options)
             if vlm_options.inference_framework == InferenceFramework.MLX:
+                from docling.models.vlm_pipeline_models.mlx_model import (
+                    HuggingFaceMlxModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceMlxModel(
                         enabled=True,
@@ -217,6 +220,10 @@ class VlmPipeline(PaginatedPipeline):
                     ),
                 ]
             elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS:
+                from docling.models.vlm_pipeline_models.hf_transformers_model import (
+                    HuggingFaceTransformersVlmModel,
+                )
+
                 self.build_pipe = [
                     HuggingFaceTransformersVlmModel(
                         enabled=True,
@@ -372,6 +379,16 @@ class VlmPipeline(PaginatedPipeline):
                 if page_no in page_documents
             ]
         )
+        nemotron_pages = {
+            str(page.page_no): page.predictions.vlm_response.nemotron_parse.model_dump()
+            for page in conv_res.pages
+            if page.predictions.vlm_response is not None
+            and page.predictions.vlm_response.nemotron_parse is not None
+        }
+        if nemotron_pages:
+            conv_res.document.body.meta = BaseMeta.model_validate(
+                {"docling__nemotron_parse": {"pages": nemotron_pages}}
+            )
         return conv_res
 
     def _join_page_documents(
@@ -559,6 +576,28 @@ class VlmPipeline(PaginatedPipeline):
                 page_image=page.image,
                 normalize_heading_levels=False,
             )
+        elif response_format == ResponseFormat.UNLIMITED_OCR2:
+            from docling.utils.unlimited_ocr2_utils import parse_unlimited_ocr2
+
+            document = parse_unlimited_ocr2(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                normalize_heading_levels=False,
+            )
+        elif response_format == ResponseFormat.LIGHTONOCR_MARKDOWN:
+            from docling.utils.lightonocr_utils import parse_lightonocr_markdown
+
+            document = parse_lightonocr_markdown(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                normalize_heading_levels=False,
+            )
         elif response_format == ResponseFormat.MARKDOWN:
             document = self._convert_text_page(
                 conv_res, page, InputFormat.MD, MarkdownDocumentBackend
@@ -668,7 +707,7 @@ class VlmPipeline(PaginatedPipeline):
             return DoclingDocument(name=f"page_{page.page_no}")
 
         try:
-            return DocLangDocDeserializer().deserialize_str(fragment)
+            document = DocLangDocDeserializer().deserialize_str(fragment)
         except Exception as exc:
             conv_res.errors.append(
                 ErrorItem(
@@ -680,6 +719,56 @@ class VlmPipeline(PaginatedPipeline):
                 )
             )
             return DoclingDocument(name=f"page_{page.page_no}")
+        self._scale_doclang_to_page(document, page)
+        return document
+
+    @staticmethod
+    def _scale_doclang_to_page(document: DoclingDocument, page: Page) -> None:
+        """Map DocLang grid locations onto the page.
+
+        The deserializer keeps locations on the DocLang grid (512x512 by
+        default) and sizes the page from that grid. Scale the boxes and the
+        page size to the real page, so that crops and provenance are in page
+        points like the other response formats.
+        """
+        if page.size is None:
+            return
+        scales: dict[int, tuple[float, float]] = {}
+        for page_no, page_item in document.pages.items():
+            grid = page_item.size
+            if grid.width <= 0 or grid.height <= 0:
+                continue
+            scales[page_no] = (
+                page.size.width / grid.width,
+                page.size.height / grid.height,
+            )
+            page_item.size = Size(width=page.size.width, height=page.size.height)
+        if not scales:
+            return
+        for item, _level in document.iterate_items(
+            with_groups=True,
+            traverse_pictures=True,
+            included_content_layers=set(ContentLayer),
+        ):
+            if not isinstance(item, DocItem):
+                continue
+            for provenance in item.prov:
+                scale = scales.get(provenance.page_no)
+                if scale is None:
+                    continue
+                sx, sy = scale
+                provenance.bbox = provenance.bbox.resize_by_scale(
+                    x_scale=sx, y_scale=sy
+                )
+            if isinstance(item, TableItem):
+                page_no = item.prov[0].page_no if item.prov else 1
+                scale = scales.get(page_no)
+                if scale is None:
+                    continue
+                sx, sy = scale
+                for cell in item.data.table_cells:
+                    if cell.bbox is not None:
+                        cell.bbox = cell.bbox.resize_by_scale(x_scale=sx, y_scale=sy)
 
     @staticmethod
     def _doctags_page_document(

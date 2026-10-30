@@ -1202,11 +1202,45 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def _handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
+    @staticmethod
+    def _picture_fill_rid(shape) -> Optional[str]:
+        """Return the relationship id of a shape's embedded picture fill.
+
+        A shape filled with a picture (Format Shape > Fill > Picture) is a
+        ``p:sp`` whose ``p:spPr`` holds an ``a:blipFill``; python-pptx reads it
+        as an ``Autoshape``, not a ``Picture``. Other fill kinds give ``None``.
+        A picture fill without an embedded image (for example one that only
+        links an external file with ``r:link``) also gives ``None``, with a
+        warning, because its image is not in the package.
+        """
+        sp_pr = shape._element.find(qn("p:spPr"))
+        if sp_pr is None:
+            return None
+        blip = sp_pr.find(f"{qn('a:blipFill')}/{qn('a:blip')}")
+        if blip is None:
+            return None
+        rid = blip.get(qn("r:embed"))
+        if not rid:
+            warnings.warn(
+                "Skipping picture fill without an embedded image",
+                UserWarning,
+                stacklevel=2,
+            )
+            return None
+        return rid
+
+    def _handle_pictures(
+        self, shape, parent_slide, slide_ind, doc, slide_size, fill_rid=None
+    ):
         # Read the picture out of the package. A shape that slips past other
         # tools' parsers can still fail here, and there is nothing to record.
         try:
-            image = shape.image
+            if fill_rid is None:
+                image = shape.image
+            else:
+                # The picture fill of an ordinary shape lives in the image part
+                # its a:blip references.
+                image = shape.part.related_part(fill_rid).image
             image_bytes = image.blob
             im_dpi, _ = image.dpi
             prov = self._generate_prov(shape, slide_ind, "", slide_size)
@@ -1896,14 +1930,30 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 # If shape doesn't have any text, move on to the next shape
                 if not isinstance(shape, Shape):
                     return
+                fill_rid = self._picture_fill_rid(shape)
+                if fill_rid is not None:
+                    # A shape filled with a picture: keep the image like a p:pic,
+                    # then any text the shape also carries.
+                    self._handle_pictures(
+                        shape,
+                        parent_slide,
+                        slide_ind,
+                        doc,
+                        slide_size,
+                        fill_rid=fill_rid,
+                    )
                 if shape.text is None:
                     return
                 if not shape.has_text_frame:
                     _log.warning("Warning: shape has text but not text_frame")
                     return
+                # Skip shapes without visible content. A whitespace-only run
+                # is still a fragment, so only count an equation or a fragment
+                # with non-blank text.
                 if not shape.text.strip() and not any(
-                    _paragraph_fragments(paragraph._element)
+                    label == DocItemLabel.FORMULA or text.strip()
                     for paragraph in shape.text_frame.paragraphs
+                    for label, text in _paragraph_fragments(paragraph._element)
                 ):
                     return
                 # Handle other text elements, including lists (bullet lists, numbered

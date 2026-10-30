@@ -5,11 +5,17 @@ import importlib.util
 import zipfile
 from io import BytesIO
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from pydantic import ValidationError
 
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.opendocument_backend import (
     OdpDocumentBackend,
     OdsDocumentBackend,
@@ -21,15 +27,22 @@ from docling.datamodel.backend_options import (
     DeclarativeBackendOptions,
     HTMLBackendOptions,
 )
-from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DocumentStream,
+    InputFormat,
+    Page,
+)
 from docling.datamodel.document import (
     _CONTENT_SNIFF_BYTES,
     _ODF_MIMETYPE_MAX_BYTES,
+    ConversionResult,
     InputDocument,
     _DocumentConversionInput,
 )
 from docling.datamodel.settings import DocumentLimits
 from docling.document_converter import (
+    DocumentConverter,
     HTMLFormatOption,
     ImageFormatOption,
     OdpFormatOption,
@@ -37,6 +50,7 @@ from docling.document_converter import (
     OdtFormatOption,
     PdfFormatOption,
 )
+from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 
 def test_in_doc_from_valid_path():
@@ -44,6 +58,185 @@ def test_in_doc_from_valid_path():
     doc = _make_input_doc(test_doc_path)
     assert doc.valid is True
     assert doc.backend_options is None
+
+
+@pytest.mark.parametrize(
+    "backend_type",
+    [
+        PyPdfiumDocumentBackend,
+        DoclingParseDocumentBackend,
+        ThreadedDoclingParseDocumentBackend,
+    ],
+)
+@pytest.mark.parametrize("from_stream", [False, True])
+@pytest.mark.parametrize("already_unloaded", [False, True])
+def test_in_doc_release_pdf(backend_type, from_stream, already_unloaded):
+    test_doc_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
+    source = BytesIO(test_doc_path.read_bytes()) if from_stream else test_doc_path
+    doc = InputDocument(
+        path_or_stream=source,
+        format=InputFormat.PDF,
+        filename=test_doc_path.name,
+        backend=backend_type,
+    )
+    backend = doc._backend
+    metadata = doc.model_dump()
+    assert backend.is_valid()
+    if already_unloaded:
+        backend.unload()
+
+    doc.release()
+    doc.release()
+
+    assert doc._backend is None
+    assert backend.path_or_stream is None
+    assert backend._closed
+    assert doc.model_dump() == metadata
+    if from_stream:
+        assert source.closed
+    else:
+        assert test_doc_path.is_file()
+
+
+def test_in_doc_release_after_pipeline_cleanup():
+    stream = BytesIO(Path("./tests/data/pdf/sources/2206.01062.pdf").read_bytes())
+    doc = InputDocument(
+        path_or_stream=stream,
+        filename="test.pdf",
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
+    )
+    backend = doc._backend
+    page = Page(page_no=1)
+    page_backend = backend.load_page(0)
+    page._backend = page_backend
+    result = ConversionResult(input=doc, pages=[page])
+    # Exercise the real cleanup paths without initializing ML models.
+    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
+    pipeline._unload(result)
+
+    result.input.release()
+    result.input.release()
+
+    assert stream.closed
+    assert backend._closed
+    assert page_backend._closed
+    assert page._backend is None
+    assert result.input._backend is None
+
+
+def test_in_doc_release_after_html_conversion():
+    stream = BytesIO(b"<html><body><p>Release keeps this text.</p></body></html>")
+    result = DocumentConverter(allowed_formats=[InputFormat.HTML]).convert(
+        DocumentStream(name="test.html", stream=stream)
+    )
+    assert result.status == ConversionStatus.SUCCESS
+    markdown = result.document.export_to_markdown()
+    document = result.document.model_dump()
+    metadata = result.input.model_dump()
+    assert "Release keeps this text." in markdown
+
+    result.input.release()
+    result.input.release()
+
+    assert stream.closed
+    assert result.document.export_to_markdown() == markdown
+    assert result.document.model_dump() == document
+    assert result.input.model_dump() == metadata
+    assert result.status == ConversionStatus.SUCCESS
+
+
+def test_in_doc_release_image():
+    stream = BytesIO(Path("./tests/data/tiff/sources/2206.01062.tif").read_bytes())
+    doc = InputDocument(
+        path_or_stream=stream,
+        filename="test.tif",
+        format=InputFormat.IMAGE,
+        backend=ImageDocumentBackend,
+    )
+    backend = doc._backend
+    assert isinstance(backend, ImageDocumentBackend)
+    assert backend.page_count() == 2
+
+    doc.release()
+    doc.release()
+
+    assert doc._backend is None
+    assert stream.closed
+    assert backend._source is None
+    assert backend.page_count() == 0
+
+
+@pytest.mark.parametrize("reason", ["missing", "empty", "too_large", "download_limit"])
+def test_in_doc_release_without_backend(reason):
+    if reason == "missing":
+        doc = _make_input_doc(Path("./tests/does/not/exist.pdf"))
+    elif reason == "empty":
+        doc = _make_input_doc_from_stream(
+            DocumentStream(name="test.pdf", stream=BytesIO())
+        )
+    elif reason == "too_large":
+        doc = InputDocument(
+            path_or_stream=Path("./tests/data/pdf/sources/2206.01062.pdf"),
+            format=InputFormat.PDF,
+            backend=PyPdfiumDocumentBackend,
+            limits=DocumentLimits(max_file_size=1),
+        )
+    else:
+        doc = InputDocument.create_invalid(
+            filename="test.pdf", format=InputFormat.PDF, filesize=100
+        )
+    assert not doc.valid
+
+    doc.release()
+    doc.release()
+
+    assert doc._backend is None
+
+
+def test_in_doc_release_rejected_page_count():
+    stream = BytesIO(Path("./tests/data/pdf/sources/2206.01062.pdf").read_bytes())
+    doc = InputDocument(
+        path_or_stream=stream,
+        filename="test.pdf",
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
+        limits=DocumentLimits(max_num_pages=1),
+    )
+    assert not doc.valid
+    assert not stream.closed
+
+    doc.release()
+
+    assert stream.closed
+    assert doc._backend is None
+
+
+def test_in_doc_release_can_retry_failed_cleanup(monkeypatch):
+    stream = BytesIO(b"<html><body>Test</body></html>")
+    doc = InputDocument(
+        path_or_stream=stream,
+        filename="test.html",
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+    )
+    backend = doc._backend
+    unload = backend.unload
+    failing_unload = Mock(side_effect=RuntimeError("cleanup failed"))
+    monkeypatch.setattr(backend, "unload", failing_unload)
+    with pytest.raises(RuntimeError, match="cleanup failed"):
+        doc.release()
+    assert doc._backend is backend
+    assert not stream.closed
+
+    successful_unload = Mock(wraps=unload)
+    monkeypatch.setattr(backend, "unload", successful_unload)
+    doc.release()
+    doc.release()
+
+    successful_unload.assert_called_once_with()
+    assert stream.closed
+    assert doc._backend is None
 
 
 def test_in_doc_from_invalid_path():

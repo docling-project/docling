@@ -1493,3 +1493,82 @@ def test_inline_whitespace_round_trips_through_markdown(source, expected):
     )
     doc = MarkdownDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
     assert doc.export_to_markdown() == expected
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected"),
+    [
+        pytest.param(
+            "---\ntitle: T\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="basic",
+        ),
+        pytest.param(
+            "---\r\ntitle: T\r\n---\r\n\r\n# H\r\n\r\nbody\r\n",
+            "# H\n\nbody",
+            id="crlf",
+        ),
+        pytest.param(
+            "---\ntitle: T\n\ntags: [a, b]\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="blank-line-inside-frontmatter",
+        ),
+        pytest.param(
+            "---\ntitle: T\n...\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="dots-terminator",
+        ),
+        pytest.param(
+            "---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="thematic-break-opening",
+        ),
+        pytest.param(
+            "---\n\nNote: this is important.\n\n---\n\nbody\n",
+            "Note: this is important.\n\nbody",
+            id="thematic-break-then-yaml-like-paragraph",
+        ),
+        pytest.param(
+            "---\nJust a sentence\n---\n\nbody\n",
+            "## Just a sentence\n\nbody",
+            id="setext-block-is-not-frontmatter",
+        ),
+        pytest.param(
+            "---\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="empty-frontmatter-not-a-mapping",
+        ),
+        pytest.param(
+            "---\ntitle: T\n---",
+            "",
+            id="closing-delimiter-at-eof",
+        ),
+        pytest.param(
+            "---   \ntitle: T\n---  \n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="trailing-spaces-on-delimiters",
+        ),
+    ],
+)
+def test_convert_strips_leading_frontmatter(markdown: str, expected: str) -> None:
+    converter = get_converter()
+    conv_result = converter.convert_string(markdown, format=InputFormat.MD)
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert conv_result.document.export_to_markdown() == expected
+
+
+def test_convert_frontmatter_followed_by_content_keeps_the_content():
+    """Frontmatter directly followed by content must not swallow the content,
+    even when a later thematic break is present in the document."""
+    converter = get_converter()
+    markdown = "---\ntitle: T\n---\nIntro\nSection\n---\n\nbody\n"
+
+    conv_result = converter.convert_string(markdown, format=InputFormat.MD)
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    pred_md = conv_result.document.export_to_markdown()
+    assert "title: T" not in pred_md
+    assert "Intro" in pred_md
+    assert "Section" in pred_md
+    assert "body" in pred_md

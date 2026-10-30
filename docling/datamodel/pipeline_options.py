@@ -260,6 +260,23 @@ class OcrOptions(BaseOptions):
         ),
     ] = 3.0
 
+    replace_broken_text_layer: Annotated[
+        bool,
+        Field(
+            description=(
+                "Replace a broken PDF text layer with OCR, page by page. When enabled,"
+                " Docling checks the visible text layer of each page. A page whose"
+                " text layer is broken, for example from a font whose glyphs were not"
+                " mapped to real characters, is read with full-page OCR, and its OCR"
+                " text is used instead of its PDF text for that page only. Its"
+                " `parse_score` drops to 0 and keeps describing the PDF text layer. A"
+                " low `parse_score` alone does not replace a page. Other pages, and"
+                " pages without a text layer, keep the usual behavior."
+            ),
+            examples=[False, True],
+        ),
+    ] = False
+
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,
@@ -316,10 +333,13 @@ class OcrAutoOptions(OcrOptions):
     """Automatic OCR engine selection based on system availability.
 
     When this option is used, Docling probes the runtime environment at
-    pipeline initialization and selects the best available OCR engine
-    (e.g., EasyOCR if GPU is present, Tesseract otherwise). The requested
-    languages are forwarded to whichever engine is chosen, and an engine with
-    no model for them is skipped in favour of the next candidate.
+    pipeline initialization and selects the first available OCR engine, in
+    this order: OcrMac on macOS, Nemotron OCR on Linux with CUDA, RapidOCR
+    with onnxruntime, EasyOCR, and RapidOCR with torch. Tesseract is never
+    selected automatically; use `TesseractOcrOptions` or
+    `TesseractCliOcrOptions` for it. The requested languages are forwarded to
+    whichever engine is chosen, and an engine with no model for them is
+    skipped in favour of the next candidate.
 
     Notes:
         `lang` is forwarded to whichever engine is selected. The default empty
@@ -422,6 +442,17 @@ class RapidOcrOptions(OcrOptions):
             description="Enable text direction classification stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
+    detect_orientation: Annotated[
+        bool,
+        Field(
+            description=(
+                "Read an OCR region again at the other three orientations when fewer than half of its "
+                "lines are read with confidence, and keep the first orientation that reads well. Unlike "
+                "`use_cls`, which flips single text lines by 180 degrees, this also fixes pages turned "
+                "by 90 or 270 degrees."
+            )
+        ),
+    ] = False
     use_rec: Annotated[
         bool | None,
         Field(
@@ -1114,6 +1145,16 @@ detailed descriptions of image content.
 """
 
 
+class NemotronParseOptions(BaseModel):
+    """Nemotron 3.5 Parse stages. Single-pass preserves the preset defaults."""
+
+    passes: Literal["single", "double", "triple"] = "single"
+    triple_regions: Literal["detector", "union"] = "union"
+    crop_batch_size: int = Field(
+        default=8, ge=1, description="Maximum crops per engine batch"
+    )
+
+
 class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     """Configuration for VLM-based document conversion.
 
@@ -1147,6 +1188,11 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
 
     batch_size: int = Field(
         default=1, description="Batch size for processing multiple pages"
+    )
+
+    nemotron_parse: NemotronParseOptions = Field(
+        default_factory=NemotronParseOptions,
+        description="Multi-pass options for the nemotron_parse_v3_5 response format",
     )
 
     force_backend_text: bool = Field(
@@ -1232,9 +1278,13 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GLMOCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR_3_08B)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR_3_4B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_FALCON_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_CHANDRA_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR2_MLX)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_MOCR)
 
@@ -1977,10 +2027,9 @@ class HeadingHierarchyOptions(BaseModel):
           When a bookmark confidently matches a detected heading it is authoritative; entries
           that match nothing fall back to numbering/style, so partial/noisy outlines never
           degrade the numbering result.
-        - ``use_style`` requires the parsed PDF cells to still be available when the
-          heading-hierarchy step runs, i.e.
-          ``PdfPipelineOptions.generate_parsed_pages=True``. Without them, style inference is
-          silently skipped (numbering still applies).
+        - ``use_style`` reads the text lines of the headings from the parsed PDF cells. The PDF
+          pipeline keeps those lines until the heading-hierarchy step has run, so
+          ``PdfPipelineOptions.generate_parsed_pages`` is not needed.
     """
 
     enabled: Annotated[
@@ -2020,7 +2069,7 @@ class HeadingHierarchyOptions(BaseModel):
             description=(
                 "Use the visual style of the heading (font size, and with `use_font_style` also "
                 "weight, slant and letter case) as a fallback for headings without recognizable "
-                "numbering. Requires `generate_parsed_pages=True`."
+                "numbering."
             )
         ),
     ] = True

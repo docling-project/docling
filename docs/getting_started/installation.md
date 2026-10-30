@@ -79,11 +79,12 @@ The following table summarizes the extras available in the `docling` package. Th
 | `asr` | Installs dependencies for running the ASR pipeline. |
 | `vlm` | Installs dependencies for running the VLM pipeline. |
 | `easyocr` | Installs the [EasyOCR](https://github.com/JaidedAI/EasyOCR) OCR engine. |
-| `feat-ocr-nemotron` | Installs NVIDIA Nemotron OCR. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. |
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
 | `ocrmac` | Installs the OcrMac OCR engine. |
 | `htmlrender` | Installs dependencies for HTML page rendering in the HTML backend. |
 | `rapidocr` | Installs the [RapidOCR](https://github.com/RapidAI/RapidOCR) OCR engine with [onnxruntime](https://github.com/microsoft/onnxruntime/) backend. |
+
+For Nemotron OCR, install `docling-slim[feat-ocr-nemotron]` alongside `docling` as shown below.
 
 
 ### OCR engines
@@ -95,7 +96,7 @@ the following engines.
 | Engine | Installation | Usage |
 | ------ | ------------ | ----- |
 | [EasyOCR](https://github.com/JaidedAI/EasyOCR) | `easyocr` extra or via `pip install easyocr`. | `EasyOcrOptions` |
-| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) | `feat-ocr-nemotron` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
+| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) | `docling-slim[feat-ocr-nemotron]`. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
@@ -170,16 +171,51 @@ doc_converter = DocumentConverter(
 ??? "Nemotron OCR installation"
 
     [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v2) requires the CUDA 13 PyTorch wheels.
-    Install it with the `feat-ocr-nemotron` extra, the CUDA 13 PyTorch index, and the `unsafe-best-match`
-    index strategy so `pip` resolves the CUDA-enabled `torch` packages correctly.
+    Install `docling` together with `docling-slim[feat-ocr-nemotron]` using uv.
+    Use uv's `unsafe-best-match` index strategy to select the CUDA-enabled `torch` wheels.
 
     ```console
-    pip install "docling[feat-ocr-nemotron]" \
+    uv venv --python 3.12
+    uv pip install docling "docling-slim[feat-ocr-nemotron]" \
       --extra-index-url https://download.pytorch.org/whl/cu130 \
       --index-strategy unsafe-best-match
     ```
 
     Nemotron OCR is currently supported only on Linux x86_64 with Python 3.12 and CUDA 13.x.
+
+??? "Installation without RapidOCR"
+
+    The `docling` package installs `docling-slim[standard]`, which always includes RapidOCR.
+    If you use another OCR engine, for example the Tesseract CLI, which needs no Python OCR
+    package, install `docling-slim` with the extras of `standard` except `feat-ocr-rapidocr`:
+
+    ```console
+    pip install "docling-slim[format-pdf,models-local,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]" opencv-python-headless
+    ```
+
+    The table structure model needs OpenCV, which RapidOCR otherwise brings in. Without an OpenCV
+    package, the conversion of a PDF fails with `ModuleNotFoundError: No module named 'cv2'`.
+    Install either `opencv-python-headless` or `opencv-python`, not both (see the [FAQ](../faq/index.md)).
+
+    Add the extra of the OCR engine you use, for example `feat-ocr-tesserocr` or `feat-ocr-easyocr`.
+    The Tesseract CLI only needs the `tesseract` program, see "Tesseract installation" above.
+
+    Then select the OCR engine explicitly. The default automatic selection (`OcrAutoOptions`) never
+    selects Tesseract, so without an engine that it can select, it logs
+    `No OCR engine found. Please review the install details.` and converts without OCR.
+
+    ```python
+    from docling.datamodel.pipeline_options import PdfPipelineOptions, TesseractCliOcrOptions
+
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.ocr_options = TesseractCliOcrOptions(lang=["eng"])
+    ```
+
+    On the command line, use `docling --ocr-engine tesseract --ocr-lang eng`.
+
+    Set the languages to the Tesseract language data you installed. The default languages of the
+    Tesseract options are `eng`, `spa`, `fra` and `deu`, and the conversion fails if one of them
+    is not installed.
 
 ## Development setup
 
