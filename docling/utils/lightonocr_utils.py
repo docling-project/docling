@@ -17,11 +17,21 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     ImageRef,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
     Size,
+    TableData,
+    TabularChartMetaField,
 )
 from PIL import Image as PILImage
 
-from docling.utils.chandra_utils import _add_html_fragment
+from docling.utils.chandra_utils import (
+    _add_html_fragment,
+    _HTMLTreeParser,
+    _table_cells,
+    _table_data,
+)
 from docling.utils.markdown_math import create_markdown_parser
 from docling.utils.vlm_utils import (
     normalize_section_header_levels,
@@ -85,6 +95,21 @@ def _blocks(content: str) -> Iterator[tuple[str, str, str]]:
     yield label, bbox, "".join(lines)
 
 
+def _chart_data(body: str) -> TableData | None:
+    """Read the HTML table of a chart block. Other bodies describe the chart."""
+    root = _HTMLTreeParser(body).root
+    table = next((node for node in root.elements() if node.tag == "table"), None)
+    if table is None:
+        return None
+    try:
+        cells = _table_cells(table)
+    except ValueError as exc:
+        # Like the Chandra mapper: drop the grid, keep the page.
+        _log.warning("LightOnOCR chart table is too large to map (%s)", exc)
+        return None
+    return _table_data([cell for cell, _ in cells]) if cells else None
+
+
 def parse_lightonocr_markdown(
     content: str,
     original_page_size: Size,
@@ -129,10 +154,13 @@ def parse_lightonocr_markdown(
         if label not in _LABELS:
             _log.warning("Unknown LightOnOCR label %r; keeping it as text", label)
         layout_label = _LABELS.get(label, "Text")
+        chart_data = None
         if label == "formula":
             rendered = f'<math display="block">{html.escape(strip_math_delimiters(body))}</math>'
-        elif label in _PICTURE_LABELS - {"chart"}:
-            rendered = f'<img alt="{html.escape(body.strip(), quote=True)}">'
+        elif label in _PICTURE_LABELS:
+            chart_data = _chart_data(body) if label == "chart" else None
+            alt = "" if chart_data is not None else body.strip()
+            rendered = f'<img alt="{html.escape(alt, quote=True)}">'
         else:
             parsed = markdown.parse(body)
             rendered = markdown.render(parsed)
@@ -150,6 +178,20 @@ def parse_lightonocr_markdown(
                 picture.meta.description.created_by = "lightonocr"
             if label in {"header_image", "footer_image"}:
                 picture.content_layer = ContentLayer.FURNITURE
+            if label == "chart" and picture.meta is not None:
+                # The model gives no chart type. DocLang keeps chart data only
+                # for chart classes.
+                picture.meta.classification = PictureClassificationMetaField(
+                    predictions=[
+                        PictureClassificationPrediction(
+                            class_name=PictureClassificationLabel.OTHER_CHART.value
+                        )
+                    ]
+                )
+                if chart_data is not None:
+                    picture.meta.tabular_chart = TabularChartMetaField(
+                        chart_data=chart_data
+                    )
     if normalize_heading_levels:
         normalize_section_header_levels(doc)
     return doc

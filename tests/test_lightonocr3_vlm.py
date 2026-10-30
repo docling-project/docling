@@ -16,6 +16,7 @@ from docling_core.types.doc import (
     ContentLayer,
     DocItemLabel,
     FormulaItem,
+    PictureClassificationLabel,
     SectionHeaderItem,
     Size,
     TitleItem,
@@ -142,17 +143,34 @@ A building with a sign saying "Office".
 Annual rent.
 """
     doc = parse_lightonocr_markdown(content, PAGE_SIZE, page_no=1)
-    assert len(doc.tables) == 2
+    assert len(doc.tables) == 1
     assert doc.tables[0].data.grid[1][0].text == "1000"
     assert len(doc.pictures) == 2
     description = doc.pictures[0].meta.description
     assert description.text == 'A building with a sign saying "Office".'
     assert description.created_by == "lightonocr"
-    assert doc.tables[1].parent == doc.pictures[1].get_ref()
-    assert doc.pictures[1].prov
-    assert not doc.tables[1].prov
+    chart = doc.pictures[1]
+    assert chart.label == DocItemLabel.PICTURE
+    assert chart.prov
+    assert chart.meta.description is None
+    assert [p.class_name for p in chart.meta.classification.predictions] == [
+        PictureClassificationLabel.OTHER_CHART.value
+    ]
+    assert chart.meta.tabular_chart.chart_data.grid[1][1].text == "1000"
     assert doc.texts[-1].label == DocItemLabel.CAPTION
-    assert not doc.pictures[1].captions
+    assert not chart.captions
+
+
+def test_chart_without_table_keeps_its_description():
+    doc = parse_lightonocr_markdown(
+        "![chart](0,0,1000,500)\nRevenue grows each year.", PAGE_SIZE, page_no=1
+    )
+    chart = doc.pictures[0]
+    assert chart.meta.description.text == "Revenue grows each year."
+    assert chart.meta.tabular_chart is None
+    assert [p.class_name for p in chart.meta.classification.predictions] == [
+        PictureClassificationLabel.OTHER_CHART.value
+    ]
 
 
 def test_documented_block_sequence():
