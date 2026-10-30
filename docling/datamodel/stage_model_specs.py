@@ -27,6 +27,7 @@ from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
     DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
+    UNLIMITED_OCR2_PROMPT,
     UNLIMITED_OCR_GROUNDING_PROMPT,
 )
 from docling.models.inference_engines.image_classification.base import (
@@ -1859,6 +1860,37 @@ VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
                     "skip_special_tokens": False,
                 }
             ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.API_OPENAI,
+)
+
+_UNLIMITED_OCR2_API = ApiModelConfig(
+    params={
+        # Matches `--served-model-name Unlimited-OCR-2` on the vendor server.
+        "model": "Unlimited-OCR-2",
+        "max_tokens": 8000,
+        # `<td>` and `<tr>` are special tokens, so tables need them kept.
+        "skip_special_tokens": False,
+    }
+)
+
+VLM_CONVERT_UNLIMITED_OCR2 = StageModelPreset(
+    preset_id="unlimited_ocr2",
+    name="Unlimited-OCR 2",
+    description="Unlimited-OCR 2 model for document layout parsing with bounding boxes, one page per request (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR-2",
+        default_repo_id="baidu/Unlimited-OCR-2",
+        revision="c14071b549f4fcab10909f3c4acc6a2edb366947",
+        prompt=UNLIMITED_OCR2_PROMPT,
+        response_format=ResponseFormat.UNLIMITED_OCR2,
+        supported_engines={VlmEngineType.API, VlmEngineType.API_OPENAI},
+        max_new_tokens=8000,
+        api_overrides={
+            VlmEngineType.API: _UNLIMITED_OCR2_API,
+            VlmEngineType.API_OPENAI: _UNLIMITED_OCR2_API,
         },
     ),
     scale=2.0,

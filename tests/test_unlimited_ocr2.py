@@ -21,6 +21,9 @@ from docling_core.types.doc import (
     TitleItem,
 )
 
+from docling.datamodel.pipeline_options import VlmConvertOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.utils.unlimited_ocr2_utils import parse_unlimited_ocr2
 
 PAGE_SIZE = Size(width=600, height=800)
@@ -282,3 +285,19 @@ def test_repeated_blocks_cut_by_max_tokens_keep_a_valid_document() -> None:
     doc = _parse(f"<PAGE>{repeated}<BLOCK>text[10, 20, 30, 40, 10, 20")
 
     assert [item.text for item in doc.texts] == ["Loop"] * 3
+
+
+@pytest.mark.parametrize("engine_type", [VlmEngineType.API, VlmEngineType.API_OPENAI])
+def test_preset_keeps_table_tokens_on_both_api_engine_types(
+    engine_type: VlmEngineType,
+) -> None:
+    options = VlmConvertOptions.from_preset(
+        "unlimited_ocr2",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=engine_type, url="http://localhost:10000/v1/chat/completions"
+        ),
+    )
+
+    params = options.model_spec.get_api_params(engine_type)
+    assert params["skip_special_tokens"] is False
+    assert params["model"] == "Unlimited-OCR-2"

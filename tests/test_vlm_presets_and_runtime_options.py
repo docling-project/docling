@@ -737,6 +737,7 @@ class TestPresetEngineIntegration:
             ResponseFormat.MARKDOWN,
             ResponseFormat.DEEPSEEKOCR_MARKDOWN,
             ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+            ResponseFormat.UNLIMITED_OCR2,
             ResponseFormat.PLAINTEXT,
             ResponseFormat.CHANDRA_HTML,
             ResponseFormat.DOTS_JSON,
