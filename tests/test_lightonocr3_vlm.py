@@ -228,6 +228,29 @@ def test_two_markers_on_one_line():
     assert doc.texts[1].prov[0].bbox.l == 300
 
 
+@pytest.mark.parametrize("prefix", ["", "![text](0,0,1000,100) "])
+@pytest.mark.parametrize("quote", ["`", "``"])
+def test_marker_in_inline_code_stays_code(prefix: str, quote: str):
+    code = "![image](0,0,1000,1000)"
+    doc = parse_lightonocr_markdown(
+        f"{prefix}The syntax is {quote}{code}{quote}.", PAGE_SIZE, page_no=1
+    )
+    assert [item.text for item in doc.texts] == ["The syntax is", code, "."]
+    assert isinstance(doc.texts[1], CodeItem)
+    assert not doc.pictures
+
+
+def test_marker_after_inline_code_starts_a_block():
+    doc = parse_lightonocr_markdown(
+        "![text](0,0,500,100) Use `![image](0,0,1,1)` ![text](500,0,1000,100) Next",
+        PAGE_SIZE,
+        page_no=1,
+    )
+    assert [item.text for item in doc.texts] == ["Use", "![image](0,0,1,1)", "Next"]
+    assert doc.texts[-1].prov[0].bbox.l == 300
+    assert not doc.pictures
+
+
 def test_cut_off_marker_stays_text():
     text = "Cut off here ![text](100,200"
     doc = parse_lightonocr_markdown(

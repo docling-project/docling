@@ -45,6 +45,7 @@ _MARKER = re.compile(
     r"!\[([A-Za-z_][\w-]*?)\+?\]"
     r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)[ \t]*"
 )
+_CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`).+?(?<!`)\1(?!`)")
 # Upstream reports replies that start with the closing tag of the empty think block.
 _THINK = re.compile(r"\A\s*(?:<think>.*?)?</think>\s*", re.DOTALL)
 _LABELS = {
@@ -69,12 +70,25 @@ _LABELS = {
 _PICTURE_LABELS = {"image", "chart", "header_image", "footer_image"}
 
 
+def _next_marker(line: str) -> re.Match[str] | None:
+    """Find the first marker outside inline code spans.
+
+    shortcut: indented code, <code> tags and table cells can still split a block.
+    If real output has no markers in mid-line, anchor markers to the line start again.
+    """
+    spans = [span.span() for span in _CODE_SPAN.finditer(line)]
+    for marker in _MARKER.finditer(line):
+        if not any(start <= marker.start() < end for start, end in spans):
+            return marker
+    return None
+
+
 def _blocks(content: str) -> Iterator[tuple[str, str, str]]:
     label, bbox = "text", ""
     lines: list[str] = []
     fence = ""
     for line in content.splitlines(keepends=True):
-        while not fence and (marker := _MARKER.search(line)) is not None:
+        while not fence and (marker := _next_marker(line)) is not None:
             yield label, bbox, "".join(lines) + line[: marker.start()]
             label, *box = marker.groups()
             bbox, lines = " ".join(box), []
