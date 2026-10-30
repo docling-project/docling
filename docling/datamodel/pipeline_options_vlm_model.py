@@ -107,6 +107,7 @@ class ResponseFormat(str, Enum):
     MARKDOWN = "markdown"
     DEEPSEEKOCR_MARKDOWN = "deepseekocr_markdown"
     UNLIMITED_OCR_MARKDOWN = "unlimited_ocr_markdown"
+    UNLIMITED_OCR2 = "unlimited_ocr2"
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"

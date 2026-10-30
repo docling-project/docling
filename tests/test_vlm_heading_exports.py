@@ -32,6 +32,7 @@ from docling.utils.dots_utils import parse_dots_json
 from docling.utils.nemotron_parse_utils import parse_nemotron_parse_v2
 from docling.utils.nemotron_parse_v3_5_utils import parse_nemotron_parse_v3_5
 from docling.utils.paddleocr_vl_utils import parse_paddleocr_vl_result
+from docling.utils.unlimited_ocr2_utils import parse_unlimited_ocr2
 
 _SIZE = Size(width=600, height=800)
 # A block is (is_title, markup depth or None for no heading markup).
@@ -43,6 +44,7 @@ _FORMATS = {
     "nemotron_v3_5": ResponseFormat.NEMOTRON_PARSE_V3_5,
     "deepseek": ResponseFormat.DEEPSEEKOCR_MARKDOWN,
     "unlimited": ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+    "unlimited2": ResponseFormat.UNLIMITED_OCR2,
 }
 _PARSERS = [*_FORMATS, "paddle"]
 
@@ -86,6 +88,12 @@ def _response(parser: str, blocks: list[_Block]) -> str:
         elif parser == "unlimited":
             label = "title" if is_title else "sub_title"
             parts.append(f"<|det|>{label} [100, {y}, 900, {y + 40}]<|/det|>{text}\n")
+        elif parser == "unlimited2":
+            # This format has one label: a level is what marks a section header.
+            level = "" if is_title else f"<LEVEL{depth or 2}>"
+            parts.append(
+                f"<BLOCK>title{level}[100, {y}, 900, {y + 40}]<FORK>H{index}\n"
+            )
         else:
             raise AssertionError(parser)
     if parser == "dots":
@@ -121,6 +129,8 @@ def _parse(parser: str, blocks: list[_Block], page_no: int = 1) -> DoclingDocume
         return parse_nemotron_parse_v3_5(content, _SIZE, page_no=page_no)
     if parser == "deepseek":
         return parse_deepseekocr_markdown(content, _SIZE, page_no=page_no)
+    if parser == "unlimited2":
+        return parse_unlimited_ocr2(content, _SIZE, page_no=page_no)
     return parse_unlimited_ocr_markdown(content, _SIZE, page_no=page_no)
 
 
