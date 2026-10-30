@@ -46,6 +46,30 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     uv add docling
     ```
 
+??? "Fonts for the default PDF backend"
+
+    The default PDF backend draws non-embedded fonts, including the standard 14
+    faces such as Helvetica and Times, with fonts installed on the host. A slim
+    container often has none. The page image then has no text, and layout and
+    table detection can drop that text. Docling logs a warning when a page has
+    text cells but almost no ink inside them.
+
+    On Debian or Ubuntu:
+
+    ```bash
+    apt-get install fonts-liberation fonts-dejavu-core fonts-urw-base35
+    ```
+
+    On Fedora:
+
+    ```bash
+    dnf install liberation-fonts dejavu-sans-fonts
+    ```
+
+    `fonts-urw-base35` covers Symbol and ZapfDingbats. You can also set
+    `DOCLING_PARSE_FALLBACK_FONT` to one readable font file. That file is used
+    only for font names the host does not match.
+
 ??? "Installation on macOS Intel (x86_64)"
 
     When installing Docling on macOS with Intel processors, you might encounter errors with PyTorch compatibility.

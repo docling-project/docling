@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 import warnings
 from collections.abc import Iterable, Iterator
@@ -68,6 +69,16 @@ _INVISIBLE_RENDERING_MODES = frozenset(
     {PdfCellRenderingMode.INVISIBLE, PdfCellRenderingMode.ONLY_CLIPPING}
 )
 
+# A host with no font for a non-embedded face leaves the text cells empty in the
+# page image. Measured ink inside those cells is about 0.007; a matched font is
+# about 0.2. Below this fraction the glyphs were not painted.
+_MIN_TEXT_INK_FRACTION = 0.02
+_MIN_TEXT_CHARS = 8
+_MIN_TEXT_PIXELS = 64
+_DARK_LEVEL = 128
+
+_log = logging.getLogger(__name__)
+
 
 def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
     """Keep only the cells that paint ink on the page"""
@@ -77,6 +88,78 @@ def _visible_text_cells(cells: Iterable[TextCell]) -> list[TextCell]:
         if not isinstance(cell, PdfTextCell)
         or cell.rendering_mode not in _INVISIBLE_RENDERING_MODES
     ]
+
+
+def _visible_text_ink_fraction(
+    image: Image.Image,
+    cells: Iterable[TextCell],
+    *,
+    scale: float,
+    page_height: float,
+) -> float | None:
+    """Return the dark-pixel share inside visible text cells.
+
+    ``None`` means the page does not have enough text to judge the render.
+    """
+    gray = image.convert("L")
+    width, height = gray.size
+    chars = 0
+    dark = 0
+    total = 0
+    for cell in cells:
+        text = (cell.text or "").strip()
+        if not text:
+            continue
+        chars += len(text)
+        box = cell.rect.to_bounding_box()
+        if box.coord_origin == CoordOrigin.BOTTOMLEFT:
+            box = box.to_top_left_origin(page_height)
+        left = max(0, min(width, round(min(box.l, box.r) * scale)))
+        right = max(0, min(width, round(max(box.l, box.r) * scale)))
+        top = max(0, min(height, round(min(box.t, box.b) * scale)))
+        bottom = max(0, min(height, round(max(box.t, box.b) * scale)))
+        if right <= left or bottom <= top:
+            continue
+        crop = gray.crop((left, top, right, bottom))
+        area = (right - left) * (bottom - top)
+        total += area
+        dark += sum(crop.histogram()[:_DARK_LEVEL])
+    if chars < _MIN_TEXT_CHARS or total < _MIN_TEXT_PIXELS:
+        return None
+    return dark / total
+
+
+def _warn_once_if_text_unpainted(
+    page: ThreadedDoclingParsePageBackend,
+    image: Image.Image,
+    scale: float,
+    state: dict[str, bool],
+) -> None:
+    if state.get("decided"):
+        return
+    cells = page.get_visible_text_cells()
+    if not cells:
+        return
+    fraction = _visible_text_ink_fraction(
+        image,
+        cells,
+        scale=scale,
+        page_height=page.get_size().height,
+    )
+    if fraction is None:
+        return
+    state["decided"] = True
+    if fraction >= _MIN_TEXT_INK_FRACTION:
+        return
+    _log.warning(
+        "Page %s text is missing from the rendered page image. "
+        "docling-parse paints non-embedded fonts with fonts from this host, "
+        "and none matched. Layout and table detection can drop that text. "
+        "On Debian or Ubuntu install fonts-liberation and fonts-dejavu-core. "
+        "On Fedora install liberation-fonts and dejavu-sans-fonts. "
+        "Or set DOCLING_PARSE_FALLBACK_FONT to a readable font file.",
+        page.page_no,
+    )
 
 
 def _make_docling_parse_decode_config(
@@ -125,9 +208,16 @@ def _make_docling_parse_page_content_config(
 
 
 class ThreadedDoclingParsePageBackend(PdfPageBackend):
-    def __init__(self, result: PageParseResult, rendered: bool = True):
+    def __init__(
+        self,
+        result: PageParseResult,
+        rendered: bool = True,
+        *,
+        font_paint_state: dict[str, bool] | None = None,
+    ):
         self._result = result
         self._rendered = rendered
+        self._font_paint_state = font_paint_state
         self._seg_page: Optional[SegmentedPdfPage] = None
 
     @property
@@ -282,7 +372,10 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
                 "This backend was configured with render_pages=False, so page "
                 f"{self.page_no} was parsed but never rendered and no page image exists."
             )
-        return self._result.get_image(scale=scale, cropbox=cropbox).convert("RGB")
+        image = self._result.get_image(scale=scale, cropbox=cropbox).convert("RGB")
+        if cropbox is None and self._font_paint_state is not None:
+            _warn_once_if_text_unpainted(self, image, scale, self._font_paint_state)
+        return image
 
     def get_size(self) -> Size:
         return Size(width=self._result.page_width, height=self._result.page_height)
@@ -324,6 +417,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             else AcceleratorOptions().num_threads
         )
         self._render_pages = threaded_options.render_pages
+        self._font_paint_state: dict[str, bool] = {"decided": False}
         render_config: RenderConfig | None = None
         if self._render_pages:
             render_config = RenderConfig()
@@ -403,7 +497,11 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
     def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
         self._iterating = True
         for result in self.parser.iterate_results():
-            yield ThreadedDoclingParsePageBackend(result, rendered=self._render_pages)
+            yield ThreadedDoclingParsePageBackend(
+                result,
+                rendered=self._render_pages,
+                font_paint_state=self._font_paint_state,
+            )
         self._iterating = False
 
     def unload(self) -> None:
