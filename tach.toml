@@ -183,6 +183,11 @@ layer = "foundation"
 depends_on = []
 
 [[modules]]
+path = "docling.utils.deepseekocr_utils"
+layer = "core"
+depends_on = ["docling.backend", "docling.utils"]
+
+[[modules]]
 path = "docling.utils.nemotron_parse_utils"
 layer = "core"
 depends_on = ["docling.backend", "docling.datamodel", "docling.utils"]
