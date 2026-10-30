@@ -391,7 +391,9 @@ def _markdown_table_data(rows: list[str]) -> TableData:
 
 
 def _chart_label(chart_type: str) -> PictureClassificationLabel:
-    # DocLang serializes chart data only for the *_CHART labels and HEATMAP.
+    # DocLang keeps chart data for the bar, stacked bar, line, pie, scatter, flow and
+    # heatmap classes. BOX_PLOT and OTHER_CHART lose it, and export_to_doctags()
+    # raises ValueError on OTHER_CHART.
     if "heatmap" in chart_type:
         return PictureClassificationLabel.HEATMAP
     if "stacked" in chart_type and "bar" in chart_type:

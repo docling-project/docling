@@ -121,6 +121,62 @@ converter = DocumentConverter(
 doc = converter.convert(source="FILE").document
 ```
 
+### LightOnOCR-3
+
+LightOnOCR-3 has two presets: `lightonocr3_08b` and `lightonocr3_4b`. They use
+the official [0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) and
+[4B](https://huggingface.co/lightonai/LightOnOCR-3-4B) models at pinned revisions.
+Local inference requires `transformers>=5.5.4` or `vllm>=0.30.0`. The existing
+`lightonocr` preset continues to use LightOnOCR-2-1B.
+
+For `docling-slim` installations, the parser also requires the Markdown extra:
+
+```bash
+pip install 'docling-slim[format-markdown]'
+```
+
+```bash
+docling contract.pdf --pipeline vlm --vlm-model lightonocr3_08b
+```
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("lightonocr3_08b"),
+)
+```
+
+Pass these options to the `PdfFormatOption` in the example above. The presets
+use the `grounding` prompt and sample at temperature 0.1, because upstream advises
+against greedy decoding, so two runs can give different text. Pages render at
+`scale=2.0` with at most 2048 pixels on the long edge. Raise
+`VlmConvertOptions.scale` to send more pixels at a higher token cost.
+
+Docling parses the block labels and normalized bounding boxes, Markdown text,
+HTML tables, image descriptions, and chart tables. A `chart` block becomes a
+picture with the `other_chart` class and its table as chart data. `header_image`
+and `footer_image` blocks become furniture pictures, and `page_number` blocks
+become page footers. Section headings use the document-wide depth normalization
+described below. LaTeX math is preserved.
+Coordinates belong to blocks; derived text and table cells do not receive
+separate boxes. Continuation blocks keep their base labels without being merged.
+Lists keep their structure, without assigning the block box to individual items.
+A caption links to a table or picture only when it has exactly one adjacent owner.
+
+The model gives no chart type, so `chart` blocks use the `other_chart` class, and
+current docling-core does not fully support that class. JSON, Markdown, and HTML
+keep the chart data. DCLX and DocLang exports lose it, and `export_to_doctags()`
+raises `ValueError` when a document has a `chart` block.
+
+For plain transcription, set `pipeline_options.vlm_options.model_spec.prompt = ""`.
+The parser also accepts that Markdown output, without bounding boxes. Use only
+the empty prompt or `grounding`, as specified in the model cards.
+
+Local inference uses Transformers or vLLM. No MLX export is configured for these
+presets. An OpenAI-compatible server can also serve the official model
+repositories; configure its URL and engine options as described below.
+
 ### Other models
 
 Other models can be configured by directly providing the Hugging Face `repo_id`, the prompt and a few more options.
@@ -226,8 +282,10 @@ unreported empty result. An explicitly labeled `Blank-Page` may be empty.
 
 ## Heading depths in native layout output
 
-For Chandra, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, and PaddleOCR-VL
-output, the layout label alone decides title versus section header. Docling
+For Chandra, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, PaddleOCR-VL, and
+LightOnOCR-3 output, the layout label alone decides title versus section header.
+LightOnOCR-3 has one exception: its `title` label covers all headings, so a `title`
+block with `##` or deeper is a section header. Docling
 exports a title as `#` and a section header one step below it. If no section
 header in the document uses depth 1 (`#` or `<h1>`), each section header exports
 with its source depth: `##` stays `##`. Otherwise each one exports one step

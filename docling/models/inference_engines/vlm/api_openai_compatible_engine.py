@@ -140,6 +140,9 @@ class ApiVlmEngine(BaseVlmEngine):
             if input_data.max_new_tokens:
                 api_params["max_tokens"] = input_data.max_new_tokens
 
+            # Per-request API settings can differ between multi-pass stages.
+            api_params.update(input_data.extra_generation_config.get("api_params", {}))
+
             # 3. User params override everything
             api_params.update(self.user_params)
 

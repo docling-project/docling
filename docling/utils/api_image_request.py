@@ -25,6 +25,7 @@ from docling.datamodel.base_models import (
     VlmStopReason,
 )
 from docling.models.utils.generation_utils import GenerationStopper
+from docling.utils.stop_reason import normalize_stop_reason
 
 _log = logging.getLogger(__name__)
 
@@ -93,11 +94,7 @@ def _extract_generated_text(
 def _map_stop_reason(finish_reason: str | None) -> VlmStopReason:
     if finish_reason == "content_filter":
         _log.warning("API response was filtered due to content safety policy.")
-        return VlmStopReason.CONTENT_FILTERED
-    elif finish_reason == "length":
-        return VlmStopReason.LENGTH
-    else:
-        return VlmStopReason.END_OF_SEQUENCE
+    return normalize_stop_reason(finish_reason)
 
 
 def _extract_response_value(response_payload: Any, key: str | None) -> Any | None:

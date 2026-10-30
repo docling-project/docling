@@ -170,6 +170,22 @@ def test_threaded_pipeline_page_range():
     assert [p.page_no for p in result.pages] == [2, 3, 4]
 
 
+def test_threaded_pipeline_drops_page_backends_when_kept_for_enrichment():
+    """Enrichment options set keep_backend; the returned result must still not
+    hold the native page backends after the conversion finishes."""
+    converter = _make_threaded_converter()
+    converter.initialize_pipeline(InputFormat.PDF)
+    pipeline = converter._get_pipeline(InputFormat.PDF)
+    assert pipeline is not None
+    pipeline.keep_backend = True
+
+    result = converter.convert(_SINGLE_FILE, raises_on_error=True, page_range=(1, 2))
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert len(result.pages) == 2
+    assert all(page._backend is None for page in result.pages)
+
+
 def test_threaded_pipeline_stage_shutdown_timeout():
     """A stage stuck in a blocking model call is abandoned after
     `shutdown_timeout`, not the hardcoded 15s the pipeline used to have."""

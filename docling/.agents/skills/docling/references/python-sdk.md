@@ -226,6 +226,26 @@ converter = DocumentConverter(
 result = converter.convert("report.pdf")
 ```
 
+For Nemotron 3.5 Parse, use the stage preset API. It defaults to single-pass:
+
+```python
+from docling.datamodel.pipeline_options import NemotronParseOptions, VlmConvertOptions
+from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
+
+vlm_options = VlmConvertOptions.from_preset(
+    "nemotron_parse_v3_5",
+    engine_options=AutoInlineVlmEngineOptions(trust_remote_code=True),
+    nemotron_parse=NemotronParseOptions(passes="double", crop_batch_size=8),
+)
+```
+
+Set `passes="triple"` to add detection. `triple_regions="union"` keeps detector
+and non-overlapping parser regions; `"detector"` uses detector regions only.
+Crops run in batches with Transformers and API engines. Guarded merging keeps the
+page result when a crop is invalid or incompatible. Document JSON records each
+page's mode and request counts in `body.meta.docling__nemotron_parse.pages`.
+These options are available through the SDK; the CLI preset keeps single-pass.
+
 Model presets (`docling.datamodel.vlm_model_specs`):
 
 | Preset | Backend | Device | Notes |
