@@ -2298,6 +2298,40 @@ def test_list_returning_to_starting_level_zero_still_works(documents):
     assert group_of_d.get_ref() == group_of_b.get_ref()
 
 
+def test_nested_list_items_separated_by_empty_paragraphs_keep_hierarchy(documents):
+    """Sub-items separated by empty paragraphs must remain nested under their parent.
+
+    Regression for #4947: intervening empty spacer paragraphs used to reset or flatten
+    subsequent sub-items into root list siblings.
+    """
+    doc = next(item[1] for item in documents if item[0].name == "docx_lists.docx")
+
+    list_items = _list_items_in_section(
+        doc, "Test 13: Nested list items separated by empty paragraphs"
+    )
+    assert [item.text for item in list_items] == [
+        "Prepare the site",
+        "Clear debris",
+        "Level the ground",
+        "Install the inverter",
+        "Mount the bracket",
+    ]
+
+    # Sub-items 1.1 and 1.2 nest under "Prepare the site"
+    sub_group_1 = list_items[1].parent.resolve(doc)
+    assert list_items[2].parent == sub_group_1.get_ref()
+    assert sub_group_1.parent == list_items[0].get_ref()
+
+    # Sub-item 2.1 nests under "Install the inverter"
+    sub_group_2 = list_items[4].parent.resolve(doc)
+    assert sub_group_2.parent == list_items[3].get_ref()
+
+    # Root items share the top-level list group
+    assert list_items[0].parent == list_items[3].parent
+    assert sub_group_1.get_ref() != list_items[0].parent
+    assert sub_group_2.get_ref() != list_items[3].parent
+
+
 def _docx_with_fragment_only_rel():
     """Build a minimal DOCX whose ``word/_rels/document.xml.rels`` contains a
     fragment-only ``Target`` (``#bookmark``).

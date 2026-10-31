@@ -7,7 +7,7 @@ Kept separate from ``test_backend_msword.py`` so that file stays under the
 repository's per-file line limit.
 """
 
-from docling_core.types.doc import ListItem
+from docling_core.types.doc import ListItem, TextItem
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -153,3 +153,63 @@ def test_text_after_a_resumed_list_keeps_only_its_own_comment(tmp_path):
     ]
     assert len(comment_texts) == 1
     assert comment_texts[0].endswith("on the note")
+
+
+def test_nested_list_items_keep_nesting_across_empty_paragraphs(tmp_path):
+    """Sub-items separated by empty paragraphs must remain nested under their parent.
+
+    Authors commonly insert empty paragraphs for vertical spacing between list
+    items. An intervening empty paragraph must not flatten subsequent sub-items
+    into siblings of the root list item.
+    """
+    doc = Document()
+    _make_multilevel_numbering(doc, abstract_id="800", num_id="801")
+
+    _add_numbered_paragraph(doc, "Prepare the site", "801", 0)
+    doc.add_paragraph("")
+    _add_numbered_paragraph(doc, "Clear debris", "801", 1)
+    doc.add_paragraph("")
+    _add_numbered_paragraph(doc, "Level the ground", "801", 1)
+    doc.add_paragraph("")
+    _add_numbered_paragraph(doc, "Install the inverter", "801", 0)
+    doc.add_paragraph("")
+    _add_numbered_paragraph(doc, "Mount the bracket", "801", 1)
+
+    docx_path = tmp_path / "nested_spacers.docx"
+    doc.save(str(docx_path))
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
+    converted = converter.convert(docx_path).document
+
+    items = {item.text: item for item in converted.texts if isinstance(item, ListItem)}
+    assert [
+        items[text].marker
+        for text in (
+            "Prepare the site",
+            "Clear debris",
+            "Level the ground",
+            "Install the inverter",
+            "Mount the bracket",
+        )
+    ] == ["1.", "1.1.", "1.2.", "2.", "2.1."]
+
+    # Sub-items 1.1 and 1.2 nest under "Prepare the site"
+    sub_group_1 = items["Clear debris"].parent.resolve(converted)
+    assert items["Level the ground"].parent == sub_group_1.get_ref()
+    assert sub_group_1.parent == items["Prepare the site"].get_ref()
+
+    # Sub-item 2.1 nests under "Install the inverter"
+    sub_group_2 = items["Mount the bracket"].parent.resolve(converted)
+    assert sub_group_2.parent == items["Install the inverter"].get_ref()
+
+    # Root items share the top-level list group
+    assert items["Prepare the site"].parent == items["Install the inverter"].parent
+    assert sub_group_1.get_ref() != items["Prepare the site"].parent
+    assert sub_group_2.get_ref() != items["Install the inverter"].parent
+
+    # Empty spacer paragraphs must not survive as empty text items in the document
+    assert [
+        it.text
+        for it in converted.texts
+        if isinstance(it, TextItem) and not it.text.strip()
+    ] == []

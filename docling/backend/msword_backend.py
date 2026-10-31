@@ -11,6 +11,7 @@ import zipfile
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Final, NamedTuple
@@ -671,6 +672,30 @@ class _NestedList(NamedTuple):
     outer_left_indent: int
 
 
+@dataclass
+class _CachedListState:
+    """Snapshot of active list state preserved across empty spacer paragraphs."""
+
+    parents: dict[int, NodeItem | None]
+    level_at_new_list: int | None
+    level_start_ilevel: int | None
+    nested_lists: list[_NestedList]
+    last_list_left_indent: int
+    prev_numid: int | None
+    prev_indent: int | None
+
+    def clone(self) -> _CachedListState:
+        return _CachedListState(
+            parents=self.parents.copy(),
+            level_at_new_list=self.level_at_new_list,
+            level_start_ilevel=self.level_start_ilevel,
+            nested_lists=self.nested_lists.copy(),
+            last_list_left_indent=self.last_list_left_indent,
+            prev_numid=self.prev_numid,
+            prev_indent=self.prev_indent,
+        )
+
+
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Backend for parsing Word documents (DOCX and DOC files).
 
@@ -858,6 +883,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.last_list_group: ListGroup | None = None
         self.last_list_group_numid: int | None = None
         self.last_list_group_parent: NodeItem | None = None
+        # Context of the list before empty spacer paragraphs, restored when
+        # the list resumes across spacers
+        self._cached_list_state: _CachedListState | None = None
         # Empty paragraphs before a resumed list item, deleted at the end of
         # convert(); keyed by reference, as a later resume finds them again
         self._deferred_empty_paragraphs: dict[str, TextItem] = {}
@@ -1170,6 +1198,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.last_list_group = None
         self.last_list_group_numid = None
         self.last_list_group_parent = None
+        self._cached_list_state = None
 
     def _end_list_on_body_text(self, text: str) -> None:
         """Drop the cached list group once body text follows a list.
@@ -1206,6 +1235,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         saved_last_list_group = self.last_list_group
         saved_last_list_group_numid = self.last_list_group_numid
         saved_last_list_group_parent = self.last_list_group_parent
+        saved_cached_list_state = (
+            self._cached_list_state.clone()
+            if self._cached_list_state is not None
+            else None
+        )
         self._clear_list_group_cache()
 
         try:
@@ -1220,6 +1254,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.last_list_group = saved_last_list_group
             self.last_list_group_numid = saved_last_list_group_numid
             self.last_list_group_parent = saved_last_list_group_parent
+            self._cached_list_state = saved_cached_list_state
 
     def _walk_linear(
         self,
@@ -3117,6 +3152,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # by the Code branch below (otherwise it nests inside the ListGroup).
             # Lists nested by left indentation close with the outermost list,
             # whose group is the one cached below.
+            nested_lists_before_clear = self.nested_lists.copy()
             self.last_numid = (
                 self.nested_lists[0].outer_numid
                 if self.nested_lists and self.level_at_new_list is not None
@@ -3128,7 +3164,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self._clear_list_group_cache()
             else:
                 # Empty/whitespace paragraph — cache the group for potential reuse
-                if self.level_at_new_list and self.level_at_new_list in self.parents:
+                if (
+                    self.level_at_new_list is not None
+                    and self.level_at_new_list in self.parents
+                ):
                     parent_item = self.parents.get(self.level_at_new_list)
                     if isinstance(parent_item, ListGroup):
                         self.last_list_group = parent_item
@@ -3136,12 +3175,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         self.last_list_group_parent = self.parents.get(
                             self.level_at_new_list - 1
                         )
+                        self._cached_list_state = _CachedListState(
+                            parents=self.parents.copy(),
+                            level_at_new_list=self.level_at_new_list,
+                            level_start_ilevel=self.level_start_ilevel,
+                            nested_lists=nested_lists_before_clear,
+                            last_list_left_indent=self.last_list_left_indent,
+                            prev_numid=self._prev_numid(),
+                            prev_indent=self._prev_indent(),
+                        )
 
-            if self.level_at_new_list:
+            if self.level_at_new_list is not None:
                 for key in range(len(self.parents)):
                     if key >= self.level_at_new_list:
                         self.parents[key] = None
-                self.level = self.level_at_new_list - 1
+                self.level = max(0, self.level_at_new_list - 1)
                 self.level_at_new_list = None
             else:
                 for key in range(len(self.parents)):
@@ -3625,6 +3673,39 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         level = self._get_level()
         prev_numid = self._prev_numid()
         prev_indent = self._prev_indent()
+
+        # If resuming a list across empty spacer paragraphs, restore the list hierarchy
+        if self._cached_list_state is not None and self._can_reuse_list_group(
+            numid, self.parents.get(level - 1)
+        ):
+            container = (
+                self.last_list_group_parent
+                if self.last_list_group_parent is not None
+                else doc.body
+            )
+            trailing_empty: list[TextItem] = []
+            can_resume = False
+            for ref in reversed(container.children):
+                item = ref.resolve(doc)
+                if isinstance(item, TextItem) and not item.text.strip():
+                    trailing_empty.append(item)
+                    continue
+                if item.self_ref == self.last_list_group.self_ref:
+                    can_resume = True
+                break
+            if can_resume:
+                for empty in trailing_empty:
+                    self._deferred_empty_paragraphs[empty.self_ref] = empty
+                cached = self._cached_list_state
+                self.parents = cached.parents.copy()
+                self.level_at_new_list = cached.level_at_new_list
+                self.level_start_ilevel = cached.level_start_ilevel
+                self.nested_lists = cached.nested_lists.copy()
+                self.last_list_left_indent = cached.last_list_left_indent
+                prev_numid = cached.prev_numid
+                prev_indent = cached.prev_indent
+                level = self._get_level()
+                self._clear_list_group_cache()
 
         if (
             prev_numid is not None
