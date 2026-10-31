@@ -79,6 +79,7 @@ from docling.utils.code_language import (
     detect_code_language,
     normalize_code_language,
 )
+from docling.utils.image_utils import check_image_pixels
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -123,6 +124,16 @@ def _warn_headers_without_origin() -> None:
 # Sentinel character for explicit line breaks from <br> tags
 # Using Unicode Private Use Area to avoid conflicts with actual content
 _BR_SENTINEL = "\ue000"
+
+
+def _resolve_line_breaks(text: str) -> str:
+    """Replace the sentinels of <br> tags with a line break.
+
+    For text that is one paragraph (heading, caption, list item): consecutive <br>
+    tags give one line break.
+    """
+    return re.sub(rf" *{_BR_SENTINEL}[ {_BR_SENTINEL}]*", "\n", text).strip()
+
 
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
@@ -203,6 +214,9 @@ _IMPLIED_END_TAGS: Final = {
     "th": ({"td", "th"}, {"tr", "table"}),
     "tr": ({"tr", "td", "th"}, {"table", "thead", "tbody", "tfoot"}),
 }
+
+# HTML table row-group elements that wrap <tr> children.
+_TABLE_SECTION_TAGS: Final = frozenset({"thead", "tbody", "tfoot"})
 
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
 
@@ -405,7 +419,7 @@ class AnnotatedTextList(list):
             current_code = c if c else current_code
 
         return AnnotatedText(
-            text=current_text.strip(),
+            text=_resolve_line_breaks(current_text),
             hyperlink=current_h,
             formatting=current_f,
             code=current_code,
@@ -526,6 +540,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             enable_remote_fetch=options.enable_remote_fetch,
             max_image_data_base64_bytes=options.max_image_data_base64_bytes,
             max_remote_image_bytes=options.max_remote_image_bytes,
+            max_image_pixels=options.max_image_pixels,
             max_redirects=options.max_redirects,
             headers=options.headers,
             header_origins=self._get_header_origins(options, configured_base_path),
@@ -1130,7 +1145,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _get_render_html_text(self) -> str:
         if self._raw_html_bytes is None:
             return ""
-        return self._raw_html_bytes.decode("utf-8", errors="replace")
+        # A browser reads the bytes with the encoding the document declares
+        # (``<meta charset>`` or an HTTP header), so the stream we hand to
+        # ``page.set_content`` has to be decoded the same way. Reuse the
+        # encoding BeautifulSoup already detected for these bytes instead of
+        # assuming UTF-8, which garbles every non-ASCII character of a legacy
+        # encoded stream.
+        encoding = (
+            self.soup.original_encoding if self.soup is not None else None
+        ) or "utf-8"
+        return self._raw_html_bytes.decode(encoding, errors="replace")
 
     def _inject_base_tag(self, html_text: str, base_url: Optional[str]) -> str:
         if not base_url:
@@ -2022,8 +2046,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         num_rows: int,
         num_cols: int,
     ) -> Optional[TableData]:
-        for t in cast(list[Tag], element.find_all(["thead", "tbody"], recursive=False)):
-            t.unwrap()
+        self._unwrap_table_sections(element)
 
         _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
         grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
@@ -2908,9 +2931,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             tag, ignore_list=True, find_parent_annotation=True
         )
         min_parts = parts.simplify_text_elements()
-        item_text = re.sub(
-            r"\s+|\n+", " ", "".join([el.text for el in min_parts])
-        ).strip()
+        item_text = _resolve_line_breaks(
+            re.sub(r"\s+|\n+", " ", "".join([el.text for el in min_parts]))
+        )
 
         if not item_text:
             return None
@@ -2932,7 +2955,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             with self._use_inline_group(min_parts, doc):
                 compacted_parts = self._compact_adjacent_single_char_parts(min_parts)
                 for annotated_text, source_tag_ids in compacted_parts:
-                    text_part = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+                    text_part = _resolve_line_breaks(
+                        re.sub(r"\s+|\n+", " ", annotated_text.text)
+                    )
+                    if not text_part:
+                        # The part only held <br> tags
+                        continue
                     clean_text = HTMLDocumentBackend._clean_unicode(text_part)
 
                     # Apply extra formatting if provided
@@ -2977,7 +3005,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         else:
             # Simple content - single text element
             annotated_text = min_parts[0]
-            text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+            text = _resolve_line_breaks(re.sub(r"\s+|\n+", " ", annotated_text.text))
             clean_text = HTMLDocumentBackend._clean_unicode(text)
             prov = self._make_text_prov(
                 text=clean_text,
@@ -3316,9 +3344,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return match.group("marker").strip() if match else ""
 
     @staticmethod
-    def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
-        for t in cast(list[Tag], tag.find_all(["thead", "tbody"], recursive=False)):
+    def _unwrap_table_sections(tag: Tag) -> None:
+        """Lift the rows of a table's row groups into the table itself.
+
+        The HTML table model places tfoot rows after all other row groups,
+        wherever the tfoot element appears in the source (HTML 4 required it
+        before tbody), so tfoot elements move to the end before unwrapping.
+        """
+        for t in cast(list[Tag], tag.find_all("tfoot", recursive=False)):
+            tag.append(t.extract())
+        for t in cast(list[Tag], tag.find_all(_TABLE_SECTION_TAGS, recursive=False)):
             t.unwrap()
+
+    @staticmethod
+    def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
+        HTMLDocumentBackend._unwrap_table_sections(tag)
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
         row_cell_spans: list[list[tuple[int, int]]] = []
@@ -3497,7 +3537,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
-                    text_orig = annotated_text.text.strip()
+                    # In preformatted text, each <br> is a newline
+                    text_orig = re.sub(
+                        rf" ?{_BR_SENTINEL} ?", "\n", annotated_text.text
+                    ).strip()
+                    if not text_orig:
+                        continue
                     text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
                     prov = self._make_prov(
                         text=text_clean,
@@ -3920,7 +3965,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ) -> str:
         def _extract(node: PageElement) -> list[str]:
             if isinstance(node, NavigableString):
-                return [str(node)]
+                return [str(node).replace(_BR_SENTINEL, "\n")]
             if isinstance(node, Tag):
                 if id(node) in excluded_obj_ids:
                     return []
@@ -5346,11 +5391,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return None
                 try:
                     image = Image.open(BytesIO(image_data))
+                    check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
                     return ImageRef.from_pil(
                         image, dpi=int(image.info.get("dpi", (72,))[0])
                     )
-                except (UnidentifiedImageError, OSError, TypeError, ValueError) as exc:
+                except (
+                    Image.DecompressionBombError,
+                    UnidentifiedImageError,
+                    OSError,
+                    TypeError,
+                    ValueError,
+                ) as exc:
                     warnings.warn(
                         f"Could not process an embedded MHTML image from {src_url}: "
                         f"{exc}"

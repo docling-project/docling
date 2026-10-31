@@ -7,7 +7,7 @@ import warnings
 from collections.abc import Callable
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Final, Optional, Set, Union
+from typing import Final, Optional, Set, Union, cast
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
 
@@ -33,8 +33,9 @@ def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialec
     it rejects samples whose rows hold different numbers of delimiters. A
     successful sniff must also parse as a complete record: a line cut inside a
     quoted field can otherwise mistake its content for a delimiter. Retrying
-    with a sample that closes the quote recovers those.
-    `read_sample` is only called on that fallback path.
+    with a sample that closes the quote recovers those. A first line holding
+    several candidate delimiters is also checked against the sample.
+    `read_sample` is only called on those paths.
 
     Raises csv.Error if neither can be detected.
     """
@@ -43,9 +44,73 @@ def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialec
         # Sniffer can succeed on a delimiter inside an unfinished quoted field.
         # Only trust the first-line dialect if it also parses a complete record.
         next(csv.reader([head], dialect=dialect, doublequote=True, strict=True))
-        return dialect
     except csv.Error:
         return csv.Sniffer().sniff(read_sample(), _DELIMITERS)
+
+    # A line holding more than one candidate delimiter is ambiguous on its own:
+    # the sniffer then picks the first one in its preference order, e.g. `,`
+    # for `a;b (x, y);c`. The following rows can tell them apart, so prefer a
+    # sample-based dialect when its delimiter splits the line into at least as
+    # many fields. Only occurrences outside brackets count: ragged rows can make
+    # the sample favour a delimiter that only appears inside a header field,
+    # like the `:` in `Time (hh:mm:ss)`, and a column name rarely splits there.
+    # The sample never switches the file to `:`: time values make it look
+    # consistent in ragged rows, and colon-separated files are rare.
+    # When both agree on the delimiter, the first-line dialect is kept, since
+    # the sample may pick a different quote character (e.g. `'` for `,'n/a'`).
+    # For the same reason, a switch only takes the delimiter from the sample.
+    # Limitation: when the data rows hold as many commas as the header, as in
+    # `Name;Size (w, h);Price` with rows like `A;1,5;2`, the sample also prefers
+    # `,` and the header delimiter is not recovered.
+    if sum(delimiter in head for delimiter in _DELIMITERS) > 1:
+        try:
+            sample_dialect = csv.Sniffer().sniff(read_sample(), _DELIMITERS)
+        except csv.Error:
+            return dialect
+        if sample_dialect.delimiter in (dialect.delimiter, ":"):
+            return dialect
+        sample_count = _count_outside_brackets(head, sample_dialect.delimiter)
+        if sample_count and sample_count >= _count_outside_brackets(
+            head, dialect.delimiter
+        ):
+            return _with_delimiter(dialect, sample_dialect)
+    return dialect
+
+
+def _with_delimiter(
+    dialect: type[csv.Dialect], sample_dialect: type[csv.Dialect]
+) -> type[csv.Dialect]:
+    """Return `dialect` with the delimiter taken from `sample_dialect`.
+
+    Only the delimiter (and whether spaces follow it) comes from the sample.
+    The quoting stays as sniffed from the first line: the sample may pick `'`
+    as the quote character for cells like `'n/a'`, which would strip those
+    quotes, or fail on an unclosed one such as `'90s music`.
+    """
+    attrs = {
+        "delimiter": sample_dialect.delimiter,
+        "skipinitialspace": sample_dialect.skipinitialspace,
+        "quotechar": dialect.quotechar,
+        "quoting": dialect.quoting,
+        "doublequote": dialect.doublequote,
+        "escapechar": dialect.escapechar,
+        "lineterminator": dialect.lineterminator,
+    }
+    return cast(type[csv.Dialect], type("_SwitchedDialect", (csv.Dialect,), attrs))
+
+
+def _count_outside_brackets(line: str, char: str) -> int:
+    """Count `char` in `line`, skipping occurrences inside (), [] or {}."""
+    depth = 0
+    count = 0
+    for c in line:
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth = max(depth - 1, 0)
+        elif c == char and depth == 0:
+            count += 1
+    return count
 
 
 class CsvDocumentBackend(DeclarativeDocumentBackend):
@@ -105,6 +170,8 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         usually the header line, which rarely contains one. RFC 4180 and
         `csv.excel` both use doubling, so it is the correct default.
         """
+        # Rewind before sniffing so repeated conversions use the same dialect.
+        self.content.seek(0)
         # Dialect detection: the larger sample is only read on fallback.
         head = self.content.readline()
         while head in ("\n", "\r\n", "\r"):

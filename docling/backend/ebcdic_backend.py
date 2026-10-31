@@ -194,6 +194,14 @@ class _RecordParser:
         offset = 0
         for field in record.fields:
             chunk = body[offset : offset + field.size]
+            if len(chunk) < field.size:
+                # A record length shorter than the layout leaves this field
+                # partly or wholly absent, and decoding what is left would
+                # report a value the record does not hold.
+                raise EbcdicDecodeError(
+                    f"Record {record.name!r} ends inside {field.name!r}: "
+                    f"{len(chunk)} of {field.size} bytes left."
+                )
             offset += field.size
             if field.type is not EbcdicFieldType.SKIP:
                 value = self._decoder.decode(chunk, field)

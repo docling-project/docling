@@ -278,7 +278,10 @@ def test_native_distil_artifacts_path_missing_checkpoint_raises(tmp_path):
         max_time_chunk=1.0,
         language="en",
     )
-    with pytest.raises(FileNotFoundError, match="does not contain"):
+    with pytest.raises(
+        FileNotFoundError,
+        match=r"does not contain .* docling-tools models download whisper_distil_small_en",
+    ):
         _NativeWhisperModel(
             True, tmp_path, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
         )

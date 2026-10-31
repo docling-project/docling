@@ -12,6 +12,7 @@ from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
     DoclingDocument,
+    FormulaItem,
     InlineGroup,
     RichTableCell,
     Script,
@@ -93,10 +94,7 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
         },
     ]
     doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
-    assert any(
-        item.text == "Bold $x_1 * y_2 < 2$" and item.formatting.bold
-        for item in doc.texts
-    )
+    assert any(item.text == "Bold" and item.formatting.bold for item in doc.texts)
     assert any(
         item.text == "2" and item.formatting.script == Script.SUB for item in doc.texts
     )
@@ -106,28 +104,59 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
         "_literal_",
         "'**literal**'",
     ]
-    assert (
-        next(item.text for item in doc.texts if item.label == DocItemLabel.FORMULA)
-        == r"x_1 * y_2 * z_3"
-    )
+    assert [item.text for item in doc.texts if isinstance(item, FormulaItem)] == [
+        "x_1 * y_2 < 2",
+        "x_1 * y_2 * z_3",
+    ]
+    assert "$x_1 * y_2 < 2$" in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize(
-    "text",
+    ("text", "expected"),
     [
-        "snake_case and a_b_c",
-        r"\*literal\*",
-        "unmatched **bold",
-        "$x_1 * y_2 * z_3$",
-        "______",
+        ("snake_case and a_b_c", "snake_case and a_b_c"),
+        (r"Price $5\_x-$10", "Price $5_x-$10"),
+        (r"\*literal\*", "*literal*"),
+        (r"a\_b, `c\_d` and \\*", r"a_b, `c\_d` and \\*"),
+        ("unmatched **bold", "unmatched **bold"),
+        ("______", "______"),
+        ("a *\n=\nb", "a *\n=\nb"),
+        (r"``a\_b` c`` and d\_e", r"``a\_b` c`` and d_e"),
+        # An unclosed run took cubic time before the code-span match was atomic.
+        ("`" * 5000 + r" a\_b", "`" * 5000 + " a_b"),
     ],
 )
-def test_literal_markers_stay_literal(text: str, page_size: Size):
+def test_literal_markers_stay_literal(text: str, expected: str, page_size: Size):
     data = [{"bbox": [10, 20, 300, 50], "category": "Text", "text": text}]
     doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
     assert len(doc.texts) == 1
-    assert doc.texts[0].text == text
+    assert doc.texts[0].text == expected
+    assert doc.texts[0].orig == text
     assert doc.texts[0].formatting is None
+
+
+def test_single_bold_run_and_line_breaks(page_size: Size):
+    data = [
+        {
+            "bbox": [10, 20, 300, 50],
+            "category": "Section-header",
+            "text": "## **Head**",
+        },
+        {"bbox": [10, 60, 300, 90], "category": "Text", "text": "**All bold**"},
+        {"bbox": [10, 100, 300, 130], "category": "Text", "text": "**b**\nline two"},
+    ]
+    doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+    heading, bold = doc.texts[:2]
+    assert (heading.text, heading.orig, heading.formatting.bold) == (
+        "Head",
+        "## **Head**",
+        True,
+    )
+    assert (bold.text, bold.formatting.bold, len(bold.prov)) == ("All bold", True, 1)
+    assert not heading.children and not bold.children
+    # The break moves to the start of the next run to stay valid Markdown.
+    assert [item.text for item in doc.texts[3:]] == ["b", "\nline two"]
+    assert doc.export_to_markdown().startswith("## **Head**\n\n**All bold**\n\n")
 
 
 def test_missing_markdown_dependency_has_install_hint(page_size: Size, monkeypatch):
@@ -330,9 +359,10 @@ class TestParseMultipleCategories:
             item.text == "2" and item.formatting.script == Script.SUB
             for item in doc.texts
         )
-        assert any(
-            item.text == "Keep the inequality $0<a<2$ literal." for item in doc.texts
-        )
+        assert [item.text for item in doc.texts if isinstance(item, FormulaItem)] == [
+            "0<a<2"
+        ]
+        assert "Keep the inequality $0<a<2$ literal." in doc.export_to_markdown()
 
 
 class TestCleanJson:
@@ -370,3 +400,14 @@ class TestParseFormulaAndFootnote:
         assert len(items) == 1
         item, _ = items[0]
         assert item.label == DocItemLabel.FOOTNOTE
+
+
+def test_standalone_math_becomes_formula_without_inheriting_block_box(page_size: Size):
+    data = [
+        {"bbox": [10, 20, 300, 50], "category": "Text", "text": "$x_1 * y_2 * z_3$"}
+    ]
+    doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+    assert doc.texts[0].prov
+    assert isinstance(doc.texts[1], FormulaItem)
+    assert doc.texts[1].text == "x_1 * y_2 * z_3"
+    assert not doc.texts[1].prov

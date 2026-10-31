@@ -22,6 +22,7 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Collection
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,7 @@ LABEL_DUPLICATE = "ai:possible-duplicate"
 LABEL_CI_SAFE = "ai:ci-safe"
 LABEL_CI_NEEDS_CARE = "ai:ci-needs-care"
 MANAGED_LABELS = (LABEL_DUPLICATE, LABEL_CI_SAFE, LABEL_CI_NEEDS_CARE)
+TRIAGE_ANSWER_KEYS = ("ci_safety",)
 
 MAX_ISSUE_REFS = 5
 MAX_OPEN_PRS_SCANNED = 50
@@ -46,6 +48,12 @@ MAX_BODY_CHARS = 6_000
 MAX_MODEL_TEXT_CHARS = 600
 # Written into untrusted text to stop GitHub from linking or notifying.
 ZERO_WIDTH_SPACE = "\u200b"
+BOT_LOGIN = "github-actions[bot]"
+REVIEW_MARKER_PREFIX = "<!-- ai-pr-review sha="
+REVIEW_MARKER = re.compile(r"<!-- ai-pr-review sha=([0-9a-f]{40}) -->")
+LABEL_REVIEW_LGTM = "ai:review-lgtm"
+LABEL_REVIEW_CHANGES = "ai:review-changes"
+REVIEW_LABELS = (LABEL_REVIEW_LGTM, LABEL_REVIEW_CHANGES)
 HUNK_SLACK_LINES = 3
 
 # Changes in these paths can alter what CI executes. A match always requires
@@ -310,26 +318,208 @@ def markdown_text(text: str) -> str:
     return re.sub(r"([!-/:-@\[-`{-~])", r"\\\1", text)
 
 
-def markdown_code(text: str) -> str:
+def markdown_code(text: str, *, in_table: bool = False) -> str:
     """Render untrusted text as one inline code span.
 
     Markdown has no syntax inside a code span. The fence is longer than any
     run of backticks in the text, so the text cannot close it.
     """
     text = clean_text(text, limit=len(text))
+    if in_table:
+        # GitHub splits a table cell at a pipe, also inside a code span.
+        text = text.replace("|", "\\|")
     fence = "`" * (max((len(run) for run in re.findall(r"`+", text)), default=0) + 1)
     pad = " " if text.startswith("`") or text.endswith("`") else ""
     return f"{fence}{pad}{text}{pad}{fence}"
 
 
-def extract_answer(last_message: str) -> Any:
-    """Return the JSON object in the final model message."""
-    fenced = re.search(r"```(?:json)?\s*(\{.*\})\s*```", last_message, re.DOTALL)
-    candidate = fenced.group(1) if fenced else last_message
-    start, end = candidate.find("{"), candidate.rfind("}")
-    if start < 0 or end <= start:
+def _closing_run(text: str, start: int, stop: int, length: int) -> int | None:
+    """Return the end of the next run of exactly ``length`` backticks."""
+    index = start
+    while index < stop:
+        if text[index] != "`":
+            index += 1
+            continue
+        end = index
+        while end < stop and text[end] == "`":
+            end += 1
+        if end - index == length:
+            return end
+        index = end
+    return None
+
+
+def code_segments(text: str) -> list[tuple[bool, str]]:
+    """Split Markdown into text and code, as ``(is_code, part)`` pairs.
+
+    The split is conservative. A part is code only when CommonMark also reads
+    it as code: a fenced block (open to the end when it is not closed), or a
+    code span that closes on the same line. Text that CommonMark reads as code
+    but this function does not only gets escaped once too often.
+    """
+    segments: list[tuple[bool, str]] = []
+    start = index = 0
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+            continue
+        if char != "`":
+            index += 1
+            continue
+        run_end = index
+        while run_end < len(text) and text[run_end] == "`":
+            run_end += 1
+        run = run_end - index
+        line_start = text.rfind("\n", 0, index) + 1
+        line_end = text.find("\n", run_end)
+        line_end = len(text) if line_end < 0 else line_end
+        is_fence = (
+            run >= 3
+            and index - line_start <= 3
+            and not text[line_start:index].strip(" ")
+            and "`" not in text[run_end:line_end]
+        )
+        end: int | None
+        if is_fence:
+            closing = re.compile(rf"^ {{0,3}}`{{{run},}}[ \t]*$", re.MULTILINE)
+            match = closing.search(text, line_end)
+            end = match.end() if match else len(text)
+        else:
+            end = _closing_run(text, run_end, line_end, run)
+        if end is None:
+            index = run_end
+            continue
+        segments.append((False, text[start:index]))
+        segments.append((True, text[index:end]))
+        start = index = end
+    segments.append((False, text[start:]))
+    return [(is_code, part) for is_code, part in segments if part]
+
+
+def _markdown_text_part(part: str) -> str:
+    """Escape a text part and keep its spaces next to the code spans."""
+    stripped = part.strip()
+    if not stripped:
+        return part
+    lead = part[: len(part) - len(part.lstrip())]
+    trail = part[len(part.rstrip()) :]
+    return f"{lead}{markdown_text(stripped)}{trail}"
+
+
+def markdown_inline(text: str, *, in_table: bool = False) -> str:
+    """Render one line of untrusted text as literal text with code spans.
+
+    The model writes identifiers in code spans. A code span has no Markdown
+    syntax, so it can stay; everything outside it is escaped.
+    """
+    return "".join(
+        markdown_code(part.strip("`").strip(), in_table=in_table)
+        if is_code
+        else _markdown_text_part(part)
+        for is_code, part in code_segments(clean_text(text, limit=len(text)))
+    )
+
+
+def ai_reviewed_shas(reviews: list[dict[str, Any]]) -> list[str]:
+    """Return the commits of the earlier AI reviews, oldest first."""
+    shas: list[str] = []
+    for review in reviews:
+        if review["user"]["login"] != BOT_LOGIN:
+            continue
+        match = REVIEW_MARKER.search(review.get("body") or "")
+        if match:
+            shas.append(match.group(1))
+    return shas
+
+
+@dataclass(slots=True)
+class BobOutput:
+    status: str | None
+    stats: Any
+    last_message: str | None
+    errors: list[str]
+
+
+def read_bob_output(path: Path) -> BobOutput:
+    """Read the output of ``bob run --format json``.
+
+    Bob Shell writes one JSON event per line. When a task reaches its turn or
+    cost limit, an error event comes before the result event. The last
+    message is then often a tool result, not the answer.
+    """
+    text = path.read_text("utf-8")
+    try:
+        events = [json.loads(text)]
+    except json.JSONDecodeError:
+        events = [json.loads(line) for line in text.splitlines() if line.strip()]
+    events = [event for event in events if isinstance(event, dict)]
+    errors = [str(e.get("message", "")) for e in events if e.get("type") == "error"]
+    results = [e for e in events if e.get("type", "result") == "result"]
+    if not results:
+        reason = f": {'; '.join(errors)}" if errors else ""
+        raise ValueError(f"Bob Shell output has no result{reason}")
+    result = results[-1]
+    last_message = result.get("last_message")
+    return BobOutput(
+        status=result.get("status"),
+        stats=result.get("stats"),
+        last_message=last_message if isinstance(last_message, str) else None,
+        errors=errors,
+    )
+
+
+def answer_from_output(output: BobOutput, required_keys: Collection[str]) -> Any:
+    """Return the answer in the final message, or say why there is none."""
+    print(f"Bob Shell status: {output.status}; stats: {json.dumps(output.stats)}")
+    for error in output.errors:
+        print(f"::warning::Bob Shell stopped early: {error}")
+    try:
+        if output.last_message is None:
+            raise ValueError("Bob Shell output has no final message")
+        return extract_answer(output.last_message, required_keys)
+    except ValueError as exc:
+        if output.errors:
+            raise ValueError(f"{exc} (Bob Shell stopped early)") from exc
+        raise
+
+
+def extract_answer(last_message: str, required_keys: Collection[str] = ()) -> Any:
+    """Return the answer object in the final model message.
+
+    The model sometimes writes a draft object before the answer, or text after
+    it. So take the last top-level JSON object that has all `required_keys`.
+    A nested object, for example one finding of a broken answer, does not
+    count, so a broken answer is not read as an empty one.
+    """
+
+    def is_answer(value: object) -> bool:
+        return isinstance(value, dict) and all(key in value for key in required_keys)
+
+    for block in reversed(
+        re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", last_message, re.DOTALL)
+    ):
+        try:
+            value = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if is_answer(value):
+            return value
+    decoder = json.JSONDecoder()
+    answer: dict[str, Any] | None = None
+    index = last_message.find("{")
+    while index >= 0:
+        try:
+            value, end = decoder.raw_decode(last_message, index)
+        except json.JSONDecodeError:
+            index = last_message.find("{", index + 1)
+            continue
+        if is_answer(value):
+            answer = value
+        index = last_message.find("{", end)
+    if answer is None:
         raise ValueError("final message contains no JSON object")
-    return json.loads(candidate[start : end + 1])
+    return answer
 
 
 # ---------------------------------------------------------------------------
@@ -698,14 +888,9 @@ def prepare(repo: str, pr_number: int, out_dir: Path, git_dir: Path) -> bool:
 
 def extract(bob_output: Path, context_path: Path, out_path: Path) -> None:
     context = TriageContext.from_dict(json.loads(context_path.read_text("utf-8")))
-    output = json.loads(bob_output.read_text("utf-8"))
-    stats = output.get("stats")
-    print(f"Bob Shell status: {output.get('status')}; stats: {json.dumps(stats)}")
-    last_message = output.get("last_message")
-    if not isinstance(last_message, str):
-        raise ValueError("Bob Shell output has no final message")
+    answer = answer_from_output(read_bob_output(bob_output), TRIAGE_ANSWER_KEYS)
     allowed = {candidate.number for candidate in context.candidates}
-    result = parse_triage_result(extract_answer(last_message), allowed)
+    result = parse_triage_result(answer, allowed)
     out_path.write_text(json.dumps(asdict(result), indent=2), encoding="utf-8")
 
 
@@ -742,7 +927,7 @@ def render_comment(
             "",
         ]
     elif result.summary:
-        lines += [markdown_text(result.summary), ""]
+        lines += [markdown_inline(result.summary), ""]
     if added_topics:
         names = ", ".join(f"`{topic}`" for topic in added_topics)
         lines += [f"Topic labels added: {names}.", ""]
@@ -760,7 +945,7 @@ def render_comment(
     if result is not None:
         for concern in result.ci_concerns:
             path = f"{markdown_code(concern.path)}: " if concern.path else ""
-            lines.append(f"- {path}{markdown_text(concern.reason)}")
+            lines.append(f"- {path}{markdown_inline(concern.reason)}")
     lines.append("")
 
     verdicts = {d.pr: d.verdict for d in result.duplicates} if result else {}
@@ -790,7 +975,7 @@ def render_comment(
         if result is not None and result.groundtruth_verdict is not None:
             lines += [
                 f"Assessment: **{result.groundtruth_verdict}**."
-                f" {markdown_text(result.groundtruth_reason)}",
+                f" {markdown_inline(result.groundtruth_reason)}",
                 "",
             ]
 
@@ -808,7 +993,7 @@ def _candidate_table(
     for candidate in candidates:
         verdict = verdicts.get(candidate.number)
         assessment = (
-            f"{verdict}: {markdown_text(reasons[candidate.number])}"
+            f"{verdict}: {markdown_inline(reasons[candidate.number], in_table=True)}"
             if verdict
             else "not assessed"
         )
@@ -817,6 +1002,21 @@ def _candidate_table(
             f"| #{candidate.number} | {candidate.state} | {signals} | {assessment} |"
         )
     return rows
+
+
+def stale_review_labels(
+    current: set[str], reviewed_shas: list[str], head_sha: str
+) -> set[str]:
+    """Return the AI review labels that describe an older commit.
+
+    A review label belongs to the commit of the last AI review. A push resets
+    the labels, but a manual run and /ai triage do not, and a review can be
+    skipped for the new head. A review of the head in the same run sets its
+    label again after this.
+    """
+    if reviewed_shas and reviewed_shas[-1] == head_sha:
+        return set()
+    return current & set(REVIEW_LABELS)
 
 
 def publish(
@@ -862,7 +1062,15 @@ def publish(
             {label["name"] for label in repo_labels},
         )
     current = {label["name"] for label in pr["labels"]}
-    for label in sorted((current & set(MANAGED_LABELS)) - labels):
+    stale = (current & set(MANAGED_LABELS)) - labels
+    if current & set(REVIEW_LABELS):
+        reviews = gh_api(
+            f"repos/{repo}/pulls/{pr_number}/reviews?per_page=100", paginate=True
+        )
+        stale |= stale_review_labels(
+            current, ai_reviewed_shas(reviews), context.pr.head_sha
+        )
+    for label in sorted(stale):
         gh_write("DELETE", f"repos/{repo}/issues/{pr_number}/labels/{label}")
     to_add = (labels | set(topics)) - current
     if to_add:

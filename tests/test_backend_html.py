@@ -20,6 +20,7 @@ from docling_core.types.doc import (
     RichTableCell,
 )
 from docling_core.types.doc.document import ContentLayer
+from PIL import Image
 from pydantic import AnyUrl, ValidationError
 
 from docling.backend.html_backend import (
@@ -31,7 +32,7 @@ from docling.backend.utils.image_resource_loader import (
     validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -481,6 +482,61 @@ def test_table_row_header_rowspan_keeps_the_row_cells():
     grid_texts = [cell.text for row in data.grid for cell in row if cell.text]
     assert grid_texts == [cell.text for cell in data.table_cells]
     assert "$134" in doc.export_to_markdown()
+
+
+_THEAD = b"<thead><tr><th>Item</th><th>Amount</th></tr></thead>"
+_TFOOT = b"<tfoot><tr><td>Total</td><td>10</td></tr></tfoot>"
+
+
+@pytest.mark.parametrize(
+    "body,expected_grid",
+    [
+        (
+            _THEAD + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>" + _TFOOT,
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+        # HTML 4 placed tfoot before tbody; the table model still ends with it.
+        (
+            _THEAD + _TFOOT + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>",
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+        (
+            b"<tbody><tr><td>Widgets</td><td>4</td></tr></tbody>"
+            + _TFOOT
+            + b"<tbody><tr><td>Gadgets</td><td>6</td></tr></tbody>",
+            [["Widgets", "4"], ["Gadgets", "6"], ["Total", "10"]],
+        ),
+        (
+            _THEAD
+            + b'<tfoot><tr><td rowspan="2">Total</td><td>10</td></tr></tfoot>'
+            + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>",
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+    ],
+    ids=["tfoot_last", "tfoot_first", "tfoot_between", "tfoot_first_rowspan"],
+)
+def test_table_tfoot_rows_are_kept(body, expected_grid):
+    """Regression: <tfoot> is a standard table section, but only thead/tbody
+    were unwrapped before scanning rows. Footer totals then stayed nested
+    inside <tfoot> and were dropped from the grid. Wherever the tfoot sits in
+    the source, its rows come last in the table model.
+    """
+    src = b"<table>" + body + b"</table>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 3
+    grid = [[cell.text for cell in row] for row in doc.tables[0].data.grid]
+    assert grid == expected_grid
+    if b"rowspan=" in body:
+        total = next(c for c in doc.tables[0].data.table_cells if c.text == "Total")
+        assert total.end_row_offset_idx - total.start_row_offset_idx == 1
 
 
 def test_table_inside_figure_is_parsed():
@@ -1491,6 +1547,35 @@ def test_e2e_html_conversion_with_images(mock_local, monkeypatch):
     assert verify_document(res_local.document, gt_path + ".json", GENERATE)
 
 
+def test_local_file_uri_source_resolves_images(tmp_path: Path):
+    """A file URI source must resolve relative HTML images locally."""
+    image_path = tmp_path / "figure.png"
+    image_path.write_bytes(PNG_1X1)
+    html_path = tmp_path / "doc.html"
+    html_path.write_text('<img src="figure.png">', encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(
+                backend_options=HTMLBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=html_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(html_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is not None
+
+
 def test_html_furniture():
     raw_html = (
         b"<html><body><p>Initial content with some <strong>bold text</strong></p>"
@@ -2010,6 +2095,33 @@ def test_load_image_data_enforces_data_uri_size_limit():
         backend._load_image_data(data_uri)
 
 
+def test_image_over_pixel_limit_is_skipped():
+    def png_data_uri(width: int, height: int) -> str:
+        buffer = BytesIO()
+        Image.new("RGB", (width, height), (255, 0, 0)).save(buffer, format="PNG")
+        return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
+    html = (
+        "<html><body><p>Before.</p>"
+        f'<img src="{png_data_uri(8, 8)}"><img src="{png_data_uri(7, 5)}">'
+        "<p>After.</p></body></html>"
+    )
+    converter = _create_html_converter(
+        HTMLBackendOptions(fetch_images=True, max_image_pixels=63)
+    )
+    with pytest.warns(UserWarning, match="exceeds the limit of 63 pixels"):
+        result = converter.convert(
+            DocumentStream(name="test.html", stream=BytesIO(html.encode()))
+        )
+    doc = result.document
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert len(doc.pictures) == 2
+    assert doc.pictures[0].image is None
+    assert doc.pictures[1].get_image(doc).size == (7, 5)
+    assert [text.text for text in doc.texts] == ["Before.", "After."]
+
+
 def test_anchor_fragment_links_with_source_uri():
     """Fragment-only hrefs must not be mangled when source_uri is set."""
     html_path = Path("tests/data/html/sources/hyperlink_06.html")
@@ -2185,6 +2297,52 @@ def _require_chromium() -> None:
             playwright.chromium.launch(headless=True).close()
     except Exception as exc:
         pytest.skip(f"Chromium is not available: {exc}")
+
+
+def _make_stream_backend(src: bytes, name: str) -> HTMLDocumentBackend:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename=name,
+    )
+    return HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(src),
+        options=HTMLBackendOptions(render_page=True),
+    )
+
+
+def test_browser_render_decodes_stream_with_declared_encoding():
+    """A rendered stream keeps the text of a non-UTF-8 document.
+
+    A stream reaches Chromium through `page.set_content`, so the bytes are
+    decoded here instead of by the browser honouring `<meta charset>` the way
+    a `page.goto` on a path does. Decoding as UTF-8 garbled every non-ASCII
+    character of a legacy encoded document while the conversion still
+    reported success.
+    """
+    text = "Привет, мир"
+    src = (
+        '<html><head><meta charset="windows-1251"></head>'
+        f"<body><p>{text}</p></body></html>"
+    ).encode("cp1251")
+
+    backend = _make_stream_backend(src, "page.html")
+
+    rendered = backend._get_render_html_text()
+    assert text in rendered
+    assert BeautifulSoup(rendered, "html.parser").get_text() == text
+
+
+def test_browser_render_decodes_utf8_stream_unchanged():
+    """A UTF-8 document without a charset declaration still decodes as UTF-8."""
+    text = "café"
+    src = f"<html><body><p>{text}</p></body></html>".encode()
+
+    rendered = _make_stream_backend(src, "page.html")._get_render_html_text()
+
+    assert BeautifulSoup(rendered, "html.parser").get_text() == text
 
 
 def test_browser_render_fetches_remote_resources_through_image_loader(
@@ -2466,6 +2624,52 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
     assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
         "Text should still be present after sentinel cleanup"
     )
+
+
+def test_html_line_break_outside_paragraphs():
+    # A <br> outside a paragraph or a table cell, e.g. in a heading or a list
+    # item, left the internal sentinel (U+E000) in the text. It is now a line
+    # break, as in a paragraph. The text of a checkbox stays on one line.
+    src = (
+        b"<html><body>"
+        b"<h1>Title<br>line</h1>"
+        b"<h2>Heading<br>line</h2>"
+        b"<ul><li>Item<br>line</li><li><b>Bold</b><br><i>italic</i></li></ul>"
+        b"<dl><dt>Term<br>line</dt><dd>Definition<br>line</dd></dl>"
+        b"<table><caption>Caption<br>line</caption>"
+        b"<tr><td>A</td><td>B</td></tr></table>"
+        b"<figure><img src='a.png'><figcaption>Figure<br>line</figcaption></figure>"
+        b"<pre>Code<br>line</pre>"
+        b"<pre><b>bold</b><br><i>code</i></pre>"
+        b"<ul><li><input type='checkbox' checked>Task<br>line</li></ul>"
+        b"</body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert [item.text for item in doc.texts] == [
+        "Title\nline",
+        "Heading\nline",
+        "Item\nline",
+        "",  # the list item with formatting: its text is in the two runs below
+        "Bold",
+        "italic",
+        "Term\nline",
+        "Definition\nline",
+        "Caption\nline",
+        "Figure\nline",
+        "Code\nline",
+        "bold",
+        "code",
+        "Task line",
+    ]
+    assert not any(_BR_SENTINEL in item.orig for item in doc.texts)
+    assert "## Heading line" in doc.export_to_markdown()
 
 
 def test_gfm_task_list_renders_checkbox_with_text():

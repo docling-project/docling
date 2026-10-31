@@ -27,6 +27,7 @@ from docling.datamodel.vlm_prompts import (
     CHANDRA_OCR_LAYOUT_PROMPT,
     DOCLING_BASE_PAGE_PROMPT,
     DOTS_LAYOUT_PROMPT,
+    UNLIMITED_OCR2_PROMPT,
     UNLIMITED_OCR_GROUNDING_PROMPT,
 )
 from docling.models.inference_engines.image_classification.base import (
@@ -1210,6 +1211,10 @@ VLM_CONVERT_GOT_OCR = StageModelPreset(
     default_engine_type=VlmEngineType.TRANSFORMERS,
 )
 
+# All presets in this module that set trust_remote_code=True execute Python
+# code from their Hugging Face repo on model load, so each one is pinned to a
+# commit SHA, including engine overrides that point at a different repo. A pin
+# is bumped only after reviewing the remote code at the new commit.
 VLM_CONVERT_PHI4 = StageModelPreset(
     preset_id="phi4",
     name="Phi-4",
@@ -1217,6 +1222,7 @@ VLM_CONVERT_PHI4 = StageModelPreset(
     model_spec=VlmModelSpec(
         name="Phi-4-Multimodal-Instruct",
         default_repo_id="microsoft/Phi-4-multimodal-instruct",
+        revision="93f923e1a7727d1c4f446756212d9d3e8fcc5d81",
         prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
         response_format=ResponseFormat.MARKDOWN,
         trust_remote_code=True,
@@ -1320,6 +1326,7 @@ VLM_CONVERT_NEMOTRON_PARSE_V2 = StageModelPreset(
     model_spec=VlmModelSpec(
         name="NVIDIA-Nemotron-Parse-2.0",
         default_repo_id="nvidia/NVIDIA-Nemotron-Parse-2.0",
+        revision="b6742064f4a8cf22a10383ece5e7fbead355ac04",
         prompt=(
             "</s><s><predict_bbox><predict_classes><output_markdown>"
             "<predict_no_text_in_pic>"
@@ -1348,6 +1355,7 @@ VLM_CONVERT_NEMOTRON_PARSE_V2 = StageModelPreset(
             ),
             VlmEngineType.MLX: EngineModelConfig(
                 repo_id="mlx-community/Nemotron-Parse-2.0-8bit",
+                revision="e7e89479657fb3631028ac12b6bc0d5a59ceafe4",
                 min_engine_version="0.6.17",
             ),
             VlmEngineType.VLLM: EngineModelConfig(
@@ -1365,6 +1373,66 @@ VLM_CONVERT_NEMOTRON_PARSE_V2 = StageModelPreset(
         },
     ),
     scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+# The model needs its own repository code; pin the commit the user reviews and trusts.
+_NEMOTRON_PARSE_V3_5_REVISION = "e7ea79242a87ea0ad3919b672bfedb429a683206"
+_NEMOTRON_PARSE_V3_5_MAX_TOKENS = 8744
+
+VLM_CONVERT_NEMOTRON_PARSE_V3_5 = StageModelPreset(
+    preset_id="nemotron_parse_v3_5",
+    name="Nemotron 3.5 Parse",
+    description=(
+        "NVIDIA Nemotron 3.5 Parse model for document parsing with semantic "
+        "classes, bounding boxes, tables and charts (0.6B parameters). Runs "
+        "code from the pinned model repository: requires trust_remote_code=True"
+    ),
+    model_spec=VlmModelSpec(
+        name="Nemotron-3.5-Parse",
+        default_repo_id="nvidia/Nemotron-3.5-Parse",
+        revision=_NEMOTRON_PARSE_V3_5_REVISION,
+        prompt=(
+            "</s><s><predict_bbox><predict_classes><output_markdown>"
+            "<predict_text_in_pic>"
+        ),
+        response_format=ResponseFormat.NEMOTRON_PARSE_V3_5,
+        # In-process vLLM needs NVIDIA's out-of-tree plugin; use its server via API.
+        supported_engines={VlmEngineType.TRANSFORMERS, VlmEngineType.API},
+        # Never trusted implicitly: the user opts in on the engine options.
+        trust_remote_code=False,
+        max_new_tokens=_NEMOTRON_PARSE_V3_5_MAX_TOKENS,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.14.1",
+                extra_config={
+                    "requires_trust_remote_code": True,
+                    "transformers_model_type": TransformersModelType.AUTOMODEL,
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                    "extra_processor_kwargs": {"add_special_tokens": False},
+                    "extra_generation_config": {
+                        "repetition_penalty": 1.1,
+                        "skip_special_tokens": True,
+                    },
+                },
+            ),
+        },
+        api_overrides={
+            # Matches NVIDIA's `vllm serve --served-model-name nemotron-parse`.
+            VlmEngineType.API: ApiModelConfig(
+                params={
+                    "model": "nemotron-parse",
+                    "max_tokens": _NEMOTRON_PARSE_V3_5_MAX_TOKENS,
+                    "top_k": 1,
+                    "repetition_penalty": 1.1,
+                    "skip_special_tokens": False,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    max_size=2048,
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
@@ -1559,6 +1627,7 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="Falcon-OCR",
         default_repo_id="tiiuae/Falcon-OCR",
+        revision="42ec56b72a23984ac059e7c8a6d397a8529423fe",
         prompt="",
         response_format=ResponseFormat.MARKDOWN,
         trust_remote_code=True,
@@ -1566,7 +1635,8 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
             # Native Falcon-OCR support was added to mlx-vlm in v0.4.3.
             # A dedicated mlx-community checkpoint is now available for MLX.
             VlmEngineType.MLX: EngineModelConfig(
-                repo_id="mlx-community/Falcon-OCR-bf16"
+                repo_id="mlx-community/Falcon-OCR-bf16",
+                revision="28ccccd3f7cf68a266547ae035b3e0af544cf153",
             ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
@@ -1626,6 +1696,66 @@ VLM_CONVERT_LIGHTONOCR = StageModelPreset(
     scale=2.0,
     max_size=1540,
     default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+
+def _lightonocr3_preset(size: str, preset_id: str, revision: str) -> StageModelPreset:
+    name = f"LightOnOCR-3-{size}"
+    repo_id = f"lightonai/{name}"
+    max_new_tokens = 12288
+    return StageModelPreset(
+        preset_id=preset_id,
+        name=name,
+        description=f"LightOnOCR-3 OCR with block grounding ({size} parameters)",
+        model_spec=VlmModelSpec(
+            name=name,
+            default_repo_id=repo_id,
+            revision=revision,
+            prompt="grounding",
+            response_format=ResponseFormat.LIGHTONOCR_MARKDOWN,
+            # Upstream advises against greedy decoding for these models.
+            temperature=0.1,
+            max_new_tokens=max_new_tokens,
+            engine_overrides={
+                VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                    min_engine_version="5.5.4",
+                    torch_dtype="bfloat16",
+                    extra_config={
+                        "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                        "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                        # Transformers otherwise applies its own top_k default.
+                        "extra_generation_config": {
+                            "skip_special_tokens": True,
+                            "top_k": 0,
+                        },
+                    },
+                ),
+                # Upstream tests vLLM 0.30.0 and reports loops on 0.27.1.
+                VlmEngineType.VLLM: EngineModelConfig(
+                    min_engine_version="0.30.0",
+                    extra_config={"max_model_len": 18000},
+                ),
+            },
+            api_overrides={
+                VlmEngineType.API: ApiModelConfig(
+                    params={"model": repo_id, "max_tokens": max_new_tokens}
+                ),
+                VlmEngineType.API_OPENAI: ApiModelConfig(
+                    params={"model": repo_id, "max_tokens": max_new_tokens}
+                ),
+            },
+        ),
+        scale=2.0,
+        max_size=2048,
+        default_engine_type=VlmEngineType.AUTO_INLINE,
+    )
+
+
+VLM_CONVERT_LIGHTONOCR_3_08B = _lightonocr3_preset(
+    "0.8B", "lightonocr3_08b", "36d8636925327c671bd8e479c517a004f7566bd9"
+)
+VLM_CONVERT_LIGHTONOCR_3_4B = _lightonocr3_preset(
+    "4B", "lightonocr3_4b", "b71010f095dc3735de7ee6b9969bff8f8f50b39a"
 )
 
 # -----------------------------------------------------------------------------
@@ -1796,6 +1926,64 @@ VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
     default_engine_type=VlmEngineType.API_OPENAI,
 )
 
+_UNLIMITED_OCR2_API = ApiModelConfig(
+    params={
+        # Matches `--served-model-name Unlimited-OCR-2` on the vendor server.
+        "model": "Unlimited-OCR-2",
+        "max_tokens": 8000,
+        # `<td>` and `<tr>` are special tokens, so tables need them kept.
+        "skip_special_tokens": False,
+    }
+)
+
+VLM_CONVERT_UNLIMITED_OCR2 = StageModelPreset(
+    preset_id="unlimited_ocr2",
+    name="Unlimited-OCR 2",
+    description="Unlimited-OCR 2 model for document layout parsing with bounding boxes, one page per request (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR-2",
+        default_repo_id="baidu/Unlimited-OCR-2",
+        revision="c14071b549f4fcab10909f3c4acc6a2edb366947",
+        prompt=UNLIMITED_OCR2_PROMPT,
+        response_format=ResponseFormat.UNLIMITED_OCR2,
+        supported_engines={VlmEngineType.API, VlmEngineType.API_OPENAI},
+        max_new_tokens=8000,
+        api_overrides={
+            VlmEngineType.API: _UNLIMITED_OCR2_API,
+            VlmEngineType.API_OPENAI: _UNLIMITED_OCR2_API,
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.API_OPENAI,
+)
+
+# The MLX chat template adds the image token, so the prompt keeps only the instruction.
+# The model writes the page marker itself. This is a separate preset because
+# `EngineModelConfig` has no prompt field. mlx-vlm 0.7.11 added the model.
+VLM_CONVERT_UNLIMITED_OCR2_MLX = StageModelPreset(
+    preset_id="unlimited_ocr2_mlx",
+    name="Unlimited-OCR 2 (MLX)",
+    description="Unlimited-OCR 2 on Apple Silicon, with bounding boxes, one page per request (3.34B MoE)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR-2",
+        default_repo_id="mlx-community/Unlimited-OCR-2-bf16",
+        revision="850d1e483f5a82a0597f0a45aac31b07ba840df2",
+        prompt="Multi page parsing.",
+        response_format=ResponseFormat.UNLIMITED_OCR2,
+        supported_engines={VlmEngineType.MLX},
+        max_new_tokens=8000,
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/Unlimited-OCR-2-bf16",
+                revision="850d1e483f5a82a0597f0a45aac31b07ba840df2",
+                min_engine_version="0.7.11",
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.MLX,
+)
+
 VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     preset_id="chandra_ocr2",
     name="Chandra-OCR-2",
@@ -1803,6 +1991,7 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     model_spec=VlmModelSpec(
         name="Chandra-OCR-2-5.3B",
         default_repo_id="datalab-to/chandra-ocr-2",
+        revision="af93b47dba1b47b6640c86ccf487ed2260ab9a09",
         prompt=CHANDRA_OCR_LAYOUT_PROMPT,
         response_format=ResponseFormat.CHANDRA_HTML,
         max_new_tokens=12384,
@@ -1816,6 +2005,7 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
             # not. No bf16 MLX export is published; this is the 8-bit conversion.
             VlmEngineType.MLX: EngineModelConfig(
                 repo_id="mlx-community/chandra-ocr-2-oQ8",
+                revision="eafcb4c79468ff6cf8b76ecc3aedbffe0dd82282",
                 min_engine_version="0.6.17",
             ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
@@ -1858,6 +2048,7 @@ VLM_CONVERT_DOTS_OCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="dots.ocr-3B",
         default_repo_id="rednote-hilab/dots.ocr",
+        revision="c0111ce6bc07803dbc267932ffef0ae3a51dc951",
         prompt=DOTS_LAYOUT_PROMPT,
         response_format=ResponseFormat.DOTS_JSON,
         max_new_tokens=24000,
@@ -1899,6 +2090,7 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="dots.mocr-3B",
         default_repo_id="rednote-hilab/dots.mocr",
+        revision="e539fbb52280393adc081b289ec597430a0f9031",
         prompt=DOTS_LAYOUT_PROMPT,
         response_format=ResponseFormat.DOTS_JSON,
         max_new_tokens=24000,

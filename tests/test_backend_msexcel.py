@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import tracemalloc
+import zipfile
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from io import BytesIO
 from pathlib import Path
 
@@ -17,19 +19,23 @@ from docling_core.types.doc import (
     GroupLabel,
     PictureClassificationLabel,
     PictureItem,
+    RichTableCell,
     TableItem,
     TextItem,
 )
 from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
+from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
 from openpyxl.worksheet.merge import MergedCellRange
+from PIL import Image
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msexcel_backend import (
     ExcelCell,
     ExcelTable,
     MsExcelDocumentBackend,
+    _format_excel_value,
     _order_comment_thread,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
@@ -386,17 +392,19 @@ def test_chartsheet(documents) -> None:
     )
     assert picture.caption_text(doc) == "Wild Duck Observations by Year"
 
-    # The two series and their shared categories are rebuilt as a table:
-    #   | <blank> | Freshwater Ducks | Saltwater Ducks |
-    #   | 2019    | 120              | 80              |
+    # The two series and their shared categories are rebuilt as a table, with
+    # the category axis title in the top-left cell:
+    #   | Year | Freshwater Ducks | Saltwater Ducks |
+    #   | 2019 | 120              | 80              |
     #   ...
-    #   | 2024    | 180              | 130             |
+    #   | 2024 | 180              | 130             |
     chart_data = picture.meta.tabular_chart.chart_data
     assert (chart_data.num_rows, chart_data.num_cols) == (7, 3)
     grid = {
         (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
         for cell in chart_data.table_cells
     }
+    assert grid[(0, 0)] == "Year"
     assert grid[(0, 1)] == "Freshwater Ducks"
     assert grid[(0, 2)] == "Saltwater Ducks"
     assert grid[(6, 0)] == "2024"
@@ -448,6 +456,48 @@ def test_chartsheet_data_values(documents) -> None:
             break
 
     assert found_310, "Should find the value 310 (total ducks for 2024) in the document"
+
+
+def test_chart_data_keeps_raw_values_in_formatted_cells(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Sales"
+    sheet.append(["Month", "Revenue"])
+    sheet.append([datetime(2025, 2, 1), 1234.5])
+    sheet.append([datetime(2025, 3, 1), 99.125])
+    for row in (2, 3):
+        sheet.cell(row, 1).number_format = "mmm-yy"
+        sheet.cell(row, 2).number_format = '"$"#,##0.00'
+    chart = BarChart()
+    chart.add_data(
+        Reference(sheet, min_col=2, min_row=1, max_row=3), titles_from_data=True
+    )
+    chart.set_categories(Reference(sheet, min_col=1, min_row=2, max_row=3))
+    sheet.add_chart(chart, "D1")
+    path = tmp_path / "formatted_chart_data.xlsx"
+    workbook.save(path)
+
+    document = get_converter().convert(path).document
+    assert len(document.tables) == 1
+    worksheet_grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in document.tables[0].data.table_cells
+    }
+    assert worksheet_grid[(1, 0)] == "Feb-25"
+    assert worksheet_grid[(1, 1)] == "$1,234.50"
+    assert worksheet_grid[(2, 1)] == "$99.13"
+    assert len(document.pictures) == 1
+    chart_data = document.pictures[0].meta.tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (3, 2)
+    chart_grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert chart_grid[(0, 1)] == "Revenue"
+    assert chart_grid[(1, 0)] == "2025-02-01"
+    assert chart_grid[(2, 0)] == "2025-03-01"
+    assert chart_grid[(1, 1)] == "1234.5"
+    assert chart_grid[(2, 1)] == "99.125"
 
 
 def test_chart_parsing_disabled() -> None:
@@ -736,6 +786,241 @@ def test_merged_cells_are_indexed_once_and_preserve_semantics(tmp_path: Path) ->
     assert comment_map[(3, 3)] == [("Codex", "Synthetic note", None)]
 
 
+def _rewrite_sheet_xml(
+    path: Path, old: str, new: str, sheet_part: str = "xl/worksheets/sheet1.xml"
+) -> None:
+    """Rewrite a range in a sheet part, as openpyxl cannot save such ranges."""
+    with zipfile.ZipFile(path) as source:
+        parts = {info.filename: source.read(info) for info in source.infolist()}
+    assert old.encode() in parts[sheet_part]
+    parts[sheet_part] = parts[sheet_part].replace(old.encode(), new.encode())
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target:
+        for name, data in parts.items():
+            target.writestr(name, data)
+
+
+def test_whole_sheet_merged_range_is_clipped_to_data(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "Quarterly report"
+    sheet["B3"] = "end"
+    sheet.merge_cells("A1:B2")
+    file_path = tmp_path / "whole-sheet-merge.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(
+        file_path, '<mergeCell ref="A1:B2"/>', '<mergeCell ref="A1:XFD1048576"/>'
+    )
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    tracemalloc.start()
+    try:
+        doc = converter.convert(file_path).document
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert peak < 50 * 1024 * 1024
+    assert len(doc.tables) == 1
+    table = doc.tables[0].data
+    assert (table.num_rows, table.num_cols) == (3, 2)
+    [anchor] = [cell for cell in table.table_cells if cell.text == "Quarterly report"]
+    assert (anchor.row_span, anchor.col_span) == (3, 2)
+
+
+def _load_backend_sheet(file_path: Path):
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    return backend, backend.workbook.active
+
+
+def test_find_data_tables_does_not_materialize_empty_cells(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "first"
+    sheet["AD33334"] = "last"  # ~1M-position bounding rectangle
+    file_path = tmp_path / "sparse.xlsx"
+    workbook.save(file_path)
+    backend, loaded_sheet = _load_backend_sheet(file_path)
+    cells_before = len(loaded_sheet._cells)
+
+    tracemalloc.start()
+    try:
+        tables, _ = backend._find_data_tables(loaded_sheet)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert len(tables) == 2
+    found = sorted((t.anchor, [(c.row, c.col, c.text) for c in t.data]) for t in tables)
+    assert found == [
+        ((0, 0), [(0, 0, "first")]),
+        ((29, 33333), [(0, 0, "last")]),
+    ]
+    assert len(loaded_sheet._cells) == cells_before
+    assert peak < 50 * 1024 * 1024
+
+
+def test_sparse_merged_anchor_and_comment_only_cell_tables(tmp_path: Path) -> None:
+    # Coverage test: passes on main too, pins output for merges and comments.
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "head"
+    sheet["B1"] = "x"
+    sheet["A2"] = "merged"
+    sheet.merge_cells("A2:B2")
+    sheet["C2"].comment = Comment("only a note", "Codex")
+    sheet["A5000"] = "far"
+    sheet["B5000"] = "far2"
+    file_path = tmp_path / "sparse-merge-comment.xlsx"
+    workbook.save(file_path)
+    backend, loaded_sheet = _load_backend_sheet(file_path)
+
+    tables, comment_map = backend._find_data_tables(loaded_sheet)
+
+    found = sorted(
+        (
+            t.anchor,
+            t.num_rows,
+            t.num_cols,
+            sorted((c.row, c.col, c.text, c.row_span, c.col_span) for c in t.data),
+        )
+        for t in tables
+    )
+    assert found == [
+        (
+            (0, 0),
+            2,
+            2,
+            [(0, 0, "head", 1, 1), (0, 1, "x", 1, 1), (1, 0, "merged", 1, 2)],
+        ),
+        ((0, 4999), 1, 2, [(0, 0, "far", 1, 1), (0, 1, "far2", 1, 1)]),
+    ]
+    assert comment_map == {}  # comment-only cell outside any table is dropped
+
+
+def test_missing_merge_anchor_inside_table_keeps_span(tmp_path: Path) -> None:
+    # Coverage test for the contains_at fallback; main recreates the cell instead.
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "head"
+    sheet.merge_cells("A2:B2")
+    file_path = tmp_path / "missing-merge-anchor.xlsx"
+    workbook.save(file_path)
+    backend, loaded_sheet = _load_backend_sheet(file_path)
+    del loaded_sheet._cells[(2, 1)]  # force the merged-anchor fallback
+
+    tables, _ = backend._find_data_tables(loaded_sheet)
+
+    assert len(tables) == 1
+    table = tables[0]
+    assert (table.num_rows, table.num_cols) == (2, 2)
+    anchor = next(c for c in table.data if (c.row, c.col) == (1, 0))
+    assert anchor.col_span == 2
+
+
+def test_merged_range_beyond_data_is_clipped(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Inventory", None, None])
+    sheet.append(["Item", "Count", "Price"])
+    sheet.append(["Fruit", 3, 1.5])
+    sheet.append([None, 4, 2.5])
+    sheet.append(["Total", None, None])
+    sheet.merge_cells("A1:C1")
+    sheet.merge_cells("A3:A4")
+    sheet.merge_cells("A5:B5")
+    file_path = tmp_path / "partial-merge.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(
+        file_path, '<mergeCell ref="A5:B5"/>', '<mergeCell ref="A5:XFD1000"/>'
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    loaded_sheet = backend.workbook.active
+    assert {str(merged) for merged in loaded_sheet.merged_cells.ranges} == {
+        "A1:C1",
+        "A3:A4",
+        "A5:C5",
+    }
+
+    tables, _ = backend._find_data_tables(loaded_sheet)
+
+    assert len(tables) == 1
+    table = tables[0]
+    assert (table.anchor, table.num_rows, table.num_cols) == ((0, 0), 5, 3)
+    spans = {
+        cell.text: (cell.row_span, cell.col_span)
+        for cell in table.data
+        if cell.text in {"Inventory", "Fruit", "Total"}
+    }
+    assert spans == {"Inventory": (1, 3), "Fruit": (2, 1), "Total": (1, 3)}
+
+
+def test_hyperlink_range_is_clipped_to_data(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "Docs"
+    sheet["A1"].hyperlink = "https://example.com/docs"
+    sheet["B3"] = "end"
+    small = workbook.create_sheet("Small")
+    small["A1"] = "Home"
+    small["A1"].hyperlink = "https://example.com/"
+    small["C3"] = "end"
+    file_path = tmp_path / "hyperlink-range.xlsx"
+    workbook.save(file_path)
+    _rewrite_sheet_xml(file_path, 'ref="A1" r:id', 'ref="A1:J100000" r:id')
+    _rewrite_sheet_xml(
+        file_path,
+        'ref="A1" r:id',
+        'ref="A1:B2" r:id',
+        sheet_part="xl/worksheets/sheet2.xml",
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    tracemalloc.start()
+    try:
+        backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+        doc = backend.convert()
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert peak < 50 * 1024 * 1024
+    loaded_sheet = backend.workbook["Sheet"]
+    assert loaded_sheet["A1"].hyperlink.target == "https://example.com/docs"
+    assert (loaded_sheet.max_row, loaded_sheet.max_column) == (3, 2)
+    loaded_small = backend.workbook["Small"]
+    linked = {
+        cell.coordinate
+        for row in loaded_small.iter_rows()
+        for cell in row
+        if cell.hyperlink is not None
+    }
+    assert linked == {"A1", "A2", "B1", "B2"}
+    [docs_table] = [
+        table.data
+        for table in doc.tables
+        if any(cell.text == "Docs" for cell in table.data.table_cells)
+    ]
+    assert (docs_table.num_rows, docs_table.num_cols) == (3, 2)
+
+
 def test_split_leading_section_label_helper() -> None:
     backend = object.__new__(MsExcelDocumentBackend)
 
@@ -1002,6 +1287,87 @@ def test_one_cell_anchor_image():
     assert prov.bbox.b == 2.0, f"Image bottom should be 2.0, got {prov.bbox.b}"
 
 
+def test_images_placed_in_cells(documents) -> None:
+    """Test that images placed in cells become pictures in rich table cells.
+
+    Excel stores an image placed in a cell ("Place in Cell") as a rich value in
+    xl/richData. The cell itself only holds the fallback error value #VALUE!.
+    """
+    doc = next(doc for path, doc in documents if path.stem == "xlsx_10_place_in_cell")
+
+    table = doc.tables[0]
+    cells = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell
+        for cell in table.data.table_cells
+    }
+    for row, alt_text in ((1, "A red square"), (2, "A green square")):
+        cell = cells[(row, 1)]
+        assert isinstance(cell, RichTableCell)
+        assert cell.text == ""
+        picture = cell.ref.resolve(doc)
+        assert isinstance(picture, PictureItem)
+        assert picture.parent is not None
+        assert picture.parent.cref == table.self_ref
+        assert picture.image is not None
+        assert picture.meta is not None
+        assert picture.meta.description is not None
+        assert picture.meta.description.text == alt_text
+
+    # An error value without an image is cell content and keeps its text.
+    assert not isinstance(cells[(1, 3)], RichTableCell)
+    assert cells[(1, 3)].text == "#N/A"
+
+
+def test_image_placed_in_a_singleton_cell() -> None:
+    """Test that a lone image cell becomes a picture with treat_singleton_as_text."""
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_10_place_in_cell"
+    )
+    options = MsExcelBackendOptions(treat_singleton_as_text=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    # The "Logo" sheet (page 2) holds only one image cell.
+    assert not [table for table in doc.tables if table.prov[0].page_no == 2]
+    assert not [text for text in doc.texts if text.prov[0].page_no == 2]
+    pictures = [picture for picture in doc.pictures if picture.prov[0].page_no == 2]
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
+
+
+def test_image_cell_next_to_a_section_label(tmp_path: Path) -> None:
+    """Test that an image cell keeps a merged label in its table."""
+    xlsxwriter = pytest.importorskip("xlsxwriter")
+
+    image_path = tmp_path / "icon.png"
+    Image.new("RGB", (16, 16), "red").save(image_path)
+    file_path = tmp_path / "section_image.xlsx"
+    workbook = xlsxwriter.Workbook(str(file_path))
+    sheet = workbook.add_worksheet()
+    sheet.merge_range("A1:B1", "Fruit list")
+    sheet.embed_image("C1", str(image_path), {"description": "Section icon"})
+    sheet.write_row("A2", ["name", "qty", "note"])
+    sheet.write_row("A3", ["apple", 1, "x"])
+    sheet.write_row("A4", ["pear", 2, "y"])
+    workbook.close()
+
+    doc = DocumentConverter().convert(file_path).document
+
+    # The image is content in the first row, so the label is not split off.
+    assert not doc.texts
+    [table] = doc.tables
+    assert (table.data.num_rows, table.data.num_cols) == (4, 3)
+    [picture] = doc.pictures
+    cell = table.data.grid[0][2]
+    assert isinstance(cell, RichTableCell)
+    assert cell.ref.cref == picture.self_ref
+    assert picture.parent is not None
+    assert picture.parent.cref == table.self_ref
+
+
 def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
     workbook = Workbook()
     sheet = workbook.active
@@ -1028,6 +1394,139 @@ def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
     assert table.data.num_cols == 1
     assert len(table.data.table_cells) == 1
     assert table.data.table_cells[0].text == "last row"
+
+
+def test_format_excel_value_matches_excel_display() -> None:
+    """Currency, percent, and mmm-yy formats keep the text Excel shows."""
+    assert _format_excel_value(12.5, '"$"#,##0.00') == "$12.50"
+    assert _format_excel_value(0.1, "0%") == "10%"
+    assert _format_excel_value(datetime(2025, 2, 1), "mmm-yy") == "Feb-25"
+    assert (
+        _format_excel_value(
+            datetime(2024, 1, 2, 0, 0),
+            "yyyy\\-mm\\-dd\\ hh:mm:ss",
+        )
+        == "2024-01-02 00:00:00"
+    )
+    assert _format_excel_value(12.5, "General") == "12.5"
+    assert _format_excel_value(1, "\\1\\.0#") == "1"
+
+
+@pytest.mark.parametrize(
+    "value,number_format,expected",
+    [
+        (datetime(2025, 2, 1), "mm-dd-yy", "2025-02-01"),
+        (datetime(2025, 2, 1, 13, 30), "m/d/yy h:mm", "2025-02-01 13:30:00"),
+        (time(0, 7, 45), "mm:ss", "07:45"),
+        (time(13, 30), "h:mm AM/PM", "1:30 PM"),
+        (time(13, 30), "h:mm am/pm", "1:30 pm"),
+        (time(0, 7), "hh:mm am/pm", "12:07 am"),
+        (time(0, 7), "hh:mm AM/PM", "12:07 AM"),
+        (time(13, 30), "h:mm", "13:30"),
+        (datetime(2025, 2, 1), "d-mmm-yy", "1-Feb-25"),
+        (datetime(2025, 2, 1), "mmmmm", "F"),
+        (datetime(2025, 3, 1), "mmmmm d", "M 1"),
+        (datetime(2025, 2, 1), '"mmmmm "mmmmm', "mmmmm F"),
+        (time(13, 30), "mmmmm", "13:30:00"),
+        (datetime(2025, 2, 1), '"Due "mmm d', "Due Feb 1"),
+        (datetime(2025, 2, 1), '"Due; "mmm d', "Due; Feb 1"),
+        (datetime(2025, 2, 1), "yyyy-mm-dd", "2025-02-01"),
+        (12.5, "[$$-409]#,##0.00", "$12.50"),
+        (-5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
+        (-5, '"$"#,##0.00;[Red]"$"-#,##0.00', "$-5.00"),
+        (-5, '"$"#,##0.00', "-$5.00"),
+        (0.125, "0%", "13%"),
+        (-0.125, "0%", "-13%"),
+        (0.0125, "0.00%", "1.25%"),
+        (12.5, '"$"#,##0', "$13"),
+        (-12.5, '"$"#,##0', "-$13"),
+        (1234.565, '"$"#,##0.00', "$1,234.57"),
+        (0, '"$"0;("$"0);"-"', "-"),
+        (0, '"$"0;("$"0);', ""),
+        (12.5, '0.00"$"', "12.50$"),
+        # Unsupported formats retain the value instead of dropping format semantics.
+        (timedelta(days=1, hours=2, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
+        (datetime(2025, 2, 1), "[$-409]mmmm d, yyyy", "2025-02-01 00:00:00"),
+        (0.125, "[>=1]0%;0.0%", "0.125"),
+        (12.5, '"$"0.##', "12.5"),
+        (12.5, '"$0"0.00', "12.5"),
+    ],
+)
+def test_excel_number_format_tokens_and_sections(
+    value, number_format, expected
+) -> None:
+    assert _format_excel_value(value, number_format) == expected
+
+
+def test_xlsx_number_formats_survive_document_conversion(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    rows = [
+        ("Date", datetime(2025, 2, 1), "mm-dd-yy", "2025-02-01"),
+        ("Minutes", time(0, 7, 45), "mm:ss", "07:45"),
+        ("Afternoon", time(13, 30), "h:mm AM/PM", "1:30 PM"),
+        ("Lowercase afternoon", time(13, 30), "h:mm am/pm", "1:30 pm"),
+        ("Month initial", datetime(2025, 2, 1), "mmmmm", "F"),
+        ("Due", datetime(2025, 2, 1), '"Due "mmm d', "Due Feb 1"),
+        ("Negative", -5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
+        ("Percent", 0.125, "0%", "13%"),
+        ("Currency", 12.5, "[$$-409]#,##0", "$13"),
+        ("Duration", timedelta(hours=26, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
+    ]
+    sheet.append(["Format", "Value"])
+    for row_index, (label, value, number_format, _) in enumerate(rows, start=2):
+        sheet.cell(row_index, 1, label)
+        sheet.cell(row_index, 2, value).number_format = number_format
+    path = tmp_path / "number_format_tokens.xlsx"
+    workbook.save(path)
+
+    document = get_converter().convert(path).document
+    table = document.tables[0].data
+    assert [
+        (cell.start_row_offset_idx, cell.text)
+        for cell in table.table_cells
+        if cell.start_col_offset_idx == 1
+    ] == [
+        (0, "Value"),
+        *[(index, expected) for index, (_, _, _, expected) in enumerate(rows, start=1)],
+    ]
+
+
+def test_xlsx_keeps_excel_number_formats(tmp_path: Path) -> None:
+    """Table cell text uses the stored number format, not str(value)."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Order"
+    sheet["A1"] = "Item"
+    sheet["B1"] = "Qty"
+    sheet["C1"] = "Price"
+    sheet["D1"] = "Line total"
+    sheet["A2"] = "Orange juice"
+    sheet["B2"] = 10
+    sheet["C2"] = 12.5
+    sheet["C2"].number_format = '"$"#,##0.00'
+    sheet["D2"] = 125
+    sheet["D2"].number_format = '"$"#,##0.00'
+    sheet["C4"] = "Discount"
+    sheet["D4"] = 0.1
+    sheet["D4"].number_format = "0%"
+    sheet["C5"] = "Order month"
+    sheet["D5"] = datetime(2025, 2, 1)
+    sheet["D5"].number_format = "mmm-yy"
+    file_path = tmp_path / "number_formats.xlsx"
+    workbook.save(file_path)
+
+    converter = get_converter()
+    doc = converter.convert(file_path).document
+    cells = {cell.text for table in doc.tables for cell in table.data.table_cells}
+
+    assert "$12.50" in cells
+    assert "$125.00" in cells
+    assert "10%" in cells
+    assert "Feb-25" in cells
+    assert "12.5" not in cells
+    assert "0.1" not in cells
+    assert "2025-02-01 00:00:00" not in cells
 
 
 def test_emf_images_in_xlsx(libreoffice_available):

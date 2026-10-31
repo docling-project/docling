@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable
 
 from docling_core.types.doc.document import (
     DocItemLabel,
@@ -14,21 +14,26 @@ from docling_core.types.doc.document import (
 )
 
 from docling.backend.latex.constants import (
+    MACROS_ACCENTS,
     MACROS_CITATION,
     MACROS_COLOR_INLINE,
     MACROS_ESCAPED,
     MACROS_IGNORED,
+    MACROS_LETTERS,
     MACROS_SPACING,
     MACROS_STRUCTURAL,
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.handlers.math import InlineFormula
+from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import Any
 
 try:  # pragma: no cover - import-time guard
+    from pylatexenc.latex2text import LatexNodes2Text
     from pylatexenc.latexwalker import (
         LatexCharsNode,
         LatexEnvironmentNode,
@@ -36,6 +41,7 @@ try:  # pragma: no cover - import-time guard
         LatexMacroNode,
         LatexMathNode,
         LatexSpecialsNode,
+        LatexWalker,
     )
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
@@ -74,6 +80,66 @@ class TextHelperMixin:
         ) -> tuple[str, int]: ...
         def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
 
+    def _char_macro_to_text(self, node: LatexMacroNode) -> str | None:
+        """Return the Unicode text of an accent or letter macro.
+
+        ``\\'e`` gives ``é``, ``\\~n`` gives ``ñ`` and ``\\ss`` gives ``ß``.
+        ``None`` means the node is not one of these: another macro, or a name
+        the document redefines.
+        """
+        name = node.macroname
+        if name in self._custom_macros:
+            return None
+        if name in MACROS_ACCENTS:
+            args = node.nodeargd.argnlist if node.nodeargd else []
+            arg = next((a for a in args if a is not None), None)
+            if self._uses_custom_macro(arg):
+                text = self._accent_custom_macro_arg(name, arg)
+            else:
+                text = LatexNodes2Text().nodelist_to_text([node])
+        elif name in MACROS_LETTERS:
+            text = LatexNodes2Text().nodelist_to_text([node])
+        else:
+            return None
+        # \~{} and \^{} are the usual way to typeset a literal ~ or ^, which
+        # latex2text renders as an empty string.
+        if not text and name in ("~", "^"):
+            return name
+        return text
+
+    def _accent_custom_macro_arg(self, name: str, arg) -> str:
+        """Apply accent ``name`` to an argument that uses document macros.
+
+        latex2text does not know the document's macros and would drop them,
+        so expand them first, one level at a time to follow chains such as
+        ``\\newcommand{\\vowel}{\\letter}``: ``\\'{\\vowel}`` -> ``\\'{\\letter}``
+        -> ``\\'{e}``. An argument that never resolves, e.g. a macro defined
+        in terms of itself, is kept without the accent.
+        """
+        nodes = [arg]
+        text = ""
+        for _ in range(10):
+            text = self._nodes_to_text(nodes)
+            walker = LatexWalker(
+                text, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
+            )
+            nodes, _, _ = walker.get_latex_nodes()
+            if not any(self._uses_custom_macro(n) for n in nodes):
+                base = "".join(n.latex_verbatim() for n in nodes)
+                return LatexNodes2Text().latex_to_text(f"\\{name}{{{base}}}")
+        return text
+
+    def _uses_custom_macro(self, node) -> bool:
+        """Whether ``node`` or anything nested in it is a document macro."""
+        if isinstance(node, LatexMacroNode):
+            if node.macroname in self._custom_macros:
+                return True
+            args = node.nodeargd.argnlist if node.nodeargd else []
+            return any(self._uses_custom_macro(a) for a in args if a is not None)
+        if isinstance(node, LatexGroupNode):
+            return any(self._uses_custom_macro(n) for n in node.nodelist or [])
+        return False
+
     def _process_chars_node(
         self,
         node: LatexCharsNode,
@@ -81,7 +147,7 @@ class TextHelperMixin:
         parent: NodeItem | None,
         formatting: Formatting | None,
         text_label: DocItemLabel | None,
-        text_buffer: List[str],
+        text_buffer: list[str | InlineFormula],
         flush_fn: Callable[[], None],
     ):
         text = node.chars
@@ -114,16 +180,121 @@ class TextHelperMixin:
         parent: NodeItem | None,
         formatting: Formatting | None,
         text_label: DocItemLabel | None,
-        text_buffer: List[str],
+        text_buffer: list[str | InlineFormula],
         flush_fn: Callable[[], None],
     ):
-        if node.nodelist and self._is_text_only_group(node):
+        if (
+            node.nodelist
+            and self._is_text_only_group(node)
+            and self._contains_math(node.nodelist)
+        ):
+            self._append_inline_nodes(
+                node.nodelist,
+                doc,
+                parent,
+                formatting,
+                text_label,
+                text_buffer,
+                flush_fn,
+            )
+        elif node.nodelist and self._is_text_only_group(node):
             group_text = self._nodes_to_text(node.nodelist)
             if group_text:
                 text_buffer.append(group_text)
         elif node.nodelist:
             flush_fn()
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+
+    def _contains_math(self, nodes: list) -> bool:
+        for node in nodes:
+            if isinstance(node, LatexMathNode):
+                return True
+            if isinstance(node, LatexEnvironmentNode) and node.envname == "math":
+                return True
+            if isinstance(node, LatexMacroNode):
+                if node.macroname == "ensuremath":
+                    return True
+                if node.macroname in self._custom_macros:
+                    expansion = self._custom_macros[node.macroname]
+                    if r"\ensuremath" in expansion or "$" in expansion:
+                        return True
+            for children in iter_child_nodelists(node):
+                if self._contains_math(children):
+                    return True
+        return False
+
+    def _append_inline_nodes(
+        self,
+        nodes: list,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        formatting: Formatting | None,
+        text_label: DocItemLabel | None,
+        text_buffer: list[str | InlineFormula],
+        flush_fn: Callable[[], None],
+    ) -> None:
+        index = 0
+        while index < len(nodes):
+            node = nodes[index]
+            consumed = 0
+            if isinstance(node, LatexCharsNode):
+                self._process_chars_node(
+                    node, doc, parent, formatting, text_label, text_buffer, flush_fn
+                )
+            elif isinstance(node, LatexMathNode):
+                self._process_math_node(node, doc, parent, text_buffer, flush_fn)
+            elif isinstance(node, LatexEnvironmentNode) and node.envname == "math":
+                math_text = self._clean_math(node.latex_verbatim(), node.envname)
+                if math_text:
+                    text_buffer.append(InlineFormula(math_text))
+            elif isinstance(node, LatexGroupNode):
+                self._append_inline_nodes(
+                    node.nodelist or [],
+                    doc,
+                    parent,
+                    formatting,
+                    text_label,
+                    text_buffer,
+                    flush_fn,
+                )
+            elif isinstance(node, LatexMacroNode):
+                inline_args = self._inline_math_argument_nodes(node)
+                if inline_args is not None:
+                    self._append_inline_nodes(
+                        inline_args,
+                        doc,
+                        parent,
+                        formatting,
+                        text_label,
+                        text_buffer,
+                        flush_fn,
+                    )
+                else:
+                    consumed = self._process_macro_node_inline(
+                        node,
+                        doc,
+                        parent,
+                        formatting,
+                        text_label,
+                        text_buffer,
+                        flush_fn,
+                        nodes[index + 1 :],
+                    )
+            index += 1 + consumed
+
+    def _inline_math_argument_nodes(self, node: LatexMacroNode) -> list | None:
+        if node.macroname not in (
+            MACROS_TEXT_FORMATTING | MACROS_TEXT_STYLE | MACROS_COLOR_INLINE
+        ):
+            return None
+        if not node.nodeargd or not node.nodeargd.argnlist:
+            return None
+        argument = node.nodeargd.argnlist[-1]
+        if not isinstance(argument, LatexGroupNode) or not argument.nodelist:
+            return None
+        if self._contains_math(argument.nodelist):
+            return argument.nodelist
+        return None
 
     def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str:
         pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"
@@ -143,6 +314,9 @@ class TextHelperMixin:
     def _macro_node_to_text(self, node: LatexMacroNode, following_nodes) -> tuple:
         """Return ``(text, consumed_following)`` for a single macro node."""
         consumed = 0
+        char_text = self._char_macro_to_text(node)
+        if char_text is not None:
+            return (char_text, consumed)
         if node.macroname in (MACROS_TEXT_FORMATTING | MACROS_TEXT_STYLE):
             text = self._extract_macro_arg(node)
             return (text or "", consumed)

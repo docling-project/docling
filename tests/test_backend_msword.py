@@ -4,6 +4,8 @@
 import logging
 import os
 import re
+import threading
+import time
 from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
@@ -32,6 +34,7 @@ from PIL import Image
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.utils.archive_limits import ArchiveLimitError, ArchiveLimits
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
@@ -836,27 +839,26 @@ def test_strict_ooxml_rejects_zip_slip(evil_name):
     with zipfile.ZipFile(buffer) as archive:
         assert msword_backend_module._is_strict_ooxml(archive) is True
         with pytest.raises(SecurityError, match="ZIP slip"):
-            msword_backend_module._normalize_strict_ooxml(archive)
+            msword_backend_module._normalize_strict_ooxml(
+                archive, msword_backend_module._DEFAULT_ARCHIVE_LIMITS
+            )
 
 
 @pytest.mark.parametrize(
-    ("cap_attr", "message"),
+    ("limits", "message"),
     [
-        ("_MAX_TOTAL_UNCOMPRESSED_SIZE", "uncompressed size"),
-        ("_MAX_MEMBER_UNCOMPRESSED_SIZE", "oversized OOXML part"),
+        (ArchiveLimits(4096, 1024, 10), "max_total_bytes"),
+        (ArchiveLimits(1024, 1 << 20, 10), "max_file_bytes"),
     ],
 )
-def test_strict_ooxml_rejects_zip_bomb(monkeypatch, cap_attr, message):
+def test_strict_ooxml_rejects_oversized_package(limits, message):
     """A Strict package exceeding the per-member or total budget is rejected."""
     import zipfile
 
-    from docling.exceptions import SecurityError
-
-    monkeypatch.setattr(msword_backend_module, cap_attr, 128)
     buffer = _make_strict_zip({"word/document.xml": b"A" * 4096})
     with zipfile.ZipFile(buffer) as archive:
-        with pytest.raises(SecurityError, match=message):
-            msword_backend_module._normalize_strict_ooxml(archive)
+        with pytest.raises(ArchiveLimitError, match=message):
+            msword_backend_module._normalize_strict_ooxml(archive, limits)
 
 
 def test_load_msword_file_propagates_security_error():
@@ -1188,6 +1190,118 @@ def test_list_counter_and_enum_marker(docx_paths):
     assert backend.list_counters[(2, 0)] == 1  # unaffected
 
 
+def test_numbered_heading_syncs_list_counter(docx_paths, monkeypatch):
+    """Heading numbering should be available to custom numbering templates."""
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    doc = DoclingDocument(name="heading-counter-test")
+    backend._add_heading(
+        doc,
+        curr_level=1,
+        text="Chapter",
+        is_numbered_style=True,
+        numid=200,
+        ilevel=0,
+    )
+
+    assert backend.numbered_headers[1] == 1
+    assert backend.list_counters[(200, 0)] == 1
+
+    backend._add_heading(
+        doc,
+        curr_level=1,
+        text="Next chapter",
+        is_numbered_style=True,
+        numid=200,
+        ilevel=0,
+    )
+
+    assert backend.numbered_headers[1] == 2
+    assert backend.list_counters[(200, 0)] == 2
+
+    # A table-title numbering template can refer to the chapter counter
+    # through %1 while using level 6 for its own counter through %7.
+    level = OxmlElement("w:lvl")
+    level.set(qn("w:ilvl"), "6")
+
+    num_fmt = OxmlElement("w:numFmt")
+    num_fmt.set(qn("w:val"), "decimal")
+    level.append(num_fmt)
+
+    lvl_text = OxmlElement("w:lvlText")
+    lvl_text.set(qn("w:val"), "Tabell %1.%7")
+    level.append(lvl_text)
+
+    unrelated_level = OxmlElement("w:lvl")
+    unrelated_lvl_text = OxmlElement("w:lvlText")
+    unrelated_lvl_text.set(qn("w:val"), "%8")
+    unrelated_level.append(unrelated_lvl_text)
+
+    monkeypatch.setattr(
+        backend,
+        "_get_level_element",
+        lambda numid, ilvl: unrelated_level if ilvl == 7 else level,
+    )
+
+    backend._get_list_counter(200, 6)
+    assert backend._build_enum_marker(200, 6) == "Tabell 2.1"
+
+    # A new chapter should restart dependent caption counters while preserving
+    # unrelated deeper counters sharing the same numId.
+    backend.list_counters[(200, 7)] = 4
+    backend._add_heading(
+        doc,
+        curr_level=1,
+        text="Third chapter",
+        is_numbered_style=True,
+        numid=200,
+        ilevel=0,
+    )
+    assert backend.list_counters[(200, 7)] == 4
+
+    backend._get_list_counter(200, 6)
+    assert backend._build_enum_marker(200, 6) == "Tabell 3.1"
+
+
+def test_custom_caption_numbering_is_added_to_paragraph_text(docx_paths, monkeypatch):
+    """Custom caption numbers should be paragraph text, not list markers."""
+    in_doc = InputDocument(
+        path_or_stream=docx_paths[0],
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    level = OxmlElement("w:lvl")
+    lvl_text = OxmlElement("w:lvlText")
+    lvl_text.set(qn("w:val"), "Tabell %1.%7")
+    level.append(lvl_text)
+
+    monkeypatch.setattr(backend, "_get_level_element", lambda numid, ilevel: level)
+    monkeypatch.setattr(backend, "_get_list_counter", lambda numid, ilevel: 1)
+    monkeypatch.setattr(
+        backend, "_build_enum_marker", lambda numid, ilevel: "Tabell 14.1"
+    )
+
+    paragraph_elements = [("Saker som kan rettsmekles i tingrettene", None, None)]
+
+    assert backend._apply_caption_numbering(
+        paragraph_elements, numid=200, ilevel=6, p_style_id="Caption"
+    )
+    assert paragraph_elements[0][0] == (
+        "Tabell 14.1 Saker som kan rettsmekles i tingrettene"
+    )
+
+    # The caller clears numid/ilevel after applying the caption marker.
+    assert not backend._should_handle_as_list(None, None, "Caption")
+
+
 def test_custom_numbering_format_markers(tmp_path):
     """Test that lvlText templates like 'Proposal %1:' produce correct markers.
 
@@ -1329,7 +1443,7 @@ def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missin
     )
     monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
 
-    def fake_add_heading(doc, level, text, is_numbered_style):
+    def fake_add_heading(doc, level, text, is_numbered_style, numid=None, ilevel=None):
         captured["heading"] = (level, text, is_numbered_style)
         return []
 
@@ -1577,6 +1691,35 @@ def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     assert formatting["All bold text"].bold is True
     assert formatting["All italic text"].italic is True
     assert formatting["Plain text"].bold is False
+
+
+def test_cyclic_based_on_chain_does_not_hang(tmp_path):
+    """A ``basedOn`` cycle between paragraph styles must not stall the conversion.
+
+    Regression test: the bold lookup in ``_get_format_from_run`` followed
+    ``base_style`` links without a depth cap, so a malformed styles.xml in
+    which style A is based on B and B on A looped forever.
+    """
+    doc = Document()
+    style_a = doc.styles.add_style("Cycle A", WD_STYLE_TYPE.PARAGRAPH)
+    style_b = doc.styles.add_style("Cycle B", WD_STYLE_TYPE.PARAGRAPH)
+    style_a.base_style = style_b
+    style_b.base_style = style_a
+    doc.add_paragraph("Text in a cyclic style", style=style_a)
+    docx_path = tmp_path / "cyclic_styles.docx"
+    doc.save(docx_path)
+
+    # A bounded join turns a hang into a failure instead of a stuck test run.
+    results: list[DoclingDocument] = []
+    worker = threading.Thread(
+        target=lambda: results.append(_convert(docx_path)), daemon=True
+    )
+    worker.start()
+    worker.join(timeout=30)
+
+    assert not worker.is_alive(), "conversion did not finish: style chain loops"
+    assert results, "conversion raised; see the captured thread exception"
+    assert [item.text for item in results[0].texts] == ["Text in a cyclic style"]
 
 
 # ------ Code-block detection tests ------
@@ -1835,6 +1978,22 @@ def test_docx_code_detection(tmp_path):
     assert str(getattr(design.label, "value", design.label)).startswith("checkbox")
 
 
+def test_docx_code_call_pattern_is_bounded():
+    pattern = MsWordDocumentBackend._CODE_CALL_PATTERN
+    assert pattern.search("x = foo(1, 2)") is not None
+    assert pattern.search("party(ies)") is None
+
+    # Many unclosed calls in one paragraph must not take quadratic time.
+    for unit in ("a(", "a(,"):
+        text = unit * (64_000 // len(unit))
+        start = time.perf_counter()
+        assert pattern.search(text) is None
+        assert time.perf_counter() - start < 2.0
+
+    # Argument lists past the bound no longer count as a call.
+    assert pattern.search("foo(" + "a" * 300 + ", 1)") is None
+
+
 # ------ Content control (w:sdt) holding a picture ------
 
 
@@ -1939,12 +2098,12 @@ def test_list_returning_to_starting_level_above_zero_keeps_items(documents):
     assert isinstance(group_of_a, ListGroup)
     assert group_of_c.get_ref() == group_of_a.get_ref()
 
-    # The deeper item must nest inside the same list (as a sub-group of the
-    # outer ListGroup), not become a sibling top-level list -- which is what
-    # the bug produced for Item A/Item B.
+    # The deeper item must nest inside the same list (as a sub-group of
+    # Item A), not become a sibling top-level list -- which is what the bug
+    # produced for Item A/Item B.
     group_of_b = list_items[1].parent.resolve(doc)
     assert isinstance(group_of_b, ListGroup)
-    assert group_of_b.parent == group_of_a.get_ref()
+    assert group_of_b.parent == list_items[0].get_ref()
 
     # The markdown must reflect a single nested list, not two separate lists.
     markdown = doc.export_to_markdown()
@@ -2211,6 +2370,30 @@ def test_fragment_only_rel_does_not_crash_backend():
     assert text_items[0].hyperlink is None
 
 
+@pytest.mark.parametrize("body_style", ["Body Text", None])
+def test_list_style_type_does_not_fail_conversion(tmp_path, body_style):
+    """A style with the invalid type ``list`` must not fail the conversion.
+
+    python-docx raises ``ValueError`` when it reads that type. Both the default
+    style lookup on load and the style of a paragraph without ``w:pStyle``
+    read the type of every style.
+    """
+    document = Document()
+    document.add_paragraph("Quarterly results", style="Heading 1")
+    document.add_paragraph("Revenue grew 3%.", style=body_style)
+    list_style = OxmlElement("w:style")
+    list_style.set(qn("w:type"), "list")
+    list_style.set(qn("w:styleId"), "OutlineList")
+    document.styles.element.append(list_style)
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "Quarterly results",
+        "Revenue grew 3%.",
+    ]
+
+
 _PLAIN_FOOTNOTE_BODY = (
     "<w:p><w:r><w:t>Smith, J. (2020). Example Study.</w:t></w:r></w:p>"
 )
@@ -2378,3 +2561,148 @@ def test_footnote_body_text_is_not_dropped_outside_plain_paragraphs(
         if item.label == DocItemLabel.FOOTNOTE
     ]
     assert expected in footnote_items
+
+
+def test_hidden_footnote_paragraph_is_left_out():
+    """A hidden paragraph in a footnote is left out of the footnote text.
+
+    python-docx loads the footnotes part as a plain part, so this also checks
+    that ``w:vanish`` there is found when the body has none.
+    """
+    note_body = (
+        "<w:p><w:r><w:t>Shown note.</w:t></w:r></w:p>"
+        "<w:p><w:r><w:rPr><w:vanish/></w:rPr><w:t>Hidden note.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(
+        name="notes.docx", stream=_docx_with_notes(footnote_body=note_body)
+    )
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(
+        stream, raises_on_error=True
+    )
+
+    footnote_items = [
+        item.text
+        for item in result.document.texts
+        if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_items == ["Shown note.", "An endnote body."]
+
+
+_MC_BODY_BLOCK = """
+<mc:AlternateContent
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex">
+  <mc:Choice Requires="{requires}">
+    <w:p><w:r><w:t>CHOICE_BRANCH_ACTIVE</w:t></w:r></w:p>
+    <w:p><w:r><w:t>LEGITIMATE_DUPLICATE_PARAGRAPH</w:t></w:r></w:p>
+    <w:p><w:r><w:t>LEGITIMATE_DUPLICATE_PARAGRAPH</w:t></w:r></w:p>
+  </mc:Choice>
+  <mc:Fallback>
+    <w:p><w:r><w:t>FALLBACK_LEGACY_BRANCH</w:t></w:r></w:p>
+  </mc:Fallback>
+</mc:AlternateContent>
+"""
+
+
+def _body_texts_around_alternate_content(tmp_path, requires: str) -> list[str]:
+    document = Document()
+    document.add_paragraph("Paragraph before AlternateContent")
+    block = etree.fromstring(_MC_BODY_BLOCK.format(requires=requires))
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("Paragraph after AlternateContent")
+    doc = _convert_built(document, tmp_path)
+    return [item.text for item in doc.texts]
+
+
+def test_body_level_alternate_content_reads_the_supported_choice(tmp_path):
+    """A body-level ``mc:AlternateContent`` must not drop its paragraphs.
+
+    Only the supported ``mc:Choice`` is read, so the legacy ``mc:Fallback``
+    text does not appear and identical paragraphs in the Choice both stay.
+    """
+    texts = _body_texts_around_alternate_content(tmp_path, requires="wps")
+
+    assert texts == [
+        "Paragraph before AlternateContent",
+        "CHOICE_BRANCH_ACTIVE",
+        "LEGITIMATE_DUPLICATE_PARAGRAPH",
+        "LEGITIMATE_DUPLICATE_PARAGRAPH",
+        "Paragraph after AlternateContent",
+    ]
+
+
+def test_body_level_alternate_content_falls_back_when_choice_is_unsupported(
+    tmp_path,
+):
+    """A Choice that requires an unknown namespace yields to ``mc:Fallback``."""
+    texts = _body_texts_around_alternate_content(tmp_path, requires="w16se")
+
+    assert texts == [
+        "Paragraph before AlternateContent",
+        "FALLBACK_LEGACY_BRANCH",
+        "Paragraph after AlternateContent",
+    ]
+
+
+_MC_BODY_TEXTBOX_BLOCK = """
+<mc:AlternateContent
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    xmlns:v="urn:schemas-microsoft-com:vml">
+  <mc:Choice Requires="wps">
+    <w:p><w:r><wps:wsp><wps:txbx><w:txbxContent>
+      <w:p><w:r><w:t>TEXTBOX_TEXT</w:t></w:r></w:p>
+    </w:txbxContent></wps:txbx></wps:wsp></w:r></w:p>
+  </mc:Choice>
+  <mc:Fallback>
+    <w:p><w:r><w:pict><v:shape><v:textbox><w:txbxContent>
+      <w:p><w:r><w:t>TEXTBOX_TEXT</w:t></w:r></w:p>
+    </w:txbxContent></v:textbox></v:shape></w:pict></w:r></w:p>
+  </mc:Fallback>
+</mc:AlternateContent>
+"""
+
+
+def test_body_level_alternate_content_reads_a_text_box_once(tmp_path):
+    """A text box inside the chosen branch is read once, not once per detection pass.
+
+    The text-box detection runs over a body child with descendant paths. If it runs on the
+    ``mc:AlternateContent`` element and again on the Choice's own paragraph, the same text box is
+    emitted twice.
+    """
+    document = Document()
+    document.add_paragraph("before")
+    block = etree.fromstring(_MC_BODY_TEXTBOX_BLOCK)
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("after")
+
+    doc = _convert_built(document, tmp_path)
+
+    texts = [item.text for item in doc.texts]
+    # The paragraph that anchors a text box also gives an empty item, as it does outside
+    # ``mc:AlternateContent``, so the check is that the text box itself is read once.
+    assert texts.count("TEXTBOX_TEXT") == 1, texts
+    assert texts[0] == "before"
+    assert texts[-1] == "after"
+
+
+def test_body_level_alternate_content_with_no_usable_branch_adds_nothing(tmp_path):
+    """No supported Choice and no Fallback leaves the block out, rather than failing."""
+    document = Document()
+    document.add_paragraph("Paragraph before AlternateContent")
+    block = etree.fromstring(_MC_BODY_BLOCK.format(requires="w16se"))
+    mc_ns = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    for fallback in block.findall(f"{{{mc_ns}}}Fallback"):
+        block.remove(fallback)
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("Paragraph after AlternateContent")
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "Paragraph before AlternateContent",
+        "Paragraph after AlternateContent",
+    ]

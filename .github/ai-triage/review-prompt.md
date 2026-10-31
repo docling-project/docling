@@ -63,11 +63,15 @@ Do not report:
 
 Severity, from the review skill:
 
-- `blocker`: a defect that you can show with the code: the trigger, the wrong
-  result, and the user impact. For example wrong output, lost content, a
-  crash on supported input, a security defect, or a regression test that does
-  not test the defect. Never use `blocker` for a claim that you did not check
-  in the source, including the source of a dependency.
+- `blocker`: a defect that you can show with the code and that must stop the
+  merge: the trigger, the wrong result, and the user impact. For example wrong
+  output, lost content, a crash on supported input, an import that fails for
+  a supported install, a security defect, or a regression test that does not
+  test the defect. These are not blockers: a small defect in a limit, a
+  message, or a log; a behavior change that the PR states and tests. Report
+  one root cause as one finding, also when it shows in several places. Never
+  use `blocker` for a claim that you did not check in the source, including
+  the source of a dependency.
 - `question`: evidence is missing, or the claim needs "if", "may", or
   "could". Ask for the specific evidence and do not assert a defect.
 - `suggestion`: a useful improvement with no demonstrated defect.
@@ -86,10 +90,19 @@ In an incremental review:
 - Report a new finding only for the new changes. Do not report a new point on
   lines that an earlier AI review already saw.
 
+You have a limited number of turns. Read only what a finding needs. After
+about 25 tool calls, stop reading and give the final answer. A task that
+reaches the limit has no answer, and the review is lost.
+
 Write in ASD-STE100 Simplified Technical English: short sentences, active
 voice. Lead with the problem, then the fix. Do not praise. In `summary`, do
 not repeat the PR description, and do not say that you did not run tests.
-Give the main risk and the one thing that the human reviewer must check. Use a
+Give the main risk and the one thing that the human reviewer must check. Do
+not ask the reviewer to check a point that the code, the tests, or the source
+of a dependency already settles: read it and say the result. With no finding,
+say in one sentence what you checked. Write a file reference as code, for
+example `docling/backend/example.py:42`, not as a Markdown link. Do not
+mention the input files of this task. Use a
 GitHub suggestion block only for a small, certain fix. Point to an existing
 helper or pattern in the repository when one exists.
 

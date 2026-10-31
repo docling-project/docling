@@ -256,9 +256,48 @@ item-0 at level 0: unspecified: group _root_
         item-249 at level 4: list_item: Wolf G, Yang P, Füchtbauer AC, F ... 10.1101/gad.252767.114, PMID: 25737282
         item-250 at level 4: list_item: Yamauchi M, Freitag B, Khan C, B ... JVI.69.2.1142-1149.1995, PMID: 7529329
         item-251 at level 4: list_item: Zhang Y, Liu T, Meyer CA, Eeckho ... .1186/gb-2008-9-9-r137, PMID: 18798982
-  item-252 at level 1: caption: Figure 1. Genome-wide binding pa ... onsensus fingers highlighted in white.
-  item-253 at level 1: caption: Table 1. KRAB-ZFP genes clusters ...  ChIP-seq was performed in this study.
-  item-254 at level 1: caption: Figure 2. Retrotransposon reacti ... s were calculated using paired t-test.
-  item-255 at level 1: caption: Figure 3. TE-dependent gene acti ... Gm13051 are indicated by dashed lines.
-  item-256 at level 1: caption: Figure 4. ETn retrotransposition ... combined for the statistical analysis.
-  item-257 at level 1: caption: Key resources table
+    item-252 at level 2: section_header: Decision letter
+      item-253 at level 3: text: In the interests of transparency ... and the accompanying author responses.
+      item-254 at level 3: text: Acceptance summary:
+      item-255 at level 3: text: This is the first study that add ... ontrol ever adapting retrotransposons.
+      item-256 at level 3: text: Decision letter after peer review:
+      item-257 at level 3: inline: group group
+        item-258 at level 4: text: Thank you for submitting your ar ... e murine lineage" for consideration by
+        item-259 at level 4: text: eLife
+        item-260 at level 4: text: . Your article has been reviewed ... ir identity: Joan Barau (Reviewer #3).
+      item-261 at level 3: text: The reviewers have discussed the ... help you prepare a revised submission.
+      item-262 at level 3: text: Summary:
+      item-263 at level 3: text: Restriction of transposable elem ... rganization in large genomic clusters.
+      item-264 at level 3: text: In this study, the authors probe ... omes, but this was not addressed here.
+      item-265 at level 3: text: This is the first study of this  ... effects of cluster deletions – if any.
+      item-266 at level 3: text: Essential revisions:
+      item-267 at level 3: text: 1) Related to the identification ... ted in Figure 4—figure supplement 3A).
+      item-268 at level 3: text: 2) It is not very clear as to wh ... vated (according to the RNA-seq data).
+      item-269 at level 3: text: 3) As most of the manuscript is  ... e (C57bl6/J) genome and also in 129Sv.
+      item-270 at level 3: text: 4) Figure 2C: Was CpG methylatio ... ns repression. Changes may be greater.
+      item-271 at level 3: text: 5) The data graphed in Figure 4B ... igree in 4A to produce the boxplot 4B.
+    item-272 at level 2: section_header: Author response
+      item-273 at level 3: text: Essential revisions:
+      item-274 at level 3: text: 1) Related to the identification ... ted in Figure 4—figure supplement 3A).
+      item-275 at level 3: text: We compiled a list of largely in ... t 3B and refer to it in the main text.
+      item-276 at level 3: text: As for the PCR validation, the f ... ipeline has a low false positive rate.
+      item-277 at level 3: text: We compiled a list of all novel  ... nd added it as Figure 4—source data 1.
+      item-278 at level 3: text: 2) It is not very clear as to wh ... vated (according to the RNA-seq data).
+      item-279 at level 3: text: We screened the two KO/WT ES cel ... us ETn elements in WT and KO ES cells.
+      item-280 at level 3: text: We attempted repeatedly to perfo ... relative to other cultured cell lines.
+      item-281 at level 3: text: As for Chr2-cl KO ES cells, such ... uses on IAP and L1 retrotransposition.
+      item-282 at level 3: text: 3) As most of the manuscript is  ... e (C57bl6/J) genome and also in 129Sv.
+      item-283 at level 3: text: We have added the following to the manuscript:
+      item-284 at level 3: text: “including the closely related M ... mouse strains Gagnier et al., 2019().”
+      item-285 at level 3: text: 4) Figure 2C: Was CpG methylatio ... ns repression. Changes may be greater.
+      item-286 at level 3: text: We determined CpG methylation se ...  internal ETn region and not the LTRs.
+      item-287 at level 3: text: As for IAP, we saw a substantial ... Gm21082, lose methylation in Chr4 KOs.
+      item-288 at level 3: text: 5) The data graphed in Figure 4B ... igree in 4A to produce the boxplot 4B.
+      item-289 at level 3: text: The data in Figure 4B indeed com ... ssues (Figure 4—figure supplement 3C).
+      item-290 at level 3: text: We now show the data separated b ... aragraph in the main text accordingly.
+  item-291 at level 1: caption: Figure 1. Genome-wide binding pa ... onsensus fingers highlighted in white.
+  item-292 at level 1: caption: Table 1. KRAB-ZFP genes clusters ...  ChIP-seq was performed in this study.
+  item-293 at level 1: caption: Figure 2. Retrotransposon reacti ... s were calculated using paired t-test.
+  item-294 at level 1: caption: Figure 3. TE-dependent gene acti ... Gm13051 are indicated by dashed lines.
+  item-295 at level 1: caption: Figure 4. ETn retrotransposition ... combined for the statistical analysis.
+  item-296 at level 1: caption: Key resources table

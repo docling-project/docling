@@ -18,6 +18,7 @@ from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
     check_min_engine_version,
     extract_generation_stoppers,
+    generation_stopper_stop_reason,
     preprocess_image_batch,
 )
 from docling.models.inference_engines.vlm.base import (
@@ -154,7 +155,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Download or locate model artifacts
         repo_cache_folder = repo_id.replace("/", "--")
         if self.artifacts_path is None:
-            artifacts_path = self.download_models(repo_id, revision=revision)
+            artifacts_path = self.download_models(
+                repo_id,
+                revision=revision,
+                trust_remote_code=self.options.trust_remote_code,
+            )
         elif (self.artifacts_path / repo_cache_folder).exists():
             artifacts_path = self.artifacts_path / repo_cache_folder
         else:
@@ -319,7 +324,9 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                                     _log.info(
                                         f"Stopping generation due to GenerationStopper: {type(stopper).__name__}"
                                     )
-                                    stop_reason = "custom_criteria"
+                                    stop_reason = generation_stopper_stop_reason(
+                                        stopper
+                                    ).value
                                     break
                             except Exception as e:
                                 _log.warning(

@@ -30,6 +30,7 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionOutputFormat,
     ChartExtractionVlmEngineOptions,
 )
+from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
@@ -81,6 +82,8 @@ class ChartExtractionVlmEngineModel(BaseItemAndImageEnrichmentModel):
             enable_remote_services=False,
         )
     """
+
+    progress_step = EnrichmentStep.CHART_EXTRACTION
 
     images_scale: float = 2.0
 

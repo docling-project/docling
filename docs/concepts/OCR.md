@@ -151,6 +151,49 @@ Engines that run one language at a time (RapidOCR, Nemotron-OCR) take the **firs
 about the rest. The KServe client also sends only the first entry.
 
 
+## Replace a broken PDF text layer
+
+Some PDFs look correct on screen, but their text copies out as garbage, for example `8VceZWZTReV`
+instead of `Certificate`. This happens when a font does not map its glyphs to real characters. With
+`replace_broken_text_layer`, Docling detects these pages and reads them with OCR instead. Other
+pages keep their PDF text.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(
+    do_ocr=True,
+    ocr_options=RapidOcrOptions(replace_broken_text_layer=True),
+)
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+The option is off by default and works with every OCR engine. Pick an engine and `lang` that can
+read the language of the document. A replaced page keeps its low `parse_score` in the
+[confidence scores](confidence_scores.md), because the score describes the PDF text layer.
+
+```bash
+docling report.pdf --replace-broken-text-layer
+```
+
+Docling detects a broken page from characters that do not belong in text, such as control
+characters, `�`, or private-use characters, on the page or in many of its lines. These checks work
+for every script. For Latin letters, it also detects accented letters that stand for another
+script, for example `Îò÷¸ò ïîêàçûâàåò` for Russian text, and letters with too few vowels, as in
+the example above. The vowel check uses no language profile, so it works the same for every
+Latin-script language. One broken cell on an otherwise good page does not replace the page.
+
+Docling cannot detect a page whose text uses the right alphabet but the wrong letters, or the right
+letters in the wrong order, for example `Cartifecita` instead of `Certificate`. Such pages keep
+their PDF text. To read every page with OCR, set `mode=OcrMode.FULL_PAGE` (`--ocr-mode full_page`).
+
+
 ## RapidOCR
 
 The engine's own vocabulary, in its own codes, is listed in
@@ -223,12 +266,43 @@ from docling.datamodel.pipeline_options import RapidOcrOptions
 options = RapidOcrOptions(lang=["en"], model_size="tiny")
 ```
 
+CLI conversion:
+
+```sh
+docling convert --from pdf --to dclx --ocr-engine rapidocr --ocr-lang en --ocr-option model_size=tiny document.pdf
+```
+
+`--ocr-option KEY=VALUE` sets any field of the selected engine's options class and can be
+repeated. The value is read as JSON when possible (`text_score=0.6`, `use_det=false`,
+`lang=["en"]`), otherwise as a string. An unknown key is an error. Run
+`docling options ocr rapidocr` to list the keys, types, and defaults of an engine.
+`--layout-option` and `--table-structure-option` do the same for the layout and table
+structure engines.
+
 CLI prefetch (for offline/`artifacts_path` use). `--rapidocr-model-size` is a single value applied
 to every `--rapidocr-backend-lang` pair given (or to the default pair, if none are given) -- unlike
 `--rapidocr-backend-lang`, which is repeatable:
 
 ```sh
 docling-tools models download rapidocr --rapidocr-backend-lang onnxruntime:en --rapidocr-model-size tiny
+```
+
+### RapidOCR page orientation
+
+RapidOCR turns a tall text line a quarter turn counter-clockwise before it reads the line, and its
+line classifier (`use_cls`) only flips single lines by 180 degrees. A scanned page that is turned
+counter-clockwise or upside down is read as garbage, or only in part.
+
+With `detect_orientation`, RapidOCR first reads each OCR region as it is. If it finds at least 3
+lines and fewer than half of them score 0.8 or more, it reads the region again at the other three
+orientations. It keeps the first orientation in which at least half of the lines score 0.8 or more
+and the text with such scores is at least twice as long. The text boxes are mapped back onto the
+page. A region that reads well is read only once, and no extra package or model is needed.
+
+```python
+from docling.datamodel.pipeline_options import RapidOcrOptions
+
+options = RapidOcrOptions(detect_orientation=True)
 ```
 
 

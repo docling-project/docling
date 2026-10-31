@@ -28,6 +28,29 @@ def _build_context_db() -> Any:
         environments=[EnvironmentSpec("longtable", "[{")],
         prepend=True,
     )
+    db.add_context_category(
+        "docling-metadata-and-bibliography",
+        macros=[
+            MacroSpec("title", "[{"),
+            MacroSpec("affiliation", "{"),
+            MacroSpec("affil", "{"),
+            MacroSpec("address", "{"),
+            MacroSpec("institute", "{"),
+            MacroSpec("email", "{"),
+            MacroSpec("altaffiliation", "[{"),
+            MacroSpec("thanks", "{"),
+            MacroSpec("inst", "{"),
+            MacroSpec("preprint", "{"),
+            MacroSpec("parbox", "[{{"),
+            MacroSpec("caption", "*[{"),
+            MacroSpec("captionof", "{{"),
+            MacroSpec("bibitem", "[{"),
+            MacroSpec("bibliographystyle", "{"),
+            MacroSpec("newtheorem", "*{[{["),
+        ],
+        environments=[EnvironmentSpec("thebibliography", "{")],
+        prepend=True,
+    )
     # pylatexenc does not know hyperref's \href[options]{URL}{text}, so its two
     # arguments would stay in the body and be read as text glued together.
     db.add_context_category(

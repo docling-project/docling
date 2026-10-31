@@ -68,13 +68,17 @@ def test_large_or_data_only_prs_are_not_reviewed() -> None:
     assert not review.is_reviewable([{**source, "changes": 5000}])
 
 
-def test_findings_outside_the_pr_or_with_unknown_severity_are_rejected() -> None:
-    with pytest.raises(ValueError, match="outside the PR"):
-        review.parse_review_result(
-            answer(finding(path="docling/b.py")), {"docling/a.py"}
-        )
-    with pytest.raises(ValueError, match="severity"):
-        review.parse_review_result(answer(finding(severity="major")), {"docling/a.py"})
+def test_a_bad_finding_is_dropped_and_the_others_are_kept() -> None:
+    result = review.parse_review_result(
+        answer(
+            finding(path="docling/b.py"),
+            finding(severity="major"),
+            finding(line=0),
+            finding(title="Kept"),
+        ),
+        {"docling/a.py"},
+    )
+    assert [f.title for f in result.findings] == ["Kept"]
     with pytest.raises(ValueError, match="status"):
         review.parse_review_result(
             answer(
@@ -84,6 +88,30 @@ def test_findings_outside_the_pr_or_with_unknown_severity_are_rejected() -> None
             ),
             {"docling/a.py"},
         )
+
+
+def test_a_review_that_reached_the_turn_limit_reports_the_reason(
+    tmp_path: Path,
+) -> None:
+    # The shape that `bob run --format json` writes when a limit stops a task:
+    # an error event, then the result, whose last message is a tool result.
+    output = tmp_path / "bob.json"
+    error = {
+        "type": "error",
+        "severity": "error",
+        "message": "The task reached the maximum of 40 turns.",
+    }
+    result = {
+        "type": "result",
+        "status": "success",
+        "stats": {},
+        "last_message": "Contents of file docling/a.py: ...",
+    }
+    output.write_text(f"{json.dumps(error)}\n{json.dumps(result)}\n", "utf-8")
+    bob = review.read_bob_output(output)
+    assert bob.errors == ["The task reached the maximum of 40 turns."]
+    with pytest.raises(ValueError, match="stopped early"):
+        review.answer_from_output(bob, review.REVIEW_ANSWER_KEYS)
 
 
 def test_only_an_open_blocker_sets_the_changes_label() -> None:

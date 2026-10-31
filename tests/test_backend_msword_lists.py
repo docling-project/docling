@@ -763,12 +763,10 @@ def test_list_styles_nest_by_indentation(tmp_path):
     )
     items = _list_items_by_text(doc)
 
-    bullets = items["banana"].parent.resolve(doc)
     sub_bullets = items["banana split"].parent.resolve(doc)
-    assert sub_bullets.parent == bullets.get_ref()
+    assert sub_bullets.parent == items["banana"].get_ref()
     assert items["banana bread"].parent == sub_bullets.get_ref()
-    numbers = items["first"].parent.resolve(doc)
-    assert items["first-a"].parent.resolve(doc).parent == numbers.get_ref()
+    assert items["first-a"].parent.resolve(doc).parent == items["first"].get_ref()
 
     assert doc.export_to_markdown() == (
         "- apple\n"
@@ -803,8 +801,8 @@ def test_lists_at_the_same_indentation_stay_siblings(tmp_path):
     bullets = items["bullet"].parent.resolve(doc)
     sub_bullets = items["bullet-a"].parent.resolve(doc)
     sub_numbers = items["bullet-1"].parent.resolve(doc)
-    assert sub_bullets.parent == bullets.get_ref()
-    assert sub_numbers.parent == bullets.get_ref()
+    assert sub_bullets.parent == items["bullet"].get_ref()
+    assert sub_numbers.parent == items["bullet"].get_ref()
     assert sub_numbers.get_ref() != sub_bullets.get_ref()
 
     numbers = items["number"].parent.resolve(doc)
@@ -839,9 +837,9 @@ def test_list_styles_return_to_the_outer_list(tmp_path):
         "2.",
         "3.",
     ]
-    assert items["one-a-i"].parent.resolve(doc).parent == items["one-a"].parent
+    assert items["one-a-i"].parent.resolve(doc).parent == items["one-a"].get_ref()
     second_sub_list = items["two-a"].parent.resolve(doc)
-    assert second_sub_list.parent == outer
+    assert second_sub_list.parent == items["two"].get_ref()
     assert second_sub_list.get_ref() != items["one-a"].parent
 
 
@@ -909,5 +907,74 @@ def test_list_nesting_follows_word_indentation_precedence(tmp_path):
 
     outer = items["outer"].parent
     assert items["back"].parent == outer
-    assert items["by style"].parent.resolve(doc).parent == outer
-    assert items["by paragraph"].parent.resolve(doc).parent == outer
+    assert items["by style"].parent.resolve(doc).parent == items["outer"].get_ref()
+    assert items["by paragraph"].parent.resolve(doc).parent == items["back"].get_ref()
+
+
+def test_get_level_element_follows_num_style_link(tmp_path):
+    """Resolve levels through a numbering definition's w:numStyleLink."""
+    doc = Document()
+    numbering = doc.part.numbering_part.element
+
+    # The paragraph numbering points to an abstract definition that contains
+    # numStyleLink rather than a direct level.
+    linked_abstract = OxmlElement("w:abstractNum")
+    linked_abstract.set(qn("w:abstractNumId"), "300")
+    style_link = OxmlElement("w:numStyleLink")
+    style_link.set(qn("w:val"), "LinkedNumberingStyle")
+    linked_abstract.append(style_link)
+    numbering.append(linked_abstract)
+
+    # The linked paragraph style points to a second numbering definition.
+    linked_style = doc.styles.add_style("LinkedNumberingStyle", WD_STYLE_TYPE.LIST)
+    ppr = linked_style.element.get_or_add_pPr()
+    numpr = OxmlElement("w:numPr")
+    num_id_elem = OxmlElement("w:numId")
+    num_id_elem.set(qn("w:val"), "401")
+    numpr.append(num_id_elem)
+    ppr.append(numpr)
+
+    target_abstract = OxmlElement("w:abstractNum")
+    target_abstract.set(qn("w:abstractNumId"), "400")
+    level = OxmlElement("w:lvl")
+    level.set(qn("w:ilvl"), "0")
+
+    start = OxmlElement("w:start")
+    start.set(qn("w:val"), "1")
+    level.append(start)
+
+    num_fmt = OxmlElement("w:numFmt")
+    num_fmt.set(qn("w:val"), "decimal")
+    level.append(num_fmt)
+
+    lvl_text = OxmlElement("w:lvlText")
+    lvl_text.set(qn("w:val"), "%1")
+    level.append(lvl_text)
+
+    target_abstract.append(level)
+    numbering.append(target_abstract)
+
+    for num_id, abstract_id in (("301", "300"), ("401", "400")):
+        num = OxmlElement("w:num")
+        num.set(qn("w:numId"), num_id)
+        abstract_ref = OxmlElement("w:abstractNumId")
+        abstract_ref.set(qn("w:val"), abstract_id)
+        num.append(abstract_ref)
+        numbering.append(num)
+
+    docx_path = tmp_path / "num_style_link.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=docx_path.name,
+    )
+    backend = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path)
+
+    resolved = backend._get_level_element(301, 0)
+
+    assert resolved is not None
+    assert resolved.get(qn("w:ilvl")) == "0"
+    assert resolved.find(qn("w:lvlText")).get(qn("w:val")) == "%1"

@@ -18,7 +18,6 @@ from docling_core.types.doc.document import (
 from PIL import Image
 
 from docling.backend.latex.constants import (
-    MACROS_ACCENTS,
     MACROS_CITATION,
     MACROS_COLOR,
     MACROS_COLOR_INLINE,
@@ -27,13 +26,14 @@ from docling.backend.latex.constants import (
     MACROS_IGNORED,
     MACROS_INLINE_VERBATIM,
     MACROS_LEGACY_FORMATTING,
+    MACROS_METADATA,
     MACROS_NEWCOMMAND,
-    MACROS_PREAMBLE_METADATA,
     MACROS_SPACING,
     MACROS_STRUCTURAL,
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
 )
+from docling.backend.latex.handlers.math import InlineFormula
 from docling.backend.latex.utils.encoding import decode_latex_content
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
 from docling.backend.latex.utils.text import iter_child_nodelists
@@ -75,12 +75,101 @@ _PYPDFIUM2_INSTALL_HINT = (
 )
 
 
+def _skip_latex_space(text: str, cursor: int) -> int:
+    while cursor < len(text) and text[cursor].isspace():
+        cursor += 1
+    return cursor
+
+
+def _latex_group_end(text: str, start: int, opening: str, closing: str) -> int:
+    depth = 0
+    index = start
+    while index < len(text):
+        if (
+            text[index] == "\\"
+            and index + 1 < len(text)
+            and text[index + 1] in "\\{}[]%"
+        ):
+            index += 2
+            continue
+        if text[index] == "%":
+            newline = text.find("\n", index)
+            index = len(text) if newline < 0 else newline + 1
+            continue
+        if text[index] == opening:
+            depth += 1
+        elif text[index] == closing:
+            depth -= 1
+            if depth == 0:
+                return index + 1
+        index += 1
+    return len(text)
+
+
+def _strip_latex_comments(text: str) -> str:
+    command_letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@"
+    parts: list[str] = []
+    index = 0
+    while index < len(text):
+        if text[index] == "\\" and index + 1 < len(text) and text[index + 1] in "\\%":
+            parts.append(text[index : index + 2])
+            index += 2
+            continue
+        if text[index] == "%":
+            newline = text.find("\n", index)
+            next_index = len(text) if newline < 0 else newline + 1
+            while next_index < len(text) and text[next_index] == "%":
+                newline = text.find("\n", next_index)
+                next_index = len(text) if newline < 0 else newline + 1
+            if next_index < len(text) and text[next_index] in command_letters:
+                word_start = index
+                while word_start > 0 and text[word_start - 1] in command_letters:
+                    word_start -= 1
+                slash = word_start - 1
+                if slash >= 0 and text[slash] == "\\":
+                    while slash > 0 and text[slash - 1] == "\\":
+                        slash -= 1
+                    if (word_start - slash) % 2 == 1:
+                        # A space ends the command without taking its argument.
+                        parts.append(" ")
+            index = next_index
+            continue
+        parts.append(text[index])
+        index += 1
+    return "".join(parts)
+
+
+def _simple_declaration_end(text: str, command: str, cursor: int) -> int | None:
+    cursor = _skip_latex_space(text, cursor)
+    if command == "newif":
+        if cursor >= len(text) or text[cursor] != "\\":
+            return None
+        cursor += 1
+        while cursor < len(text) and text[cursor].isalpha():
+            cursor += 1
+        return cursor
+
+    group_count = 9 if command == "newtheoremstyle" else 1
+    for _ in range(group_count):
+        cursor = _skip_latex_space(text, cursor)
+        if cursor >= len(text) or text[cursor] != "{":
+            return None
+        cursor = _latex_group_end(text, cursor, "{", "}")
+    if command == "newcounter":
+        optional = _skip_latex_space(text, cursor)
+        if optional < len(text) and text[optional] == "[":
+            cursor = _latex_group_end(text, optional, "[", "]")
+    return cursor
+
+
 class MacroHandlerMixin:
     if TYPE_CHECKING:
         _source_dir: Path | None
         _input_stack: set[str]
         _custom_macros: dict[str, str]
         _custom_macro_num_args: dict[str, int]
+        _masked_macro_spans: list[tuple[int, int]]
+        _suppress_image_path_caption: bool
         labels: dict[str, bool]
 
         def _process_nodes(
@@ -90,19 +179,144 @@ class MacroHandlerMixin:
             parent: Any = ...,
             formatting: Any = ...,
             text_label: Any = ...,
+            heading_level: int | None = ...,
         ) -> None: ...
         def _nodes_to_text(self, nodes: Any) -> str: ...
+        def _char_macro_to_text(self, node: Any) -> str | None: ...
         def _item_term(self, node: Any) -> str: ...
 
     def _preprocess_custom_macros(self, latex_text: str) -> str:
-        latex_text = re.sub(r"\\be\b", r"\\begin{equation}", latex_text)
-        latex_text = re.sub(r"\\ee\b", r"\\end{equation}", latex_text)
-        latex_text = re.sub(r"\\bea\b", r"\\begin{eqnarray}", latex_text)
-        latex_text = re.sub(r"\\eea\b", r"\\end{eqnarray}", latex_text)
-        latex_text = re.sub(r"\\beq\b", r"\\begin{equation}", latex_text)
-        latex_text = re.sub(r"\\eeq\b", r"\\end{equation}", latex_text)
+        """Expand legacy shortcuts without changing macro definitions."""
+        self._masked_macro_spans = self._macro_definition_spans(latex_text)
+        shortcuts: dict[str, str] = {}
+        environment_alias = re.compile(r"\\(?:begin|end)\{[^{}]+\}|\$\$")
+        fuzz_assignment = re.compile(
+            r"\\[vh]fuzz\s*=\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)\s*"
+            r"(?:pt|pc|in|bp|cm|mm|dd|cc|sp|em|ex)\b"
+        )
 
-        return latex_text
+        def replace(segment: str) -> str:
+            if shortcuts:
+                names = "|".join(
+                    re.escape(name) for name in sorted(shortcuts, key=len, reverse=True)
+                )
+                pattern = re.compile(r"\\(?:" + names + r")(?![A-Za-z@])")
+                segment = pattern.sub(
+                    lambda match: shortcuts[match.group()[1:]], segment
+                )
+            return fuzz_assignment.sub("", segment)
+
+        pieces: list[str] = []
+        cursor = 0
+        for start, end in self._masked_macro_spans:
+            pieces.append(replace(latex_text[cursor:start]))
+            definition = latex_text[start:end]
+            if definition.startswith(
+                (r"\newcommand", r"\renewcommand", r"\providecommand")
+            ):
+                definition_nodes, _, _ = LatexWalker(
+                    definition, tolerant_parsing=True, latex_context=LATEX_CONTEXT_DB
+                ).get_latex_nodes()
+                self._extract_custom_macros(definition_nodes)
+            elif match := re.fullmatch(
+                r"\\(?:def|edef|gdef|xdef)\s*\\([A-Za-z@]+)\s*\{(.*)\}",
+                definition,
+                re.DOTALL,
+            ):
+                # A source definition can replace a built-in accent macro.
+                # Register zero-argument definitions before the main parse so
+                # the parser does not consume a following math delimiter.
+                self._custom_macros[match.group(1)] = _strip_latex_comments(
+                    match.group(2)
+                )
+                self._custom_macro_num_args[match.group(1)] = 0
+            for name, expansion in self._custom_macros.items():
+                body = expansion.strip()
+                if self._custom_macro_num_args.get(
+                    name
+                ) == 0 and environment_alias.fullmatch(body):
+                    shortcuts[name] = body
+                else:
+                    shortcuts.pop(name, None)
+            pieces.append(re.sub(r"[^\n]", " ", definition))
+            cursor = end
+        pieces.append(replace(latex_text[cursor:]))
+        return "".join(pieces)
+
+    @staticmethod
+    def _macro_definition_spans(text: str) -> list[tuple[int, int]]:
+        """Find balanced definitions that may contain legacy shortcut names."""
+        pattern = re.compile(
+            r"\\(?P<command>newcommand|renewcommand|providecommand|"
+            r"newenvironment|newtheoremstyle|newtheorem|newlength|newcounter|"
+            r"newif|def|edef|gdef|xdef)\b"
+        )
+
+        verbatim_start = re.compile(r"\\begin\{(verbatim\*?|lstlisting|minted)\}")
+        spans: list[tuple[int, int]] = []
+        index = 0
+        while index < len(text):
+            if text[index] == "%":
+                newline = text.find("\n", index)
+                index = len(text) if newline < 0 else newline + 1
+                continue
+            if text[index] != "\\":
+                index += 1
+                continue
+            if index + 1 < len(text) and text[index + 1] in "\\%":
+                index += 2
+                continue
+            if match := verbatim_start.match(text, index):
+                end = text.find(r"\end{" + match.group(1) + "}", match.end())
+                index = len(text) if end < 0 else end + len(match.group(0))
+                continue
+            match = pattern.match(text, index)
+            if match is None:
+                index += 1
+                continue
+            cursor = match.end()
+            command = match.group("command")
+            if command in {"newif", "newlength", "newcounter", "newtheoremstyle"}:
+                end = _simple_declaration_end(text, command, cursor)
+                if end is not None:
+                    spans.append((match.start(), end))
+                index = end if end is not None else match.end()
+                continue
+            if command in MACROS_NEWCOMMAND | {"newenvironment", "newtheorem"}:
+                cursor = _skip_latex_space(text, cursor)
+                if cursor < len(text) and text[cursor] == "*":
+                    cursor += 1
+                cursor = _skip_latex_space(text, cursor)
+                if cursor < len(text) and text[cursor] == "{":
+                    cursor = _latex_group_end(text, cursor, "{", "}")
+                elif cursor < len(text) and text[cursor] == "\\":
+                    cursor += 1
+                    while cursor < len(text) and text[cursor].isalpha():
+                        cursor += 1
+                option_count = 2 if command != "newtheorem" else 1
+                for _ in range(option_count):
+                    cursor = _skip_latex_space(text, cursor)
+                    if cursor < len(text) and text[cursor] == "[":
+                        cursor = _latex_group_end(text, cursor, "[", "]")
+            else:
+                while cursor < len(text) and text[cursor] != "{":
+                    cursor += 1
+            cursor = _skip_latex_space(text, cursor)
+            if cursor < len(text) and text[cursor] == "{":
+                end = _latex_group_end(text, cursor, "{", "}")
+                if command == "newenvironment":
+                    second = _skip_latex_space(text, end)
+                    if second < len(text) and text[second] == "{":
+                        end = _latex_group_end(text, second, "{", "}")
+                elif command == "newtheorem":
+                    second = _skip_latex_space(text, end)
+                    if second < len(text) and text[second] == "[":
+                        end = _latex_group_end(text, second, "[", "]")
+                spans.append((match.start(), end))
+                index = end
+            else:
+                index = match.end()
+        return spans
 
     def _extract_custom_macros(self, nodes, depth: int = 0):
         if nodes is None or depth > 10:
@@ -137,7 +351,9 @@ class MacroHandlerMixin:
                             macro_def = def_arg.latex_verbatim().strip("{} ")
 
                         if macro_name:
-                            self._custom_macros[macro_name] = macro_def
+                            self._custom_macros[macro_name] = _strip_latex_comments(
+                                macro_def
+                            )
                             self._custom_macro_num_args[macro_name] = (
                                 self._parse_custom_macro_num_args(num_args_arg)
                             )
@@ -148,32 +364,10 @@ class MacroHandlerMixin:
             for child_nodes in iter_child_nodelists(node):
                 self._extract_custom_macros(child_nodes, depth + 1)
 
-    def _extract_preamble_metadata(self, nodes, doc: DoclingDocument, depth: int = 0):
-        if nodes is None or depth > 10:
-            return
-
-        for node in nodes:
-            if isinstance(node, LatexEnvironmentNode) and node.envname == "document":
-                return
-
-            if (
-                isinstance(node, LatexMacroNode)
-                and node.macroname in MACROS_PREAMBLE_METADATA
-            ):
-                text = self._extract_macro_arg(node)
-                if text:
-                    if node.macroname == "title":
-                        doc.add_text(label=DocItemLabel.TITLE, text=text)
-                    else:
-                        doc.add_text(label=DocItemLabel.TEXT, text=text)
-
-            for child_nodes in iter_child_nodelists(node):
-                self._extract_preamble_metadata(child_nodes, doc, depth + 1)
-
     def _process_item_macro_inline(
         self,
         node: LatexMacroNode,
-        text_buffer: list[str],
+        text_buffer: list[str | InlineFormula],
         following_nodes=None,
     ) -> None:
         term = self._item_term(node)
@@ -182,6 +376,44 @@ class MacroHandlerMixin:
             if following_nodes and isinstance(following_nodes[0], LatexCharsNode):
                 following_nodes[0].chars = following_nodes[0].chars.lstrip()
 
+    def _append_custom_math_expansion(
+        self,
+        expansion: str,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        formatting: Formatting | None,
+        text_label: DocItemLabel | None,
+        text_buffer: list[str | InlineFormula],
+        flush_fn: Callable[[], None],
+    ) -> bool:
+        if r"\ensuremath" not in expansion and "$" not in expansion:
+            return False
+        try:
+            parsed_nodes, _, _ = LatexWalker(
+                expansion,
+                tolerant_parsing=True,
+                latex_context=LATEX_CONTEXT_DB,
+            ).get_latex_nodes()
+        except LatexWalkerParseError:
+            return False
+        if not self._contains_math(parsed_nodes):
+            return False
+        self._append_inline_nodes(
+            parsed_nodes, doc, parent, formatting, text_label, text_buffer, flush_fn
+        )
+        return True
+
+    def _append_ensuremath(
+        self, node: LatexMacroNode, text_buffer: list[str | InlineFormula]
+    ) -> None:
+        if not node.nodeargd or not node.nodeargd.argnlist:
+            return
+        argument = node.nodeargd.argnlist[-1]
+        if isinstance(argument, LatexGroupNode):
+            math_text = argument.latex_verbatim()[1:-1].strip()
+            if math_text:
+                text_buffer.append(InlineFormula(self._expand_macros(math_text)))
+
     def _process_macro_node_inline(
         self,
         node: LatexMacroNode,
@@ -189,11 +421,14 @@ class MacroHandlerMixin:
         parent: NodeItem | None,
         formatting: Formatting | None,
         text_label: DocItemLabel | None,
-        text_buffer: list[str],
+        text_buffer: list[str | InlineFormula],
         flush_fn: Callable[[], None],
         following_nodes=None,
     ) -> int:
-        if node.macroname in MACROS_INLINE_VERBATIM:
+        char_text = self._char_macro_to_text(node)
+        if char_text is not None:
+            text_buffer.append(char_text)
+        elif node.macroname in MACROS_INLINE_VERBATIM:
             if node.macroname == "~":
                 text_buffer.append(" ")
             else:
@@ -204,6 +439,8 @@ class MacroHandlerMixin:
             formatted_text = self._extract_macro_arg(node)
             if formatted_text:
                 text_buffer.append(formatted_text)
+        elif node.macroname == "ensuremath":
+            self._append_ensuremath(node, text_buffer)
         elif node.macroname in self._custom_macros:
             expansion, consumed = self._expand_custom_macro_invocation(
                 node, following_nodes or []
@@ -212,6 +449,18 @@ class MacroHandlerMixin:
                 _log.debug(
                     f"Expanding custom macro \\{node.macroname} -> '{expansion}'"
                 )
+                if self._append_custom_math_expansion(
+                    expansion,
+                    doc,
+                    parent,
+                    formatting,
+                    text_label,
+                    text_buffer,
+                    flush_fn,
+                ):
+                    if node.latex_verbatim()[-1].isspace():
+                        text_buffer.append(" ")
+                    return consumed
                 if self._custom_macro_num_args.get(node.macroname, 0) > 0:
                     text_buffer.append(self._parse_latex_fragment_to_text(expansion))
                 else:
@@ -221,12 +470,12 @@ class MacroHandlerMixin:
             ref_arg = self._extract_macro_arg(node)
             if ref_arg:
                 text_buffer.append(f"[{ref_arg}]")
-        elif node.macroname == "url":
-            url_text = self._extract_macro_arg(node)
-            if url_text:
-                text_buffer.append(url_text)
-        elif node.macroname == "href":
-            link_text = self._href_link_text(node)
+        elif node.macroname in ("url", "href"):
+            link_text = (
+                self._href_link_text(node)
+                if node.macroname == "href"
+                else self._extract_macro_arg(node)
+            )
             if link_text:
                 text_buffer.append(link_text)
         elif node.macroname in MACROS_COLOR:
@@ -246,6 +495,8 @@ class MacroHandlerMixin:
         elif node.macroname == "item":
             flush_fn()
             self._process_item_macro_inline(node, text_buffer, following_nodes)
+        elif node.macroname == "label":
+            self._process_macro(node, doc, parent, formatting, text_label)
         else:
             if node.macroname in MACROS_STRUCTURAL:
                 flush_fn()
@@ -279,22 +530,21 @@ class MacroHandlerMixin:
         text_label: DocItemLabel | None = None,
     ):
         if node.macroname in MACROS_HEADING:
-            title = self._extract_macro_arg(node)
-            if title:
-                level = self._get_heading_level(node.macroname)
-                doc.add_heading(parent=parent, text=title, level=level)
+            if node.nodeargd is not None and node.nodeargd.argnlist:
+                argument = node.nodeargd.argnlist[-1]
+                if isinstance(argument, LatexGroupNode):
+                    self._process_nodes(
+                        argument.nodelist,
+                        doc,
+                        parent,
+                        formatting,
+                        heading_level=self._get_heading_level(node.macroname),
+                    )
 
-        elif node.macroname == "title":
-            title = self._extract_macro_arg(node)
-            if title:
-                doc.add_text(parent=parent, label=DocItemLabel.TITLE, text=title)
+        elif node.macroname in MACROS_METADATA:
+            self._metadata_handler.process_macro(node, doc, parent, formatting)
 
-        elif node.macroname in ["author", "date"]:
-            meta_text = self._extract_macro_arg(node)
-            if meta_text:
-                doc.add_text(parent=parent, label=DocItemLabel.TEXT, text=meta_text)
-
-        elif node.macroname in ["thanks", "maketitle"]:
+        elif node.macroname == "maketitle":
             pass
 
         elif node.macroname in MACROS_TEXT_STYLE:
@@ -321,14 +571,10 @@ class MacroHandlerMixin:
             if label_text:
                 self.labels[label_text] = True
 
-        elif node.macroname == "caption":
-            caption_text = self._extract_macro_arg(node)
-            if caption_text:
-                doc.add_text(
-                    parent=parent, label=DocItemLabel.CAPTION, text=caption_text
-                )
+        elif node.macroname in {"caption", "captionof"}:
+            self._add_caption(node, doc, parent, formatting)
 
-        elif node.macroname in ["footnote", "marginpar"]:
+        elif node.macroname == "marginpar":
             footnote_text = self._extract_macro_arg(node)
             if footnote_text:
                 doc.add_text(
@@ -384,9 +630,11 @@ class MacroHandlerMixin:
                 except Exception as e:
                     _log.debug(f"Could not load image {img_path}: {e}")
 
-                caption = doc.add_text(
-                    label=DocItemLabel.CAPTION, text=f"Image: {img_path}"
-                )
+                caption = None
+                if not self._suppress_image_path_caption:
+                    caption = doc.add_text(
+                        label=DocItemLabel.CAPTION, text=f"Image: {img_path}"
+                    )
 
                 doc.add_picture(
                     parent=parent,
@@ -456,20 +704,6 @@ class MacroHandlerMixin:
                 label=(text_label or DocItemLabel.TEXT),
             )
 
-        elif node.macroname in MACROS_ACCENTS:
-            try:
-                from pylatexenc.latex2text import LatexNodes2Text
-
-                text = LatexNodes2Text().nodelist_to_text([node])
-                doc.add_text(
-                    parent=parent,
-                    text=text,
-                    formatting=formatting,
-                    label=(text_label or DocItemLabel.TEXT),
-                )
-            except Exception:
-                pass
-
         elif node.macroname in MACROS_SPACING:
             if node.macroname == "newline":
                 doc.add_text(
@@ -510,6 +744,26 @@ class MacroHandlerMixin:
                     _log.debug(f"Skipping unknown macro: {node.macroname}")
             else:
                 _log.debug(f"Skipping unknown macro: {node.macroname}")
+
+    def _add_caption(
+        self,
+        node: LatexMacroNode,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        formatting: Formatting | None = None,
+    ) -> None:
+        if node.nodeargd is None or not node.nodeargd.argnlist:
+            return
+        argument = node.nodeargd.argnlist[-1]
+        if not isinstance(argument, LatexGroupNode):
+            return
+        self._process_nodes(
+            argument.nodelist,
+            doc,
+            parent,
+            formatting,
+            DocItemLabel.CAPTION,
+        )
 
     def _extract_macro_arg(self, node: LatexMacroNode) -> str:
         if node.nodeargd and node.nodeargd.argnlist:
@@ -570,14 +824,20 @@ class MacroHandlerMixin:
         return " ".join(parts)
 
     def _expand_macros(self, latex_str: str) -> str:
-        for macro_name, macro_def in self._custom_macros.items():
-            if self._custom_macro_num_args.get(macro_name, 0) > 0:
-                continue
-            latex_str = re.sub(
-                rf"\\{re.escape(macro_name)}(?![a-zA-Z])",
-                lambda m: macro_def,
-                latex_str,
-            )
+        for _ in range(10):
+            previous = latex_str
+            for macro_name, macro_def in self._custom_macros.items():
+                if self._custom_macro_num_args.get(macro_name, 0) > 0:
+                    continue
+                if "\\" + macro_name not in latex_str:
+                    continue
+                latex_str = re.sub(
+                    rf"\\{re.escape(macro_name)}(?![a-zA-Z])",
+                    lambda m: macro_def,
+                    latex_str,
+                )
+            if latex_str == previous:
+                break
         return latex_str
 
     def _parse_custom_macro_num_args(self, num_args_arg) -> int:
