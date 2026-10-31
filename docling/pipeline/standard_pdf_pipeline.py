@@ -99,6 +99,14 @@ _log = logging.getLogger(__name__)
 
 _MODEL_STAGE_NAMES = ("ocr", "layout", "layout_postprocess", "table", "assemble")
 
+# Idle model-thread sets, shared by all pipeline instances in the process.
+# PyTorch never frees per-thread state when a thread exits (#2788), so a new
+# set of threads per pipeline would leak that state every time a converter is
+# rebuilt. The executors run whatever callables a run submits, so any idle set
+# can serve any pipeline.
+_IDLE_MODEL_THREADS: list[dict[str, ThreadPoolExecutor]] = []
+_MODEL_THREADS_LOCK = threading.Lock()
+
 STAGE_FAILURE_CATEGORY = {
     "ocr": FailureCategory.INFERENCE_FAILURE,
     "layout": FailureCategory.INFERENCE_FAILURE,
@@ -619,9 +627,6 @@ class StandardPdfPipeline(ConvertPipeline):
         super().__init__(pipeline_options)
         self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
         self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
-        # Reused model threads: PyTorch never frees per-thread state when a thread exits (#2788)
-        self._idle_model_threads: list[dict[str, ThreadPoolExecutor]] = []
-        self._model_threads_lock = threading.Lock()
 
         # initialise heavy models once
         self._init_models()
@@ -772,9 +777,9 @@ class StandardPdfPipeline(ConvertPipeline):
 
     def _borrow_model_threads(self) -> dict[str, ThreadPoolExecutor]:
         """Take an idle set of model threads, one per model stage, or create one."""
-        with self._model_threads_lock:
-            if self._idle_model_threads:
-                return self._idle_model_threads.pop()
+        with _MODEL_THREADS_LOCK:
+            if _IDLE_MODEL_THREADS:
+                return _IDLE_MODEL_THREADS.pop()
         return {
             name: ThreadPoolExecutor(max_workers=1, thread_name_prefix=f"Model-{name}")
             for name in _MODEL_STAGE_NAMES
@@ -790,8 +795,8 @@ class StandardPdfPipeline(ConvertPipeline):
             for executor in model_threads.values():
                 executor.shutdown(wait=False, cancel_futures=True)
             return
-        with self._model_threads_lock:
-            self._idle_model_threads.append(model_threads)
+        with _MODEL_THREADS_LOCK:
+            _IDLE_MODEL_THREADS.append(model_threads)
 
     def _create_run_ctx(self) -> RunContext:
         opts = self.pipeline_options
