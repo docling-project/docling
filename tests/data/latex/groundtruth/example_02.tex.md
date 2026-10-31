@@ -18,7 +18,6 @@ Sample table
 | - | - | - |
 | Alice | 25 | Boston |
 | Bob | 30 | Seattle |
-|  |  |  |
 
 ## References
 

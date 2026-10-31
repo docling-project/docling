@@ -30,6 +30,7 @@ from docling.backend.utils.table_spans import (
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexwalker import (
         LatexCharsNode,
+        LatexCommentNode,
         LatexEnvironmentNode,
         LatexMacroNode,
         LatexSpecialsNode,
@@ -226,7 +227,15 @@ class TableHelperMixin:
                 else:
                     current_cell_nodes.append(n)
 
-        finish_row()
+        # A \\ after the last row (often followed by \hline or \bottomrule)
+        # does not start another row: only whitespace or comments follow it,
+        # so there is no row to finish.
+        if current_row or not all(
+            isinstance(n, LatexCommentNode)
+            or (isinstance(n, LatexCharsNode) and not n.chars.strip())
+            for n in current_cell_nodes
+        ):
+            finish_row()
 
         if not rows:
             return None
