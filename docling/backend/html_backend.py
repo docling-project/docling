@@ -85,7 +85,7 @@ _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
-    from bs4.element import PreformattedString
+    from bs4.element import Comment, PreformattedString
 
     _BS4_AVAILABLE = True
 except ImportError as e:  # pragma: no cover - import-time guard
@@ -2547,6 +2547,45 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     )
         return result
 
+    def _extract_preformatted_text(self, tag: Tag) -> str:
+        """Extract a ``<pre>`` block without normal-flow whitespace rules.
+
+        BeautifulSoup marks text inside ``<pre>`` as ``PreformattedString``.
+        The normal annotation extractor intentionally ignores those nodes and
+        also inserts separators between annotated fragments.  Both behaviours
+        lose significant code whitespace when a preformatted block contains
+        inline elements.  Walk the DOM directly so text-node boundaries are
+        concatenated exactly as written and explicit ``<br>`` tags remain
+        line breaks.
+        """
+
+        parts: list[str] = []
+
+        def append_text(item: PageElement) -> None:
+            if isinstance(item, Comment):
+                return
+            if isinstance(item, NavigableString):
+                parts.append(str(item))
+                return
+            if not isinstance(item, Tag) or self._is_suppressed_tag(item):
+                return
+            if item.name == "br":
+                parts.append("\n")
+                return
+            for child in item.children:
+                append_text(child)
+
+        append_text(tag)
+        text = "".join(parts).replace(_BR_SENTINEL, "\n")
+        lines = text.splitlines(keepends=True)
+        start = 0
+        end = len(lines)
+        while start < end and not lines[start].strip():
+            start += 1
+        while end > start and not lines[end - 1].strip():
+            end -= 1
+        return "".join(lines[start:end]).rstrip("\r\n")
+
     @contextmanager
     def _use_hyperlink(self, tag: Tag):
         old_hyperlink: Union[AnyUrl, Path, None] = None
@@ -3530,26 +3569,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).
-            text_list = self._extract_text_and_hyperlink_recursively(
-                tag, find_parent_annotation=True, keep_newlines=True
-            )
-            annotated_texts = text_list.simplify_text_elements()
             language_hint = self._code_language_hint(tag)
-            with self._use_inline_group(annotated_texts, doc) as inline_ref:
-                for annotated_text in annotated_texts:
-                    # In preformatted text, each <br> is a newline
-                    text_orig = re.sub(
-                        rf" ?{_BR_SENTINEL} ?", "\n", annotated_text.text
-                    ).strip()
-                    if not text_orig:
-                        continue
+            has_hyperlink = any(anchor.get("href") for anchor in tag.find_all("a"))
+            if not has_hyperlink:
+                text_orig = self._extract_preformatted_text(tag)
+                if text_orig:
                     text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
-                    prov = self._make_prov(
-                        text=text_clean,
-                        tag=tag,
-                        source_tag_id=annotated_text.source_tag_id,
-                    )
-                    docling_code2 = doc.add_code(
+                    prov = self._make_prov(text=text_clean, tag=tag)
+                    docling_code = doc.add_code(
                         parent=self.parents[self.level],
                         text=text_clean,
                         orig=text_orig,
@@ -3557,14 +3584,46 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             text_clean, hint=language_hint
                         ),
                         content_layer=self.content_layer,
-                        formatting=annotated_text.formatting,
-                        hyperlink=annotated_text.hyperlink,
                         prov=prov,
                     )
-                    if inline_ref is None:
-                        added_refs.append(docling_code2.get_ref())
-            if inline_ref is not None:
-                added_refs.append(inline_ref)
+                    added_refs.append(docling_code.get_ref())
+            else:
+                # Keep the existing inline-group behaviour for hyperlinks until
+                # the single-item link semantics are explicitly defined.
+                text_list = self._extract_text_and_hyperlink_recursively(
+                    tag, find_parent_annotation=True, keep_newlines=True
+                )
+                annotated_texts = text_list.simplify_text_elements()
+                with self._use_inline_group(annotated_texts, doc) as inline_ref:
+                    for annotated_text in annotated_texts:
+                        # In preformatted text, each <br> is a newline
+                        text_orig = re.sub(
+                            rf" ?{_BR_SENTINEL} ?", "\n", annotated_text.text
+                        ).strip()
+                        if not text_orig:
+                            continue
+                        text_clean = HTMLDocumentBackend._clean_unicode(text_orig)
+                        prov = self._make_prov(
+                            text=text_clean,
+                            tag=tag,
+                            source_tag_id=annotated_text.source_tag_id,
+                        )
+                        docling_code2 = doc.add_code(
+                            parent=self.parents[self.level],
+                            text=text_clean,
+                            orig=text_orig,
+                            code_language=detect_code_language(
+                                text_clean, hint=language_hint
+                            ),
+                            content_layer=self.content_layer,
+                            formatting=annotated_text.formatting,
+                            hyperlink=annotated_text.hyperlink,
+                            prov=prov,
+                        )
+                        if inline_ref is None:
+                            added_refs.append(docling_code2.get_ref())
+                if inline_ref is not None:
+                    added_refs.append(inline_ref)
 
         elif tag_name == "footer":
             with self._use_footer(tag, doc):
