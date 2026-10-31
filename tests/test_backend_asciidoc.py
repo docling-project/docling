@@ -1361,3 +1361,25 @@ def test_attribute_references_in_listings_stay_verbatim() -> None:
     doc = _convert_adoc(src)
 
     assert [item.text for item in doc.texts] == ["echo {product}"]
+
+
+def test_attribute_values_with_pipes_stay_inside_table_cells() -> None:
+    # References are replaced after a row is split into cells, so "{vbar}" or
+    # a value containing "|" is cell text, not a column delimiter.
+    src = (
+        b":choice: yes|no\n"
+        b"\n"
+        b"|===\n"
+        b"|Operator |a {vbar}{vbar} b\n"
+        b"|Answer |{choice}\n"
+        b"more {choice}\n"
+        b"|===\n"
+    )
+    doc = _convert_adoc(src)
+
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Operator",
+        "a || b",
+        "Answer",
+        "yes|no more yes|no",
+    ]

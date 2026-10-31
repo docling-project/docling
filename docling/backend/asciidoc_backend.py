@@ -307,7 +307,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 continue
             text_line = self._substitute_attributes(line, attributes)
 
-            if in_delimited_table and self._continue_table(table_data, text_line):
+            # Table rows are split into cells before references are replaced,
+            # so a value containing "|" (e.g. "{vbar}") stays cell text.
+            if in_delimited_table and self._continue_table(
+                table_data, line, attributes
+            ):
                 continue
 
             in_list, last_list_item, list_continuation = self._close_list_if_needed(
@@ -444,7 +448,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             elif self._is_table_line(line):  # within a table
                 in_table = True
-                table_data.append(self._parse_table_line(text_line))
+                table_data.append(
+                    [
+                        self._substitute_attributes(cell, attributes)
+                        for cell in self._parse_table_line(line)
+                    ]
+                )
 
             elif in_table and not self._is_table_line(line):  # end of table
                 self._add_table_if_nonempty(
@@ -1092,7 +1101,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return re.match(rf"^{_CELL_SPEC}\|", line) is not None
 
     @classmethod
-    def _continue_table(cls, table_data: list[list[str]], line: str) -> bool:
+    def _continue_table(
+        cls,
+        table_data: list[list[str]],
+        line: str,
+        attributes: dict[str, str],
+    ) -> bool:
         """Consume a line between |=== delimiters that is not a row.
 
         A blank line only separates rows, and a line without a leading "|"
@@ -1104,6 +1118,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         if stripped and not table_data:
             return False
         if stripped:
+            stripped = cls._substitute_attributes(stripped, attributes)
             table_data[-1][-1] = f"{table_data[-1][-1]} {stripped}".lstrip()
         return True
 
