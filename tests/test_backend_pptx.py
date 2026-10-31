@@ -322,6 +322,31 @@ def test_pptx_left_flush_shape_keeps_own_bbox(tmp_path: Path):
     assert bbox.r != prs.slide_width
 
 
+def test_pptx_line_breaks_in_table_cells_and_notes(tmp_path: Path):
+    """A line break (a:br) in a table cell or in the notes becomes "\\n".
+
+    python-pptx returns a line break inside a paragraph as a vertical tab
+    ("\\v") in ``.text``, so this control character was in the text of table
+    cells and notes.
+    """
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    shape = slide.shapes.add_table(1, 1, Inches(1), Inches(2), Inches(4), Inches(1))
+    shape.table.cell(0, 0).text = "line1\vline2"
+    slide.notes_slide.notes_text_frame.text = "note a\vnote b"
+    pptx_path = tmp_path / "line_breaks.pptx"
+    prs.save(pptx_path)
+
+    doc = get_converter().convert(pptx_path).document
+
+    assert doc.tables[0].data.table_cells[0].text == "line1\nline2"
+    notes = [t.text for t in doc.texts if t.content_layer == ContentLayer.NOTES]
+    assert "note a\nnote b" in notes
+
+
 def test_pptx_page_range():
     converter = get_converter()
     pptx_path = Path("./tests/data/pptx/sources/powerpoint_sample.pptx")
