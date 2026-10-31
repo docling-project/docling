@@ -8,6 +8,7 @@ import importlib.metadata
 import logging
 import sys
 import time
+from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
@@ -84,6 +85,28 @@ def _ensure_dots_flash_attn_import() -> None:
             "engine. Install flash-attn in the transformers-v4 environment "
             "before using this model."
         ) from exc
+
+
+def _generation_attention_backends(device: str | None) -> AbstractContextManager[Any]:
+    """Keep PyTorch from choosing the cuDNN attention backend during CUDA generation.
+
+    On recent NVIDIA GPUs (SM 9.x and 10.x, such as H100) ``scaled_dot_product_attention``
+    prefers cuDNN, and PyTorch caches one cuDNN graph per query and key/value length
+    without a limit (pytorch/pytorch#202607). Every decode step of ``generate()`` has a
+    new key/value length, so host memory grows with every document and is never freed.
+    The flash, memory-efficient and math backends cache no graphs. Other devices, and
+    torch versions without ``torch.nn.attention.sdpa_kernel`` (before 2.3), are left
+    unchanged.
+    """
+    if device is None or not device.startswith("cuda"):
+        return nullcontext()
+    try:
+        from torch.nn.attention import SDPBackend, sdpa_kernel
+    except ImportError:  # torch < 2.3
+        return nullcontext()
+    return sdpa_kernel(
+        [SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION, SDPBackend.MATH]
+    )
 
 
 def _stopper_stop_reasons(
@@ -554,7 +577,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             first_input.max_new_tokens,
         )
         start_time = time.time()
-        with torch.inference_mode():
+        with torch.inference_mode(), _generation_attention_backends(self.device):
             generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
         generation_time = time.time() - start_time
 
