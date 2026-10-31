@@ -111,6 +111,14 @@ def _decode_bytes(raw: bytes, encoding: Optional[str] = None) -> str:
                     f"{bom_encoding!r}: {error}"
                 ) from error
 
+    if b"\x00" in raw:
+        raise DocumentLoadError(
+            "The document contains NUL bytes without a byte-order mark and "
+            "cannot be decoded reliably. For BOM-less UTF-16, set the `encoding` "
+            "backend option to 'utf-16-le' or 'utf-16-be' to match the document's "
+            "byte order; otherwise set the document's encoding explicitly."
+        )
+
     try:
         return raw.decode("utf-8")
     except UnicodeDecodeError as utf8_error:
@@ -148,8 +156,9 @@ def decode_text(
     """Read a plain-text document and decode it.
 
     With ``encoding`` set, the content is decoded with it and nothing is
-    guessed. Without it, a byte-order mark is honoured, then UTF-8 is tried,
-    then cp1252; input that is none of those raises ``DocumentLoadError``
+    guessed. Without it, a byte-order mark is honoured; NUL bytes without a
+    mark are rejected. Otherwise UTF-8 is tried, then
+    cp1252; input that is none of those raises ``DocumentLoadError``
     rather than being re-decoded into mojibake.
 
     Line endings are translated as text-mode ``open()`` does, so a document
