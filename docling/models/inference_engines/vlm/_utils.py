@@ -8,6 +8,7 @@ implementations to avoid code duplication and ensure consistency.
 """
 
 import importlib.metadata
+import importlib.util
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -103,6 +104,20 @@ def engine_version_satisfied(
         min_version,
     )
     return False
+
+
+def engine_module_available(required_module: str | None) -> bool:
+    """Check the native module used by an engine's model loader.
+
+    A source build and a release can have the same version but different models.
+    Module discovery also works for editable source installations.
+    """
+    if required_module is None:
+        return True
+    try:
+        return importlib.util.find_spec(required_module) is not None
+    except ModuleNotFoundError:
+        return False
 
 
 def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image:

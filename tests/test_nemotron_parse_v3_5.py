@@ -3,7 +3,11 @@
 
 """Test the NVIDIA Nemotron 3.5 Parse preset, remote-code gate and output mapper."""
 
+import sys
+from importlib.machinery import ModuleSpec
 from pathlib import Path
+from types import ModuleType
+from unittest.mock import Mock
 
 import pytest
 from docling_core.types.doc import (
@@ -28,6 +32,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.vlm_engine_options import (
     AutoInlineVlmEngineOptions,
+    MlxVlmEngineOptions,
     TransformersVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
@@ -64,8 +69,12 @@ def test_preset_pins_revision_and_requires_opt_in() -> None:
     assert spec.prompt == (
         "</s><s><predict_bbox><predict_classes><output_markdown><predict_text_in_pic>"
     )
-    assert spec.supported_engines == {VlmEngineType.TRANSFORMERS, VlmEngineType.API}
-    assert not spec.has_explicit_engine_export(VlmEngineType.MLX)
+    assert spec.supported_engines == {
+        VlmEngineType.TRANSFORMERS,
+        VlmEngineType.MLX,
+        VlmEngineType.API,
+    }
+    assert spec.has_explicit_engine_export(VlmEngineType.MLX)
 
     config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
     assert (config.repo_id, config.revision) == (_REPO_ID, _REVISION)
@@ -86,6 +95,155 @@ def test_preset_pins_revision_and_requires_opt_in() -> None:
         "repetition_penalty": 1.1,
         "skip_special_tokens": False,
     }
+
+
+@pytest.mark.parametrize(
+    ("system", "device", "mlx_version", "module_layout", "expected"),
+    [
+        ("Darwin", "mps", "0.7.9", "port", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.10", "port", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.10", "no-port", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.11", "port", VlmEngineType.MLX),
+        ("Darwin", "mps", "0.7.11", "no-port", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "mps", "0.7.11", "no-models", VlmEngineType.TRANSFORMERS),
+        ("Darwin", "cpu", "0.7.11", "port", VlmEngineType.TRANSFORMERS),
+        ("Linux", "cuda:0", "0.7.11", "port", VlmEngineType.TRANSFORMERS),
+    ],
+)
+def test_auto_inline_selects_nemotron_native_engine(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    *,
+    system: str,
+    device: str,
+    mlx_version: str,
+    module_layout: str,
+    expected: VlmEngineType,
+) -> None:
+    from docling.models.inference_engines.vlm.auto_inline_engine import (
+        AutoInlineVlmEngine,
+    )
+
+    options = VlmConvertOptions.from_preset("nemotron_parse_v3_5")
+    engine = AutoInlineVlmEngine(
+        options=AutoInlineVlmEngineOptions(prefer_vllm=True),
+        accelerator_options=AcceleratorOptions(),
+        artifacts_path=None,
+    )
+    engine.model_spec = options.model_spec
+    monkeypatch.setattr("platform.system", lambda: system)
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.auto_inline_engine.decide_device",
+        lambda *args, **kwargs: device,
+    )
+    # Use real module discovery to check the model independently of the version.
+    # The minimal package needs no Apple Silicon runtime or model.
+    mlx_module = ModuleType("mlx_vlm")
+    mlx_module.__path__ = [str(tmp_path / "empty")]
+    monkeypatch.setitem(sys.modules, "mlx_vlm", mlx_module)
+    monkeypatch.delitem(sys.modules, "mlx_vlm.models", raising=False)
+    monkeypatch.delitem(
+        sys.modules, "mlx_vlm.models.nemotron_parse_v3_5", raising=False
+    )
+    if module_layout != "no-models":
+        models_module = ModuleType("mlx_vlm.models")
+        models_module.__path__ = [str(tmp_path)]
+        monkeypatch.setitem(sys.modules, "mlx_vlm.models", models_module)
+    if module_layout == "port":
+        (tmp_path / "nemotron_parse_v3_5.py").write_text("", encoding="utf-8")
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm._utils._installed_engine_version",
+        lambda engine_type: mlx_version,
+    )
+
+    assert engine._select_engine() == expected
+    config = options.model_spec.get_engine_config(expected)
+    if expected == VlmEngineType.MLX:
+        assert config.repo_id == "geoHeil/Nemotron-3.5-Parse-MLX-bf16"
+        assert config.revision != _REVISION
+        assert config.extra_config.get("requires_trust_remote_code") is not True
+        assert options.model_spec.get_runtime_input_extra_config(expected) == {
+            "repetition_penalty": 1.1,
+            "repetition_context_size": 0,
+        }
+    else:
+        assert (config.repo_id, config.revision) == (_REPO_ID, _REVISION)
+
+
+@pytest.mark.parametrize(
+    ("mlx_version", "has_port", "error"),
+    [
+        ("0.7.10", False, r"requires mlx-vlm>=0\.7\.11"),
+        ("0.7.11", False, r"mlx_vlm\.models\.nemotron_parse_v3_5.*Transformers"),
+        ("0.7.11", True, None),
+    ],
+)
+def test_explicit_native_mlx_checks_requirements_before_loading_pinned_export(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    mlx_version: str,
+    has_port: bool,
+    error: str | None,
+) -> None:
+    from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
+
+    model, processor, config = object(), object(), object()
+    load = Mock(return_value=(model, processor))
+    load_config = Mock(return_value=config)
+    download = Mock(return_value=tmp_path)
+    mlx_module = ModuleType("mlx_vlm")
+    prompt_module = ModuleType("mlx_vlm.prompt_utils")
+    utils_module = ModuleType("mlx_vlm.utils")
+    native_module = ModuleType("mlx_vlm.models.nemotron_parse_v3_5")
+    native_module.__spec__ = ModuleSpec(native_module.__name__, loader=None)
+    # Stub only the optional vendor boundary; run Docling's module gate and loader.
+    monkeypatch.setattr(mlx_module, "load", load, raising=False)
+    monkeypatch.setattr(mlx_module, "stream_generate", Mock(), raising=False)
+    monkeypatch.setattr(prompt_module, "apply_chat_template", Mock(), raising=False)
+    monkeypatch.setattr(utils_module, "load_config", load_config, raising=False)
+    monkeypatch.delitem(sys.modules, "mlx_vlm.models", raising=False)
+    monkeypatch.delitem(sys.modules, native_module.__name__, raising=False)
+    modules = [mlx_module, prompt_module, utils_module]
+    if has_port:
+        modules.append(native_module)
+    for module in modules:
+        monkeypatch.setitem(sys.modules, module.__name__, module)
+    monkeypatch.setattr(MlxVlmEngine, "download_models", staticmethod(download))
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm._utils._installed_engine_version",
+        lambda engine_type: mlx_version,
+    )
+
+    spec = VlmConvertOptions.get_preset("nemotron_parse_v3_5").model_spec
+    if error is not None:
+        with pytest.raises(RuntimeError, match=error):
+            MlxVlmEngine(
+                options=MlxVlmEngineOptions(),
+                artifacts_path=None,
+                model_config=spec.get_engine_config(VlmEngineType.MLX),
+            )
+        download.assert_not_called()
+        load.assert_not_called()
+        load_config.assert_not_called()
+        return
+
+    engine = MlxVlmEngine(
+        options=MlxVlmEngineOptions(),
+        artifacts_path=None,
+        model_config=spec.get_engine_config(VlmEngineType.MLX),
+    )
+
+    download.assert_called_once_with(
+        "geoHeil/Nemotron-3.5-Parse-MLX-bf16",
+        revision="d6a6b5386601e04706e36268e0c003fca9671ade",
+        trust_remote_code=False,
+    )
+    load.assert_called_once_with(tmp_path, strict=True)
+    load_config.assert_called_once_with(tmp_path)
+    assert engine._initialized
+    assert engine.vlm_model is model
+    assert engine.processor is processor
+    assert engine.config is config
 
 
 def test_transformers_engine_refuses_remote_code_without_opt_in(

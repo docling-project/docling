@@ -17,6 +17,7 @@ from PIL.Image import Image
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
     check_min_engine_version,
+    engine_module_available,
     extract_generation_stoppers,
     generation_stopper_stop_reason,
     preprocess_image_batch,
@@ -127,6 +128,14 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             VlmEngineType.MLX,
             self.model_config.min_engine_version if self.model_config else None,
         )
+        if self.model_config is not None and not engine_module_available(
+            self.model_config.required_module
+        ):
+            raise RuntimeError(
+                "The installed mlx-vlm does not provide native model module "
+                f"{self.model_config.required_module}. Install a released mlx-vlm "
+                "that includes this module, or select the Transformers engine."
+            )
 
         self.apply_chat_template = apply_chat_template  # type: ignore[assignment]
         self.stream_generate = stream_generate  # type: ignore[assignment]
@@ -278,14 +287,15 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     "verbose": False,
                     "temperature": input_data.temperature,
                 }
-                if self.options.repetition_penalty is not None:
-                    generation_kwargs["repetition_penalty"] = (
-                        self.options.repetition_penalty
+                for key in ("repetition_penalty", "repetition_context_size"):
+                    if key in input_data.extra_generation_config:
+                        generation_kwargs[key] = input_data.extra_generation_config[key]
+                generation_kwargs.update(
+                    self.options.model_dump(
+                        include={"repetition_penalty", "repetition_context_size"},
+                        exclude_none=True,
                     )
-                if self.options.repetition_context_size is not None:
-                    generation_kwargs["repetition_context_size"] = (
-                        self.options.repetition_context_size
-                    )
+                )
 
                 # Use stream_generate for proper stop string handling
                 for token in self.stream_generate(

@@ -253,7 +253,7 @@ Languages are given as BCP-47 tags for every engine; see
 | `qwen` | Qwen2.5-VL-3B | 3B | ✅ | ✅ | ❌ | ❌ | Markdown |
 | `nanonets_ocr2` | Nanonets-OCR2-3B | 3B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ✅ | Markdown |
 | `nemotron_parse_v2` | NVIDIA Nemotron Parse 2.0 | 0.9B | ✅ | ✅ | ❌ | ✅ | Native layout with Markdown text and LaTeX tables |
-| `nemotron_parse_v3_5` | NVIDIA Nemotron 3.5 Parse | 0.6B | ✅ | ❌ | OpenAI-compatible | ❌ | Native layout with Markdown text, LaTeX tables, and chart data |
+| `nemotron_parse_v3_5` | NVIDIA Nemotron 3.5 Parse | 0.6B | ✅ | ✅ | OpenAI-compatible | ❌ | Native layout with Markdown text, LaTeX tables, and chart data |
 | `mineru2_pro` | MinerU2.5-Pro-2604 | 1.2B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ❌ | Native two-step layout, text, formulas, and OTSL tables |
 | `gemma_12b` | Gemma-3-12B | 12B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
@@ -273,7 +273,30 @@ community-published `carlesonielfa/MinerU2.5-Pro-2604-1.2B-mlx-bf16` conversion 
 OpenDataLab MLX checkpoint is currently available. Image/chart analysis and cross-page table merging
 are not enabled by this preset.
 
-`nemotron_parse_v3_5` runs code from the `nvidia/Nemotron-3.5-Parse` model repository, pinned to
+`nemotron_parse_v3_5` selects MLX on Apple Silicon when `mlx-vlm` 0.7.11 or later is installed.
+Otherwise it selects Transformers, including on CUDA. The MLX engine
+uses the native `mlx-vlm` port and the pinned
+[`geoHeil/Nemotron-3.5-Parse-MLX-bf16`](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16)
+checkpoint. It does not require `trust_remote_code=True`. The port uses plain greedy decoding;
+it does not use the optional MTP head. The output uses the same native-output mapper as
+Transformers. The [8-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-8bit)
+and [4-bit](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-4bit) checkpoints are also available.
+
+The native port is part of the [`mlx-vlm` 0.7.11 release](https://github.com/Blaizzy/mlx-vlm/releases/tag/v0.7.11).
+To use it, upgrade with `pip install "mlx-vlm>=0.7.11"`. Docling also checks that the installed
+package provides the `mlx_vlm.models.nemotron_parse_v3_5` module. Auto-inline falls back to
+Transformers if either check fails. Explicit MLX selection reports an old version or a missing
+module before it downloads model weights.
+
+[Local parity results and reproduction commands](https://huggingface.co/geoHeil/Nemotron-3.5-Parse-MLX-bf16/blob/d28803cbe9fa7359f982288adbeafa53e5ecbcb7/PARITY.md)
+compare the uploaded checkpoints against the pinned Transformers reference on three pages.
+The float32 architecture control matches the complete reference output on all three pages.
+The bf16 checkpoint preserves text and classes on the authored text/table page, with coordinate
+differences. Other pages also show class differences; bf16 text similarity after removing geometry
+ranges from 80.477% to 100%. These samples do not establish general accuracy. Full model parity runs
+require Apple Silicon and run locally, outside CI.
+
+The Transformers engine runs code from the `nvidia/Nemotron-3.5-Parse` model repository, pinned to
 revision `e7ea79242a87ea0ad3919b672bfedb429a683206`. Docling does not trust that code by default:
 review it, then set `trust_remote_code=True` on the VLM engine options (for example
 `AutoInlineVlmEngineOptions(trust_remote_code=True)`) or pass `--trust-remote-code` to the CLI.
