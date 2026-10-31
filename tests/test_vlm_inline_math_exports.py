@@ -81,3 +81,29 @@ def test_currency_range_remains_text_next_to_math(parser: str, price: str) -> No
     assert [item.text for item in doc.texts if isinstance(item, FormulaItem)] == ["x"]
     assert f"Price {price}" in doc.export_to_markdown()
     assert len([item for item in doc.texts if item.prov]) == 1
+
+
+@pytest.mark.parametrize("parser", ["dots", "nemotron"])
+def test_escaped_citation_brackets_remain_text_next_to_display_math(
+    parser: str,
+) -> None:
+    # Nemotron 3.5 Parse escapes literal citation brackets in its Markdown.
+    text = (
+        "TableFormer \\[9\\] on PubTabNet \\[3, 5\\], \\[12\u201314\\] "
+        "where \\[E = mc^2\\] holds."
+    )
+    size = Size(width=600, height=800)
+    if parser == "dots":
+        source = json.dumps(
+            [{"category": "Text", "bbox": [100, 100, 500, 200], "text": text}]
+        )
+        doc = parse_dots_json(source, size, page_no=2)
+    else:
+        source = f"<x_0.2><y_0.2>{text}<x_0.8><y_0.4><class_Text>"
+        doc = parse_nemotron_parse_v2(source, size, size, page_no=2)
+    formulas = [item for item in doc.texts if isinstance(item, FormulaItem)]
+    assert [formula.text for formula in formulas] == ["E = mc^2"]
+    assert "TableFormer [9] on PubTabNet [3, 5], [12\u201314] where" in (
+        doc.export_to_markdown()
+    )
+    assert len([item for item in doc.texts if item.prov]) == 1
