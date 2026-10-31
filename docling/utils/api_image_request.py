@@ -428,6 +428,27 @@ def api_image_request_streaming(
                             _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
                             continue
 
+                        # An SSE chunk can carry the server's error instead of a delta
+                        # (`data: {"error": {...}}`, no `choices`). Ending the loop on it
+                        # reported an empty, successful result.
+                        if (
+                            isinstance(obj, dict)
+                            and obj.get("error")
+                            and not obj.get("choices")
+                        ):
+                            error = obj["error"]
+                            message = (
+                                error.get("message")
+                                if isinstance(error, dict)
+                                else None
+                            ) or str(error)
+                            _log.error(
+                                "API returned an error in the stream: %s", message
+                            )
+                            return _failed_streaming_request(
+                                f"Error in stream: {_response_preview(message)}"
+                            )
+
                         # OpenAI-compatible delta format
                         # obj["choices"][0]["delta"]["content"] may be None or missing
                         # (e.g., tool calls)
