@@ -17,10 +17,10 @@ _INCOMPLETE_FINISH_REASONS = {
     "error": VlmStopReason.INFERENCE_ERROR,
 }
 
-# Finish reasons that mean the model emitted its end-of-text token on its own,
-# i.e. the output is complete.
+# Finish reasons that mean the model completed its response.
 _COMPLETE_FINISH_REASONS = {
     "stop": VlmStopReason.END_OF_SEQUENCE,
+    "tool_calls": VlmStopReason.END_OF_SEQUENCE,
     "end": VlmStopReason.END_OF_SEQUENCE,
     "end_of_sequence": VlmStopReason.END_OF_SEQUENCE,
 }

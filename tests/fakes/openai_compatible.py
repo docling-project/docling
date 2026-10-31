@@ -40,8 +40,13 @@ class FakeOpenAiApi:
     """State plus an ``APIRouter`` serving ``/v1/chat/completions``."""
 
     completion: str = DEFAULT_COMPLETION
+    #: Override the full response for tool-call and refusal cases.
+    message: OpenAiChatMessage | None = None
     #: Emitted one SSE chunk at a time when the caller asks for a stream.
     stream_chunks: list[str] = field(default_factory=list)
+    #: Raw ``delta`` objects sent instead of ``stream_chunks``, for example
+    #: ``tool_calls`` fragments.
+    stream_deltas: list[dict[str, Any]] = field(default_factory=list)
     #: One logprob per stream chunk, sent in the chunk's ``choices[0].logprobs``.
     stream_logprobs: list[float] = field(default_factory=list)
     prompt_tokens: int = 11
@@ -86,9 +91,8 @@ class FakeOpenAiApi:
             choices=[
                 OpenAiResponseChoice(
                     index=0,
-                    message=OpenAiChatMessage(
-                        role="assistant", content=self.completion
-                    ),
+                    message=self.message
+                    or OpenAiChatMessage(role="assistant", content=self.completion),
                     finish_reason=self.finish_reason,
                 )
             ],
@@ -96,18 +100,22 @@ class FakeOpenAiApi:
         )
         return json.loads(response.model_dump_json())
 
-    def _chunks(self) -> list[str]:
-        return self.stream_chunks or [self.completion]
+    def _deltas(self) -> list[dict[str, Any]]:
+        if self.stream_deltas:
+            return self.stream_deltas
+        chunks = self.stream_chunks or [self.completion]
+        return [{"content": piece} for piece in chunks]
 
     async def _sse(self, model: str | None) -> AsyncIterator[bytes]:
         """Emit the OpenAI streaming delta format, terminated by [DONE]."""
         for line in self.stream_preamble:
             yield f"{line}\n\n".encode()
-        for i, piece in enumerate(self._chunks()):
+        for i, delta in enumerate(self._deltas()):
             if i == self.stream_stall_after:
                 await asyncio.sleep(self.delay_seconds)
-            choice: dict[str, Any] = {"index": 0, "delta": {"content": piece}}
+            choice: dict[str, Any] = {"index": 0, "delta": delta}
             if i < len(self.stream_logprobs):
+                piece = delta["content"]
                 choice["logprobs"] = {
                     "content": [
                         {

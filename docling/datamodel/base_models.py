@@ -433,6 +433,7 @@ class ApiImageRequestResult:
     usage: Any | None = None
     logprobs: Any | None = None
     error: str | None = None  # set when stop_reason is INFERENCE_ERROR
+    tool_calls: tuple["OpenAiToolCall", ...] = ()
 
 
 @dataclass(frozen=True)
@@ -445,6 +446,7 @@ class ApiImageStreamingRequestResult:
     logprobs: Any | None = None
     error: str | None = None  # set when the request failed and produced no output
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
+    tool_calls: tuple["OpenAiToolCall", ...] = ()
 
 
 class FieldValuePrediction(BaseModel):
@@ -653,13 +655,23 @@ class Page(BaseModel):
 ## OpenAI API Request / Response Models ##
 
 
+class OpenAiFunctionCall(BaseModel):
+    name: str | None = None
+    # A JSON string whose schema belongs to the tool the client sent.
+    arguments: str = ""
+
+
+class OpenAiToolCall(BaseModel):
+    id: str | None = None
+    type: str = "function"
+    function: OpenAiFunctionCall
+
+
 class OpenAiChatMessage(BaseModel):
     role: str
     content: str | None = None
-    # Some reasoning-style servers (e.g. LM Studio serving chandra-ocr-2) leave
-    # content empty and place the actual answer in reasoning_content.
-    reasoning_content: str | None = None
-    tool_calls: list[dict[str, Any]] | None = None
+    refusal: str | None = None
+    tool_calls: list[OpenAiToolCall] | None = None
 
 
 class OpenAiTopLogprob(BaseModel):
