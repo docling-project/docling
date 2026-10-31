@@ -24,6 +24,7 @@ from docling_core.types.doc import (
     TableData,
     TextItem,
 )
+from pydantic import AnyUrl, TypeAdapter
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
@@ -52,12 +53,33 @@ _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms
 # that starts with an abbreviation such as "Dr." or "Fig." stays text.
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
 
-# Inline formatting marks, unconstrained (doubled, valid anywhere) before
+# URL schemes that Asciidoctor turns into links without a macro name.
+_URL_SCHEME: Final = r"(?:https?|file|ftp|irc)://"
+# Asciidoctor only links a URL at the start of the text, after whitespace or
+# after one of >()[];"' so that a URL inside a word or an attribute stays text.
+_URL_START: Final = r"""(?<![^\s>()\[\];"'])"""
+# The attribute list of a link, between its brackets. A bracket in it must be
+# escaped, so an unclosed "[" ends the scan at the next one, not at the end of
+# the line, and a line with many of them still converts in linear time.
+_LINK_ATTRS: Final = r"(?:[^\[\]\\]|\\.)*"
+# A link target is a URL, or a relative path such as "docs/install.html".
+_LINK_TARGET: Final = TypeAdapter(AnyUrl | Path)
+
+# Links, then inline formatting marks. Links come first so that the "_" and
+# "*" in a URL are not read as formatting marks. The link forms follow
+# Asciidoctor: a URL with link text in brackets, a URL in angle brackets, a
+# bare URL (which ends before trailing punctuation), and the link: and mailto:
+# macros. Formatting marks are unconstrained (doubled, valid anywhere) before
 # constrained (single, valid only at word boundaries, so "snake_case" and
 # "2*3*4" stay plain text), as in Asciidoctor. A constrained span does not
 # contain its own mark, so each scan stops at the next mark on the line.
 _INLINE_FORMAT_RE: Final = re.compile(
-    r"``(?P<umono>.+?)``"
+    rf"{_URL_START}(?P<url>{_URL_SCHEME}[^\s\[\]]+)\[(?P<url_text>{_LINK_ATTRS})\]"
+    rf"|<(?P<angle_url>{_URL_SCHEME}[^\s<>\[\]]+)>"
+    rf"|{_URL_START}(?P<bare_url>{_URL_SCHEME}[^\s\[\]<]*[^\s,.?!\[\]<)])"
+    r"|(?<![\w\\])(?:link|(?P<mailto>mailto)):"
+    rf"(?P<macro_target>[^:\s\[][^\s\[]*)\[(?P<macro_text>{_LINK_ATTRS})\]"
+    r"|``(?P<umono>.+?)``"
     r"|\*\*(?P<ubold>.+?)\*\*"
     r"|__(?P<uitalic>.+?)__"
     r"|(?<!\w)`(?P<mono>[^`\s](?:[^`]*?[^`\s])?)`(?!\w)"
@@ -72,6 +94,7 @@ class _InlineRun:
     bold: bool = False
     italic: bool = False
     code: bool = False
+    hyperlink: str | None = None
 
 
 @dataclass(frozen=True)
@@ -842,18 +865,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             return []
         text = " ".join(text_data)
         runs = AsciiDocBackend._parse_inline(text)
-        if not any(run.bold or run.italic or run.code for run in runs):
+        if not any(run.bold or run.italic or run.code or run.hyperlink for run in runs):
             doc.add_text(text=text, label=DocItemLabel.PARAGRAPH, parent=parent)
             return []
-        # Mixed formatting needs one item per run, kept together in an inline
-        # group like the Markdown backend does.
+        # Mixed formatting and links need one item per run, kept together in an
+        # inline group like the Markdown backend does.
         group = doc.add_inline_group(parent=parent)
         for run in runs:
             run_text = run.text.strip()
             if not run_text:
                 continue
+            hyperlink = (
+                _LINK_TARGET.validate_python(run.hyperlink) if run.hyperlink else None
+            )
             if run.code:
-                doc.add_code(text=run_text, parent=group)
+                doc.add_code(text=run_text, parent=group, hyperlink=hyperlink)
             else:
                 doc.add_text(
                     text=run_text,
@@ -864,32 +890,105 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         if run.bold or run.italic
                         else None
                     ),
+                    hyperlink=hyperlink,
                 )
         return []
 
     @staticmethod
     def _parse_inline(
-        text: str, bold: bool = False, italic: bool = False
+        text: str,
+        bold: bool = False,
+        italic: bool = False,
+        hyperlink: str | None = None,
     ) -> list[_InlineRun]:
-        """Split text into runs of plain, bold, italic and monospace text."""
+        """Split text into runs of plain, bold, italic, monospace and link text.
+
+        `hyperlink` is set inside the text of a link. A link has no links in
+        it, so a link form found there stays text of the outer link.
+        """
         runs: list[_InlineRun] = []
         position = 0
         for match in _INLINE_FORMAT_RE.finditer(text):
             if match.start() > position:
                 runs.append(
-                    _InlineRun(text[position : match.start()], bold=bold, italic=italic)
+                    _InlineRun(
+                        text[position : match.start()],
+                        bold=bold,
+                        italic=italic,
+                        hyperlink=hyperlink,
+                    )
                 )
-            if (code := match.group("umono") or match.group("mono")) is not None:
-                runs.append(_InlineRun(code, code=True))
+            if (link := AsciiDocBackend._match_link(match)) is not None:
+                target, link_text = link
+                if hyperlink is not None:
+                    runs.append(
+                        _InlineRun(match.group(0), bold, italic, hyperlink=hyperlink)
+                    )
+                elif link_text is None:
+                    # No link text: the target itself is shown, as written.
+                    shown = match.group("macro_target") or target
+                    runs.append(_InlineRun(shown, bold, italic, hyperlink=target))
+                else:
+                    runs.extend(
+                        AsciiDocBackend._parse_inline(link_text, bold, italic, target)
+                    )
+            elif (code := match.group("umono") or match.group("mono")) is not None:
+                runs.append(_InlineRun(code, code=True, hyperlink=hyperlink))
             elif (inner := match.group("ubold") or match.group("bold")) is not None:
-                runs.extend(AsciiDocBackend._parse_inline(inner, True, italic))
+                runs.extend(
+                    AsciiDocBackend._parse_inline(inner, True, italic, hyperlink)
+                )
             else:
                 inner = match.group("uitalic") or match.group("italic")
-                runs.extend(AsciiDocBackend._parse_inline(inner, bold, True))
+                runs.extend(AsciiDocBackend._parse_inline(inner, bold, True, hyperlink))
             position = match.end()
         if position < len(text):
-            runs.append(_InlineRun(text[position:], bold=bold, italic=italic))
+            runs.append(
+                _InlineRun(
+                    text[position:], bold=bold, italic=italic, hyperlink=hyperlink
+                )
+            )
         return runs
+
+    @staticmethod
+    def _match_link(match: re.Match[str]) -> tuple[str, str | None] | None:
+        """Return the target and the link text of a link match.
+
+        The link text is None when the link has none, and then Asciidoctor
+        shows the target. Returns None when the match is not a link.
+        """
+        if url := match.group("url"):
+            return url, AsciiDocBackend._link_text(match.group("url_text"))
+        if url := match.group("angle_url") or match.group("bare_url"):
+            return url, None
+        if target := match.group("macro_target"):
+            if match.group("mailto"):
+                target = f"mailto:{target}"
+            return target, AsciiDocBackend._link_text(match.group("macro_text"))
+        return None
+
+    @staticmethod
+    def _link_text(attributes: str) -> str | None:
+        """Get the link text from the attribute list in the brackets of a link.
+
+        As in Asciidoctor, named attributes (e.g. `window=_blank`) can follow
+        the text, the text is then quoted if it contains a comma, and a final
+        `^` (open in a new window) is not part of the text.
+        """
+        text = re.sub(r"\\([\[\]])", r"\1", attributes)
+        if "=" in text:
+            quoted = re.match(r'\s*"((?:[^"\\]|\\.)*)"\s*(?:,|$)', text)
+            if quoted:
+                text = quoted.group(1).replace('\\"', '"')
+            else:
+                text = text.split(",", 1)[0]
+                if re.match(r"\s*[A-Za-z_][\w-]*\s*=", text):
+                    # Only named attributes, no link text.
+                    text = ""
+        text = text.strip()
+        if text.endswith("^"):
+            text = text[:-1].rstrip()
+        return text or None
 
     #   =========   Title
     @staticmethod
