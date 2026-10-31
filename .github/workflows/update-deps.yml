@@ -2,6 +2,11 @@ name: "Update Locked Docling Deps"
 
 # Upgrades the locked Docling dependencies in uv.lock, regenerates the
 # reference test data against the new lock, and opens (or refreshes) one PR.
+#
+# While the PR branch has only commits from this job, each run rebuilds the
+# branch from the default branch. Once a maintainer pushes a fix to the branch,
+# the runs build on top of it instead: they regenerate the reference data with
+# the fix and push a new commit.
 
 on:
   schedule:
@@ -33,9 +38,43 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      changed: ${{ steps.diff.outputs.changed }}
+      proceed: ${{ steps.diff.outputs.proceed }}
+      mode: ${{ steps.base.outputs.mode }}
+      base_sha: ${{ steps.base.outputs.base_sha }}
     steps:
+      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        id: app-token
+        with:
+          app-id: ${{ vars.CI_APP_ID }}
+          private-key: ${{ secrets.CI_PRIVATE_KEY }}
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # "replace": rebuild the PR branch from the default branch.
+      # "update": the open PR has commits from other authors, so build on it.
+      - name: Choose the base commit
+        id: base
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          bot_user="${APP_SLUG}[bot]"
+          bot_id=$(gh api "/users/${bot_user}" --jq .id)
+          bot_email="${bot_id}+${bot_user}@users.noreply.github.com"
+
+          mode=replace
+          pr_state=$(gh pr view "$PR_BRANCH" --json state --jq .state 2>/dev/null || true)
+          if [ "$pr_state" = "OPEN" ] &&
+            git fetch origin "$PR_BRANCH" &&
+            git log --format=%ae "HEAD..origin/$PR_BRANCH" | grep -qvxF "$bot_email"; then
+            mode=update
+            git checkout -q "origin/$PR_BRANCH"
+          fi
+          echo "Mode: $mode"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ env.PYTHON_VERSION }}
@@ -56,13 +95,16 @@ jobs:
         id: diff
         env:
           PACKAGES: ${{ inputs.packages || env.DEFAULT_PACKAGES }}
+          MODE: ${{ steps.base.outputs.mode }}
         run: |
-          if git diff --quiet -- uv.lock; then
+          # In update mode, the reference data is regenerated even without a
+          # new release, because the fixes on the branch can change it.
+          if git diff --quiet -- uv.lock && [ "$MODE" = "replace" ]; then
             echo "uv.lock is already up to date."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
 
           locked_version() {
             awk -v name="name = \"$1\"" '$0 == name { getline; gsub(/version = |"/, ""); print; exit }'
@@ -82,7 +124,7 @@ jobs:
           cat versions.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: ${{ steps.diff.outputs.changed == 'true' }}
+        if: ${{ steps.diff.outputs.proceed == 'true' }}
         with:
           name: uv-lock
           path: |
@@ -92,7 +134,7 @@ jobs:
 
   regenerate:
     needs: lock
-    if: ${{ needs.lock.outputs.changed == 'true' }}
+    if: ${{ needs.lock.outputs.proceed == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
@@ -101,6 +143,8 @@ jobs:
         suite: ["core", "ocr", "pdf-model", "vlm", "asr"]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.lock.outputs.base_sha }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: uv-lock
@@ -133,11 +177,14 @@ jobs:
             mapfile -t SUITE_ARGS < <(uv run --no-sync python .github/scripts/pytest_marker_selection.py suite-args "$SUITE")
             SUITE_ARGS=(-m "$SUITE_MARKER" "${SUITE_ARGS[@]}")
           fi
+          set -o pipefail
           status=passed
           uv run --no-sync pytest -p no:tach --durations=10 \
             --deselect tests/test_data_gen_flag.py::test_gen_test_data_flag \
-            "${SUITE_ARGS[@]}" || status=failed
+            "${SUITE_ARGS[@]}" 2>&1 | tee "$RUNNER_TEMP/pytest.log" || status=failed
           echo "| \`$SUITE\` | $status |" > "groundtruth-$SUITE.status"
+          grep -E '^(FAILED|ERROR) ' "$RUNNER_TEMP/pytest.log" |
+            sed -E "s/^(FAILED|ERROR) ([^ ]+).*/- \`$SUITE\`: \`\\2\`/" > "groundtruth-$SUITE.failed" || true
 
       - name: Collect reference data changes
         env:
@@ -153,11 +200,12 @@ jobs:
           path: |
             groundtruth-${{ matrix.suite }}.patch
             groundtruth-${{ matrix.suite }}.status
+            groundtruth-${{ matrix.suite }}.failed
           retention-days: 7
 
   open-pr:
     needs: [lock, regenerate]
-    if: ${{ !cancelled() && needs.lock.outputs.changed == 'true' && needs.regenerate.result == 'success' }}
+    if: ${{ !cancelled() && needs.lock.outputs.proceed == 'true' && needs.regenerate.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -169,6 +217,7 @@ jobs:
           private-key: ${{ secrets.CI_PRIVATE_KEY }}
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ needs.lock.outputs.base_sha }}
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -191,74 +240,98 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          MODE: ${{ needs.lock.outputs.mode }}
         run: |
           bot_user="${APP_SLUG}[bot]"
           bot_id=$(gh api "/users/${bot_user}" --jq .id)
-          bot_email="${bot_id}+${bot_user}@users.noreply.github.com"
           git config user.name "$bot_user"
-          git config user.email "$bot_email"
-
-          # Do not overwrite fixes that maintainers pushed to the PR branch.
-          if git fetch origin "$PR_BRANCH" 2>/dev/null &&
-            git log --format=%ae "HEAD..origin/$PR_BRANCH" | grep -qvxF "$bot_email"; then
-            echo "::warning title=PR branch has manual commits::Not updating $PR_BRANCH."
-            echo "pushed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          git config user.email "${bot_id}+${bot_user}@users.noreply.github.com"
 
           git switch -C "$PR_BRANCH"
           git add --all -- uv.lock tests
-          git commit -s -m "chore: update locked docling dependencies"
+          if git diff --cached --quiet; then
+            echo "Nothing changed on top of the PR branch."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --cached --quiet -- uv.lock; then
+            message="chore: regenerate reference data for locked docling dependencies"
+          else
+            message="chore: update locked docling dependencies"
+          fi
+          git commit -s -m "$message"
 
-          if git rev-parse --verify --quiet "origin/$PR_BRANCH" >/dev/null &&
+          if [ "$MODE" = "update" ]; then
+            # Keep the maintainer commits: add one commit, never force-push.
+            git push origin "$PR_BRANCH"
+          elif git rev-parse --verify --quiet "origin/$PR_BRANCH" >/dev/null &&
             git diff --quiet "origin/$PR_BRANCH" HEAD; then
             echo "The PR branch already has these changes."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
           else
             git push --force origin "$PR_BRANCH"
-            echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
 
       - name: Open or update the PR
         if: ${{ steps.push.outputs.pushed == 'true' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          MODE: ${{ needs.lock.outputs.mode }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           results="$RUNNER_TEMP/results"
           {
-            echo "Automated update of the locked Docling dependencies."
+            if [ "$MODE" = "update" ]; then
+              echo "Regenerated the reference data on top of the fixes on this branch."
+            else
+              echo "Automated update of the locked Docling dependencies."
+            fi
             echo
             echo "## Versions"
             echo
-            cat "$results/versions.md"
+            if [ "$(wc -l < "$results/versions.md")" -gt 2 ]; then
+              cat "$results/versions.md"
+            else
+              echo "No new versions in this run."
+            fi
             echo
             echo "## Reference data regeneration"
             echo
             echo "| Suite | Tests with \`DOCLING_GEN_TEST_DATA=1\` |"
             echo "| --- | --- |"
             cat "$results"/groundtruth-*.status
-            echo
-            if git diff --quiet HEAD~1 HEAD -- tests; then
-              echo "No reference data changed."
-            else
-              echo "Changed reference files:"
+            if [ -n "$(cat "$results"/groundtruth-*.failed)" ]; then
               echo
-              echo '```text'
-              git diff --stat HEAD~1 HEAD -- tests
-              echo '```'
+              echo "<details><summary>Failing tests</summary>"
+              echo
+              cat "$results"/groundtruth-*.failed
+              echo
+              echo "</details>"
             fi
             echo
+            echo "## Changed reference files"
+            echo
+            summary=$(python3 .github/scripts/groundtruth_diff.py HEAD~1 HEAD)
+            echo "${summary:-No reference data changed.}"
+            echo
             echo "Review the reference data changes before you merge. A \`failed\` suite"
-            echo "needs a code fix on this branch. The nightly job stops updating this"
-            echo "branch once it has commits from other authors."
+            echo "needs a code fix on this branch. After you push a fix, the next run"
+            echo "regenerates the reference data on top of it."
             echo "Generated by [this run]($RUN_URL)."
-          } > pr-body.md
+          } > summary.md
 
-          if gh pr view "$PR_BRANCH" --json state --jq .state 2>/dev/null | grep -q OPEN; then
-            gh pr edit "$PR_BRANCH" --body-file pr-body.md
+          pr_number=$(gh pr list --head "$PR_BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$pr_number" ]; then
+            if [ "$MODE" = "update" ]; then
+              gh pr comment "$pr_number" --body-file summary.md
+            else
+              # REST, because `gh pr edit` fails on the classic Projects fields.
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/pulls/$pr_number" -F body=@summary.md >/dev/null
+            fi
           else
             gh pr create --base main --head "$PR_BRANCH" \
               --title "chore: update locked docling dependencies" \
-              --body-file pr-body.md
+              --body-file summary.md
           fi
