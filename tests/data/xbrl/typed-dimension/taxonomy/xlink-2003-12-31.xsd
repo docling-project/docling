@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- (c) XBRL International.  See www.xbrl.org/legal  
+ 
+This version is non-normative - it should be identical to the normative
+version that is contained in Appendix A of the specification RECOMMENDATION
+with errata corrections to 2008-07-02 except for this comment.
+
+Following the schema maintenance policy of XBRL International, this version's 
+location on the web will be as follows:
+
+1) While it is the most current RECOMMENDED version of the schema and until it is 
+superseded by any additional errata corrections it will reside on the web at
+
+http://www.xbrl.org/2003/xlink-2003-12-31.xsd 
+
+2) It will be archived in perpetuity at 
+
+http://www.xbrl.org/2003/2008-07-02/xlink-2003-12-31.xsd
+
+-->
+<schema targetNamespace="http://www.w3.org/1999/xlink" 
+  xmlns:xlink="http://www.w3.org/1999/xlink" 
+  xmlns="http://www.w3.org/2001/XMLSchema" 
+  elementFormDefault="qualified"
+  attributeFormDefault="qualified">
+  
+  <annotation>
+    <documentation>
+    XLink attribute specification
+    </documentation>
+  </annotation>
+  
+   
+  <attribute name="type">
+    <simpleType>
+	    <annotation>
+	      <documentation>
+	    Enumeration of values for the type attribute
+	    </documentation>
+	    </annotation>
+	    <restriction base="string">
+	      <enumeration value="simple"/>
+	      <enumeration value="extended"/>
+	      <enumeration value="locator"/>
+	      <enumeration value="arc"/>
+	      <enumeration value="resource"/>
+	      <enumeration value="title"/>
+	    </restriction>
+	  </simpleType>
+  </attribute>
+  
+  <attribute name="role">
+    <simpleType>
+	    <annotation>
+	      <documentation>
+	      A URI with a minimum length of 1 character.
+	      </documentation>
+	    </annotation>
+	    <restriction base="anyURI">
+	      <minLength value="1"/>
+	    </restriction>
+  </simpleType>
+  </attribute>
+
+  <attribute name="arcrole">
+      <simpleType>
+	    <annotation>
+	      <documentation>
+	      A URI with a minimum length of 1 character.
+	      </documentation>
+	    </annotation>
+	    <restriction base="anyURI">
+	      <minLength value="1"/>
+	    </restriction>
+  </simpleType>
+  </attribute>
+
+  <attribute name="title" type="string"/>
+  
+  <attribute name="show">
+    <simpleType>
+	    <annotation>
+	      <documentation>
+	      Enumeration of values for the show attribute
+	      </documentation>
+	    </annotation>
+	    <restriction base="string">
+	      <enumeration value="new"/>
+	      <enumeration value="replace"/>
+	      <enumeration value="embed"/>
+	      <enumeration value="other"/>
+	      <enumeration value="none"/>
+	    </restriction>
+	  </simpleType>
+	</attribute>
+
+  <attribute name="actuate">
+    <simpleType>
+    <annotation>
+      <documentation>
+      Enumeration of values for the actuate attribute
+      </documentation>
+    </annotation>
+    <restriction base="string">
+      <enumeration value="onLoad"/>
+      <enumeration value="onRequest"/>
+      <enumeration value="other"/>
+      <enumeration value="none"/>
+    </restriction>
+  </simpleType>
+	</attribute>
+	
+  <attribute name="label" type="NCName"/>
+  
+  <attribute name="from" type="NCName"/>
+  
+  <attribute name="to" type="NCName"/>
+  
+  <attribute name="href" type="anyURI"/>
+  
+</schema>
