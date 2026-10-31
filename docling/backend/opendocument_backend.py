@@ -103,6 +103,24 @@ _ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION = {
     "chart:scatter": PictureClassificationLabel.SCATTER_PLOT,
 }
 
+# An index holds its visible text in the index containers, as ordinary
+# paragraphs. odfdo has no class for these elements, so they are matched by
+# tag; every index kind (table of contents, alphabetical index, ...) uses the
+# same containers.
+_ODF_INDEX_CONTAINER_TAGS = frozenset(
+    {
+        "text:table-of-content",
+        "text:alphabetical-index",
+        "text:illustration-index",
+        "text:table-index",
+        "text:object-index",
+        "text:user-index",
+        "text:bibliography",
+        "text:index-body",
+        "text:index-title",
+    }
+)
+
 
 class _OdfComments:
     """ODT comment threads, keyed by the paragraph or heading that holds them."""
@@ -1187,7 +1205,7 @@ def _add_odf_child(
             image_loader=image_loader,
             comments=comments,
         )
-    elif isinstance(element, Section):
+    elif isinstance(element, Section) or element.tag in _ODF_INDEX_CONTAINER_TAGS:
         # Writer saves a section hidden with Format > Sections > Hide as
         # text:display="none", so its content is not shown or printed.
         if element.get_attribute("text:display") == "none":

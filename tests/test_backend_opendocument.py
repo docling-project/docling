@@ -301,6 +301,88 @@ def test_odt_hidden_section_goes_to_invisible_layer(tmp_path: Path):
     assert document.tables[0].content_layer == ContentLayer.INVISIBLE
 
 
+def test_odt_table_of_contents_content(tmp_path: Path):
+    path = tmp_path / "table_of_contents.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    body.append(Paragraph("Intro paragraph."))
+    index = Element.from_tag("text:table-of-content")
+    index_source = Element.from_tag("text:table-of-content-source")
+    index_source.set_attribute("text:outline-level", 10)
+    title_template = Element.from_tag("text:index-title-template")
+    title_template.text = "Index title template"
+    index_source.append(title_template)
+    index.append(index_source)
+    index_body = Element.from_tag("text:index-body")
+    index_title = Element.from_tag("text:index-title")
+    index_title.append(Paragraph("Table of Contents"))
+    index_body.append(index_title)
+    index_body.append(Paragraph("Chapter One"))
+    index_body.append(Paragraph("Section One"))
+    index.append(index_body)
+    body.append(index)
+    body.append(Paragraph("Outro paragraph."))
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert [item.text for item in result.document.texts] == [
+        "Intro paragraph.",
+        "Table of Contents",
+        "Chapter One",
+        "Section One",
+        "Outro paragraph.",
+    ]
+    assert [item.label for item in result.document.texts] == [DocItemLabel.TEXT] * 5
+
+
+@pytest.mark.parametrize(
+    "index_tag",
+    [
+        "text:alphabetical-index",
+        "text:illustration-index",
+        "text:table-index",
+        "text:object-index",
+        "text:user-index",
+        "text:bibliography",
+    ],
+)
+def test_odt_other_index_kinds_keep_their_text(tmp_path: Path, index_tag: str):
+    """The other index kinds keep their entries in ``text:index-body`` too.
+
+    They have no ``text:table-of-content-source``: only the shared index
+    containers are written.
+    """
+    path = tmp_path / "index.odt"
+    source = OdfDocument("text")
+    body = source.body
+    body.clear()
+
+    body.append(Paragraph("Intro paragraph."))
+    index = Element.from_tag(index_tag)
+    index_body = Element.from_tag("text:index-body")
+    index_title = Element.from_tag("text:index-title")
+    index_title.append(Paragraph("Index title"))
+    index_body.append(index_title)
+    index_body.append(Paragraph("First entry"))
+    index.append(index_body)
+    body.append(index)
+    body.append(Paragraph("Outro paragraph."))
+    source.save(str(path))
+
+    result = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    assert [item.text for item in result.document.texts] == [
+        "Intro paragraph.",
+        "Index title",
+        "First entry",
+        "Outro paragraph.",
+    ]
+    assert all(item.label == DocItemLabel.TEXT for item in result.document.texts)
+
+
 def test_ods_conversion(ods_path: Path):
     res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(ods_path)
     doc = res.document
