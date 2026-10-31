@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Final, cast
 
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -171,6 +172,8 @@ class XMLComponents(TypedDict):
     title: str
     authors: list[Author]
     abstract: list[Abstract]
+    # Copyright, license and funding statement nodes, walked at emit time.
+    statements: list[etree._Element]
 
 
 class JatsDocumentBackend(DeclarativeDocumentBackend):
@@ -311,6 +314,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if self.root:
                 for sub_article in sub_articles:
                     self._add_sub_article(doc, self.root, sub_article)
+
+            # add the copyright, license and funding statements as furniture
+            self._add_statements(doc, xml_components)
         except Exception:
             _log.error(traceback.format_exc())
 
@@ -538,12 +544,25 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return text
 
+    def _parse_statements(self) -> list[etree._Element]:
+        """Return the copyright, license and funding statements of the metadata."""
+        meta: etree._Element | None = self._find_metadata()
+        if meta is None:
+            return []
+
+        return meta.xpath(
+            "permissions/copyright-statement"
+            "|permissions/license/license-p"
+            "|funding-group/funding-statement"
+        )
+
     def _parse_metadata(self) -> XMLComponents:
         """Parsing JATS document metadata."""
         xml_components: XMLComponents = {
             "title": self._parse_title(),
             "authors": self._parse_authors(),
             "abstract": self._parse_abstract(),
+            "statements": self._parse_statements(),
         }
         return xml_components
 
@@ -583,6 +602,24 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     self._walk_linear(doc, section_parent, paragraph)
 
         return
+
+    def _add_statements(
+        self, doc: DoclingDocument, xml_components: XMLComponents
+    ) -> None:
+        """Add the copyright, license and funding statements of the metadata.
+
+        Like page headers and footers in other backends, the statements go into
+        the furniture layer: available on request, but out of the reading order.
+        """
+        if self.root is None:
+            return
+        for statement in xml_components["statements"]:
+            JatsDocumentBackend._emit_inline(
+                doc,
+                self.root,
+                self._walk_linear(doc, self.root, statement),
+                content_layer=ContentLayer.FURNITURE,
+            )
 
     def _add_authors(self, doc: DoclingDocument, xml_components: XMLComponents) -> None:
         # TODO: once docling supports text formatting, add affiliation reference to
@@ -934,13 +971,20 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _emit_inline(
-        doc: DoclingDocument, parent: NodeItem, segments: list[InlineSegment]
+        doc: DoclingDocument,
+        parent: NodeItem,
+        segments: list[InlineSegment],
+        content_layer: ContentLayer | None = None,
     ) -> None:
         """Emit inline segments under ``parent``, wrapping many in an inline group."""
         segments = JatsDocumentBackend._strip_segments(segments)
         if not segments:
             return
-        container = doc.add_inline_group(parent=parent) if len(segments) > 1 else parent
+        container = (
+            doc.add_inline_group(parent=parent, content_layer=content_layer)
+            if len(segments) > 1
+            else parent
+        )
         for segment in segments:
             doc.add_text(
                 label=segment.label,
@@ -948,6 +992,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 formatting=segment.formatting,
                 hyperlink=segment.hyperlink,
                 parent=container,
+                content_layer=content_layer,
             )
 
     def _add_figure_captions(
