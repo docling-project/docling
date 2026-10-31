@@ -912,6 +912,48 @@ Nested **bold _and italic_** text.
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["um"]
 
 
+def test_links_in_paragraphs() -> None:
+    # URL and link macros used to stay in the text as literal markup, such as
+    # "https://example.com[Example]". They are now text with a hyperlink.
+    source = b"""See https://example.com[Example site], link:docs/install.html[Install]
+and mailto:team@example.com[].
+
+Bare https://example.com/a_b/c.html, <https://example.com/x> and
+https://example.com[Docs, window=_blank] or https://example.com[*Bold* link^].
+
+Not linked: word:https://example.com.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="links.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [
+        (item.text, str(item.hyperlink), item.formatting is not None)
+        for item in doc.texts
+        if item.hyperlink is not None
+    ]
+    assert links == [
+        ("Example site", "https://example.com/", False),
+        ("Install", str(Path("docs/install.html")), False),
+        ("team@example.com", "mailto:team@example.com", False),
+        ("https://example.com/a_b/c.html", "https://example.com/a_b/c.html", False),
+        ("https://example.com/x", "https://example.com/x", False),
+        ("Docs", "https://example.com/", False),
+        ("Bold", "https://example.com/", True),
+        ("link", "https://example.com/", False),
+    ]
+    plain = [item.text for item in doc.texts if item.hyperlink is None]
+    assert "Not linked: word:https://example.com." in plain
+    md = doc.export_to_markdown()
+    assert "[Example site](https://example.com/)" in md
+    assert "example.com[" not in md
+    assert "link:" not in md
+
+
 @pytest.mark.parametrize("mark", ["*", "_", "`"])
 def test_many_unclosed_inline_marks_stay_plain_text(mark: str) -> None:
     # A long line of opening marks that never close must convert in linear
