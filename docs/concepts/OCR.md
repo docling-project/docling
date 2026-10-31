@@ -362,6 +362,25 @@ tag where one exists, and the bare file name for everything else.
 An empty `lang` list runs Tesseract's per-page orientation and script detection. That requires
 the `osd` traineddata; without it, `lang=[]` raises with an install hint.
 
+### Tesseract image input and orientation
+
+Both Tesseract engines receive a grayscale render of each OCR region, together with its resolution:
+72 DPI times `scale`, so 216 DPI by default. Tesseract binarizes a colour image channel by channel,
+which can blank out text on a highlighter mark or a coloured background; a grayscale image avoids
+that. The cost is lower contrast for light text on a strongly coloured box and for light, saturated
+text such as orange or yellow on white, which Tesseract can then miss.
+
+Before reading a region, Docling runs Tesseract's orientation and script detection (OSD) on it and
+turns it upright. OSD reports its orientation confidence as the margin between its best and
+second-best orientation, so a value near 0 is a close call. A detection below
+`orientation_confidence_threshold` (default `1.0`) is ignored and the region is read as rendered.
+Set it to `0` to rotate on every detection, or raise it when a wrong rotation costs you more than a
+missed one; OCRmyPDF's page-rotation default, for example, is 14.
+
+When Tesseract fails on a region in the `tesseract` engine, the failure is reported in
+`ConversionResult.errors` with its page number and Tesseract's message, and the document is marked
+`PARTIAL_SUCCESS`.
+
 ## OcrMac
 
 The engine's own vocabulary, in its own codes, is listed in

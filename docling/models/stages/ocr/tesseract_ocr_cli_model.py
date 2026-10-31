@@ -18,7 +18,12 @@ from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import (
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    Page,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     OcrOptions,
@@ -69,6 +74,7 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
+        self._dpi = round(72 * self.scale)
 
         self._name: Optional[str] = None
         self._version: Optional[str] = None
@@ -226,12 +232,13 @@ class TesseractOcrCliModel(BaseOcrModel):
         if self.options.psm is not None:
             cmd.extend(["--psm", str(int(self.options.psm))])
 
+        cmd.extend(["--dpi", str(self._dpi)])
         cmd.append(self._sanitize_filename(ifilename))
         cmd.extend(["stdout", "tsv"])
         _log.info("command: {}".format(" ".join(cmd)))
 
         output = subprocess.run(
-            cmd, stdout=PIPE, stderr=DEVNULL, stdin=DEVNULL, check=True, shell=False
+            cmd, capture_output=True, stdin=DEVNULL, check=True, shell=False
         )
 
         # _log.info(output)
@@ -272,6 +279,8 @@ class TesseractOcrCliModel(BaseOcrModel):
             "0",
             "-l",
             "osd",
+            "--dpi",
+            str(self._dpi),
             self._sanitize_filename(ifilename),
             "stdout",
         ]
@@ -344,7 +353,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                             continue
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
-                        )
+                        ).convert("L")
                         try:
                             with tempfile.NamedTemporaryFile(
                                 suffix=".png", mode="w+b", delete=False
@@ -355,7 +364,10 @@ class TesseractOcrCliModel(BaseOcrModel):
                             df_osd: Optional[pd.DataFrame] = None
                             try:
                                 df_osd = self._perform_osd(fname)
-                                doc_orientation = _parse_orientation(df_osd)
+                                doc_orientation = _parse_orientation(
+                                    df_osd,
+                                    self.options.orientation_confidence_threshold,
+                                )
                             except subprocess.CalledProcessError as exc:
                                 _log.error(
                                     "OSD failed (doc %s, page: %s, "
@@ -386,6 +398,18 @@ class TesseractOcrCliModel(BaseOcrModel):
                                     ocr_rect_i,
                                     image_file,
                                     exc.stderr,
+                                )
+                                conv_res.errors.append(
+                                    ErrorItem(
+                                        component_type=DoclingComponentType.MODEL,
+                                        module_name=type(self).__name__,
+                                        error_message=(
+                                            f"Tesseract failed on OCR rectangle {ocr_rect_i}: "
+                                            f"{_stderr_text(exc)}"
+                                        ),
+                                        category=FailureCategory.INFERENCE_FAILURE,
+                                        page_no=page.page_no,
+                                    )
                                 )
                                 continue
                         finally:
@@ -440,9 +464,16 @@ class TesseractOcrCliModel(BaseOcrModel):
         return TesseractCliOcrOptions
 
 
-def _parse_orientation(df_osd: pd.DataFrame) -> int:
+def _parse_orientation(df_osd: pd.DataFrame, confidence_threshold: float) -> int:
     # For strictly optimal performance with invariant dataframe format:
-    mask = df_osd["key"].to_numpy() == "Orientation in degrees"
-    orientation_val = df_osd["value"].to_numpy()[mask][0]
+    keys = df_osd["key"].to_numpy()
+    values = df_osd["value"].to_numpy()
+    if float(values[keys == "Orientation confidence"][0]) < confidence_threshold:
+        return 0
+    orientation_val = values[keys == "Orientation in degrees"][0]
     orientation = parse_tesseract_orientation(orientation_val.strip())
     return orientation
+
+
+def _stderr_text(exc: subprocess.CalledProcessError) -> str:
+    return " ".join((exc.stderr or b"").decode("utf-8", "replace").split())

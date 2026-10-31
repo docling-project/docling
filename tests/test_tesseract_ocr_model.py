@@ -28,6 +28,9 @@ class _OcrReader(_Reader):
     def SetImage(self, image):
         pass
 
+    def SetSourceResolution(self, ppi):
+        pass
+
     def DetectOrientationScript(self):
         return {"orient_deg": 0, "orient_conf": 10.0, "script_name": "Latin"}
 
@@ -108,6 +111,16 @@ def test_cell_confidence_is_scaled_to_unit_range(monkeypatch, tmp_path):
         accelerator_options=AcceleratorOptions(),
     )
 
+    conv_res, page = _ocr_blank_page(model, tmp_path, page_no=0)
+
+    assert page.parsed_page is not None
+    cells = page.parsed_page.textline_cells
+    assert [cell.confidence for cell in cells] == [pytest.approx(0.42)]
+    assert conv_res.confidence.pages[0].ocr_score == pytest.approx(0.42)
+    del model
+
+
+def _ocr_blank_page(model, tmp_path, page_no=1):
     image_path = tmp_path / "page.png"
     Image.new("RGB", (200, 100), "white").save(image_path)
     in_doc = InputDocument(
@@ -117,15 +130,61 @@ def test_cell_confidence_is_scaled_to_unit_range(monkeypatch, tmp_path):
     )
     conv_res = ConversionResult(input=in_doc)
     page_backend = in_doc._backend.load_page(0)
-    page = Page(page_no=0, size=page_backend.get_size())
+    page = Page(page_no=page_no, size=page_backend.get_size())
     page._backend = page_backend
 
-    list(model(conv_res, [page]))
+    assert list(model(conv_res, [page])) == [page]
+    return conv_res, page
 
-    assert page.parsed_page is not None
-    cells = page.parsed_page.textline_cells
-    assert [cell.confidence for cell in cells] == [pytest.approx(0.42)]
-    assert conv_res.confidence.pages[0].ocr_score == pytest.approx(0.42)
+
+def _recording_reader(osd):
+    class _RecordingReader(_OcrReader):
+        images: list[tuple[str, tuple[int, int]]] = []
+        resolutions: list[int] = []
+
+        def SetImage(self, image):
+            _RecordingReader.images.append((image.mode, image.size))
+
+        def SetSourceResolution(self, ppi):
+            _RecordingReader.resolutions.append(ppi)
+
+        def DetectOrientationScript(self):
+            return osd
+
+    return _RecordingReader
+
+
+def _model_with_reader(monkeypatch, reader, **options):
+    monkeypatch.setitem(
+        sys.modules,
+        "tesserocr",
+        _fake_tesserocr(lambda **kwargs: ("/tessdata", ["eng", "osd"]), reader),
+    )
+    return TesseractOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=TesseractOcrOptions(mode=OcrMode.FULL_PAGE, **options),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+
+@pytest.mark.parametrize(
+    ("orient_conf", "ocr_size"),
+    [(0.4, (600, 300)), (8.0, (300, 600))],
+    ids=["close-call", "confident"],
+)
+def test_region_is_rotated_only_on_a_confident_orientation(
+    monkeypatch, tmp_path, orient_conf, ocr_size
+):
+    reader = _recording_reader(
+        {"orient_deg": 90, "orient_conf": orient_conf, "script_name": "Latin"}
+    )
+    model = _model_with_reader(monkeypatch, reader, lang=["eng"])
+
+    _ocr_blank_page(model, tmp_path)
+
+    assert reader.images == [("L", (600, 300)), ("L", ocr_size)]
+    assert reader.resolutions == [216, 216]
     del model
 
 
