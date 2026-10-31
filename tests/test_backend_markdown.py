@@ -1052,10 +1052,7 @@ def test_ordered_list_split_by_prose_preserves_numbers():
 
 
 def test_ordered_list_numbers_survive_html_block():
-    """A Markdown file with an HTML block is converted again through HTML.
-
-    The list numbers must survive that round trip, like in a file without HTML.
-    """
+    """The list numbers are the same as in a file without HTML blocks."""
     markdown = "5. foo\n6. bar\n\nRestart the shell.\n\n7. baz\n\n<div>note</div>\n"
     conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
     assert conv_result.status == ConversionStatus.SUCCESS
