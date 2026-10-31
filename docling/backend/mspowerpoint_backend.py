@@ -247,6 +247,92 @@ class _OpenList:
     last_item: Optional[ListItem] = None
 
 
+_ROMAN_NUMERALS: Final[tuple[tuple[int, str], ...]] = (
+    (1000, "M"),
+    (900, "CM"),
+    (500, "D"),
+    (400, "CD"),
+    (100, "C"),
+    (90, "XC"),
+    (50, "L"),
+    (40, "XL"),
+    (10, "X"),
+    (9, "IX"),
+    (5, "V"),
+    (4, "IV"),
+    (1, "I"),
+)
+
+
+def _int_to_letter_marker(value: int) -> str:
+    """Map a 1-based counter to a, ..., z, aa, bb, ..., as the Word backend does."""
+    if value <= 0:
+        return str(value)
+    return chr(ord("a") + (value - 1) % 26) * ((value - 1) // 26 + 1)
+
+
+def _int_to_roman_marker(value: int) -> str:
+    """Map a 1-based counter to an upper-case Roman numeral."""
+    if value <= 0:
+        return str(value)
+    remaining = value
+    numeral = ""
+    for amount, symbol in _ROMAN_NUMERALS:
+        count, remaining = divmod(remaining, amount)
+        numeral += symbol * count
+    return numeral
+
+
+_AUTO_NUMBER_SCHEME: Final = re.compile(
+    r"(?P<counter>alphaLc|alphaUc|romanLc|romanUc)"
+    r"(?P<punctuation>ParenBoth|ParenR|Period)"
+)
+"""``a:buAutoNum/@type`` schemes that count with Latin letters or Roman numerals,
+such as ``alphaLcParenR`` for "a) b) c)". Arabic schemes keep the decimal number
+and a period, as numbered lists do in the Word backend."""
+
+_AUTO_NUMBER_COUNTERS: Final[dict[str, Callable[[int], str]]] = {
+    "alphaLc": _int_to_letter_marker,
+    "alphaUc": lambda value: _int_to_letter_marker(value).upper(),
+    "romanLc": lambda value: _int_to_roman_marker(value).lower(),
+    "romanUc": _int_to_roman_marker,
+}
+"""Writes the counter for the start of a scheme name, such as ``alphaLc``."""
+
+_AUTO_NUMBER_PUNCTUATION: Final[dict[str, tuple[str, str]]] = {
+    "ParenBoth": ("(", ")"),
+    "ParenR": ("", ")"),
+    "Period": ("", "."),
+}
+"""The text before and after the counter for the end of a scheme name, such as
+``ParenR``."""
+
+_MAX_AUTO_NUMBER_START: Final = 32767
+"""The largest ``a:buAutoNum/@startAt`` value that ``ST_TextBulletStartAtNum``
+allows. A larger value is invalid and would build very long letter or Roman
+markers."""
+
+
+def _auto_number_marker(value: int, scheme: Optional[str]) -> str:
+    """Return the marker that PowerPoint shows for an auto-numbered paragraph.
+
+    Args:
+        value: The number of the paragraph in its list.
+        scheme: The ``a:buAutoNum/@type`` value, such as ``alphaLcParenR``, or
+            None when the element has no type.
+
+    Returns:
+        The marker, such as ``"c)"`` for 3 and ``alphaLcParenR``. Other schemes,
+            such as ``arabicParenR``, ``circleNumDbPlain`` or ``ea1JpnKorPeriod``,
+            give the decimal number and a period.
+    """
+    match = _AUTO_NUMBER_SCHEME.fullmatch(scheme or "")
+    if match is None:
+        return f"{value}."
+    prefix, suffix = _AUTO_NUMBER_PUNCTUATION[match["punctuation"]]
+    return prefix + _AUTO_NUMBER_COUNTERS[match["counter"]](value) + suffix
+
+
 def _is_metafile(image_bytes: bytes) -> bool:
     """Return True when the bytes are a Windows metafile (WMF or EMF).
 
@@ -572,14 +658,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         Returns:
             The `startAt` value, or 1 when the paragraph carries no `a:buAutoNum`
-                element, no `startAt` attribute, or an invalid value.
+                element, no `startAt` attribute, or an invalid value. Valid values
+                are the integers from 1 to 32767 (`ST_TextBulletStartAtNum`).
         """
         bu_auto = paragraph.find("a:pPr/a:buAutoNum", namespaces=self.NAMESPACES)
         if bu_auto is not None and "startAt" in bu_auto.attrib:
             try:
-                return int(bu_auto.get("startAt"))
+                start = int(bu_auto.get("startAt"))
             except ValueError:
-                pass
+                return 1
+            if 1 <= start <= _MAX_AUTO_NUMBER_START:
+                return start
         return 1
 
     def _parse_bullet_from_paragraph_properties(
@@ -729,7 +818,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         is_list, kind, detail = self._parse_bullet_from_paragraph_properties(lvl_pPr)
         return (is_list, kind, detail)
 
-    def _is_list_item(self, paragraph) -> tuple[bool, str]:
+    def _is_list_item(self, paragraph) -> tuple[bool, str, Optional[str]]:
         """Determine whether a paragraph should be treated as a list item.
 
         The method first tries to resolve list style information via the shape that
@@ -740,9 +829,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             paragraph: `python-pptx` paragraph object to inspect.
 
         Returns:
-            A 2-tuple (`is_list`, `bullet_type`) where: `is_list` is True if the
-                paragraph is considered a list item, otherwise False; `bullet_type` is
-                one of `Bullet`, `Numbered` or `None`, describing the list marker type.
+            A 3-tuple (`is_list`, `bullet_type`, `auto_number_scheme`) where:
+                `is_list` is True if the paragraph is considered a list item,
+                otherwise False; `bullet_type` is one of `Bullet`, `Numbered` or
+                `None`, describing the list marker type; `auto_number_scheme` is the
+                numbering type string (`a:buAutoNum/@type`) of a `Numbered` item, or
+                None.
         """
         p = paragraph._element
 
@@ -767,34 +859,33 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 "buBlip",
             ):
                 if marker_info["kind"] == "buChar":
-                    return (True, "Bullet")
+                    return (True, "Bullet", None)
                 elif marker_info["kind"] == "buAutoNum":
-                    return (True, "Numbered")
+                    return (True, "Numbered", marker_info["detail"])
                 else:
-                    return (True, "None")
+                    return (True, "None", None)
 
             # Check if it's definitely not a list item
             if marker_info["is_list"] is False:
-                return (False, "None")
+                return (False, "None", None)
 
             # Fallback to paragraph level check
             if paragraph.level > 0:
-                return (True, "None")
+                return (True, "None", None)
 
-            return (False, "None")
+            return (False, "None", None)
 
         # Fallback to simpler check if shape is not available
+        bu_auto = p.find(".//a:buAutoNum", namespaces={"a": self.NAMESPACES["a"]})
         if p.find(".//a:buChar", namespaces={"a": self.NAMESPACES["a"]}) is not None:
-            return (True, "Bullet")
-        elif (
-            p.find(".//a:buAutoNum", namespaces={"a": self.NAMESPACES["a"]}) is not None
-        ):
-            return (True, "Numbered")
+            return (True, "Bullet", None)
+        elif bu_auto is not None:
+            return (True, "Numbered", bu_auto.get("type"))
         elif paragraph.level > 0:
             # Most likely a sub-list
-            return (True, "None")
+            return (True, "None", None)
         else:
-            return (False, "None")
+            return (False, "None", None)
 
     def _get_effective_list_marker(self, shape, paragraph) -> dict:
         """Return a dictionary describing the effective list marker for a paragraph.
@@ -1021,7 +1112,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         # Iterate through paragraphs to build up text
         for paragraph in shape.text_frame.paragraphs:
-            is_a_list, bullet_type = self._is_list_item(paragraph)
+            is_a_list, bullet_type, auto_number_scheme = self._is_list_item(paragraph)
             p = paragraph._element
 
             fragments = _paragraph_fragments(p)
@@ -1065,7 +1156,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     if current.counter == 0:
                         current.counter = self._get_auto_number_start(p) - 1
                     current.counter += 1
-                    enum_marker = str(current.counter) + "."
+                    enum_marker = _auto_number_marker(
+                        current.counter, auto_number_scheme
+                    )
 
                 current.last_item = doc.add_list_item(
                     marker=enum_marker,
