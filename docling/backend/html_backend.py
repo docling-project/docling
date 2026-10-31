@@ -5261,9 +5261,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
             caption_prov_tag = img_tag
 
-        caption_anno_text = caption.to_single_text_element()
+        src_loc: str = self._get_attr_as_string(img_tag, "src")
+        img_ref: Optional[ImageRef] = None
+        if cast(HTMLBackendOptions, self.options).fetch_images and src_loc:
+            try:
+                src_loc = self._resolve_relative_path(src_loc)
+            except ValueError as e:
+                # The source is not loaded, but the picture is kept, as for an
+                # image file that cannot be read.
+                warnings.warn(f"Could not process an image from {src_loc}: {e}")
+            else:
+                img_ref = self._create_image_ref(src_loc)
 
-        caption_item: Optional[TextItem] = None
+        docling_pic = doc.add_picture(
+            image=img_ref,
+            parent=parent,
+            content_layer=self.content_layer,
+            prov=self._make_prov(text="", tag=img_tag),
+        )
+
+        # Add the caption as a child of its picture, as the PDF pipeline does,
+        # so that it stays with the picture in its section or table cell.
+        caption_anno_text = caption.to_single_text_element()
         if caption_anno_text.text:
             text_clean = HTMLDocumentBackend._clean_unicode(
                 caption_anno_text.text.strip()
@@ -5281,37 +5300,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 formatting=caption_anno_text.formatting,
                 hyperlink=caption_anno_text.hyperlink,
                 prov=prov,
+                parent=docling_pic,
             )
+            docling_pic.captions.append(caption_item.get_ref())
 
-        src_loc: str = self._get_attr_as_string(img_tag, "src")
-        pic_prov = self._make_prov(text="", tag=img_tag)
-        if not cast(HTMLBackendOptions, self.options).fetch_images or not src_loc:
-            # Do not fetch the image, just add a placeholder
-            placeholder: PictureItem = doc.add_picture(
-                caption=caption_item,
-                parent=parent,
-                content_layer=self.content_layer,
-                prov=pic_prov,
-            )
-            return placeholder.get_ref()
-
-        img_ref: Optional[ImageRef] = None
-        try:
-            src_loc = self._resolve_relative_path(src_loc)
-        except ValueError as e:
-            # The source is not loaded, but the picture is kept, as for an
-            # image file that cannot be read.
-            warnings.warn(f"Could not process an image from {src_loc}: {e}")
-        else:
-            img_ref = self._create_image_ref(src_loc)
-
-        docling_pic = doc.add_picture(
-            image=img_ref,
-            caption=caption_item,
-            parent=parent,
-            content_layer=self.content_layer,
-            prov=pic_prov,
-        )
         return docling_pic.get_ref()
 
     def _emit_input(self, input_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
