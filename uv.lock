@@ -1989,7 +1989,7 @@ requires-dist = [{ name = "docling-slim", extras = ["service-client"], editable 
 [[package]]
 name = "docling-core"
 version = "2.105.0"
-source = { git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes#c87ddd1160f99b85dcf8e438bacae102b4d0d4fb" }
+source = { git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes#9e4820d7004ec948fd6d13d86903f37af6fd1f34" }
 dependencies = [
     { name = "defusedxml" },
     { name = "doclang" },
