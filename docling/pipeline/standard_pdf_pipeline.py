@@ -650,6 +650,9 @@ class StandardPdfPipeline(ConvertPipeline):
                     self.pipeline_options.do_ocr
                     and self.pipeline_options.ocr_options.replace_broken_text_layer
                 ),
+                check_indic_scripts=(
+                    self.pipeline_options.ocr_options.check_indic_scripts
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)

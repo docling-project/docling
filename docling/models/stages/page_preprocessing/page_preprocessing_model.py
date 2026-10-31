@@ -46,6 +46,7 @@ class PagePreprocessingOptions(BaseModel):
     capture_reading_order_separators: bool = False
     # Score a broken text layer as poor, for OcrOptions.replace_broken_text_layer.
     detect_broken_text_layer: bool = False
+    check_indic_scripts: bool = False  # OcrOptions.check_indic_scripts.
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -130,7 +131,10 @@ class PagePreprocessingModel(BasePageModel):
         # also comes from a few unmapped glyphs, such as bullets, on a good page.
         if self.options.detect_broken_text_layer and not np.isnan(parse_score):
             visible_cells, _ = segregate_by_visibility(page.cells)
-            if is_broken_text_layer("\n".join(c.text for c in visible_cells)):
+            if is_broken_text_layer(
+                "\n".join(c.text for c in visible_cells),
+                check_indic=self.options.check_indic_scripts,
+            ):
                 page._broken_text_layer = True
                 parse_score = 0.0
         conv_res.confidence.pages[page.page_no].parse_score = parse_score
