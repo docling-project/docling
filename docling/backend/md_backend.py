@@ -72,7 +72,11 @@ try:  # pragma: no cover - import-time guard
             if super().break_paragraph(source, lazy):
                 return True
             if "Table" in source.parser.block_elements:
+                # Paragraph.parse consumes the line through source.match, so the
+                # probe must restore it or a lazy continuation line never advances.
+                prev_match = source.match
                 matched = source.parser.block_elements["Table"].match(source)
+                source.match = prev_match
                 if matched:
                     source.reset()
                     return True
