@@ -52,6 +52,50 @@ _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms
 # that starts with an abbreviation such as "Dr." or "Fig." stays text.
 _LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
 
+# An attribute entry ":name: value" sets a document attribute; ":name!:" and
+# ":!name:" unset it. A reference "{name}" is replaced by the value of the
+# attribute, "\{name}" is kept as the literal "{name}", and a reference to an
+# attribute that is not set stays as written (Asciidoctor's default
+# attribute-missing behavior).
+_ATTRIBUTE_ENTRY_RE: Final = re.compile(
+    r"^:(?P<unset_before>!)?(?P<name>\w[\w.-]*?)(?P<unset_after>!)?:(?:\s+(?P<value>.*))?$"
+)
+_ATTRIBUTE_REFERENCE_RE: Final = re.compile(r"(?P<escape>\\)?\{(?P<name>\w[\w-]*)\}")
+# Attributes that Asciidoctor predefines for characters that are awkward to type
+# or would otherwise be read as markup.
+_INTRINSIC_ATTRIBUTES: Final = {
+    "empty": "",
+    "blank": "",
+    "sp": " ",
+    "nbsp": "\u00a0",
+    "zwsp": "\u200b",
+    "wj": "\u2060",
+    "apos": "'",
+    "quot": '"',
+    "lsquo": "\u2018",
+    "rsquo": "\u2019",
+    "ldquo": "\u201c",
+    "rdquo": "\u201d",
+    "deg": "\u00b0",
+    "plus": "+",
+    "brvbar": "\u00a6",
+    "vbar": "|",
+    "amp": "&",
+    "lt": "<",
+    "gt": ">",
+    "startsb": "[",
+    "endsb": "]",
+    "caret": "^",
+    "asterisk": "*",
+    "tilde": "~",
+    "backslash": "\\",
+    "backtick": "`",
+    "two-colons": "::",
+    "two-semicolons": ";;",
+    "cpp": "C++",
+    "pp": "++",
+}
+
 # Inline formatting marks, unconstrained (doubled, valid anywhere) before
 # constrained (single, valid only at word boundaries, so "snake_case" and
 # "2*3*4" stay plain text), as in Asciidoctor. A constrained span does not
@@ -235,6 +279,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             parents[i] = None
             indents[i] = None
 
+        attributes = self._header_attributes(self.lines)
+
         for block in self._iter_blocks(self.lines):
             if not isinstance(block, str):
                 text_data, caption_data, in_list, last_list_item, list_continuation = (
@@ -253,7 +299,15 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             line = block
             stripped_line = line.strip()
-            if in_delimited_table and self._continue_table(table_data, line):
+
+            # Attribute entries set or unset a document attribute; they are
+            # never body content. Every other line has its attribute
+            # references replaced before its text is used.
+            if self._apply_attribute_entry(stripped_line, attributes):
+                continue
+            text_line = self._substitute_attributes(line, attributes)
+
+            if in_delimited_table and self._continue_table(table_data, text_line):
                 continue
 
             in_list, last_list_item, list_continuation = self._close_list_if_needed(
@@ -268,16 +322,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # Block attributes and anchors (e.g. "[cols=\"2,1\"]", "[NOTE]",
             # "[[some-id]]") are metadata that applies to the block that
             # follows; they are never body content, so skip them.
-            if (
-                re.match(r"^\[\[.+\]\]$", stripped_line)
-                or re.match(r"^\[[^\[\]]+\]$", stripped_line)
-                or re.match(r"^:[\w.-]+:(\s.*)?$", stripped_line)
+            if re.match(r"^\[\[.+\]\]$", stripped_line) or re.match(
+                r"^\[[^\[\]]+\]$", stripped_line
             ):
                 continue
 
             # Title
             if self._is_title(line):
-                item = self._parse_title(line)
+                item = self._parse_title(text_line)
                 level = item["level"]
 
                 parents[level] = doc.add_text(
@@ -294,7 +346,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     text_data=text_data,
                     parent=self._get_current_parent(parents),
                 )
-                item = self._parse_section_header(line)
+                item = self._parse_section_header(text_line)
                 level = item["level"]
 
                 ancestor = next(
@@ -311,7 +363,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             # Lists
             elif self._is_list_item(line):
                 _log.debug(f"line: {line}")
-                item = self._parse_list_item(line)
+                item = self._parse_list_item(text_line)
                 _log.debug(f"parsed list-item: {item}")
 
                 level = self._get_current_level(parents)
@@ -392,7 +444,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             elif self._is_table_line(line):  # within a table
                 in_table = True
-                table_data.append(self._parse_table_line(line))
+                table_data.append(self._parse_table_line(text_line))
 
             elif in_table and not self._is_table_line(line):  # end of table
                 self._add_table_if_nonempty(
@@ -406,7 +458,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             elif self._is_picture(line):
                 caption_data, in_list, last_list_item = self._add_picture_item(
                     doc=doc,
-                    line=line,
+                    line=text_line,
                     caption_data=caption_data,
                     in_list=in_list,
                     last_list_item=last_list_item,
@@ -416,7 +468,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Caption
             elif self._is_caption(line) and len(caption_data) == 0:
-                item = self._parse_caption(line)
+                item = self._parse_caption(text_line)
                 caption_data.append(item["text"])
 
             elif len(line.strip()) > 0 and len(caption_data) > 0:
@@ -429,7 +481,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 caption_data = self._flush_caption_as_paragraph(
                     doc, caption_data, parent
                 )
-                item = self._parse_text(line)
+                item = self._parse_text(text_line)
                 text_data.append(item["text"])
 
             elif len(line.strip()) == 0:
@@ -441,7 +493,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 )
 
             elif len(line.strip()) > 0:  # allow multiline texts
-                item = self._parse_text(line)
+                item = self._parse_text(text_line)
                 text_data.append(item["text"])
 
         text_data = self._flush_text_data(
@@ -461,6 +513,65 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             )
 
         return doc
+
+    @classmethod
+    def _header_attributes(cls, lines: list[str]) -> dict[str, str]:
+        """Collect the attributes set in the document header.
+
+        Header attributes apply to the whole document, including the document
+        title above them ("= {product} Guide" followed by ":product: Widget").
+        The header is the document title with the lines that follow it up to
+        the first blank line, plus any attribute entries and comments above
+        the title.
+        """
+        attributes = dict(_INTRINSIC_ATTRIBUTES)
+        seen_title = False
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                if seen_title:
+                    break
+                continue
+            if cls._is_line_comment(line):
+                continue
+            if not seen_title and cls._is_title(line):
+                seen_title = True
+                continue
+            if cls._apply_attribute_entry(stripped, attributes):
+                continue
+            if not seen_title:
+                # Content before any title: the document has no header.
+                break
+            # Author and revision lines of the header.
+        return attributes
+
+    @staticmethod
+    def _apply_attribute_entry(line: str, attributes: dict[str, str]) -> bool:
+        """Set or unset an attribute if `line` is an attribute entry."""
+        match = _ATTRIBUTE_ENTRY_RE.match(line)
+        if match is None:
+            return False
+        name = match.group("name").lower()
+        if match.group("unset_before") or match.group("unset_after"):
+            attributes.pop(name, None)
+        else:
+            value = (match.group("value") or "").strip()
+            attributes[name] = AsciiDocBackend._substitute_attributes(value, attributes)
+        return True
+
+    @staticmethod
+    def _substitute_attributes(text: str, attributes: dict[str, str]) -> str:
+        """Replace the attribute references in `text` by their values."""
+        if "{" not in text:
+            return text
+
+        def replace(match: re.Match[str]) -> str:
+            name = match.group("name")
+            if match.group("escape"):
+                return "{" + name + "}"
+            return attributes.get(name.lower(), match.group(0))
+
+        return _ATTRIBUTE_REFERENCE_RE.sub(replace, text)
 
     @staticmethod
     def _get_current_level(parents):
