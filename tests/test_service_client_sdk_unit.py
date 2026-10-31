@@ -1906,6 +1906,40 @@ def test_submit_auto_falls_back_to_inbody_when_presigned_is_rejected() -> None:
     ]
 
 
+def test_submit_auto_reports_presigned_rejection_when_inbody_is_also_rejected() -> None:
+    def fake_submit_convert_task(
+        self,
+        source,
+        options,
+        target,
+        request_headers=None,
+    ):
+        if isinstance(target, PresignedUrlTarget):
+            raise ServiceError(
+                "Task submission failed.",
+                status_code=422,
+                detail=(
+                    "Presigned URL target requires artifact storage to be configured "
+                    "and enabled on the server."
+                ),
+            )
+        raise ServiceError(
+            "Task submission failed.",
+            status_code=422,
+            detail="target kind 'inbody' is not allowed.",
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit_convert_task, client)
+        with pytest.raises(ServiceError) as exc_info:
+            client.submit(source="https://example.org/sample.pdf")
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail is not None
+    assert "target kind 'inbody' is not allowed." in exc_info.value.detail
+    assert "requires artifact storage" in exc_info.value.detail
+
+
 def test_submit_and_retrieve_each_auto_target_returns_presigned_when_supported(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
