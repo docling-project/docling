@@ -1383,3 +1383,25 @@ def test_attribute_values_with_pipes_stay_inside_table_cells() -> None:
         "Answer",
         "yes|no more yes|no",
     ]
+
+
+def test_formatting_marks_from_attribute_values_stay_literal() -> None:
+    # Asciidoctor replaces attribute references after inline formatting, so
+    # marks that come from a value are text, while marks written around a
+    # reference still format its value.
+    src = (
+        b":product: snake_case_name\n"
+        b"\n"
+        b"Use {asterisk}not bold{asterisk} and {backtick}ls{backtick} here.\n"
+        b"\n"
+        b"Run *{product}* now.\n"
+    )
+    doc = _convert_adoc(src)
+
+    texts = [item.text for item in doc.texts]
+    assert texts[0] == "Use *not bold* and `ls` here."
+    assert doc.texts[0].formatting is None
+    bold = [item for item in doc.texts if item.text == "snake_case_name"]
+    assert len(bold) == 1
+    assert bold[0].formatting is not None and bold[0].formatting.bold
+    assert not any("\ue000" in t or "\ue001" in t or "\ue002" in t for t in texts)

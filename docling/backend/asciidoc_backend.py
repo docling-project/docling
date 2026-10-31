@@ -96,6 +96,14 @@ _INTRINSIC_ATTRIBUTES: Final = {
     "pp": "++",
 }
 
+# Asciidoctor replaces attribute references after inline formatting, so marks
+# that come from an attribute value ("{asterisk}", "{backtick}") are literal
+# text. Paragraph text is formatted after the references are replaced, so the
+# marks in a value are swapped for private-use stand-ins until then.
+_PROTECTED_MARKS: Final = {"*": "\ue000", "_": "\ue001", "`": "\ue002"}
+_PROTECT_MARKS: Final = str.maketrans(_PROTECTED_MARKS)
+_RESTORE_MARKS: Final = str.maketrans({v: k for k, v in _PROTECTED_MARKS.items()})
+
 # Inline formatting marks, unconstrained (doubled, valid anywhere) before
 # constrained (single, valid only at word boundaries, so "snake_case" and
 # "2*3*4" stay plain text), as in Asciidoctor. A constrained span does not
@@ -306,6 +314,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             if self._apply_attribute_entry(stripped_line, attributes):
                 continue
             text_line = self._substitute_attributes(line, attributes)
+            paragraph_line = self._substitute_attributes(
+                line, attributes, protect_marks=True
+            )
 
             # Table rows are split into cells before references are replaced,
             # so a value containing "|" (e.g. "{vbar}") stays cell text.
@@ -490,7 +501,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 caption_data = self._flush_caption_as_paragraph(
                     doc, caption_data, parent
                 )
-                item = self._parse_text(text_line)
+                item = self._parse_text(paragraph_line)
                 text_data.append(item["text"])
 
             elif len(line.strip()) == 0:
@@ -502,7 +513,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 )
 
             elif len(line.strip()) > 0:  # allow multiline texts
-                item = self._parse_text(text_line)
+                item = self._parse_text(paragraph_line)
                 text_data.append(item["text"])
 
         text_data = self._flush_text_data(
@@ -569,8 +580,15 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return True
 
     @staticmethod
-    def _substitute_attributes(text: str, attributes: dict[str, str]) -> str:
-        """Replace the attribute references in `text` by their values."""
+    def _substitute_attributes(
+        text: str, attributes: dict[str, str], protect_marks: bool = False
+    ) -> str:
+        """Replace the attribute references in `text` by their values.
+
+        With `protect_marks`, inline formatting marks in the values are
+        replaced by stand-ins that `_flush_text_data` turns back into the
+        marks after formatting, so they stay literal text.
+        """
         if "{" not in text:
             return text
 
@@ -578,7 +596,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             name = match.group("name")
             if match.group("escape"):
                 return "{" + name + "}"
-            return attributes.get(name.lower(), match.group(0))
+            value = attributes.get(name.lower())
+            if value is None:
+                return match.group(0)
+            return value.translate(_PROTECT_MARKS) if protect_marks else value
 
         return _ATTRIBUTE_REFERENCE_RE.sub(replace, text)
 
@@ -961,9 +982,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         if len(text_data) == 0:
             return []
         text = " ".join(text_data)
-        runs = AsciiDocBackend._parse_inline(text)
+        runs = [
+            _InlineRun(
+                run.text.translate(_RESTORE_MARKS), run.bold, run.italic, run.code
+            )
+            for run in AsciiDocBackend._parse_inline(text)
+        ]
         if not any(run.bold or run.italic or run.code for run in runs):
-            doc.add_text(text=text, label=DocItemLabel.PARAGRAPH, parent=parent)
+            doc.add_text(
+                text=text.translate(_RESTORE_MARKS),
+                label=DocItemLabel.PARAGRAPH,
+                parent=parent,
+            )
             return []
         # Mixed formatting needs one item per run, kept together in an inline
         # group like the Markdown backend does.
