@@ -15,6 +15,8 @@ produced by the PDF path defaults to ``level=1`` and the document hierarchy is f
    fuzzily matched (title + page) to detected headings; a confidently matched heading takes
    the bookmark's depth, and a confidently matched *list-item* is promoted to a heading
    (layout models often mis-classify a heading as a list-item).
+   When no bookmark matches, the **printed contents** pages take their place: their entries are
+   read from the parsed words of the ``DOCUMENT_INDEX`` regions and go through the same matcher.
 2. **numbering** -- legal/outline numbering such as ``PART I -> 1. -> 1.1 -> (a) -> (i)``.
    The primary signal for headings without a bookmark match: on legal/regulatory documents
    numbering is far more reliable than styling, which is often uniform.
@@ -36,17 +38,19 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+from itertools import pairwise
 from statistics import median
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
-from docling_core.types.doc.page import PdfTextCell, SegmentedPdfPage
+from docling_core.types.doc.page import PdfTextCell, SegmentedPdfPage, TextCell
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.utils.font_style import parse_font_style, weight_class
 from docling.utils.pdf_outline import _PdfOutlineItem
+from docling.utils.printed_toc import TocLine, page_label_value, read_toc_lines
 
 # Default precedence of numbering schemes, highest hierarchy level first. ``dotted`` shares
 # the ``arabic`` rank and is ordered below it by its segment depth (1.1 below 1.).
@@ -287,6 +291,8 @@ _ITALIC_RATIO = 0.6
 
 # Layout labels whose text lines the style signal reads.
 _STYLE_LABELS = frozenset({DocItemLabel.SECTION_HEADER, DocItemLabel.LIST_ITEM})
+# Layout labels whose words the printed-contents signal reads.
+_TOC_LABELS = frozenset({DocItemLabel.DOCUMENT_INDEX})
 
 
 def _is_all_caps(text: str) -> bool:
@@ -548,6 +554,142 @@ def _infer_from_bookmarks(
     return result
 
 
+# --------------------------------------------------------------------------- printed contents
+
+# A wrapped contents entry spans at most this many lines.
+_TOC_MAX_WRAP = 3
+# Share of falling page numbers above which a region is not a contents list (an alphabetical
+# index, for example).
+_TOC_MAX_FALLING = 0.2
+
+
+def _toc_entries(lines: list[TocLine]) -> list[TocLine]:
+    """Join wrapped lines into entries; only entries that end with a page label are kept.
+
+    A line without a page label continues into the next line ("Annex D" / "(normative)" /
+    "Character Sets ... 649"), unless the next line starts with its own numbering marker.
+    """
+    entries: list[TocLine] = []
+    pending: list[TocLine] = []
+    for line in lines:
+        if pending and _parse_marker(line.text) is not None:
+            pending = []
+        if line.page_label is None:
+            pending.append(line)
+            if len(pending) >= _TOC_MAX_WRAP:
+                pending = []
+            continue
+        if pending:
+            line = TocLine(
+                text=" ".join([*(p.text for p in pending), line.text]),
+                page_label=line.page_label,
+                indent=pending[0].indent,
+                height=pending[0].height,
+            )
+            pending = []
+        entries.append(line)
+    return entries
+
+
+def _is_contents(entries: list[TocLine]) -> bool:
+    """Whether the Arabic page labels mostly rise, as in a contents list."""
+    labels = [page_label_value(entry.page_label or "") for entry in entries]
+    pages = [label[1] for label in labels if label and label[0] == "arabic"]
+    pairs = list(pairwise(pages))
+    return not pairs or sum(b < a for a, b in pairs) <= _TOC_MAX_FALLING * len(pairs)
+
+
+def _cluster_indents(indents: list[float], tolerance: float) -> list[int]:
+    """Indentation cluster of each value, 0 for the leftmost; gaps above ``tolerance`` split."""
+    index: dict[float, int] = {}
+    cluster, previous = 0, None
+    for value in sorted(set(indents)):
+        if previous is not None and value - previous > tolerance:
+            cluster += 1
+        index[value] = cluster
+        previous = value
+    return [index[value] for value in indents]
+
+
+def _toc_levels(entries: list[TocLine]) -> list[int]:
+    """Depth of each contents entry, from its indentation or else its dotted number.
+
+    With one indentation only, the entries are peers unless a dotted number places one deeper
+    (``2.1`` below ``2``).
+    """
+    tolerance = 0.5 * median(entry.height for entry in entries)
+    clusters = _cluster_indents([entry.indent for entry in entries], tolerance)
+    if sum(1 for size in Counter(clusters).values() if size >= 2) >= 2:
+        return clusters
+    depths = []
+    for entry in entries:
+        marker = _parse_marker(entry.text)
+        depths.append(marker.depth - 1 if marker and marker.family == "dotted" else 0)
+    return depths
+
+
+def _page_offsets(entries: list[TocLine], document: DoclingDocument) -> dict[str, int]:
+    """Physical page minus printed page, per label kind, voted by entries that equal a heading.
+
+    Printed labels rarely equal the physical page numbers (front matter, cover pages). An offset
+    needs at least two votes, so a contents page whose labels do not fit the document is ignored.
+    """
+    pages_by_title: dict[str, list[int]] = {}
+    for item in document.texts:
+        if isinstance(item, SectionHeaderItem) and item.prov:
+            title = _norm(_strip_marker(item.text))
+            if len(title) >= 4:
+                pages_by_title.setdefault(title, []).append(item.prov[0].page_no)
+    votes: dict[str, Counter[int]] = {"arabic": Counter(), "roman": Counter()}
+    for entry in entries:
+        label = page_label_value(entry.page_label or "")
+        if label is None:
+            continue
+        kind, value = label
+        for page_no in pages_by_title.get(_norm(_strip_marker(entry.text)), []):
+            votes[kind][page_no - value] += 1
+    offsets: dict[str, int] = {}
+    for kind, counter in votes.items():
+        if counter:
+            offset, count = counter.most_common(1)[0]
+            if count >= 2:
+                offsets[kind] = offset
+    return offsets
+
+
+def _printed_toc_outline(
+    document: DoclingDocument, parsed_pages: dict[int, SegmentedPdfPage]
+) -> list[_PdfOutlineItem]:
+    """Build an outline from the printed contents pages, for the bookmark matcher."""
+    entries: list[TocLine] = []
+    for table in document.tables:
+        if table.label != DocItemLabel.DOCUMENT_INDEX or not table.prov:
+            continue
+        prov = table.prov[0]
+        parsed = parsed_pages.get(prov.page_no)
+        if parsed is None:
+            continue
+        region = _toc_entries(read_toc_lines(prov.bbox, parsed))
+        if _is_contents(region):
+            entries.extend(region)
+    if not entries:
+        return []
+
+    offsets = _page_offsets(entries, document)
+    outline: list[_PdfOutlineItem] = []
+    for entry, level in zip(entries, _toc_levels(entries)):
+        label = page_label_value(entry.page_label or "")
+        if label is None or label[0] not in offsets:
+            continue
+        kind, value = label
+        outline.append(
+            _PdfOutlineItem(
+                title=entry.text, level=level, page_no=value + offsets[kind]
+            )
+        )
+    return outline
+
+
 class HeadingHierarchyModel:
     """Assigns ``SectionHeaderItem.level`` on an already-assembled ``DoclingDocument``.
 
@@ -560,38 +702,59 @@ class HeadingHierarchyModel:
     def __init__(self, options: HeadingHierarchyOptions):
         self.options = options
 
-    def retain_parsed_lines(self, page: Page) -> SegmentedPdfPage | None:
+    def retain_parsed_cells(self, page: Page) -> SegmentedPdfPage | None:
         """Return the part of a finished page's ``parsed_page`` that this stage reads later.
 
-        The pipeline releases the parsed pages before assembly to save memory, but the style
-        signal reads the text lines of the headings during assembly. Only the text lines that
-        overlap a section header, or a list item that a bookmark can promote, are kept.
+        The pipeline releases the parsed pages before assembly to save memory, but this stage
+        reads some cells during assembly. The style signal reads the text lines that overlap a
+        section header, or a list item that a bookmark can promote. The printed-contents signal
+        reads the words of the contents regions. Only those cells are kept.
         """
         parsed = page.parsed_page
         layout = page.predictions.layout
-        if not (self.options.enabled and self.options.use_style) or (
-            parsed is None or layout is None
+        options = self.options
+        if (
+            not options.enabled
+            or not (options.use_style or options.use_printed_toc)
+            or parsed is None
+            or layout is None
         ):
             return None
         height = parsed.dimension.height
-        boxes = [
-            cluster.bbox.to_top_left_origin(height)
-            for cluster in layout.clusters
-            if cluster.label in _STYLE_LABELS
-        ]
-        lines = [
-            cell
-            for cell in parsed.textline_cells
-            if any(
-                box.overlaps(cell.rect.to_bounding_box().to_top_left_origin(height))
-                for box in boxes
-            )
-        ]
+
+        def overlapping(
+            cells: list[PdfTextCell | TextCell], labels: frozenset[DocItemLabel]
+        ) -> list[PdfTextCell | TextCell]:
+            boxes = [
+                cluster.bbox.to_top_left_origin(height)
+                for cluster in layout.clusters
+                if cluster.label in labels
+            ]
+            return [
+                cell
+                for cell in cells
+                if any(
+                    box.overlaps(cell.rect.to_bounding_box().to_top_left_origin(height))
+                    for box in boxes
+                )
+            ]
+
+        lines = (
+            overlapping(parsed.textline_cells, _STYLE_LABELS)
+            if options.use_style
+            else []
+        )
+        words = (
+            overlapping(parsed.word_cells, _TOC_LABELS)
+            if options.use_printed_toc
+            else []
+        )
         return SegmentedPdfPage(
             dimension=parsed.dimension,
             char_cells=[],
-            word_cells=[],
+            word_cells=words,
             textline_cells=lines,
+            has_words=bool(words),
             has_lines=bool(lines),
         )
 
@@ -601,7 +764,7 @@ class HeadingHierarchyModel:
             return document
 
         parsed_pages: dict[int, SegmentedPdfPage] = {}
-        if self.options.use_style:
+        if self.options.use_style or self.options.use_printed_toc:
             parsed_pages = {
                 page.page_no: page.parsed_page
                 for page in conv_res.pages
@@ -624,16 +787,21 @@ class HeadingHierarchyModel:
     ) -> DoclingDocument:
         """Assign heading levels in place from the configured signals.
 
-        Precedence: bookmarks (when confidently matched) > numbering > style. The bookmark pass
-        may promote a mis-classified list-item to a heading. Headings with no applicable signal
-        keep their existing level. ``parsed_pages`` (page number -> parsed page) is only needed
-        for the style fallback; ``outline`` (PDF bookmarks) for bookmark inference.
+        Precedence: bookmarks (when confidently matched) > printed contents > numbering > style.
+        The printed contents are read only when no bookmark matched. Both passes may promote a
+        mis-classified list-item to a heading. Headings with no applicable signal keep their
+        existing level. ``parsed_pages`` (page number -> parsed page) is needed for the printed
+        contents and the style fallback; ``outline`` (PDF bookmarks) for bookmark inference.
         """
         # Bookmark pass first: it may promote list-items, changing the set of headings, so it
         # has to run before the heading list is collected.
         bookmark_levels: dict[int, int] = {}
         if self.options.use_bookmarks and outline:
             bookmark_levels = _infer_from_bookmarks(document, outline, self.options)
+        if not bookmark_levels and self.options.use_printed_toc and parsed_pages:
+            toc = _printed_toc_outline(document, parsed_pages)
+            if toc:
+                bookmark_levels = _infer_from_bookmarks(document, toc, self.options)
 
         headings = [
             item for item in document.texts if isinstance(item, SectionHeaderItem)

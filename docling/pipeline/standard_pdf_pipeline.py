@@ -764,7 +764,7 @@ class StandardPdfPipeline(ConvertPipeline):
     def _release_parsed_page(self, page: Page) -> None:
         if page.parsed_page is None or self.pipeline_options.generate_parsed_pages:
             return
-        page.parsed_page = self.heading_hierarchy_model.retain_parsed_lines(page)
+        page.parsed_page = self.heading_hierarchy_model.retain_parsed_cells(page)
 
     # ────────────────────────────────────────────────────────────────────────
     # Build - thread pipeline
