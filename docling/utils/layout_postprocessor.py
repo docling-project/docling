@@ -392,8 +392,23 @@ class LayoutPostprocessor:
                 if parent_by_regular_id.get(regular.id) == container.id
             ]
             self._set_cluster_children(container, direct_children + nested_children)
+            if container.label == DocItemLabel.KEY_VALUE_REGION:
+                self._keep_key_value_text_in_body(direct_children)
 
         return picture_clusters + table_clusters + container_clusters
+
+    @staticmethod
+    def _keep_key_value_text_in_body(children: list[Cluster]) -> None:
+        """Relabel page headers and footers inside a key-value region as text.
+
+        The layout model can label the same line as both a key-value region and
+        a page header or footer. Inside a key-value region the line is content,
+        but a page header or footer is moved to the furniture layer, so the
+        line would be dropped from the body and from the Markdown export.
+        """
+        for child in children:
+            if child.label in (DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER):
+                child.label = DocItemLabel.TEXT
 
     def _set_cluster_children(self, cluster: Cluster, children: list[Cluster]) -> None:
         if not children:
