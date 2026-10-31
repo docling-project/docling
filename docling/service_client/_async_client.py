@@ -1044,6 +1044,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
         error_message: str,
     ) -> httpx.Response:
         assert async_client is not None, "client not open — use async with"
+        self._raise_if_task_cancelled(task_id, last_status)
         response = await self._request_with_retry_using_client(
             async_client=async_client,
             method="GET",
@@ -1055,6 +1056,8 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 response=response,
                 last_status=last_status,
             )
+        if response.status_code == 409:
+            self._raise_if_cancelled_result(task_id, response)
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, error_message)
         self._raise_if_task_failure_result(response)
