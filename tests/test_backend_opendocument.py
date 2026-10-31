@@ -696,6 +696,55 @@ def test_odt_ordered_nested_list(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odt_headings_numbered_through_a_list_stay_headings(tmp_path: Path):
+    # Writer saves headings numbered with a list style inside
+    # <text:list><text:list-item>, one level of list per outline level.
+    path = tmp_path / "headings_in_list.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    outline = OdfList()
+    first = ListItem()
+    first.append(Header(1, "Context and Objectives"))
+    sub = OdfList()
+    background = ListItem()
+    background.append(Header(2, "Project Background"))
+    sub.append(background)
+    first.append(sub)
+    outline.append(first)
+    target = ListItem()
+    target.append(Header(1, "Target Architecture"))
+    outline.append(target)
+    body.append(outline)
+    body.append(Paragraph("Body text."))
+
+    mixed = OdfList()
+    heading_item = ListItem()
+    heading_item.append(Header(2, "Not an outline"))
+    mixed.append(heading_item)
+    mixed.append(ListItem("Plain item"))
+    body.append(mixed)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    items = [
+        (item.label, item.text, getattr(item, "level", None))
+        for item, _level in res.document.iterate_items()
+        if isinstance(item, TextItem)
+    ]
+
+    assert items == [
+        ("section_header", "Context and Objectives", 1),
+        ("section_header", "Project Background", 2),
+        ("section_header", "Target Architecture", 1),
+        ("text", "Body text.", None),
+        # A list that also holds other content is still a list.
+        ("list_item", "Not an outline", None),
+        ("list_item", "Plain item", None),
+    ]
+
+
 def test_odt_text_document_nested_lists():
     path = Path("tests/data/odf/sources/text_document_01.odt")
 

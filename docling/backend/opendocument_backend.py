@@ -842,6 +842,37 @@ def _odf_list_item_text_runs(
     return _normalize_odf_text_runs(runs)
 
 
+def _odf_list_headings(odf_list: OdfList) -> list[Header]:
+    """Return the headings of a list that holds nothing but headings.
+
+    Writer saves headings numbered through a list style (Tools > Heading
+    Numbering, or a multilevel list applied to headings) as <text:h> inside
+    <text:list><text:list-item>. Such a list is the document outline, not a
+    list. Returns an empty list when any item holds other content.
+    """
+    headings: list[Header] = []
+    for item in odf_list.children:
+        if not isinstance(item, ListItem):
+            continue
+        for child in item.children:
+            if isinstance(child, Header):
+                headings.append(child)
+            elif isinstance(child, OdfList):
+                nested = _odf_list_headings(child)
+                if not nested and _odf_list_has_renderable_content(
+                    child, flatten_nested_text=True
+                ):
+                    return []
+                headings.extend(nested)
+            elif not (
+                isinstance(child, Paragraph)
+                and not child.text_recursive.strip()
+                and not child.get_images()
+            ):
+                return []
+    return headings
+
+
 def _odf_list_starts_with_empty_nested_item(
     odf_list: OdfList, *, flatten_nested_text: bool
 ) -> bool:
@@ -1397,6 +1428,19 @@ def _add_odf_list(
     if not _odf_list_has_renderable_content(
         odf_list, flatten_nested_text=flatten_nested_text
     ):
+        return None
+
+    headings = _odf_list_headings(odf_list)
+    if headings:
+        for heading in headings:
+            _add_odf_heading(
+                doc,
+                heading,
+                parent=parent,
+                content_layer=content_layer,
+                odf_obj=odf_obj,
+                comments=comments,
+            )
         return None
 
     style_enumerated = _odf_list_level_is_enumerated(
