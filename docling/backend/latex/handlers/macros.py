@@ -470,10 +470,14 @@ class MacroHandlerMixin:
             ref_arg = self._extract_macro_arg(node)
             if ref_arg:
                 text_buffer.append(f"[{ref_arg}]")
-        elif node.macroname == "url":
-            url_text = self._extract_macro_arg(node)
-            if url_text:
-                text_buffer.append(url_text)
+        elif node.macroname in ("url", "href"):
+            link_text = (
+                self._href_link_text(node)
+                if node.macroname == "href"
+                else self._extract_macro_arg(node)
+            )
+            if link_text:
+                text_buffer.append(link_text)
         elif node.macroname in MACROS_COLOR:
             pass
         elif node.macroname in MACROS_TEXT_STYLE:
@@ -700,42 +704,6 @@ class MacroHandlerMixin:
                 label=(text_label or DocItemLabel.TEXT),
             )
 
-        elif node.macroname == "href":
-            if node.nodeargd and len(node.nodeargd.argnlist) >= 2:
-                url_arg = node.nodeargd.argnlist[0]
-                text_arg = node.nodeargd.argnlist[1]
-
-                url_text = ""
-                if url_arg is not None:
-                    if isinstance(url_arg, LatexGroupNode):
-                        url_text = self._nodes_to_text(url_arg.nodelist)
-                    else:
-                        url_text = url_arg.latex_verbatim().strip("{} ")
-
-                display_text = ""
-                if text_arg is not None:
-                    if isinstance(text_arg, LatexGroupNode):
-                        display_text = self._nodes_to_text(text_arg.nodelist)
-                    else:
-                        display_text = text_arg.latex_verbatim().strip("{} ")
-
-                if url_text and display_text:
-                    link_text = f"[{display_text}]({url_text})"
-                elif url_text:
-                    link_text = url_text
-                elif display_text:
-                    link_text = display_text
-                else:
-                    link_text = ""
-
-                if link_text:
-                    doc.add_text(
-                        parent=parent,
-                        label=DocItemLabel.REFERENCE,
-                        text=link_text,
-                        formatting=formatting,
-                    )
-
         elif node.macroname in MACROS_SPACING:
             if node.macroname == "newline":
                 doc.add_text(
@@ -815,6 +783,19 @@ class MacroHandlerMixin:
                         return self._nodes_to_text(arg.nodelist)
                     return arg.latex_verbatim().strip("{} ")
         return ""
+
+    def _href_link_text(self, node: LatexMacroNode) -> str:
+        """``[text](url)`` for ``\\href[options]{url}{text}``, or whichever part is set."""
+        args = node.nodeargd.argnlist if node.nodeargd else []
+        if not args or len(args) < 2:
+            return ""
+        url_arg = args[-2]
+        # Taken verbatim: characters such as _ and # are not markup in a URL.
+        url = url_arg.latex_verbatim().strip("{} ") if url_arg is not None else ""
+        text = self._extract_macro_arg(node)
+        if url and text:
+            return f"[{text}]({url})"
+        return url or text
 
     def _extract_macro_arg_nodes(self, node: LatexMacroNode, index: int) -> list:
         if node.nodeargd and node.nodeargd.argnlist:
