@@ -1277,3 +1277,131 @@ def test_unclosed_content_block_delimiter_terminates() -> None:
         assert "before" in texts, f"{delim!r}: {texts}"
         assert "after" in texts, f"{delim!r}: {texts}"
         assert not any(delim.decode() in t for t in texts), f"{delim!r}: {texts}"
+
+
+def test_attribute_references_are_replaced_by_their_values() -> None:
+    # Attribute references stayed literal, and ":name!:" was not read as an
+    # attribute entry, so it was joined to the next paragraph as text.
+    src = (
+        b"= {product} Guide\n"
+        b":product: Widget\n"
+        b":version: 2.4\n"
+        b"\n"
+        b"Welcome to {product} {version}.\n"
+        b"\n"
+        b":version!:\n"
+        b"The version is unset now.\n"
+    )
+    doc = _convert_adoc(src)
+
+    assert doc.export_to_markdown() == (
+        "# Widget Guide\n\nWelcome to Widget 2.4.\n\nThe version is unset now."
+    )
+
+
+def test_attribute_references_in_headings_lists_tables_and_captions() -> None:
+    src = (
+        b":product: Widget\n"
+        b"\n"
+        b"== {product} setup\n"
+        b"\n"
+        b".{product} options\n"
+        b"* Install {product}\n"
+        b"\n"
+        b"|===\n"
+        b"|Name |{product}\n"
+        b"|===\n"
+    )
+    doc = _convert_adoc(src)
+
+    texts = [item.text for item in doc.texts]
+    assert "Widget setup" in texts
+    assert "Widget options" in texts
+    assert "Install Widget" in texts
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Name",
+        "Widget",
+    ]
+    assert not any("{product}" in text for text in texts)
+
+
+def test_attribute_entries_set_and_unset_attributes_in_order() -> None:
+    # An entry applies from where it appears; a value can use attributes set
+    # before it; ":!name:" unsets like ":name!:"; names are case-insensitive.
+    src = (
+        b"Before: {edition}.\n"
+        b"\n"
+        b":edition: Pro\n"
+        b":full-name: Widget {edition}\n"
+        b"After: {full-name} / {Edition}.\n"
+        b"\n"
+        b":!edition:\n"
+        b"Unset: {edition}.\n"
+    )
+    doc = _convert_adoc(src)
+
+    assert [item.text for item in doc.texts] == [
+        "Before: {edition}.",
+        "After: Widget Pro / Pro.",
+        "Unset: {edition}.",
+    ]
+
+
+def test_escaped_missing_and_intrinsic_attribute_references() -> None:
+    src = b":product: Widget\n\nKeep \\{product}, {undefined} and {json }; a{sp}b{empty}c.\n"
+    doc = _convert_adoc(src)
+
+    assert [item.text for item in doc.texts] == [
+        "Keep {product}, {undefined} and {json }; a bc."
+    ]
+
+
+def test_attribute_references_in_listings_stay_verbatim() -> None:
+    src = b":product: Widget\n\n----\necho {product}\n----\n"
+    doc = _convert_adoc(src)
+
+    assert [item.text for item in doc.texts] == ["echo {product}"]
+
+
+def test_attribute_values_with_pipes_stay_inside_table_cells() -> None:
+    # References are replaced after a row is split into cells, so "{vbar}" or
+    # a value containing "|" is cell text, not a column delimiter.
+    src = (
+        b":choice: yes|no\n"
+        b"\n"
+        b"|===\n"
+        b"|Operator |a {vbar}{vbar} b\n"
+        b"|Answer |{choice}\n"
+        b"more {choice}\n"
+        b"|===\n"
+    )
+    doc = _convert_adoc(src)
+
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "Operator",
+        "a || b",
+        "Answer",
+        "yes|no more yes|no",
+    ]
+
+
+def test_formatting_marks_from_attribute_values_stay_literal() -> None:
+    # Asciidoctor replaces attribute references after inline formatting, so
+    # marks that come from a value are text, while marks written around a
+    # reference still format its value.
+    src = (
+        b":product: snake_case_name\n"
+        b"\n"
+        b"Use {asterisk}not bold{asterisk} and {backtick}ls{backtick} here.\n"
+        b"\n"
+        b"Run *{product}* now.\n"
+    )
+    doc = _convert_adoc(src)
+
+    texts = [item.text for item in doc.texts]
+    assert texts[0] == "Use *not bold* and `ls` here."
+    assert doc.texts[0].formatting is None
+    bold = [item for item in doc.texts if item.text == "snake_case_name"]
+    assert len(bold) == 1
+    assert bold[0].formatting is not None and bold[0].formatting.bold
+    assert not any("\ue000" in t or "\ue001" in t or "\ue002" in t for t in texts)
