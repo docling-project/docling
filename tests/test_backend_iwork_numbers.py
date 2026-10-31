@@ -334,6 +334,48 @@ def test_version_5_cell_storage_is_decoded(buffer: str, expected: str | None):
     assert render(decoded) == expected
 
 
+def _decimal128_cell(coefficient: int, exponent: int) -> bytes:
+    """Pack a version 5 numeric cell holding one decimal128 value."""
+    biased = exponent + cells.DECIMAL128_BIAS
+    value = coefficient | (biased << 113)
+    return (
+        bytes([cells.CELL_VERSION_CURRENT, cells.CELL_TYPE_NUMBER])
+        + b"\x00" * 6
+        + cells.CELL_FLAG_DECIMAL.to_bytes(4, "little")
+        + value.to_bytes(16, "little")
+    )
+
+
+@pytest.mark.parametrize(
+    "coefficient, exponent, expected",
+    [
+        (int("3" * 34), -34, "0." + "3" * 34),
+        (1234567890123456789012345678901, -2, "12345678901234567890123456789.01"),
+        (
+            9999999999999999999999999999999999,
+            -20,
+            "99999999999999.99999999999999999999",
+        ),
+    ],
+    ids=["34-digit-fraction", "31-digit-amount", "34-digit-max"],
+)
+def test_decimal128_keeps_every_encoded_digit(
+    coefficient: int, exponent: int, expected: str
+):
+    """A decimal128 carries 34 digits, which is more than the decimal context
+    keeps by default, so a value has to be read and rendered without arithmetic.
+    Rounding here changes the number the spreadsheet shows.
+
+    These cells are packed from the encoding itself because neither fixture
+    stores a value wide enough to show the loss.
+    """
+    decoded = cells.iwa_cell(
+        _decimal128_cell(coefficient, exponent), 0, cells.CellValues()
+    )
+
+    assert render(decoded) == expected
+
+
 def _write_numbers(
     path: Path, members: dict[str, bytes], *, encrypted: bool = False
 ) -> Path:
