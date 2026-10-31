@@ -671,6 +671,25 @@ class _NestedList(NamedTuple):
     outer_left_indent: int
 
 
+class _NumberingLevel(NamedTuple):
+    """A level of a numbering instance (``w:num``).
+
+    ``lvl`` is the ``w:lvl`` that defines the level: the one in the
+    ``w:lvlOverride`` of the instance for this level, else the one of the
+    abstract numbering definition. ``start_override`` is the
+    ``w:startOverride`` in that ``w:lvlOverride``, if there is one.
+    """
+
+    lvl: BaseOxmlElement
+    start_override: BaseOxmlElement | None
+
+
+_MAX_START_OVERRIDE: Final = 32767
+"""The largest ``w:startOverride`` value that is applied. Letter and Roman markers
+grow with the number, so a larger value would build very long markers. 32767 is
+also the largest ``startAt`` that PowerPoint allows (``ST_TextBulletStartAtNum``)."""
+
+
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Backend for parsing Word documents (DOCX and DOC files).
 
@@ -1572,7 +1591,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return numId, ilvl
 
     def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
-        """Find a numbering level, following linked numbering styles."""
+        """Find a numbering level, following level overrides and linked styles."""
+        level = self._get_numbering_level(numid, ilvl)
+        return level.lvl if level is not None else None
+
+    def _get_numbering_level(self, numid: int, ilvl: int) -> _NumberingLevel | None:
+        """Find a level of a numbering instance, following linked numbering styles.
+
+        The ``w:lvlOverride`` of the instance for the level can contain a
+        ``w:lvl`` and a ``w:startOverride`` (ECMA-376 Part 1, 17.9.9). Its
+        ``w:lvl`` replaces the level of the abstract numbering definition. Its
+        ``w:startOverride`` is returned with the level.
+        """
         try:
             numbering_part = None
             styles_part = None
@@ -1592,6 +1622,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             if num_element is None:
                 return None
+
+            start_override = None
+            level_override = num_element.find(
+                f"w:lvlOverride[@w:ilvl='{ilvl}']", namespaces=namespaces
+            )
+            if level_override is not None:
+                start_override = level_override.find(
+                    "w:startOverride", namespaces=namespaces
+                )
+                override_level = level_override.find("w:lvl", namespaces=namespaces)
+                if override_level is not None:
+                    return _NumberingLevel(override_level, start_override)
 
             visited_abstract_ids: set[str] = set()
             for _ in range(self._MAX_STYLE_INHERITANCE_DEPTH):
@@ -1617,7 +1659,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     f"w:lvl[@w:ilvl='{ilvl}']", namespaces=namespaces
                 )
                 if level_element is not None:
-                    return level_element
+                    return _NumberingLevel(level_element, start_override)
 
                 style_link = abstract_element.find(
                     "w:numStyleLink", namespaces=namespaces
@@ -1728,11 +1770,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return left or 0
 
     def _get_start_value(self, numid: int, ilvl: int) -> int:
-        """Read the start value from the abstractNum definition."""
-        lvl_element = self._get_level_element(numid, ilvl)
-        if lvl_element is not None:
+        """Read the start value of a numbering level.
+
+        The ``w:startOverride`` of the numbering instance has priority over the
+        ``w:start`` of the level (ECMA-376 Part 1, 17.9.27). An override without
+        an integer value from 0 to ``_MAX_START_OVERRIDE`` is ignored, and the
+        ``w:start`` of the level applies.
+        """
+        level = self._get_numbering_level(numid, ilvl)
+        if level is not None:
+            if level.start_override is not None:
+                start = self._str_to_int(
+                    level.start_override.get(self.XML_KEY), default=None
+                )
+                if start is not None and 0 <= start <= _MAX_START_OVERRIDE:
+                    return start
             namespaces = _OOXML_NAMESPACES
-            start_element = lvl_element.find(".//w:start", namespaces=namespaces)
+            start_element = level.lvl.find(".//w:start", namespaces=namespaces)
             if start_element is not None:
                 val = start_element.get(self.XML_KEY)
                 if val is not None:
