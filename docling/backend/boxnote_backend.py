@@ -32,6 +32,7 @@ from docling.backend.utils.table_spans import (
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.text_decoding import UTF8_BOM_ENCODING
 
 _log = logging.getLogger(__name__)
 
@@ -65,15 +66,14 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
 
         self.data: dict[str, Any] = {}
-        # utf-8-sig drops a leading BOM. Kept, it reaches json.loads, which
-        # rejects it as an unexpected character and fails the whole load.
-        # Equivalent to utf-8 when no BOM is present.
+        # UTF8_BOM_ENCODING drops a leading BOM. Kept, it reaches json.loads,
+        # which rejects it as an unexpected character and fails the whole load.
         try:
             raw = ""
             if isinstance(self.path_or_stream, BytesIO):
-                raw = self.path_or_stream.getvalue().decode("utf-8-sig")
+                raw = self.path_or_stream.getvalue().decode(UTF8_BOM_ENCODING)
             elif isinstance(self.path_or_stream, Path):
-                raw = self.path_or_stream.read_text(encoding="utf-8-sig")
+                raw = self.path_or_stream.read_text(encoding=UTF8_BOM_ENCODING)
             if raw.strip():
                 loaded = json.loads(raw)
                 if isinstance(loaded, dict):
