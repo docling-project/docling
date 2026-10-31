@@ -627,7 +627,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         more runs, such as text and an `<ext-link>`, becomes an empty list item
         with an inline group of the runs.
         """
-        segments = JatsDocumentBackend._strip_segments(
+        segments = JatsDocumentBackend._trim_segment_edges(
             self._walk_linear(doc, parent, node)
         )
         if not (isinstance(parent, GroupItem) and parent.label == GroupLabel.LIST):
@@ -814,13 +814,25 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             return Path(href)
 
     @staticmethod
-    def _strip_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
-        stripped: list[InlineSegment] = []
-        for segment in segments:
-            text = segment.text.strip()
-            if text:
-                stripped.append(replace(segment, text=text))
-        return stripped
+    def _trim_segment_edges(segments: list[InlineSegment]) -> list[InlineSegment]:
+        """Trim the outer edges of a segment sequence, keeping interior whitespace.
+
+        Stripping *every* segment destroyed the run boundaries, forcing the serializers to
+        invent a separator. Adjacent equal-format runs are already coalesced by
+        ``_append_run``, so only the block edges need trimming (as in the ODF backend).
+        """
+        trimmed = list(segments)
+        while trimmed and not trimmed[0].text.strip():
+            trimmed.pop(0)
+        if trimmed:
+            trimmed[0] = replace(trimmed[0], text=trimmed[0].text.lstrip())
+
+        while trimmed and not trimmed[-1].text.strip():
+            trimmed.pop()
+        if trimmed:
+            trimmed[-1] = replace(trimmed[-1], text=trimmed[-1].text.rstrip())
+
+        return [segment for segment in trimmed if segment.text]
 
     @staticmethod
     def _walk_inline_formula(
@@ -857,9 +869,20 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         )
                     )
             else:
-                segments.extend(
-                    JatsDocumentBackend._walk_inline_formula(child, current, hyperlink)
+                child_segments = JatsDocumentBackend._walk_inline_formula(
+                    child, current, hyperlink
                 )
+                if (
+                    tag == "p"
+                    and segments
+                    and child_segments
+                    and not segments[-1].text[-1:].isspace()
+                    and not child_segments[0].text[:1].isspace()
+                ):
+                    # A paragraph is a block: keep the boundary to what precedes it
+                    # (`<fn><label>1</label><p>See` reads "1 See").
+                    segments.append(InlineSegment(label=DocItemLabel.TEXT, text=" "))
+                segments.extend(child_segments)
             if child.tail:
                 tail = JatsDocumentBackend._normalize_xml_line_breaks(child.tail)
                 if tail:
@@ -937,7 +960,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument, parent: NodeItem, segments: list[InlineSegment]
     ) -> None:
         """Emit inline segments under ``parent``, wrapping many in an inline group."""
-        segments = JatsDocumentBackend._strip_segments(segments)
+        segments = JatsDocumentBackend._trim_segment_edges(segments)
         if not segments:
             return
         container = doc.add_inline_group(parent=parent) if len(segments) > 1 else parent
@@ -1258,7 +1281,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         footnote_segments: list[list[InlineSegment]] = []
         for fn in node.iterchildren(tag="fn"):
-            segments = JatsDocumentBackend._strip_segments(
+            segments = JatsDocumentBackend._trim_segment_edges(
                 JatsDocumentBackend._walk_inline_formula(fn)
             )
             if segments:

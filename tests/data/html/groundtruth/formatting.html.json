@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "formatting",
   "origin": {
     "mimetype": "text/html",
@@ -290,8 +290,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is a",
-      "text": "This is a"
+      "orig": "This is a ",
+      "text": "This is a "
     },
     {
       "self_ref": "#/texts/3",
@@ -302,8 +302,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "bold (b)",
-      "text": "bold (b)",
+      "orig": "bold (b) ",
+      "text": "bold (b) ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -321,8 +321,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "example and right next to it we have a",
-      "text": "example and right next to it we have a"
+      "orig": "example and right next to it we have a ",
+      "text": "example and right next to it we have a "
     },
     {
       "self_ref": "#/texts/5",
@@ -352,8 +352,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Notice that",
-      "text": ". Notice that"
+      "orig": ". Notice that ",
+      "text": ". Notice that "
     },
     {
       "self_ref": "#/texts/7",
@@ -364,8 +364,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "strong + bold mixed",
-      "text": "strong + bold mixed",
+      "orig": "strong + bold mixed ",
+      "text": "strong + bold mixed ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -395,8 +395,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Here is an",
-      "text": "Here is an"
+      "orig": "Here is an ",
+      "text": "Here is an "
     },
     {
       "self_ref": "#/texts/10",
@@ -407,8 +407,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "italic (i)",
-      "text": "italic (i)",
+      "orig": "italic (i) ",
+      "text": "italic (i) ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -426,8 +426,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "word and an",
-      "text": "word and an"
+      "orig": "word and an ",
+      "text": "word and an "
     },
     {
       "self_ref": "#/texts/12",
@@ -438,8 +438,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "emphasis (em)",
-      "text": "emphasis (em)",
+      "orig": "emphasis (em) ",
+      "text": "emphasis (em) ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -457,8 +457,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "example. Sometimes we combine them like",
-      "text": "example. Sometimes we combine them like"
+      "orig": "example. Sometimes we combine them like ",
+      "text": "example. Sometimes we combine them like "
     },
     {
       "self_ref": "#/texts/14",
@@ -500,8 +500,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Now let's look at text that appears crossed out:",
-      "text": "Now let's look at text that appears crossed out:"
+      "orig": "Now let's look at text that appears crossed out: ",
+      "text": "Now let's look at text that appears crossed out: "
     },
     {
       "self_ref": "#/texts/17",
@@ -512,8 +512,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "strikethrough with s",
-      "text": "strikethrough with s",
+      "orig": "strikethrough with s ",
+      "text": "strikethrough with s ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -531,8 +531,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/19",
@@ -562,8 +562,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". You can also mix them:",
-      "text": ". You can also mix them:"
+      "orig": ". You can also mix them: ",
+      "text": ". You can also mix them: "
     },
     {
       "self_ref": "#/texts/21",
@@ -605,8 +605,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "To highlight insertions or underlines:",
-      "text": "To highlight insertions or underlines:"
+      "orig": "To highlight insertions or underlines: ",
+      "text": "To highlight insertions or underlines: "
     },
     {
       "self_ref": "#/texts/24",
@@ -636,8 +636,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/26",
@@ -667,8 +667,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". A combination could be:",
-      "text": ". A combination could be:"
+      "orig": ". A combination could be: ",
+      "text": ". A combination could be: "
     },
     {
       "self_ref": "#/texts/28",
@@ -753,8 +753,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "2",
-      "text": "2",
+      "orig": "2 ",
+      "text": "2 ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -784,8 +784,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "3",
-      "text": "3",
+      "orig": "3 ",
+      "text": "3 ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -865,8 +865,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Mixing several: This sentence has",
-      "text": "Mixing several: This sentence has"
+      "orig": "Mixing several: This sentence has ",
+      "text": "Mixing several: This sentence has "
     },
     {
       "self_ref": "#/texts/41",
@@ -896,8 +896,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", some",
-      "text": ", some"
+      "orig": ", some ",
+      "text": ", some "
     },
     {
       "self_ref": "#/texts/43",
@@ -939,8 +939,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "2",
-      "text": "2",
+      "orig": "2 ",
+      "text": "2 ",
       "formatting": {
         "bold": false,
         "italic": false,

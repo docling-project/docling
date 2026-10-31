@@ -112,3 +112,29 @@ def test_inline_equation_retains_the_title_label() -> None:
     assert title.children
     assert "Energy" in doc.export_to_markdown()
     assert "E=mc^2" in doc.export_to_markdown()
+
+
+def _equation(text: str) -> str:
+    return f"<a14:m><m:oMath><m:r><m:t>{text}</m:t></m:r></m:oMath></a14:m>"
+
+
+@pytest.mark.parametrize("listed", [False, True])
+def test_whitespace_between_inline_equations_is_kept(listed: bool) -> None:
+    """Only the block edges are trimmed; the space between two formulas is text."""
+    properties = '<a:pPr><a:buChar char="•"/></a:pPr>' if listed else ""
+    doc = _convert_paragraph(
+        properties
+        + "<a:r><a:t> Let </a:t></a:r>"
+        + _equation("a")
+        + "<a:r><a:t> </a:t></a:r>"
+        + _equation("b")
+        + "<a:r><a:t> hold. </a:t></a:r>"
+    )
+
+    runs = [
+        item.text
+        for item in doc.texts
+        if item.label in (DocItemLabel.TEXT, DocItemLabel.FORMULA)
+    ]
+    assert runs == ["Let ", "a", " ", "b", " hold."]
+    assert ("- " if listed else "") + "Let $a$ $b$ hold." in doc.export_to_markdown()

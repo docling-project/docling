@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "html_inline_group_in_table_cell",
   "origin": {
     "mimetype": "text/html",
@@ -223,8 +223,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "See",
-      "text": "See"
+      "orig": "See ",
+      "text": "See "
     },
     {
       "self_ref": "#/texts/3",
@@ -235,8 +235,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Page A",
-      "text": "Page A",
+      "orig": "Page A ",
+      "text": "Page A ",
       "hyperlink": "https://example.com/a"
     },
     {
@@ -248,8 +248,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/5",
@@ -260,8 +260,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Page B",
-      "text": "Page B",
+      "orig": "Page B ",
+      "text": "Page B ",
       "hyperlink": "https://example.com/b"
     },
     {
@@ -285,8 +285,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Bold",
-      "text": "Bold",
+      "orig": "Bold ",
+      "text": "Bold ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -304,8 +304,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/9",
@@ -316,8 +316,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "italic",
-      "text": "italic",
+      "orig": "italic ",
+      "text": "italic ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -379,8 +379,8 @@
       "content_layer": "body",
       "label": "code",
       "prov": [],
-      "orig": "See",
-      "text": "See",
+      "orig": "See ",
+      "text": "See ",
       "captions": [],
       "references": [],
       "footnotes": [],
@@ -412,8 +412,8 @@
       "content_layer": "body",
       "label": "code",
       "prov": [],
-      "orig": "first",
-      "text": "first",
+      "orig": " first",
+      "text": " first",
       "captions": [],
       "references": [],
       "footnotes": [],

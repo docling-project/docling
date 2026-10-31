@@ -880,9 +880,26 @@ No marks here.
         "both": (True, True),
     }
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["mono"]
-    plain = [item.text for item in doc.texts if item.formatting is None]
-    assert "and snake_case_name and 2*3*4." in plain
-    assert "No marks here." in plain
+    # Runs carry their own boundary whitespace; only the block edges are trimmed.
+    assert [item.text for item in doc.texts] == [
+        "Some ",
+        "bold",
+        ", ",
+        "italic",
+        " and ",
+        "mono",
+        " text, with ",
+        "st",
+        "rong.",
+        "both",
+        " and snake_case_name and 2*3*4.",
+        "No marks here.",
+    ]
+    assert doc.export_to_markdown() == (
+        "Some **bold**, *italic* and `mono` text, with **st**rong.\n\n"
+        "***both*** and snake\\_case\\_name and 2*3*4.\n\n"
+        "No marks here."
+    )
 
 
 def test_inline_formatting_marks_and_spans() -> None:
@@ -906,10 +923,34 @@ Nested **bold _and italic_** text.
     assert styled == [
         ("ui", False, True),
         ("a b c", True, False),
-        ("bold", True, False),
+        ("bold ", True, False),
         ("and italic", True, True),
     ]
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["um"]
+    assert doc.export_to_markdown() == (
+        "Text with *ui*, `um` and **a b c** marks.\n\n"
+        "Nested **bold** ***and italic*** text."
+    )
+
+
+def test_code_run_edge_whitespace_stays_outside_the_code() -> None:
+    doc = DoclingDocument(name="code-edges")
+    AsciiDocBackend._flush_text_data(
+        doc=doc,
+        text_data=["Install with `pip install x` first, x`` a ``y."],
+        parent=None,
+    )
+
+    assert [item.text for item in doc.texts] == [
+        "Install with ",
+        "pip install x",
+        " first, x",
+        " ",
+        "a",
+        " ",
+        "y.",
+    ]
+    assert doc.export_to_markdown() == "Install with `pip install x` first, x `a` y."
 
 
 @pytest.mark.parametrize("mark", ["*", "_", "`"])

@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     CodeItem,
     ContentLayer,
     DocItemLabel,
+    Formatting,
     GroupItem,
     ListGroup,
     ListItem,
@@ -30,6 +31,7 @@ from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
 from PIL import Image
+from pydantic import AnyUrl
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
@@ -187,10 +189,12 @@ def test_text_after_image_anchors(documents):
     name = "word_image_anchors.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
     texts = {item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)}
+    # Runs keep their own whitespace, so the spaces the source puts between the two runs of a
+    # paragraph stay on the left run rather than being stripped and re-invented by the serializer.
     for expected in (
-        "This is test 1",
+        "This is test 1   ",
         "0:08\nCorrect, he is not.",
-        "This is test 2",
+        "This is test 2 ",
         "0:16\nYeah, exactly.",
     ):
         assert expected in texts
@@ -1542,6 +1546,60 @@ def test_checkbox_labels_in_tables(documents):
     assert any(
         any(food in item.text for food in food_items) for item in checkbox_items
     ), "No checkboxes found in table cells"
+
+
+def test_checkbox_paragraph_keeps_interior_run_whitespace(tmp_path):
+    """Only the leading checkbox symbol and the block edges are stripped (docling#3891)."""
+    document = Document()
+    para = document.add_paragraph()
+    sdt = etree.SubElement(para._p, qn("w:sdt"))
+    sdt_pr = etree.SubElement(sdt, qn("w:sdtPr"))
+    etree.SubElement(
+        sdt_pr, "{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
+    )
+    para.add_run("☐ Buy ")
+    para.add_run("milk").bold = True
+    para.add_run(" now ")
+
+    doc = _convert_built(document, tmp_path)
+
+    runs = [
+        item for item in doc.texts if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+    assert [run.text for run in runs] == ["Buy ", "milk", " now"]
+
+
+def test_skip_empty_text_keeps_interior_whitespace_runs(tmp_path):
+    """A whitespace-only run between two runs is text; only an all-empty block is skipped."""
+    document = Document()
+    document.add_paragraph("x")
+    path = tmp_path / "case.docx"
+    document.save(str(path))
+    backend = InputDocument(
+        path_or_stream=path, format=InputFormat.DOCX, backend=MsWordDocumentBackend
+    )._backend
+
+    doc = DoclingDocument(name="test")
+    elements = [
+        ("See ", None, None),
+        ("docs", None, AnyUrl("https://example.com/")),
+        (" ", None, None),
+        ("now", Formatting(bold=True), None),
+    ]
+    backend._add_body_text_items(
+        doc=doc, paragraph_elements=elements, checkbox_label=None, skip_empty_text=True
+    )
+    assert [item.text for item in doc.texts] == ["See ", "docs", " ", "now"]
+
+    empty = DoclingDocument(name="empty")
+    refs = backend._add_body_text_items(
+        doc=empty,
+        paragraph_elements=[("", None, None)],
+        checkbox_label=None,
+        skip_empty_text=True,
+    )
+    assert refs == []
+    assert empty.texts == []
 
 
 def test_text_after_drawingml_images(documents):

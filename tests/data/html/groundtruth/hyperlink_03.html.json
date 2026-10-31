@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "hyperlink_03",
   "origin": {
     "mimetype": "text/html",
@@ -230,8 +230,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is my",
-      "text": "This is my"
+      "orig": "This is my ",
+      "text": "This is my "
     },
     {
       "self_ref": "#/texts/5",
@@ -287,8 +287,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "More text",
-      "text": "More text"
+      "orig": "More text ",
+      "text": "More text "
     },
     {
       "self_ref": "#/texts/9",
@@ -299,8 +299,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "with some links",
-      "text": "with some links",
+      "orig": "with some links ",
+      "text": "with some links ",
       "hyperlink": "/some_links.html"
     },
     {

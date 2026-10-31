@@ -30,6 +30,7 @@ tests/test_service_client_sdk_unit.py
 tests/test_backend_opendocument.py
 tests/test_backend_html.py
 tests/test_backend_jats.py
+tests/test_backend_markdown.py
 tests/test_backend_msword.py
 tests/test_backend_msexcel.py
 tests/test_cli.py

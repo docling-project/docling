@@ -566,7 +566,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             raw = element.children if isinstance(element.children, str) else ""
-            text = unescape(raw.strip())
+            # Keep the raw fragment: its edge whitespace is the run boundary. Marko has
+            # already trimmed the cell edges, and whitespace-only runs are significant.
+            text = unescape(raw)
             if text:
                 item = doc.add_text(
                     label=DocItemLabel.TEXT,
@@ -903,13 +905,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             original_text = (
                 element.children if isinstance(element.children, str) else ""
             )
-            snippet_text = unescape(original_text.strip())
-            if snippet_text:
+            # Keep the raw fragment: whitespace at a `RawText` edge is the boundary between
+            # inline runs (`Foo *emph* bar` -> `"Foo "`, `"emph"`, `" bar"`) and the serializers
+            # concatenate faithfully. Marko has already trimmed the block edges for us.
+            snippet_text = unescape(original_text)
+            stripped_text = unescape(original_text.strip())
+            # A whitespace-only run is kept between runs, but never becomes a heading/list item.
+            if snippet_text and (stripped_text or not creation_stack):
                 if creation_stack:
+                    # Headings and list items become one item's own text, not a run: trim.
                     parent_item = self._flush_creation_stack(
                         doc=doc,
                         creation_stack=creation_stack,
-                        snippet_text=snippet_text,
+                        snippet_text=stripped_text,
                         parent_item=parent_item,
                         list_ordered_flag_by_ref=list_ordered_flag_by_ref,
                         list_start_by_ref=list_start_by_ref,
@@ -945,7 +953,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         doc.texts[-1].text += " " + snippet_text
                         doc.texts[-1].orig += " " + snippet_text
                     else:
-                        prefix = "\n" if self._pending_hard_line_break else ""
+                        # The break still separates the runs when they cannot merge.
+                        prefix = (
+                            "\n"
+                            if self._pending_hard_line_break
+                            else " "
+                            if self._pending_soft_line_break
+                            else ""
+                        )
                         doc.add_text(
                             label=DocItemLabel.TEXT,
                             parent=parent_item,
@@ -978,6 +993,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._pending_soft_line_break = False
                 # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
                 return
+            if self._pending_hard_line_break or self._pending_soft_line_break:
+                # The break separator never goes inside the code run: give it a plain run.
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=parent_item,
+                    text="\n" if self._pending_hard_line_break else " ",
+                )
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,

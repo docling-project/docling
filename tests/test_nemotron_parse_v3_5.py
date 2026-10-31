@@ -296,10 +296,11 @@ def test_text_maps_inline_bold_and_superscript_runs() -> None:
     group = parent.children[0].resolve(doc)
     assert isinstance(group, InlineGroup)
     runs = [child.resolve(doc) for child in group.children]
-    assert [run.text for run in runs] == ["Mass is", "heavy", "in m", "2"]
+    assert [run.text for run in runs] == ["Mass is ", "heavy", " in m", "2"]
     assert runs[1].formatting is not None and runs[1].formatting.bold
     assert runs[3].formatting is not None
     assert runs[3].formatting.script == Script.SUPER
+    assert doc.export_to_markdown() == "Mass is **heavy** in m2"
 
 
 def test_caption_links_to_adjacent_table() -> None:
@@ -341,7 +342,7 @@ def test_page_header_and_formatted_page_footer_are_furniture() -> None:
     furniture = [
         item.text for item in doc.texts if item.content_layer == ContentLayer.FURNITURE
     ]
-    assert furniture == ["Journal of Tests", "", "Page", "4"]
+    assert furniture == ["Journal of Tests", "", "Page ", "4"]
     assert "Journal of Tests" not in doc.export_to_markdown()
     assert doc.export_to_markdown() == "Body"
 

@@ -848,9 +848,9 @@ def test_odt_hyperlink_preserved(tmp_path: Path):
         )
         for item in res.document.texts
     ] == [
-        ("Watch", None),
+        ("Watch ", None),
         ("the example talk", "https://example.com/talk"),
-        ("for context.", None),
+        (" for context.", None),
     ]
     assert res.document.export_to_markdown().strip() == (
         "Watch [the example talk](https://example.com/talk) for context."
@@ -1152,7 +1152,7 @@ def test_odt_preserves_hyperlinks_in_block_text(
             str(item.hyperlink) if item.hyperlink is not None else None,
         )
         for item in inline_items
-    ] == [("Read", None), ("details", "#details"), ("now", None)]
+    ] == [("Read ", None), ("details", "#details"), (" now", None)]
     assert result.document.export_to_markdown().strip() == (
         f"{expected_markdown} Read [details](#details) now"
     )

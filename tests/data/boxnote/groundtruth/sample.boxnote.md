@@ -1,6 +1,6 @@
 # Release notes
 
-We shipped a  **new**  parser. See the  [docs](https://example.com/docs)  for details.
+We shipped a **new** parser. See the [docs](https://example.com/docs) for details.
 
 ## Highlights
 

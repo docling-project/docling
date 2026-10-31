@@ -900,7 +900,7 @@ def test_convert_line_breaks():
     # leading '\n' on the run that follows, since the runs cannot be merged.
     doc = _convert_markdown("Author **John**  \nUniversity XYZ", opt)
     assert len(doc.texts) == 3
-    assert doc.texts[0].text == "Author"
+    assert doc.texts[0].text == "Author "
     assert doc.texts[0].formatting is None
     assert doc.texts[1].text == "John"
     assert doc.texts[1].formatting is not None
@@ -958,24 +958,43 @@ def test_convert_line_break_next_to_code_span():
         doc = _convert_markdown(markdown, opt)
         return [(str(t.label), t.text) for t in doc.texts]
 
-    expected = [("text", "Already in"), ("code", "Reference/"), ("text", ". Done.")]
+    # Runs keep their boundary whitespace; a soft break before the code span
+    # becomes a plain " " run, never a space inside the code run.
 
     # No break: the reference behaviour
-    assert items("Already in `Reference/`. Done.") == expected
+    assert items("Already in `Reference/`. Done.") == [
+        ("text", "Already in "),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Soft break before the code span
-    assert items("Already in\n`Reference/`. Done.") == expected
+    assert items("Already in\n`Reference/`. Done.") == [
+        ("text", "Already in"),
+        ("text", " "),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Hard break before the code span
-    assert items("Already in  \n`Reference/`. Done.") == expected
+    assert items("Already in  \n`Reference/`. Done.") == [
+        ("text", "Already in"),
+        ("text", "\n"),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Soft break after the code span
-    assert items("Already in `Reference/`\n. Done.") == expected
+    assert items("Already in `Reference/`\n. Done.") == [
+        ("text", "Already in "),
+        ("code", "Reference/"),
+        ("text", " . Done."),
+    ]
 
     # Hard break after the code span: the break is kept as a leading '\\n' on
     # the run that follows, as across a formatting boundary.
     assert items("Already in `Reference/`  \n. Done.") == [
-        ("text", "Already in"),
+        ("text", "Already in "),
         ("code", "Reference/"),
         ("text", "\n. Done."),
     ]
@@ -983,8 +1002,9 @@ def test_convert_line_break_next_to_code_span():
     # Two code spans after a soft break
     assert items("Already in\n`Reference/` and `Other/`. Done.") == [
         ("text", "Already in"),
+        ("text", " "),
         ("code", "Reference/"),
-        ("text", "and"),
+        ("text", " and "),
         ("code", "Other/"),
         ("text", ". Done."),
     ]
@@ -993,6 +1013,7 @@ def test_convert_line_break_next_to_code_span():
     assert items("- Already in\n  `Reference/`. Done.") == [
         ("list_item", ""),
         ("text", "Already in"),
+        ("text", " "),
         ("code", "Reference/"),
         ("text", ". Done."),
     ]
@@ -1110,6 +1131,42 @@ def test_convert_table_cell_whitespace_around_inline_emphasis():
     ]
 
 
+def test_rich_table_cell_runs_keep_boundary_whitespace():
+    """Rich-cell runs carry their own boundary whitespace; only the cell edges are trimmed."""
+    from docling_core.types.doc import RichTableCell
+
+    markdown = (
+        "| Cell | Note |\n"
+        "|---|---|\n"
+        "| **C** Cadre | x |\n"
+        "| **A** **B** | y |\n"
+        "|  Install with `pip install x` first.  | z |\n"
+    )
+    doc = get_converter().convert_string(markdown, format=InputFormat.MD).document
+
+    runs = [
+        [
+            ref.resolve(doc).text
+            for ref in cell.ref.resolve(doc).children[0].resolve(doc).children
+        ]
+        for cell in doc.tables[0].data.table_cells
+        if isinstance(cell, RichTableCell)
+    ]
+    assert runs == [
+        ["C", " Cadre"],
+        ["A", " ", "B"],
+        ["Install with ", "pip install x", " first."],
+    ]
+    rows = [
+        line.split("|")[1].strip() for line in doc.export_to_markdown().splitlines()
+    ]
+    assert rows[2:] == [
+        "**C** Cadre",
+        "**A** **B**",
+        "Install with `pip install x` first.",
+    ]
+
+
 def test_line_break_does_not_cross_block_boundary():
     """A line break only joins runs of its own paragraph.
 
@@ -1153,6 +1210,7 @@ def test_line_break_does_not_cross_block_boundary():
     # A code span at the end of a paragraph does not take in the next paragraph
     assert items("Intro\n`code`\n\nAfter") == [
         ("text", "Intro"),
+        ("text", " "),
         ("code", "code"),
         ("text", "After"),
     ]
@@ -1404,6 +1462,37 @@ def test_rich_table_cell_no_stray_body_items():
     # The only direct body child must be the table itself.
     body_crefs = {ref.cref for ref in doc.body.children}
     assert body_crefs == {"#/tables/0"}
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        # A soft-wrapped paragraph renders as one line with a space at the wrap point.
+        (
+            "After the swim,\nit is time to eat\nsomething nice\n",
+            "After the swim, it is time to eat something nice",
+        ),
+        # Emphasis boundaries keep the source spacing, and none is invented.
+        ("Foo *emph* bar\n", "Foo *emph* bar"),
+        (
+            "The pipe (| or `|`) only in tables.\n",
+            "The pipe (| or `|`) only in tables.",
+        ),
+        # No space at the boundary in the source, so none in the output.
+        ("a*b*c\n", "a*b*c"),
+    ],
+)
+def test_inline_whitespace_round_trips_through_markdown(source, expected):
+    """Marko run boundaries survive: the export reproduces the source line."""
+    stream = BytesIO(source.encode())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.MD,
+        backend=MarkdownDocumentBackend,
+        filename="test.md",
+    )
+    doc = MarkdownDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+    assert doc.export_to_markdown() == expected
 
 
 @pytest.mark.parametrize(

@@ -6,7 +6,7 @@ Basic duck facts
 | - | - | - |
 | Wood Duck |  | Often seen near ponds. |
 | Mallard | Ponds, lakes, rivers | Quack |
-| Goose (not a duck!) | Water & wetlands | **Large** , *loud* , noisy , ~~small~~ |
+| Goose (not a duck!) | Water & wetlands | **Large**, *loud*, noisy, ~~small~~ |
 | Teal | - Pond - Marsh - Riverbank | 1. Fly south in winter 2. Build nest on ground |
 
 Duck family tree (simplified)
@@ -21,7 +21,7 @@ Duck-related actions
 
 | Action | Action |
 | - | - |
-| **Swim** | Gracefully glide on H 2 O surfaces. |
+| **Swim** | Gracefully glide on H2O surfaces. |
 | *Fly* |  |
 | Quack | Type Sound Short "quak" Long "quaaaaaack" |
 
