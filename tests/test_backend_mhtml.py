@@ -39,6 +39,12 @@ def _blue_png() -> bytes:
     return buffer.getvalue()
 
 
+def _cmyk_jpeg() -> bytes:
+    buffer = BytesIO()
+    Image.new("CMYK", (200, 100), (0, 255, 255, 0)).save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
 def _archive(
     html: str,
     extra_parts: str = "",
@@ -229,6 +235,28 @@ def test_embedded_relative_location_resolves_with_file_root():
     doc = _convert_stream(data, options=HTMLBackendOptions(fetch_images=True))
 
     assert doc.pictures[0].image is not None
+
+
+def test_cmyk_picture_in_mhtml_is_kept():
+    jpeg = base64.b64encode(_cmyk_jpeg()).decode()
+    parts = (
+        "--B\r\nContent-Type: image/jpeg\r\n"
+        "Content-ID: <image1@example>\r\n"
+        f"Content-Transfer-Encoding: base64\r\n\r\n{jpeg}\r\n"
+    )
+    html = '<html><body><img src="cid:image1@example"></body></html>'
+
+    doc = _convert_stream(
+        _archive(html, parts), options=HTMLBackendOptions(fetch_images=True)
+    )
+
+    assert len(doc.pictures) == 1
+    image_ref = doc.pictures[0].image
+    assert image_ref is not None
+    image = image_ref.pil_image
+    assert image is not None
+    assert image.size == (200, 100)
+    assert image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
 
 
 def test_default_fetch_images_leaves_archive_image_as_placeholder():

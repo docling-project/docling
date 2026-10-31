@@ -359,3 +359,22 @@ def test_data_uri_over_size_limit_is_rejected():
     assert loader.load_image_data("data:image/png;base64,AAAAAAAAAAA=", None)
     with pytest.raises(ValueError, match="exceeds size limit of 8 bytes"):
         loader.load_image_data("data:image/png;base64,AAAAAAAAAAAAAAAA", None)
+
+
+def _jpeg_data_uri(data: bytes) -> str:
+    return "data:image/jpeg;base64," + base64.b64encode(data).decode()
+
+
+def _jpeg(image: Image.Image) -> bytes:
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+def test_create_image_ref_skips_undecodable_image():
+    # A truncated file only fails when Pillow decodes it, with an OSError.
+    data = _jpeg(Image.new("RGB", (200, 100), "red"))
+    truncated = _jpeg_data_uri(data[: len(data) // 2])
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        assert ImageResourceLoader().create_image_ref(truncated, None) is None
