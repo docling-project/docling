@@ -89,6 +89,16 @@ class AsyncStatusWatcher(Protocol):
     ) -> TaskStatusResponse: ...
 
 
+def _fallback_timeout(task_id: str, wait_timeout: float, deadline: float) -> float:
+    """Return the time left for the polling fallback within the original timeout."""
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TaskTimeoutError(
+            f"Timed out waiting for task {task_id} after {wait_timeout:.2f}s."
+        )
+    return remaining
+
+
 class PollingWatcher:
     """Status watcher using `GET /v1/status/poll/{task_id}` with server-side wait."""
 
@@ -171,12 +181,14 @@ class WebSocketWatcher:
         self, task_id: str, timeout: float | None = None
     ) -> Iterator[TaskStatusResponse]:
         wait_timeout = self._default_timeout if timeout is None else timeout
+        deadline = time.monotonic() + wait_timeout
         try:
             yield from self._iter_ws_updates(task_id=task_id, timeout=wait_timeout)
         except ServiceUnavailableError:
             if self._fallback_to_poll and self._poll_fallback is not None:
                 yield from self._poll_fallback.iter_updates(
-                    task_id=task_id, timeout=wait_timeout
+                    task_id=task_id,
+                    timeout=_fallback_timeout(task_id, wait_timeout, deadline),
                 )
                 return
             raise
@@ -355,6 +367,7 @@ class AsyncWebSocketWatcher:
         self, task_id: str, timeout: float | None = None
     ) -> AsyncIterator[TaskStatusResponse]:  # type: ignore[override]
         wait_timeout = self._default_timeout if timeout is None else timeout
+        deadline = time.monotonic() + wait_timeout
         try:
             async for update in self._iter_ws_updates(
                 task_id=task_id, timeout=wait_timeout
@@ -363,7 +376,8 @@ class AsyncWebSocketWatcher:
         except ServiceUnavailableError:
             if self._fallback_to_poll and self._poll_fallback is not None:
                 async for update in self._poll_fallback.iter_updates(
-                    task_id=task_id, timeout=wait_timeout
+                    task_id=task_id,
+                    timeout=_fallback_timeout(task_id, wait_timeout, deadline),
                 ):
                     yield update
                 return
