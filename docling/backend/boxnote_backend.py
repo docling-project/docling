@@ -388,7 +388,9 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         caption = None
         label = attrs.get("alt") or attrs.get("fileName")
         if label:
-            caption = doc.add_text(label=DocItemLabel.CAPTION, text=label)
+            caption = doc.add_text(
+                label=DocItemLabel.CAPTION, text=label, parent=parent
+            )
         doc.add_picture(caption=caption, parent=parent)
 
     def _collapse(self, content: list[dict]) -> _Run:

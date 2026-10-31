@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import DocItemLabel
 
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -168,6 +169,45 @@ def test_utf8_bom_does_not_fail_the_load(tmp_path):
     expected = converter.convert(source, raises_on_error=True).document
     for doc in (stream_doc, file_doc):
         assert doc.export_to_markdown() == expected.export_to_markdown()
+
+
+def test_image_caption_is_parented_with_its_picture():
+    # An image inside a list item: its caption must live under the same parent
+    # as the picture, not at the body top level.
+    payload = {
+        "doc": {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "bullet_list",
+                    "content": [
+                        {
+                            "type": "list_item",
+                            "content": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {"type": "text", "text": "Item with picture"}
+                                    ],
+                                },
+                                {
+                                    "type": "image",
+                                    "attrs": {"alt": "A chart of revenue"},
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    (picture,) = doc.pictures
+    (caption,) = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
+    assert picture.parent.cref != "#/body"
+    assert caption.parent == picture.parent
 
 
 def _table_cell(text: str, **attrs: int) -> dict:
