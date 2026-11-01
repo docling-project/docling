@@ -576,11 +576,27 @@ _COMPLETE_MATCH_SHARE = 0.5
 _FONT_SUBSET_PREFIX = re.compile(r"^[A-Z]{6}\+")
 
 
+# A word set with letter spacing, such as ``A B S T R A C T``: three or more single letters.
+_LETTER_SPACED = re.compile(r"^\s*(?:[^\W\d_]\s+){2,}[^\W\d_]\s*$")
+
+# The section number at the start of a heading or bookmark title: ``4``, ``4.``, ``2.1``, ``IV.``,
+# ``A.``.
+_SECTION_NUMBER = re.compile(
+    r"^\s*\(?(\d+(?:\.\d+)*|[IVXLC]+(?=[.)\s])|[A-Z](?=[.)]))[.)]?(?=\s|$)"
+)
+
+
 def _is_standard_heading(text: str) -> bool:
+    unspaced = re.sub(r"\s+", "", text) if _LETTER_SPACED.match(text) else text
     return any(
         _STANDARD_HEADING.match(_norm(variant))
-        for variant in (text, _strip_marker(text))
+        for variant in (text, _strip_marker(text), unspaced)
     )
+
+
+def _section_number(text: str) -> str | None:
+    match = _SECTION_NUMBER.match(text or "")
+    return match.group(1).upper() if match else None
 
 
 def _body_size(parsed_pages: dict[int, SegmentedPdfPage]) -> float | None:
@@ -696,11 +712,27 @@ def _demote_unmatched_headings(
     """Demote headings that match no bookmark to text, when the outline looks complete.
 
     ``matched`` holds the ``id`` of every bookmark-matched heading. Standard unnumbered headings
-    (Abstract, References, ...) and headings with children are kept. Returns the number of
-    demoted headings.
+    (Abstract, References, ...) and headings with children are kept. A heading also counts as
+    matched when its section number belongs to a bookmark that matched no heading: the bookmark
+    title can differ from the printed one (for example, unresolved LaTeX references in hyperref
+    bookmarks). Returns the number of demoted headings.
     """
     headings = [item for item in document.texts if isinstance(item, SectionHeaderItem)]
-    unmatched = [heading for heading in headings if id(heading) not in matched]
+    matched_numbers = {
+        _section_number(heading.text) for heading in headings if id(heading) in matched
+    }
+    free_numbers = {
+        number
+        for bm in outline
+        if (number := _section_number(bm.title or "")) is not None
+        and number not in matched_numbers
+    }
+    unmatched = [
+        heading
+        for heading in headings
+        if id(heading) not in matched
+        and _section_number(heading.text) not in free_numbers
+    ]
     demotable = [
         heading
         for heading in unmatched

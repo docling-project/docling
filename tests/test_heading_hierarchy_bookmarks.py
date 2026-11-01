@@ -317,6 +317,64 @@ def test_standard_headings_are_never_demoted():
     assert len(headings) == 8
 
 
+def test_letter_spaced_standard_heading_is_kept():
+    # Some publishers set "Abstract" with letter spacing; it is still a standard heading.
+    doc, pages = _paged_doc(
+        [
+            _bold_run_in("A B S T R A C T"),
+            _PARA,
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            _RUNNING_HEADER,
+            _section("2 Method"),
+            _PARA,
+        ]
+    )
+    outline = _outline(("Introduction", 0), ("Background", 1), ("Method", 0))
+
+    _model(demote_unmatched_headings=True).assign_heading_levels(
+        doc, parsed_pages=pages, outline=outline
+    )
+
+    headings = _headings(doc)
+    assert "A B S T R A C T" in headings
+    assert _RUNNING_HEADER[0] not in headings
+
+
+def test_heading_with_the_number_of_an_unmatched_bookmark_is_kept():
+    # The bookmark of section 2 carries unresolved LaTeX references, so its title matches no
+    # heading. The printed heading with the same number stays a heading. A false header whose
+    # number belongs to an already matched heading is still demoted.
+    false_header = ("1 Proceedings of the Workshop", 10, "/Times-Roman")
+    doc, pages = _paged_doc(
+        [
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            false_header,
+            _PARA,
+            _section("2 Proofs of Lemma 1.1 and Lemma 1.2"),
+            _PARA,
+        ]
+    )
+    outline = _outline(
+        ("1 Introduction", 0),
+        ("1.1 Background", 1),
+        ("2 Proofs of thm:mainEXP and thm:mainPOLY", 0),
+    )
+
+    _model(demote_unmatched_headings=True).assign_heading_levels(
+        doc, parsed_pages=pages, outline=outline
+    )
+
+    headings = _headings(doc)
+    assert "2 Proofs of Lemma 1.1 and Lemma 1.2" in headings
+    assert false_header[0] not in headings
+
+
 def test_top_level_only_bookmarks_demote_nothing():
     # An outline that lists only the top level does not cover the subsections it omits.
     doc, pages = _paged_doc(
