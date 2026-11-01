@@ -928,6 +928,23 @@ def test_horizontal_dilation_preserves_columns_at_graph_branches() -> None:
     assert [element.cid for element in result] == [0, 1, 2, 3, 4, 30]
 
 
+def test_horizontal_dilation_skips_a_widening_that_overlaps_a_neighbour() -> None:
+    # A centred title (0) is the only element above the right column (4). The
+    # left column opens with a heading (1), and 4 starts above the first left
+    # paragraph (2). Widened to the title, 4 overlaps 2. If the dilation keeps
+    # the widened box, 4 reaches over the left column and becomes a parent of
+    # 3, so 4 is read between the two left paragraphs.
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 740.0, 760.0, l=240.0, r=360.0),
+        _box(1, DocItemLabel.SECTION_HEADER, 705.0, 720.0, l=60.0, r=220.0),
+        _box(2, DocItemLabel.TEXT, 600.0, 690.0, l=40.0, r=290.0),
+        _box(3, DocItemLabel.TEXT, 500.0, 590.0, l=40.0, r=290.0),
+        _box(4, DocItemLabel.TEXT, 640.0, 730.0, l=310.0, r=560.0),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4]
+
+
 def test_graphics_continue_left_to_right_only_across_an_empty_gap() -> None:
     from docling.models.postprocessing.reading_order_rb import (
         _ReadingOrderPredictorState,
