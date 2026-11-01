@@ -54,3 +54,15 @@ A non-uniform table with a vertical span over a row starting late
 | Header 0.0 | Header 0.1 | Merged Cell 0.2 1.2 |
 | - | - | - |
 |  |  | Merged Cell 0.2 1.2 |
+
+Table without tblGrid
+
+| Nogrid R1C1 | Nogrid R1C2 |
+| - | - |
+| Nogrid R2C1 | Nogrid R2C2 |
+
+Table with gridAfter beyond the declared grid
+
+| After A1 | After B1 |  |
+| - | - | - |
+| After A2 | After B2 |  |
