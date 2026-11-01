@@ -89,7 +89,10 @@ header, a bold lead-in, a theorem label. When the PDF has a complete outline, th
 says which headings are real. Set `demote_unmatched_headings=True` to turn every detected heading
 that matches no bookmark into plain text in that case. Matched headings keep the bookmark level as
 usual, and standard unnumbered headings that outlines often skip (Abstract, Keywords,
-Acknowledgements, References, Bibliography, Appendix) are always kept.
+Acknowledgements, References, Bibliography, Appendix) are always kept, also when they are set with
+letter spacing (`A B S T R A C T`). A heading also counts as matched when its section number
+belongs to a bookmark that matched no heading, because a bookmark title can differ from the
+printed heading (for example, unresolved LaTeX references in the bookmark).
 
 Many outlines are partial, so Docling demotes nothing unless the outline looks complete. All of
 these must be true:
