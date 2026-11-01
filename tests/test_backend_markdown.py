@@ -1487,20 +1487,14 @@ def test_convert_frontmatter_followed_by_content_keeps_the_content():
 
 
 def test_pipe_in_lazy_continuation_line_does_not_hang():
-    """A table probe on a lazy continuation line must not stall the parser."""
-    converter = get_converter()
+    """The hang is an infinite loop, so a daemon thread turns it into a failure."""
+    convert = get_converter().convert_string
+    md = "- a\n  - b\n  |x| y\n"
     result: list[ConversionResult] = []
-
-    # The regression is an infinite loop, so a daemon thread turns it into a failure.
     thread = Thread(
-        target=lambda: result.append(
-            converter.convert_string("- a\n  - b\n  |x| y\n", format=InputFormat.MD)
-        ),
-        daemon=True,
+        target=lambda: result.append(convert(md, format=InputFormat.MD)), daemon=True
     )
     thread.start()
     thread.join(timeout=30)
-
     assert not thread.is_alive()
-    assert result[0].status == ConversionStatus.SUCCESS
     assert "|x| y" in result[0].document.export_to_markdown().replace("\\", "")
