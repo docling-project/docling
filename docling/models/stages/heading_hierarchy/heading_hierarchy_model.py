@@ -25,13 +25,18 @@ produced by the PDF path defaults to ``level=1`` and the document hierarchy is f
    slant and letter case, so that headings sharing a size are still separated (bold above
    regular, upright above italic, all-caps above mixed).
 
-Apart from promoting a confidently bookmark-matched list-item, the model only rewrites heading
-levels -- it never adds, removes or reorders items. The core
+With ``demote_unmatched_headings`` (off by default), a detected heading that matches no bookmark
+is demoted to plain text when the outline looks complete -- see
+:func:`_demote_unmatched_headings` for the completeness checks.
+
+Apart from promoting a confidently bookmark-matched list-item and the opt-in demotion above, the
+model only rewrites heading levels -- it never adds, removes or reorders items. The core
 (:meth:`HeadingHierarchyModel.assign_heading_levels`) works on a bare ``DoclingDocument`` so it
 can be reused outside the pipeline; the outline drives bookmark inference and the parsed pages
 drive the style fallback.
 """
 
+import logging
 import re
 from collections import Counter
 from dataclasses import dataclass
@@ -39,14 +44,16 @@ from difflib import SequenceMatcher
 from statistics import median
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument
-from docling_core.types.doc.document import ListItem, SectionHeaderItem
-from docling_core.types.doc.page import PdfTextCell, SegmentedPdfPage
+from docling_core.types.doc.document import ListItem, SectionHeaderItem, TextItem
+from docling_core.types.doc.page import PdfTextCell, SegmentedPdfPage, TextCell
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.utils.font_style import parse_font_style, weight_class
 from docling.utils.pdf_outline import _PdfOutlineItem
+
+_log = logging.getLogger(__name__)
 
 # Default precedence of numbering schemes, highest hierarchy level first. ``dotted`` shares
 # the ``arabic`` rank and is ordered below it by its segment depth (1.1 below 1.).
@@ -295,6 +302,28 @@ def _is_all_caps(text: str) -> bool:
     return len(letters) >= 4 and all(char.isupper() for char in letters)
 
 
+def _heading_cells(
+    item: SectionHeaderItem, parsed_pages: dict[int, SegmentedPdfPage]
+) -> list[TextCell]:
+    """The parsed PDF cells with text that overlap the heading's first provenance box."""
+    if not item.prov:
+        return []
+    prov = item.prov[0]
+    parsed = parsed_pages.get(prov.page_no)
+    if parsed is None:
+        return []
+
+    page_height = parsed.dimension.height
+    hbox = prov.bbox.to_top_left_origin(page_height)
+    return [
+        cell
+        for cell in parsed.textline_cells
+        if cell.text
+        and cell.text.strip()
+        and hbox.overlaps(cell.rect.to_bounding_box().to_top_left_origin(page_height))
+    ]
+
+
 def _heading_style(
     item: SectionHeaderItem,
     parsed_pages: dict[int, SegmentedPdfPage],
@@ -307,25 +336,11 @@ def _heading_style(
     output, the pypdfium2 backend, or names that carry no recognizable styling -- contribute
     their size but leave the heading at the regular weight, so the ranking degrades to font size.
     """
-    if not item.prov:
-        return None
-    prov = item.prov[0]
-    parsed = parsed_pages.get(prov.page_no)
-    if parsed is None:
-        return None
-
-    page_height = parsed.dimension.height
-    hbox = prov.bbox.to_top_left_origin(page_height)
     heights: list[float] = []
     weights: Counter[int] = Counter()
     styled_chars = 0
     italic_chars = 0
-    for cell in parsed.textline_cells:
-        if not cell.text or not cell.text.strip():
-            continue
-        cbox = cell.rect.to_bounding_box().to_top_left_origin(page_height)
-        if not hbox.overlaps(cbox):
-            continue
+    for cell in _heading_cells(item, parsed_pages):
         heights.append(cell.rect.height)
 
         if not options.use_font_style or not isinstance(cell, PdfTextCell):
@@ -548,6 +563,176 @@ def _infer_from_bookmarks(
     return result
 
 
+# Unnumbered headings that documents commonly leave out of their bookmarks. They are never demoted.
+_STANDARD_HEADING = re.compile(
+    r"^(abstract|keywords|acknowledge?ments?|references|bibliography|appendix|appendices)\b",
+    re.IGNORECASE,
+)
+
+# Share of the detected headings that must match a bookmark for the outline to count as complete.
+_COMPLETE_MATCH_SHARE = 0.5
+
+# Subset-embedded fonts are prefixed with six uppercase letters and a plus (PDF 32000-1 9.6.4).
+_FONT_SUBSET_PREFIX = re.compile(r"^[A-Z]{6}\+")
+
+
+def _is_standard_heading(text: str) -> bool:
+    return any(
+        _STANDARD_HEADING.match(_norm(variant))
+        for variant in (text, _strip_marker(text))
+    )
+
+
+def _body_size(parsed_pages: dict[int, SegmentedPdfPage]) -> float | None:
+    """The median text-line height of the document, weighted by characters.
+
+    Cell heights follow the glyphs on the line (descenders, superscripts), so body lines spread
+    over a range of heights; the weighted median is a stabler body-size proxy than the mode.
+    """
+    weighted = sorted(
+        (cell.rect.height, len(text))
+        for parsed in parsed_pages.values()
+        for cell in parsed.textline_cells
+        if (text := (cell.text or "").strip())
+    )
+    total = sum(chars for _, chars in weighted)
+    seen = 0
+    for height, chars in weighted:
+        seen += chars
+        if 2 * seen >= total:
+            return height
+    return None
+
+
+def _face(cell: TextCell) -> str | None:
+    """The font face of a digital cell (its font name without the subset tag), else None."""
+    if not isinstance(cell, PdfTextCell):
+        return None
+    name = _FONT_SUBSET_PREFIX.sub("", cell.font_name.lstrip("/"), count=1)
+    return name if name and name != "null" else cell.font_key or None
+
+
+def _main_face(cells: list[TextCell]) -> str | None:
+    """The font face that carries most characters of ``cells``."""
+    chars: Counter[str] = Counter()
+    for cell in cells:
+        face = _face(cell)
+        if face is not None:
+            chars[face] += len(cell.text.strip())
+    return chars.most_common(1)[0][0] if chars else None
+
+
+def _share_a_heading_style(
+    headings: list[SectionHeaderItem],
+    parsed_pages: dict[int, SegmentedPdfPage],
+    options: HeadingHierarchyOptions,
+) -> bool:
+    """Whether two or more of ``headings`` share a heading-like style.
+
+    A style is heading-like when it is larger than the body text, bold, or set in a font face
+    other than the body face. The face check catches bold and italic fonts whose names carry no
+    readable style, such as the TeX fonts ``CMBX10`` and ``CMTI10``. A family of unmatched
+    headings in such a style means that the outline omits a level (often the deepest one), so
+    those headings are real and the outline is not complete.
+    """
+    body_size = _body_size(parsed_pages)
+    if body_size is None:
+        return True  # no evidence either way: treat the outline as incomplete
+    body_face = _main_face(
+        [cell for parsed in parsed_pages.values() for cell in parsed.textline_cells]
+    )
+    # Weight is read from the font names even when the style fallback ranks by size only.
+    style_options = options.model_copy(update={"use_font_style": True})
+    keys: list[tuple[float, str | None, bool]] = []
+    for heading in headings:
+        style = _heading_style(heading, parsed_pages, style_options)
+        if style is None:
+            continue
+        face = _main_face(_heading_cells(heading, parsed_pages))
+        larger = style.size > body_size * (1 + options.style_size_tolerance)
+        bold = style.weight_cls > 0
+        if larger or bold or (face is not None and face != body_face):
+            keys.append((style.size, face, bold))
+    clusters = _cluster_sizes(
+        {size for size, _, _ in keys}, options.style_size_tolerance
+    )
+    counts = Counter((clusters[size], face, bold) for size, face, bold in keys)
+    return any(count >= 2 for count in counts.values())
+
+
+def _outline_looks_complete(
+    headings: list[SectionHeaderItem],
+    unmatched: list[SectionHeaderItem],
+    demotable: list[SectionHeaderItem],
+    outline: list[_PdfOutlineItem],
+    parsed_pages: dict[int, SegmentedPdfPage],
+    options: HeadingHierarchyOptions,
+) -> bool:
+    """Whether the outline appears to list every real heading of the document.
+
+    All of these must hold: the outline has more than one level (a flat outline usually lists only
+    the top level); every detected dotted-numbered heading (``2.1 ...``) matches a bookmark; at
+    least half of the detected headings match a bookmark; and no two of the headings that would be
+    demoted share a heading-like style.
+    """
+    if not parsed_pages:
+        return False
+    if len({bm.level for bm in outline if (bm.title or "").strip()}) < 2:
+        return False
+    if any(_DOTTED.match(heading.text.strip()) for heading in unmatched):
+        return False
+    if len(headings) - len(unmatched) < _COMPLETE_MATCH_SHARE * len(headings):
+        return False
+    return not _share_a_heading_style(demotable, parsed_pages, options)
+
+
+def _demote_unmatched_headings(
+    document: DoclingDocument,
+    matched: set[int],
+    outline: list[_PdfOutlineItem],
+    parsed_pages: dict[int, SegmentedPdfPage],
+    options: HeadingHierarchyOptions,
+) -> int:
+    """Demote headings that match no bookmark to text, when the outline looks complete.
+
+    ``matched`` holds the ``id`` of every bookmark-matched heading. Standard unnumbered headings
+    (Abstract, References, ...) and headings with children are kept. Returns the number of
+    demoted headings.
+    """
+    headings = [item for item in document.texts if isinstance(item, SectionHeaderItem)]
+    unmatched = [heading for heading in headings if id(heading) not in matched]
+    demotable = [
+        heading
+        for heading in unmatched
+        if not heading.children and not _is_standard_heading(heading.text)
+    ]
+    if not demotable or not _outline_looks_complete(
+        headings, unmatched, demotable, outline, parsed_pages, options
+    ):
+        return 0
+
+    for heading in demotable:
+        text_item = TextItem(
+            label=DocItemLabel.TEXT,
+            self_ref=heading.self_ref,  # reassigned by the insert
+            parent=heading.parent,
+            content_layer=heading.content_layer,
+            meta=heading.meta,
+            prov=heading.prov,
+            source=heading.source,
+            comments=heading.comments,
+            orig=heading.orig,
+            text=heading.text,
+            formatting=heading.formatting,
+            hyperlink=heading.hyperlink,
+        )
+        document.insert_item_after_sibling(new_item=text_item, sibling=heading)
+    # One deletion for all headings: each call re-indexes the whole document.
+    document.delete_items(node_items=list(demotable))
+    _log.debug("Demoted %d headings that match no bookmark.", len(demotable))
+    return len(demotable)
+
+
 class HeadingHierarchyModel:
     """Assigns ``SectionHeaderItem.level`` on an already-assembled ``DoclingDocument``.
 
@@ -565,13 +750,23 @@ class HeadingHierarchyModel:
 
         The pipeline releases the parsed pages before assembly to save memory, but the style
         signal reads the text lines of the headings during assembly. Only the text lines that
-        overlap a section header, or a list item that a bookmark can promote, are kept.
+        overlap a section header, or a list item that a bookmark can promote, are kept. With
+        ``demote_unmatched_headings``, all text lines are kept, because its style check compares
+        the headings with the body text.
         """
         parsed = page.parsed_page
         layout = page.predictions.layout
-        if not (self.options.enabled and self.options.use_style) or (
-            parsed is None or layout is None
-        ):
+        if not self.options.enabled or parsed is None:
+            return None
+        if self.options.demote_unmatched_headings and self.options.use_bookmarks:
+            return SegmentedPdfPage(
+                dimension=parsed.dimension,
+                char_cells=[],
+                word_cells=[],
+                textline_cells=list(parsed.textline_cells),
+                has_lines=bool(parsed.textline_cells),
+            )
+        if not self.options.use_style or layout is None:
             return None
         height = parsed.dimension.height
         boxes = [
@@ -601,7 +796,7 @@ class HeadingHierarchyModel:
             return document
 
         parsed_pages: dict[int, SegmentedPdfPage] = {}
-        if self.options.use_style:
+        if self.options.use_style or self.options.demote_unmatched_headings:
             parsed_pages = {
                 page.page_no: page.parsed_page
                 for page in conv_res.pages
@@ -625,15 +820,25 @@ class HeadingHierarchyModel:
         """Assign heading levels in place from the configured signals.
 
         Precedence: bookmarks (when confidently matched) > numbering > style. The bookmark pass
-        may promote a mis-classified list-item to a heading. Headings with no applicable signal
-        keep their existing level. ``parsed_pages`` (page number -> parsed page) is only needed
-        for the style fallback; ``outline`` (PDF bookmarks) for bookmark inference.
+        may promote a mis-classified list-item to a heading and, with
+        ``demote_unmatched_headings``, demote headings that a complete outline does not list.
+        Headings with no applicable signal keep their existing level. ``parsed_pages`` (page
+        number -> parsed page) is only needed for the style fallback and the demotion;
+        ``outline`` (PDF bookmarks) for bookmark inference.
         """
-        # Bookmark pass first: it may promote list-items, changing the set of headings, so it
-        # has to run before the heading list is collected.
+        # Bookmark pass first: it may promote list-items and demote headings, changing the set
+        # of headings, so it has to run before the heading list is collected.
         bookmark_levels: dict[int, int] = {}
         if self.options.use_bookmarks and outline:
             bookmark_levels = _infer_from_bookmarks(document, outline, self.options)
+            if self.options.demote_unmatched_headings and bookmark_levels:
+                _demote_unmatched_headings(
+                    document,
+                    matched=set(bookmark_levels),
+                    outline=outline,
+                    parsed_pages=parsed_pages or {},
+                    options=self.options,
+                )
 
         headings = [
             item for item in document.texts if isinstance(item, SectionHeaderItem)

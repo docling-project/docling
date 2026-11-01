@@ -2019,8 +2019,9 @@ class HeadingHierarchyOptions(BaseModel):
     reading-order model and assigns ``SectionHeaderItem.level`` from (in precedence order)
     PDF bookmarks/ToC, numbering and font style. The step changes heading levels and may
     promote a heading mis-classified as a list-item when it confidently matches a bookmark;
-    otherwise it never adds, removes or reorders items, and headings for which no signal
-    applies keep their current level.
+    with ``demote_unmatched_headings`` it may also demote headings that a complete outline
+    does not list. Otherwise it never adds, removes or reorders items, and headings for which
+    no signal applies keep their current level.
 
     Notes:
         - ``use_bookmarks`` reads the PDF outline surfaced on ``ConversionResult._pdf_outline``.
@@ -2030,6 +2031,9 @@ class HeadingHierarchyOptions(BaseModel):
         - ``use_style`` reads the text lines of the headings from the parsed PDF cells. The PDF
           pipeline keeps those lines until the heading-hierarchy step has run, so
           ``PdfPipelineOptions.generate_parsed_pages`` is not needed.
+        - ``demote_unmatched_headings`` compares the headings with the body text, so with it the
+          PDF pipeline keeps all text lines of each page (not the characters or words) until the
+          heading-hierarchy step has run. Without parsed pages, no heading is demoted.
     """
 
     enabled: Annotated[
@@ -2130,6 +2134,22 @@ class HeadingHierarchyOptions(BaseModel):
             ),
         ),
     ] = 0.8
+    demote_unmatched_headings: Annotated[
+        bool,
+        Field(
+            description=(
+                "When the PDF bookmarks look complete, demote detected section headers that "
+                "match no bookmark to plain text, except standard unnumbered headings "
+                "(Abstract, Keywords, Acknowledgements, References, Bibliography, Appendix). "
+                "The outline counts as complete only when it has more than one level, every "
+                "detected dotted-numbered heading (e.g. '2.1 ...') matches a bookmark, at least "
+                "half of the detected headings match a bookmark, and no two of the headings to "
+                "demote share a heading-like font style (larger than body text, bold, or in a "
+                "font face other than the body text's); otherwise nothing is demoted. Requires "
+                "`use_bookmarks`."
+            )
+        ),
+    ] = False
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):
