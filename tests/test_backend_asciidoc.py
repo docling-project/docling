@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     Formatting,
+    GroupLabel,
     ImageRefMode,
     ListItem,
 )
@@ -952,6 +953,71 @@ Not linked: word:https://example.com.
     assert "[Example site](https://example.com/)" in md
     assert "example.com[" not in md
     assert "link:" not in md
+
+
+@pytest.mark.parametrize(
+    "source, expected_text",
+    [
+        ('https://example.com["Docs, API", window=_blank]', "Docs, API"),
+        (
+            r'https://example.com["Say \"hello\", API", window=_blank]',
+            'Say "hello", API',
+        ),
+        ("https://example.com[window=_blank]", "https://example.com"),
+        (r"https://example.com[Array \[index\], window=_blank]", "Array [index]"),
+    ],
+)
+def test_link_labels_and_attributes(source: str, expected_text: str) -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source.encode()),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="link-attributes.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(links) == 1
+    assert links[0].text == expected_text
+    assert str(links[0].hyperlink) == "https://example.com/"
+    assert links[0].parent is not None
+    assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
+    assert "window=_blank" not in doc.export_to_markdown()
+
+
+def test_url_in_link_label_keeps_outer_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://outer.example[https://inner.example]"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="url-label.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert [(item.text, str(item.hyperlink)) for item in links] == [
+        ("https://inner.example", "https://outer.example/")
+    ]
+    assert "[https://inner.example](https://outer.example/)" in doc.export_to_markdown()
+
+
+def test_inline_code_link_keeps_code_item_and_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://example.com[`API`]"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="code-link.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(links) == 1
+    assert isinstance(links[0], CodeItem)
+    assert links[0].text == "API"
+    assert str(links[0].hyperlink) == "https://example.com/"
+    assert links[0].parent is not None
+    assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
+    assert "[`API`](https://example.com/)" in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize("mark", ["*", "_", "`"])
