@@ -970,6 +970,8 @@ class _DocumentConversionInput(BaseModel):
                     "application/octet-stream",
                     "application/xml",
                     "application/xhtml+xml",
+                    # _resolve_postscript_mime checks the head of the file.
+                    "application/postscript",
                 }
             )
             if needs_content_sniff:
@@ -1020,6 +1022,7 @@ class _DocumentConversionInput(BaseModel):
                         mime = office_mime
 
         mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
+        mime = _DocumentConversionInput._resolve_postscript_mime(mime, obj_ext, content)
 
         if mime is not None and mime.lower() == "application/gzip":
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
@@ -1066,6 +1069,24 @@ class _DocumentConversionInput(BaseModel):
         if ext.lower() == "msg":
             return _DocumentConversionInput._mime_from_extension("msg")
         return mime
+
+    @staticmethod
+    def _resolve_postscript_mime(
+        mime: Optional[str], ext: Optional[str], content: bytes
+    ) -> Optional[str]:
+        """Keep a PostScript guess only when the content starts with ``%!PS``.
+
+        ``filetype`` reports PostScript for all content that starts with ``%!``.
+        A TeX magic comment such as ``%!TEX root = main.tex`` starts with the same
+        two bytes. PostScript is not an input format, so a wrong guess makes the
+        converter skip the document. For other content, the extension and then the
+        content probes find the format, as they do when ``filetype`` finds no type.
+        """
+        if mime is None or mime.lower() != "application/postscript":
+            return mime
+        if content.startswith(b"%!PS"):
+            return mime
+        return _DocumentConversionInput._mime_from_extension((ext or "").lower())
 
     @staticmethod
     def _has_doclang_extension(name: str) -> bool:
