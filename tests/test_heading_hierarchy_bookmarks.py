@@ -10,17 +10,18 @@ import pytest
 from docling_core.types.doc import (
     BoundingBox,
     CoordOrigin,
+    DocItemLabel,
     DoclingDocument,
     ProvenanceItem,
     Size,
 )
-from docling_core.types.doc.document import ListItem, SectionHeaderItem
+from docling_core.types.doc.document import ListItem, SectionHeaderItem, TextItem
 
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import Cluster, InputFormat, LayoutPrediction, Page
 from docling.datamodel.document import InputDocument
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
@@ -31,6 +32,7 @@ from docling.utils.pdf_outline import (
     _PdfOutlineItem,
     extract_outline_from_pdfium,
 )
+from tests.test_heading_hierarchy import _cell, _segmented_page
 
 SAMPLE_PDF = Path("./tests/data/pdf/bookmark_sample.pdf")
 
@@ -173,6 +175,346 @@ def test_use_bookmarks_false_ignores_outline():
     model.assign_heading_levels(doc, outline=outline)
 
     assert [h.level for h in doc.texts] == [1, 1]  # outline ignored, nothing applies
+
+
+# ---------------------------------------------------------------------- demotion
+
+_BODY = (
+    "Body text of the section. It is long enough to set the body size of the page, "
+    "so that the headings stand out against it. " * 2
+)
+
+
+def _paged_doc(rows) -> tuple[DoclingDocument, dict]:
+    """A one-page document and its parsed page, from ``(text, height, font name)`` rows.
+
+    Rows are stacked down the page in reading order. A row whose text is ``_BODY`` becomes a text
+    item, any other row a section header; the cell height acts as the font size.
+    """
+    doc = DoclingDocument(name="t")
+    doc.add_page(page_no=1, size=Size(width=600, height=800))
+    cells = []
+    top = 20
+    for text, height, font_name in rows:
+        prov = ProvenanceItem(
+            page_no=1,
+            charspan=(0, len(text)),
+            bbox=BoundingBox(
+                l=50, t=top, r=550, b=top + height, coord_origin=CoordOrigin.TOPLEFT
+            ),
+        )
+        if text == _BODY:
+            doc.add_text(label=DocItemLabel.TEXT, text=text, prov=prov)
+        else:
+            doc.add_heading(text=text, prov=prov)
+        cells.append(_cell(text, 50, top, 550, top + height, font_name=font_name))
+        top += height + 4
+    return doc, {1: _segmented_page(cells)}
+
+
+def _section(text: str) -> tuple[str, int, str]:
+    return (text, 14, "/Times-Bold")
+
+
+def _subsection(text: str) -> tuple[str, int, str]:
+    return (text, 12, "/Times-Bold")
+
+
+def _bold_run_in(text: str) -> tuple[str, int, str]:
+    # A heading set in the body size, distinguished only by its weight.
+    return (text, 10, "/Times-Bold")
+
+
+_PARA = (_BODY, 10, "/Times-Roman")
+# A running header that the layout model mis-labelled as a section header.
+_RUNNING_HEADER = ("Proceedings of the Workshop", 10, "/Times-Roman")
+
+
+def _outline(*entries: tuple[str, int]) -> list[_PdfOutlineItem]:
+    return [
+        _PdfOutlineItem(title=title, level=level, page_no=1) for title, level in entries
+    ]
+
+
+def _headings(doc: DoclingDocument) -> dict[str, int]:
+    return {
+        item.text: item.level
+        for item in doc.texts
+        if isinstance(item, SectionHeaderItem)
+    }
+
+
+def test_complete_bookmarks_demote_unmatched_heading():
+    doc, pages = _paged_doc(
+        [
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            _RUNNING_HEADER,
+            _PARA,
+            _section("2 Method"),
+            _PARA,
+        ]
+    )
+    outline = _outline(("Introduction", 0), ("Background", 1), ("Method", 0))
+    prov = next(item.prov for item in doc.texts if item.text == _RUNNING_HEADER[0])
+
+    _model(demote_unmatched_headings=True).assign_heading_levels(
+        doc, parsed_pages=pages, outline=outline
+    )
+
+    assert _headings(doc) == {"1 Introduction": 1, "1.1 Background": 2, "2 Method": 1}
+    demoted = next(item for item in doc.texts if item.text == _RUNNING_HEADER[0])
+    assert type(demoted) is TextItem and demoted.label == DocItemLabel.TEXT
+    assert demoted.prov == prov
+    # The demoted item keeps its place in reading order.
+    markdown = doc.export_to_markdown()
+    assert "\n\nProceedings of the Workshop\n\n" in markdown
+    assert markdown.index("## 1.1 Background") < markdown.index("Proceedings")
+    assert markdown.index("Proceedings") < markdown.index("# 2 Method")
+
+
+def test_standard_headings_are_never_demoted():
+    # Abstract, Acknowledgements and References are rarely bookmarked; they stay headings even
+    # when they share a style, while the unmatched running header is demoted.
+    doc, pages = _paged_doc(
+        [
+            _bold_run_in("Abstract"),
+            _PARA,
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            _subsection("1.2 Related work"),
+            _PARA,
+            _RUNNING_HEADER,
+            _section("2 Method"),
+            _PARA,
+            _subsection("2.1 Setup"),
+            _PARA,
+            _section("Acknowledgements"),
+            _PARA,
+            _section("References"),
+            _PARA,
+        ]
+    )
+    outline = _outline(
+        ("Introduction", 0),
+        ("Background", 1),
+        ("Related work", 1),
+        ("Method", 0),
+        ("Setup", 1),
+    )
+
+    _model(demote_unmatched_headings=True).assign_heading_levels(
+        doc, parsed_pages=pages, outline=outline
+    )
+
+    headings = _headings(doc)
+    assert {"Abstract", "Acknowledgements", "References"} <= set(headings)
+    assert _RUNNING_HEADER[0] not in headings
+    assert len(headings) == 8
+
+
+def test_top_level_only_bookmarks_demote_nothing():
+    # An outline that lists only the top level does not cover the subsections it omits.
+    doc, pages = _paged_doc(
+        [
+            _section("Introduction"),
+            _PARA,
+            _subsection("Background"),
+            _PARA,
+            _RUNNING_HEADER,
+            _section("Method"),
+            _PARA,
+        ]
+    )
+    outline = _outline(("Introduction", 0), ("Method", 0))
+
+    _model(demote_unmatched_headings=True).assign_heading_levels(
+        doc, parsed_pages=pages, outline=outline
+    )
+
+    assert set(_headings(doc)) == {
+        "Introduction",
+        "Background",
+        _RUNNING_HEADER[0],
+        "Method",
+    }
+
+
+@pytest.mark.parametrize(
+    "deepest",
+    [
+        # Numbered: a dotted heading that matches no bookmark proves the outline is partial.
+        [_bold_run_in("2.1.1 Data collection")],
+        # Unnumbered: two unmatched headings in one heading-like style form a missing level.
+        [_bold_run_in("Data collection"), _PARA, _bold_run_in("Data cleaning")],
+        # The same in a face whose name carries no readable weight (the TeX bold font).
+        [
+            ("Data collection", 10, "/CMBX10"),
+            _PARA,
+            ("Data cleaning", 10, "/CMBX10"),
+        ],
+    ],
+    ids=["numbered", "unnumbered", "unnamed-bold-face"],
+)
+def test_outline_missing_its_deepest_level_demotes_nothing(deepest):
+    doc, pages = _paged_doc(
+        [
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            _section("2 Method"),
+            _PARA,
+            _subsection("2.1 Setup"),
+            _PARA,
+            *deepest,
+            _PARA,
+        ]
+    )
+    outline = _outline(
+        ("Introduction", 0), ("Background", 1), ("Method", 0), ("Setup", 1)
+    )
+
+    _model(demote_unmatched_headings=True).assign_heading_levels(
+        doc, parsed_pages=pages, outline=outline
+    )
+
+    assert len(_headings(doc)) == 4 + sum(row is not _PARA for row in deepest)
+    assert not any(type(item) is TextItem and item.text != _BODY for item in doc.texts)
+
+
+def test_outline_matching_under_half_of_the_headings_demotes_nothing():
+    # An outline that matches only a minority of the detected headings is too sparse to trust.
+    doc, pages = _paged_doc(
+        [
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            ("Draft version", 10, "/Times-Roman"),
+            _PARA,
+            _RUNNING_HEADER,
+            _PARA,
+            ("Preprint under review", 10, "/Times-Roman"),
+            _PARA,
+        ]
+    )
+    outline = _outline(("Introduction", 0), ("Background", 1))
+
+    _model(demote_unmatched_headings=True).assign_heading_levels(
+        doc, parsed_pages=pages, outline=outline
+    )
+
+    assert len(_headings(doc)) == 5
+
+
+@pytest.mark.parametrize(
+    ("demote", "with_pages"),
+    [(False, True), (True, False)],
+    ids=["option-off", "no-parsed-pages"],
+)
+def test_demotion_needs_the_option_and_parsed_pages(demote, with_pages):
+    doc, pages = _paged_doc(
+        [
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            _RUNNING_HEADER,
+            _section("2 Method"),
+            _PARA,
+        ]
+    )
+    outline = _outline(("Introduction", 0), ("Background", 1), ("Method", 0))
+
+    _model(demote_unmatched_headings=demote).assign_heading_levels(
+        doc, parsed_pages=pages if with_pages else None, outline=outline
+    )
+
+    assert _RUNNING_HEADER[0] in _headings(doc)
+
+
+def test_call_collects_parsed_pages_for_demotion():
+    # The style fallback is off, yet the demotion still needs the parsed pages of the result.
+    doc, pages = _paged_doc(
+        [
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            _RUNNING_HEADER,
+            _section("2 Method"),
+            _PARA,
+        ]
+    )
+    conv_res = SimpleNamespace(
+        document=doc,
+        pages=[SimpleNamespace(page_no=1, parsed_page=pages[1])],
+        _pdf_outline=_outline(("Introduction", 0), ("Background", 1), ("Method", 0)),
+    )
+
+    out = _model(demote_unmatched_headings=True)(conv_res)
+
+    assert set(_headings(out)) == {"1 Introduction", "1.1 Background", "2 Method"}
+
+
+@pytest.mark.parametrize("use_style", [True, False], ids=["style-on", "style-off"])
+def test_demotion_works_on_the_lines_the_pipeline_retains(use_style):
+    # Without generate_parsed_pages=True, the stage sees only what retain_parsed_lines keeps.
+    # The style check compares the headings with the body text: with the heading lines alone,
+    # the bold headings would set the body face, and the two unmatched lines in the real body
+    # face would look like a missing outline level.
+    doc, pages = _paged_doc(
+        [
+            _section("1 Introduction"),
+            _PARA,
+            _subsection("1.1 Background"),
+            _PARA,
+            _RUNNING_HEADER,
+            _PARA,
+            _section("2 Method"),
+            _PARA,
+            _subsection("2.1 Setup"),
+            _PARA,
+            ("Draft version", 10, "/Times-Roman"),
+            _PARA,
+            _section("3 Results"),
+            _PARA,
+        ]
+    )
+    page = Page(page_no=1, parsed_page=pages[1])
+    page.predictions.layout = LayoutPrediction(
+        clusters=[
+            Cluster(id=i, label=item.label, bbox=item.prov[0].bbox)
+            for i, item in enumerate(doc.texts)
+        ]
+    )
+    model = _model(use_style=use_style, demote_unmatched_headings=True)
+    conv_res = SimpleNamespace(
+        document=doc,
+        pages=[SimpleNamespace(page_no=1, parsed_page=model.retain_parsed_lines(page))],
+        _pdf_outline=_outline(
+            ("Introduction", 0),
+            ("Background", 1),
+            ("Method", 0),
+            ("Setup", 1),
+            ("Results", 0),
+        ),
+    )
+
+    out = model(conv_res)
+
+    assert set(_headings(out)) == {
+        "1 Introduction",
+        "1.1 Background",
+        "2 Method",
+        "2.1 Setup",
+        "3 Results",
+    }
 
 
 # ----------------------------------------------------------------------- extraction

@@ -159,6 +159,9 @@ words with `numbering_keywords`, for example
 `HeadingHierarchyOptions(enabled=True, numbering_keywords={"chapter": ["rozdział"], "article": ["art."]})`,
 and number words with `numbering_number_words`.
 
+Set `demote_unmatched_headings=True` to also turn detected headings that match no bookmark into
+text, but only when the PDF outline looks complete.
+
 The service equivalent is `do_pdf_heading_hierarchy` plus `pdf_heading_hierarchy_options`.
 
 ### Selecting the accelerator
