@@ -45,6 +45,16 @@ docling-tools models download whisper_distil_small_en --output-dir /models
 docling --asr-model whisper_distil_small_en_native --artifacts-path /models audio.wav
 ```
 
+The WhisperS2T presets use their `--asr-model` names. Each one downloads its
+CTranslate2 model in `float16` (for CUDA) and `float32` (for CPU), plus the
+small word-alignment model that word timestamps use if the preset needs one,
+into the output directory in the Hugging Face cache layout:
+
+```sh
+docling-tools models download whisper_small_en_s2t --output-dir /models
+docling --asr-model whisper_small_en_s2t --artifacts-path /models audio.wav
+```
+
 `docling-tools models download --all` does not include ASR models. Add `--asr`
 to prefetch all native Whisper model sizes, English-only variants, and
 Distil-Whisper presets:
@@ -54,7 +64,8 @@ docling-tools models download --all --asr --output-dir /models
 ```
 
 This requires the `asr` extra and downloads OpenAI-format checkpoints. It does
-not prefetch Transformers-format, MLX, or WhisperS2T models.
+not prefetch Transformers-format, MLX, or WhisperS2T models. Prefetch a
+WhisperS2T preset by its name, as shown above.
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
 
@@ -100,7 +111,7 @@ python my_docling_script.py
 The main purpose of Docling is to run local models which are not sharing any user data with remote services.
 Anyhow, there are valid use cases for processing part of the pipeline using remote services, for example invoking OCR engines from cloud vendors or the usage of hosted LLMs.
 
-In Docling we decided to allow such models, but we require the user to explicitly opt-in in communicating with external services.
+In Docling we decided to allow such models, but we require the user to explicitly opt in to communicating with external services.
 
 ```py
 from docling.datamodel.base_models import InputFormat
@@ -173,7 +184,7 @@ export.
 ### Image resolution and scale
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
-determines the physical page size; missing DPI and `(1, 1)` DPI are treated as 72 DPI.
+determines the physical page size; missing DPI, `(1, 1)` DPI and `(0, 0)` DPI are treated as 72 DPI.
 Rendering at scale `n` produces `n` pixels per document point.
 
 ### Control PDF table extraction options
@@ -333,7 +344,6 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
-pipeline_options.generate_parsed_pages = True  # required by the font-style signal
 
 doc_converter = DocumentConverter(
     format_options={
@@ -416,7 +426,7 @@ print(budget.export_to_markdown(
 A chart on a Keynote slide or a Numbers sheet becomes a picture classified by
 its kind, with the data it plots in the picture's `meta.tabular_chart` and its
 title as the caption, which is the shape the PowerPoint backend gives a chart. Neither app keeps
-a picture of a chart, so the picture itself is empty unless you opt into
+a picture of a chart, so the picture itself is empty unless you opt in to
 `render_chart_images`. That rebuilds each chart from its data as an Office chart
 and draws it with LibreOffice, so it needs a LibreOffice installation. The image
 has the chart's kind, data and title but not its colours or fonts, and a mixed,
@@ -568,7 +578,9 @@ The HTML backend only downloads images referenced by a page when you opt in with
 `--html-image-fetch remote`). Downloads connect only to public, globally
 routable addresses: every address of a host is checked, every redirect is
 checked again before it is followed (up to `max_redirects`), and downloads stop
-at `max_remote_image_bytes`. When `render_page=True`, the browser requests
+at `max_remote_image_bytes`. An image larger than `max_image_pixels` (width x
+height, default 89,478,485) is skipped with a warning, and the rest of the
+document converts; the Markdown backend has the same option. When `render_page=True`, the browser requests
 remote resources through the same download path, and navigating the page away
 from the source document is refused.
 
@@ -607,6 +619,24 @@ environment variables, downloads go through the proxy and Docling does not check
 the destination addresses; the proxy is then responsible for restricting which
 destinations it connects to.
 
+### XBRL taxonomy references
+
+The XBRL backend reads the schemas and linkbases that an instance document
+references. It needs `enable_local_fetch=True`, `enable_remote_fetch=True`, or
+both, and applies them to every reference:
+
+- Local paths and `file:` URLs are read only with `enable_local_fetch=True`. The
+  instance document and the `taxonomy` folder (including its taxonomy packages)
+  are always read.
+- `http(s)` URLs are downloaded only with `enable_remote_fetch=True`. Without
+  it, they resolve from the Arelle web cache only. Downloads connect only to
+  public, globally routable addresses, and every redirect is checked again.
+  With a proxy, the destination address is checked before the request goes to
+  the proxy.
+- Other URL schemes are refused.
+
+A refused reference stops the conversion with an error that lists it.
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:
@@ -618,6 +648,86 @@ from docling.document_converter import DocumentConverter
 source = "https://arxiv.org/pdf/2408.09869"
 converter = DocumentConverter()
 result = converter.convert(source, max_num_pages=100, max_file_size=20971520)
+```
+
+## Convert ZIP archives
+
+Docling expands generic ZIP archives into separate documents. Use
+`convert_all()` to convert every supported archive member:
+
+```python
+from docling.document_converter import DocumentConverter
+
+converter = DocumentConverter()
+results = list(converter.convert_all(["documents.zip"]))
+```
+
+`convert()` returns one result. It raises `ConversionError` when its source
+contains multiple documents. Use `convert_all()` for a ZIP archive with more
+than one member. By default, `convert_all()` raises on the first failed member.
+Pass `raises_on_error=False` to receive failure results and continue with later
+members. The configured file-size limit applies to each member and to the total
+size of successfully read members.
+For image inputs, the page count is checked against `max_num_pages` before any
+page is decoded, and each page (for example each frame of a multi-page TIFF) is
+decoded only when it is processed. The `max_image_pixels` backend option limits
+the pixels (width x height) of one page; the default, 89,478,485, is the default
+of Pillow's `Image.MAX_IMAGE_PIXELS`. A larger first page rejects the document,
+and a larger later page fails that page:
+
+```python
+from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, ImageFormatOption
+
+converter = DocumentConverter(
+    format_options={
+        InputFormat.IMAGE: ImageFormatOption(
+            backend_options=PdfBackendOptions(max_image_pixels=50_000_000)
+        )
+    }
+)
+```
+
+### Limits on the decompressed size of DOCX, XLSX and EPUB files
+
+DOCX, XLSX and EPUB files are ZIP archives, so a small file can decompress to a
+much larger size. Docling checks the decompressed sizes that the archive declares
+before it parses the file, and stops each read once the decompressed bytes go
+above the limit. A file that exceeds a limit fails to convert with an
+`ArchiveLimitError`, which is a `DocumentLoadError`.
+
+| Option | `MsWordBackendOptions` / `MsExcelBackendOptions` | `EpubBackendOptions` |
+| --- | --- | --- |
+| `max_file_bytes` | 128 MiB per member | 10 MB per content document |
+| `max_total_bytes` | 512 MiB for all members | 100 MB for all content documents |
+| `max_member_count` | 10,000 members | 1,000 content documents |
+
+The DOCX and XLSX limits apply to every member of the package, because
+python-docx and openpyxl load the package members into memory. The EPUB limits
+apply to the container, the package document and the content documents in the
+spine, and also to the members extracted for image processing. Raise the limits
+for large trusted files:
+
+```python
+from docling.datamodel.backend_options import MsExcelBackendOptions, MsWordBackendOptions
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import (
+    DocumentConverter,
+    ExcelFormatOption,
+    WordFormatOption,
+)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.DOCX: WordFormatOption(
+            backend_options=MsWordBackendOptions(max_file_bytes=512 * 1024 * 1024)
+        ),
+        InputFormat.XLSX: ExcelFormatOption(
+            backend_options=MsExcelBackendOptions(max_total_bytes=2 * 1024**3)
+        ),
+    }
+)
 ```
 
 ## Convert from binary PDF streams

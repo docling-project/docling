@@ -55,6 +55,8 @@ try:
     from arelle.ModelDtsObject import ModelConcept  # type: ignore
     from arelle.ModelXbrl import ModelXbrl  # type: ignore
 
+    from docling.backend.xml.xbrl_web_cache import FetchPolicyWebCache
+
     _XBRL_AVAILABLE = True
 except ImportError as e:
     _XBRL_IMPORT_ERROR = e
@@ -156,21 +158,34 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
 
                 # cntlr = Cntlr.Cntlr(logFileName="logToPrint")
                 cntlr = Cntlr.Cntlr()
-                # Disable remote access for security purposes, unless explicitly set
+                # Apply the fetch options to every document that Arelle resolves.
+                # The copy of the instance and of the taxonomy folder is always
+                # readable.
+                web_cache = FetchPolicyWebCache(
+                    cntlr,
+                    enable_local_fetch=self.options.enable_local_fetch,
+                    enable_remote_fetch=self.options.enable_remote_fetch,
+                    local_roots=[tmp_path],
+                )
+                cntlr.webCache = web_cache
                 if not self.options.enable_remote_fetch:
-                    cntlr.webCache.workOffline = True
                     cntlr.modelManager.validateDisclosureSystem = False
                 else:
                     # TODO: parametrize the timeout?
-                    cntlr.webCache.timeout = _WEB_CACHE_TIMEOUT
+                    web_cache.timeout = _WEB_CACHE_TIMEOUT
                     # TODO: custom set cntlr.webCache.cacheDir?
                     _log.debug(
-                        f"Web Cache for remote taxonomy is: {cntlr.webCache.cacheDir}"
+                        f"Web Cache for remote taxonomy is: {web_cache.cacheDir}"
                     )
 
                 model = cntlr.modelManager.load(
                     str(instance_path), taxonomyPackages=zip_paths
                 )
+                if web_cache.refused:
+                    raise OperationNotAllowed(
+                        "XBRL resources refused by the fetch options: "
+                        + "; ".join(web_cache.refused)
+                    )
                 if (
                     not isinstance(model, ModelXbrl)
                     or not model

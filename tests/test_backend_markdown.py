@@ -300,6 +300,104 @@ def test_local_relative_image_resolves_from_document_dir(tmp_path: Path, as_path
     assert image.getpixel((0, 0)) == (0, 255, 0)
 
 
+def test_local_relative_image_accepts_file_uri_source(tmp_path: Path):
+    """A file URI source must resolve relative images like a local path."""
+    source_dir = tmp_path / "with space"
+    source_dir.mkdir()
+    image_path = source_dir / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    md_path = source_dir / "doc.md"
+    md_path.write_text("# Title\n\n![alt](figure.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.size == (7, 5)
+    assert image.getpixel((0, 0)) == (0, 255, 0)
+
+
+def test_local_file_uri_source_respects_local_fetch(tmp_path: Path):
+    """A file URI base does not enable local image fetching by itself."""
+    image_path = tmp_path / "figure.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    md_path = tmp_path / "doc.md"
+    md_path.write_text("# Title\n\n![alt](figure.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=False,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    with pytest.warns(UserWarning, match="Fetching local resources"):
+        doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is None
+
+
+def test_local_file_uri_source_keeps_document_on_path_traversal(
+    tmp_path: Path,
+):
+    """A path-traversal image must not abort Markdown conversion."""
+    source_dir = tmp_path / "docs"
+    source_dir.mkdir()
+    outside_image = tmp_path / "outside.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(outside_image)
+    md_path = source_dir / "doc.md"
+    md_path.write_text("# Title\n\n![alt](../outside.png)\n", encoding="utf-8")
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: MarkdownFormatOption(
+                backend_options=MarkdownBackendOptions(
+                    fetch_images=True,
+                    enable_local_fetch=True,
+                    source_uri=md_path.as_uri(),
+                )
+            )
+        },
+    )
+
+    with pytest.warns(UserWarning, match="Path traversal blocked"):
+        doc = converter.convert(md_path).document
+
+    pictures = [
+        item for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    ]
+    assert len(pictures) == 1
+    assert pictures[0].get_image(doc) is None
+
+
 def test_code_block_language_detection():
     markdown = (
         "```python\n"
@@ -1306,3 +1404,82 @@ def test_rich_table_cell_no_stray_body_items():
     # The only direct body child must be the table itself.
     body_crefs = {ref.cref for ref in doc.body.children}
     assert body_crefs == {"#/tables/0"}
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected"),
+    [
+        pytest.param(
+            "---\ntitle: T\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="basic",
+        ),
+        pytest.param(
+            "---\r\ntitle: T\r\n---\r\n\r\n# H\r\n\r\nbody\r\n",
+            "# H\n\nbody",
+            id="crlf",
+        ),
+        pytest.param(
+            "---\ntitle: T\n\ntags: [a, b]\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="blank-line-inside-frontmatter",
+        ),
+        pytest.param(
+            "---\ntitle: T\n...\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="dots-terminator",
+        ),
+        pytest.param(
+            "---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="thematic-break-opening",
+        ),
+        pytest.param(
+            "---\n\nNote: this is important.\n\n---\n\nbody\n",
+            "Note: this is important.\n\nbody",
+            id="thematic-break-then-yaml-like-paragraph",
+        ),
+        pytest.param(
+            "---\nJust a sentence\n---\n\nbody\n",
+            "## Just a sentence\n\nbody",
+            id="setext-block-is-not-frontmatter",
+        ),
+        pytest.param(
+            "---\n---\n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="empty-frontmatter-not-a-mapping",
+        ),
+        pytest.param(
+            "---\ntitle: T\n---",
+            "",
+            id="closing-delimiter-at-eof",
+        ),
+        pytest.param(
+            "---   \ntitle: T\n---  \n\n# H\n\nbody\n",
+            "# H\n\nbody",
+            id="trailing-spaces-on-delimiters",
+        ),
+    ],
+)
+def test_convert_strips_leading_frontmatter(markdown: str, expected: str) -> None:
+    converter = get_converter()
+    conv_result = converter.convert_string(markdown, format=InputFormat.MD)
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert conv_result.document.export_to_markdown() == expected
+
+
+def test_convert_frontmatter_followed_by_content_keeps_the_content():
+    """Frontmatter directly followed by content must not swallow the content,
+    even when a later thematic break is present in the document."""
+    converter = get_converter()
+    markdown = "---\ntitle: T\n---\nIntro\nSection\n---\n\nbody\n"
+
+    conv_result = converter.convert_string(markdown, format=InputFormat.MD)
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    pred_md = conv_result.document.export_to_markdown()
+    assert "title: T" not in pred_md
+    assert "Intro" in pred_md
+    assert "Section" in pred_md
+    assert "body" in pred_md

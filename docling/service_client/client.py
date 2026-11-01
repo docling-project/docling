@@ -451,7 +451,8 @@ class _BaseDoclingServiceClient:
                 effective_range[0],
                 min(effective_range[1], max_num_pages),
             )
-        merged.page_range = effective_range
+        if effective_range != merged.page_range:
+            merged = merged.model_copy(update={"page_range": effective_range})
 
         limits = DocumentLimits(
             max_num_pages=sys.maxsize if max_num_pages is None else max_num_pages,

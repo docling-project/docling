@@ -14,6 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal, cast
 
+import yaml
 from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
@@ -164,6 +165,26 @@ def _only_plain_line_breaks(children: list) -> bool:
     )
 
 
+# As in Pandoc, an opening `---` followed by a blank line is a thematic break,
+# not frontmatter.
+_FRONTMATTER_PATTERN = re.compile(
+    r"\A---[ \t]*\r?\n(?![ \t]*\r?\n)(.*?)^(?:---|\.\.\.)[ \t]*(?:\r?\n|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def _strip_frontmatter(text: str) -> str:
+    """Drop a leading YAML frontmatter block (a ``---`` fenced YAML mapping)."""
+    match = _FRONTMATTER_PATTERN.match(text)
+    if match is None:
+        return text
+    try:
+        meta = yaml.safe_load(match.group(1))
+    except yaml.YAMLError:
+        return text
+    return text[match.end() :] if isinstance(meta, dict) else text
+
+
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _apply_formatting(
@@ -276,6 +297,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # output.
         try:
             md_content = decode_text(self.path_or_stream, options.encoding)
+            md_content = _strip_frontmatter(md_content)
             # remove invalid sequences
             # very long sequences of underscores will lead to unnecessary long processing times.
             # In any proper Markdown files, underscores have to be escaped,
@@ -1112,6 +1134,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 enable_local_fetch=md_options.enable_local_fetch,
                 enable_remote_fetch=md_options.enable_remote_fetch,
                 max_image_data_base64_bytes=md_options.max_image_data_base64_bytes,
+                max_image_pixels=md_options.max_image_pixels,
             )
         return self._image_loader
 
@@ -1127,7 +1150,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         base_path = (
             str(md_options.source_uri) if md_options.source_uri is not None else None
         )
-        return self._get_image_loader().load_image_ref(dest, base_path)
+        try:
+            return self._get_image_loader().load_image_ref(dest, base_path)
+        except ValueError as exc:
+            # Keep the document usable when a relative image escapes its local
+            # source directory. The image is omitted, while the loader still
+            # enforces the confinement check.
+            warnings.warn(f"Could not process an image from {dest}: {exc}")
+            return None
 
     def is_valid(self) -> bool:
         return self.valid
@@ -1181,20 +1211,22 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
                 html_str = html_payload.text
 
-                def _restore_original_html(txt, regex):
-                    _txt, count = re.subn(regex, "", txt)
-                    if count != self._html_blocks:
-                        raise RuntimeError(
-                            "An internal error has occurred during Markdown conversion."
-                        )
-                    return _txt
-
-                # restore original HTML by removing previously added markers
-                for regex in [
-                    rf"<pre>\s*<code>\s*{_START_MARKER}",
-                    rf"{_STOP_MARKER}\s*</code>\s*</pre>",
-                ]:
-                    html_str = _restore_original_html(txt=html_str, regex=regex)
+                # Restore only the marked HTML blocks. The HTML serializer
+                # escapes code content, so decode each block before parsing it.
+                pattern = (
+                    rf"<pre>\s*<code>\s*{re.escape(_START_MARKER)}"
+                    rf"(.*?){re.escape(_STOP_MARKER)}\s*</code>\s*</pre>"
+                )
+                html_str, count = re.subn(
+                    pattern,
+                    lambda match: unescape(match.group(1)),
+                    html_str,
+                    flags=re.DOTALL,
+                )
+                if count != self._html_blocks:
+                    raise RuntimeError(
+                        "An internal error has occurred during Markdown conversion."
+                    )
                 self._html_blocks = 0
                 # delegate to HTML backend
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))

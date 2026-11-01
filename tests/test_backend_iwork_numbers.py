@@ -44,6 +44,7 @@ See https://github.com/masaccio/numbers-parser (``tests/data``).
 import logging
 import struct
 import zipfile
+from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 
@@ -65,7 +66,7 @@ from PIL import Image, ImageDraw
 
 import docling.backend.iwork_backend as iwork_backend
 from docling.backend.docx.drawingml.utils import get_docx_to_pdf_converter
-from docling.backend.iwork import cells, numbers_xml
+from docling.backend.iwork import cells, numbers_iwa, numbers_xml
 from docling.backend.iwork.archives import (
     PACKAGE_DATAS_FIELD,
     TSD_GROUP,
@@ -1148,3 +1149,42 @@ def test_conversion_matches_the_groundtruth(source: Path):
     assert verify_document(doc, str(groundtruth) + ".json", generate=GEN_TEST_DATA), (
         f"DoclingDocument verification failed on {source}"
     )
+
+
+def test_a_date_no_datetime_can_hold_leaves_its_cell_empty(tmp_path: Path):
+    """A date cell outside datetime's range, or NaN, must not crash the conversion.
+
+    Only a corrupt or hostile document records such a span; its cell comes out
+    empty and every other cell survives.
+    """
+    with zipfile.ZipFile(NUMBERS_IWORK09) as archive:
+        xml = archive.read("index.xml")
+    assert xml.count(b'cell-date="276048000"') == 1
+    assert xml.count(b'cell-date="277257600"') == 1
+    xml = xml.replace(b'cell-date="276048000"', b'cell-date="1e308"')
+    xml = xml.replace(b'cell-date="277257600"', b'cell-date="nan"')
+
+    target = tmp_path / "dates_outside_range.numbers"
+    with (
+        zipfile.ZipFile(NUMBERS_IWORK09) as source,
+        zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out,
+    ):
+        for name in source.namelist():
+            out.writestr(name, xml if name == "index.xml" else source.read(name))
+
+    expected = [_grid(table) for table in _tables(_backend(NUMBERS_IWORK09).convert())]
+    assert expected[1].pop((2, 1)) == "2009-10-01 00:00:00"
+    assert expected[1].pop((3, 1)) == "2009-10-15 00:00:00"
+
+    damaged = [_grid(table) for table in _tables(_backend(target).convert())]
+    assert damaged == expected, "only the two bogus dates should be lost"
+
+
+def test_render_leaves_a_date_or_duration_no_timedelta_can_hold_empty():
+    """The IWA reader can carry a decimal128 whose exponent no double holds, and
+    a corrupt double can be infinite; both render to nothing rather than raise."""
+    huge = cells.Cell(cells.CELL_TYPE_DATE, number=Decimal("1E+6100"))
+    assert numbers_iwa.render(huge) is None
+
+    endless = cells.Cell(cells.CELL_TYPE_DURATION, number=float("inf"))
+    assert numbers_iwa.render(endless) is None

@@ -49,6 +49,7 @@ class EnvironmentHandlerMixin:
         _tectonic_engine: TectonicEngine | None
         _tikz_executor: ThreadPoolExecutor | None
         _tikz_futures: list[Future[Any]]
+        _tikz_untrusted_warned: bool
         _suppress_image_path_caption: bool
 
         def _process_nodes(
@@ -206,7 +207,9 @@ class EnvironmentHandlerMixin:
             return
 
         opts = cast("LatexBackendOptions", self.options)
-        if opts.tikz_engine == "tectonic":
+        if opts.tikz_engine == "tectonic" and not opts.tikz_engine_trusted_input:
+            self._warn_tikz_untrusted_input()
+        elif opts.tikz_engine == "tectonic":
             try:
                 from docling.backend.latex.engines.tectonic import TectonicEngine
 
@@ -266,6 +269,18 @@ class EnvironmentHandlerMixin:
                 text=tikz_raw,
                 language=CodeLanguageLabel.TIKZ,
             )
+        )
+
+    def _warn_tikz_untrusted_input(self) -> None:
+        if self._tikz_untrusted_warned:
+            return
+        self._tikz_untrusted_warned = True
+        _log.warning(
+            "TikZ rendering with Tectonic is skipped because the LaTeX input "
+            "is not marked as trusted. Tectonic can read and write files "
+            "outside the working directory. Set "
+            "LatexBackendOptions(tikz_engine_trusted_input=True) only for "
+            "trusted input, or run the conversion in an isolated environment."
         )
 
     def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> str | None:

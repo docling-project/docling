@@ -4,6 +4,20 @@
 from PIL import Image
 
 
+def check_image_pixels(size: tuple[int, int], max_pixels: int) -> None:
+    """Raise ``ValueError`` if an image of ``size`` exceeds ``max_pixels``.
+
+    Pillow reads the dimensions from the image header, so call this after
+    ``Image.open`` (or ``seek``) and before the pixel data is decoded.
+    """
+    width, height = size
+    if width * height > max_pixels:
+        raise ValueError(
+            f"Image of {width}x{height} pixels exceeds the limit of "
+            f"{max_pixels} pixels."
+        )
+
+
 def to_rgb(image: Image.Image) -> Image.Image:
     """Convert an image to RGB, flattening any transparency onto white.
 

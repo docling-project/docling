@@ -159,6 +159,7 @@ nav:
       - _generated/examples/rag_weaviate.md
       - _generated/examples/retrieval_qdrant.md
       - _generated/examples/rag_mongodb.md
+      - _generated/examples/rag_topk.md
       - RAG with Vault PII transform [↗]: https://github.com/workloads/pathfinder-prism
   - Integrations:
     - Integrations: integrations/index.md

@@ -1,4 +1,4 @@
-<doclang version="0.7">
+<doclang version="0.8">
   <text>
     <layer value="furniture"/>
     \documentclass[apj,twocolumn,twocolappendix]{aastex631}
