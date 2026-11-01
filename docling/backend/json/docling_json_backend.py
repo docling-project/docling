@@ -25,6 +25,54 @@ def _is_kept_image_uri(uri: AnyUrl | Path) -> bool:
     return isinstance(uri, AnyUrl) and uri.scheme.lower() in _KEPT_IMAGE_URI_SCHEMES
 
 
+def _drive_letter_path(uri: AnyUrl) -> Optional[Path]:
+    """Return the filesystem path of a URI that pydantic read as a URL.
+
+    pydantic's URL parser reads a Windows drive path such as ``G:\\dir\\img.png``
+    as a URL whose scheme is the drive letter (``g``), so the value lands in the
+    ``AnyUrl`` branch of ``ImageRef.uri`` and every later stage treats it as
+    remote instead of local. No registered URL scheme is a single letter, so a
+    one-letter alphabetic scheme identifies such a path. The file must exist for
+    the rewrite to happen: a URI that merely looks like a drive path (e.g. one
+    converted on a machine that mounts no such drive) keeps the URL spelling,
+    which every stage already treats as "remote, never fetched".
+    """
+    scheme = uri.scheme
+    if len(scheme) == 1 and scheme.isalpha():
+        path = Path(str(uri))
+        if path.is_file():
+            return path
+    return None
+
+
+def _normalize_local_image_refs(node: object) -> int:
+    """Rewrite every ``ImageRef`` URI below ``node`` that names a local file.
+
+    The whole model tree is walked, rather than a fixed list of item
+    collections, so image fields on any item type (pictures, tables, code,
+    forms, pages, ...) are covered, including ones added in future
+    docling-core releases. Returns the number of references rewritten.
+    """
+    rewritten = 0
+    if isinstance(node, BaseModel):
+        for name, value in node:
+            if isinstance(value, ImageRef):
+                if isinstance(value.uri, AnyUrl):
+                    path = _drive_letter_path(value.uri)
+                    if path is not None:
+                        value.uri = path
+                        rewritten += 1
+            else:
+                rewritten += _normalize_local_image_refs(value)
+    elif isinstance(node, (list, tuple)):
+        for child in node:
+            rewritten += _normalize_local_image_refs(child)
+    elif isinstance(node, dict):
+        for child in node.values():
+            rewritten += _normalize_local_image_refs(child)
+    return rewritten
+
+
 def _clear_local_image_refs(node: object) -> int:
     """Set every ``ImageRef`` field below ``node`` whose URI is local to ``None``.
 
@@ -96,6 +144,19 @@ class DoclingJSONBackend(DeclarativeDocumentBackend):
                 raise RuntimeError(f"Unexpected: {type(self.path_or_stream)=}")
             doc = DoclingDocument.model_validate_json(json_data=json_data)
             if self.options.enable_local_fetch:
+                # pydantic reads Windows drive paths as URLs: a URI a Windows
+                # machine wrote as a local path parses into the AnyUrl branch
+                # of ImageRef.uri and load_local_images() would skip it as
+                # remote. Rewriting the URIs that name existing files back to
+                # paths restores the local-file treatment.
+                rewritten = _normalize_local_image_refs(doc)
+                if rewritten:
+                    _log.debug(
+                        "%s: read %d image reference(s) whose drive-letter "
+                        "URI names a local file as a local path.",
+                        self.file.name,
+                        rewritten,
+                    )
                 # docling-core gates local image reads; opting in reads them now,
                 # resolving relative paths against the JSON file's directory
                 doc.load_local_images(
