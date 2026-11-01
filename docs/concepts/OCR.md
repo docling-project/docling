@@ -362,6 +362,13 @@ tag where one exists, and the bare file name for everything else.
 An empty `lang` list runs Tesseract's per-page orientation and script detection. That requires
 the `osd` traineddata; without it, `lang=[]` raises with an install hint.
 
+For the CLI engine, `TesseractCliOcrOptions(path="/path/to/tessdata")` selects the
+traineddata directory for language discovery, orientation/script detection, and text
+recognition. Put the requested language models and the `osd` model in that directory.
+For `lang=[]`, also include the appropriate `script/<Name>.traineddata` models
+(for example, `script/Latin.traineddata`) for the scripts to recognize.
+If `path` is omitted, Tesseract uses its default lookup, including `TESSDATA_PREFIX`.
+
 ## OcrMac
 
 The engine's own vocabulary, in its own codes, is listed in
