@@ -945,6 +945,25 @@ def test_horizontal_dilation_skips_a_widening_that_overlaps_a_neighbour() -> Non
     assert _predicted_cids(elements) == [0, 1, 2, 3, 4]
 
 
+def test_horizontal_dilation_skips_a_widening_to_a_wide_caption_below() -> None:
+    # A caption (5) below the left column is wider than the column and reaches
+    # into the right one. The right column ends with an indented block (4) that
+    # stops short of the caption, so 1 is the only element directly above 5.
+    # Widened to the caption, 1 overlaps 3. If the dilation keeps the widened
+    # box, 1 reaches under the right column and 2 becomes a parent of it, so 2
+    # is read between the two left paragraphs.
+    elements = [
+        _box(0, DocItemLabel.TEXT, 600.0, 700.0, l=40.0, r=290.0),
+        _box(1, DocItemLabel.TEXT, 480.0, 590.0, l=40.0, r=290.0),
+        _box(2, DocItemLabel.TEXT, 620.0, 700.0, l=310.0, r=560.0),
+        _box(3, DocItemLabel.TEXT, 540.0, 610.0, l=310.0, r=560.0),
+        _box(4, DocItemLabel.TEXT, 450.0, 530.0, l=350.0, r=560.0),
+        _box(5, DocItemLabel.CAPTION, 420.0, 440.0, l=40.0, r=340.0),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5]
+
+
 def test_graphics_continue_left_to_right_only_across_an_empty_gap() -> None:
     from docling.models.postprocessing.reading_order_rb import (
         _ReadingOrderPredictorState,
