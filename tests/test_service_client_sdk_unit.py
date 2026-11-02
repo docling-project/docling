@@ -83,6 +83,7 @@ from docling.service_client.exceptions import (
     ServiceError,
     ServiceUnavailableError,
     TaskExecutionError,
+    TaskTimeoutError,
     UsageLimitExceededError,
 )
 from docling.service_client.job import ConversionJob, _JobHandlers
@@ -436,6 +437,44 @@ def test_websocket_watcher_treats_clean_close_on_next_as_end_of_stream(
     updates = list(watcher.iter_updates(task_id="task-1"))
 
     assert [update.task_status for update in updates] == ["pending", "pending"]
+
+
+def test_websocket_watcher_raises_task_timeout_when_no_update_arrives(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connections: list[int] = []
+
+    class SilentWebSocket:
+        def __enter__(self) -> "SilentWebSocket":
+            connections.append(1)
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def recv(self, timeout: float | None = None) -> str:
+            # websockets raises the built-in TimeoutError when recv times out.
+            raise TimeoutError("timed out while waiting for a message")
+
+        def send(self, message: str) -> None:
+            pass
+
+    monkeypatch.setattr(
+        watchers_module, "connect", lambda *args, **kwargs: SilentWebSocket()
+    )
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda task_id: f"ws://example.invalid/{task_id}",
+        poll_fallback=None,
+        fallback_to_poll=False,
+        connect_timeout=1.0,
+        default_timeout=0.5,
+    )
+
+    with pytest.raises(TaskTimeoutError, match=r"after 0\.50s"):
+        list(watcher.iter_updates(task_id="task-1"))
+
+    # A slow task is not a dropped connection, so nothing reconnects.
+    assert len(connections) == 1
 
 
 def test_websocket_watcher_reconnects_after_connection_drop(
