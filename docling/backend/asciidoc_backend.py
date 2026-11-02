@@ -882,7 +882,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             run.bold != bold or run.italic or run.code or run.hyperlink for run in runs
         ):
             doc.add_text(
-                text=text,
+                text="".join(run.text for run in runs) if bold else text,
                 label=DocItemLabel.PARAGRAPH,
                 parent=parent,
                 formatting=Formatting(bold=True) if bold else None,

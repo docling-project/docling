@@ -1055,6 +1055,17 @@ def test_links_in_block_titles_of_paragraphs_and_lists() -> None:
     assert "example.com[" not in doc.export_to_markdown()
 
 
+def test_links_in_block_titles_strip_inline_marks() -> None:
+    doc = _convert_adoc(b".The *main* step\nPara after title.\n")
+
+    bold = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.bold
+    ]
+    assert bold == ["The main step"]
+
+
 @pytest.mark.parametrize(
     "target",
     [
@@ -1078,9 +1089,8 @@ def test_links_in_block_titles_of_pictures_tables_and_code(
     captions = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
     assert len(captions) == 1
     assert captions[0].text == expected_text
-    expected = expected_link
     actual = None if captions[0].hyperlink is None else str(captions[0].hyperlink)
-    assert actual == expected
+    assert actual == expected_link
 
 
 @pytest.mark.parametrize("mark", ["*", "_", "`"])
