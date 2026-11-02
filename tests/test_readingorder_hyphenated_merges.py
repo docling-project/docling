@@ -74,3 +74,44 @@ def test_merge_elements_dehyphenates_lowercase_continuations(
 
     assert item.text == expected
     assert item.orig == expected
+
+
+@pytest.mark.parametrize(
+    ("prefix", "continuation", "expected_spans"),
+    [
+        ("algo-", "rithms", [(0, 4), (4, 10)]),
+        ("algo\u00ad", "rithms", [(0, 4), (4, 10)]),
+        ("algo-", "Rithms", [(0, 5), (6, 12)]),
+        ("algo", "rithms", [(0, 4), (5, 11)]),
+    ],
+)
+def test_merged_provenance_covers_the_resulting_text(
+    prefix: str, continuation: str, expected_spans: list[tuple[int, int]]
+) -> None:
+    """Removing a hyphen must update both source and continuation spans."""
+    item = _list_item(prefix)
+    model = ReadingOrderModel(ReadingOrderOptions())
+
+    model._merge_elements(
+        _element(1, prefix), _element(2, continuation), item, page_height=100
+    )
+
+    assert [prov.charspan for prov in item.prov] == expected_spans
+    assert "".join(item.text[start:end] for start, end in expected_spans).replace(
+        " ", ""
+    ) == item.text.replace(" ", "")
+
+
+def test_repeated_merges_keep_earlier_spans_valid() -> None:
+    """A later split-word merge must not overlap an earlier source span."""
+    item = _list_item("algo-")
+    model = ReadingOrderModel(ReadingOrderOptions())
+    model._merge_elements(
+        _element(1, "algo-"), _element(2, "rithms and pro-"), item, page_height=100
+    )
+    model._merge_elements(
+        _element(1, "algo-"), _element(3, "grams"), item, page_height=100
+    )
+
+    assert item.text == "algorithms and programs"
+    assert [prov.charspan for prov in item.prov] == [(0, 4), (4, 18), (18, 23)]
