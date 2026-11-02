@@ -133,6 +133,19 @@ class TestSanitizeTextLigatures:
         # "IJ is een rivier" — IJ appears as a standalone word
         assert model.sanitize_text(["\u0132 is"]) == "IJ is"
 
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            (["sta\ufb00 members"], "staff members"),
+            (["o\ufb00 the record"], "off the record"),
+            (["stu\ufb00 and more"], "stuff and more"),
+            (["the sta\ufb00", "members"], "the staff members"),
+        ],
+    )
+    def test_space_after_word_final_ligature_preserved(self, model, lines, expected):
+        """A ligature that ends a word keeps the space to the next word."""
+        assert model.sanitize_text(lines) == expected
+
 
 class TestSanitizeTextHyphenation:
     """Tests for end-of-line hyphen handling in sanitize_text()."""
