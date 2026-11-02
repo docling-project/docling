@@ -59,7 +59,8 @@ _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms
 # "2.3+" both. A "*" factor duplicates the cell instead and is not a span.
 _CELL_SPAN_RE: Final = re.compile(r"(?P<col>\d+)?(?:\.(?P<row>\d+))?\+")
 # The duplication factor of a cell specifier: "3*" writes the cell three times.
-# Asciidoctor takes one span or one factor per cell, so "2*3+" stays text.
+# Asciidoctor takes one span or one factor per cell and keeps "2*3+" as text;
+# Docling drops it as a specifier, as it did before the factor was read.
 _CELL_REPEAT_RE: Final = re.compile(r"(?P<repeat>\d+)\*(?![\d.])")
 # An ordered marker with a letter has one letter only ("a.", "B."), so a line
 # that starts with an abbreviation such as "Dr." or "Fig." stays text.
@@ -1222,10 +1223,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             cell.text = f"{cell.text} {stripped}".lstrip()
         return True
 
-    @classmethod
-    def _parse_table_line(cls, line: str) -> list[str]:
-        return [cell.text for cell in cls._parse_table_cells(line)]
-
     @staticmethod
     def _parse_table_cells(line: str) -> list[_TableCellSource]:
         """Split a table line into its cells, reading each cell's spans.
@@ -1338,32 +1335,43 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     def _populate_table_as_grid(
         cls, table_data: list[list[_TableCellSource]]
     ) -> TableData:
+        """Place each cell on the grid, with its spans.
+
+        A cell takes the first column of its row that no cell to its left and
+        no rowspan from a row above already covers. A rowspan is cut at the
+        last row of the table.
+        """
         rows = cls._group_table_rows(table_data)
         num_rows = len(rows)
-
-        # Adjust the table data into a grid format
-        num_cols = max((len(row) for row in rows), default=0)
-
-        data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
+        occupied: set[tuple[int, int]] = set()
+        cells: list[TableCell] = []
         for row_idx, row in enumerate(rows):
-            for col_idx, source in enumerate(row):
-                row_span = 1
-                col_span = 1
-
-                cell = TableCell(
-                    text=source.text,
-                    row_span=row_span,
-                    col_span=col_span,
-                    start_row_offset_idx=row_idx,
-                    end_row_offset_idx=row_idx + row_span,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + col_span,
-                    column_header=row_idx == 0,
-                    row_header=False,
+            col_idx = 0
+            for source in row:
+                while (row_idx, col_idx) in occupied:
+                    col_idx += 1
+                row_span = min(source.row_span, num_rows - row_idx)
+                col_span = source.col_span
+                for r in range(row_idx, row_idx + row_span):
+                    for c in range(col_idx, col_idx + col_span):
+                        occupied.add((r, c))
+                cells.append(
+                    TableCell(
+                        text=source.text,
+                        row_span=row_span,
+                        col_span=col_span,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + row_span,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + col_span,
+                        column_header=row_idx == 0,
+                        row_header=False,
+                    )
                 )
-                data.table_cells.append(cell)
+                col_idx += col_span
 
-        return data
+        num_cols = max((cell.end_col_offset_idx for cell in cells), default=0)
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
 
     #   =========   Pictures
     @staticmethod

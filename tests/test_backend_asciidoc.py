@@ -152,6 +152,27 @@ def _table_rows(src: bytes) -> list[list[str]]:
     return [rows[idx] for idx in sorted(rows)]
 
 
+def _table_grid(src: bytes) -> tuple[int, list[tuple[str, int, int, int, int]]]:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="table.adoc",
+    )
+    data = in_doc._backend.convert().tables[0].data
+    cells = [
+        (
+            cell.text,
+            cell.start_row_offset_idx,
+            cell.start_col_offset_idx,
+            cell.row_span,
+            cell.col_span,
+        )
+        for cell in data.table_cells
+    ]
+    return data.num_cols, cells
+
+
 def test_table_row_written_over_several_lines() -> None:
     # Asciidoctor takes the column count from the first line and fills each
     # row with that many cells, so its basic table example writes one cell per
@@ -184,6 +205,41 @@ def test_table_rows_over_several_lines_count_spans() -> None:
         ["y"],
         ["z"],
     ]
+
+
+def test_table_spans_take_their_grid_positions() -> None:
+    # Each cell carries its spans and starts at the first column that no
+    # column span to its left and no row span from above covers.
+    # (text, row, col, row_span, col_span)
+    assert _table_grid(b"|===\n|A |B\n2+|wide\n|x\n|y\n|===\n") == (
+        2,
+        [
+            ("A", 0, 0, 1, 1),
+            ("B", 0, 1, 1, 1),
+            ("wide", 1, 0, 1, 2),
+            ("x", 2, 0, 1, 1),
+            ("y", 2, 1, 1, 1),
+        ],
+    )
+    assert _table_grid(b"|===\n|A |B\n.2+|tall\n|x\n|y\n|z\n|===\n") == (
+        2,
+        [
+            ("A", 0, 0, 1, 1),
+            ("B", 0, 1, 1, 1),
+            ("tall", 1, 0, 2, 1),
+            ("x", 1, 1, 1, 1),
+            ("y", 2, 1, 1, 1),
+            ("z", 3, 0, 1, 1),
+        ],
+    )
+    # A row span below the last row is cut at the end of the table.
+    assert _table_grid(b"|===\n|A |B\n.3+|tall |x\n|===\n")[1][2] == (
+        "tall",
+        1,
+        0,
+        1,
+        1,
+    )
 
 
 def test_table_rows_over_several_lines_count_duplicated_cells() -> None:
@@ -829,15 +885,19 @@ def test_parse_picture() -> None:
     )
 
 
+def _cell_texts(line: str) -> list[str]:
+    return [cell.text for cell in AsciiDocBackend._parse_table_cells(line)]
+
+
 def test_table_cell_format_specifiers() -> None:
     # A header row whose cells carry alignment + style specifiers ("^.^h|")
     # must still be detected as a table line and parsed into clean cells.
     line = "^.^h|Field               ^.^h| Description"
     assert AsciiDocBackend._is_table_line(line)
-    assert AsciiDocBackend._parse_table_line(line) == ["Field", "Description"]
+    assert _cell_texts(line) == ["Field", "Description"]
 
     # A column-spanning specifier ("2+^|") is dropped from the cell text.
-    assert AsciiDocBackend._parse_table_line("2+^|Spanned ^|Next") == [
+    assert _cell_texts("2+^|Spanned ^|Next") == [
         "Spanned",
         "Next",
     ]
@@ -846,8 +906,8 @@ def test_table_cell_format_specifiers() -> None:
 def test_table_cell_content_preserved() -> None:
     # Single-letter cells that coincide with style operators (s, h, m, ...) and
     # words ending in one (Eth) must not be mistaken for cell specifiers.
-    assert AsciiDocBackend._parse_table_line("| s | Strong") == ["s", "Strong"]
-    assert AsciiDocBackend._parse_table_line("| eth | Eth | Ethernet") == [
+    assert _cell_texts("| s | Strong") == ["s", "Strong"]
+    assert _cell_texts("| eth | Eth | Ethernet") == [
         "eth",
         "Eth",
         "Ethernet",
