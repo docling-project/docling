@@ -172,8 +172,8 @@ def test_utf8_bom_does_not_fail_the_load(tmp_path):
 
 
 def test_image_caption_is_parented_with_its_picture():
-    # An image inside a list item: its caption must live under the same parent
-    # as the picture, not at the body top level.
+    # An image inside a list item: its caption must be a child of the picture
+    # itself, not a sibling at the body top level.
     payload = {
         "doc": {
             "type": "doc",
@@ -207,7 +207,8 @@ def test_image_caption_is_parented_with_its_picture():
     (picture,) = doc.pictures
     (caption,) = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
     assert picture.parent.cref != "#/body"
-    assert caption.parent == picture.parent
+    assert caption.parent == picture.get_ref()
+    assert caption.get_ref() in picture.captions
 
 
 def _table_cell(text: str, **attrs: int) -> dict:
