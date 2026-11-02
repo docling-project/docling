@@ -89,13 +89,17 @@ class AsyncStatusWatcher(Protocol):
     ) -> TaskStatusResponse: ...
 
 
+def _task_timeout_error(task_id: str, wait_timeout: float) -> TaskTimeoutError:
+    return TaskTimeoutError(
+        f"Timed out waiting for task {task_id} after {wait_timeout:.2f}s."
+    )
+
+
 def _fallback_timeout(task_id: str, wait_timeout: float, deadline: float) -> float:
     """Return the time left for the polling fallback within the original timeout."""
     remaining = deadline - time.monotonic()
     if remaining <= 0:
-        raise TaskTimeoutError(
-            f"Timed out waiting for task {task_id} after {wait_timeout:.2f}s."
-        )
+        raise _task_timeout_error(task_id, wait_timeout)
     return remaining
 
 
@@ -186,10 +190,14 @@ class WebSocketWatcher:
             yield from self._iter_ws_updates(task_id=task_id, timeout=wait_timeout)
         except ServiceUnavailableError:
             if self._fallback_to_poll and self._poll_fallback is not None:
-                yield from self._poll_fallback.iter_updates(
-                    task_id=task_id,
-                    timeout=_fallback_timeout(task_id, wait_timeout, deadline),
-                )
+                try:
+                    yield from self._poll_fallback.iter_updates(
+                        task_id=task_id,
+                        timeout=_fallback_timeout(task_id, wait_timeout, deadline),
+                    )
+                except TaskTimeoutError as exc:
+                    # Report the caller's timeout, not the part left for polling.
+                    raise _task_timeout_error(task_id, wait_timeout) from exc
                 return
             raise
 
@@ -375,11 +383,15 @@ class AsyncWebSocketWatcher:
                 yield update
         except ServiceUnavailableError:
             if self._fallback_to_poll and self._poll_fallback is not None:
-                async for update in self._poll_fallback.iter_updates(
-                    task_id=task_id,
-                    timeout=_fallback_timeout(task_id, wait_timeout, deadline),
-                ):
-                    yield update
+                try:
+                    async for update in self._poll_fallback.iter_updates(
+                        task_id=task_id,
+                        timeout=_fallback_timeout(task_id, wait_timeout, deadline),
+                    ):
+                        yield update
+                except TaskTimeoutError as exc:
+                    # Report the caller's timeout, not the part left for polling.
+                    raise _task_timeout_error(task_id, wait_timeout) from exc
                 return
             raise
 

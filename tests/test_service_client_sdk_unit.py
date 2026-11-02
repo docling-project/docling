@@ -4182,6 +4182,35 @@ def test_websocket_watcher_times_out_when_reconnects_use_the_whole_timeout(
     assert fallback.timeouts == []
 
 
+def test_websocket_watcher_poll_fallback_timeout_reports_the_original_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = _FakeClock()
+    monkeypatch.setattr(watchers_module, "time", clock)
+    monkeypatch.setattr(watchers_module, "connect", _raise_os_error)
+
+    def pending_poll(task_id: str, wait: float) -> TaskStatusResponse:
+        clock.sleep(wait)
+        return _status_response(task_id=task_id, status="pending")
+
+    fallback = PollingWatcher(
+        poll_status=pending_poll,
+        poll_server_wait=5.0,
+        poll_client_interval=None,
+        default_timeout=10.0,
+    )
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda tid: f"ws://fake/{tid}",
+        poll_fallback=fallback,
+        fallback_to_poll=True,
+        connect_timeout=0.1,
+        default_timeout=10.0,
+    )
+
+    with pytest.raises(TaskTimeoutError, match=r"after 10\.00s"):
+        list(watcher.iter_updates("task-1"))
+
+
 @pytest.mark.anyio
 async def test_async_websocket_watcher_poll_fallback_gets_only_the_remaining_timeout(
     monkeypatch: pytest.MonkeyPatch,
