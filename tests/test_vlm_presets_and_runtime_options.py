@@ -741,6 +741,7 @@ class TestPresetEngineIntegration:
             ResponseFormat.LIGHTONOCR_MARKDOWN,
             ResponseFormat.PLAINTEXT,
             ResponseFormat.CHANDRA_HTML,
+            ResponseFormat.SURYA_HTML,
             ResponseFormat.DOTS_JSON,
             ResponseFormat.NEMOTRON_PARSE_V2,
             ResponseFormat.NEMOTRON_PARSE_V3_5,
