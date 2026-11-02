@@ -262,7 +262,13 @@ def parse_dots_json(
 
         if category == "Table":
             current_list_group = None
-            if _add_html_table(doc, text, prov) is None:
+            try:
+                table = _add_html_table(doc, text, prov)
+            except ValueError as exc:
+                # Like the Chandra mapper: drop the grid, keep the page.
+                _log.warning("dots table is too large to map: %s", exc)
+                table = None
+            if table is None:
                 _log.warning("Invalid dots HTML table; preserving an empty table")
                 doc.add_table(data=TableData(num_rows=0, num_cols=0), prov=prov)
         elif category == "Picture":
