@@ -427,6 +427,45 @@ The runs keep a space beside a script only where the PDF shows a gap, so that "O
 June" becomes `21<sup>st</sup> of June`. Markdown and plain text have no script marks, so they
 give "21st of June".
 
+
+### Use embedded PDF images for picture items
+
+The standard PDF pipeline normally creates `PictureItem` images by cropping
+the corresponding region from the rendered page. For PDF files, enable
+`PdfPipelineOptions(use_embedded_picture_images=True)` to use the embedded
+PDF image directly when the picture region contains one safe image object.
+The extracted image keeps its native pixel dimensions.
+
+Docling uses the rendered crop as a fallback when the region contains multiple
+images, text, vector shapes, masks, or other content, or when the embedded
+image cannot be matched safely. This option affects picture images only. It
+does not change page images or the image used by the layout model.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(
+    generate_picture_images=True,
+    use_embedded_picture_images=True,
+)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+result = doc_converter.convert("document.pdf")
+```
+
+The equivalent CLI option is:
+
+```sh
+docling convert document.pdf --use-embedded-picture-images
+```
+
+
 ### PowerPoint and Excel charts
 
 A chart on a PowerPoint slide or an Excel sheet becomes a picture classified by

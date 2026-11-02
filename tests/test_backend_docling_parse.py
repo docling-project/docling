@@ -41,7 +41,11 @@ def ruled_table_path():
     return Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
 
 
-def _get_backend(pdf_doc, page_range: PageRange = DEFAULT_PAGE_RANGE):
+def _get_backend(
+    pdf_doc,
+    page_range: PageRange = DEFAULT_PAGE_RANGE,
+    backend_options: ThreadedDoclingParseBackendOptions | None = None,
+):
     """Open a document with the threaded backend, optionally narrowed to a page range.
 
     The threaded parser yields results in completion order, not page order, so
@@ -52,6 +56,7 @@ def _get_backend(pdf_doc, page_range: PageRange = DEFAULT_PAGE_RANGE):
         path_or_stream=pdf_doc,
         format=InputFormat.PDF,
         backend=ThreadedDoclingParseDocumentBackend,
+        backend_options=backend_options,
         limits=DocumentLimits(page_range=page_range),
     )
 
@@ -1027,3 +1032,36 @@ def test_docling_parse_exposes_complete_widget_contract_in_native_order() -> Non
     finally:
         page.unload()
         backend.unload()
+
+
+def test_extract_single_embedded_image():
+    doc_backend: ThreadedDoclingParseDocumentBackend = _get_backend(
+        Path("tests/data/pdf/sources/picture_classification.pdf"),
+        page_range=(1, 1),
+        backend_options=ThreadedDoclingParseBackendOptions(include_bitmap_images=True),
+    )
+    try:
+        page_backend = next(doc_backend.iter_pages())
+        bitmap_bbox = next(iter(page_backend.get_bitmap_rects()))
+
+        image = page_backend.get_embedded_image(bitmap_bbox)
+
+        assert image is not None
+        assert image.size == (768, 474)
+    finally:
+        doc_backend.unload()
+
+
+def test_reject_embedded_image_with_overlapping_page_content():
+    doc_backend: ThreadedDoclingParseDocumentBackend = _get_backend(
+        Path("tests/data/pdf/sources/amt_handbook_sample.pdf"),
+        page_range=(1, 1),
+        backend_options=ThreadedDoclingParseBackendOptions(include_bitmap_images=True),
+    )
+    try:
+        page_backend = next(doc_backend.iter_pages())
+        bitmap_bbox = next(iter(page_backend.get_bitmap_rects()))
+
+        assert page_backend.get_embedded_image(bitmap_bbox) is None
+    finally:
+        doc_backend.unload()

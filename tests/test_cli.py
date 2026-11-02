@@ -133,6 +133,12 @@ def test_cli_convert_help():
     assert "layour" not in result.output
     assert "input_sources" not in result.output
     assert "--output-file" in strip_ansi(result.output)
+    embedded_images_option = next(
+        parameter
+        for parameter in convert_command.params
+        if parameter.name == "use_embedded_picture_images"
+    )
+    assert "--use-embedded-picture-images" in embedded_images_option.opts
     separator_option = next(
         parameter
         for parameter in convert_command.params
@@ -1408,6 +1414,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
             "7",
             "--release-native-memory-every-n-pages",
             "64",
+            "--use-embedded-picture-images",
         ],
     )
 
@@ -1417,6 +1424,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options is not None
     assert captured_backend_options.parser_threads == 7
     assert captured_backend_options.release_native_memory_every_n_pages == 64
+    assert captured_backend_options.include_bitmap_images is True
 
 
 # Pipeline and backend selection are independent in the CLI routing, so pair
