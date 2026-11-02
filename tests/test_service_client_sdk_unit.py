@@ -453,7 +453,9 @@ def test_websocket_watcher_raises_task_timeout_when_no_update_arrives(
             return None
 
         def recv(self, timeout: float | None = None) -> str:
-            # websockets raises the built-in TimeoutError when recv times out.
+            # Like websockets: wait until the timeout, then raise the built-in
+            # TimeoutError.
+            time.sleep(timeout or 0)
             raise TimeoutError("timed out while waiting for a message")
 
         def send(self, message: str) -> None:
@@ -467,10 +469,10 @@ def test_websocket_watcher_raises_task_timeout_when_no_update_arrives(
         poll_fallback=None,
         fallback_to_poll=False,
         connect_timeout=1.0,
-        default_timeout=0.5,
+        default_timeout=0.2,
     )
 
-    with pytest.raises(TaskTimeoutError, match=r"after 0\.50s"):
+    with pytest.raises(TaskTimeoutError, match=r"after 0\.20s"):
         list(watcher.iter_updates(task_id="task-1"))
 
     # A slow task is not a dropped connection, so nothing reconnects.
