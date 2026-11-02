@@ -34,7 +34,7 @@ from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import cudnn_attention_disabled, decide_device
 from docling.utils.profiling import TimeRecorder
 from docling.utils.vlm_utils import strip_stop_strings, strip_trailing_token
 
@@ -395,7 +395,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             gen_kwargs["stopping_criteria"] = stopping_criteria
 
         start_time = time.time()
-        with torch.inference_mode():
+        with torch.inference_mode(), cudnn_attention_disabled(self.device):
             generated_ids = self.vlm_model.generate(**gen_kwargs)
         generation_time = time.time() - start_time
 

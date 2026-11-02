@@ -23,7 +23,7 @@ from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.progress import EnrichmentStep
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import cudnn_attention_disabled, decide_device
 
 
 class CodeFormulaModelOptions(BaseModel):
@@ -334,7 +334,8 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
 
         from typing import Any, cast
 
-        generated_ids = cast(Any, self._model).generate(**inputs, **gen_kwargs)
+        with cudnn_attention_disabled(self.device):
+            generated_ids = cast(Any, self._model).generate(**inputs, **gen_kwargs)
 
         outputs = self._processor.batch_decode(
             generated_ids[:, inputs.input_ids.shape[1] :], skip_special_tokens=False

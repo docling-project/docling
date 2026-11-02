@@ -26,7 +26,7 @@ from docling.models.extraction.prompt_utils import (
 )
 from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import cudnn_attention_disabled, decide_device
 from docling.utils.granite_vision_utils import (
     GRANITE_VISION_4_REPO_ID,
     granite_vision_4_needs_remote_code,
@@ -204,7 +204,7 @@ class TransformersExtractionModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         }
 
         start_time = time.time()
-        with torch.inference_mode():
+        with torch.inference_mode(), cudnn_attention_disabled(self.device):
             generated_ids = cast(Any, self.vlm_model).generate(**gen_kwargs)
         generation_time = time.time() - start_time
 
