@@ -140,10 +140,24 @@ class TestSanitizeTextLigatures:
             (["o\ufb00 the record"], "off the record"),
             (["stu\ufb00 and more"], "stuff and more"),
             (["the sta\ufb00", "members"], "the staff members"),
+            (["fa\ufb06 lane"], "fast lane"),
         ],
     )
     def test_space_after_word_final_ligature_preserved(self, model, lines, expected):
         """A ligature that ends a word keeps the space to the next word."""
+        assert model.sanitize_text(lines) == expected
+
+    @pytest.mark.parametrize(
+        ("lines", "expected"),
+        [
+            (["e\ufb03 cient"], "efficient"),
+            (["classi\ufb01 ed"], "classified"),
+            (["re\ufb02 ect"], "reflect"),
+            (["ba\ufb04 ed"], "baffled"),
+        ],
+    )
+    def test_space_after_mid_word_ligature_absorbed(self, model, lines, expected):
+        """fi, fl, ffi and ffl rarely end a word, so the split is repaired."""
         assert model.sanitize_text(lines) == expected
 
 

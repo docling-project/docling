@@ -42,6 +42,9 @@ _LIGATURE_MAP: dict[str, str] = {
 # avoid an invalid descending range with U+FB06.
 _LIGATURE_RE = re.compile(r"([ﬀ-ﬆ]|Ĳ|ĳ|)( (?=\w))?")
 _WORD_CHAR_RE = re.compile(r"\w")
+# Ligatures that commonly end a word ("staﬀ", "faﬆ"); fi, fl, ffi and ffl
+# (U+FB01-U+FB04) almost never do, so they keep the mid-word repair.
+_WORD_FINAL_LIGATURES = frozenset("\ufb00\ufb05\ufb06")
 
 # Arabic Presentation Forms-A (U+FB50-U+FDFF) and Forms-B (U+FE70-U+FEFF).
 # Some PDF fonts encode Arabic with these compatibility codepoints, which carry
@@ -85,11 +88,11 @@ def normalize_extracted_text(text: str) -> str:
     for raw, clean in _TYPOGRAPHIC_MAP.items():
         text = text.replace(raw, clean)
     # For the traditional fb00-fb06 ligatures (e.g. ﬁ, ﬂ), a spurious space
-    # inserted by the PDF parser between a word-initial glyph and the rest of
-    # the word is absorbed (e.g. "ﬁ eld" → "field"). After a glyph that follows
-    # a word character the space is kept, since the glyph can end the word
-    # (e.g. "staﬀ members", also when the lines "the staﬀ" and "members" are
-    # joined, must not become "staffmembers").
+    # inserted by the PDF parser after the glyph is absorbed (e.g.
+    # "ﬁ eld" → "field", "eﬃ cient" → "efficient"). The ff and st ligatures
+    # (U+FB00, U+FB05, U+FB06) often end a word, so after a word character
+    # their space is kept (e.g. "staﬀ members", also when the lines "the staﬀ"
+    # and "members" are joined, must not become "staffmembers").
     # For U+0132/U+0133 (Dutch IJ/ij) and U+F0A0 (PUA discard glyph), any
     # captured trailing space is re-emitted so that real word boundaries are
     # preserved (e.g. "Ĳ is" → "IJ is", "hello\uf0a0 world" → "hello world").
@@ -99,7 +102,11 @@ def normalize_extracted_text(text: str) -> str:
             + (
                 ""
                 if "\ufb00" <= m.group(1) <= "\ufb06"
-                and not (m.start() and _WORD_CHAR_RE.match(m.string, m.start() - 1))
+                and not (
+                    m.group(1) in _WORD_FINAL_LIGATURES
+                    and m.start()
+                    and _WORD_CHAR_RE.match(m.string, m.start() - 1)
+                )
                 else (m.group(2) or "")
             )
         ),
