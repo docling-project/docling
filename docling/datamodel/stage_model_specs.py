@@ -1650,10 +1650,7 @@ VLM_CONVERT_MINICPM_OCR = StageModelPreset(
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
                     "transformers_strip_stop_strings": True,
                     "extra_processor_kwargs": {"downsample_mode": "4x"},
-                    "extra_generation_config": {
-                        "downsample_mode": "4x",
-                        "no_repeat_ngram_size": 100,
-                    },
+                    "extra_generation_config": {"no_repeat_ngram_size": 100},
                 },
             ),
         },

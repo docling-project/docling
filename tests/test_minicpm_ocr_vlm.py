@@ -87,7 +87,6 @@ def test_minicpm_ocr_preset_engine_config():
     # Runtime-level generation settings must carry the decoder options.
     runtime_config = spec.get_runtime_input_extra_config(VlmEngineType.TRANSFORMERS)
     assert runtime_config["skip_special_tokens"] is True
-    assert runtime_config["downsample_mode"] == "4x"
     assert runtime_config["no_repeat_ngram_size"] == 100
     assert runtime_config["transformers_prompt_style"] == TransformersPromptStyle.CHAT
     assert runtime_config["extra_processor_kwargs"] == {"downsample_mode": "4x"}
@@ -189,6 +188,8 @@ def test_e2e_minicpm_ocr_conversion():
     conv_result = converter.convert(pdf_path)
     doc = conv_result.document
 
+    # SUCCESS excludes PARTIAL_SUCCESS, which the pipeline sets for a page
+    # with an inference error or a length-limited response.
     assert conv_result.status == ConversionStatus.SUCCESS
     assert len(doc.pages) > 0, "Document should have pages"
     assert len(doc.texts) > 0, "Document should have text elements"
