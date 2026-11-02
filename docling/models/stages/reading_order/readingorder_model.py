@@ -1013,6 +1013,8 @@ class ReadingOrderModel:
                 hyperlink=element.hyperlink,
             )
             self.list_item_processor.process_list_item(new_item)
+            # Provenance indexes text, which no longer includes the list marker.
+            new_item.prov[0].charspan = (0, len(new_item.text))
 
         elif label == DocItemLabel.SECTION_HEADER:
             current_list = None
@@ -1065,9 +1067,10 @@ class ReadingOrderModel:
         ):
             # A soft hyphen or hard-hyphenated lowercase continuation is a split word.
             start = len(new_item.text) - 1
-            for previous in new_item.prov:
-                if previous.charspan[1] == len(new_item.text):
-                    previous.charspan = (previous.charspan[0], start)
+            if new_item.prov:
+                # Only the final source span owns the removed trailing hyphen.
+                previous = new_item.prov[-1]
+                previous.charspan = (previous.charspan[0], start)
             new_item.text = new_item.text[:-1] + merged_elem.text
             new_item.orig = (
                 new_item.orig[:-1] + merged_elem.text
