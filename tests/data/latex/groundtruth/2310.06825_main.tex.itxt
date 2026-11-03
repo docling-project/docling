@@ -37,7 +37,7 @@ item-0 at level 0: unspecified: group _root_
         item-34 at level 4: formula: k \times W
         item-35 at level 4: text:  tokens.
   item-36 at level 1: text: r0.275
-  item-37 at level 1: table with [11x2]
+  item-37 at level 1: table with [10x2]
     item-38 at level 2: unspecified: group group
       item-39 at level 3: text: 
         item-40 at level 4: inline: group group
@@ -162,7 +162,7 @@ item-0 at level 0: unspecified: group _root_
     item-157 at level 2: picture
       item-157 at level 3: caption: Performance of Mistral~7B\xspaceand different Llama\xspacemodels on a wide range of benchmarks. All models were re-evaluated on all metrics with our evaluation pipeline for accurate comparison. Mistral~7B\xspacesignificantly outperforms Llama\xspace2 7B and Llama\xspace2 13B on all benchmarks. It is also vastly superior to Llama\xspace1 34B in mathematics, code generation, and reasoning benchmarks.
     item-158 at level 2: caption: Performance of Mistral~7B\xspace ...  generation, and reasoning benchmarks.
-  item-159 at level 1: table with [6x14]
+  item-159 at level 1: table with [5x14]
     item-159 at level 2: caption: Comparison of Mistral~7B\xspacewith Llama\xspace. Mistral~7B\xspaceoutperforms Llama\xspace2 13B on all metrics, and approaches the code performance of Code-Llama\xspace7B without sacrificing performance on non-code benchmarks.
   item-160 at level 1: caption: Comparison of Mistral~7B\xspacew ... ng performance on non-code benchmarks.
   item-161 at level 1: section: group figure
@@ -170,7 +170,7 @@ item-0 at level 0: unspecified: group _root_
       item-162 at level 3: caption: Results on MMLU, commonsense reasoning, world knowledge and reading comprehension for Mistral~7B\xspaceand Llama\xspace2 (7B/13B/70B). Mistral~7B\xspacelargely outperforms Llama\xspace2 13B on all evaluations, except on knowledge benchmarks, where it is on par (this is likely due to its limited parameter count, which limits the amount of knowledge it can compress).
     item-163 at level 2: caption: Results on MMLU, commonsense rea ...  amount of knowledge it can compress).
   item-164 at level 1: text: r0.48
-  item-165 at level 1: table with [9x3]
+  item-165 at level 1: table with [8x3]
   item-166 at level 1: caption: Comparison of Chat models. Mistr ... and is comparable to 13B  Chat models.
   item-167 at level 1: section_header: Instruction Finetuning
   item-168 at level 1: text: =-1 To evaluate the generalizati ...  on https://llmboxing.com/leaderboard.
@@ -181,7 +181,7 @@ item-0 at level 0: unspecified: group _root_
   item-173 at level 1: text: We introduce a system prompt (se ... as indicated in Table[tab:guardrails].
   item-174 at level 1: text: 0.98 Always assist with care, re ... plies promote fairness and positivity.
   item-175 at level 1: text: r0.38
-  item-176 at level 1: table with [5x2]
+  item-176 at level 1: table with [4x2]
     item-177 at level 2: unspecified: group group
       item-178 at level 3: text: 
         item-179 at level 4: inline: group group
@@ -203,7 +203,7 @@ item-0 at level 0: unspecified: group _root_
   item-195 at level 1: caption: System prompts. Mean official MT ... Chat reports official results of 6.65.
   item-196 at level 1: text: =-1 We use a set of 175 unsafe p ...  answer 100% of the harmful questions.
   item-197 at level 1: text: =-1 As an illustration, we provi ... y when system prompts are deactivated.
-  item-198 at level 1: table with [4x2]
+  item-198 at level 1: table with [3x2]
     item-198 at level 2: caption: Comparison between Mistral and Llama\xspacesystem prompts. Mistral provides the right answer whereas Llama\xspace2 declines to answer to the question How to kill a linux process.
   item-199 at level 1: caption: Comparison between Mistral and L ...  question How to kill a linux process.
   item-200 at level 1: section_header: Content moderation with self-reflection

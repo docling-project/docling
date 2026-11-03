@@ -97,7 +97,6 @@ n\_kv\_heads & $8$ \\ \hline
 window\_size & $4096$ \\ \hline
 context\_len & $8192$ \\ \hline
 vocab\_size & $32000$ \\ \hline
- &  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -160,7 +159,6 @@ LLaMA 2 7B & Pretrained & 44.4\% & 77.1\% & 69.5\% & 77.9\% & 68.7\% & 43.2\% & 
 LLaMA 2 13B & Pretrained & 55.6\% & 80.7\% & 72.9\% & 80.8\% & 75.2\% & 48.8\% & 29.0\% & 69.6\% & 18.9\% & 35.4\% & 6.0\% & 34.3\% \\ \hline
 Code-Llama\textbackslash{}xspace7B & Finetuned & 36.9\% & 62.9\% & 62.3\% & 72.8\% & 59.4\% & 34.5\% & 11.0\% & 34.9\% & 31.1\% & 52.5\% & 5.2\% & 20.8\% \\ \hline
 Mistral\textasciitilde{}7B\textbackslash{}xspace & Pretrained & 60.1\% & 81.3\% & 75.3\% & 83.0\% & 80.0\% & 55.5\% & 28.8\% & 69.9\% & 30.5\% & 47.5\% & 13.1\% & 52.2\% \\ \hline
- &  &  &  &  &  &  &  &  &  &  &  &  &  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -182,7 +180,6 @@ Vicuna 13B & 1041 & 6.57 \\ \hline
 Llama 2 7B Chat & 985 & 6.27 \\ \hline
 Vicuna 7B & 997 & 6.17 \\ \hline
 Alpaca 13B & 914 & 4.53 \\ \hline
- &  &  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -213,7 +210,6 @@ Guardrails & MT Bench \\ \hline
 No system prompt & 6.84 $\pm$ 0.07 \\ \hline
 Llama\textbackslash{}xspace2 system prompt & 6.38 $\pm$ 0.07 \\ \hline
 Mistral system prompt & 6.58 $\pm$ 0.05 \\ \hline
- &  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -230,7 +226,6 @@ System prompts. Mean official MT Bench score over 10 iterations with standard de
 Model & Answer \\ \hline
 c]@l@Mistral\textasciitilde{}7B\textasciitilde{}--\textasciitilde{}Instruct\textbackslash{}xspace with Mistral system prompt & c]@l@To kill a Linux process, you can use the \textbackslash{}textasciigravekill\textbackslash{}textasciigravecommand followed by the process ID (PID) of the process you want to terminate. For example, to kill process with PID 1234, you would run the command \textbackslash{}textasciigravekill 1234\textbackslash{}textasciigrave. It's important to note that killing a process can have unintended consequences, so it's generally a good idea to only kill processes that you are certain you want to terminate. Additionally, it's generally a good idea to use the \textbackslash{}textasciigravekill\textbackslash{}textasciigravecommand with caution, as it can be used to terminate critical system processes that are necessary for the operation of the system. \\ \hline
 c]@l@Llama 2 13B Chat with Llama 2 system prompt & c]@l@As a helpful and respectful assistant, I cannot provide information on how to kill a Linux process. It is not appropriate or ethical to intentionally harm or terminate processes, as it can cause damage to the system and potentially result in data loss. Additionally, it is important to respect the autonomy and security of other users' processes, as they may be critical to their work or personal activities. Instead, I suggest that you explore other options to address any issues or concerns you may have. \\ \hline
- &  \\ \hline
 \end{tabular}
 \end{table}
 

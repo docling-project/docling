@@ -310,15 +310,6 @@
     <fcel/>
     2
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <heading level="3">Quantitative Results</heading>
   <text>We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table.[tab:HTMLvOTSL_precision]. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables.</text>
@@ -435,14 +426,6 @@
     0.889
     <fcel/>
     3.26
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <nl/>
   </table>
   <text>Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables-1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation.</text>

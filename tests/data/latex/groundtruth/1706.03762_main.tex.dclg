@@ -481,11 +481,6 @@
       <formula>O(n/r)</formula>
     </text>
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <text>
     <content>As noted in Table [tab:op_complexities], a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires </content>
@@ -1172,50 +1167,6 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <ecel/>
     <ecel/>
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <text>
     <content>On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table[tab:wmt-results]) outperforms the best previously reported models (including ensembles) by more than </content>
@@ -1708,20 +1659,6 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     <fcel/>
     213
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <text>To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table[tab:variations].</text>
   <text>In Table[tab:variations] rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section [sec:multihead]. While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads.</text>
@@ -1838,11 +1775,6 @@ lrate = d_{\text{model}}^{-0.5} \cdot
     generative
     <fcel/>
     93.3
-    <ecel/>
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <ecel/>
     <nl/>
   </table>

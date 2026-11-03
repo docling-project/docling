@@ -318,12 +318,6 @@
     <fcel/>
     $5.576M
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <text>Lastly, we emphasize again the economical training costs of DeepSeek-V3, summarized in Table[tab:cost], achieved through our optimized co-design of algorithms, frameworks, and hardware. During the pre-training stage, training DeepSeek-V3 on each trillion tokens requires only 180K H800 GPU hours, i.e., 3.7 days on our cluster with 2048 H800 GPUs. Consequently, our pre-training stage is completed in less than two months and costs 2664K GPU hours. Combined with 119K GPU hours for the context length extension and 5K GPU hours for post-training, DeepSeek-V3 costs only 2.788M GPU hours for its full training. Assuming the rental price of the H800 GPU is $2 per GPU hour, our total training costs amount to only $5.576M. Note that the aforementioned costs include only the official training of DeepSeek-V3, excluding the costs associated with prior research and ablation experiments on architectures, algorithms, or data.</text>
   <text>Our main contribution includes:</text>
@@ -772,11 +766,6 @@
     <text>
       <formula>PP + 1</formula>
     </text>
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <nl/>
   </table>
   <heading level="4">Efficient Implementation of Cross-Node All-to-All Communication</heading>
@@ -1570,16 +1559,6 @@
     <ecel/>
     <ecel/>
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <heading level="4">Evaluation Results</heading>
   <text>In Table[tab:main], we compare the base model of DeepSeek-V3 with the state-of-the-art open-source base models, including DeepSeek-V2-Base[dsvii] (our previous release), Qwen2.5 72B Base[qwen2_5], and LLaMA-3.1 405B Base[llama3_1_405b]. We evaluate all these models with our internal evaluation framework, and ensure that they share the same evaluation setting. Note that due to the changes in our evaluation framework over the past months, the performance of DeepSeek-V2-Base exhibits a slight difference from our previously reported results. Overall, DeepSeek-V3-Base comprehensively outperforms DeepSeek-V2-Base and Qwen2.5 72B Base, and surpasses LLaMA-3.1 405B Base in the majority of benchmarks, essentially becoming the strongest open-source model.</text>
@@ -1779,13 +1758,6 @@
     38.6
     <fcel/>
     39.8
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <nl/>
   </table>
   <heading level="3">Discussion</heading>
@@ -1987,13 +1959,6 @@
     37.2
     <fcel/>
     39.6
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <nl/>
   </table>
   <heading level="4">Batch-Wise Load Balance VS. Sequence-Wise Load Balance</heading>
@@ -2604,17 +2569,6 @@
     64.8
     <ecel/>
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <heading level="4">Standard Evaluation</heading>
   <text>Table[tab:chat] presents the evaluation results, showcasing that DeepSeek-V3 stands as the best-performing open-source model. Additionally, it is competitive against frontier closed-source models like GPT-4o and Claude-3.5-Sonnet.</text>
@@ -2674,10 +2628,6 @@
     85.5
     <fcel/>
     70.0
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <nl/>
   </table>
   <heading level="4">Open-Ended Evaluation</heading>
@@ -2791,13 +2741,6 @@
     <fcel/>
     89.6
     <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <nl/>
   </table>
   <heading level="3">Discussion</heading>
   <heading level="4">Distillation from DeepSeek-R1</heading>
@@ -2846,12 +2789,6 @@
     83.2
     <fcel/>
     1510
-    <nl/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
-    <ecel/>
     <nl/>
   </table>
   <heading level="4">Self-Rewarding</heading>
