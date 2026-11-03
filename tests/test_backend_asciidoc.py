@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     Formatting,
+    GroupLabel,
     ImageRefMode,
     ListItem,
 )
@@ -937,6 +938,186 @@ Nested **bold _and italic_** text.
         ("and italic", True, True),
     ]
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["um"]
+
+
+def test_links_in_paragraphs() -> None:
+    # URL and link macros used to stay in the text as literal markup, such as
+    # "https://example.com[Example]". They are now text with a hyperlink.
+    source = b"""See https://example.com[Example site], link:docs/install.html[Install]
+and mailto:team@example.com[].
+
+Bare https://example.com/a_b/c.html, <https://example.com/x> and
+https://example.com[Docs, window=_blank] or https://example.com[*Bold* link^].
+
+Not linked: word:https://example.com.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="links.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [
+        (item.text, str(item.hyperlink), item.formatting is not None)
+        for item in doc.texts
+        if item.hyperlink is not None
+    ]
+    assert links == [
+        ("Example site", "https://example.com/", False),
+        ("Install", str(Path("docs/install.html")), False),
+        ("team@example.com", "mailto:team@example.com", False),
+        ("https://example.com/a_b/c.html", "https://example.com/a_b/c.html", False),
+        ("https://example.com/x", "https://example.com/x", False),
+        ("Docs", "https://example.com/", False),
+        ("Bold", "https://example.com/", True),
+        ("link", "https://example.com/", False),
+    ]
+    plain = [item.text for item in doc.texts if item.hyperlink is None]
+    assert "Not linked: word:https://example.com." in plain
+    md = doc.export_to_markdown()
+    assert "[Example site](https://example.com/)" in md
+    assert "example.com[" not in md
+    assert "link:" not in md
+
+
+@pytest.mark.parametrize(
+    "source, expected_text",
+    [
+        ('https://example.com["Docs, API", window=_blank]', "Docs, API"),
+        (
+            r'https://example.com["Say \"hello\", API", window=_blank]',
+            'Say "hello", API',
+        ),
+        ("https://example.com[window=_blank]", "https://example.com"),
+        (r"https://example.com[Array \[index\], window=_blank]", "Array [index]"),
+    ],
+)
+def test_link_labels_and_attributes(source: str, expected_text: str) -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source.encode()),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="link-attributes.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(links) == 1
+    assert links[0].text == expected_text
+    assert str(links[0].hyperlink) == "https://example.com/"
+    assert links[0].parent is not None
+    assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
+    assert "window=_blank" not in doc.export_to_markdown()
+
+
+def test_url_in_link_label_keeps_outer_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://outer.example[https://inner.example]"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="url-label.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert [(item.text, str(item.hyperlink)) for item in links] == [
+        ("https://inner.example", "https://outer.example/")
+    ]
+    assert "[https://inner.example](https://outer.example/)" in doc.export_to_markdown()
+
+
+def test_inline_code_link_keeps_code_item_and_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://example.com[`API`]"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="code-link.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(links) == 1
+    assert isinstance(links[0], CodeItem)
+    assert links[0].text == "API"
+    assert str(links[0].hyperlink) == "https://example.com/"
+    assert links[0].parent is not None
+    assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
+    assert "[`API`](https://example.com/)" in doc.export_to_markdown()
+
+
+def test_links_in_block_titles_of_paragraphs_and_lists() -> None:
+    doc = _convert_adoc(
+        b".Caption https://example.com[Docs]\n"
+        b"Para after title.\n\n"
+        b".Steps https://example.com[Docs]\n"
+        b"* one\n"
+    )
+
+    links = [
+        (
+            item.text,
+            str(item.hyperlink),
+            item.formatting is not None and item.formatting.bold,
+        )
+        for item in doc.texts
+        if item.hyperlink is not None
+    ]
+    assert links == [("Docs", "https://example.com/", True)] * 2
+    for item in doc.texts:
+        if item.hyperlink is not None:
+            assert item.parent is not None
+            assert item.parent.resolve(doc).label == GroupLabel.INLINE
+    bold = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.bold
+    ]
+    assert "Caption" in bold
+    assert "Steps" in bold
+    paragraph = next(item for item in doc.texts if item.text == "Para after title.")
+    assert paragraph.formatting is None
+    assert all("example.com[" not in item.text for item in doc.texts)
+    assert "example.com[" not in doc.export_to_markdown()
+
+
+def test_links_in_block_titles_strip_inline_marks() -> None:
+    doc = _convert_adoc(b".The *main* step\nPara after title.\n")
+
+    bold = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.bold
+    ]
+    assert bold == ["The main step"]
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        pytest.param(b"image::x.png[]", id="picture"),
+        pytest.param(b"|===\n|a\n|===", id="table"),
+        pytest.param(b"----\nx = 1\n----", id="code"),
+    ],
+)
+@pytest.mark.parametrize(
+    "title, expected_text, expected_link",
+    [
+        (b".See https://example.com[Docs]", "See Docs", None),
+        (b".https://example.com[Docs]", "Docs", "https://example.com/"),
+    ],
+)
+def test_links_in_block_titles_of_pictures_tables_and_code(
+    target: bytes, title: bytes, expected_text: str, expected_link: str | None
+) -> None:
+    doc = _convert_adoc(title + b"\n" + target + b"\n")
+
+    captions = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert len(captions) == 1
+    assert captions[0].text == expected_text
+    actual = None if captions[0].hyperlink is None else str(captions[0].hyperlink)
+    assert actual == expected_link
 
 
 @pytest.mark.parametrize("mark", ["*", "_", "`"])

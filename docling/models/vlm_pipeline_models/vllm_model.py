@@ -4,7 +4,7 @@
 import logging
 import sys
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -27,8 +27,51 @@ from docling.models.base_model import BaseVlmPageModel
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.stop_reason import normalize_stop_reason
 
 _log = logging.getLogger(__name__)
+
+
+def _prediction_from_vllm_request(
+    request: Any,
+    *,
+    generation_time: float,
+    input_prompt: str | None,
+    track_generated_tokens: bool,
+    decode_response: Callable[[str], str],
+) -> VlmPrediction:
+    """Turn one vLLM request result into a prediction.
+
+    A request that produced nothing is reported as an inference error, so that
+    the empty page is not taken for a complete description. Otherwise the
+    finish reason decides whether the page is complete: it carries the stop
+    string or the token limit that ended the generation, while the stop reason
+    field stays None on a normal end of sequence.
+    """
+    completion = request.outputs[0] if request.outputs else None
+    if completion is None:
+        return VlmPrediction(
+            text="",
+            generation_time=generation_time,
+            num_tokens=0,
+            stop_reason=VlmStopReason.INFERENCE_ERROR,
+            error_message="vLLM returned no completion for this image",
+            input_prompt=input_prompt,
+        )
+
+    generated_tokens = [VlmPredictionToken(token=int(t)) for t in completion.token_ids]
+    num_tokens = len(generated_tokens)
+    if not track_generated_tokens:
+        generated_tokens = []
+
+    return VlmPrediction(
+        text=decode_response(completion.text),
+        generation_time=generation_time,
+        num_tokens=num_tokens,
+        stop_reason=normalize_stop_reason(completion.finish_reason),
+        generated_tokens=generated_tokens,
+        input_prompt=input_prompt,
+    )
 
 
 class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
@@ -338,30 +381,12 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
         # Emit predictions
         for i, output in enumerate(outputs):
-            text = output.outputs[0].text if output.outputs else ""
-            stop_reason = (
-                VlmStopReason.END_OF_SEQUENCE
-                if output.outputs[0].stop_reason
-                else VlmStopReason.LENGTH
-            )
-
-            generated_tokens = [
-                VlmPredictionToken(token=int(t)) for t in output.outputs[0].token_ids
-            ]
-            num_tokens = len(generated_tokens)
-
-            if not self.vlm_options.track_generated_tokens:
-                generated_tokens = []
-
             input_prompt = prompts[i] if self.vlm_options.track_input_prompt else None
             _log.debug(f"VLM generated response carries input prompt: {input_prompt}")
-
-            decoded_text = self.vlm_options.decode_response(text)
-            yield VlmPrediction(
-                text=decoded_text,
+            yield _prediction_from_vllm_request(
+                output,
                 generation_time=generation_time,
-                num_tokens=num_tokens,
-                stop_reason=stop_reason,
-                generated_tokens=generated_tokens,
                 input_prompt=input_prompt,
+                track_generated_tokens=self.vlm_options.track_generated_tokens,
+                decode_response=self.vlm_options.decode_response,
             )

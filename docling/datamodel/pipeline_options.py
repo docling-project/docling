@@ -442,6 +442,17 @@ class RapidOcrOptions(OcrOptions):
             description="Enable text direction classification stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
+    detect_orientation: Annotated[
+        bool,
+        Field(
+            description=(
+                "Read an OCR region again at the other three orientations when fewer than half of its "
+                "lines are read with confidence, and keep the first orientation that reads well. Unlike "
+                "`use_cls`, which flips single text lines by 180 degrees, this also fixes pages turned "
+                "by 90 or 270 degrees."
+            )
+        ),
+    ] = False
     use_rec: Annotated[
         bool | None,
         Field(
@@ -1134,6 +1145,16 @@ detailed descriptions of image content.
 """
 
 
+class NemotronParseOptions(BaseModel):
+    """Nemotron 3.5 Parse stages. Single-pass preserves the preset defaults."""
+
+    passes: Literal["single", "double", "triple"] = "single"
+    triple_regions: Literal["detector", "union"] = "union"
+    crop_batch_size: int = Field(
+        default=8, ge=1, description="Maximum crops per engine batch"
+    )
+
+
 class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     """Configuration for VLM-based document conversion.
 
@@ -1167,6 +1188,11 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
 
     batch_size: int = Field(
         default=1, description="Batch size for processing multiple pages"
+    )
+
+    nemotron_parse: NemotronParseOptions = Field(
+        default_factory=NemotronParseOptions,
+        description="Multi-pass options for the nemotron_parse_v3_5 response format",
     )
 
     force_backend_text: bool = Field(
@@ -1252,9 +1278,13 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GLMOCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR_3_08B)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR_3_4B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_FALCON_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_CHANDRA_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_UNLIMITED_OCR2_MLX)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_MOCR)
 

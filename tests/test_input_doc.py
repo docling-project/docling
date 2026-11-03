@@ -108,7 +108,8 @@ def test_in_doc_release_after_pipeline_cleanup():
     )
     backend = doc._backend
     page = Page(page_no=1)
-    page._backend = backend.load_page(0)
+    page_backend = backend.load_page(0)
+    page._backend = page_backend
     result = ConversionResult(input=doc, pages=[page])
     # Exercise the real cleanup paths without initializing ML models.
     pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
@@ -119,7 +120,8 @@ def test_in_doc_release_after_pipeline_cleanup():
 
     assert stream.closed
     assert backend._closed
-    assert page._backend._closed
+    assert page_backend._closed
+    assert page._backend is None
     assert result.input._backend is None
 
 

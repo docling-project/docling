@@ -226,6 +226,65 @@ converter = DocumentConverter(
 result = converter.convert("report.pdf")
 ```
 
+For Nemotron 3.5 Parse, use the stage preset API. It defaults to single-pass:
+
+```python
+from docling.datamodel.pipeline_options import NemotronParseOptions, VlmConvertOptions
+from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
+
+vlm_options = VlmConvertOptions.from_preset(
+    "nemotron_parse_v3_5",
+    engine_options=AutoInlineVlmEngineOptions(trust_remote_code=True),
+    nemotron_parse=NemotronParseOptions(passes="double", crop_batch_size=8),
+)
+```
+
+Set `passes="triple"` to add detection. `triple_regions="union"` keeps detector
+and non-overlapping parser regions; `"detector"` uses detector regions only.
+Crops run in batches with Transformers and API engines. Guarded merging keeps the
+page result when a crop is invalid or incompatible. Document JSON records each
+page's mode and request counts in `body.meta.docling__nemotron_parse.pages`.
+These options are available through the SDK; the CLI preset keeps single-pass.
+
+For Unlimited-OCR 2, start the vendor's SGLang server first. Install the customized
+wheel from the `wheel/` folder of `baidu/Unlimited-OCR-2`, then follow the
+`python -m sglang.launch_server` command in the Docling model catalog. It needs an
+NVIDIA GPU and these flags: `--served-model-name Unlimited-OCR-2`,
+`--chat-template unlimited-ocr`, and the full CUDA Graph flags. Then use the preset:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "unlimited_ocr2",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:10000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+Docling sends one page per request, so the whole-document mode of the model is not
+used, and tables and text that continue on the next page stay split. If you set
+`params`, also set `model`, `max_tokens`, and `skip_special_tokens=False`, or tables
+lose their cells. Transformers and in-process vLLM are not supported.
+
+On Apple Silicon, use the `unlimited_ocr2_mlx` preset instead. It needs `mlx-vlm>=0.7.11`
+and runs in-process with the default MLX engine. No server is needed:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("unlimited_ocr2_mlx"),
+)
+```
+
 Model presets (`docling.datamodel.vlm_model_specs`):
 
 | Preset | Backend | Device | Notes |

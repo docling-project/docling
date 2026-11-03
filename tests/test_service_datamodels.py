@@ -409,6 +409,20 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
     assert result.result.kind == "PresignedArtifactResult"
 
 
+def test_artifact_ref_accepts_chunks_artifact_type() -> None:
+    # Producers upload "{stem}.chunks.jsonl" as a presigned artifact when
+    # "chunks" is requested in to_formats.
+    artifact = ArtifactRef.model_validate(
+        {
+            "artifact_type": "chunks",
+            "mime_type": "application/jsonl",
+            "uri": "https://example.com/converted/input.chunks.jsonl",
+        }
+    )
+
+    assert artifact.artifact_type == "chunks"
+
+
 def test_zip_archive_result_filename_is_optional_on_the_wire() -> None:
     # Results from producers that predate `filename` must still parse.
     legacy = DoclingTaskResult.model_validate(
