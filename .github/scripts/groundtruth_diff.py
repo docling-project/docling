@@ -10,15 +10,19 @@ content, structure, or tables.
 
 from __future__ import annotations
 
+import argparse
 import difflib
 import json
+import subprocess
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 GROUNDTRUTH_SEGMENT = "groundtruth"
+# `git diff --name-status` letters, mapped to the GitHub file status names.
+GIT_STATUSES = {"A": "added", "D": "removed"}
 MAX_LISTED_FILES = 60
 # Keys that only carry layout coordinates or page geometry.
 GEOMETRY_KEYS = frozenset({"prov", "bbox", "size", "pages", "charspan"})
@@ -312,3 +316,47 @@ def render_markdown(changes: list[FileChange]) -> str:
     if len(changes) > listed:
         lines.append(f"- … {len(changes) - listed} more file(s) not listed")
     return "\n".join(lines)
+
+
+def summarize_git_range(base: str, head: str, *, repo: Path) -> list[FileChange]:
+    """Classify the reference files that differ between two commits."""
+    listing = subprocess.run(
+        ["git", "diff", "--name-status", "--no-renames", base, head, "--", "tests"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    changes = []
+    for line in listing.splitlines():
+        code, path = line.split("\t", 1)
+        if not is_groundtruth_path(path):
+            continue
+        status = GIT_STATUSES.get(code, "modified")
+        old = None if status == "added" else _read_blob(repo, base, path)
+        new = None if status == "removed" else _read_blob(repo, head, path)
+        changes.append(summarize_file(path, old, new, status=status))
+    return changes
+
+
+def _read_blob(repo: Path, commit: str, path: str) -> bytes | None:
+    result = subprocess.run(
+        ["git", "show", f"{commit}:{path}"], cwd=repo, capture_output=True
+    )
+    return result.stdout if result.returncode == 0 else None
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Print a Markdown summary of the reference data changes "
+        "between two commits."
+    )
+    parser.add_argument("base", help="Commit before the changes.")
+    parser.add_argument("head", help="Commit after the changes.")
+    args = parser.parse_args(argv)
+    print(render_markdown(summarize_git_range(args.base, args.head, repo=Path())))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

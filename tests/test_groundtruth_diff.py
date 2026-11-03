@@ -6,6 +6,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -135,3 +136,38 @@ def test_render_lists_relevant_kinds_first() -> None:
     lines = gt.render_markdown(changes).splitlines()
     assert lines[2] == "| structure | 1 |"
     assert lines[5] == "- **structure** `f2.json`: reading order changed"
+
+
+def test_git_range_classifies_each_changed_reference_file(tmp_path: Path) -> None:
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    def write(path: str, text: str) -> None:
+        (tmp_path / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / path).write_text(text)
+
+    git("init", "-q")
+    git("config", "user.email", "test@example.com")
+    git("config", "user.name", "Test")
+    write("tests/data/md/groundtruth/kept.md", "# Title\n\nold text\n")
+    write("tests/data/md/groundtruth/dropped.md", "gone\n")
+    write("tests/test_x.py", "old\n")
+    git("add", "-A")
+    git("commit", "-q", "-m", "base")
+    base = git("rev-parse", "HEAD")
+    write("tests/data/md/groundtruth/kept.md", "# Title\n\nnew text\n")
+    write("tests/data/md/groundtruth/new.md", "new\n")
+    (tmp_path / "tests/data/md/groundtruth/dropped.md").unlink()
+    write("tests/test_x.py", "new\n")
+    git("add", "-A")
+    git("commit", "-q", "-m", "head")
+
+    changes = gt.summarize_git_range(base, "HEAD", repo=tmp_path)
+
+    assert {change.path: change.kind for change in changes} == {
+        "tests/data/md/groundtruth/kept.md": gt.ChangeKind.TEXT,
+        "tests/data/md/groundtruth/new.md": gt.ChangeKind.ADDED,
+        "tests/data/md/groundtruth/dropped.md": gt.ChangeKind.REMOVED,
+    }
