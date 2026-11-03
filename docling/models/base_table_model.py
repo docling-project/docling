@@ -8,6 +8,7 @@ from collections.abc import Iterable, Sequence
 from typing import Type
 
 from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.base_models import Cluster, Page, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
@@ -35,37 +36,47 @@ def degenerate_structure_reason(otsl_seq: list[str], max_steps: int) -> str | No
     return None
 
 
-def keep_table_text_as_child(table_cluster: Cluster, page: Page) -> None:
-    """Make sure the text under a table cluster survives a discarded structure.
-
-    The reading-order stage emits a table's nested clusters only when the
-    table has no grid, so a table whose structure was discarded keeps its text
-    through them. A table cluster without nested clusters gets one text child
-    holding the page cells inside its box.
-    """
-    if table_cluster.children:
-        return
-    cells = [
+def page_cells_in_table(table_cluster: Cluster, page: Page) -> list[TextCell]:
+    """The page's non-blank text cells that lie mostly inside the table box."""
+    return [
         cell
         for cell in page.cells
         if cell.text.strip()
         and cell.rect.to_bounding_box().intersection_over_self(table_cluster.bbox) > 0.5
     ]
+
+
+def keep_table_text_as_child(table_cluster: Cluster, page: Page) -> None:
+    """Make sure the text under a table cluster survives a discarded structure.
+
+    The reading-order stage emits a table's nested clusters only when the
+    table has no grid, so a table whose structure was discarded keeps its text
+    through them. The layout stage nests the regular clusters that lie inside
+    the table box, but the cells they do not cover would go with the grid, so
+    those cells get one extra text child.
+    """
+    covered = {cell.index for child in table_cluster.children for cell in child.cells}
+    cells = [
+        cell
+        for cell in page_cells_in_table(table_cluster, page)
+        if cell.index not in covered
+    ]
     if not cells:
         return
     layout = page.predictions.layout
-    used_ids = [table_cluster.id]
+    used_ids = [table_cluster.id, *(child.id for child in table_cluster.children)]
     if layout is not None:
         used_ids.extend(c.id for c in layout.clusters)
         used_ids.extend(ch.id for c in layout.clusters for ch in c.children)
     table_cluster.children = [
+        *table_cluster.children,
         Cluster(
             id=max(used_ids) + 1,
             label=DocItemLabel.TEXT,
             bbox=table_cluster.bbox,
             confidence=table_cluster.confidence,
             cells=cells,
-        )
+        ),
     ]
 
 

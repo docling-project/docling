@@ -216,7 +216,9 @@ def test_keep_table_text_as_child_gathers_the_text_inside_the_table():
     assert [cell.text for cell in child.cells] == TABLE_TEXT
 
 
-def test_keep_table_text_as_child_leaves_existing_nested_clusters_alone():
+def test_keep_table_text_as_child_adds_the_cells_nested_clusters_do_not_cover():
+    """The layout stage nests the text clusters that sit inside the table
+    box; the cells outside them must not go with the discarded grid."""
     nested = Cluster(
         id=4,
         label=DocItemLabel.TEXT,
@@ -228,7 +230,10 @@ def test_keep_table_text_as_child_leaves_existing_nested_clusters_alone():
 
     keep_table_text_as_child(table, page)
 
-    assert table.children == [nested]
+    kept, added = table.children
+    assert kept is nested
+    assert added.id == 5
+    assert [cell.text for cell in added.cells] == TABLE_TEXT[1:]
 
 
 def test_keep_table_text_as_child_without_text_in_the_table():
