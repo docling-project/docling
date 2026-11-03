@@ -9,7 +9,7 @@ import re
 
 MAX_MODEL_TEXT_CHARS = 600
 # Written into untrusted text to stop GitHub from linking or notifying.
-ZERO_WIDTH_SPACE = "​"
+ZERO_WIDTH_SPACE = "\u200b"
 
 
 def clean_text(text: str, limit: int = MAX_MODEL_TEXT_CHARS) -> str:
