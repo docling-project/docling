@@ -473,11 +473,14 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
                 for cell in cells[1:]:
                     vertical_threshold = row_height * vertical_threshold_factor
+                    bbox = cell.rect.to_bounding_box()
                     if (
-                        abs(cell.rect.to_bounding_box().t - row_top)
-                        <= vertical_threshold
-                        and abs(cell.rect.to_bounding_box().b - row_bottom)
-                        <= vertical_threshold
+                        abs(bbox.t - row_top) <= vertical_threshold
+                        and abs(bbox.b - row_bottom) <= vertical_threshold
+                    ) or (
+                        # PDFium boxes a punctuation run tightly on the baseline,
+                        # so its edges miss the row's, though it sits inside it.
+                        bbox.t >= row_top and bbox.b <= row_bottom
                     ):
                         current_row.append(cell)
                         row_top = min(row_top, cell.rect.to_bounding_box().t)
