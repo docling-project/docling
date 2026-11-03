@@ -1171,6 +1171,45 @@ def test_vertical_separator_blocks_left_to_right_link() -> None:
     assert [element.cid for element in separated] == [0, 2, 1]
 
 
+def test_same_row_needs_cids_in_text_order() -> None:
+    # Issue #5132. The cids follow the position on the page (top edge, then
+    # left edge), as for clusters without text cells. L2 (cid 3) and R3 (cid 4)
+    # start at almost the same height in neighbouring columns. As one row, R3
+    # would become the only parent of L3, and the right column would be read in
+    # the middle of the left one.
+    page_size = Size(width=600, height=800)
+
+    def paragraph(cid: int, l: float, b: float, r: float, t: float) -> PageElement:  # noqa: E741
+        return PageElement(
+            cid=cid,
+            page_no=1,
+            page_size=page_size,
+            label=DocItemLabel.TEXT,
+            in_text_order=False,
+            l=l,
+            b=b,
+            r=r,
+            t=t,
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+
+    names = ["L1", "R1", "R2", "L2", "R3", "L3", "R4"]
+    elements = [
+        paragraph(0, 40, 600, 290, 760),
+        paragraph(1, 310, 700, 560, 760),
+        paragraph(2, 310, 600, 560, 690),
+        paragraph(3, 40, 450, 290, 590),
+        paragraph(4, 310, 452, 560, 588),
+        paragraph(5, 40, 300, 290, 440),
+        paragraph(6, 310, 380, 560, 440),
+    ]
+
+    result = ReadingOrderPredictor().predict_reading_order(page_elements=elements)
+    order = [names[element.cid] for element in result]
+
+    assert order == ["L1", "L2", "L3", "R1", "R2", "R3", "R4"]
+
+
 def test_consecutive_text_overlapping_slightly_stays_in_sequence() -> None:
     # 1 continues 0 in the left column but its top pokes 1pt into 0, so 0 is
     # not strictly above it; without the link, 0 flows into the right column

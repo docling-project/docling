@@ -100,6 +100,7 @@ class ReadingOrderModel:
                     page_no=element.page_no,
                     page_size=page_no_to_pages[element.page_no].size,
                     label=element.label,
+                    in_text_order=bool(element.cluster.cells),
                     l=bbox.l,
                     r=bbox.r,
                     b=bbox.b,
