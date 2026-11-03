@@ -1,7 +1,9 @@
 body:
   children:
   - $ref: '#/texts/0'
+  - $ref: '#/texts/1'
   - $ref: '#/groups/0'
+  - $ref: '#/texts/9'
   content_layer: body
   label: unspecified
   name: _root_
@@ -15,14 +17,6 @@ furniture:
   self_ref: '#/furniture'
 groups:
 - children:
-  - $ref: '#/texts/1'
-  content_layer: body
-  label: section
-  name: header-1
-  parent:
-    $ref: '#/body'
-  self_ref: '#/groups/0'
-- children:
   - $ref: '#/texts/2'
   - $ref: '#/texts/4'
   - $ref: '#/texts/5'
@@ -30,8 +24,8 @@ groups:
   label: list
   name: list
   parent:
-    $ref: '#/texts/1'
-  self_ref: '#/groups/1'
+    $ref: '#/body'
+  self_ref: '#/groups/0'
 - children:
   - $ref: '#/texts/3'
   content_layer: body
@@ -39,13 +33,23 @@ groups:
   name: list
   parent:
     $ref: '#/texts/2'
+  self_ref: '#/groups/1'
+- children:
+  - $ref: '#/texts/6'
+  - $ref: '#/texts/7'
+  - $ref: '#/texts/8'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/5'
   self_ref: '#/groups/2'
 key_value_items: []
 name: mixed_without_h1
 origin:
-  binary_hash: 11100987453172996924
+  binary_hash: 407652015547384603
   filename: mixed_without_h1.md
-  mimetype: text/html
+  mimetype: text/markdown
 pages: {}
 pictures: []
 schema_name: DoclingDocument
@@ -60,27 +64,25 @@ texts:
   prov: []
   self_ref: '#/texts/0'
   text: Content before first heading
-- children:
-  - $ref: '#/groups/1'
-  - $ref: '#/texts/6'
+- children: []
   content_layer: body
   label: section_header
   level: 1
   orig: Some heading
   parent:
-    $ref: '#/groups/0'
+    $ref: '#/body'
   prov: []
   self_ref: '#/texts/1'
   text: Some heading
 - children:
-  - $ref: '#/groups/2'
+  - $ref: '#/groups/1'
   content_layer: body
   enumerated: false
   label: list_item
   marker: ''
   orig: A. first
   parent:
-    $ref: '#/groups/1'
+    $ref: '#/groups/0'
   prov: []
   self_ref: '#/texts/2'
   text: A. first
@@ -91,7 +93,7 @@ texts:
   marker: ''
   orig: subitem
   parent:
-    $ref: '#/groups/2'
+    $ref: '#/groups/1'
   prov: []
   self_ref: '#/texts/3'
   text: subitem
@@ -102,28 +104,56 @@ texts:
   marker: ''
   orig: B. second
   parent:
-    $ref: '#/groups/1'
+    $ref: '#/groups/0'
   prov: []
   self_ref: '#/texts/4'
   text: B. second
-- children: []
+- children:
+  - $ref: '#/groups/2'
   content_layer: body
   enumerated: false
   label: list_item
   marker: ''
-  orig: 2 . strange
+  orig: ''
   parent:
-    $ref: '#/groups/1'
+    $ref: '#/groups/0'
   prov: []
   self_ref: '#/texts/5'
-  text: 2 . strange
+  text: ''
+- children: []
+  content_layer: body
+  label: text
+  orig: '2'
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/6'
+  text: '2'
+- children: []
+  content_layer: body
+  label: text
+  orig: .
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/7'
+  text: .
+- children: []
+  content_layer: body
+  label: text
+  orig: strange
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/8'
+  text: strange
 - children: []
   content_layer: body
   label: text
   orig: The end!
   parent:
-    $ref: '#/texts/1'
+    $ref: '#/body'
   prov: []
-  self_ref: '#/texts/6'
+  self_ref: '#/texts/9'
   text: The end!
 version: 1.10.0
