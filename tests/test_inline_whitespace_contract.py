@@ -13,9 +13,10 @@ import re
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc import DocItemLabel, DoclingDocument
 from docx import Document
 
+from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -176,3 +177,23 @@ def test_jats_inline_runs_rejoin_to_the_source_text():
             t.text for t in doc.texts if t.label == DocItemLabel.TEXT and t.text != "T"
         ]
         assert "".join(runs) == expected, paragraph
+
+
+def test_asciidoc_code_run_edge_whitespace_stays_outside_the_code():
+    doc = DoclingDocument(name="code-edges")
+    AsciiDocBackend._flush_text_data(
+        doc=doc,
+        text_data=["Install with `pip install x` first, x`` a ``y."],
+        parent=None,
+    )
+
+    assert [item.text for item in doc.texts] == [
+        "Install with ",
+        "pip install x",
+        " first, x",
+        " ",
+        "a",
+        " ",
+        "y.",
+    ]
+    assert doc.export_to_markdown() == "Install with `pip install x` first, x `a` y."

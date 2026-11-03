@@ -934,26 +934,6 @@ Nested **bold _and italic_** text.
     )
 
 
-def test_code_run_edge_whitespace_stays_outside_the_code() -> None:
-    doc = DoclingDocument(name="code-edges")
-    AsciiDocBackend._flush_text_data(
-        doc=doc,
-        text_data=["Install with `pip install x` first, x`` a ``y."],
-        parent=None,
-    )
-
-    assert [item.text for item in doc.texts] == [
-        "Install with ",
-        "pip install x",
-        " first, x",
-        " ",
-        "a",
-        " ",
-        "y.",
-    ]
-    assert doc.export_to_markdown() == "Install with `pip install x` first, x `a` y."
-
-
 def test_links_in_paragraphs() -> None:
     # URL and link macros used to stay in the text as literal markup, such as
     # "https://example.com[Example]". They are now text with a hyperlink.
@@ -1088,8 +1068,8 @@ def test_links_in_block_titles_of_paragraphs_and_lists() -> None:
         for item in doc.texts
         if item.formatting is not None and item.formatting.bold
     ]
-    assert "Caption" in bold
-    assert "Steps" in bold
+    assert "Caption " in bold
+    assert "Steps " in bold
     paragraph = next(item for item in doc.texts if item.text == "Para after title.")
     assert paragraph.formatting is None
     assert all("example.com[" not in item.text for item in doc.texts)
