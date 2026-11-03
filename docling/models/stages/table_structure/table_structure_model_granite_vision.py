@@ -3,13 +3,16 @@
 
 import importlib.metadata
 import logging
+import re
 import warnings
+from collections import Counter
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, ClassVar, Literal, cast
+from typing import Any, ClassVar, Literal, NamedTuple, cast
 
 import torch
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc import DocItemLabel, TableCell
 from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
@@ -17,10 +20,21 @@ from transformers import (
 )
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.base_models import Page, Table, TableStructurePrediction
+from docling.datamodel.base_models import (
+    Cluster,
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    Page,
+    Table,
+    TableStructurePrediction,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
-from docling.models.base_table_model import BaseTableStructureModel
+from docling.models.base_table_model import (
+    BaseTableStructureModel,
+    keep_table_text_as_child,
+)
 from docling.models.utils.generation_utils import TailRepetitionStopper
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
@@ -30,6 +44,63 @@ from docling.utils.otsl import parse_otsl_output
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+
+_ROW_BREAK = "<nl>"
+_WORD = re.compile(r"\w+")
+# Fewer native words than this give a share too coarse to judge a transcription.
+_MIN_WORDS_FOR_TEXT_CHECK = 4
+
+
+class TextRecall(NamedTuple):
+    """How many of the words in the PDF text under a table the model transcribed."""
+
+    found: int
+    total: int
+
+    @property
+    def share(self) -> float:
+        return self.found / self.total
+
+
+def native_text_recall(
+    cluster: Cluster, table_cells: Sequence[TableCell]
+) -> TextRecall | None:
+    """Compare the transcribed cells with the PDF text layer under the table.
+
+    The Granite stage transcribes cell text from the image and never reads the
+    page's text. When the page has a native text layer, the words the layout
+    stage assigned to the table cluster say what the cells must contain, so a
+    transcription that lost most of them is a failed structure even when the
+    generation ended normally. OCR cells are left out: they are a second
+    reading of the same pixels, not ground truth. Words are compared as
+    case-folded runs of letters and digits, so spacing and punctuation
+    differences between the two readings do not count.
+
+    Returns None when there is no native text to compare with.
+    """
+    native = Counter(
+        word
+        for cell in cluster.cells
+        if not cell.from_ocr
+        for word in _WORD.findall(cell.text.casefold())
+    )
+    total = sum(native.values())
+    if total < _MIN_WORDS_FOR_TEXT_CHECK:
+        return None
+    transcribed = Counter(
+        word for cell in table_cells for word in _WORD.findall(cell.text.casefold())
+    )
+    found = sum(min(count, transcribed[word]) for word, count in native.items())
+    return TextRecall(found=found, total=total)
+
+
+@dataclass(frozen=True)
+class _GeneratedOtsl:
+    """One table's decoded OTSL and how its generation ended."""
+
+    text: str
+    hit_budget: bool
+    dropped_chars: int
 
 
 class GraniteVisionTableStructureModel(BaseTableStructureModel):
@@ -53,9 +124,15 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
         # OTSL legitimately repeats short fragments (runs of <ecel>, identical
         # rows), so the loop detector needs a longer repeated span than the
         # code/formula default before it trips. Units are up to one wide row.
+        # The window it inspects must hold that span. The OTSL tags are three
+        # to four tokens each in this tokenizer, about 1.7 characters per
+        # token on a row of numbers, so 1024 tokens show ~1,800 characters:
+        # too few for 32 copies of any row wider than ~55 characters, and the
+        # loop then ran to the budget. 4096 tokens cover units up to ~220
+        # characters at about 2 ms per generation step.
         self._repetition_stopper: TailRepetitionStopper | None = (
             TailRepetitionStopper(
-                min_repeats=32, min_span=640, max_unit=256, lookback_tokens=1024
+                min_repeats=32, min_span=640, max_unit=256, lookback_tokens=4096
             )
             if options.stop_on_repetition
             else None
@@ -158,7 +235,9 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             )
         return cast(Any, self._model).generate(**inputs, **gen_kwargs)
 
-    def _decode_generated(self, output_ids: Any, prompt_len: int, row: int) -> str:
+    def _decode_generated(
+        self, output_ids: Any, prompt_len: int, row: int
+    ) -> _GeneratedOtsl:
         """Decode one row of generated tokens and clean up a runaway tail."""
         generated = output_ids[row, prompt_len:]
         # Rows that finished early are padded to the longest row of the batch,
@@ -169,43 +248,155 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
             if pad_token_id is not None
             else int(generated.shape[0])
         )
-        if generated_count >= self.options.max_new_tokens:
-            _log.warning(
-                "GraniteVision table output hit the max_new_tokens limit (%d); "
-                "the table may be truncated.",
-                self.options.max_new_tokens,
-            )
         text = self._processor.decode(generated, skip_special_tokens=True)
+        dropped_chars = 0
         if self._repetition_stopper is not None:
-            text = self._drop_repeated_rows(text)
-        return text
+            text, dropped_chars = self._drop_repeated_rows(text)
+        return _GeneratedOtsl(
+            text=text,
+            hit_budget=generated_count >= self.options.max_new_tokens,
+            dropped_chars=dropped_chars,
+        )
 
-    def _drop_repeated_rows(self, text: str) -> str:
+    def _drop_repeated_rows(self, text: str) -> tuple[str, int]:
         """Remove a looping OTSL tail without damaging the last real row.
 
         The generic ``TailRepetitionStopper.strip`` walks the periodic run back
         character by character, which on tag-structured text also eats the
         closing tags shared with the preceding real row. Whole copies of the
         repeated unit are peeled off instead, and a partial row left by a
-        stop in mid-unit is cut at the last row break.
+        stop in mid-unit is cut at the last row break. The loop usually starts
+        on a real row that the model then repeats, so one copy of a unit that
+        spans whole rows is put back.
+
+        Returns the cleaned text and the number of characters removed.
         """
         assert self._repetition_stopper is not None
         unit = self._repetition_stopper.repeated_unit(text)
         if unit is None:
-            return text
+            return text, 0
         unit_text = text[-unit:]
         kept = text
         while kept.endswith(unit_text):
             kept = kept[: -len(unit_text)]
-        last_row_break = kept.rfind("<nl>")
-        if last_row_break >= 0:
-            kept = kept[: last_row_break + len("<nl>")]
-        _log.warning(
-            "GraniteVision table output repeated the same fragment; "
-            "dropped %d characters of repeated rows.",
-            len(text) - len(kept),
+        last_row_break = kept.rfind(_ROW_BREAK)
+        kept = kept[: last_row_break + len(_ROW_BREAK)] if last_row_break >= 0 else ""
+        # The unit was sliced from the end of the text, so it may start in the
+        # middle of a row; rotate it to begin at a row start before keeping it.
+        row_break = unit_text.rfind(_ROW_BREAK)
+        if row_break >= 0:
+            row_end = row_break + len(_ROW_BREAK)
+            kept += unit_text[row_end:] + unit_text[:row_end]
+        return kept, len(text) - len(kept)
+
+    def _table_from_output(
+        self,
+        conv_res: ConversionResult,
+        page: Page,
+        cluster: Cluster,
+        generated: _GeneratedOtsl,
+    ) -> Table:
+        """Parse one table's OTSL, check it, and fall back to the page text if it failed.
+
+        A structure counts as failed when the generation was cut off by the
+        token budget, when the output holds no table, or when the page's text
+        layer shows that the transcription lost most of the words under the
+        table. A failed structure is discarded and the text under the table
+        is kept as a text child, so nothing the PDF says is lost; when there
+        is no such text (a scanned page without OCR) a partial structure is
+        kept rather than nothing. Every failure, and every trimmed loop that
+        the text layer could not confirm, is recorded in ``conv_res.errors``
+        so the conversion reports partial success instead of silent loss.
+        """
+        problems: list[str] = []
+        failed = False
+        if generated.hit_budget:
+            problems.append(
+                f"the output hit the max_new_tokens limit ({self.options.max_new_tokens})"
+            )
+            failed = True
+        if generated.dropped_chars:
+            problems.append(
+                "the output repeated the same fragment and "
+                f"{generated.dropped_chars} characters of repeated rows were dropped"
+            )
+        try:
+            otsl_seq, table_cells, num_rows, num_cols = parse_otsl_output(
+                generated.text
+            )
+        except Exception as exc:
+            problems.append(f"the OTSL output could not be parsed ({exc})")
+            otsl_seq, table_cells, num_rows, num_cols = [], [], 0, 0
+            failed = True
+        if not failed and num_rows == 0:
+            problems.append("the output holds no table structure")
+            failed = True
+
+        recall: TextRecall | None = None
+        if not failed and self.options.min_text_recall > 0:
+            recall = native_text_recall(cluster, table_cells)
+            if recall is not None and recall.share < self.options.min_text_recall:
+                problems.append(
+                    f"the transcribed cells hold {recall.found} of the "
+                    f"{recall.total} words in the PDF text under the table "
+                    f"(min_text_recall={self.options.min_text_recall})"
+                )
+                failed = True
+
+        if failed:
+            keep_table_text_as_child(cluster, page)
+            if cluster.children:
+                otsl_seq, table_cells, num_rows, num_cols = [], [], 0, 0
+                problems.append(
+                    "the structure was discarded and the text under the table "
+                    "was kept as plain text"
+                )
+            elif num_rows:
+                problems.append(
+                    "no text was found under the table, so the partial "
+                    "structure was kept"
+                )
+            else:
+                problems.append("no text was found under the table")
+
+        if problems:
+            confirmed = not failed and recall is not None
+            if not failed and not confirmed:
+                problems.append(
+                    "the kept rows could not be checked against the PDF text "
+                    "under the table"
+                )
+            message = (
+                f"GraniteVision table {cluster.id} on page {page.page_no}: "
+                + "; ".join(problems)
+                + "."
+            )
+            if confirmed:
+                _log.warning(
+                    "%s The kept rows match the PDF text under the table.", message
+                )
+            else:
+                _log.warning(message)
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.MODEL,
+                        module_name=type(self).__name__,
+                        error_message=message,
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+
+        return Table(
+            otsl_seq=otsl_seq,
+            table_cells=table_cells,
+            num_rows=num_rows,
+            num_cols=num_cols,
+            id=cluster.id,
+            page_no=page.page_no,
+            cluster=cluster,
+            label=cluster.label,
         )
-        return kept
 
     def predict_tables(
         self,
@@ -242,7 +433,9 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                 # Crop one image per table cluster from the page image
                 valid_pairs = []
                 for cluster in clusters:
-                    crop = page.get_image(scale=1.0, cropbox=cluster.bbox)
+                    crop = page.get_image(
+                        scale=self.options.image_scale, cropbox=cluster.bbox
+                    )
                     if crop is not None:
                         valid_pairs.append((cluster, crop))
 
@@ -284,37 +477,19 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
 
                 # Decode only generated tokens (strip input prompt tokens)
                 prompt_len = inputs["input_ids"].shape[1]
-                output_texts = [
+                outputs = [
                     self._decode_generated(output_ids, prompt_len, i)
                     for i in range(len(valid_images))
                 ]
 
-                for cluster, raw_text in zip(valid_clusters, output_texts):
+                for cluster, generated in zip(valid_clusters, outputs):
                     _log.debug(
-                        f"GraniteVision table [{cluster.id}] raw output: {raw_text!r}"
+                        f"GraniteVision table [{cluster.id}] raw output: {generated.text!r}"
                     )
-                    try:
-                        otsl_seq, table_cells, num_rows, num_cols = parse_otsl_output(
-                            raw_text
-                        )
-                    except Exception as exc:
-                        _log.warning(
-                            f"Failed to parse OTSL output for table cluster {cluster.id}: {exc}"
-                        )
-                        otsl_seq, table_cells, num_rows, num_cols = [], [], 0, 0
-
-                    tbl = Table(
-                        otsl_seq=otsl_seq,
-                        table_cells=table_cells,
-                        num_rows=num_rows,
-                        num_cols=num_cols,
-                        id=cluster.id,
-                        page_no=page.page_no,
-                        cluster=cluster,
-                        label=cluster.label,
+                    table_prediction.table_map[cluster.id] = self._table_from_output(
+                        conv_res, page, cluster, generated
                     )
-                    table_prediction.table_map[cluster.id] = tbl
 
-                predictions.append(table_prediction)
+            predictions.append(table_prediction)
 
         return predictions

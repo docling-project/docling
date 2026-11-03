@@ -208,12 +208,39 @@ class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
             description=(
                 "Stop a generation that keeps repeating the same OTSL fragment "
                 "(for example an endless row of identical cells) before "
-                "`max_new_tokens`, and drop the repeated tail from the output. "
-                "The thresholds are wide enough to leave real runs of empty or "
-                "identical cells untouched."
+                "`max_new_tokens`, and drop the repeated copies from the output, "
+                "keeping the first one. The thresholds are wide enough to leave "
+                "real runs of empty or identical cells untouched."
             ),
         ),
     ] = True
+    image_scale: Annotated[
+        float,
+        Field(
+            gt=0,
+            description=(
+                "Scale of the table crop sent to the model, relative to the page's "
+                "72 dpi. The model tiles its input into 384-pixel patches, so a "
+                "small table at 1.0 may be too coarse to read; TableFormer crops "
+                "at 2.0."
+            ),
+        ),
+    ] = 1.0
+    min_text_recall: Annotated[
+        float,
+        Field(
+            ge=0,
+            le=1,
+            description=(
+                "Smallest share of the words in the PDF text layer under a table "
+                "that the transcribed cells must contain. Below it the predicted "
+                "structure is discarded, the text under the table is kept as plain "
+                "text, and the conversion records an error for the table (partial "
+                "success). Pages without a text layer are not checked. 0 disables "
+                "the check."
+            ),
+        ),
+    ] = 0.5
 
 
 class OcrOptions(BaseOptions):
