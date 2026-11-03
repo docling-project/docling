@@ -520,6 +520,38 @@ def test_cells_outside_a_nested_cluster_are_kept_as_well():
     assert "kept as plain text" in _only_error(errors).error_message
 
 
+def test_cells_another_cluster_holds_are_not_gathered_twice():
+    """A text block at the table edge can hold a line inside the table box
+    without being nested in the table (the layout stage nests a block only
+    when more than 80% of it lies inside). The line is output through the
+    block, so the fallback must leave it there."""
+    cells = _lab_cells()
+    note = _text_cell(8, BoundingBox(l=110, t=270, r=390, b=290), "Note")
+    footer = _text_cell(9, BoundingBox(l=110, t=320, r=390, b=350), "Footer")
+    page, cluster = _page_with_text(cells)
+    page.parsed_page.textline_cells = [*cells, note, footer]
+    # A fifth of the block lies inside the table box.
+    block = Cluster(
+        id=4,
+        label=DocItemLabel.TEXT,
+        bbox=BoundingBox(l=100, t=260, r=400, b=460),
+        cells=[note, footer],
+    )
+    page.predictions.layout = LayoutPrediction(clusters=[cluster, block])
+    options = GraniteVisionTableStructureOptions(max_new_tokens=8)
+    model = _model_with_mocked_inference(
+        options, decoded_text=HEADER_ROW, generated_tokens=8
+    )
+
+    table, errors = _predict(model, page, cluster)
+
+    assert (table.num_rows, table.num_cols) == (0, 0)
+    (child,) = cluster.children
+    assert child.id == 5
+    assert [c.text for c in child.cells] == [c.text for c in cells]
+    assert "kept as plain text" in _only_error(errors).error_message
+
+
 def test_crop_uses_the_configured_scale():
     model = _model_with_mocked_inference(
         GraniteVisionTableStructureOptions(image_scale=2.0), decoded_text=HEADER_ROW
