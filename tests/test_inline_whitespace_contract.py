@@ -197,3 +197,68 @@ def test_asciidoc_code_run_edge_whitespace_stays_outside_the_code():
         "y.",
     ]
     assert doc.export_to_markdown() == "Install with `pip install x` first, x `a` y."
+
+
+def test_asciidoc_code_run_keeps_the_source_whitespace_outside_the_code():
+    doc = DoclingDocument(name="code-edges")
+    AsciiDocBackend._flush_text_data(
+        doc=doc, text_data=["x``  a  ``y and w`` ``z."], parent=None
+    )
+
+    assert [(item.text, item.label) for item in doc.texts] == [
+        ("x", DocItemLabel.TEXT),
+        ("  ", DocItemLabel.TEXT),
+        ("a", DocItemLabel.CODE),
+        ("  ", DocItemLabel.TEXT),
+        ("y and w", DocItemLabel.TEXT),
+        (" ", DocItemLabel.TEXT),
+        ("z.", DocItemLabel.TEXT),
+    ]
+
+
+@pytest.mark.parametrize(
+    "source, expected_runs, expected_markdown",
+    [
+        (
+            "a https://x.y[ pad ]b end.",
+            ["a ", " pad ", "b end."],
+            "a  [pad](https://x.y/) b end.",
+        ),
+        (
+            "a https://x.y[pad ^]b end.",
+            ["a ", "pad ", "b end."],
+            "a [pad](https://x.y/) b end.",
+        ),
+        # `^` is the new-window marker only as the final character
+        (
+            "a https://x.y[pad^ ]b end.",
+            ["a ", "pad^ ", "b end."],
+            "a [pad^](https://x.y/) b end.",
+        ),
+        # blank brackets show the target and keep their whitespace
+        (
+            "a https://x.y[ ]b end.",
+            ["a ", "https://x.y", " ", "b end."],
+            "a [https://x.y](https://x.y/) b end.",
+        ),
+        # only the block's outer edge is trimmed
+        (
+            "https://x.y[ pad ] end.",
+            ["pad ", " end."],
+            "[pad](https://x.y/)  end.",
+        ),
+        (
+            "a https://x.y[ *Bold* ]b end.",
+            ["a ", " ", "Bold", " ", "b end."],
+            "a  [**Bold**](https://x.y/) b end.",
+        ),
+    ],
+)
+def test_asciidoc_link_text_keeps_its_edge_whitespace(
+    source: str, expected_runs: list[str], expected_markdown: str
+):
+    doc = DoclingDocument(name="link-edges")
+    AsciiDocBackend._flush_text_data(doc=doc, text_data=[source], parent=None)
+
+    assert [item.text for item in doc.texts] == expected_runs
+    assert doc.export_to_markdown() == expected_markdown

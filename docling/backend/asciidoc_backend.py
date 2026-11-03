@@ -891,16 +891,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         # Mixed formatting and links need one item per run, kept together in an
         # inline group like the Markdown backend does.
         # Runs keep their boundary whitespace (docling-core joins them with ""); a
-        # code run's edge whitespace moves out into a plain " " run of its own.
+        # code run's edge whitespace moves out into a plain run of its own.
         spaced: list[_InlineRun] = []
         for run in runs:
-            core = run.text.strip() if run.code else run.text
-            if run.code and run.text[:1].isspace():
-                spaced.append(_InlineRun(" "))
-            if core:
-                spaced.append(replace(run, text=core))
-            if run.code and core and run.text[-1:].isspace():
-                spaced.append(_InlineRun(" "))
+            core = run.text.strip()
+            if not run.code or not core:
+                spaced.append(replace(run, code=False))
+                continue
+            lead, _, trail = run.text.partition(core)
+            for part in (_InlineRun(lead), replace(run, text=core), _InlineRun(trail)):
+                if part.text:
+                    spaced.append(part)
         # Only the block's outer edges are trimmed.
         while spaced and not spaced[0].text.strip():
             spaced.pop(0)
@@ -964,6 +965,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     # No link text: the target itself is shown, as written.
                     shown = match.group("macro_target") or target
                     runs.append(_InlineRun(shown, bold, italic, hyperlink=target))
+                    # Blank brackets have no link text, but their whitespace stays.
+                    blank = match.group("url_text") or match.group("macro_text") or ""
+                    if blank.isspace():
+                        runs.append(_InlineRun(blank, bold, italic))
                 else:
                     runs.extend(
                         AsciiDocBackend._parse_inline(link_text, bold, italic, target)
@@ -1017,14 +1022,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             if quoted:
                 text = quoted.group(1).replace('\\"', '"')
             else:
-                text = text.split(",", 1)[0]
-                if re.match(r"\s*[A-Za-z_][\w-]*\s*=", text):
+                text = text.split(",", 1)[0].strip()
+                if re.match(r"[A-Za-z_][\w-]*\s*=", text):
                     # Only named attributes, no link text.
                     text = ""
-        text = text.strip()
         if text.endswith("^"):
-            text = text[:-1].rstrip()
-        return text or None
+            text = text[:-1]
+        return text if text.strip() else None
 
     #   =========   Title
     @staticmethod
