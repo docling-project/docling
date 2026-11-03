@@ -59,7 +59,6 @@ def test_recognized_words_are_kept_verbatim(words: list[str]) -> None:
     model._safe_tessdata_path = None
     model._auto_script = False
     model._native_codes = ["eng"]
-    model._dpi = 216
 
     with patch(
         f"{_MODULE}.subprocess.run",
@@ -74,11 +73,9 @@ class _FakeTesseract:
     def __init__(self, osd_confidence=8.0, ocr_stderr=None):
         self.osd_confidence = osd_confidence
         self.ocr_stderr = ocr_stderr
-        self.commands: list[list[str]] = []
         self.ocr_images: list[tuple[str, tuple[int, int]]] = []
 
     def __call__(self, cmd, **kwargs):
-        self.commands.append(cmd)
         if "osd" in cmd:
             stdout = _OSD_STDOUT.format(confidence=self.osd_confidence)
             return _FakeCompletedProcess(stdout.encode("utf-8"))
@@ -135,17 +132,6 @@ def test_region_is_rotated_only_on_a_confident_orientation(
     _convert_page(monkeypatch, tmp_path, tesseract, lang=["eng"])
 
     assert tesseract.ocr_images == [("L", ocr_size)]
-
-
-def test_tesseract_is_told_the_render_resolution(monkeypatch, tmp_path):
-    tesseract = _FakeTesseract()
-
-    _convert_page(monkeypatch, tmp_path, tesseract, lang=["eng"], scale=2.0)
-
-    assert [cmd[cmd.index("--dpi") + 1] for cmd in tesseract.commands] == [
-        "144",
-        "144",
-    ]
 
 
 def test_failed_region_is_recorded_on_the_page(monkeypatch, tmp_path):

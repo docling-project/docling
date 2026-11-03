@@ -74,7 +74,6 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
-        self._dpi = round(72 * self.scale)
 
         self._name: Optional[str] = None
         self._version: Optional[str] = None
@@ -232,7 +231,6 @@ class TesseractOcrCliModel(BaseOcrModel):
         if self.options.psm is not None:
             cmd.extend(["--psm", str(int(self.options.psm))])
 
-        cmd.extend(["--dpi", str(self._dpi)])
         cmd.append(self._sanitize_filename(ifilename))
         cmd.extend(["stdout", "tsv"])
         _log.info("command: {}".format(" ".join(cmd)))
@@ -279,8 +277,6 @@ class TesseractOcrCliModel(BaseOcrModel):
             "0",
             "-l",
             "osd",
-            "--dpi",
-            str(self._dpi),
             self._sanitize_filename(ifilename),
             "stdout",
         ]
@@ -468,7 +464,8 @@ def _parse_orientation(df_osd: pd.DataFrame, confidence_threshold: float) -> int
     # For strictly optimal performance with invariant dataframe format:
     keys = df_osd["key"].to_numpy()
     values = df_osd["value"].to_numpy()
-    if float(values[keys == "Orientation confidence"][0]) < confidence_threshold:
+    confidence = values[keys == "Orientation confidence"]
+    if len(confidence) and float(confidence[0]) < confidence_threshold:
         return 0
     orientation_val = values[keys == "Orientation in degrees"][0]
     orientation = parse_tesseract_orientation(orientation_val.strip())
