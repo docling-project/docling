@@ -32,6 +32,8 @@ from docling.pipeline.vlm_pipeline import VlmPipeline
 from tests.fakes.http_service import FakeService
 from tests.fakes.openai_compatible import FakeOpenAiApi
 
+pytestmark = pytest.mark.ml_vlm
+
 _MINICPM_OCR_REVISION = "c5833cddb363aa62f1cb60ddde48c832e8f1a92c"
 _API_ENGINES = {
     VlmEngineType.API,
@@ -164,7 +166,6 @@ def test_minicpm_ocr_api_preset_request(api: FakeOpenAiApi, tmp_path: Path):
     assert text_part["text"] == "Convert this page to markdown."
 
 
-@pytest.mark.ml_vlm
 @pytest.mark.skipif(
     os.getenv("DOCLING_TEST_MINICPM_OCR") != "1",
     reason="set DOCLING_TEST_MINICPM_OCR=1 to run the MiniCPM-OCR inference test",
