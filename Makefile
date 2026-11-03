@@ -17,7 +17,7 @@ check-all: ## Run all read-only local checks.
 	uv run --no-sync ty check
 	uv run --no-sync tach check
 	python3 scripts/check_tach_module_coverage.py
-	python3 scripts/check_max_lines.py
+	python3 scripts/check_max_lines.py --max-lines=1500
 	python3 .github/scripts/check_skill_routes.py
 	uv run --no-sync dprint check --config .github/dprint.json --config-discovery=false
 	uv lock --locked
