@@ -279,7 +279,7 @@ How soon the dream is past!
 
 ## The Separation
 
-"Friend after friend departs."
+> "Friend after friend departs."
 
 And they are gone-that little band  
 Of friends-the firm and true!  
@@ -331,8 +331,8 @@ A tribute of homage she cannot command.
 
 ## Hours of Childhood
 
-"Blest hours of childhood! then, and then alone,  
-Dance we the revels gay round pleasure's throne."
+> "Blest hours of childhood! then, and then alone,
+> Dance we the revels gay round pleasure's throne."
 
 Dear cherished hours, how much ye tell  
 Of all we've known, and loved so well!  
@@ -481,9 +481,9 @@ The volunteer-driven Standard Ebooks project relies on readers like you to submi
 
 ## Uncopyright
 
-May you do good and not evil.  
-May you find forgiveness for yourself and forgive others.  
-May you share freely, never taking more than you give.
+> May you do good and not evil.
+> May you find forgiveness for yourself and forgive others.
+> May you share freely, never taking more than you give.
 
 Copyright pages exist to tell you that you *can't* do something. Unlike them, this Uncopyright page exists to tell you that the writing and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. The United States public domain represents our collective cultural heritage, and items in it are free for anyone in the United States to do almost anything at all with, without having to get permission.
 

@@ -26,6 +26,7 @@ from urllib.request import url2pathname
 import requests
 import urllib3
 from docling_core.types.doc import (
+    BlockQuoteGroup,
     BoundingBox,
     CodeLanguageLabel,
     CoordOrigin,
@@ -41,6 +42,7 @@ from docling_core.types.doc import (
     GroupItem,
     GroupLabel,
     ListGroup,
+    NodeItem,
     PictureClassificationLabel,
     PictureClassificationMetaField,
     PictureClassificationPrediction,
@@ -146,6 +148,7 @@ _TEXT_BLOCK_TAGS: Final = {"p", "li", "th", "td"}
 # Tags that initiate distinct Docling items
 _BLOCK_TAGS: Final = {
     "address",
+    "blockquote",
     "details",
     "dl",
     "figure",
@@ -996,10 +999,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        # Skip headers that become cell or list item text: they never switch the
-        # layer back to body
+        # Skip headers that become cell, list item or quoted text: they never
+        # switch the layer back to body
         clean_headers = [
-            h for h in all_headers if not self._is_header_in_cell_or_item(h)
+            h for h in all_headers if not self._is_header_in_cell_item_or_quote(h)
         ]
         # Pick the first header from the remaining
         if len(clean_headers):
@@ -1017,12 +1020,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     @staticmethod
-    def _is_header_in_cell_or_item(header: Tag) -> bool:
-        """Whether a header is emitted as table cell or list item text.
+    def _is_header_in_cell_item_or_quote(header: Tag) -> bool:
+        """Whether a header is emitted as table cell, list item or quoted text.
 
         Headers that are direct children of <ul>/<ol> (or in a <div> there) and
         headers in <menu> items are still emitted as headers."""
-        if header.find_parent(["table", "dl"]):
+        if header.find_parent(["table", "dl", "blockquote"]):
             return True
         item = header.find_parent("li")
         if item is None:
@@ -2449,6 +2452,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         ignore_list=False,
         find_parent_annotation=False,
         keep_newlines=False,
+        ignore_block_quote=False,
     ) -> AnnotatedTextList:
         result: AnnotatedTextList = AnnotatedTextList()
 
@@ -2463,7 +2467,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     with self._use_format(format_tags):
                         with self._use_hyperlink(this_parent):
                             return self._extract_text_and_hyperlink_recursively(
-                                item, ignore_list
+                                item,
+                                ignore_list,
+                                ignore_block_quote=ignore_block_quote,
                             )
                 this_parent = this_parent.parent
 
@@ -2522,27 +2528,38 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
+        if ignore_block_quote and tag.name == "blockquote":
+            return result
         if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
                     with self._use_format([child.name]):
                         result.extend(
                             self._extract_text_and_hyperlink_recursively(
-                                child, ignore_list, keep_newlines=keep_newlines
+                                child,
+                                ignore_list,
+                                keep_newlines=keep_newlines,
+                                ignore_block_quote=ignore_block_quote,
                             )
                         )
                 elif isinstance(child, Tag) and child.name == "a":
                     with self._use_hyperlink(child):
                         result.extend(
                             self._extract_text_and_hyperlink_recursively(
-                                child, ignore_list, keep_newlines=keep_newlines
+                                child,
+                                ignore_list,
+                                keep_newlines=keep_newlines,
+                                ignore_block_quote=ignore_block_quote,
                             )
                         )
                 else:
                     # Recursively get the child's text content
                     result.extend(
                         self._extract_text_and_hyperlink_recursively(
-                            child, ignore_list, keep_newlines=keep_newlines
+                            child,
+                            ignore_list,
+                            keep_newlines=keep_newlines,
+                            ignore_block_quote=ignore_block_quote,
                         )
                     )
         return result
@@ -2692,6 +2709,70 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level -= 1
 
     @contextmanager
+    def _use_block_quote(
+        self, tag: Tag, doc: DoclingDocument
+    ) -> Iterator[BlockQuoteGroup]:
+        """Create a block quote group and set it as the current parent.
+
+        The ``cite`` attribute, resolved against the source URI when one is
+        configured, becomes the group's source URL.
+
+        Args:
+            tag: The blockquote tag.
+            doc: Currently used document.
+        """
+        quote = doc.add_block_quote_group(
+            name=tag.name,
+            parent=self.parents[self.level],
+            content_layer=self.content_layer,
+            cite=self._cite_url(tag),
+        )
+        # Headings inside the quote move the level and parents within the
+        # quote; the state from before the quote comes back when it closes.
+        original_level = self.level
+        original_parents = self.parents.copy()
+        self.parents[self.level + 1] = quote
+        self.level += 1
+        try:
+            yield quote
+        finally:
+            self.level = original_level
+            self.parents = original_parents
+
+    def _enclosing_block_quote_level(self, tag: Tag) -> Optional[int]:
+        """Return the hierarchy level of the open block quote that encloses ``tag``."""
+        if tag.find_parent("blockquote") is None:
+            return None
+        for level in range(self.level, -1, -1):
+            if isinstance(self.parents.get(level), BlockQuoteGroup):
+                return level
+        return None
+
+    def _enclosing_block_quote(self, tag: Tag) -> Optional[BlockQuoteGroup]:
+        """Return the open block quote group that encloses ``tag``, if any."""
+        level = self._enclosing_block_quote_level(tag)
+        if level is None:
+            return None
+        return cast(BlockQuoteGroup, self.parents[level])
+
+    def _cite_url(self, tag: Tag) -> Optional[AnyUrl]:
+        """Return the ``cite`` attribute of a quote as a URL.
+
+        A relative value is resolved against the configured source URI. A value
+        that is not a URL after that is dropped.
+        """
+        raw = tag.get("cite")
+        if not isinstance(raw, str) or not (cite := raw.strip()):
+            return None
+        source_uri = self.options.source_uri
+        resolved = urljoin(str(source_uri), cite) if source_uri is not None else cite
+        try:
+            return AnyUrl(resolved)
+        except ValidationError:
+            _log.debug("Dropping cite attribute that is not a URL: %r", cite)
+            return None
+
+    @contextmanager
     def _use_form_container(self, form_item: DocItem):
         """Create a form container group and set it as the current parent."""
         self.parents[self.level + 1] = form_item
@@ -2769,8 +2850,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_ref = []
         tag_name = tag.name.lower()
-        # set default content layer to BODY as soon as we encounter a heading
-        self.content_layer = ContentLayer.BODY
+        # A heading inside a quote is quoted text: it stays in the quote and
+        # neither opens a document section nor closes the enclosing one.
+        quote_level = self._enclosing_block_quote_level(tag)
+        if quote_level is None:
+            # set default content layer to BODY as soon as we encounter a heading
+            self.content_layer = ContentLayer.BODY
         level = int(tag_name[1])
         annotated_text_list = self._extract_text_and_hyperlink_recursively(
             tag, find_parent_annotation=True
@@ -2783,7 +2868,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             source_tag_id=annotated_text.source_tag_id,
         )
         # the first level is for the title item
-        if level == 1:
+        if level == 1 and quote_level is None:
             for key in self.parents.keys():
                 self.parents[key] = None
             self.level = 0
@@ -2799,7 +2884,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 added_ref = [p1.get_ref()]
         # the other levels need to be lowered by 1 if a title was set
         else:
-            level -= 1
+            heading_level = max(level - 1, 1)
+            # The quote is the root of the quoted headings
+            level = (
+                heading_level
+                if quote_level is None
+                else heading_level + quote_level - 1
+            )
             if level > self.level:
                 # add invisible group
                 for i in range(self.level, level):
@@ -2822,7 +2913,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
                 text=text_clean,
                 orig=annotated_text.text,
-                level=self.level,
+                level=heading_level,
                 content_layer=self.content_layer,
                 formatting=annotated_text.formatting,
                 hyperlink=annotated_text.hyperlink,
@@ -2883,6 +2974,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if not self._has_list_ancestor(elem, li):
                     self._handle_block(elem, doc)
                     self.parents[self.level + 1] = None
+            elif elem.name == "blockquote":
+                # A quote inside a list item is a block child of the item, like a
+                # table: the block handler consumes it whole.
+                self._handle_block(elem, doc)
+                self.parents[self.level + 1] = None
             elif elem.name == "table":
                 # Dispatch nested tables to the block handler so they are parsed
                 # as tables instead of being flattened into the list item text.
@@ -2928,7 +3024,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         """
         # Extract text and hyperlinks
         parts = self._extract_text_and_hyperlink_recursively(
-            tag, ignore_list=True, find_parent_annotation=True
+            tag, ignore_list=True, find_parent_annotation=True, ignore_block_quote=True
         )
         min_parts = parts.simplify_text_elements()
         item_text = _resolve_line_breaks(
@@ -3400,13 +3496,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if not any_image_produced:
                 caption_tag = tag.find("figcaption", recursive=False)
                 if isinstance(caption_tag, Tag):
-                    # Emit the caption as a standalone item under the current parent
-                    cap_item = self._emit_caption(caption_tag, doc)
+                    first_item = added_refs[0].resolve(doc) if added_refs else None
+                    if isinstance(first_item, BlockQuoteGroup):
+                        # The attribution of a quoted figure is a child of the quote.
+                        cap_item = self._emit_caption(
+                            caption_tag, doc, parent=first_item
+                        )
+                        if cap_item is not None:
+                            first_item.captions.append(cap_item.get_ref())
+                    else:
+                        # Emit the caption as a standalone item under the current parent
+                        cap_item = self._emit_caption(caption_tag, doc)
 
-                    # Populate the captions list on the TableItem if present
-                    if cap_item is not None and added_refs:
-                        first_item = added_refs[0].resolve(doc)
-                        if isinstance(first_item, TableItem):
+                        # Populate the captions list on the TableItem if present
+                        if cap_item is not None and isinstance(first_item, TableItem):
                             first_item.captions.append(cap_item.get_ref())
 
         elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
@@ -3566,9 +3669,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if inline_ref is not None:
                 added_refs.append(inline_ref)
 
-        elif tag_name == "footer":
-            with self._use_footer(tag, doc):
+        elif tag_name == "blockquote":
+            with self._use_block_quote(tag, doc) as quote:
                 self._walk(tag, doc)
+            added_refs.append(quote.get_ref())
+
+        elif tag_name == "footer":
+            if (quote_group := self._enclosing_block_quote(tag)) is not None:
+                # An attribution inside a quote is body content, not page furniture.
+                cap_item = self._emit_caption(tag, doc, parent=quote_group)
+                if cap_item is not None:
+                    quote_group.captions.append(cap_item.get_ref())
+                    added_refs.append(cap_item.get_ref())
+            else:
+                with self._use_footer(tag, doc):
+                    self._walk(tag, doc)
 
         elif tag_name == "details":
             with self._use_details(tag, doc):
@@ -5202,9 +5317,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return added_refs
 
     def _emit_caption(
-        self, caption_tag: Tag, doc: DoclingDocument
+        self,
+        caption_tag: Tag,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
     ) -> Optional[TextItem]:
-        """Emit a caption element (<caption> or <figcaption>) as a text item."""
+        """Emit a caption element (<caption>, <figcaption> or a quote's <footer>) as a text item."""
         cap_list = self._extract_text_and_hyperlink_recursively(
             caption_tag, find_parent_annotation=True
         )
@@ -5226,7 +5344,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             formatting=cap_anno.formatting,
             hyperlink=cap_anno.hyperlink,
             prov=cap_prov,
-            parent=self.parents[self.level],
+            parent=parent if parent is not None else self.parents[self.level],
         )
 
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
