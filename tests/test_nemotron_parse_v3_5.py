@@ -187,6 +187,41 @@ def test_table_maps_multirow_multicolumn_and_thead() -> None:
     assert [cells[2, col].text for col in range(4)] == ["Kin $", "145", "", "5 % < 6"]
 
 
+def test_table_with_oversized_span_is_rejected_without_building_it() -> None:
+    # Building the span grid used memory linear in the predicted span value.
+    table = r"\begin{tabular}{c}\multicolumn{1000000000}{c}{x}\\\end{tabular}"
+
+    data = _parse(_block("Table", table)).tables[0].data
+
+    assert (data.num_rows, data.num_cols) == (0, 0)
+
+
+def test_table_cell_markup_stays_cell_text() -> None:
+    table = (
+        r"\begin{tabular}{cc}"
+        r'a</td></tr><tr><td colspan="9">b & x<sup>2</sup> \& y\\'
+        r"\end{tabular}"
+    )
+
+    data = _parse(_block("Table", table)).tables[0].data
+
+    assert (data.num_rows, data.num_cols) == (1, 2)
+    assert data.grid[0][0].text == 'a</td></tr><tr><td colspan="9">b'
+    assert data.grid[0][1].text == "x2 & y"
+
+
+def test_table_cell_latex_angle_brackets_stay_cell_text() -> None:
+    table = (
+        r"\begin{tabular}{cc}"
+        r"\textless{}b\textgreater{}x\textless{}/b\textgreater{} & <code>a<b</code>\\"
+        r"\end{tabular}"
+    )
+
+    data = _parse(_block("Table", table)).tables[0].data
+
+    assert [cell.text for cell in data.grid[0]] == ["<b>x</b>", "a<b"]
+
+
 def test_table_cell_under_multirow_with_text_ends_the_span() -> None:
     table = r"\begin{tabular}{cc}\multirow{3}{*}{A} & 1\\ \mbox{} & 2\\ B & 3\\\end{tabular}"
 

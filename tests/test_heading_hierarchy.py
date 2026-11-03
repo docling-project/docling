@@ -9,6 +9,7 @@ import pytest
 from docling_core.types.doc import (
     BoundingBox,
     CoordOrigin,
+    DocItemLabel,
     DoclingDocument,
     ProvenanceItem,
 )
@@ -22,6 +23,7 @@ from docling_core.types.doc.page import (
     SegmentedPdfPage,
 )
 
+from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
@@ -605,3 +607,57 @@ def test_font_names_without_styling_rank_by_size_only():
     )
 
     assert levels == [1, 2, 2]
+
+
+def _finished_page(cells, clusters) -> Page:
+    page = Page(page_no=1, parsed_page=_segmented_page(cells))
+    page.predictions.layout = LayoutPrediction(
+        clusters=[
+            Cluster(id=i, label=label, bbox=_bbox(*box))
+            for i, (label, box) in enumerate(clusters)
+        ]
+    )
+    return page
+
+
+def test_retain_parsed_lines_keeps_only_heading_and_list_item_lines():
+    page = _finished_page(
+        [
+            _cell("1. Overview", 100, 50, 300, 70, font_name="Helvetica-Bold"),
+            _cell("Body text that the style signal never reads.", 100, 80, 500, 92),
+            _cell("(a) a list item", 120, 100, 300, 112),
+        ],
+        [
+            (DocItemLabel.SECTION_HEADER, (100, 50, 300, 70)),
+            (DocItemLabel.TEXT, (100, 80, 500, 92)),
+            (DocItemLabel.LIST_ITEM, (120, 100, 300, 112)),
+        ],
+    )
+    model = HeadingHierarchyModel(options=HeadingHierarchyOptions(enabled=True))
+
+    retained = model.retain_parsed_lines(page)
+
+    assert retained is not None
+    assert [cell.text for cell in retained.textline_cells] == [
+        "1. Overview",
+        "(a) a list item",
+    ]
+    assert retained.textline_cells[0].font_name == "Helvetica-Bold"
+    assert retained.dimension == page.parsed_page.dimension
+    assert retained.word_cells == []
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        HeadingHierarchyOptions(enabled=False),
+        HeadingHierarchyOptions(enabled=True, use_style=False),
+    ],
+)
+def test_retain_parsed_lines_keeps_nothing_without_the_style_signal(options):
+    page = _finished_page(
+        [_cell("1. Overview", 100, 50, 300, 70)],
+        [(DocItemLabel.SECTION_HEADER, (100, 50, 300, 70))],
+    )
+
+    assert HeadingHierarchyModel(options=options).retain_parsed_lines(page) is None

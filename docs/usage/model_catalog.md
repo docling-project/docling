@@ -259,6 +259,10 @@ Languages are given as BCP-47 tags for every engine; see
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
 | `unlimited_ocr` | Unlimited-OCR | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks |
+| `unlimited_ocr2` | Unlimited-OCR 2 | 3.34B (MoE) | ❌ | ❌ | OpenAI-compatible | ❌ | Native layout blocks with HTML tables, one page per request |
+| `unlimited_ocr2_mlx` | Unlimited-OCR 2 (MLX) | 3.34B (MoE) | ❌ | ✅ | ❌ | ❌ | Native layout blocks with HTML tables, one page per request |
+| `lightonocr3_08b` | LightOnOCR-3-0.8B | 0.8B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
+| `lightonocr3_4b` | LightOnOCR-3-4B | 4B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 
@@ -281,7 +285,146 @@ sends `top_k=1`, `repetition_penalty=1.1`, and `skip_special_tokens=False`. If y
 `params`, the preset parameters are not sent, so include these values yourself. The preset maps
 charts to pictures with a chart class and data table, with one picture for each chart panel.
 
+The default is single-pass. To re-parse Table and Chart crops, set
+`VlmConvertOptions.nemotron_parse` in the Python SDK:
+
+```python
+from docling.datamodel.pipeline_options import (
+    NemotronParseOptions,
+    VlmConvertOptions,
+    VlmPipelineOptions,
+)
+from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset(
+        "nemotron_parse_v3_5",
+        engine_options=AutoInlineVlmEngineOptions(trust_remote_code=True),
+        nemotron_parse=NemotronParseOptions(
+            passes="double",  # "single", "double", or "triple"
+            triple_regions="union",  # "union" or "detector"; triple-pass only
+            crop_batch_size=8,
+        ),
+    ),
+)
+```
+
+Double-pass uses the Table and Chart boxes from the page parse. Triple-pass adds a
+separate no-text detection request. `triple_regions="detector"` uses detector boxes;
+`"union"` also keeps parser boxes that do not overlap detector boxes of the same class.
+Both Transformers and API engines use bounded crop batches. Each page has at most
+80 crop regions. Crops have a 4% + 12 pixel margin, use JPEG quality 95, and are
+skipped if either padded dimension is less than 8 pixels. Crop coordinates map back
+to the page frame.
+
+Multi-pass page and detection requests use temperature 0.2 and repetition penalty
+1.05. Crop requests use 0.1 and 1.0. All stages use `top_k=50` and `top_p=1.0`.
+Detection has a 4096 token limit; page and crop requests have an 8744 token limit.
+Explicit API `params` override these request settings. Single-pass keeps the original
+preset settings. For every Transformers VLM preset, output that reaches the token
+limit without EOS is now reported as incomplete. The VLM pipeline returns
+`PARTIAL_SUCCESS` for these pages. Output that reaches EOS at the token limit
+remains complete.
+
+Only guarded merging is supported. A crop table must have a valid grid and compatible
+column count. A replacement also needs at least 0.5 box intersection over union and
+0.65 text similarity. It keeps the page box and reading order. New objects must not
+overlap an existing object of the same class. Failed, empty, truncated, and invalid
+crop output keeps the page result. Invalid detection output skips the crop stage.
+These guards can retain the less detailed page result. NVIDIA's published multi-pass
+scores use its alternatives merge policy and do not measure this guarded policy.
+
+Each page prediction has `nemotron_parse` metadata with the mode and model request
+counts. The exported document keeps these values at
+`body.meta.docling__nemotron_parse.pages`, keyed by source page number. `requests`
+counts page, detection, and crop requests, including unsuccessful crop requests;
+it is not a stage or engine-batch count. `rejected_crop_requests` counts unsuccessful
+or invalid crop generations before merging. Token counts include all stages, and
+`usage` keeps each stage response's provider usage when available.
+
 `unlimited_ocr` is served through an OpenAI-compatible endpoint: point `ApiVlmEngineOptions.url` at your own runtime. Its API override sets `skip_special_tokens=False`, without which the layout annotations are stripped from the completion.
+
+`unlimited_ocr2` runs through an OpenAI-compatible server that you start yourself. Docling runs
+no model code in-process for this preset. It has no in-process vLLM configuration. The
+Transformers engine cannot run it, because the model needs its own generation loop and
+`transformers==4.52.1`. vLLM support needs [vllm-project/vllm#64016](https://github.com/vllm-project/vllm/pull/64016),
+which is not merged yet.
+
+On Apple Silicon, use `unlimited_ocr2_mlx` instead. It runs the community
+`mlx-community/Unlimited-OCR-2-bf16` conversion in-process with the MLX engine, at a pinned
+revision, and needs `mlx-vlm>=0.7.11`. The `docling-slim[models-vlm-inline]` extra allows
+`mlx-vlm>=0.7.0`, so upgrade `mlx-vlm` if your environment has an older release. The preset
+sends the prompt `Multi page parsing.`, and the MLX chat template adds the image token. It does
+not set `trust_remote_code`. Docling still sends one page per request.
+
+Today the server is the customized SGLang wheel from the model repository. It needs an NVIDIA
+GPU. The command below is the model card command at the pinned revision, without
+`--enable-custom-logit-processor`, because Docling does not send a logit processor. The model card
+also lists memory settings for the server.
+
+```shell
+hf download baidu/Unlimited-OCR-2 \
+    --revision c14071b549f4fcab10909f3c4acc6a2edb366947 --local-dir Unlimited-OCR-2
+uv venv --python 3.10 && source .venv/bin/activate
+uv pip install Unlimited-OCR-2/wheel/sglang-0.5.20.dev13+g75b9b06b02-py3-none-any.whl \
+    fastokens==0.3.2
+
+python -m sglang.launch_server \
+    --model-path Unlimited-OCR-2 \
+    --served-model-name Unlimited-OCR-2 \
+    --chat-template unlimited-ocr \
+    --tokenizer-backend fastokens \
+    --tokenizer-worker-num 8 \
+    --mem-fraction-static 0.7 \
+    --max-running-requests 64 \
+    --max-prefill-tokens 2048 \
+    --enable-streaming-session \
+    --allow-auto-truncate \
+    --disable-radix-cache \
+    --mm-preprocess-cache-size-mb 0 \
+    --cuda-graph-backend-decode full --cuda-graph-max-bs-decode 64 \
+    --cuda-graph-backend-prefill full \
+    --cuda-graph-max-bs-prefill 16384 \
+    --cuda-graph-bs-prefill 1024 2048 \
+    --cuda-graph-config '{"prefill": {"backend": "full", "full_prefill_max_req": 64}}' \
+    --host 127.0.0.1 \
+    --port 10000
+```
+
+Keep the CUDA Graph flags. The vendor reports that eager mode can repeat box coordinates. Then
+point the preset at the server in the Python SDK. The CLI has no option for the API URL, so
+`--vlm-model unlimited_ocr2` uses the default OpenAI URL and is not useful without the SDK.
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "unlimited_ocr2",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:10000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+Limits of this preset:
+
+- **One page per request.** Docling sends each page alone. The main feature of the model is to
+  read all pages of a document in one request, and Docling does not use this mode yet. The vendor's
+  paper reports only a small gain on single pages: 94.02 against 93.92 for Unlimited-OCR on
+  OmniDocBench.
+- **No merge across pages.** Docling reads `cross_` and `append_` blocks as normal blocks. A table
+  or paragraph that continues on the next page stays split. `<MERGE>` joins text on the same page.
+- **No repetition guard.** The vendor client sends a pickled logit processor, and Docling does not.
+  A page that repeats ends at `max_tokens` (8000) with the `length` stop reason.
+- **Your own `params`.** If you set `params`, the preset parameters are not sent, so include
+  `model`, `max_tokens`, and `skip_special_tokens=False`. Without the last value, the server removes
+  `<td>` and `<tr>` from tables.
 
 #### Picture Description Stage
 

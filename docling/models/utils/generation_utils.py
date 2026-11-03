@@ -20,6 +20,8 @@ class GenerationStopper:
     Base interface for stopping logic.
     - should_stop(s): True to stop given the current decoded text window.
     - lookback_tokens(): how many tokens should be considered (default: sys.maxsize).
+    - is_valid_end(): True if a stop marks the valid end of the output (default:
+      False, the output was cut).
     """
 
     @abstractmethod
@@ -28,6 +30,18 @@ class GenerationStopper:
 
     def lookback_tokens(self) -> int:
         return sys.maxsize
+
+    def is_valid_end(self) -> bool:
+        """Whether a stop from this stopper marks the valid end of the output.
+
+        Return True for a stopper that detects the expected end of the output,
+        for example a closing tag such as ``</doctag>``. The engines then report
+        the stop as ``VlmStopReason.END_OF_SEQUENCE``.
+
+        The default is False: the stopper cut the output, for example to break a
+        repetition loop. The engines then report ``VlmStopReason.STOP_SEQUENCE``.
+        """
+        return False
 
 
 def build_generation_config(

@@ -454,3 +454,6 @@ pip-selfcheck.json
 
 # AI agents
 **/.bob/
+
+# Local ASR model validation output
+/asr-validation/
