@@ -236,6 +236,57 @@ def test_keep_table_text_as_child_adds_the_cells_nested_clusters_do_not_cover():
     assert [cell.text for cell in added.cells] == TABLE_TEXT[1:]
 
 
+def test_keep_table_text_as_child_leaves_the_cells_other_clusters_hold():
+    """A text block at the table edge can hold a line that lies inside the
+    table box without being nested in the table: the layout stage nests a
+    block only when more than 80% of it lies inside, and it gives each line
+    to one block. The line is output through its block, so gathering it
+    again would output it twice."""
+    note = _text_cell(7, BoundingBox(l=110, t=260, r=390, b=290), "Note")
+    footer = _text_cell(8, BoundingBox(l=110, t=320, r=390, b=350), "Footer")
+    # A fifth of the block lies inside the table box.
+    block = Cluster(
+        id=4,
+        label=DocItemLabel.TEXT,
+        bbox=BoundingBox(l=100, t=260, r=400, b=460),
+        cells=[note, footer],
+    )
+    table = _table_cluster()
+    page = _page([*TABLE_CELLS, note, footer], [table, block])
+
+    keep_table_text_as_child(table, page)
+
+    (child,) = table.children
+    assert [cell.text for cell in child.cells] == TABLE_TEXT
+
+
+def test_keep_table_text_as_child_sees_the_cells_nested_clusters_hold():
+    """The layout stage takes the clusters it nests in a picture out of the
+    page's top-level list; the lines they hold are still spoken for."""
+    note = _text_cell(7, BoundingBox(l=110, t=260, r=390, b=290), "Note")
+    picture = Cluster(
+        id=4,
+        label=DocItemLabel.PICTURE,
+        bbox=BoundingBox(l=100, t=260, r=400, b=460),
+        children=[
+            Cluster(
+                id=5,
+                label=DocItemLabel.TEXT,
+                bbox=BoundingBox(l=110, t=260, r=390, b=290),
+                cells=[note],
+            )
+        ],
+    )
+    table = _table_cluster()
+    page = _page([*TABLE_CELLS, note], [table, picture])
+
+    keep_table_text_as_child(table, page)
+
+    (child,) = table.children
+    assert child.id == 6
+    assert [cell.text for cell in child.cells] == TABLE_TEXT
+
+
 def test_keep_table_text_as_child_without_text_in_the_table():
     table = _table_cluster()
     page = _page([BLANK_CELL, CAPTION_CELL, STRADDLING_CELL], [table])

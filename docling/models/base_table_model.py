@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from typing import Type
 
 from docling_core.types.doc import DocItemLabel
@@ -46,6 +46,13 @@ def page_cells_in_table(table_cluster: Cluster, page: Page) -> list[TextCell]:
     ]
 
 
+def _clusters_in_tree(clusters: Iterable[Cluster]) -> Iterator[Cluster]:
+    """The clusters and, recursively, the clusters nested in them."""
+    for cluster in clusters:
+        yield cluster
+        yield from _clusters_in_tree(cluster.children)
+
+
 def keep_table_text_as_child(table_cluster: Cluster, page: Page) -> None:
     """Make sure the text under a table cluster survives a discarded structure.
 
@@ -54,24 +61,36 @@ def keep_table_text_as_child(table_cluster: Cluster, page: Page) -> None:
     through them. The layout stage nests the regular clusters that lie inside
     the table box, but the cells they do not cover would go with the grid, so
     those cells get one extra text child.
+
+    The layout stage gives each text cell to at most one regular cluster, and
+    a cluster at the table edge can hold a line inside the table box without
+    being nested in the table (it nests a cluster only when more than 80% of
+    it lies inside). Such a line is output through its own cluster, so only
+    the cells no other cluster holds are gathered.
     """
-    covered = {cell.index for child in table_cluster.children for cell in child.cells}
+    layout = page.predictions.layout
+    clusters = list(
+        _clusters_in_tree(
+            [*(layout.clusters if layout is not None else []), *table_cluster.children]
+        )
+    )
+    held = {
+        cell.index
+        for cluster in clusters
+        if cluster is not table_cluster
+        for cell in cluster.cells
+    }
     cells = [
         cell
         for cell in page_cells_in_table(table_cluster, page)
-        if cell.index not in covered
+        if cell.index not in held
     ]
     if not cells:
         return
-    layout = page.predictions.layout
-    used_ids = [table_cluster.id, *(child.id for child in table_cluster.children)]
-    if layout is not None:
-        used_ids.extend(c.id for c in layout.clusters)
-        used_ids.extend(ch.id for c in layout.clusters for ch in c.children)
     table_cluster.children = [
         *table_cluster.children,
         Cluster(
-            id=max(used_ids) + 1,
+            id=max([table_cluster.id, *(cluster.id for cluster in clusters)]) + 1,
             label=DocItemLabel.TEXT,
             bbox=table_cluster.bbox,
             confidence=table_cluster.confidence,
