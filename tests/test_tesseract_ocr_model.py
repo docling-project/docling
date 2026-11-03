@@ -28,9 +28,6 @@ class _OcrReader(_Reader):
     def SetImage(self, image):
         pass
 
-    def SetSourceResolution(self, ppi):
-        pass
-
     def DetectOrientationScript(self):
         return {"orient_deg": 0, "orient_conf": 10.0, "script_name": "Latin"}
 
@@ -140,13 +137,9 @@ def _ocr_blank_page(model, tmp_path, page_no=1):
 def _recording_reader(osd):
     class _RecordingReader(_OcrReader):
         images: list[tuple[str, tuple[int, int]]] = []
-        resolutions: list[int] = []
 
         def SetImage(self, image):
             _RecordingReader.images.append((image.mode, image.size))
-
-        def SetSourceResolution(self, ppi):
-            _RecordingReader.resolutions.append(ppi)
 
         def DetectOrientationScript(self):
             return osd
@@ -184,7 +177,20 @@ def test_region_is_rotated_only_on_a_confident_orientation(
     _ocr_blank_page(model, tmp_path)
 
     assert reader.images == [("L", (600, 300)), ("L", ocr_size)]
-    assert reader.resolutions == [216, 216]
+    del model
+
+
+def test_colour_input_is_kept_when_grayscale_is_off(monkeypatch, tmp_path):
+    reader = _recording_reader(
+        {"orient_deg": 0, "orient_conf": 10.0, "script_name": "Latin"}
+    )
+    model = _model_with_reader(
+        monkeypatch, reader, lang=["eng"], convert_to_grayscale=False
+    )
+
+    _ocr_blank_page(model, tmp_path)
+
+    assert reader.images == [("RGB", (600, 300)), ("RGB", (600, 300))]
     del model
 
 

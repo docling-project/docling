@@ -134,6 +134,16 @@ def test_region_is_rotated_only_on_a_confident_orientation(
     assert tesseract.ocr_images == [("L", ocr_size)]
 
 
+def test_colour_input_is_kept_when_grayscale_is_off(monkeypatch, tmp_path):
+    tesseract = _FakeTesseract(osd_confidence=0.4)
+
+    _convert_page(
+        monkeypatch, tmp_path, tesseract, lang=["eng"], convert_to_grayscale=False
+    )
+
+    assert tesseract.ocr_images == [("RGB", (600, 300))]
+
+
 def test_failed_region_is_recorded_on_the_page(monkeypatch, tmp_path):
     tesseract = _FakeTesseract(ocr_stderr=b"Error in pixReadStream: simulated")
 

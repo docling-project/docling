@@ -349,7 +349,9 @@ class TesseractOcrCliModel(BaseOcrModel):
                             continue
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
-                        ).convert("L")
+                        )
+                        if self.options.convert_to_grayscale:
+                            high_res_image = high_res_image.convert("L")
                         try:
                             with tempfile.NamedTemporaryFile(
                                 suffix=".png", mode="w+b", delete=False

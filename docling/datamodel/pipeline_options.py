@@ -693,6 +693,17 @@ class TesseractCliOcrOptions(OcrOptions):
             )
         ),
     ] = None
+    convert_to_grayscale: Annotated[
+        bool,
+        Field(
+            description=(
+                "Convert each OCR region to grayscale before orientation detection and recognition. Tesseract "
+                "binarizes a colour image channel by channel, which can turn a highlighter mark into a black "
+                "block that hides its text. Grayscale lowers the contrast of light text on a strongly coloured "
+                "background, such as white labels on coloured bands; set `False` to keep the colour image."
+            )
+        ),
+    ] = True
     orientation_confidence_threshold: Annotated[
         float,
         Field(
@@ -750,6 +761,17 @@ class TesseractOcrOptions(OcrOptions):
             )
         ),
     ] = None
+    convert_to_grayscale: Annotated[
+        bool,
+        Field(
+            description=(
+                "Convert each OCR region to grayscale before orientation detection and recognition. Tesseract "
+                "binarizes a colour image channel by channel, which can turn a highlighter mark into a black "
+                "block that hides its text. Grayscale lowers the contrast of light text on a strongly coloured "
+                "background, such as white labels on coloured bands; set `False` to keep the colour image."
+            )
+        ),
+    ] = True
     orientation_confidence_threshold: Annotated[
         float,
         Field(

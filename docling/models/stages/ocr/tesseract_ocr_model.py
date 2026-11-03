@@ -60,7 +60,6 @@ class TesseractOcrModel(BaseOcrModel):
         self._auto_script: bool = not self.languages
         # multiplier for 72 dpi; the default 3.0 == 216 dpi.
         self.scale = self.options.scale
-        self._dpi = round(72 * self.scale)
         self._reader = None
         self._script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
         # Conversions that run at the same time share this model. A tesserocr
@@ -193,11 +192,12 @@ class TesseractOcrModel(BaseOcrModel):
                             continue
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
-                        ).convert("L")
+                        )
+                        if self.options.convert_to_grayscale:
+                            high_res_image = high_res_image.convert("L")
 
                         local_reader = self._reader
                         self._osd_reader.SetImage(high_res_image)
-                        self._osd_reader.SetSourceResolution(self._dpi)
 
                         doc_orientation = 0
                         osd = self._osd_reader.DetectOrientationScript()
@@ -253,7 +253,6 @@ class TesseractOcrModel(BaseOcrModel):
                                 local_reader = self._script_readers[lang]
 
                         local_reader.SetImage(high_res_image)
-                        local_reader.SetSourceResolution(self._dpi)
                         boxes = local_reader.GetComponentImages(
                             self._reader_RIL.TEXTLINE, True
                         )

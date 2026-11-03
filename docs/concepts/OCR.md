@@ -364,11 +364,13 @@ the `osd` traineddata; without it, `lang=[]` raises with an install hint.
 
 ### Tesseract image input and orientation
 
-Both Tesseract engines receive a grayscale render of each OCR region, together with its resolution:
-72 DPI times `scale`, so 216 DPI by default. Tesseract binarizes a colour image channel by channel,
-which can blank out text on a highlighter mark or a coloured background; a grayscale image avoids
-that. The cost is lower contrast for light text on a strongly coloured box and for light, saturated
-text such as orange or yellow on white, which Tesseract can then miss.
+By default, both Tesseract engines receive a grayscale render of each OCR region. Tesseract
+binarizes a colour image channel by channel, which can blank out text on a highlighter mark or a
+coloured background; a grayscale image avoids that. The cost is lower contrast for light text on a
+strongly coloured background, such as white labels on coloured bands, and for light, saturated text
+such as orange or yellow on white, which Tesseract can then miss. For pages with such text, set
+`convert_to_grayscale=False` on `TesseractCliOcrOptions` or `TesseractOcrOptions` to keep the
+colour image.
 
 Before reading a region, Docling runs Tesseract's orientation and script detection (OSD) on it and
 turns it upright. OSD reports its orientation confidence as the margin between its best and
