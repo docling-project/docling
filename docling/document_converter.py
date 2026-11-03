@@ -641,6 +641,10 @@ class DocumentConverter:
     ) -> ConversionResult:
         """Convert one document fetched from a file path, URL, or DocumentStream.
 
+        A generic ZIP archive can contain multiple documents. Use ``convert_all``
+        for such archives. This method raises ``ConversionError`` instead of
+        silently returning only the first converted member.
+
         Note: If the document content is given as a string (Markdown or HTML
         content), use the `convert_string` method.
 
@@ -688,16 +692,27 @@ class DocumentConverter:
             >>> stream = DocumentStream(name="page.html", stream=buf)
             >>> result = converter.convert(stream)
         """
-        all_res = self.convert_all(
-            source=[source],
-            raises_on_error=raises_on_error,
-            max_num_pages=max_num_pages,
-            max_file_size=max_file_size,
-            headers=headers,
-            page_range=page_range,
-            progress_callback=progress_callback,
+        all_res = iter(
+            self.convert_all(
+                source=[source],
+                raises_on_error=raises_on_error,
+                max_num_pages=max_num_pages,
+                max_file_size=max_file_size,
+                headers=headers,
+                page_range=page_range,
+                progress_callback=progress_callback,
+            )
         )
-        return next(all_res)
+        first_result = next(all_res, None)
+        if first_result is None:
+            return next(all_res)
+
+        if next(all_res, None) is not None:
+            raise ConversionError(
+                "The source contains multiple documents. Use convert_all() to "
+                "convert every document in the source."
+            )
+        return first_result
 
     @validate_call(config=ConfigDict(strict=True))
     def convert_all(

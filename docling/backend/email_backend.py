@@ -213,8 +213,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for attachment in message.attachments:
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
+            # Only filename and MIME type are needed; pass an empty payload to avoid
+            # copying attachment content into the RFC 822 byte stream.
             email_message.add_attachment(
-                attachment.file_bytes or b"",
+                b"",
                 maintype=maintype or "application",
                 subtype=subtype or "octet-stream",
                 filename=attachment.file_name,

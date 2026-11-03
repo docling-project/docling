@@ -107,6 +107,8 @@ class ResponseFormat(str, Enum):
     MARKDOWN = "markdown"
     DEEPSEEKOCR_MARKDOWN = "deepseekocr_markdown"
     UNLIMITED_OCR_MARKDOWN = "unlimited_ocr_markdown"
+    UNLIMITED_OCR2 = "unlimited_ocr2"
+    LIGHTONOCR_MARKDOWN = "lightonocr_markdown"
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"
@@ -284,7 +286,11 @@ class InlineVlmOptions(BaseVlmOptions):
             description=(
                 "Custom stopping criteria objects for fine-grained control "
                 "over generation termination. Allows implementing complex "
-                "stopping logic beyond simple string matching."
+                "stopping logic beyond simple string matching. A "
+                "GenerationStopper declares with is_valid_end() whether its "
+                "stop marks the valid end of the output (stop reason "
+                "end_of_sequence) or cuts the output (stop reason "
+                "stop_sequence, the default)."
             )
         ),
     ] = []
@@ -442,7 +448,10 @@ class ApiVlmOptions(BaseVlmOptions):
             description=(
                 "Custom stopping criteria objects for client-side generation "
                 "control. Applied after receiving API responses for additional "
-                "filtering or termination logic."
+                "filtering or termination logic. A GenerationStopper declares "
+                "with is_valid_end() whether its stop marks the valid end of "
+                "the output (stop reason end_of_sequence) or cuts the output "
+                "(stop reason stop_sequence, the default)."
             )
         ),
     ] = []

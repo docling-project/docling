@@ -55,7 +55,9 @@ def _make_tikz_backend(
     return LatexDocumentBackend(
         in_doc=in_doc,
         path_or_stream=BytesIO(latex_content),
-        options=LatexBackendOptions(tikz_engine="tectonic"),
+        options=LatexBackendOptions(
+            tikz_engine="tectonic", tikz_engine_trusted_input=True
+        ),
     )
 
 
@@ -693,7 +695,9 @@ def test_latex_tikzpicture_file_backed_render_receives_source_root(
     backend = LatexDocumentBackend(
         in_doc=in_doc,
         path_or_stream=tex_file,
-        options=LatexBackendOptions(tikz_engine="tectonic"),
+        options=LatexBackendOptions(
+            tikz_engine="tectonic", tikz_engine_trusted_input=True
+        ),
     )
     doc = backend.convert()
 
@@ -734,3 +738,63 @@ def test_latex_tikz_validate_depth_guard_and_arg_recursion():
 
     node = DummyNode(nodeargd=DummyArgData([DummyArg([])]), nodelist=[])
     assert backend._validate_tikz_nodelist([node], depth=0) is True
+
+
+@pytest.mark.parametrize("allow_shell_escape", [False, True])
+def test_latex_tikzpicture_tectonic_requires_trusted_input(
+    monkeypatch, caplog, allow_shell_escape
+):
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tikzpicture}
+    \draw (0,0) -- (1,1);
+    \end{tikzpicture}
+    \begin{tikzpicture}
+    \draw (0,0) circle (1);
+    \end{tikzpicture}
+    \end{document}
+    """
+    from docling.backend.latex.engines import tectonic
+
+    def fail_init(self, *args, **kwargs):
+        raise AssertionError("TectonicEngine must not be created")
+
+    def fail_run(*args, **kwargs):
+        raise AssertionError("Tectonic must not be run")
+
+    monkeypatch.setattr(tectonic.TectonicEngine, "__init__", fail_init)
+    monkeypatch.setattr(tectonic.subprocess, "run", fail_run)
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(latex_content),
+        options=LatexBackendOptions(
+            tikz_engine="tectonic",
+            tikz_engine_allow_shell_escape=allow_shell_escape,
+        ),
+    )
+    with caplog.at_level("WARNING"):
+        doc = backend.convert()
+
+    assert len(doc.pictures) == 2
+    for picture in doc.pictures:
+        assert picture.image is None
+        assert picture.meta is not None
+        assert picture.meta.code is not None
+        assert "\\begin{tikzpicture}" in picture.meta.code.text
+        assert picture.meta.code.language.name == "TIKZ"
+
+    warnings = [
+        record
+        for record in caplog.records
+        if "tikz_engine_trusted_input=True" in record.getMessage()
+    ]
+    assert len(warnings) == 1
+    assert "not marked as trusted" in warnings[0].getMessage()

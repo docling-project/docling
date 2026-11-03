@@ -72,3 +72,6 @@ DOTS_LAYOUT_PROMPT = (
 
 # Keep the official Unlimited-OCR model-card prompt verbatim.
 UNLIMITED_OCR_GROUNDING_PROMPT = "<image>document parsing."
+
+# Keep the official Unlimited-OCR 2 model-card prompt verbatim, for one page.
+UNLIMITED_OCR2_PROMPT = "<PAGE><image>Multi page parsing."

@@ -649,6 +649,10 @@ class StandardPdfPipeline(ConvertPipeline):
                 capture_reading_order_separators=(
                     self.pipeline_options.use_reading_order_separators
                 ),
+                detect_broken_text_layer=(
+                    self.pipeline_options.do_ocr
+                    and self.pipeline_options.ocr_options.replace_broken_text_layer
+                ),
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)
@@ -761,8 +765,12 @@ class StandardPdfPipeline(ConvertPipeline):
         if not self.keep_backend and page._backend is not None:
             page._backend.unload()
             page._backend = None
-        if not self.pipeline_options.generate_parsed_pages:
-            page.parsed_page = None
+        self._release_parsed_page(page)
+
+    def _release_parsed_page(self, page: Page) -> None:
+        if page.parsed_page is None or self.pipeline_options.generate_parsed_pages:
+            return
+        page.parsed_page = self.heading_hierarchy_model.retain_parsed_lines(page)
 
     # ────────────────────────────────────────────────────────────────────────
     # Build - thread pipeline
@@ -1147,9 +1155,7 @@ class StandardPdfPipeline(ConvertPipeline):
         for p in conv_res.pages:
             if not self.keep_backend and p._backend is not None:
                 p._backend.unload()
-            if not self.pipeline_options.generate_parsed_pages:
-                del p.parsed_page
-                p.parsed_page = None
+            self._release_parsed_page(p)
 
     # ---------------------------------------------------------------- assemble
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
@@ -1177,6 +1183,9 @@ class StandardPdfPipeline(ConvertPipeline):
             )
             conv_res.document = self.heading_hierarchy_model(conv_res)
             conv_res.document = self.script_position_model(conv_res)
+            if not self.pipeline_options.generate_parsed_pages:
+                for p in conv_res.pages:
+                    p.parsed_page = None
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
@@ -1319,5 +1328,6 @@ class StandardPdfPipeline(ConvertPipeline):
         for p in conv_res.pages:
             if p._backend is not None:
                 p._backend.unload()
+                p._backend = None
         if conv_res.input._backend:
             conv_res.input._backend.unload()

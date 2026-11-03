@@ -33,6 +33,7 @@ from docling.datamodel.service.responses import (
     PublicFailureInfo,
     TaskFailureResult,
     TaskStatusResponse,
+    ZipArchiveResult,
 )
 from docling.datamodel.service.sources import S3Coordinates
 from docling.datamodel.service.targets import (
@@ -406,6 +407,43 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
     )
 
     assert result.result.kind == "PresignedArtifactResult"
+
+
+def test_artifact_ref_accepts_chunks_artifact_type() -> None:
+    # Producers upload "{stem}.chunks.jsonl" as a presigned artifact when
+    # "chunks" is requested in to_formats.
+    artifact = ArtifactRef.model_validate(
+        {
+            "artifact_type": "chunks",
+            "mime_type": "application/jsonl",
+            "uri": "https://example.com/converted/input.chunks.jsonl",
+        }
+    )
+
+    assert artifact.artifact_type == "chunks"
+
+
+def test_zip_archive_result_filename_is_optional_on_the_wire() -> None:
+    # Results from producers that predate `filename` must still parse.
+    legacy = DoclingTaskResult.model_validate(
+        {
+            "result": {"kind": "ZipArchiveResult", "content": ""},
+            "processing_time": 1.0,
+            "num_converted": 1,
+            "num_succeeded": 1,
+            "num_failed": 0,
+        }
+    )
+    assert isinstance(legacy.result, ZipArchiveResult)
+    assert legacy.result.filename is None
+
+    named = DoclingTaskResult.model_validate_json(
+        legacy.model_copy(
+            update={"result": ZipArchiveResult(content=b"", filename="report.zip")}
+        ).model_dump_json()
+    )
+    assert isinstance(named.result, ZipArchiveResult)
+    assert named.result.filename == "report.zip"
 
 
 def test_task_failure_result_roundtrip() -> None:

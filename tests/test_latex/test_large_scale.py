@@ -10,12 +10,21 @@ LaTeX and JSON serialized from the resulting DoclingDocument.
 The full stream contains millions of source files and can take a long time.
 Completed files are appended to ``latex-manifest.jsonl``. Run the same command
 again after an interruption to continue with the next unprocessed source file.
+Add ``--recheck-failures`` to convert the files that failed earlier again, for
+example after a fix. The latest result of each file replaces the earlier one.
+``latex-failures.jsonl`` keeps every failure found, also failures that a later
+recheck cleared.
+The stream starts with shard 0, which holds the arXiv papers of 2007 and 2008.
+Use ``--corpus-shard N`` (0-79, repeatable) to read other shards, and
+``--corpus-dir DIR`` to write the output files outside the repository, for
+example one folder for each of several parallel runs.
 """
 
 import hashlib
 import json
 import logging
 from collections import Counter
+from collections.abc import Iterable
 from io import BytesIO
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -36,7 +45,14 @@ from .latex_serializer import (
 )
 
 _DATASET = "secemp9/arxiv-complete"
+_SHARD_COUNT = 80
 _SOURCE_EXTENSIONS = {"tex", "ltx"}
+
+
+def _shard_files(shards: list[int]) -> list[str]:
+    return [
+        f"latex/train-{shard:05d}-of-{_SHARD_COUNT:05d}.parquet" for shard in shards
+    ]
 
 
 class _ManifestEntry(BaseModel):
@@ -72,6 +88,14 @@ def _read_manifest(path: Path) -> dict[tuple[str, str], _ManifestEntry]:
     return entries
 
 
+def _needs_check(entry: _ManifestEntry | None, recheck_failures: bool) -> bool:
+    return entry is None or (recheck_failures and bool(entry.stages))
+
+
+def _failure_counts(entries: Iterable[_ManifestEntry]) -> Counter[str]:
+    return Counter(stage for entry in entries for stage in entry.stages)
+
+
 def test_manifest_recovers_interrupted_write(tmp_path: Path) -> None:
     manifest_path = tmp_path / "latex-manifest.jsonl"
     entry = _ManifestEntry(paper_id="1234.5678", path="main.tex", stages=[])
@@ -80,6 +104,34 @@ def test_manifest_recovers_interrupted_write(tmp_path: Path) -> None:
 
     assert _read_manifest(manifest_path) == {("1234.5678", "main.tex"): entry}
     assert manifest_path.read_bytes() == complete_line
+
+
+def test_recheck_replaces_earlier_failure(tmp_path: Path) -> None:
+    """A file that passes on a recheck no longer counts as a corpus failure."""
+    failed = _ManifestEntry(paper_id="1234.5678", path="main.tex", stages=["parse"])
+    passed = _ManifestEntry(paper_id="1234.5678", path="main.tex", stages=[])
+    other = _ManifestEntry(paper_id="1234.5679", path="main.tex", stages=[])
+
+    assert _needs_check(None, recheck_failures=False)
+    assert not _needs_check(failed, recheck_failures=False)
+    assert _needs_check(failed, recheck_failures=True)
+    assert not _needs_check(other, recheck_failures=True)
+
+    manifest_path = tmp_path / "latex-manifest.jsonl"
+    manifest_path.write_text(
+        "".join(entry.model_dump_json() + "\n" for entry in (failed, other, passed)),
+        encoding="utf-8",
+    )
+    completed = _read_manifest(manifest_path)
+    assert completed[("1234.5678", "main.tex")] == passed
+    assert not _failure_counts(completed.values())
+
+
+def test_shard_files_name_the_latex_parquet_files() -> None:
+    assert _shard_files([0, 79]) == [
+        "latex/train-00000-of-00080.parquet",
+        "latex/train-00079-of-00080.parquet",
+    ]
 
 
 def _local_name(tag: str) -> str:
@@ -119,28 +171,31 @@ def test_arxiv_latex_corpus(
     if max_items is not None and max_items <= 0:
         pytest.fail("--max-items must be a positive integer")
     write_success: bool = pytestconfig.getoption("--write-success")
+    recheck_failures: bool = pytestconfig.getoption("--recheck-failures")
+    shards: list[int] = pytestconfig.getoption("--corpus-shard") or []
+    if any(not 0 <= shard < _SHARD_COUNT for shard in shards):
+        pytest.fail(f"--corpus-shard must be between 0 and {_SHARD_COUNT - 1}")
+    corpus_dir: Path | None = pytestconfig.getoption("--corpus-dir")
 
     from datasets import load_dataset
     from doclang import ValidationError, validate
 
-    repo_root = Path(__file__).resolve().parents[2]
-    manifest_path = repo_root / "latex-manifest.jsonl"
+    output_dir = corpus_dir or Path(__file__).resolve().parents[2]
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = output_dir / "latex-manifest.jsonl"
     completed = _read_manifest(manifest_path)
-    report_path = repo_root / "latex-failures.jsonl"
+    report_path = output_dir / "latex-failures.jsonl"
     if completed:
         report_path.touch(exist_ok=True)
     else:
         report_path.write_text("", encoding="utf-8")
     dclg_path = tmp_path / "current.dclg"
-    artifacts_dir = repo_root / "latex-failures"
+    artifacts_dir = output_dir / "latex-failures"
     source_dir = artifacts_dir / "sources"
     invalid_dir = artifacts_dir / "invalid-dclg"
-    success_dir = repo_root / "latex-success"
+    success_dir = output_dir / "latex-success"
     if write_success:
         success_dir.mkdir(exist_ok=True)
-    failures: Counter[str] = Counter(
-        stage for entry in completed.values() for stage in entry.stages
-    )
     checked = 0
     row_stages: list[str] = []
 
@@ -171,17 +226,23 @@ def test_arxiv_latex_corpus(
             entry["dclg"] = str(artifact)
         with report_path.open("a", encoding="utf-8") as output:
             output.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        failures[stage] += 1
         row_stages.append(stage)
 
-    corpus = load_dataset(_DATASET, "latex", split="train", streaming=True)
+    if shards:
+        corpus = load_dataset(
+            _DATASET, data_files=_shard_files(shards), split="train", streaming=True
+        )
+    else:
+        corpus = load_dataset(_DATASET, "latex", split="train", streaming=True)
     with caplog.at_level(logging.WARNING, logger="docling.backend.latex"):
         for row in corpus:
             if max_items is not None and checked >= max_items:
                 break
             if row["ext"] not in _SOURCE_EXTENSIONS:
                 continue
-            if (row["paper_id"], row["path"]) in completed:
+            if not _needs_check(
+                completed.get((row["paper_id"], row["path"])), recheck_failures
+            ):
                 continue
             checked += 1
             row_stages = []
@@ -296,7 +357,7 @@ def test_arxiv_latex_corpus(
             finish_row(row)
 
     summary = (
-        f"Checked {checked} new source files ({len(completed)} total); "
+        f"Checked {checked} source files ({len(completed)} in the manifest); "
         f"manifest: {manifest_path}; report: {report_path}"
     )
     terminal_reporter = pytestconfig.pluginmanager.get_plugin("terminalreporter")
@@ -305,4 +366,5 @@ def test_arxiv_latex_corpus(
     else:
         terminal_reporter.write_line(summary)
     assert completed, "The LaTeX stream contained no .tex or .ltx files"
+    failures = _failure_counts(completed.values())
     assert not failures, f"Corpus failures: {dict(failures)}; report: {report_path}"
