@@ -18,10 +18,17 @@ Rank the open PRs by how close they are to a merge.
 uv run python scripts/tools/sync_prs.py                       # rank only
 uv run python scripts/tools/sync_prs.py --comment-conflicts   # comment on conflicts
 uv run python scripts/tools/sync_prs.py --approve-ci          # approve safe CI runs
+uv run python scripts/tools/sync_prs.py --open-ci-greens-in-tabs
 uv run python scripts/tools/sync_prs.py --pr 5115 --pr 5122   # only these PRs
 ```
 
-A run over 100 PRs takes about 75 seconds.
+A run over 100 PRs takes about 75 seconds. Use `-h` to see all options and
+their defaults.
+
+While it runs, the script shows status lines (`▸ ...`) and progress bars
+with the PR that it reads, on stderr. The report goes to stdout, so
+`> report.md` gives a clean Markdown file. Use `--quiet` to turn off the
+status lines and progress bars.
 
 ### Output
 
@@ -66,12 +73,21 @@ GitHub.
 #### `--comment-conflicts`
 
 Posts a comment on each PR in the merge-conflict list. The comment asks the
-author to rebase on the base branch and shows the git commands. A hidden
-marker in the comment records the PR head commit:
+author to rebase on the base branch and shows the git commands.
 
-- A rerun does not post the same comment again.
-- If the author pushes and the conflict stays, the next run posts a new
-  comment.
+The script reads the comments of every PR with a merge conflict, also without
+this flag. The conflict list shows the state of the notification:
+
+| State | Meaning | With `--comment-conflicts` |
+| --- | --- | --- |
+| `not notified` | No notification from the script yet. | Posts a comment. |
+| `notified 3 h ago, last comment` | Our notification is the last comment. | Skips the PR. |
+| `notified 3 d ago, new comments since` | Somebody commented after the notification, but the author did not push. | Skips the PR. |
+| `..., author pushed since` | The author pushed after the notification, and the conflict is still there. | Posts a comment (if ours is not the last comment). |
+
+A hidden marker in the comment (`<!-- sync-prs:merge-conflict head=... -->`)
+identifies the notification and records the PR head commit. Only PR
+conversation comments count, not review comments.
 
 #### `--approve-ci`
 
@@ -89,6 +105,22 @@ Without the flag, the script lists the runs that it would approve.
 
 The label `ai:ci-safe` is advisory. See
 [`.github/CI_LABELS.md`](../../.github/CI_LABELS.md).
+
+#### `--open-ci-greens-in-tabs`
+
+Opens a new Google Chrome window with a tab for each open PR with green CI.
+Your other Chrome windows stay as they are. The order is: ready to merge,
+then needs approval, then the rest (for example, PRs with a merge conflict or
+with changes requested).
+
+The script starts Chrome with the flag `--new-window`:
+
+- On macOS: `open -na "Google Chrome" --args --new-window <urls>`.
+- On other systems: the first of `google-chrome`, `google-chrome-stable`,
+  `chromium`, `chromium-browser`, or `chrome` on `PATH`.
+
+With 100 PRs this can open more than 50 tabs. Use `--limit` or `--pr` to open
+fewer.
 
 ### Limits
 

@@ -28,8 +28,10 @@ Actions (all of them are off by default):
 
 ``--comment-conflicts``
     Post a comment that asks the author to resolve the merge conflict. The
-    script posts one comment per PR head commit, so a rerun does not post the
-    same comment again.
+    conflict list shows if the script already did this ("notified 3 h ago,
+    last comment"). The script does not post again when its notification is
+    still the last comment of the PR, or when it already posted one for the
+    current head commit.
 
 ``--approve-ci``
     Approve the ``pull_request`` runs that wait for a maintainer (conclusion
@@ -37,6 +39,15 @@ Actions (all of them are off by default):
     draft, it has the label ``ai:ci-safe`` and not ``ai:ci-needs-care``, the
     run is for the current head commit, and the label was added after GitHub
     created the run (so the triage saw that commit).
+
+``--open-ci-greens-in-tabs``
+    Open a new Google Chrome window with a tab for each PR with green CI:
+    first the PRs that are ready to merge, then the PRs that need approval,
+    then the rest (for example, PRs with a merge conflict or with changes
+    requested).
+
+Status lines and progress bars go to stderr (``--quiet`` turns them off).
+The report goes to stdout.
 
 Examples::
 
@@ -49,14 +60,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import shutil
 import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
+
+from tqdm import tqdm
 
 DEFAULT_REPO = "docling-project/docling"
 SAFE_LABEL = "ai:ci-safe"
@@ -68,9 +83,10 @@ FAILED_RESULTS = {"FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED
 MAINTAINER_ROLES = {"OWNER", "MEMBER", "COLLABORATOR"}
 READY_MERGE_STATES = {"CLEAN", "HAS_HOOKS"}
 CONFLICT_MARKER = "<!-- sync-prs:merge-conflict head={sha} -->"
+CONFLICT_MARKER_RE = re.compile(r"<!-- sync-prs:merge-conflict head=([0-9a-f]+) -->")
 PR_FRAGMENT = """
 fragment PrFields on PullRequest {
-  number title url isDraft headRefOid baseRefName updatedAt
+  number title url state isDraft headRefOid baseRefName updatedAt
   mergeable mergeStateStatus reviewDecision
   author { login }
   labels(first: 50) { nodes { name } }
@@ -118,6 +134,33 @@ GRAPHQL_ATTEMPTS = 3
 UNKNOWN_RETRY_DELAY_S = 5
 
 
+class Progress:
+    """Status lines and progress bars on stderr. ``--quiet`` turns them off.
+
+    The report goes to stdout, so ``> report.md`` gives a clean file.
+    """
+
+    quiet = False
+
+    @classmethod
+    def info(cls, message: str) -> None:
+        if not cls.quiet:
+            tqdm.write(
+                f"\N{BLACK RIGHT-POINTING SMALL TRIANGLE} {message}", file=sys.stderr
+            )
+
+    @classmethod
+    def bar(cls, total: int, desc: str) -> tqdm:
+        return tqdm(
+            total=total,
+            desc=desc,
+            unit="PR",
+            file=sys.stderr,
+            disable=cls.quiet,
+            dynamic_ncols=True,
+        )
+
+
 class Rank(str, Enum):
     READY = "ready to merge"
     NEEDS_APPROVAL = "CI green, needs approval"
@@ -140,11 +183,21 @@ class WaitingRun:
 
 
 @dataclass(slots=True)
+class ConflictNotice:
+    """The last merge-conflict comment that this script posted on a PR."""
+
+    posted_at: datetime
+    head_sha: str  # PR head commit when the comment was posted
+    is_last_comment: bool  # no other comment came after it
+
+
+@dataclass(slots=True)
 class PullRequest:
     number: int
     title: str
     url: str
     author: str
+    state: str
     draft: bool
     labels: list[str]
     head_sha: str
@@ -159,7 +212,9 @@ class PullRequest:
     required_approvals: int = 1
     rank: Rank = Rank.OTHER
     reason: str = ""
+    ci_green: bool = False
     waiting_runs: list[WaitingRun] = field(default_factory=list)
+    conflict_notice: ConflictNotice | None = None
 
     @classmethod
     def from_graphql(cls, data: dict[str, Any]) -> PullRequest:
@@ -172,6 +227,7 @@ class PullRequest:
             url=str(data["url"]),
             # The author is None for deleted accounts.
             author=str((data["author"] or {"login": "ghost"})["login"]),
+            state=str(data["state"]),
             draft=bool(data["isDraft"]),
             labels=sorted(label["name"] for label in data["labels"]["nodes"]),
             head_sha=str(data["headRefOid"]),
@@ -239,6 +295,11 @@ def graphql(query: str, **variables: str | int) -> dict[str, Any]:
             # Heavy queries sometimes time out on GitHub (HTTP 502).
             if attempt == GRAPHQL_ATTEMPTS or "HTTP 50" not in exc.stderr:
                 raise
+            error = exc.stderr.strip().splitlines()[-1]
+            Progress.info(
+                f"GitHub returned '{error}'. Try again"
+                f" ({attempt + 1}/{GRAPHQL_ATTEMPTS}) in {2 * attempt} s."
+            )
             time.sleep(2 * attempt)
     raise AssertionError("unreachable")
 
@@ -249,26 +310,62 @@ def view_pr(repo: str, number: int) -> PullRequest:
     return PullRequest.from_graphql(data["repository"]["pullRequest"])
 
 
-def list_prs(repo: str, limit: int, numbers: list[int]) -> list[PullRequest]:
-    if numbers:
-        prs = [view_pr(repo, number) for number in numbers]
-    else:
-        owner, name = repo.split("/")
-        prs = []
-        after: dict[str, str | int] = {}
+def view_prs(repo: str, numbers: list[int], desc: str) -> list[PullRequest]:
+    prs: list[PullRequest] = []
+    with Progress.bar(len(numbers), desc) as bar:
+        for number in numbers:
+            bar.set_postfix_str(f"#{number}")
+            prs.append(view_pr(repo, number))
+            bar.update(1)
+    return prs
+
+
+def fetch_open_prs(repo: str, limit: int) -> list[PullRequest]:
+    owner, name = repo.split("/")
+    prs: list[PullRequest] = []
+    after: dict[str, str | int] = {}
+    with Progress.bar(limit, "Fetch PRs") as bar:
+        page_number = 1
         while len(prs) < limit:
+            bar.set_postfix_str(f"page {page_number}")
             size = min(PAGE_SIZE, limit - len(prs))
             data = graphql(LIST_QUERY, owner=owner, name=name, size=size, **after)
             page = data["repository"]["pullRequests"]
-            prs += [PullRequest.from_graphql(node) for node in page["nodes"]]
+            new = [PullRequest.from_graphql(node) for node in page["nodes"]]
+            prs += new
+            if new:
+                bar.set_postfix_str(f"#{new[0].number} ... #{new[-1].number}")
+            bar.update(len(new))
             if not page["pageInfo"]["hasNextPage"]:
+                # Fewer open PRs than --limit.
+                bar.total = len(prs)
+                bar.refresh()
                 break
             after = {"after": str(page["pageInfo"]["endCursor"])}
-    unknown = [pr.number for pr in prs if pr.mergeable == "UNKNOWN"]
+            page_number += 1
+    return prs
+
+
+def list_prs(repo: str, limit: int, numbers: list[int]) -> list[PullRequest]:
+    if numbers:
+        Progress.info(f"Fetch {len(numbers)} PR(s) of {repo}.")
+        prs = view_prs(repo, numbers, "Fetch PRs")
+    else:
+        Progress.info(f"Fetch the {limit} most recently updated open PRs of {repo}.")
+        prs = fetch_open_prs(repo, limit)
+    unknown = [
+        pr.number
+        for pr in prs
+        if pr.state == "OPEN" and "UNKNOWN" in (pr.mergeable, pr.merge_state)
+    ]
     if unknown:
         # The first query starts the computation on GitHub.
+        Progress.info(
+            f"GitHub has no merge state yet for {len(unknown)} PR(s)."
+            f" Wait {UNKNOWN_RETRY_DELAY_S} s, then fetch them again."
+        )
         time.sleep(UNKNOWN_RETRY_DELAY_S)
-        fresh = {number: view_pr(repo, number) for number in unknown}
+        fresh = {pr.number: pr for pr in view_prs(repo, unknown, "Fetch again")}
         prs = [fresh.get(pr.number, pr) for pr in prs]
     return prs
 
@@ -347,11 +444,16 @@ def rank_pr(pr: PullRequest, required: set[str], base_approvals: int) -> None:
     if pr.review_decision == "REVIEW_REQUIRED":
         missing_approvals = max(missing_approvals, 1)
 
-    if pr.draft:
+    problem = ci_problem(pr, required)
+    pr.ci_green = problem is None and pr.state == "OPEN"
+
+    if pr.state != "OPEN":
+        pr.rank, pr.reason = Rank.OTHER, pr.state.lower()
+    elif pr.draft:
         pr.rank, pr.reason = Rank.OTHER, "draft"
     elif pr.mergeable == "CONFLICTING":
         pr.rank, pr.reason = Rank.CONFLICT, f"conflicts with {pr.base_ref}"
-    elif (problem := ci_problem(pr, required)) is not None:
+    elif problem is not None:
         pr.rank, pr.reason = Rank.OTHER, problem
     elif pr.review_decision == "CHANGES_REQUESTED":
         pr.rank, pr.reason = Rank.OTHER, f"changes requested, {approvals}"
@@ -384,11 +486,57 @@ def conflict_comment(pr: PullRequest) -> str:
     )
 
 
+def read_conflict_notice(repo: str, number: int) -> ConflictNotice | None:
+    """Find the last merge-conflict comment of this script on a PR."""
+    comments = gh_api_list(f"repos/{repo}/issues/{number}/comments?per_page=100")
+    for index in range(len(comments) - 1, -1, -1):
+        match = CONFLICT_MARKER_RE.search(str(comments[index]["body"] or ""))
+        if match:
+            return ConflictNotice(
+                posted_at=parse_time(comments[index]["created_at"]),
+                head_sha=match.group(1),
+                is_last_comment=index == len(comments) - 1,
+            )
+    return None
+
+
+def age(since: datetime) -> str:
+    hours = int((datetime.now(timezone.utc) - since).total_seconds() // 3600)
+    if hours < 1:
+        return "less than 1 h"
+    return f"{hours // 24} d" if hours >= 48 else f"{hours} h"
+
+
+def describe_notice(pr: PullRequest) -> str:
+    notice = pr.conflict_notice
+    if notice is None:
+        return "not notified"
+    text = f"notified {age(notice.posted_at)} ago"
+    if notice.is_last_comment:
+        text += ", last comment"
+    else:
+        text += ", new comments since"
+    if notice.head_sha != pr.head_sha:
+        text += ", author pushed since"
+    return text
+
+
+def comment_blocker(pr: PullRequest) -> str | None:
+    """Return why the script must not post a conflict comment, or None."""
+    notice = pr.conflict_notice
+    if notice is None:
+        return None
+    if notice.is_last_comment:
+        return "our notification is still the last comment"
+    if notice.head_sha == pr.head_sha:
+        return "already notified for this commit"
+    return None
+
+
 def comment_conflict(repo: str, pr: PullRequest) -> str:
-    marker = CONFLICT_MARKER.format(sha=pr.head_sha)
-    comments = gh_api_list(f"repos/{repo}/issues/{pr.number}/comments?per_page=100")
-    if any(marker in str(comment["body"]) for comment in comments):
-        return "already commented for this commit"
+    blocker = comment_blocker(pr)
+    if blocker is not None:
+        return f"skip ({blocker})"
     run(
         ["gh", "pr", "comment", str(pr.number), "-R", repo, "--body-file", "-"],
         stdin=conflict_comment(pr),
@@ -435,6 +583,63 @@ def approve_runs(repo: str, runs: list[WaitingRun]) -> list[str]:
     return errors
 
 
+CHROME_PROGRAMS = (
+    "google-chrome",
+    "google-chrome-stable",
+    "chromium",
+    "chromium-browser",
+    "chrome",
+)
+
+
+def open_in_chrome(urls: list[str]) -> None:
+    """Open a new Google Chrome window with one tab for each URL."""
+    if sys.platform == "darwin":
+        # -n passes --args also when Chrome already runs.
+        run(["open", "-na", "Google Chrome", "--args", "--new-window", *urls])
+        return
+    for name in CHROME_PROGRAMS:
+        program = shutil.which(name)
+        if program is None:
+            continue
+        # Chrome keeps running when it was not running before; do not wait.
+        subprocess.Popen(
+            [program, "--new-window", *urls],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        return
+    raise RuntimeError(
+        "Google Chrome or Chromium not found on PATH: " + ", ".join(CHROME_PROGRAMS)
+    )
+
+
+def handle_green_tabs(prs: list[PullRequest]) -> bool:
+    """Open the PRs with green CI in Chrome. Return True if it worked."""
+    order = list(Rank)
+    green = sorted(
+        (pr for pr in prs if pr.ci_green), key=lambda pr: order.index(pr.rank)
+    )
+    print(f"\n## Open {len(green)} PR(s) with green CI in Chrome\n")
+    if not green:
+        return True
+    Progress.info(f"Open a new Google Chrome window with {len(green)} tab(s).")
+    try:
+        open_in_chrome([pr.url for pr in green])
+    except (RuntimeError, subprocess.CalledProcessError) as exc:
+        print(f"- error: {exc}", file=sys.stderr)
+        return False
+    print("- opened, in the order: ready to merge, needs approval, other")
+    return True
+
+
+class HelpFormatter(
+    argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter
+):
+    """Keep the docstring layout and show the default of each option."""
+
+
 # --- Output ----------------------------------------------------------------
 
 
@@ -464,12 +669,18 @@ def handle_conflicts(repo: str, prs: list[PullRequest]) -> bool:
         return True
     ok = True
     print("\n## Merge conflict comments\n")
-    for pr in conflicts:
-        try:
-            print(f"- #{pr.number}: {comment_conflict(repo, pr)}")
-        except subprocess.CalledProcessError as exc:
-            ok = False
-            print(f"- #{pr.number}: error: {exc.stderr.strip()}", file=sys.stderr)
+    Progress.info(f"Comment on {len(conflicts)} PR(s) with a merge conflict.")
+    with Progress.bar(len(conflicts), "Comment") as bar:
+        for pr in conflicts:
+            bar.set_postfix_str(f"#{pr.number}")
+            try:
+                tqdm.write(f"- #{pr.number}: {comment_conflict(repo, pr)}")
+            except subprocess.CalledProcessError as exc:
+                ok = False
+                tqdm.write(
+                    f"- #{pr.number}: error: {exc.stderr.strip()}", file=sys.stderr
+                )
+            bar.update(1)
     return ok
 
 
@@ -481,27 +692,34 @@ def handle_waiting_ci(repo: str, prs: list[PullRequest], approve: bool) -> bool:
     ok = True
     mode = "approve" if approve else "dry run, use --approve-ci"
     print(f"\n## CI that waits for maintainer approval ({mode})\n")
-    for pr in waiting:
-        blocker = ci_approval_blocker(repo, pr)
-        if blocker is not None:
-            print(f"- #{pr.number}: skip ({blocker})")
-        elif not approve:
-            print(f"- #{pr.number}: would approve {len(pr.waiting_runs)} run(s)")
-        else:
-            errors = approve_runs(repo, pr.waiting_runs)
-            for error in errors:
-                ok = False
-                print(f"- #{pr.number}: error: {error}", file=sys.stderr)
-            done = len(pr.waiting_runs) - len(errors)
-            print(f"- #{pr.number}: approved {done} run(s)")
+    Progress.info(
+        f"Check the {SAFE_LABEL} label history of {len(waiting)} PR(s)"
+        " whose CI waits for approval."
+    )
+    with Progress.bar(len(waiting), "Check CI") as bar:
+        for pr in waiting:
+            bar.set_postfix_str(f"#{pr.number}")
+            blocker = ci_approval_blocker(repo, pr)
+            if blocker is not None:
+                tqdm.write(f"- #{pr.number}: skip ({blocker})")
+            elif not approve:
+                runs = len(pr.waiting_runs)
+                tqdm.write(f"- #{pr.number}: would approve {runs} run(s)")
+            else:
+                bar.set_postfix_str(f"#{pr.number}, approve")
+                errors = approve_runs(repo, pr.waiting_runs)
+                for error in errors:
+                    ok = False
+                    tqdm.write(f"- #{pr.number}: error: {error}", file=sys.stderr)
+                done = len(pr.waiting_runs) - len(errors)
+                tqdm.write(f"- #{pr.number}: approved {done} run(s)")
+            bar.update(1)
     return ok
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    parser.add_argument("--repo", default=DEFAULT_REPO)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=HelpFormatter)
+    parser.add_argument("--repo", default=DEFAULT_REPO, help="GitHub repository.")
     parser.add_argument(
         "--limit", type=int, default=100, help="Number of recently updated open PRs."
     )
@@ -510,10 +728,15 @@ def main(argv: list[str] | None = None) -> int:
         dest="numbers",
         type=int,
         action="append",
-        default=[],
-        help="Only this PR (repeatable). Ignores --limit.",
+        default=None,
+        help="Only this PR (repeatable). None: the --limit latest open PRs.",
     )
-    parser.add_argument("--cache-dir", type=Path, default=Path(".cache/prs"))
+    parser.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=Path(".cache/prs"),
+        help="Folder for pr.json files, relative to the repository root.",
+    )
     parser.add_argument(
         "--comment-conflicts",
         action="store_true",
@@ -524,22 +747,68 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help=f"Approve the waiting CI runs of PRs with {SAFE_LABEL}.",
     )
+    parser.add_argument(
+        "--open-ci-greens-in-tabs",
+        action="store_true",
+        help="Open a new Google Chrome window with a tab for each PR with green CI.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Do not show status lines and progress bars on stderr.",
+    )
     args = parser.parse_args(argv)
+    Progress.quiet = args.quiet
+    started = time.monotonic()
+    numbers: list[int] = args.numbers or []
 
     repo_root = Path(run(["git", "rev-parse", "--show-toplevel"]).strip())
     cache_dir = args.cache_dir
     if not cache_dir.is_absolute():
         cache_dir = repo_root / cache_dir
 
-    prs = list_prs(args.repo, args.limit, args.numbers)
+    prs = list_prs(args.repo, args.limit, numbers)
+
+    Progress.info("Read the CI runs that wait for maintainer approval.")
     waiting = waiting_runs_by_sha(args.repo)
+    Progress.info(
+        f"{sum(map(len, waiting.values()))} run(s) wait for approval in total"
+        " (most are for older commits of a PR)."
+    )
+
     rules: dict[str, tuple[set[str], int]] = {}
     for pr in prs:
         if pr.base_ref not in rules:
+            Progress.info(f"Read the branch rules of {pr.base_ref}.")
             rules[pr.base_ref] = branch_rules(args.repo, pr.base_ref)
         pr.waiting_runs = waiting.get(pr.head_sha, [])
         rank_pr(pr, *rules[pr.base_ref])
+    with_waiting = sum(bool(pr.waiting_runs) for pr in prs)
+    Progress.info(f"{with_waiting} of the fetched PR(s) wait for CI approval.")
+    counts = ", ".join(
+        f"{sum(pr.rank is rank for pr in prs)} {rank.value}" for rank in Rank
+    )
+    Progress.info(f"Ranked {len(prs)} PR(s): {counts}.")
+
+    conflicts = [pr for pr in prs if pr.rank is Rank.CONFLICT]
+    if conflicts:
+        Progress.info(
+            f"Read the comments of {len(conflicts)} PR(s) with a merge conflict."
+        )
+        with Progress.bar(len(conflicts), "Read comments") as bar:
+            for pr in conflicts:
+                bar.set_postfix_str(f"#{pr.number}")
+                pr.conflict_notice = read_conflict_notice(args.repo, pr.number)
+                pr.reason = f"{pr.reason} · {describe_notice(pr)}"
+                bar.update(1)
+        notified = sum(pr.conflict_notice is not None for pr in conflicts)
+        Progress.info(
+            f"{notified} of {len(conflicts)} PR(s) already have a notification."
+        )
+
+    for pr in prs:
         save_metadata(cache_dir, pr)
+    Progress.info(f"Saved the pr.json files to {cache_dir}.")
 
     print(f"# {len(prs)} open PR(s) in {args.repo}")
     print(f"Metadata: {cache_dir}/<number>/pr.json")
@@ -549,6 +818,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.comment_conflicts:
         ok = handle_conflicts(args.repo, prs) and ok
     ok = handle_waiting_ci(args.repo, prs, args.approve_ci) and ok
+    if args.open_ci_greens_in_tabs:
+        ok = handle_green_tabs(prs) and ok
+    Progress.info(f"Done in {time.monotonic() - started:.0f} s.")
     return 0 if ok else 1
 
 
