@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     Formatting,
+    GroupLabel,
     ImageRefMode,
     ListItem,
 )
@@ -951,6 +952,113 @@ def test_code_run_edge_whitespace_stays_outside_the_code() -> None:
         "y.",
     ]
     assert doc.export_to_markdown() == "Install with `pip install x` first, x `a` y."
+
+
+def test_links_in_paragraphs() -> None:
+    # URL and link macros used to stay in the text as literal markup, such as
+    # "https://example.com[Example]". They are now text with a hyperlink.
+    source = b"""See https://example.com[Example site], link:docs/install.html[Install]
+and mailto:team@example.com[].
+
+Bare https://example.com/a_b/c.html, <https://example.com/x> and
+https://example.com[Docs, window=_blank] or https://example.com[*Bold* link^].
+
+Not linked: word:https://example.com.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="links.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [
+        (item.text, str(item.hyperlink), item.formatting is not None)
+        for item in doc.texts
+        if item.hyperlink is not None
+    ]
+    assert links == [
+        ("Example site", "https://example.com/", False),
+        ("Install", str(Path("docs/install.html")), False),
+        ("team@example.com", "mailto:team@example.com", False),
+        ("https://example.com/a_b/c.html", "https://example.com/a_b/c.html", False),
+        ("https://example.com/x", "https://example.com/x", False),
+        ("Docs", "https://example.com/", False),
+        ("Bold", "https://example.com/", True),
+        (" link", "https://example.com/", False),
+    ]
+    plain = [item.text for item in doc.texts if item.hyperlink is None]
+    assert "Not linked: word:https://example.com." in plain
+    md = doc.export_to_markdown()
+    assert "[Example site](https://example.com/)" in md
+    assert "example.com[" not in md
+    assert "link:" not in md
+
+
+@pytest.mark.parametrize(
+    "source, expected_text",
+    [
+        ('https://example.com["Docs, API", window=_blank]', "Docs, API"),
+        (
+            r'https://example.com["Say \"hello\", API", window=_blank]',
+            'Say "hello", API',
+        ),
+        ("https://example.com[window=_blank]", "https://example.com"),
+        (r"https://example.com[Array \[index\], window=_blank]", "Array [index]"),
+    ],
+)
+def test_link_labels_and_attributes(source: str, expected_text: str) -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source.encode()),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="link-attributes.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(links) == 1
+    assert links[0].text == expected_text
+    assert str(links[0].hyperlink) == "https://example.com/"
+    assert links[0].parent is not None
+    assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
+    assert "window=_blank" not in doc.export_to_markdown()
+
+
+def test_url_in_link_label_keeps_outer_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://outer.example[https://inner.example]"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="url-label.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert [(item.text, str(item.hyperlink)) for item in links] == [
+        ("https://inner.example", "https://outer.example/")
+    ]
+    assert "[https://inner.example](https://outer.example/)" in doc.export_to_markdown()
+
+
+def test_inline_code_link_keeps_code_item_and_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://example.com[`API`]"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="code-link.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(links) == 1
+    assert isinstance(links[0], CodeItem)
+    assert links[0].text == "API"
+    assert str(links[0].hyperlink) == "https://example.com/"
+    assert links[0].parent is not None
+    assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
+    assert "[`API`](https://example.com/)" in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize("mark", ["*", "_", "`"])

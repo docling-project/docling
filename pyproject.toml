@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.145.0"  # DO NOT EDIT, updated automatically
+version = "2.146.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -411,7 +411,7 @@ docling = { workspace = true }
 # runs that own their boundary whitespace, and only a faithful-join core renders them correctly.
 # Drop this source once docling-core ships the release carrying it, and raise the floor in
 # `dependencies` to that version.
-docling-core = { git = "https://github.com/docling-project/docling-core", branch = "cau/serializer-whitespace-fixes" }
+docling-core = { git = "https://github.com/docling-project/docling-core", rev = "main" }
 
 [tool.uv]
 package = true

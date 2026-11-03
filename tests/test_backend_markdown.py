@@ -4,6 +4,7 @@
 import base64
 from io import BytesIO
 from pathlib import Path
+from threading import Thread
 
 import pytest
 from docling_core.types.doc import (
@@ -1572,3 +1573,17 @@ def test_convert_frontmatter_followed_by_content_keeps_the_content():
     assert "Intro" in pred_md
     assert "Section" in pred_md
     assert "body" in pred_md
+
+
+def test_pipe_in_lazy_continuation_line_does_not_hang():
+    """The hang is an infinite loop, so a daemon thread turns it into a failure."""
+    convert = get_converter().convert_string
+    md = "- a\n  - b\n  |x| y\n"
+    result: list[ConversionResult] = []
+    thread = Thread(
+        target=lambda: result.append(convert(md, format=InputFormat.MD)), daemon=True
+    )
+    thread.start()
+    thread.join(timeout=30)
+    assert not thread.is_alive()
+    assert "|x| y" in result[0].document.export_to_markdown().replace("\\", "")

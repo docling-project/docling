@@ -29,6 +29,7 @@ from typing import Any
 
 from groundtruth_diff import is_groundtruth_path, render_markdown, summarize_file
 from pr_topic_labels import deterministic_topics, parse_model_topics, select_topics
+from safe_markdown import clean_text, markdown_code, markdown_text
 
 COMMENT_MARKER = "<!-- ai-pr-triage -->"
 LABEL_DUPLICATE = "ai:possible-duplicate"
@@ -45,9 +46,6 @@ MAX_CANDIDATE_DIFF_CHARS = 20_000
 MAX_GROUNDTRUTH_FILES = 80
 MAX_RISK_HINTS = 30
 MAX_BODY_CHARS = 6_000
-MAX_MODEL_TEXT_CHARS = 600
-# Written into untrusted text to stop GitHub from linking or notifying.
-ZERO_WIDTH_SPACE = "\u200b"
 BOT_LOGIN = "github-actions[bot]"
 REVIEW_MARKER_PREFIX = "<!-- ai-pr-review sha="
 REVIEW_MARKER = re.compile(r"<!-- ai-pr-review sha=([0-9a-f]{40}) -->")
@@ -283,54 +281,6 @@ def _require_list(data: dict[str, Any], key: str) -> list[Any]:
 def _model_text(data: dict[str, Any], key: str) -> str:
     value = data.get(key, "")
     return clean_text(value if isinstance(value, str) else str(value))
-
-
-def clean_text(text: str, limit: int = MAX_MODEL_TEXT_CHARS) -> str:
-    """Reduce untrusted text to one line of printable characters.
-
-    This does not escape Markdown. The publish step validates a stored result
-    again, so this must give the same text when it runs twice. Escape with
-    `markdown_text` or `markdown_code` where the text goes into a comment.
-    """
-    text = "".join(ch if ch.isprintable() else " " for ch in text)
-    text = " ".join(text.split())
-    if len(text) > limit:
-        text = text[: limit - 1].rstrip() + "…"
-    return text
-
-
-def markdown_text(text: str) -> str:
-    """Render untrusted text as literal text in a Markdown line or table cell.
-
-    The model answer can be steered by text in the pull request, and the bot
-    signs the comment. So the text must not add links, images, HTML,
-    headings, lists, code blocks, table cells, or mentions. CommonMark
-    renders a backslash before any ASCII punctuation character as that
-    character, so escaping all of them covers every Markdown construct.
-    """
-    text = clean_text(text, limit=len(text))
-    # GitHub links a bare URL and notifies a mention by itself, also after an
-    # escape, so break them with a zero-width space.
-    text = re.sub(
-        r"(?i)\b(https?|ftps?|mailto|www)(?=[:.])", rf"\1{ZERO_WIDTH_SPACE}", text
-    )
-    text = re.sub(r"@(?=[\w-])", f"@{ZERO_WIDTH_SPACE}", text)
-    return re.sub(r"([!-/:-@\[-`{-~])", r"\\\1", text)
-
-
-def markdown_code(text: str, *, in_table: bool = False) -> str:
-    """Render untrusted text as one inline code span.
-
-    Markdown has no syntax inside a code span. The fence is longer than any
-    run of backticks in the text, so the text cannot close it.
-    """
-    text = clean_text(text, limit=len(text))
-    if in_table:
-        # GitHub splits a table cell at a pipe, also inside a code span.
-        text = text.replace("|", "\\|")
-    fence = "`" * (max((len(run) for run in re.findall(r"`+", text)), default=0) + 1)
-    pad = " " if text.startswith("`") or text.endswith("`") else ""
-    return f"{fence}{pad}{text}{pad}{fence}"
 
 
 def _closing_run(text: str, start: int, stop: int, length: int) -> int | None:
@@ -742,13 +692,20 @@ def find_candidates(
         return candidate
 
     for ref in refs:
-        issue = gh_api(f"repos/{repo}/issues/{ref}")
-        if "pull_request" in issue:
-            add(issue, f"referenced as #{ref}")
+        # The PR text can name any number, so a failed lookup must not stop
+        # the triage.
+        try:
+            issue = gh_api(f"repos/{repo}/issues/{ref}")
+            if "pull_request" in issue:
+                add(issue, f"referenced as #{ref}")
+                continue
+            events = gh_api(
+                f"repos/{repo}/issues/{ref}/timeline?per_page=100", paginate=True
+            )
+        except subprocess.CalledProcessError as exc:
+            reason = clean_text(exc.stderr or "", 200)
+            print(f"::warning::Skipped the reference #{ref}: {reason}")
             continue
-        events = gh_api(
-            f"repos/{repo}/issues/{ref}/timeline?per_page=100", paginate=True
-        )
         for event in events:
             source = (event.get("source") or {}).get("issue") or {}
             source_repo = (source.get("repository") or {}).get("full_name")

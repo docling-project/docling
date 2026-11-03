@@ -1921,7 +1921,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.145.0"
+version = "2.146.0"
 source = { editable = "packages/docling" }
 dependencies = [
     { name = "docling-slim", extra = ["standard"] },
@@ -1977,7 +1977,7 @@ provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "
 
 [[package]]
 name = "docling-client"
-version = "2.145.0"
+version = "2.146.0"
 source = { editable = "packages/docling-client" }
 dependencies = [
     { name = "docling-slim", extra = ["service-client"] },
@@ -1989,7 +1989,7 @@ requires-dist = [{ name = "docling-slim", extras = ["service-client"], editable 
 [[package]]
 name = "docling-core"
 version = "2.105.0"
-source = { git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes#9e4820d7004ec948fd6d13d86903f37af6fd1f34" }
+source = { git = "https://github.com/docling-project/docling-core?rev=main#1517ab72757163d751750b42c87c4049290bd166" }
 dependencies = [
     { name = "defusedxml" },
     { name = "doclang" },
@@ -2093,7 +2093,7 @@ wheels = [
 
 [[package]]
 name = "docling-slim"
-version = "2.145.0"
+version = "2.146.0"
 source = { editable = "." }
 default-groups = "all"
 dependencies = [
@@ -2500,8 +2500,8 @@ requires-dist = [
     { name = "defusedxml", marker = "extra == 'format-iwork'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'format-xml-uspto'", specifier = ">=0.7.1,<0.8.0" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes" },
-    { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes" },
+    { name = "docling-core", git = "https://github.com/docling-project/docling-core?rev=main" },
+    { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", git = "https://github.com/docling-project/docling-core?rev=main" },
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=4.0.2,<5" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=7.22.2,<8.0.0" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
@@ -2643,7 +2643,7 @@ examples = [
 ]
 pr-fast-checks = [
     { name = "boto3-stubs", specifier = "~=1.37" },
-    { name = "docling-core", extras = ["chunking"], git = "https://github.com/docling-project/docling-core?branch=cau%2Fserializer-whitespace-fixes" },
+    { name = "docling-core", extras = ["chunking"], git = "https://github.com/docling-project/docling-core?rev=main" },
     { name = "pandas-stubs", specifier = ">=2.1,<4" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
