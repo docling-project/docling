@@ -468,15 +468,10 @@ def test_output_without_a_table_falls_back_to_the_page_text():
 
 
 def test_text_recall_compares_words_not_spacing_or_punctuation():
-    cluster = Cluster(
-        id=0,
-        label=DocItemLabel.TABLE,
-        bbox=TABLE_BBOX,
-        cells=[
-            _text_cell(0, TABLE_BBOX, "Hemoglobin 13.5 g/dL"),
-            _text_cell(1, TABLE_BBOX, "12.0 - 16.0"),
-        ],
-    )
+    native = [
+        _text_cell(0, TABLE_BBOX, "Hemoglobin 13.5 g/dL"),
+        _text_cell(1, TABLE_BBOX, "12.0 - 16.0"),
+    ]
     transcribed = [
         TableCell(
             text=t,
@@ -488,21 +483,41 @@ def test_text_recall_compares_words_not_spacing_or_punctuation():
         for i, t in enumerate(["HEMOGLOBIN", "13.5  G / DL", "12.0-16.0"])
     ]
 
-    recall = native_text_recall(cluster, transcribed)
+    recall = native_text_recall(native, transcribed)
 
     assert recall is not None
     assert (recall.found, recall.total) == (9, 9)
 
 
 def test_text_recall_needs_a_few_words_to_judge():
-    cluster = Cluster(
-        id=0,
-        label=DocItemLabel.TABLE,
-        bbox=TABLE_BBOX,
-        cells=[_text_cell(0, TABLE_BBOX, "Total 42")],
+    assert native_text_recall([_text_cell(0, TABLE_BBOX, "Total 42")], []) is None
+
+
+def test_cells_outside_a_nested_cluster_are_kept_as_well():
+    """The layout stage nests the text clusters that sit inside the table
+    box; the fallback must not stop at them."""
+    cells = _lab_cells()
+    page, cluster = _page_with_text(cells)
+    nested = Cluster(
+        id=7,
+        label=DocItemLabel.TEXT,
+        bbox=BoundingBox(l=110, t=110, r=390, b=130),
+        cells=cells[:2],
+    )
+    cluster.children = [nested]
+    options = GraniteVisionTableStructureOptions(max_new_tokens=8)
+    model = _model_with_mocked_inference(
+        options, decoded_text=HEADER_ROW, generated_tokens=8
     )
 
-    assert native_text_recall(cluster, []) is None
+    table, errors = _predict(model, page, cluster)
+
+    assert (table.num_rows, table.num_cols) == (0, 0)
+    kept_nested, added = cluster.children
+    assert kept_nested is nested
+    assert added.id == 8
+    assert [c.text for c in added.cells] == [c.text for c in cells[2:]]
+    assert "kept as plain text" in _only_error(errors).error_message
 
 
 def test_crop_uses_the_configured_scale():

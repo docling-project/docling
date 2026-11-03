@@ -13,6 +13,7 @@ from typing import Any, ClassVar, Literal, NamedTuple, cast
 
 import torch
 from docling_core.types.doc import DocItemLabel, TableCell
+from docling_core.types.doc.page import TextCell
 from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
@@ -34,6 +35,7 @@ from docling.datamodel.pipeline_options import GraniteVisionTableStructureOption
 from docling.models.base_table_model import (
     BaseTableStructureModel,
     keep_table_text_as_child,
+    page_cells_in_table,
 )
 from docling.models.utils.generation_utils import TailRepetitionStopper
 from docling.models.utils.hf_model_download import download_hf_model
@@ -63,26 +65,23 @@ class TextRecall(NamedTuple):
 
 
 def native_text_recall(
-    cluster: Cluster, table_cells: Sequence[TableCell]
+    native_cells: Sequence[TextCell], table_cells: Sequence[TableCell]
 ) -> TextRecall | None:
     """Compare the transcribed cells with the PDF text layer under the table.
 
     The Granite stage transcribes cell text from the image and never reads the
-    page's text. When the page has a native text layer, the words the layout
-    stage assigned to the table cluster say what the cells must contain, so a
-    transcription that lost most of them is a failed structure even when the
-    generation ended normally. OCR cells are left out: they are a second
-    reading of the same pixels, not ground truth. Words are compared as
-    case-folded runs of letters and digits, so spacing and punctuation
+    page's text. When the page has a native text layer, the text lines under
+    the table box say what the cells must contain, so a transcription that
+    lost most of their words is a failed structure even when the generation
+    ended normally. The caller passes native lines only: OCR cells are a
+    second reading of the same pixels, not ground truth. Words are compared
+    as case-folded runs of letters and digits, so spacing and punctuation
     differences between the two readings do not count.
 
     Returns None when there is no native text to compare with.
     """
     native = Counter(
-        word
-        for cell in cluster.cells
-        if not cell.from_ocr
-        for word in _WORD.findall(cell.text.casefold())
+        word for cell in native_cells for word in _WORD.findall(cell.text.casefold())
     )
     total = sum(native.values())
     if total < _MIN_WORDS_FOR_TEXT_CHECK:
@@ -334,7 +333,10 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
 
         recall: TextRecall | None = None
         if not failed and self.options.min_text_recall > 0:
-            recall = native_text_recall(cluster, table_cells)
+            native_cells = [
+                cell for cell in page_cells_in_table(cluster, page) if not cell.from_ocr
+            ]
+            recall = native_text_recall(native_cells, table_cells)
             if recall is not None and recall.share < self.options.min_text_recall:
                 problems.append(
                     f"the transcribed cells hold {recall.found} of the "
