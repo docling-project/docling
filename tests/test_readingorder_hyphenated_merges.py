@@ -165,3 +165,31 @@ def test_list_marker_spans_index_text(
     assert expected in document.export_to_markdown()
     restored = DoclingDocument.model_validate(document.export_to_dict())
     assert restored.texts[0].prov == item.prov
+
+
+@pytest.mark.parametrize(
+    ("prefix", "expected", "expected_span"),
+    [
+        ("algo-", "algorithms", (4, 10)),
+        ("algo\u00ad", "algorithms", (4, 10)),
+        ("algo", "algo rithms", (5, 11)),
+    ],
+)
+def test_merge_without_prior_provenance(
+    prefix: str, expected: str, expected_span: tuple[int, int]
+) -> None:
+    """A missing source span must not prevent tracking the continuation."""
+    item = _list_item(prefix)
+    item.prov.clear()
+    continuation = _element(2, "rithms")
+
+    ReadingOrderModel(ReadingOrderOptions())._merge_elements(
+        _element(1, prefix), continuation, item, page_height=100
+    )
+
+    assert item.text == item.orig == expected
+    assert len(item.prov) == 1
+    assert item.prov[0].charspan == expected_span
+    assert item.text[slice(*expected_span)] == continuation.text
+    assert item.prov[0].page_no == continuation.page_no
+    assert item.prov[0].bbox == continuation.cluster.bbox.to_bottom_left_origin(100)
