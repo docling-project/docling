@@ -208,12 +208,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         Used for block titles whose target is not a floating item (picture,
         table, or code block), which have no caption slot.
         """
-        doc.add_text(
-            text=" ".join(caption_data),
-            label=DocItemLabel.PARAGRAPH,
-            parent=parent,
-            formatting=Formatting(bold=True),
-        )
+        self._flush_text_data(doc=doc, text_data=caption_data, parent=parent, bold=True)
         return []
 
     def _parse(self, doc: DoclingDocument):
@@ -344,11 +339,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     # GroupItem has no caption slot; emit the pending block
                     # title as a bold paragraph immediately before the list.
                     if caption_data:
-                        doc.add_text(
-                            text=" ".join(caption_data),
-                            label=DocItemLabel.PARAGRAPH,
+                        self._flush_text_data(
+                            doc=doc,
+                            text_data=caption_data,
                             parent=parents[level],
-                            formatting=Formatting(bold=True),
+                            bold=True,
                         )
                         caption_data = []
 
@@ -652,8 +647,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         """Add a picture with its pending caption, if any."""
         caption: Optional[TextItem] = None
         if len(caption_data) > 0:
+            text, hyperlink = self._caption_text(caption_data)
             caption = doc.add_text(
-                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+                text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
             )
 
         caption_data = []
@@ -765,9 +761,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         )
         caption: Optional[TextItem] = None
         if caption_data:
+            text, hyperlink = self._caption_text(caption_data)
             caption = doc.add_text(
-                text=" ".join(caption_data),
-                label=DocItemLabel.CAPTION,
+                text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
             )
             caption_data = []
         code_language = (
@@ -855,18 +851,42 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return "." if item["numbered"] else item["marker"][0]
 
     @staticmethod
+    def _caption_text(
+        caption_data: list[str],
+    ) -> tuple[str, AnyUrl | Path | None]:
+        """Return the text and hyperlink of a caption.
+
+        A caption is one text item, so runs cannot be kept apart. The
+        hyperlink is kept only if every non-blank run has the same one.
+        """
+        runs = AsciiDocBackend._parse_inline(" ".join(caption_data))
+        text = "".join(run.text for run in runs).strip()
+        targets = {run.hyperlink for run in runs if run.text.strip()}
+        if len(targets) == 1 and (target := targets.pop()) is not None:
+            return text, _LINK_TARGET.validate_python(target)
+        return text, None
+
+    @staticmethod
     def _flush_text_data(
         *,
         doc: DoclingDocument,
         text_data: list[str],
         parent: GroupItem | None,
+        bold: bool = False,
     ) -> list[str]:
         if len(text_data) == 0:
             return []
         text = " ".join(text_data)
-        runs = AsciiDocBackend._parse_inline(text)
-        if not any(run.bold or run.italic or run.code or run.hyperlink for run in runs):
-            doc.add_text(text=text, label=DocItemLabel.PARAGRAPH, parent=parent)
+        runs = AsciiDocBackend._parse_inline(text, bold=bold)
+        if not any(
+            run.bold != bold or run.italic or run.code or run.hyperlink for run in runs
+        ):
+            doc.add_text(
+                text="".join(run.text for run in runs) if bold else text,
+                label=DocItemLabel.PARAGRAPH,
+                parent=parent,
+                formatting=Formatting(bold=True) if bold else None,
+            )
             return []
         # Mixed formatting and links need one item per run, kept together in an
         # inline group like the Markdown backend does.
@@ -1134,8 +1154,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         caption = None
         if caption_data:
+            text, hyperlink = AsciiDocBackend._caption_text(caption_data)
             caption = doc.add_text(
-                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+                text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
             )
 
         data = AsciiDocBackend._populate_table_as_grid(table_data)
