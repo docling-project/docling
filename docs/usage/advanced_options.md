@@ -465,6 +465,35 @@ The equivalent CLI option is:
 docling convert document.pdf --use-embedded-picture-images
 ```
 
+### Merge tables that continue across pages
+
+Tables are detected one page at a time, so by default a table that runs over a page break comes
+out as one table per page. Docling can join the fragments into one table:
+
+```python
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    TableContinuationOptions,
+)
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.table_continuation_options = TableContinuationOptions(enabled=True)
+```
+
+On the command line, use `--table-continuation`.
+
+A table is joined to the table right before it when the two are on consecutive pages with
+nothing in between, have the same number of columns, and the left edges of their columns line up
+(within `max_column_shift`, a fraction of the page width). A continuation with its own caption is
+kept apart, unless the caption says it is continued. In the merged table:
+
+- a header that repeats on each page is kept once, and rows that table structure wrongly flagged
+  as headers at the top of a page are cleared;
+- a record that the page break cut in two is joined back into one row (`repair_split_rows`);
+- `prov` has one entry per page, and every cell keeps its bounding box in the coordinates of its
+  own page.
+
+The DocLang export writes the merged table as one threaded `<table>` fragment per page.
 
 ### PowerPoint and Excel charts
 
