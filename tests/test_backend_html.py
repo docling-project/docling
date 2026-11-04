@@ -2629,10 +2629,9 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
 
 def test_html_line_break_outside_paragraphs():
     # A <br> outside a paragraph or a table cell, e.g. in a heading or a list
-    # item, left the internal sentinel (U+E000) in the text. It is now a line
-    # break, as in a paragraph. The text of a checkbox stays on one line. A <br>
-    # between two inline runs is a "\n" run of its own: runs are joined with "",
-    # so dropping it merged the words (docling#3891).
+    # item, is a line break, as in a paragraph. The text of a checkbox stays on
+    # one line. A <br> between two inline runs is a "\n" run of its own: runs are
+    # joined with "", so dropping it would merge the words.
     src = (
         b"<html><body>"
         b"<h1>Title<br>line</h1>"

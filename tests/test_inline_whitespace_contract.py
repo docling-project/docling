@@ -28,12 +28,12 @@ from .test_backend_jats import convert_jats_body
 
 
 def test_docx_paragraph_runs_keep_their_own_whitespace(tmp_path):
-    """A DOCX run's boundary whitespace stays in the run, not invented by the serializer.
+    """A DOCX run's boundary whitespace stays in the run.
 
     In DOCX the space at a formatting boundary very often sits *inside* the formatted run.
-    Stripping each run forced the serializers to re-insert a separator, which produced
-    ``**bold** .`` and ``H 2 O``. Runs are now emitted verbatim, with only the paragraph
-    edges trimmed, and the serializer hoists edge whitespace out of the emphasis markers.
+    Runs are emitted verbatim, with only the paragraph edges trimmed, and the serializer
+    hoists edge whitespace out of the emphasis markers (``**bold** .`` and ``H 2 O`` must
+    not appear).
     """
     docx_path = tmp_path / "runs.docx"
     document = Document()
@@ -94,10 +94,8 @@ def test_docx_rich_table_cell_keeps_its_inline_group(tmp_path):
 def test_docx_inline_equations_keep_the_boundary_space():
     """Text after an inline equation keeps its leading space.
 
-    ``_add_inline_equations_to_parent`` builds its own InlineGroup, outside the corrected
-    paragraph path, and used to strip the fragment following the last equation. With a
-    faithful join that merged the formula into the next word
-    (``$A= \\pi r^{2}$is the area formula``).
+    ``_add_inline_equations_to_parent`` builds its own InlineGroup, so the fragment after
+    the last equation must keep its leading space (not ``$A= \\pi r^{2}$is the area formula``).
     """
     source = Path("tests/data/docx/sources/equations.docx")
     in_doc = InputDocument(
@@ -141,7 +139,7 @@ def _convert_html(tmp_path, body: str):
     ("body", "expected_md", "expected_txt"),
     [
         # Adjacent code spans: the boundary belongs between the two `` ` `` delimiters, not
-        # inside either of them. It used to land inside the second span (``a`` b``).
+        # inside either of them (not ``a`` b``).
         ("<p><code>a</code> <code>b</code></p>", "`a` `b`", "a b"),
         ("<p><code>a</code> <code>b</code> <code>c</code></p>", "`a` `b` `c`", "a b c"),
         # No source whitespace means no boundary to preserve.
@@ -174,9 +172,8 @@ def test_html_boundary_stays_outside_code_delimiters(
 def test_html_pre_keeps_interior_whitespace(tmp_path):
     """`<pre>` is preformatted: only the block edges are trimmed, never each fragment.
 
-    Stripping every fragment merged mixed content into one word once the serializer stopped
-    inserting a separator. The one-code-item-per-fragment shape of `<pre>` with inline markup
-    is a separate pre-existing issue and is not addressed here.
+    The one-code-item-per-fragment shape of `<pre>` with inline markup is a separate
+    pre-existing issue and is not addressed here.
     """
     doc = _convert_html(tmp_path, '<pre>See <a href="x">link</a> first</pre>')
     assert doc.export_to_text() == "See link first"

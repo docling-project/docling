@@ -2602,10 +2602,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         group_text = ""
         previous_format = None
 
-        # Group the runs by format, concatenating faithfully: in DOCX the boundary space very
-        # often lives inside a formatted run, and it is the run's own text (see
-        # `DoclingDocument.add_inline_group`). Stripping each group here is what forced the
-        # serializers to invent separators.
+        # Group the runs by format and concatenate them as they are: in DOCX the boundary
+        # space very often lives inside a formatted run, and it is the run's own text (see
+        # `DoclingDocument.add_inline_group`).
         for text, format, hyperlink in content:
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
@@ -3616,9 +3615,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             runs.append((DocItemLabel.TEXT, text_tmp))
 
         # Trim the paragraph's outer edges only. The whitespace around an inline equation is a
-        # significant run boundary: stripping the fragment after the last equation merged it
-        # into the formula (`$A=\pi r^{2}$is the area formula`) once the serializer stopped
-        # inventing a separator.
+        # significant run boundary (`$A=\pi r^{2}$ is the area formula`).
         if runs and runs[0][0] == DocItemLabel.TEXT:
             runs[0] = (DocItemLabel.TEXT, runs[0][1].lstrip())
         if runs and runs[-1][0] == DocItemLabel.TEXT:

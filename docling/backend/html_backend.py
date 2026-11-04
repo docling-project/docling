@@ -408,8 +408,7 @@ class AnnotatedTextList(list):
             t = at.text
             c = at.code
             s = at.source_tag_id
-            # Faithful concatenation: stripping each run and re-joining with " " invented
-            # separators the source never had. Boundary whitespace is already in the run text.
+            # Boundary whitespace is already in the run text: concatenate it as it is.
             current_text += t
             if s is not None and current_source_tag_id is None:
                 current_source_tag_id = s
@@ -482,13 +481,15 @@ class AnnotatedTextList(list):
     def normalize_whitespace(self) -> AnnotatedTextList:
         """Collapse boundary whitespace across runs and trim the block edge.
 
-        Per-node collapsing is not enough: `["a ", " ", " b"]` is three separate nodes whose
-        faithful concatenation is `"a   b"`. Whitespace at a run boundary -- in either run, or in
-        a whitespace-only run between them -- collapses to exactly one space, carried by the left
-        run so it sits outside the right run's formatting. The block's outer edges are trimmed
-        once, here, so no downstream emitter needs to strip anything.
+        Whitespace at a run boundary collapses to exactly one space. That covers the
+        whitespace in either run and in a whitespace-only run between them. The left run
+        carries the space, so it sits outside the right run's formatting. The block's
+        outer edges are trimmed once, here, so no downstream emitter needs to strip
+        anything. Do not use it for preformatted content, where every space and newline is
+        significant.
 
-        Not for preformatted content, where every space and newline is significant.
+        Returns:
+            A new list with the normalized runs.
         """
         kept: AnnotatedTextList = AnnotatedTextList()
         space_pending = False
@@ -2538,15 +2539,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             if keep_newlines:
                 # Preformatted content: every space and newline is significant, so take it
-                # verbatim. Stripping each string used to be masked by the serializer's `" "`
-                # join; with a faithful join it merges words (`<pre>See <a>x</a> first</pre>`).
+                # verbatim.
                 text: str = str(item)
             else:
                 # For normal content, collapse runs of whitespace to a single space (HTML spec
                 # behavior) but preserve the sentinel character for explicit <br> tags.
-                # Collapse only, never trim: `" ".join(s.split())` also stripped the edges, and
-                # that is where the run boundary lives -- `H<sub>2</sub>O` vs `x<sup>2</sup> + y`
-                # are indistinguishable once it is gone.
+                # Collapse only, never trim: the edge whitespace of a run is the run boundary,
+                # which tells `H<sub>2</sub>O` from `x<sup>2</sup> + y`.
                 text = _WHITESPACE_RUN.sub(" ", item)
 
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
@@ -3048,7 +3047,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 for i, (annotated_text, source_tag_ids) in enumerate(compacted_parts):
                     text_part = text_parts[i]
                     # A run that only held <br> tags stays as a "\n" run between its
-                    # neighbours; dropping it merged them (`**Bold***italic*`).
+                    # neighbours, so they do not merge (`**Bold***italic*`).
                     if not text_part or not first <= i <= last:
                         continue
                     clean_text = HTMLDocumentBackend._clean_unicode(text_part)
@@ -3630,10 +3629,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 tag, find_parent_annotation=True, keep_newlines=True
             )
             annotated_texts = text_list.simplify_text_elements()
-            # Preformatted content: every interior space is significant, so trim the block
-            # edges once (HTML drops the newline right after `<pre>`) instead of stripping each
-            # fragment. Stripping them merged `<pre>See <a>x</a> first</pre>` into one word
-            # once the serializer stopped inserting a separator.
+            # Preformatted content: every interior space is significant, so only the block
+            # edges are trimmed (HTML drops the newline right after `<pre>`).
             if annotated_texts:
                 head = annotated_texts[0]
                 annotated_texts[0] = head.model_copy(

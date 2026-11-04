@@ -190,7 +190,7 @@ def test_text_after_image_anchors(documents):
     doc = next(item[1] for item in documents if item[0].name == name)
     texts = {item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)}
     # Runs keep their own whitespace, so the spaces the source puts between the two runs of a
-    # paragraph stay on the left run rather than being stripped and re-invented by the serializer.
+    # paragraph stay on the left run.
     for expected in (
         "This is test 1   ",
         "0:08\nCorrect, he is not.",
@@ -1549,7 +1549,7 @@ def test_checkbox_labels_in_tables(documents):
 
 
 def test_checkbox_paragraph_keeps_interior_run_whitespace(tmp_path):
-    """Only the leading checkbox symbol and the block edges are stripped (docling#3891)."""
+    """Only the leading checkbox symbol and the block edges are stripped."""
     document = Document()
     para = document.add_paragraph()
     sdt = etree.SubElement(para._p, qn("w:sdt"))
