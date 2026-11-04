@@ -688,10 +688,16 @@ class _TransformersAsrModel(_LocalAudioTranscriber):
             ]
 
         if self.decoder is not None:
-            text = self.decoder.transcribe(fpath)
-        else:
-            result = self.asr_pipeline(str(fpath))
-            text = result["text"].strip()
+            return [
+                _ConversationItem(
+                    start_time=segment.start_time,
+                    end_time=segment.end_time,
+                    text=segment.text,
+                )
+                for segment in self.decoder.transcribe(fpath)
+            ]
+
+        text = self.asr_pipeline(str(fpath))["text"].strip()
         if not text:
             return []
         return [

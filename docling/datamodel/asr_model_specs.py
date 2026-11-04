@@ -881,7 +881,7 @@ NEMOTRON_3_5_ASR_STREAMING_PRESET = AsrModelPreset(
 )
 
 GRANITE_4_0_1B_SPEECH = GRANITE_4_0_1B_SPEECH_PRESET.to_options()
-NEMOTRON_3_5_ASR_STREAMING = NEMOTRON_3_5_ASR_STREAMING_PRESET.to_options()
+NEMOTRON_3_5_ASR_STREAMING = NEMOTRON_3_5_ASR_STREAMING_PRESET.to_auto_options()
 
 
 GRANITE_SPEECH_5_0_2B_PRESET = AsrModelPreset(
@@ -898,7 +898,7 @@ GRANITE_SPEECH_5_0_2B_PRESET = AsrModelPreset(
         },
     ),
 )
-GRANITE_SPEECH_5_0_2B = GRANITE_SPEECH_5_0_2B_PRESET.to_options()
+GRANITE_SPEECH_5_0_2B = GRANITE_SPEECH_5_0_2B_PRESET.to_auto_options()
 
 GRANITE_SPEECH_5_0_470M_TURBOCTC_PRESET = AsrModelPreset(
     preset_id="granite_speech_5_0_470m_turboctc",
@@ -914,7 +914,9 @@ GRANITE_SPEECH_5_0_470M_TURBOCTC_PRESET = AsrModelPreset(
         },
     ),
 )
-GRANITE_SPEECH_5_0_470M_TURBOCTC = GRANITE_SPEECH_5_0_470M_TURBOCTC_PRESET.to_options()
+GRANITE_SPEECH_5_0_470M_TURBOCTC = (
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_PRESET.to_auto_options()
+)
 
 GRANITE_SPEECH_5_0_470M_TURBOCTC_NC_PRESET = AsrModelPreset(
     preset_id="granite_speech_5_0_470m_turboctc_nc",
@@ -972,7 +974,7 @@ NEMOTRON_SPEECH_STREAMING_EN_0_6B_PRESET = AsrModelPreset(
     ),
 )
 NEMOTRON_SPEECH_STREAMING_EN_0_6B = (
-    NEMOTRON_SPEECH_STREAMING_EN_0_6B_PRESET.to_options()
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_PRESET.to_auto_options()
 )
 
 PARAKEET_CTC_1_1B_PRESET = AsrModelPreset(
@@ -995,7 +997,7 @@ PARAKEET_CTC_1_1B_PRESET = AsrModelPreset(
         },
     ),
 )
-PARAKEET_CTC_1_1B = PARAKEET_CTC_1_1B_PRESET.to_options()
+PARAKEET_CTC_1_1B = PARAKEET_CTC_1_1B_PRESET.to_auto_options()
 
 
 ADDITIONAL_ASR_PRESETS: dict[str, AsrModelPreset] = {
@@ -1029,6 +1031,27 @@ NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO = (
 )
 PARAKEET_CTC_1_1B_MLX_AUDIO = PARAKEET_CTC_1_1B_PRESET.to_options(
     InferenceAsrFramework.MLX_AUDIO
+)
+
+# Explicit Transformers presets. The names without a suffix select the engine by machine.
+GRANITE_SPEECH_5_0_2B_TRANSFORMERS = GRANITE_SPEECH_5_0_2B_PRESET.to_options(
+    InferenceAsrFramework.TRANSFORMERS
+)
+GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS = (
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_PRESET.to_options(
+        InferenceAsrFramework.TRANSFORMERS
+    )
+)
+NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS = NEMOTRON_3_5_ASR_STREAMING_PRESET.to_options(
+    InferenceAsrFramework.TRANSFORMERS
+)
+NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS = (
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_PRESET.to_options(
+        InferenceAsrFramework.TRANSFORMERS
+    )
+)
+PARAKEET_CTC_1_1B_TRANSFORMERS = PARAKEET_CTC_1_1B_PRESET.to_options(
+    InferenceAsrFramework.TRANSFORMERS
 )
 
 
@@ -1085,6 +1108,17 @@ class AsrModelType(str, Enum):
         "nemotron_speech_streaming_en_0_6b_mlx_audio"
     )
     PARAKEET_CTC_1_1B_MLX_AUDIO = "parakeet_ctc_1_1b_mlx_audio"
+
+    # Explicit Transformers models (the names without a suffix select by machine)
+    GRANITE_SPEECH_5_0_2B_TRANSFORMERS = "granite_speech_5_0_2b_transformers"
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS = (
+        "granite_speech_5_0_470m_turboctc_transformers"
+    )
+    NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS = "nemotron_3_5_asr_streaming_transformers"
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS = (
+        "nemotron_speech_streaming_en_0_6b_transformers"
+    )
+    PARAKEET_CTC_1_1B_TRANSFORMERS = "parakeet_ctc_1_1b_transformers"
 
     # Explicit Native models (force native implementation)
     WHISPER_TINY_NATIVE = "whisper_tiny_native"

@@ -1,8 +1,12 @@
 # Docling CLI reference
 
-For Transformers ASR, install `docling-slim[feat-asr-transformers]` and select
-`--asr-model granite_speech_5_0_2b` (or another speech preset). The same ASR
-settings apply to video.
+For Granite, Parakeet, and Nemotron ASR, select `--asr-model granite_speech_5_0_2b`
+(or another speech preset). Install `docling-slim[models-asr-inline]` for all engines,
+`docling-slim[feat-asr-transformers]` for Transformers, or
+`docling-slim[feat-asr-mlx-audio]` for mlx-audio without torch. A preset selects
+mlx-audio on Apple Silicon when it is installed and the model has an export, and
+Transformers in other cases. Add `_transformers` or `_mlx_audio` to the name of such a
+preset to force one engine. The same ASR settings apply to video.
 
 The `docling` CLI is the quickest way to understand the content of any supported
 document. It ships with the `docling` package (`pip install docling`) and needs

@@ -64,8 +64,9 @@ def split_on_pauses(
 
     Each cut is at the middle of the longest pause within `target_s` +- `search_s` of
     the window start, or at `target_s` when that range has no pause. A pause is not
-    always a sentence boundary. Windows do not overlap, so no text repeats. Only a
-    recording that ends early gives a window below `target_s - search_s`.
+    always a sentence boundary. Windows do not overlap, so no text repeats. A pause
+    that would leave a last window below `target_s - search_s` is not a cut point, so
+    that a decoder does not get a fragment of audio.
     """
     if search_s >= target_s:
         raise ValueError(
@@ -82,10 +83,11 @@ def split_on_pauses(
     edges = [0.0]
     while total_s - edges[-1] > target_s + search_s:
         start = edges[-1]
+        latest_cut = min(start + target_s + search_s, total_s - (target_s - search_s))
         middle = _longest_pause_middle(
             quiet,
             round((start + target_s - search_s) / frame_s),
-            min(round((start + target_s + search_s) / frame_s), quiet.size - 1),
+            min(round(latest_cut / frame_s), quiet.size - 1),
         )
         if middle is None:
             _log.debug("No pause near %.1f s; cutting at the target", start + target_s)

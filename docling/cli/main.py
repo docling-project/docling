@@ -69,11 +69,16 @@ from docling.datamodel.asr_model_specs import (
     ADDITIONAL_ASR_PRESETS,
     GRANITE_4_0_1B_SPEECH,
     GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
+    GRANITE_SPEECH_5_0_2B_TRANSFORMERS,
     GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
-    NEMOTRON_3_5_ASR_STREAMING,
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS,
     NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
+    NEMOTRON_3_5_ASR_STREAMING_PRESET,
+    NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS,
     NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS,
     PARAKEET_CTC_1_1B_MLX_AUDIO,
+    PARAKEET_CTC_1_1B_TRANSFORMERS,
     WHISPER_BASE,
     WHISPER_BASE_EN_NATIVE,
     WHISPER_BASE_EN_S2T,
@@ -426,17 +431,20 @@ class _DefaultCommandGroup(typer.core.TyperGroup):
         return super().parse_args(ctx, args)
 
 
-def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
+def _resolve_asr_options(
+    asr_model: AsrModelType, device: AcceleratorDevice | str = AcceleratorDevice.AUTO
+) -> InlineAsrOptions:
     """Map an AsrModelType enum member to its preset InlineAsrOptions.
 
     Shared mapping so both audio and (later) video CLI setup resolve
     ASR presets the same way.
     """
+    if asr_model == AsrModelType.NEMOTRON_3_5_ASR_STREAMING:
+        return NEMOTRON_3_5_ASR_STREAMING_PRESET.to_auto_options(device)
     if asr_model.value in ADDITIONAL_ASR_PRESETS:
-        return ADDITIONAL_ASR_PRESETS[asr_model.value].to_options()
+        return ADDITIONAL_ASR_PRESETS[asr_model.value].to_auto_options(device)
     mapping: dict[AsrModelType, InlineAsrOptions] = {
         AsrModelType.GRANITE_4_0_1B_SPEECH: GRANITE_4_0_1B_SPEECH,
-        AsrModelType.NEMOTRON_3_5_ASR_STREAMING: NEMOTRON_3_5_ASR_STREAMING,
         AsrModelType.WHISPER_TINY: WHISPER_TINY,
         AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
         AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
@@ -467,6 +475,11 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
         AsrModelType.NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO: NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
         AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO: NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
         AsrModelType.PARAKEET_CTC_1_1B_MLX_AUDIO: PARAKEET_CTC_1_1B_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_5_0_2B_TRANSFORMERS: GRANITE_SPEECH_5_0_2B_TRANSFORMERS,
+        AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS: GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS,
+        AsrModelType.NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS: NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS,
+        AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS: NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS,
+        AsrModelType.PARAKEET_CTC_1_1B_TRANSFORMERS: PARAKEET_CTC_1_1B_TRANSFORMERS,
         AsrModelType.WHISPER_TINY_NATIVE: WHISPER_TINY_NATIVE,
         AsrModelType.WHISPER_SMALL_NATIVE: WHISPER_SMALL_NATIVE,
         AsrModelType.WHISPER_MEDIUM_NATIVE: WHISPER_MEDIUM_NATIVE,
@@ -2104,7 +2117,7 @@ def convert(  # noqa: C901
         )
 
         # Auto-selecting models (choose best implementation for hardware)
-        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model, device)
         if isinstance(
             asr_pipeline_options.asr_options,
             (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions),

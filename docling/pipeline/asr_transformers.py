@@ -3,13 +3,25 @@
 
 """Model-specific speech decoding through documented Transformers interfaces."""
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from docling.datamodel.pipeline_options_asr_model import InlineAsrTransformersOptions
 
 if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
     import torch
+
+_SAMPLE_RATE: Final = 16000
+
+
+@dataclass(frozen=True)
+class TransformersAsrSegment:
+    text: str
+    start_time: float
+    end_time: float
 
 
 def _expand_granite_queries(
@@ -74,18 +86,40 @@ class TransformersAsrDecoder:
                 _expand_granite_queries, with_kwargs=True
             )
 
-    def transcribe(self, path: Path) -> str:
-        import torch
+    def transcribe(self, path: Path) -> list[TransformersAsrSegment]:
+        """Decode the file in windows, because the models return no timestamps.
+
+        Windows also stop the repetition loop that Granite shows on long audio.
+        """
         from transformers.pipelines.audio_utils import ffmpeg_read
 
-        waveform = ffmpeg_read(path.read_bytes(), sampling_rate=16000).copy()
-        if waveform.size == 0:
-            return ""
+        from docling.pipeline.asr_windows import split_on_pauses
+
+        waveform = ffmpeg_read(path.read_bytes(), sampling_rate=_SAMPLE_RATE).copy()
+        windows = split_on_pauses(
+            waveform,
+            _SAMPLE_RATE,
+            self.options.max_time_chunk,
+            self.options.chunk_search_window,
+        )
+        segments: list[TransformersAsrSegment] = []
+        for start, end in windows:
+            first, last = (round(edge * _SAMPLE_RATE) for edge in (start, end))
+            text = self._decode(waveform[first:last])
+            if text:
+                segments.append(
+                    TransformersAsrSegment(text=text, start_time=start, end_time=end)
+                )
+        return segments
+
+    def _decode(self, waveform: "npt.NDArray[np.floating]") -> str:
+        import torch
+
         with torch.inference_mode():
             if self.options.model_family == "granite_ctc":
                 inputs = self.processor(
                     [waveform],
-                    sampling_rate=16000,
+                    sampling_rate=_SAMPLE_RATE,
                     device=self.device,
                     return_tensors="pt",
                 ).to(self.device)

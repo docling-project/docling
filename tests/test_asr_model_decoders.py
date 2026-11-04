@@ -121,7 +121,7 @@ def test_granite_crops_prompt_and_preserves_revision(model_boundary, tmp_path):
         prompt="transcribe these technical terms",
     )
     decoder = TransformersAsrDecoder(options, "cpu", options.repo_id, False)
-    assert decoder.transcribe(path) == "decoded speech"
+    assert [segment.text for segment in decoder.transcribe(path)] == ["decoded speech"]
     for factory in (transformers.AutoProcessor, transformers.AutoModelForSpeechSeq2Seq):
         assert factory.from_pretrained.call_args.kwargs["revision"] == options.revision
     assert processor.tokenizer.apply_chat_template.call_args.args[0] == [
@@ -131,6 +131,66 @@ def test_granite_crops_prompt_and_preserves_revision(model_boundary, tmp_path):
         processor.tokenizer.batch_decode.call_args.args[0], torch.tensor([[42, 43]])
     )
     assert model.generate.call_args.kwargs["do_sample"] is False
+
+
+@pytest.mark.parametrize("family", ["granite", "granite_ctc"])
+def test_long_granite_audio_gives_one_timed_item_per_window(
+    family, model_boundary, tmp_path, monkeypatch
+):
+    transformers, model, processor = model_boundary
+    # 60 s of speech with a pause at 33 s: a cut there leaves two windows.
+    waveform = np.full(60 * 16000, 0.2, dtype=np.float32)
+    waveform[33 * 16000 : 34 * 16000] = 0.0
+    sys.modules[
+        "transformers.pipelines.audio_utils"
+    ].ffmpeg_read.return_value = waveform
+    decode = (
+        processor.batch_decode
+        if family == "granite_ctc"
+        else processor.tokenizer.batch_decode
+    )
+    decode.side_effect = [[" first "], [" second "]]
+    monkeypatch.setattr(
+        "docling.pipeline.asr_transcriber.decide_device", lambda *args, **kwargs: "cpu"
+    )
+    audio = tmp_path / "sample.wav"
+    audio.write_bytes(b"audio")
+    options = InlineAsrTransformersOptions(repo_id="test/model", model_family=family)
+
+    items = _AsrModelFactory.create(options, None, AcceleratorOptions()).transcribe(
+        audio
+    )
+
+    assert [item.text for item in items] == ["first", "second"]
+    assert items[0].start_time == 0.0
+    assert items[0].end_time == pytest.approx(33.5, abs=0.05)
+    assert items[1].start_time == items[0].end_time
+    assert items[1].end_time == pytest.approx(60.0)
+    assert model.generate.call_count == 2
+
+
+def test_granite_token_limit_applies_to_each_window(model_boundary, tmp_path):
+    _, model, _ = model_boundary
+    audio = tmp_path / "sample.wav"
+    audio.write_bytes(b"audio")
+    options = InlineAsrTransformersOptions(repo_id="test/model", model_family="granite")
+
+    TransformersAsrDecoder(options, "cpu", options.repo_id, False).transcribe(audio)
+
+    # 256 cut the speech of the 2B model at about 40 s of audio.
+    assert model.generate.call_args.kwargs["max_new_tokens"] == 1024
+
+
+def test_silent_window_gives_no_item(model_boundary, tmp_path):
+    _, _, processor = model_boundary
+    audio = tmp_path / "sample.wav"
+    audio.write_bytes(b"audio")
+    processor.tokenizer.batch_decode.return_value = ["  "]
+    options = InlineAsrTransformersOptions(repo_id="test/model", model_family="granite")
+
+    decoder = TransformersAsrDecoder(options, "cpu", options.repo_id, False)
+
+    assert decoder.transcribe(audio) == []
 
 
 def test_granite_ctc_output_becomes_document_segment(
@@ -145,9 +205,6 @@ def test_granite_ctc_output_becomes_document_segment(
     monkeypatch.setattr(
         "docling.pipeline.asr_transcriber.decide_device",
         lambda *args, **kwargs: "cuda:0",
-    )
-    monkeypatch.setattr(
-        "docling.pipeline.asr_transcriber._audio_duration_seconds", lambda path: 1.0
     )
     options = InlineAsrTransformersOptions(
         repo_id="test/model",
@@ -172,5 +229,7 @@ def test_granite_ctc_output_becomes_document_segment(
 )
 def test_added_models_resolve_through_the_cli(preset):
     options = _resolve_asr_options(AsrModelType(preset.preset_id))
-    assert options.repo_id == preset.model_spec.default_repo_id
+    config = preset.model_spec.get_engine_config(options.inference_framework)
+    assert options.repo_id == config.repo_id
+    assert options.revision == config.revision
     assert options.model_family == preset.model_spec.model_family

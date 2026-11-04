@@ -9,11 +9,11 @@ import them only inside the decoder.
 """
 
 import logging
-import platform
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Final
 
+from docling.datamodel.asr_presets import is_apple_silicon
 from docling.datamodel.pipeline_options_asr_model import InlineAsrMlxAudioOptions
 from docling.models.utils.hf_model_download import (
     is_pinned_revision,
@@ -52,10 +52,6 @@ class MlxAudioSegment:
     words: list[MlxAudioWord] | None = None
 
 
-def _is_apple_silicon() -> bool:
-    return platform.system() == "Darwin" and platform.machine() == "arm64"
-
-
 def _nemotron_prompt_key(language: str, prompt_keys: list[str]) -> str:
     """Map a language to a prompt key of the checkpoint.
 
@@ -90,7 +86,7 @@ class MlxAudioAsrDecoder:
             options: The backend options.
             checkpoint: A local checkpoint directory, or None to use the Hub.
         """
-        if not _is_apple_silicon():
+        if not is_apple_silicon():
             raise RuntimeError(
                 "The mlx-audio ASR backend needs Apple Silicon. Select a different "
                 "ASR model on this machine."

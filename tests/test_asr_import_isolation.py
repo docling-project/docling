@@ -25,6 +25,7 @@ for preset in asr_model_specs.WHISPER_ASR_PRESETS.values():
     preset.to_options()
 for preset in asr_model_specs.ADDITIONAL_ASR_PRESETS.values():
     preset.to_options()
+    preset.to_auto_options()
 print("IMPORT-OK")
 """
 
@@ -48,7 +49,15 @@ def _run_python(code: str, extra_path: Path | None = None) -> str:
 
 
 def test_asr_path_imports_without_optional_dependencies() -> None:
-    blocked = ("torch", "transformers", "mlx", "mlx.core", "mlx_audio", "mlx_whisper")
+    blocked = (
+        "torch",
+        "transformers",
+        "packaging",
+        "mlx",
+        "mlx.core",
+        "mlx_audio",
+        "mlx_whisper",
+    )
     stdout = _run_python(
         f"import sys; sys.modules.update(dict.fromkeys({blocked!r}))\n"
         + _IMPORT_ASR_PATH

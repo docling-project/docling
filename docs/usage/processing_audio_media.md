@@ -4,7 +4,7 @@ Docling converts audio and video files into a structured [`DoclingDocument`](../
 
 Audio files run through the **ASR pipeline**: transcription only. Video files run through the dedicated **video pipeline**, which transcribes the audio track *and* samples representative frames, with optional speaker diarization — see [Processing video](#processing-video) below.
 
-Under the hood, both pipelines transcribe with [OpenAI Whisper](https://github.com/openai/whisper). By default they auto-select the best backend for your hardware — `mlx-whisper` on Apple Silicon and native Whisper everywhere else — so the [basic example](#basic-usage) below needs no configuration. To change the model size, force a particular backend, or opt into the faster experimental WhisperS2T backend, see [Choosing an ASR model and backend](#choosing-an-asr-model-and-backend).
+Under the hood, both pipelines transcribe with an ASR model that you can select. The default is [OpenAI Whisper](https://github.com/openai/whisper), and Docling also supports the Granite Speech, Parakeet, and Nemotron model families. The presets auto-select the best backend for your hardware, so the [basic example](#basic-usage) below needs no configuration. To change the model, force a particular backend, or opt into the faster experimental WhisperS2T backend, see [Choosing an ASR model and backend](#choosing-an-asr-model-and-backend).
 
 ## Supported formats
 
@@ -16,7 +16,7 @@ Under the hood, both pipelines transcribe with [OpenAI Whisper](https://github.c
 For video files, Docling extracts the audio track automatically before transcription. You don't need to run FFmpeg manually.
 
 !!! note "ffmpeg required"
-    Whisper audio decoding requires the `ffmpeg` executable to be installed and available on your `PATH`. This applies to common audio formats such as MP3, WAV, M4A, AAC, OGG, and FLAC, and to video files whose audio track and frames are extracted before transcription. Install it with your system package manager — e.g. `brew install ffmpeg` on macOS, `apt-get install ffmpeg` on Debian-based Linux, or `winget install ffmpeg` on Windows.
+    Most backends require the `ffmpeg` executable to be installed and available on your `PATH` to decode audio. This applies to common audio formats such as MP3, WAV, M4A, AAC, OGG, and FLAC, and to video files whose audio track and frames are extracted before transcription. The `mlx-audio` backend decodes WAV, MP3, and FLAC itself, and needs `ffmpeg` for the other formats. Install it with your system package manager — e.g. `brew install ffmpeg` on macOS, `apt-get install ffmpeg` on Debian-based Linux, or `winget install ffmpeg` on Windows.
 
 ## Installation
 
@@ -32,13 +32,20 @@ Or with `uv`:
 uv add "docling[asr]"
 ```
 
-For video, including optional speaker diarization, install the `format-video` extra instead:
+This installs the Whisper backends. Select another extra for the other models:
 
-```bash
-pip install "docling-slim[format-video]"
-```
+| Goal | Install | Notes |
+|------|---------|-------|
+| Whisper only | `docling[asr]` | |
+| All inline ASR engines | `docling[asr-inline]` or `docling-slim[models-asr-inline]` | Whisper, Transformers, and `mlx-audio`. Needs macOS 14 or later on Apple Silicon |
+| Granite Speech, Parakeet, and Nemotron through Transformers | `docling-slim[feat-asr-transformers]` | Includes the Whisper backends |
+| Apple Silicon without PyTorch | `docling-slim[feat-asr-mlx-audio]` | Installs nothing on other platforms. Needs macOS 14 or later |
+| Video, including optional speaker diarization | `docling-slim[format-video]` | See [Processing video](#processing-video) |
 
-`format-video` already includes everything `asr` provides (transcription), plus the frame-sampling and diarization dependencies (`resemblyzer`, `soundfile`, `scikit-learn`, `librosa`). See [Processing video](#processing-video) for details.
+`format-video` already includes everything `asr` provides (transcription), plus the frame-sampling and diarization dependencies (`resemblyzer`, `soundfile`, `scikit-learn`, `librosa`).
+
+!!! note "`feat-asr-mlx-audio` needs a selected model"
+    The auto-selecting `WHISPER_*` presets, which include the CLI default, need PyTorch or `mlx-whisper`. With only `feat-asr-mlx-audio`, select an `mlx-audio` preset, such as `--asr-model granite_speech_5_0_470m_turboctc`.
 
 !!! note "WhisperS2T on Linux with CUDA"
     The optional WhisperS2T backend uses CTranslate2, which loads NVIDIA's cuBLAS shared library at runtime. On Linux, if WhisperS2T model loading fails because the library cannot be found, add it to your `LD_LIBRARY_PATH`. When cuBLAS is installed from a pip wheel (e.g. `nvidia-cublas-cu12`), the shared library lives under the `nvidia/cublas/lib` directory inside your environment's `site-packages`.
@@ -97,6 +104,8 @@ The ASR pipeline produces **paragraph-level** Markdown with timestamps per segme
 
 [time: 5.28-9.96]  This is a LibriVox recording. All LibriVox recordings are in the public domain.
 ```
+
+The length of a segment depends on the model. Whisper gives short phrases. Granite gives a segment for each window of about 30 seconds, as [Long recordings](#long-recordings) explains.
 
 This structured output is immediately suitable as input to a vector embedding model, a summarizer, or any other downstream stage.
 
@@ -260,23 +269,26 @@ See the [CLI reference](../reference/cli.md) for the complete flag list.
 
 ## Choosing an ASR model and backend
 
-Docling includes three Whisper backends installed by the `asr` extra shown above.
-The optional Transformers backend supports additional speech model families.
+Docling includes these local backends. The [Installation](#installation) table shows the extra for each one. A [remote server](#transcribing-with-a-remote-whisper-server) is also possible.
 
-| Backend | Library | Hardware | Notes |
-|---------|---------|----------|-------|
-| **Native Whisper** | `openai-whisper` (PyTorch) | CPU, CUDA | Default; broadest compatibility |
-| **MLX Whisper** | `mlx-whisper` | Apple Silicon (MPS) | Optimized for M-series Macs |
-| **WhisperS2T** | `whisper-s2t-reborn` (CTranslate2) | CPU, CUDA | Optional & experimental; batched decoding for high throughput |
+| Backend | Library | Hardware | Models | Notes |
+|---------|---------|----------|--------|-------|
+| **Native Whisper** | `openai-whisper` (PyTorch) | CPU, CUDA | Whisper | Default; broadest compatibility |
+| **MLX Whisper** | `mlx-whisper` | Apple Silicon (MPS) | Whisper | Optimized for M-series Macs |
+| **mlx-audio** | `mlx-audio` | Apple Silicon (MPS), macOS 14 or later | Whisper tiny, Granite Speech 5.0, Parakeet, Nemotron | No PyTorch; preferred for these models on Apple Silicon |
+| **Transformers** | `transformers` (PyTorch) | CPU, CUDA, MPS, XPU | Whisper, Granite Speech, Parakeet, Nemotron | All speech models on all platforms |
+| **WhisperS2T** | `whisper-s2t-reborn` (CTranslate2) | CPU, CUDA | Whisper | Optional & experimental; batched decoding for high throughput |
 
 ### Automatic backend selection
 
-The auto-selecting presets — `WHISPER_TINY`, `WHISPER_BASE`, `WHISPER_SMALL`, `WHISPER_MEDIUM`, `WHISPER_LARGE`, and `WHISPER_TURBO` — pick a backend for you based on the hardware they detect, in this priority order:
+A preset name without a backend suffix selects the backend for your machine. There is one rule for Whisper and one for the other speech models.
+
+**Whisper.** The auto-selecting presets — `WHISPER_TINY`, `WHISPER_BASE`, `WHISPER_SMALL`, `WHISPER_MEDIUM`, `WHISPER_LARGE`, and `WHISPER_TURBO` — pick a backend for you based on the hardware they detect, in this priority order:
 
 1. **MLX Whisper** — on Apple Silicon, when `mlx-whisper` is installed.
 2. **Native Whisper** — on all other hardware.
 
-WhisperS2T is **never** auto-selected; you opt into it explicitly (see below).
+WhisperS2T, `mlx-audio`, and Transformers are **never** auto-selected for these presets; you opt into them explicitly (see below).
 
 This is why the [Basic usage](#basic-usage) example needs no hardware-specific code — `asr_model_specs.WHISPER_TURBO` runs on MLX on a Mac and on native Whisper on Linux and Windows. `WHISPER_TURBO` is a good default; to change the model size, swap in another auto-selecting preset:
 
@@ -286,9 +298,31 @@ from docling.datamodel import asr_model_specs
 pipeline_options.asr_options = asr_model_specs.WHISPER_LARGE
 ```
 
+**Granite Speech, Parakeet, and Nemotron.** A preset from [Speech models](#speech-models) uses `mlx-audio` when all of these conditions are true:
+
+- The machine is Apple Silicon.
+- `mlx-audio` 0.6.4 or later is installed.
+- The model has an `mlx-audio` export.
+- The device is `auto` or `mps`.
+
+In all other cases, the preset uses Transformers. For example, `--device cpu` selects Transformers on a Mac.
+
+The SDK constants select the backend when Python imports them, so `AcceleratorOptions(device=...)` does not change the selection. Only the CLI takes the device into account. To use another backend from the SDK, select an explicit preset.
+
 ### Forcing a specific backend
 
-Each size also has explicit variants that bypass hardware detection, suffixed `_NATIVE`, `_MLX`, and `_S2T`. Use them to pin a backend regardless of platform:
+Explicit variants bypass hardware detection. Use them to pin a backend regardless of platform:
+
+| Suffix | Backend | Available for |
+|--------|---------|---------------|
+| `_NATIVE` | Native Whisper | Whisper |
+| `_MLX_WHISPER` | MLX Whisper | Whisper |
+| `_MLX` | Alias that currently selects MLX Whisper | Whisper |
+| `_S2T` | WhisperS2T | Whisper |
+| `_TRANSFORMERS` | Transformers | Whisper, and the models with an `mlx-audio` export |
+| `_MLX_AUDIO` | `mlx-audio` | `WHISPER_TINY`, and the models with an `mlx-audio` export |
+
+For example:
 
 ```python
 from docling.datamodel import asr_model_specs
@@ -298,9 +332,102 @@ pipeline_options.asr_options = asr_model_specs.WHISPER_TURBO_NATIVE
 
 # MLX (Apple Silicon)
 pipeline_options.asr_options = asr_model_specs.WHISPER_TURBO_MLX
+
+# Granite Speech through Transformers on every platform
+pipeline_options.asr_options = asr_model_specs.GRANITE_SPEECH_5_0_2B_TRANSFORMERS
+
+# Granite Speech through mlx-audio (Apple Silicon)
+pipeline_options.asr_options = asr_model_specs.GRANITE_SPEECH_5_0_2B_MLX_AUDIO
 ```
 
 The rest of the setup — the `DocumentConverter` from [Basic usage](#basic-usage) — is unchanged.
+
+### Speech models
+
+These presets run on Transformers or, when the model has an export, on `mlx-audio`. The SDK constants are in `docling.datamodel.asr_model_specs`; the CLI names are their lower-case names. [Automatic backend selection](#automatic-backend-selection) explains how a preset selects its backend, and the [Installation](#installation) table shows the extras.
+
+| SDK constant | Hugging Face repository | `mlx-audio` export |
+|---|---|---|
+| `GRANITE_SPEECH_5_0_2B` | [`ibm-granite/granite-speech-5.0-2b`](https://huggingface.co/ibm-granite/granite-speech-5.0-2b) | Same repository |
+| `GRANITE_SPEECH_5_0_470M_TURBOCTC` | [`ibm-granite/granite-speech-5.0-470m-turboctc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc) | Same repository |
+| `GRANITE_SPEECH_5_0_470M_TURBOCTC_NC` | [`ibm-granite/granite-speech-5.0-470m-turboctc-nc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc-nc) | None |
+| `GRANITE_SPEECH_4_1_2B` | [`ibm-granite/granite-speech-4.1-2b`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b) | None |
+| `GRANITE_SPEECH_4_1_2B_PLUS` | [`ibm-granite/granite-speech-4.1-2b-plus`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b-plus) | None |
+| `GRANITE_4_0_1B_SPEECH` | [`ibm-granite/granite-4.0-1b-speech`](https://huggingface.co/ibm-granite/granite-4.0-1b-speech) | None |
+| `NEMOTRON_3_5_ASR_STREAMING` | [`nvidia/nemotron-3.5-asr-streaming-0.6b`](https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b) | [`mlx-community/nemotron-3.5-asr-streaming-0.6b`](https://huggingface.co/mlx-community/nemotron-3.5-asr-streaming-0.6b) |
+| `NEMOTRON_SPEECH_STREAMING_EN_0_6B` | [`nvidia/nemotron-speech-streaming-en-0.6b`](https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b) | Same repository |
+| `PARAKEET_CTC_1_1B` | [`nvidia/parakeet-ctc-1.1b`](https://huggingface.co/nvidia/parakeet-ctc-1.1b) | [`mlx-community/parakeet-ctc-1.1b`](https://huggingface.co/mlx-community/parakeet-ctc-1.1b) |
+
+```python
+from docling.datamodel import asr_model_specs
+
+options = asr_model_specs.GRANITE_SPEECH_5_0_2B.model_copy(deep=True)
+# Override the checkpoint revision when needed. A revision belongs to the repository
+# of the selected backend.
+# options.revision = "branch-tag-or-commit"
+pipeline_options.asr_options = options
+```
+
+```bash
+docling recording.wav --asr-model granite_speech_5_0_2b --to md
+docling recording.wav --asr-model parakeet_ctc_1_1b --to md
+```
+
+The backend changes the output:
+
+- Granite gives one segment for each window on both backends. See [Long recordings](#long-recordings).
+- Parakeet and Nemotron give one segment for each sentence on `mlx-audio`, and one segment for the full audio on Transformers.
+- The backends can also give slightly different text for the same model.
+
+More notes:
+
+- On Apple MPS with Transformers, Granite and TurboCTC load weights in FP32 to avoid a BF16 normalization failure. Allow more memory than for BF16 weights.
+- On `mlx-audio`, the tokenizer of `GRANITE_SPEECH_5_0_2B` runs remote code from its repository. The preset pins a commit. If you select a revision that is not a full commit SHA, you must also set `trust_remote_code=True`.
+- Plus uses plain transcription by default; its speaker and timestamp tags are not mapped to structured Docling tracks.
+- Streaming model names identify the checkpoints; this pipeline performs file transcription.
+- The `TURBOCTC_NC` preset uses CC-BY-NC-SA-4.0.
+
+### Long recordings
+
+Granite models return no timestamps, so Docling splits a recording into windows and decodes each window separately. This applies to the Granite presets on both backends. Each window gives one segment, and the time range of the segment is the range of its window.
+
+A cut goes to the longest pause within the search range. With the defaults, windows are 20 to 40 seconds long, and a recording of up to 40 seconds is one window. A pause is not always a sentence boundary, so a cut can fall inside a sentence. If the range has no pause, the cut is at the target.
+
+| Option | Default | Meaning |
+|--------|---------|---------|
+| `max_time_chunk` | `30.0` | Target window length in seconds |
+| `chunk_search_window` | `10.0` | Seconds that a cut can move from the target to reach a pause. It must be smaller than `max_time_chunk` |
+| `max_new_tokens` | `1024` | Token limit for each window on Transformers. A low value silently cuts text. `mlx-audio` always uses `1024` |
+
+```python
+from docling.datamodel import asr_model_specs
+
+pipeline_options.asr_options = asr_model_specs.GRANITE_SPEECH_5_0_2B.model_copy(
+    update={"max_time_chunk": 20.0, "chunk_search_window": 5.0}
+)
+```
+
+@@MEASUREMENTS@@
+
+### Languages and translation
+
+The `--asr-language` CLI flag applies to the Transformers and `mlx-audio` presets. In the SDK, set `language` and `task` on the options. Support depends on the backend and the model family:
+
+| Family | `language` on Transformers | `language` on `mlx-audio` | `task="translate"` |
+|--------|----------------------------|---------------------------|--------------------|
+| Whisper | Source language | Source language | Both backends |
+| Granite (2B, 4.x) | Ignored | Source language | Both backends; the target is English |
+| Granite CTC (TurboCTC) | Ignored | English only | Ignored on Transformers; an error on `mlx-audio` |
+| Parakeet | Ignored | English only | Ignored on Transformers; an error on `mlx-audio` |
+| Nemotron | Ignored | Must be a language of the checkpoint | Ignored on Transformers; an error on `mlx-audio` |
+
+On `mlx-audio`, an unsupported language is an error. A custom `prompt` works with Whisper and Granite on `mlx-audio`; other families reject it.
+
+### Local checkpoints
+
+With `artifacts_path`, provide the local checkpoint or its parent directory. The loader does not download missing weights.
+
+The checkpoint must match the selected backend. The `mlx-audio` exports of Parakeet and Nemotron 3.5 are in other repositories, and `WHISPER_TINY_MLX_AUDIO` also has its own. On Apple Silicon, select a `_TRANSFORMERS` preset to keep using a local Transformers checkpoint of these models.
 
 ### WhisperS2T: high-throughput transcription
 
@@ -352,7 +479,7 @@ pipeline_options.asr_options = InlineAsrWhisperS2TOptions(
 ```
 
 !!! note "WhisperS2T is not available on Apple Silicon"
-    The `whisper-s2t-reborn` dependency installs only on non-Apple-Silicon platforms, so `_S2T` presets can't be used on M-series Macs — use the native or MLX backends there. On Linux with CUDA, see the [cuBLAS note](#installation) above if model loading fails.
+    The `whisper-s2t-reborn` dependency installs only on non-Apple-Silicon platforms, so `_S2T` presets can't be used on M-series Macs — use the native, MLX, or `mlx-audio` backends there. On Linux with CUDA, see the [cuBLAS note](#installation) above if model loading fails.
 
 ### Transcribing with a remote Whisper server
 
@@ -417,57 +544,15 @@ docling --to md --asr-model whisper_turbo_native recording.mp3
 
 # WhisperS2T, distilled large-v3
 docling --to md --asr-model whisper_distil_large_v3_s2t recording.mp3
+
+# Granite Speech: mlx-audio on Apple Silicon, Transformers in other cases
+docling --to md --asr-model granite_speech_5_0_470m_turboctc recording.mp3
+
+# force Transformers for Granite Speech
+docling --to md --asr-model granite_speech_5_0_470m_turboctc_transformers recording.mp3
 ```
 
 See the [CLI reference](../reference/cli.md) for the complete list of `--asr-model` values.
-
-### Transformers speech models
-
-Install the optional backend:
-
-```bash
-pip install "docling-slim[feat-asr-transformers]"
-```
-
-The following additional presets use Transformers. The SDK constants are in
-`docling.datamodel.asr_model_specs`; the CLI names are their lower-case names.
-
-| SDK constant | Hugging Face repository |
-|---|---|
-| `GRANITE_SPEECH_5_0_2B` | [`ibm-granite/granite-speech-5.0-2b`](https://huggingface.co/ibm-granite/granite-speech-5.0-2b) |
-| `GRANITE_SPEECH_5_0_470M_TURBOCTC` | [`ibm-granite/granite-speech-5.0-470m-turboctc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc) |
-| `GRANITE_SPEECH_5_0_470M_TURBOCTC_NC` | [`ibm-granite/granite-speech-5.0-470m-turboctc-nc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc-nc) |
-| `GRANITE_SPEECH_4_1_2B` | [`ibm-granite/granite-speech-4.1-2b`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b) |
-| `GRANITE_SPEECH_4_1_2B_PLUS` | [`ibm-granite/granite-speech-4.1-2b-plus`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b-plus) |
-| `NEMOTRON_SPEECH_STREAMING_EN_0_6B` | [`nvidia/nemotron-speech-streaming-en-0.6b`](https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b) |
-| `PARAKEET_CTC_1_1B` | [`nvidia/parakeet-ctc-1.1b`](https://huggingface.co/nvidia/parakeet-ctc-1.1b) |
-
-```python
-from docling.datamodel import asr_model_specs
-
-options = asr_model_specs.GRANITE_SPEECH_5_0_2B.model_copy(deep=True)
-# Override the checkpoint revision when needed.
-# options.revision = "branch-tag-or-commit"
-pipeline_options.asr_options = options
-```
-
-On Apple MPS, Granite and TurboCTC load weights in FP32 to avoid a BF16
-normalization failure. Allow more memory than for BF16 weights.
-
-With `artifacts_path`, provide the local checkpoint or its parent directory.
-The loader does not download missing weights.
-
-```bash
-docling recording.wav --asr-model granite_speech_5_0_2b --to md
-docling recording.wav --asr-model parakeet_ctc_1_1b --to md
-```
-
-These models currently produce one transcript segment covering the full audio
-duration. Plus uses plain transcription by default; its speaker and timestamp
-tags are not mapped to structured Docling tracks. Streaming model names identify
-the checkpoints; this pipeline performs file transcription.
-
-The `TURBOCTC_NC` preset uses CC-BY-NC-SA-4.0.
 
 ### Validate real model decoding
 
@@ -494,11 +579,11 @@ The shared `report.json` records the audio SHA-256, elapsed time, and failures.
 It returns a nonzero exit code if any model fails, including missing dependencies
 or unsupported hardware, and continues with the other models.
 
-The default run selects every ASR preset, including native Whisper, MLX, and
-WhisperS2T variants. Install the required backends or select a subset suitable
+The default run selects every ASR preset, including native Whisper, MLX,
+`mlx-audio`, and WhisperS2T variants. Install the required backends or select a subset suitable
 for your machine. Models download weights unless `--artifacts-path` is set.
 Use `--language` for the source language (default: English), `--revision` to
-override Transformers revisions, and `--timeout` to change the per-model limit
+override Transformers and `mlx-audio` revisions, and `--timeout` to change the per-model limit
 (default: 900 seconds, including download time).
 
 Compare the saved transcripts to the spoken fragment to assess recognition
@@ -511,6 +596,8 @@ accuracy. Decoding success alone does not measure transcription accuracy.
 | No SRT subtitle output | WebVTT is supported via `doc.save_as_vtt(...)`. For SRT, use the `openai-whisper` CLI instead: `whisper audio.mp3 --output_format srt` |
 | Audio-only ASR pipeline has no speaker diarization | Diarization is available for video via `VideoPipelineOptions.enable_diarization` — see [Processing video](#processing-video). For audio-only diarization, use [`pyannote-audio`](https://github.com/pyannote/pyannote-audio) as a pre- or post-processing step |
 | No word-level timestamps | Not available in current export formats |
+| Granite time ranges cover a full window of about 20 to 40 seconds, not a phrase | Use Whisper for finer timing, or reduce `max_time_chunk` |
+| A Granite window can end inside a sentence, because a pause is not always a sentence boundary | Join adjacent segments before further processing |
 
 For knowledge-retrieval use cases (RAG, search, summarization), paragraph-level Markdown is usually all you need. The limitations above matter primarily for subtitle generation workflows.
 

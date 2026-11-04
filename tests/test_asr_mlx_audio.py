@@ -3,6 +3,7 @@
 
 """Tests for the mlx-audio ASR backend, the `mlx` alias, and pause-aware windows."""
 
+import importlib.metadata
 import itertools
 import subprocess
 import sys
@@ -15,9 +16,12 @@ import numpy as np
 import pytest
 
 from docling.cli.main import _resolve_asr_options
-from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel import asr_presets
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
+    GRANITE_SPEECH_4_1_2B_PRESET,
     GRANITE_SPEECH_5_0_2B_PRESET,
+    PARAKEET_CTC_1_1B_PRESET,
     WHISPER_ASR_PRESETS,
     WHISPER_TINY_MLX,
     WHISPER_TINY_MLX_AUDIO,
@@ -86,7 +90,7 @@ def fake_mlx_audio(monkeypatch: pytest.MonkeyPatch) -> Mock:
         "mlx_audio.stt.utils": utils,
     }.items():
         monkeypatch.setitem(sys.modules, name, module)
-    monkeypatch.setattr(asr_mlx_audio, "_is_apple_silicon", lambda: True)
+    monkeypatch.setattr(asr_mlx_audio, "is_apple_silicon", lambda: True)
     return load
 
 
@@ -214,6 +218,14 @@ def test_windows_cover_the_recording_without_gaps_and_keep_the_size_limits():
     for start, end in windows[:-1]:
         assert 20.0 <= end - start <= 40.0
     assert windows[-1][1] - windows[-1][0] <= 40.0
+
+
+def test_pause_near_the_end_does_not_leave_a_fragment():
+    waveform = _speech_with_pauses([(39.5, 40.0)], 40.2)
+
+    windows = split_on_pauses(waveform, SAMPLE_RATE, 30.0, 10.0)
+
+    assert windows[-1][1] - windows[-1][0] >= 10.0
 
 
 def test_short_recording_has_one_window():
@@ -442,14 +454,14 @@ def test_unpinned_parakeet_does_not_need_an_opt_in(fake_mlx_audio: Mock):
 
 
 def test_other_platforms_get_a_clear_error(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(asr_mlx_audio, "_is_apple_silicon", lambda: False)
+    monkeypatch.setattr(asr_mlx_audio, "is_apple_silicon", lambda: False)
 
     with pytest.raises(RuntimeError, match="Apple Silicon"):
         MlxAudioAsrDecoder(_options(), None)
 
 
 def test_missing_library_error_names_the_extra(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(asr_mlx_audio, "_is_apple_silicon", lambda: True)
+    monkeypatch.setattr(asr_mlx_audio, "is_apple_silicon", lambda: True)
     monkeypatch.setitem(sys.modules, "mlx", None)
     monkeypatch.setitem(sys.modules, "mlx.core", None)
 
@@ -469,7 +481,7 @@ from docling.datamodel.asr_model_specs import WHISPER_TINY_MLX_AUDIO
 from docling.pipeline import asr_mlx_audio
 from docling.pipeline.asr_transcriber import _AsrModelFactory
 
-asr_mlx_audio._is_apple_silicon = lambda: True
+asr_mlx_audio.is_apple_silicon = lambda: True
 core = ModuleType("mlx.core")
 core.metal = SimpleNamespace(is_available=lambda: True)
 stt = ModuleType("mlx_audio.stt")
@@ -503,6 +515,78 @@ def test_factory_selects_the_backend(fake_mlx_audio: Mock):
     transcriber = _AsrModelFactory.create(_options(), None, AcceleratorOptions())
 
     assert isinstance(transcriber, _MlxAudioModel)
+
+
+# ---------------------------------------------------------------- engine selection
+
+
+def _machine(
+    monkeypatch: pytest.MonkeyPatch, apple_silicon: bool, mlx_audio: str | None
+) -> None:
+    def installed_version(package: str) -> str:
+        assert package == "mlx-audio"
+        if mlx_audio is None:
+            raise importlib.metadata.PackageNotFoundError(package)
+        return mlx_audio
+
+    monkeypatch.setattr(asr_presets, "is_apple_silicon", lambda: apple_silicon)
+    monkeypatch.setattr(importlib.metadata, "version", installed_version)
+
+
+@pytest.mark.parametrize(
+    ("apple_silicon", "mlx_audio", "device", "expected"),
+    [
+        (True, "0.6.4", AcceleratorDevice.AUTO, InferenceAsrFramework.MLX_AUDIO),
+        (True, "0.6.4", AcceleratorDevice.MPS, InferenceAsrFramework.MLX_AUDIO),
+        # AcceleratorOptions also accepts plain strings.
+        (True, "0.6.4", "auto", InferenceAsrFramework.MLX_AUDIO),
+        (True, "0.6.4", "cuda:0", InferenceAsrFramework.TRANSFORMERS),
+        # The user asked for a device that MLX cannot use.
+        (True, "0.6.4", AcceleratorDevice.CPU, InferenceAsrFramework.TRANSFORMERS),
+        # mlx-vlm can install a version that this backend cannot use.
+        (True, "0.6.1", AcceleratorDevice.AUTO, InferenceAsrFramework.TRANSFORMERS),
+        (True, None, AcceleratorDevice.AUTO, InferenceAsrFramework.TRANSFORMERS),
+        (False, "0.6.4", AcceleratorDevice.AUTO, InferenceAsrFramework.TRANSFORMERS),
+    ],
+)
+def test_preset_selects_the_engine_for_the_machine(
+    monkeypatch: pytest.MonkeyPatch, apple_silicon, mlx_audio, device, expected
+):
+    _machine(monkeypatch, apple_silicon, mlx_audio)
+
+    options = PARAKEET_CTC_1_1B_PRESET.to_auto_options(device)
+
+    assert options.inference_framework == expected
+
+
+def test_model_without_an_mlx_audio_export_stays_on_transformers(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _machine(monkeypatch, True, "0.6.4")
+
+    options = GRANITE_SPEECH_4_1_2B_PRESET.to_auto_options()
+
+    assert options.inference_framework == InferenceAsrFramework.TRANSFORMERS
+
+
+def test_cli_name_selects_by_machine_and_transformers_name_does_not(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _machine(monkeypatch, True, "0.6.4")
+
+    auto = _resolve_asr_options(AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC)
+    on_cpu = _resolve_asr_options(
+        AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC, AcceleratorDevice.CPU
+    )
+    forced = _resolve_asr_options(
+        AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS
+    )
+    streaming = _resolve_asr_options(AsrModelType.NEMOTRON_3_5_ASR_STREAMING)
+
+    assert auto.inference_framework == InferenceAsrFramework.MLX_AUDIO
+    assert on_cpu.inference_framework == InferenceAsrFramework.TRANSFORMERS
+    assert forced.inference_framework == InferenceAsrFramework.TRANSFORMERS
+    assert streaming.inference_framework == InferenceAsrFramework.MLX_AUDIO
 
 
 # ---------------------------------------------------------------- real inference

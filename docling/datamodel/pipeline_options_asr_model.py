@@ -329,7 +329,32 @@ AsrModelFamily = Literal[
 ]
 
 
-class InlineAsrTransformersOptions(InlineAsrOptions):
+class _WindowedAsrOptions(InlineAsrOptions):
+    """Settings for the backends that split a recording into windows at pauses."""
+
+    chunk_search_window: Annotated[
+        float,
+        Field(
+            ge=0,
+            description=(
+                "Seconds that a window edge can move from `max_time_chunk` to reach "
+                "a pause in the speech. Applies to the Granite families, which "
+                "return no timestamps. A pause is not always a sentence boundary."
+            ),
+        ),
+    ] = 10.0
+
+    @model_validator(mode="after")
+    def _validate_chunk_search_window(self) -> "_WindowedAsrOptions":
+        if self.chunk_search_window >= self.max_time_chunk:
+            raise ValueError(
+                f"chunk_search_window ({self.chunk_search_window}) must be smaller "
+                f"than max_time_chunk ({self.max_time_chunk})."
+            )
+        return self
+
+
+class InlineAsrTransformersOptions(_WindowedAsrOptions):
     """ASR with a Hugging Face Transformers checkpoint."""
 
     inference_framework: Literal[InferenceAsrFramework.TRANSFORMERS] = (
@@ -340,6 +365,9 @@ class InlineAsrTransformersOptions(InlineAsrOptions):
     prompt: str | None = None
     language: str | None = None
     task: Literal["transcribe", "translate"] = "transcribe"
+    # Only the Granite family uses this limit. It applies to each window, and 256 can
+    # cut the speech of a long window.
+    max_new_tokens: int = 1024
     supported_devices: list[AcceleratorDevice] = [
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
@@ -473,7 +501,7 @@ class InlineAsrMlxWhisperOptions(InlineAsrOptions):
     ] = None
 
 
-class InlineAsrMlxAudioOptions(InlineAsrOptions):
+class InlineAsrMlxAudioOptions(_WindowedAsrOptions):
     """ASR with the mlx-audio library on Apple Silicon.
 
     Runs Whisper, Granite Speech, Parakeet, and Nemotron checkpoints without torch.
@@ -538,17 +566,6 @@ class InlineAsrMlxAudioOptions(InlineAsrOptions):
             )
         ),
     ] = True
-    chunk_search_window: Annotated[
-        float,
-        Field(
-            ge=0,
-            description=(
-                "Seconds that a window edge can move from `max_time_chunk` to reach "
-                "a pause in the speech. Applies to the Granite families, which "
-                "return no timestamps. A pause is not always a sentence boundary."
-            ),
-        ),
-    ] = 10.0
     trust_remote_code: Annotated[
         bool,
         Field(
@@ -563,15 +580,6 @@ class InlineAsrMlxAudioOptions(InlineAsrOptions):
         list[AcceleratorDevice],
         Field(description="Hardware accelerators supported by mlx-audio."),
     ] = [AcceleratorDevice.MPS]
-
-    @model_validator(mode="after")
-    def _validate_chunk_search_window(self) -> "InlineAsrMlxAudioOptions":
-        if self.chunk_search_window >= self.max_time_chunk:
-            raise ValueError(
-                f"chunk_search_window ({self.chunk_search_window}) must be smaller "
-                f"than max_time_chunk ({self.max_time_chunk})."
-            )
-        return self
 
 
 # English-only WhisperS2T models (cannot transcribe non-English audio)
