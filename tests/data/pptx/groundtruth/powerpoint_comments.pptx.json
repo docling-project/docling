@@ -30,13 +30,13 @@
         "$ref": "#/groups/3"
       },
       {
-        "$ref": "#/groups/4"
-      },
-      {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/5"
       },
       {
         "$ref": "#/groups/7"
+      },
+      {
+        "$ref": "#/groups/8"
       }
     ],
     "content_layer": "body",
@@ -99,7 +99,7 @@
           "$ref": "#/texts/4"
         },
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/groups/4"
         }
       ],
       "content_layer": "body",
@@ -109,14 +109,34 @@
     {
       "self_ref": "#/groups/4",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/3"
       },
       "children": [
+        {
+          "$ref": "#/texts/5"
+        },
         {
           "$ref": "#/texts/6"
         },
         {
-          "$ref": "#/groups/5"
+          "$ref": "#/texts/7"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/groups/6"
         }
       ],
       "content_layer": "body",
@@ -124,38 +144,24 @@
       "label": "chapter"
     },
     {
-      "self_ref": "#/groups/5",
+      "self_ref": "#/groups/6",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/5"
       },
       "children": [
         {
-          "$ref": "#/texts/7"
-        },
-        {
-          "$ref": "#/texts/8"
-        },
-        {
           "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
+        },
+        {
+          "$ref": "#/texts/11"
         }
       ],
       "content_layer": "body",
       "name": "list",
       "label": "list"
-    },
-    {
-      "self_ref": "#/groups/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/10"
-        }
-      ],
-      "content_layer": "notes",
-      "name": "comment-slide3-2",
-      "label": "comment_section"
     },
     {
       "self_ref": "#/groups/7",
@@ -164,7 +170,21 @@
       },
       "children": [
         {
-          "$ref": "#/texts/11"
+          "$ref": "#/texts/12"
+        }
+      ],
+      "content_layer": "notes",
+      "name": "comment-slide3-2",
+      "label": "comment_section"
+    },
+    {
+      "self_ref": "#/groups/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/13"
         }
       ],
       "content_layer": "notes",
@@ -281,11 +301,11 @@
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [
         {
           "page_no": 2,
@@ -298,17 +318,72 @@
           },
           "charspan": [
             0,
-            70
+            20
           ]
         }
       ],
-      "orig": "Install Docling as a Python library with your favorite package manager",
-      "text": "Install Docling as a Python library with your favorite package manager"
+      "orig": "Install Docling as a",
+      "text": "Install Docling as a"
     },
     {
       "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 457200.0,
+            "t": 1600200.0,
+            "r": 8686800.0,
+            "b": 6126163.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            14
+          ]
+        }
+      ],
+      "orig": "Python library",
+      "text": "Python library",
+      "hyperlink": "https://pypi.org/project/docling"
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 457200.0,
+            "t": 1600200.0,
+            "r": 8686800.0,
+            "b": 6126163.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            34
+          ]
+        }
+      ],
+      "orig": "with your favorite package manager",
+      "text": "with your favorite package manager"
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -333,9 +408,9 @@
       "text": "Features"
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -362,9 +437,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -391,9 +466,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/11",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -420,9 +495,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "notes",
@@ -432,9 +507,9 @@
       "text": "[author: Jane Smith (JS), time: 2026-06-18T17:37:55.253]: This is a cool feature"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/13",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "notes",

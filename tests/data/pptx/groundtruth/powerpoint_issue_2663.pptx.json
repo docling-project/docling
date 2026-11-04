@@ -149,7 +149,14 @@
         }
       ],
       "orig": "Key Benefits:",
-      "text": "Key Benefits:"
+      "text": "Key Benefits:",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/2",
@@ -321,7 +328,14 @@
         }
       ],
       "orig": "Considerations When Using Open-Source Software:",
-      "text": "Considerations When Using Open-Source Software:"
+      "text": "Considerations When Using Open-Source Software:",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/8",

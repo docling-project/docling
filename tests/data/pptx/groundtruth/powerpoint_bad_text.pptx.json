@@ -39,6 +39,23 @@
       "content_layer": "body",
       "name": "slide-0",
       "label": "chapter"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -47,7 +64,11 @@
       "parent": {
         "$ref": "#/groups/0"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/1"
+        }
+      ],
       "content_layer": "body",
       "label": "title",
       "prov": [
@@ -66,8 +87,69 @@
           ]
         }
       ],
-      "orig": "X-Library The fully customisable and copyright-free standard content template collection exclusively for our customers",
-      "text": "X-Library The fully customisable and copyright-free standard content template collection exclusively for our customers"
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 1041400.0,
+            "t": 1689099.0,
+            "r": 8083550.0,
+            "b": 4582390.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            9
+          ]
+        }
+      ],
+      "orig": "X-Library",
+      "text": "X-Library",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 1041400.0,
+            "t": 1689099.0,
+            "r": 8083550.0,
+            "b": 4582390.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            108
+          ]
+        }
+      ],
+      "orig": "The fully customisable and copyright-free standard content template collection exclusively for our customers",
+      "text": "The fully customisable and copyright-free standard content template collection exclusively for our customers"
     }
   ],
   "pictures": [],

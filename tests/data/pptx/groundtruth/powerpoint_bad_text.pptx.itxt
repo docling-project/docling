@@ -1,3 +1,6 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: chapter: group slide-0
-    item-2 at level 2: title: X-Library The fully customisable ... llection exclusively for our customers
+    item-2 at level 2: title: 
+      item-3 at level 3: inline: group group
+        item-4 at level 4: text: X-Library
+        item-5 at level 4: text: The fully customisable and copyr ... llection exclusively for our customers

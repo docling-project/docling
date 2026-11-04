@@ -20,6 +20,7 @@ from typing import (
     Iterable,
     Iterator,
     Literal,
+    NamedTuple,
     Optional,
     Sequence,
     Union,
@@ -32,6 +33,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    Formatting,
     GroupItem,
     GroupLabel,
     ImageRef,
@@ -42,6 +44,7 @@ from docling_core.types.doc import (
     PictureClassificationPrediction,
     PictureMeta,
     ProvenanceItem,
+    Script,
     Size,
     TableCell,
     TableData,
@@ -197,26 +200,109 @@ def _iter_paragraph_elements(element: etree._Element) -> Iterator[etree._Element
             yield child
 
 
-def _paragraph_fragments(element: etree._Element) -> list[tuple[DocItemLabel, str]]:
-    """Coalesce adjacent text runs while keeping equations as separate fragments."""
-    fragments: list[tuple[DocItemLabel, str]] = []
+class _Fragment(NamedTuple):
+    """A stretch of paragraph content that shares one label, format and link."""
+
+    label: DocItemLabel
+    text: str
+    formatting: Optional[Formatting] = None
+    hyperlink: Optional[Union[AnyUrl, Path]] = None
+
+
+def _hyperlink_target(address: Optional[str]) -> Optional[Union[AnyUrl, Path]]:
+    """Convert a link address to a URL, or to a path when it has no scheme."""
+    if not address:
+        return None
+    if not urlparse(address).scheme:
+        return Path(address)
+    try:
+        return AnyUrl(address)
+    except ValidationError:
+        _log.warning("Skipping malformed hyperlink address: %r", address)
+        return None
+
+
+def _run_formatting(run_properties: Optional[etree._Element]) -> Optional[Formatting]:
+    """Read the character format a run sets itself (``a:rPr``).
+
+    Only explicit run properties count. Format that a run inherits from a
+    layout, master or list style is not resolved. Returns None for plain text.
+    """
+    if run_properties is None:
+        return None
+    baseline = int(run_properties.get("baseline", "0"))
+    formatting = Formatting(
+        bold=run_properties.get("b") in ("1", "true"),
+        italic=run_properties.get("i") in ("1", "true"),
+        underline=run_properties.get("u", "none") != "none",
+        strikethrough=run_properties.get("strike", "noStrike") != "noStrike",
+        script=Script.SUPER
+        if baseline > 0
+        else Script.SUB
+        if baseline < 0
+        else Script.BASELINE,
+    )
+    return None if formatting == Formatting() else formatting
+
+
+def _run_hyperlink(
+    run_properties: Optional[etree._Element], part
+) -> Optional[Union[AnyUrl, Path]]:
+    """Resolve the link of a run (``a:hlinkClick`` in ``a:rPr``) to a URL or path.
+
+    A link to another slide has a relationship target too, but it is not
+    something a reader can follow, so only external links are returned.
+    """
+    if run_properties is None:
+        return None
+    click = run_properties.find(qn("a:hlinkClick"))
+    rel_id = None if click is None else click.get(qn("r:id"))
+    if not rel_id or rel_id not in part.rels:
+        return None
+    relationship = part.rels[rel_id]
+    if not relationship.is_external:
+        return None
+    return _hyperlink_target(relationship.target_ref)
+
+
+def _paragraph_fragments(paragraph) -> list[_Fragment]:
+    """Coalesce adjacent runs that share a format and link.
+
+    Equations stay separate fragments. Args: ``paragraph`` is a python-pptx
+    paragraph.
+    """
+    fragments: list[_Fragment] = []
     text = ""
-    for child in _iter_paragraph_elements(element):
+    style: tuple[Optional[Formatting], Optional[Union[AnyUrl, Path]]] = (None, None)
+
+    def flush() -> None:
+        nonlocal text
+        if text:
+            fragments.append(_Fragment(DocItemLabel.TEXT, text, *style))
+            text = ""
+
+    for child in _iter_paragraph_elements(paragraph._element):
         if child.tag == f"{{{_MATH_NAMESPACE}}}oMath":
-            if text:
-                fragments.append((DocItemLabel.TEXT, text))
-                text = ""
+            flush()
             equation = str(oMath2Latex(child)).strip()
             if equation:
-                fragments.append((DocItemLabel.FORMULA, equation))
+                fragments.append(_Fragment(DocItemLabel.FORMULA, equation))
         elif isinstance(child, CT_TextLineBreak):
             text += " "
         else:
             run_text = child.find(qn("a:t"))
-            if run_text is not None:
-                text += run_text.text or ""
-    if text:
-        fragments.append((DocItemLabel.TEXT, text))
+            if run_text is None:
+                continue
+            run_properties = child.find(qn("a:rPr"))
+            run_style = (
+                _run_formatting(run_properties),
+                _run_hyperlink(run_properties, paragraph.part),
+            )
+            if run_style != style:
+                flush()
+                style = run_style
+            text += run_text.text or ""
+    flush()
     return fragments
 
 
@@ -1115,9 +1201,22 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             is_a_list, bullet_type, auto_number_scheme = self._is_list_item(paragraph)
             p = paragraph._element
 
-            fragments = _paragraph_fragments(p)
-            p_text = "".join(text for _, text in fragments)
-            has_equations = any(label == DocItemLabel.FORMULA for label, _ in fragments)
+            fragments = _paragraph_fragments(paragraph)
+            p_text = "".join(fragment.text for fragment in fragments)
+            has_equations = any(
+                fragment.label == DocItemLabel.FORMULA for fragment in fragments
+            )
+            # Runs that differ in format or link, or an equation, need one item
+            # each. Otherwise the paragraph is one item that carries the format.
+            split_fragments = has_equations or len(fragments) > 1
+            single_style = (
+                {}
+                if split_fragments or not fragments
+                else {
+                    "formatting": fragments[0].formatting,
+                    "hyperlink": fragments[0].hyperlink,
+                }
+            )
 
             prov = self._generate_prov(shape, slide_ind, p_text, slide_size)
 
@@ -1164,23 +1263,31 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     marker=enum_marker,
                     enumerated=enumerated,
                     parent=current.group,
-                    text="" if has_equations else p_text,
+                    text="" if split_fragments else p_text,
                     prov=prov,
                     content_layer=content_layer,
+                    **single_style,
                 )
-                if has_equations:
+                if split_fragments:
                     inline_group = doc.add_inline_group(
                         parent=current.last_item, content_layer=content_layer
                     )
-                    for label, text in fragments:
+                    # The serializer joins inline items with one space, so the
+                    # whitespace between runs is dropped here.
+                    for fragment in fragments:
+                        text = fragment.text.strip()
+                        if not text:
+                            continue
                         doc.add_text(
-                            label=label,
+                            label=fragment.label,
                             parent=inline_group,
                             text=text,
                             prov=self._generate_prov(
                                 shape, slide_ind, text, slide_size
                             ),
                             content_layer=content_layer,
+                            formatting=fragment.formatting,
+                            hyperlink=fragment.hyperlink,
                         )
             else:  # is paragraph not a list item
                 open_lists.clear()
@@ -1196,10 +1303,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         # It's a title
                         doc_label = DocItemLabel.TITLE
 
-                if has_equations:
+                if split_fragments:
                     has_text = any(
-                        label != DocItemLabel.FORMULA and text.strip()
-                        for label, text in fragments
+                        fragment.label != DocItemLabel.FORMULA and fragment.text.strip()
+                        for fragment in fragments
                     )
                     fragment_parent = parent_slide
                     if has_text and doc_label == DocItemLabel.TITLE:
@@ -1213,16 +1320,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         if has_text
                         else fragment_parent
                     )
-                    for label, text in fragments:
-                        if text.strip():
+                    for fragment in fragments:
+                        text = fragment.text.strip()
+                        if text:
                             doc.add_text(
-                                label=label,
+                                label=fragment.label,
                                 parent=parent,
                                 text=text,
                                 prov=self._generate_prov(
                                     shape, slide_ind, text, slide_size
                                 ),
                                 content_layer=content_layer,
+                                formatting=fragment.formatting,
+                                hyperlink=fragment.hyperlink,
                             )
                 else:
                     doc.add_text(
@@ -1231,6 +1341,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         text=p_text,
                         prov=prov,
                         content_layer=content_layer,
+                        **single_style,
                     )
         return
 
@@ -2027,9 +2138,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 # is still a fragment, so only count an equation or a fragment
                 # with non-blank text.
                 if not shape.text.strip() and not any(
-                    label == DocItemLabel.FORMULA or text.strip()
+                    fragment.label == DocItemLabel.FORMULA or fragment.text.strip()
                     for paragraph in shape.text_frame.paragraphs
-                    for label, text in _paragraph_fragments(paragraph._element)
+                    for fragment in _paragraph_fragments(paragraph)
                 ):
                     return
                 # Handle other text elements, including lists (bullet lists, numbered
@@ -2110,15 +2221,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         except (AttributeError, KeyError):
             # No click action on this shape kind, or its relationship is gone.
             return None
-        if not address:
-            return None
-        if not urlparse(address).scheme:
-            return Path(address)
-        try:
-            return AnyUrl(address)
-        except ValidationError:
-            _log.warning("Skipping malformed hyperlink address: %r", address)
-            return None
+        return _hyperlink_target(address)
 
     @classmethod
     def _apply_shape_hyperlink(cls, shape, items: Sequence[TextItem]) -> None:
