@@ -303,6 +303,26 @@ def test_stray_dashes_are_not_swallowed() -> None:
     assert texts == ["before", "after"]
 
 
+def test_trailing_plus_is_a_hard_line_break() -> None:
+    # A line ending in " +" breaks the line in AsciiDoc; the "+" is not text.
+    src = b"Roses are red, +\nviolets are blue.\n\nA *bold* line +\nand more.\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="hard_line_break.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item in doc.texts]
+    assert texts == [
+        "Roses are red,\nviolets are blue.",
+        "A",
+        "bold",
+        "line\nand more.",
+    ]
+
+
 def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
     # "[cols=...]", "[[id]]" and admonition names like "[NOTE]" are block
     # metadata for whatever follows; they used to leak into the document body
