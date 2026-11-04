@@ -1,3 +1,16 @@
+## [v2.147.0](https://github.com/docling-project/docling/releases/tag/v2.147.0) - 2026-11-04
+
+### Feature
+
+* Honor the InlineGroup whitespace contract in the backends ([#3891](https://github.com/docling-project/docling/issues/3891)) ([`ed7df11`](https://github.com/docling-project/docling/commit/ed7df110d992f1e4464f4235e1f8f2f2eb197bf0))
+
+### Fix
+
+* **asciidoc:** Parse links and inline marks in block titles ([#5144](https://github.com/docling-project/docling/issues/5144)) ([`0634e2f`](https://github.com/docling-project/docling/commit/0634e2f74561e5950d69b2cace67ef95400506ad))
+* **vlm:** Keep the page when a dots table is too large ([#5147](https://github.com/docling-project/docling/issues/5147)) ([`9884d65`](https://github.com/docling-project/docling/commit/9884d65162bae50ccf272af48dc59802038df426))
+* **latex:** Keep \href links inline instead of splitting the paragraph ([#4600](https://github.com/docling-project/docling/issues/4600)) ([`a511d52`](https://github.com/docling-project/docling/commit/a511d5242642ef57357dbee6721a1729733602b9))
+* **boxnote:** Parent the image caption with its picture ([#5119](https://github.com/docling-project/docling/issues/5119)) ([`f462d37`](https://github.com/docling-project/docling/commit/f462d37db9b8b261a00e7fde45b8ef4264cdbca2))
+
 ## [v2.146.0](https://github.com/docling-project/docling/releases/tag/v2.146.0) - 2026-11-03
 
 ### Feature

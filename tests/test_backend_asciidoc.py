@@ -881,9 +881,26 @@ No marks here.
         "both": (True, True),
     }
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["mono"]
-    plain = [item.text for item in doc.texts if item.formatting is None]
-    assert "and snake_case_name and 2*3*4." in plain
-    assert "No marks here." in plain
+    # Runs carry their own boundary whitespace; only the block edges are trimmed.
+    assert [item.text for item in doc.texts] == [
+        "Some ",
+        "bold",
+        ", ",
+        "italic",
+        " and ",
+        "mono",
+        " text, with ",
+        "st",
+        "rong.",
+        "both",
+        " and snake_case_name and 2*3*4.",
+        "No marks here.",
+    ]
+    assert doc.export_to_markdown() == (
+        "Some **bold**, *italic* and `mono` text, with **st**rong.\n\n"
+        "***both*** and snake\\_case\\_name and 2*3*4.\n\n"
+        "No marks here."
+    )
 
 
 def test_inline_formatting_marks_and_spans() -> None:
@@ -907,10 +924,14 @@ Nested **bold _and italic_** text.
     assert styled == [
         ("ui", False, True),
         ("a b c", True, False),
-        ("bold", True, False),
+        ("bold ", True, False),
         ("and italic", True, True),
     ]
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["um"]
+    assert doc.export_to_markdown() == (
+        "Text with *ui*, `um` and **a b c** marks.\n\n"
+        "Nested **bold** ***and italic*** text."
+    )
 
 
 def test_links_in_paragraphs() -> None:
@@ -945,7 +966,7 @@ Not linked: word:https://example.com.
         ("https://example.com/x", "https://example.com/x", False),
         ("Docs", "https://example.com/", False),
         ("Bold", "https://example.com/", True),
-        ("link", "https://example.com/", False),
+        (" link", "https://example.com/", False),
     ]
     plain = [item.text for item in doc.texts if item.hyperlink is None]
     assert "Not linked: word:https://example.com." in plain
@@ -1047,8 +1068,8 @@ def test_links_in_block_titles_of_paragraphs_and_lists() -> None:
         for item in doc.texts
         if item.formatting is not None and item.formatting.bold
     ]
-    assert "Caption" in bold
-    assert "Steps" in bold
+    assert "Caption " in bold
+    assert "Steps " in bold
     paragraph = next(item for item in doc.texts if item.text == "Para after title.")
     assert paragraph.formatting is None
     assert all("example.com[" not in item.text for item in doc.texts)

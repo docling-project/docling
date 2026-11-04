@@ -67,6 +67,7 @@ from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils._inline_runs import trim_run_edges
 
 _ODFDO_AVAILABLE: bool = False
 _ODFDO_IMPORT_ERROR: ImportError | None = None
@@ -567,28 +568,20 @@ def _normalize_odf_text_runs(runs: list[_OdfTextRun]) -> list[_OdfTextRun]:
             merged_runs[-1].text += run.text
             continue
 
-        text = run.text
-        if merged_runs and merged_runs[-1].hyperlink != run.hyperlink:
-            # A hyperlink boundary is a hard edge: strip the whitespace right
-            # at the boundary so it doesn't double up with the separator the
-            # markdown/inline serializer already inserts between runs.
-            merged_runs[-1].text = merged_runs[-1].text.rstrip()
-            text = text.lstrip()
+        # A hyperlink boundary is not special under the whitespace contract: the
+        # boundary space stays in whichever plain run owns it, and the serializer
+        # places it outside the link markup. No stripping here.
         merged_runs.append(
-            _OdfTextRun(text=text, formatting=run.formatting, hyperlink=run.hyperlink)
+            _OdfTextRun(
+                text=run.text, formatting=run.formatting, hyperlink=run.hyperlink
+            )
         )
 
-    while merged_runs and merged_runs[0].text.strip() == "":
-        merged_runs.pop(0)
-    if merged_runs:
-        merged_runs[0].text = merged_runs[0].text.lstrip()
-
-    while merged_runs and merged_runs[-1].text.strip() == "":
-        merged_runs.pop()
-    if merged_runs:
-        merged_runs[-1].text = merged_runs[-1].text.rstrip()
-
-    return [run for run in merged_runs if run.text]
+    return trim_run_edges(
+        merged_runs,
+        get_text=lambda run: run.text,
+        with_text=lambda run, text: _OdfTextRun(text, run.formatting, run.hyperlink),
+    )
 
 
 def _odf_text_from_runs(runs: list[_OdfTextRun]) -> str:
