@@ -120,6 +120,9 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             opf_path = rootfile.get("full-path")
             if not opf_path:
                 raise ValueError("Could not find full-path in rootfile")
+            # full-path is a reference inside the container, so it is a URL,
+            # while the archive stores the literal file name.
+            opf_path = unquote(opf_path)
 
             # Parse content.opf to get the reading order
             opf_data = read_member(self.epub_zip, opf_path, max_file_bytes)
