@@ -32,9 +32,9 @@ from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 from docling.utils.text_decoding import decode_text
-from docling.utils.utils import trim_run_edges
 
 _log = logging.getLogger(__name__)
 

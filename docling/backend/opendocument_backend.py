@@ -67,7 +67,7 @@ from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.utils.utils import trim_run_edges
+from docling.utils._inline_runs import trim_run_edges
 
 _ODFDO_AVAILABLE: bool = False
 _ODFDO_IMPORT_ERROR: ImportError | None = None

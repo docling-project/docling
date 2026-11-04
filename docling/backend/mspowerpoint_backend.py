@@ -70,7 +70,7 @@ from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
-from docling.utils.utils import trim_run_edges
+from docling.utils._inline_runs import trim_run_edges
 
 _log = logging.getLogger(__name__)
 

@@ -41,8 +41,8 @@ from docling_core.types.doc import (
 from PIL import Image as PILImage
 from pydantic import AnyUrl, ValidationError
 
+from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import detect_code_language
-from docling.utils.utils import trim_run_edges
 from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)

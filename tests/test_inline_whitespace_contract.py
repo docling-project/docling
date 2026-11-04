@@ -22,7 +22,7 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument, TextItem
-from docling.utils.utils import trim_run_edges
+from docling.utils._inline_runs import trim_run_edges
 
 from .test_backend_jats import convert_jats_body
 
