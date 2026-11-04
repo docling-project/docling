@@ -25,6 +25,7 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    InlineGroup,
     ListGroup,
     ListItem,
     NodeItem,
@@ -3964,9 +3965,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             content_layer=content_layer,
         )
         for prov in provs_in_cell:
-            group_element.children.append(prov)
             pr_item = prov.resolve(doc)
             item_parent = pr_item.parent.resolve(doc)
+            # Runs stay in their inline group, which moves into the cell as a whole.
+            if isinstance(item_parent, InlineGroup):
+                pr_item = item_parent
+                item_parent = pr_item.parent.resolve(doc)
+            if pr_item.get_ref() in group_element.children:
+                continue
+            group_element.children.append(pr_item.get_ref())
             if pr_item.get_ref() in item_parent.children:
                 item_parent.children.remove(pr_item.get_ref())
             pr_item.parent = group_element.get_ref()

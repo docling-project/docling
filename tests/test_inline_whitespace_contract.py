@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, DoclingDocument
+from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel
 from docx import Document
 
 from docling.backend.asciidoc_backend import AsciiDocBackend
@@ -62,6 +62,31 @@ def test_docx_paragraph_runs_keep_their_own_whitespace(tmp_path):
     md = doc.export_to_markdown()
     assert "Normal **bold** tail." in md
     assert "H2O" in md
+
+
+def test_docx_rich_table_cell_keeps_its_inline_group(tmp_path):
+    """Runs in a rich cell stay one inline flow, not blocks with their own separator."""
+    docx_path = tmp_path / "cell.docx"
+    document = Document()
+    paragraph = document.add_table(rows=1, cols=2).cell(0, 0).paragraphs[0]
+    paragraph.add_run("Water, ")
+    paragraph.add_run("bold").bold = True
+    paragraph.add_run(", H")
+    paragraph.add_run("2").font.subscript = True
+    paragraph.add_run("O.")
+    document.save(docx_path)
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    doc = MsWordDocumentBackend(in_doc=in_doc, path_or_stream=docx_path).convert()
+
+    assert all(
+        item.parent.resolve(doc).label == GroupLabel.INLINE for item in doc.texts
+    )
+    assert "| Water, **bold**, H2O." in doc.export_to_markdown()
 
 
 def test_docx_inline_equations_keep_the_boundary_space():
