@@ -3995,15 +3995,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Some producers omit the grid or declare fewer columns than the rows use.
         grid = element.find(qn("w:tblGrid"))
         declared_cols = len(grid.findall(qn("w:gridCol"))) if grid is not None else 0
-        occupied_cols = max(
+        max_row_cols = max(
             (
                 row.grid_cols_before
                 + sum(tc.grid_span for tc in self._row_cells(row._tr))
+                + row.grid_cols_after
                 for row in table.rows
             ),
             default=0,
         )
-        num_cols = max(declared_cols, occupied_cols)
+        num_cols = max(declared_cols, max_row_cols)
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
 
         if num_rows == 1 and num_cols == 1:
