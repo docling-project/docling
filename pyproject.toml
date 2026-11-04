@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.103.1,<3.0.0',
+  'docling-core>=2.106.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -288,7 +288,7 @@ models-vlm-inline = [
 feat-chunking = [
   # >=2.94.1 relaxed its transformers pin; older releases cap transformers<5.9.0
   # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
-  'docling-core[chunking]>=2.103.1,<3.0.0',
+  'docling-core[chunking]>=2.106.0,<3.0.0',
 ]
 
 service-client = [
@@ -340,7 +340,7 @@ typecheck = [
 ]
 pr-fast-checks = [
   { include-group = "typecheck" },
-  "docling-core[chunking] (>=2.103.1,<3.0.0)",
+  "docling-core[chunking] (>=2.106.0,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
   "ruff==0.17.2",
@@ -407,11 +407,6 @@ members = ["packages/docling", "packages/docling-client"]
 [tool.uv.sources]
 docling = { workspace = true }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
-# The InlineGroup whitespace contract lands in lock-step with docling-core: these backends emit
-# runs that own their boundary whitespace, and only a faithful-join core renders them correctly.
-# Drop this source once docling-core ships the release carrying it, and raise the floor in
-# `dependencies` to that version.
-docling-core = { git = "https://github.com/docling-project/docling-core", rev = "main" }
 
 [tool.uv]
 package = true
