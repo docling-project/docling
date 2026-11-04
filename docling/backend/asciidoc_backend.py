@@ -4,7 +4,7 @@
 import logging
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union
@@ -32,6 +32,7 @@ from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 from docling.utils.text_decoding import decode_text
 
@@ -890,19 +891,33 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             return []
         # Mixed formatting and links need one item per run, kept together in an
         # inline group like the Markdown backend does.
-        group = doc.add_inline_group(parent=parent)
+        # Runs keep their boundary whitespace (docling-core joins them with ""); a
+        # code run's edge whitespace moves out into a plain run of its own.
+        spaced: list[_InlineRun] = []
         for run in runs:
-            run_text = run.text.strip()
-            if not run_text:
+            core = run.text.strip()
+            if not run.code or not core:
+                spaced.append(replace(run, code=False))
                 continue
+            lead, _, trail = run.text.partition(core)
+            for part in (_InlineRun(lead), replace(run, text=core), _InlineRun(trail)):
+                if part.text:
+                    spaced.append(part)
+        trimmed = trim_run_edges(
+            spaced,
+            get_text=lambda run: run.text,
+            with_text=lambda run, text: replace(run, text=text),
+        )
+        group = doc.add_inline_group(parent=parent)
+        for run in trimmed:
             hyperlink = (
                 _LINK_TARGET.validate_python(run.hyperlink) if run.hyperlink else None
             )
             if run.code:
-                doc.add_code(text=run_text, parent=group, hyperlink=hyperlink)
+                doc.add_code(text=run.text, parent=group, hyperlink=hyperlink)
             else:
                 doc.add_text(
-                    text=run_text,
+                    text=run.text,
                     label=DocItemLabel.TEXT,
                     parent=group,
                     formatting=(
@@ -948,6 +963,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     # No link text: the target itself is shown, as written.
                     shown = match.group("macro_target") or target
                     runs.append(_InlineRun(shown, bold, italic, hyperlink=target))
+                    # Blank brackets have no link text, but their whitespace stays.
+                    blank = match.group("url_text") or match.group("macro_text") or ""
+                    if blank.isspace():
+                        runs.append(_InlineRun(blank, bold, italic))
                 else:
                     runs.extend(
                         AsciiDocBackend._parse_inline(link_text, bold, italic, target)
@@ -1001,14 +1020,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             if quoted:
                 text = quoted.group(1).replace('\\"', '"')
             else:
-                text = text.split(",", 1)[0]
-                if re.match(r"\s*[A-Za-z_][\w-]*\s*=", text):
+                text = text.split(",", 1)[0].strip()
+                if re.match(r"[A-Za-z_][\w-]*\s*=", text):
                     # Only named attributes, no link text.
                     text = ""
-        text = text.strip()
         if text.endswith("^"):
-            text = text[:-1].rstrip()
-        return text or None
+            text = text[:-1]
+        return text if text.strip() else None
 
     #   =========   Title
     @staticmethod

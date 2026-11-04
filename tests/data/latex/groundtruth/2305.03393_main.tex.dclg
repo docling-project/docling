@@ -1,4 +1,4 @@
-<doclang version="0.8">
+<doclang version="0.9">
   <text>
     <layer value="furniture"/>
     \documentclass[runningheads]{llncs}
@@ -111,34 +111,34 @@
   <text>The OTSL vocabulary is comprised of the following tokens:</text>
   <list>
     <ldiv/>
-<![CDATA["C" cell - a new table cell that either has or does not have cell content]]>    
+    <![CDATA["C" cell - a new table cell that either has or does not have cell content]]>
     <ldiv/>
-<![CDATA["L" cell - left-looking cell, merging with the left neighbor cell to create a span]]>    
+    <![CDATA["L" cell - left-looking cell, merging with the left neighbor cell to create a span]]>
     <ldiv/>
-<![CDATA["U" cell - up-looking cell, merging with the upper neighbor cell to create a span]]>    
+    <![CDATA["U" cell - up-looking cell, merging with the upper neighbor cell to create a span]]>
     <ldiv/>
-<![CDATA["X" cell - cross cell, to merge with both left and upper neighbor cells]]>    
+    <![CDATA["X" cell - cross cell, to merge with both left and upper neighbor cells]]>
     <ldiv/>
-<![CDATA["NL" - new-line, switch to the next row.]]>    
+    <![CDATA["NL" - new-line, switch to the next row.]]>
   </list>
   <text>A notable attribute of OTSL is that it has the capability of achieving lossless conversion to HTML.</text>
   <heading level="3">Language Syntax</heading>
   <text>The OTSL representation follows these syntax rules:</text>
   <list>
     <ldiv/>
-<![CDATA[Left-looking cell rule: The left neighbour of an "L" cell must be either another "L" cell or a "C" cell.]]>    
+    <![CDATA[Left-looking cell rule: The left neighbour of an "L" cell must be either another "L" cell or a "C" cell.]]>
     <ldiv/>
-<![CDATA[Up-looking cell rule: The upper neighbour of a "U" cell must be either another "U" cell or a "C" cell.]]>    
+    <![CDATA[Up-looking cell rule: The upper neighbour of a "U" cell must be either another "U" cell or a "C" cell.]]>
     <ldiv/>
     Cross cell rule:
     <ldiv/>
-<![CDATA[The left neighbour of an "X" cell must be either another "X" cell or a "U" cell, and the upper neighbour of an "X" cell must be either another "X" cell or an "L" cell.]]>    
+    <![CDATA[The left neighbour of an "X" cell must be either another "X" cell or a "U" cell, and the upper neighbour of an "X" cell must be either another "X" cell or an "L" cell.]]>
     <ldiv/>
-<![CDATA[First row rule: Only "L" cells and "C" cells are allowed in the first row.]]>    
+    <![CDATA[First row rule: Only "L" cells and "C" cells are allowed in the first row.]]>
     <ldiv/>
-<![CDATA[First column rule: Only "U" cells and "C" cells are allowed in the first column.]]>    
+    <![CDATA[First column rule: Only "U" cells and "C" cells are allowed in the first column.]]>
     <ldiv/>
-<![CDATA[Rectangular rule: The table representation is always rectangular - all rows must have an equal number of tokens, terminated with "NL" token.]]>    
+    <![CDATA[Rectangular rule: The table representation is always rectangular - all rows must have an equal number of tokens, terminated with "NL" token.]]>
   </list>
   <text><![CDATA[The application of these rules gives OTSL a set of unique properties. First of all, the OTSL enforces a strictly rectangular structure representation, where every new-line token starts a new row. As a consequence, all rows and all columns have exactly the same number of tokens, irrespective of cell spans. Secondly, the OTSL representation is unambiguous: Every table structure is represented in one way. In this representation every table cell corresponds to a "C"-cell token, which in case of spans is always located in the top-left corner of the table cell definition. Third, OTSL syntax rules are only backward-looking. As a consequence, every predicted token can be validated straight during sequence generation by looking at the previously predicted sequence. As such, OTSL can guarantee that every predicted sequence is syntactically valid.]]></text>
   <text>These characteristics can be easily learned by sequence generator networks, as we demonstrate further below. We find strong indications that this pattern reduces significantly the column drift seen in the HTML based models (see Figure[OTSLvHTML_compare]).</text>
