@@ -1067,9 +1067,9 @@ class AsrModelType(str, Enum):
     NEMOTRON_3_5_ASR_STREAMING = "nemotron_3_5_asr_streaming"
     # Auto-selecting models (choose best implementation for hardware)
     WHISPER_TINY = "whisper_tiny"
+    WHISPER_BASE = "whisper_base"
     WHISPER_SMALL = "whisper_small"
     WHISPER_MEDIUM = "whisper_medium"
-    WHISPER_BASE = "whisper_base"
     WHISPER_LARGE = "whisper_large"
     WHISPER_TURBO = "whisper_turbo"
 

@@ -309,6 +309,8 @@ In all other cases, the preset uses Transformers. For example, `--device cpu` se
 
 The SDK constants select the backend when Python imports them, so `AcceleratorOptions(device=...)` does not change the selection. Only the CLI takes the device into account. To use another backend from the SDK, select an explicit preset.
 
+To see the models and the backend that each one selects on your machine, run `docling models --asr`. See [From the command line](#from-the-command-line).
+
 ### Forcing a specific backend
 
 Explicit variants bypass hardware detection. Use them to pin a backend regardless of platform:
@@ -407,7 +409,16 @@ pipeline_options.asr_options = asr_model_specs.GRANITE_SPEECH_5_0_2B.model_copy(
 )
 ```
 
-@@MEASUREMENTS@@
+The backend affects time and memory. This table shows one 65-minute English recording (MP3) with the default options. The other conversions did not run at the same time:
+
+| Model | Backend | Time | Peak memory |
+|-------|---------|------|-------------|
+| Granite Speech 5.0 470M TurboCTC | Transformers | 25 s | 3.5 GB |
+| Granite Speech 5.0 470M TurboCTC | `mlx-audio` | 42 s | 2.6 GB |
+| Granite Speech 5.0 2B | Transformers | 567 s | 14.6 GB |
+| Granite Speech 5.0 2B | `mlx-audio` | 297 s | 6.2 GB |
+
+Hardware and software: MacBook Pro with Apple M3 Max (16-core CPU), 64 GB of memory, macOS 26.6, `mlx-audio` 0.6.4, `mlx` 0.32.4, `transformers` 5.16.1, and PyTorch 2.14.1. Time is the full `docling convert` command, including model loading from a local cache. Your results can differ with other hardware and recordings.
 
 ### Languages and translation
 
@@ -421,7 +432,7 @@ The `--asr-language` CLI flag applies to the Transformers and `mlx-audio` preset
 | Parakeet | Ignored | English only | Ignored on Transformers; an error on `mlx-audio` |
 | Nemotron | Ignored | Must be a language of the checkpoint | Ignored on Transformers; an error on `mlx-audio` |
 
-On `mlx-audio`, an unsupported language is an error. A custom `prompt` works with Whisper and Granite on `mlx-audio`; other families reject it.
+On `mlx-audio`, an unsupported language is an error. A custom `prompt` works with Granite on both backends and with Whisper on `mlx-audio`. On `mlx-audio`, the other families reject it.
 
 ### Local checkpoints
 
@@ -533,6 +544,14 @@ Notes:
 
 ### From the command line
 
+`docling models --asr` lists the models by family, with one column for each backend. The output has a legend for its symbols, and `--format json` gives the same data for scripts:
+
+```bash
+docling models --asr
+docling models --asr --family granite
+docling models --asr --format json
+```
+
 The `docling` CLI selects any preset with `--asr-model` (values are the lower-case preset names). Audio inputs route to the ASR pipeline and video inputs to the video pipeline automatically based on file extension, so no extra flag is required to pick a pipeline — `--asr-model` controls the transcription backend for both:
 
 ```bash
@@ -552,7 +571,7 @@ docling --to md --asr-model granite_speech_5_0_470m_turboctc recording.mp3
 docling --to md --asr-model granite_speech_5_0_470m_turboctc_transformers recording.mp3
 ```
 
-See the [CLI reference](../reference/cli.md) for the complete list of `--asr-model` values.
+See the [CLI reference](../reference/cli.md) for the complete list of options.
 
 ### Validate real model decoding
 

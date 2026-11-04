@@ -8,6 +8,11 @@ mlx-audio on Apple Silicon when it is installed and the model has an export, and
 Transformers in other cases. Add `_transformers` or `_mlx_audio` to the name of such a
 preset to force one engine. The same ASR settings apply to video.
 
+To see the supported models, run `docling models` (add `--asr` or `--vlm`, or
+`--family granite`). It lists them by family, with one column for each backend, and
+marks the backend that this machine selects. Use `--format json` to read the data in
+a script.
+
 The `docling` CLI is the quickest way to understand the content of any supported
 document. It ships with the `docling` package (`pip install docling`) and needs
 no code. Use it any time you need to read, convert, or extract content from a

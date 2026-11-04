@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
+import json
 import logging
 import re
 import sys
@@ -63,6 +64,14 @@ from docling.cli.export_utils import (
     _parse_page_range,
     _should_generate_export_images,
     _split_list,
+)
+from docling.cli.model_table import (
+    ASR_BACKENDS,
+    VLM_BACKENDS,
+    BackendState,
+    ModelRow,
+    asr_rows,
+    vlm_rows,
 )
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
@@ -1026,8 +1035,11 @@ def convert(  # noqa: C901
         str,
         typer.Option(
             ...,
-            metavar=_choices_metavar(vlm_preset_ids),
-            help=f"Choose the VLM preset to use with PDF or image files. Available presets: {', '.join(vlm_preset_ids)}",
+            metavar="NAME",
+            help=(
+                "Choose the VLM preset to use with PDF or image files. "
+                "Run 'docling models --vlm' to list the presets."
+            ),
         ),
     ] = "granite_docling",
     vlm_max_new_tokens: Annotated[
@@ -1060,7 +1072,14 @@ def convert(  # noqa: C901
     ] = False,
     asr_model: Annotated[
         AsrModelType,
-        typer.Option(..., help="Choose the ASR model to use with audio/video files."),
+        typer.Option(
+            ...,
+            metavar="NAME",
+            help=(
+                "Choose the ASR model to use with audio/video files. "
+                "Run 'docling models --asr' to list the models."
+            ),
+        ),
     ] = AsrModelType.WHISPER_TINY,
     asr_language: Annotated[
         str | None,
@@ -2294,6 +2313,159 @@ def show_engine_options(
     for row in describe_options_class(options_cls):
         table.add_row(*(rich.markup.escape(cell) for cell in row))
     console.print(table)
+
+
+class ModelListFormat(str, Enum):
+    TABLE = "table"
+    JSON = "json"
+
+
+# Symbols for a terminal that can show them, and for one that cannot.
+_BACKEND_SYMBOLS = {
+    BackendState.SELECTED: "◉",
+    BackendState.SUPPORTED: "●",
+    BackendState.ALLOWED: "○",
+}
+_ASCII_BACKEND_SYMBOLS = {
+    BackendState.SELECTED: "S",
+    BackendState.SUPPORTED: "+",
+    BackendState.ALLOWED: "o",
+}
+_BACKEND_LEGEND = {
+    BackendState.SELECTED: "selected on this machine when you use the name of the row",
+    BackendState.SUPPORTED: (
+        "supported: the preset declares it. It can need other hardware or an extra"
+    ),
+    BackendState.ALLOWED: (
+        "allowed: the preset does not restrict it and does not declare it. It can fail"
+    ),
+}
+
+
+def _backend_symbols() -> dict[BackendState, str]:
+    if (console.encoding or "").lower().startswith("utf"):
+        return _BACKEND_SYMBOLS
+    return _ASCII_BACKEND_SYMBOLS
+
+
+def _print_model_table(
+    title: str, backends: dict[str, str], rows: list[ModelRow], default: str
+) -> None:
+    symbols = _backend_symbols()
+    table = rich.table.Table(title=title, title_justify="left", box=None)
+    table.add_column("Model", no_wrap=True)
+    for label in backends.values():
+        table.add_column(label, justify="center", no_wrap=True)
+    family = None
+    for row in rows:
+        if row.family != family:
+            family = row.family
+            table.add_row(f"[bold]{rich.markup.escape(family)}[/bold]")
+        table.add_row(
+            f"  {row.name}{' *' if row.name == default else ''}",
+            *(
+                symbols[row.backends[column]] if column in row.backends else ""
+                for column in backends
+            ),
+        )
+    console.print(table, highlight=False)
+    console.print()
+
+
+@app.command("models")
+def list_models(
+    asr: Annotated[
+        bool, typer.Option("--asr", help="List only the ASR models.")
+    ] = False,
+    vlm: Annotated[
+        bool, typer.Option("--vlm", help="List only the VLM presets.")
+    ] = False,
+    family: Annotated[
+        str | None,
+        typer.Option(
+            "--family", help="List only the models of a family, for example 'granite'."
+        ),
+    ] = None,
+    output_format: Annotated[
+        ModelListFormat, typer.Option("--format", help="The output format.")
+    ] = ModelListFormat.TABLE,
+) -> None:
+    """List the VLM and ASR models, and the backends that can run them.
+
+    Use a name with `docling convert --vlm-model` or `--asr-model`. To download a
+    model, use `docling-tools models`.
+    """
+    show_all = asr == vlm
+    tables = []
+    if asr or show_all:
+        tables.append(
+            (
+                "asr",
+                "ASR models",
+                ASR_BACKENDS,
+                asr_rows(_resolve_asr_options),
+                AsrModelType.WHISPER_TINY.value,
+            )
+        )
+    if vlm or show_all:
+        tables.append(
+            ("vlm", "VLM models", VLM_BACKENDS, vlm_rows(), "granite_docling")
+        )
+    if family is not None:
+        needle = family.lower()
+        tables = [
+            (
+                kind,
+                title,
+                backends,
+                [row for row in rows if needle in row.family.lower()],
+                default,
+            )
+            for kind, title, backends, rows, default in tables
+        ]
+        if not any(rows for _, _, _, rows, _ in tables):
+            raise typer.BadParameter(
+                f"No model has the family {family!r}.", param_hint="--family"
+            )
+
+    if output_format == ModelListFormat.JSON:
+        typer.echo(
+            json.dumps(
+                [
+                    {
+                        "kind": kind,
+                        "name": row.name,
+                        "family": row.family,
+                        "default": row.name == default,
+                        "backends": {
+                            column: row.backends[column].value
+                            for column in backends
+                            if column in row.backends
+                        },
+                    }
+                    for kind, _, backends, rows, default in tables
+                    for row in rows
+                ],
+                indent=2,
+            )
+        )
+        return
+
+    for _, title, backends, rows, default in tables:
+        if rows:
+            _print_model_table(title, backends, rows, default)
+    symbols = _backend_symbols()
+    for state, meaning in _BACKEND_LEGEND.items():
+        console.print(f"{symbols[state]}  {meaning}", highlight=False)
+    console.print("*  default model", highlight=False)
+    if any(kind == "asr" and rows for kind, _, _, rows, _ in tables):
+        console.print(
+            "ASR: add a suffix to a name to force one backend: _native, _mlx_whisper "
+            "(or _mlx), _mlx_audio, _transformers, _s2t. For example, "
+            "granite_speech_5_0_2b_transformers. A row without the selected symbol "
+            "needs a suffix.",
+            highlight=False,
+        )
 
 
 # Register `convert-remote` only when the service-client extra is installed.
