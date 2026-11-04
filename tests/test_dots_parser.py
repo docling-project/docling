@@ -94,7 +94,7 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
         },
     ]
     doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
-    assert any(item.text == "Bold" and item.formatting.bold for item in doc.texts)
+    assert any(item.text == "Bold " and item.formatting.bold for item in doc.texts)
     assert any(
         item.text == "2" and item.formatting.script == Script.SUB for item in doc.texts
     )

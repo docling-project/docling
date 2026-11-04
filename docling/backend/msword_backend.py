@@ -25,6 +25,7 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    InlineGroup,
     ListGroup,
     ListItem,
     NodeItem,
@@ -63,6 +64,7 @@ from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import FormatToMimeType
 from docling.datamodel.document import InputDocument, InputFormat
 from docling.exceptions import DocumentLoadError, SecurityError
+from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 
 _log = logging.getLogger(__name__)
@@ -491,6 +493,17 @@ def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
     if num_fmt == "decimalZero":
         return f"{counter:02d}"
     return str(counter)
+
+
+def _trim_run_edges(
+    runs: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
+) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
+    """Trim the outer edges of a paragraph's runs, leaving interior whitespace intact."""
+    return trim_run_edges(
+        runs,
+        get_text=lambda run: run[0],
+        with_text=lambda run, text: (text, run[1], run[2]),
+    )
 
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:
@@ -2589,21 +2602,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         group_text = ""
         previous_format = None
 
-        # Iterate over the runs of the paragraph and group them by format
+        # Group the runs by format and concatenate them as they are: in DOCX the boundary
+        # space very often lives inside a formatted run, and it is the run's own text (see
+        # `DoclingDocument.add_inline_group`).
         for text, format, hyperlink in content:
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
             ):
                 # If the style changes for a non empty text, add the previous group
-                if len(group_text.strip()) > 0:
-                    paragraph_elements.append(
-                        (group_text.strip(), previous_format, None)
-                    )
+                if group_text:
+                    paragraph_elements.append((group_text, previous_format, None))
                 group_text = ""
 
                 # If there is a hyperlink, add it immediately
                 if hyperlink is not None:
-                    paragraph_elements.append((text.strip(), format, hyperlink))
+                    paragraph_elements.append((text, format, hyperlink))
                     text = ""
                 else:
                     previous_format = format
@@ -2611,10 +2624,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             group_text += text
 
         # Format the last group
-        if len(group_text.strip()) > 0:
-            paragraph_elements.append((group_text.strip(), previous_format, None))
+        if group_text:
+            paragraph_elements.append((group_text, previous_format, None))
 
-        return paragraph_elements
+        return _trim_run_edges(paragraph_elements)
 
     def _has_checkbox(self, element: BaseOxmlElement) -> bool:
         """Check if a paragraph element contains a checkbox.
@@ -2687,10 +2700,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Common checkbox symbols in docx documents
         checkbox_symbols = ["☐", "☑", "☒", "□", "■", "▪", "▫"]
 
-        text = text.strip()
+        # Only the leading edge: the text may be the first of several inline runs.
+        text = text.lstrip()
         for symbol in checkbox_symbols:
             if text.startswith(symbol):
-                text = text[len(symbol) :].strip()
+                text = text[len(symbol) :].lstrip()
                 break
 
         return text
@@ -3343,6 +3357,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         skip_empty_text: bool,
     ) -> list[RefItem]:
         """Add ordinary paragraph text items under the current parent."""
+        if checkbox_label and paragraph_elements:
+            text, formatting, hyperlink = paragraph_elements[0]
+            first = (self._clean_checkbox_symbols(text), formatting, hyperlink)
+            paragraph_elements = _trim_run_edges([first, *paragraph_elements[1:]]) or [
+                ("", formatting, hyperlink)
+            ]
+        # Runs are already edge-trimmed: whitespace-only runs left are interior and significant.
+        if skip_empty_text and not any(
+            text.strip() for text, _, _ in paragraph_elements
+        ):
+            return []
+
         level = self._get_level()
         parent = self._create_or_reuse_parent(
             doc=doc,
@@ -3352,14 +3378,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref: list[RefItem] = []
 
         for text, formatting, hyperlink in paragraph_elements:
-            clean_text = self._clean_checkbox_symbols(text) if checkbox_label else text
-            if skip_empty_text and (not clean_text or not clean_text.strip()):
-                continue
-
             text_item = doc.add_text(
                 label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                 parent=parent,
-                text=clean_text,
+                text=text,
                 formatting=formatting,
                 hyperlink=hyperlink,
                 content_layer=self.content_layer,
@@ -3572,6 +3594,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             equations: List of equation strings with markers (e.g., ["<eq>A=B</eq>", ...]).
             elem_ref: Optional list to append created element references to.
         """
+        runs: list[tuple[DocItemLabel, str]] = []
         text_tmp = text
         for eq in equations:
             if len(text_tmp) == 0:
@@ -3583,33 +3606,32 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
 
             if len(pre_eq_text) > 0:
-                e1 = doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=parent,
-                    text=pre_eq_text,
-                    content_layer=self.content_layer,
-                )
-                if elem_ref is not None:
-                    elem_ref.append(e1.get_ref())
-
-            e2 = doc.add_text(
-                label=DocItemLabel.FORMULA,
-                parent=parent,
-                text=eq.replace("<eq>", "").replace("</eq>", ""),
-                content_layer=self.content_layer,
+                runs.append((DocItemLabel.TEXT, pre_eq_text))
+            runs.append(
+                (DocItemLabel.FORMULA, eq.replace("<eq>", "").replace("</eq>", ""))
             )
-            if elem_ref is not None:
-                elem_ref.append(e2.get_ref())
 
         if len(text_tmp) > 0:
-            e3 = doc.add_text(
-                label=DocItemLabel.TEXT,
+            runs.append((DocItemLabel.TEXT, text_tmp))
+
+        # Trim the paragraph's outer edges only. The whitespace around an inline equation is a
+        # significant run boundary (`$A=\pi r^{2}$ is the area formula`).
+        if runs and runs[0][0] == DocItemLabel.TEXT:
+            runs[0] = (DocItemLabel.TEXT, runs[0][1].lstrip())
+        if runs and runs[-1][0] == DocItemLabel.TEXT:
+            runs[-1] = (DocItemLabel.TEXT, runs[-1][1].rstrip())
+
+        for label, run_text in runs:
+            if label == DocItemLabel.TEXT and not run_text:
+                continue
+            item = doc.add_text(
+                label=label,
                 parent=parent,
-                text=text_tmp.strip(),
+                text=run_text,
                 content_layer=self.content_layer,
             )
             if elem_ref is not None:
-                elem_ref.append(e3.get_ref())
+                elem_ref.append(item.get_ref())
 
     def _slot_for(self, word_ilevel: int) -> int:
         """Map a Word ``w:ilvl`` value to the internal parents-slot index.
@@ -3929,9 +3951,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             content_layer=content_layer,
         )
         for prov in provs_in_cell:
-            group_element.children.append(prov)
             pr_item = prov.resolve(doc)
             item_parent = pr_item.parent.resolve(doc)
+            # Runs stay in their inline group, which moves into the cell as a whole.
+            if isinstance(item_parent, InlineGroup):
+                pr_item = item_parent
+                item_parent = pr_item.parent.resolve(doc)
+            if pr_item.get_ref() in group_element.children:
+                continue
+            group_element.children.append(pr_item.get_ref())
             if pr_item.get_ref() in item_parent.children:
                 item_parent.children.remove(pr_item.get_ref())
             pr_item.parent = group_element.get_ref()
