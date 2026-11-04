@@ -468,6 +468,39 @@ def test_epub_internal_links_are_fixed_for_every_content_document_extension(
     assert hyperlinks == ["#note2", absolute, "#note3", "#note4", "#note1"]
 
 
+def test_epub_internal_links_in_either_quote_style(tmp_path: Path):
+    """A cross-document link is reduced to its anchor in either quote style.
+
+    An attribute value is as legal in single quotes as in double quotes, and
+    image sources already allow both. A link that keeps its file part points
+    at a content document that no longer exists once the spine is merged into
+    one HTML document, so it becomes a path to a missing file instead of an
+    anchor. The absolute URL is here for the opposite reason: a single quote
+    must not make its host disappear either.
+    """
+    absolute = "https://example.com/page.html#about"
+    names = ["chapter1.xhtml", "chapter2.xhtml"]
+    bodies = [
+        f"<p>See <a href='{names[1]}#note2'>single</a>.</p>"
+        f'<p>See <a href="{names[1]}#note2">double</a>.</p>'
+        f"<p>Read <a href='{absolute}'>about</a>.</p>",
+        '<p id="note2">Note 2.</p>',
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "quotes.epub", hrefs=names, names=names, bodies=bodies
+    )
+
+    doc = get_converter().convert(epub_path, raises_on_error=True).document
+
+    hyperlinks = [
+        str(item.hyperlink)
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+
+    assert hyperlinks == ["#note2", "#note2", absolute]
+
+
 def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
     tmp_path: Path,
 ):
