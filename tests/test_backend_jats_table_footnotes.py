@@ -8,10 +8,9 @@ Contract:
 * Each nonempty fn directly under table-wrap/table-wrap-foot becomes exactly
   one FOOTNOTE TextItem whose parent is the table, and the table references it
   from TableItem.footnotes in source order.
-* Each note uses an empty wrapper whose children are inline FOOTNOTE/FORMULA
-  runs, including single plain, styled, or linked runs. This keeps note content
-  visible with the released docling-core table serializers while retaining its
-  semantic label.
+* Each note is an empty FOOTNOTE item whose children are inline FOOTNOTE/FORMULA
+  runs, also for a single plain, styled, or linked run. The runs keep the source
+  whitespace between them, so their texts concatenate to the note text.
 * A bare p under table-wrap-foot and existing fn-group handling stay unchanged.
 
 All XML below is original synthetic content.
@@ -265,6 +264,26 @@ def test_styled_linked_and_superscript_runs_are_preserved():
     assert temperature is not None and temperature.bold
     assert str(by_text["method"].hyperlink) == "https://example.org/method"
     assert texts.index("*") < texts.index("room") < texts.index("method")
+
+
+def test_runs_follow_source_whitespace_around_script_markers():
+    foot = '<fn id="c1"><p><sup>a</sup>CO<sub>2</sub>e, carbon equivalent.</p></fn>'
+    doc = _convert(_table_wrap("t1", "Table 1", "Scripts.", "Alpha", foot))
+
+    table = doc.tables[0]
+    notes = _footnotes(doc, table)
+    assert len(notes) == 1
+    _assert_wrapper(table, notes[0])
+    runs = _runs(doc, notes[0])
+    # The source has no space after the marker, so no run adds one.
+    assert [r.text for r in runs] == ["a", "CO", "2", "e, carbon equivalent."]
+    assert [r.formatting.script if r.formatting else None for r in runs] == [
+        Script.SUPER,
+        None,
+        Script.SUB,
+        None,
+    ]
+    assert _note_text(doc, notes[0]) == "aCO2e, carbon equivalent."
 
 
 def test_inline_formula_is_a_formula_run_inside_the_wrapper():

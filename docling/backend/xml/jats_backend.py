@@ -1252,8 +1252,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 )
                 for segment in segments
             ]
-            # Released core table serializers skip referenced footnote wrappers.
-            # Keep all content in child runs so it is also exported by traversal.
+            # The note's rich content lives in inline child runs of an empty
+            # FOOTNOTE item, like the items of the article-level footnote list.
             footnote = doc.add_text(
                 label=DocItemLabel.FOOTNOTE, text="", parent=table_item
             )
