@@ -68,11 +68,17 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.asr_model_specs import (
     ADDITIONAL_ASR_PRESETS,
     GRANITE_4_0_1B_SPEECH,
+    GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
     NEMOTRON_3_5_ASR_STREAMING,
+    NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
+    PARAKEET_CTC_1_1B_MLX_AUDIO,
     WHISPER_BASE,
     WHISPER_BASE_EN_NATIVE,
     WHISPER_BASE_EN_S2T,
     WHISPER_BASE_MLX,
+    WHISPER_BASE_MLX_WHISPER,
     WHISPER_BASE_NATIVE,
     WHISPER_BASE_S2T,
     WHISPER_BASE_TRANSFORMERS,
@@ -86,6 +92,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_DISTIL_SMALL_EN_S2T,
     WHISPER_LARGE,
     WHISPER_LARGE_MLX,
+    WHISPER_LARGE_MLX_WHISPER,
     WHISPER_LARGE_NATIVE,
     WHISPER_LARGE_TRANSFORMERS,
     WHISPER_LARGE_V3_S2T,
@@ -94,6 +101,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_MEDIUM_EN_NATIVE,
     WHISPER_MEDIUM_EN_S2T,
     WHISPER_MEDIUM_MLX,
+    WHISPER_MEDIUM_MLX_WHISPER,
     WHISPER_MEDIUM_NATIVE,
     WHISPER_MEDIUM_S2T,
     WHISPER_MEDIUM_TRANSFORMERS,
@@ -101,6 +109,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_SMALL_EN_NATIVE,
     WHISPER_SMALL_EN_S2T,
     WHISPER_SMALL_MLX,
+    WHISPER_SMALL_MLX_WHISPER,
     WHISPER_SMALL_NATIVE,
     WHISPER_SMALL_S2T,
     WHISPER_SMALL_TRANSFORMERS,
@@ -108,11 +117,14 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_TINY_EN_NATIVE,
     WHISPER_TINY_EN_S2T,
     WHISPER_TINY_MLX,
+    WHISPER_TINY_MLX_AUDIO,
+    WHISPER_TINY_MLX_WHISPER,
     WHISPER_TINY_NATIVE,
     WHISPER_TINY_S2T,
     WHISPER_TINY_TRANSFORMERS,
     WHISPER_TURBO,
     WHISPER_TURBO_MLX,
+    WHISPER_TURBO_MLX_WHISPER,
     WHISPER_TURBO_NATIVE,
     WHISPER_TURBO_TRANSFORMERS,
     AsrModelType,
@@ -159,6 +171,7 @@ from docling.datamodel.pipeline_options import (
     normalize_pdf_backend,
 )
 from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrMlxAudioOptions,
     InlineAsrOptions,
     InlineAsrTransformersOptions,
 )
@@ -442,6 +455,18 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
         AsrModelType.WHISPER_BASE_MLX: WHISPER_BASE_MLX,
         AsrModelType.WHISPER_LARGE_MLX: WHISPER_LARGE_MLX,
         AsrModelType.WHISPER_TURBO_MLX: WHISPER_TURBO_MLX,
+        AsrModelType.WHISPER_TINY_MLX_WHISPER: WHISPER_TINY_MLX_WHISPER,
+        AsrModelType.WHISPER_SMALL_MLX_WHISPER: WHISPER_SMALL_MLX_WHISPER,
+        AsrModelType.WHISPER_MEDIUM_MLX_WHISPER: WHISPER_MEDIUM_MLX_WHISPER,
+        AsrModelType.WHISPER_BASE_MLX_WHISPER: WHISPER_BASE_MLX_WHISPER,
+        AsrModelType.WHISPER_LARGE_MLX_WHISPER: WHISPER_LARGE_MLX_WHISPER,
+        AsrModelType.WHISPER_TURBO_MLX_WHISPER: WHISPER_TURBO_MLX_WHISPER,
+        AsrModelType.WHISPER_TINY_MLX_AUDIO: WHISPER_TINY_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_5_0_2B_MLX_AUDIO: GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO: GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
+        AsrModelType.NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO: NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
+        AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO: NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
+        AsrModelType.PARAKEET_CTC_1_1B_MLX_AUDIO: PARAKEET_CTC_1_1B_MLX_AUDIO,
         AsrModelType.WHISPER_TINY_NATIVE: WHISPER_TINY_NATIVE,
         AsrModelType.WHISPER_SMALL_NATIVE: WHISPER_SMALL_NATIVE,
         AsrModelType.WHISPER_MEDIUM_NATIVE: WHISPER_MEDIUM_NATIVE,
@@ -1028,7 +1053,7 @@ def convert(  # noqa: C901
         str | None,
         typer.Option(
             "--asr-language",
-            help="Source language for Transformers ASR.",
+            help="Source language for Transformers and mlx-audio ASR.",
         ),
     ] = None,
     video_sampling_mode: Annotated[
@@ -2080,7 +2105,10 @@ def convert(  # noqa: C901
 
         # Auto-selecting models (choose best implementation for hardware)
         asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
-        if isinstance(asr_pipeline_options.asr_options, InlineAsrTransformersOptions):
+        if isinstance(
+            asr_pipeline_options.asr_options,
+            (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions),
+        ):
             asr_pipeline_options.asr_options = (
                 asr_pipeline_options.asr_options.model_copy(
                     update={"language": asr_language}

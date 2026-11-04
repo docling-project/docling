@@ -9,6 +9,8 @@ This module defines the option classes that configure how audio is transcribed.
 - ``InlineAsrNativeWhisperOptions``: OpenAI's native ``whisper`` (PyTorch), the
   default backend, supported on CPU and CUDA.
 - ``InlineAsrMlxWhisperOptions``: ``mlx-whisper``, optimized for Apple Silicon.
+- ``InlineAsrMlxAudioOptions``: ``mlx-audio``, for several model families on Apple
+  Silicon, without torch.
 - ``InlineAsrTransformersOptions``: Transformers checkpoints for speech models.
 - ``InlineAsrWhisperS2TOptions``: WhisperS2T (CTranslate2), an optional,
   experimental high-throughput backend installed via the ``format-audio`` extra.
@@ -53,7 +55,11 @@ class BaseAsrOptions(BaseModel):
 
 
 class InferenceAsrFramework(str, Enum):
+    # Alias: `docling.datamodel.asr_presets` resolves it to a concrete MLX backend,
+    # currently MLX_WHISPER.
     MLX = "mlx"
+    MLX_WHISPER = "mlx_whisper"
+    MLX_AUDIO = "mlx_audio"
     TRANSFORMERS = "transformers"
     WHISPER = "whisper"
     WHISPER_S2T = "whisper_s2t"
@@ -349,11 +355,12 @@ class InlineAsrMlxWhisperOptions(InlineAsrOptions):
     """
 
     inference_framework: Annotated[
-        InferenceAsrFramework,
+        Literal[InferenceAsrFramework.MLX, InferenceAsrFramework.MLX_WHISPER],
         Field(
             description=(
-                "Inference framework for ASR. Uses MLX for optimized "
-                "performance on Apple Silicon (M1/M2/M3)."
+                "Inference framework for ASR. Uses mlx-whisper for optimized "
+                "performance on Apple Silicon. `mlx` is an alias that currently "
+                "resolves to `mlx_whisper`."
             )
         ),
     ] = InferenceAsrFramework.MLX
@@ -464,6 +471,107 @@ class InlineAsrMlxWhisperOptions(InlineAsrOptions):
             )
         ),
     ] = None
+
+
+class InlineAsrMlxAudioOptions(InlineAsrOptions):
+    """ASR with the mlx-audio library on Apple Silicon.
+
+    Runs Whisper, Granite Speech, Parakeet, and Nemotron checkpoints without torch.
+    Install it with the `feat-asr-mlx-audio` extra.
+    """
+
+    inference_framework: Literal[InferenceAsrFramework.MLX_AUDIO] = (
+        InferenceAsrFramework.MLX_AUDIO
+    )
+    revision: Annotated[
+        str,
+        Field(
+            description=(
+                "Hugging Face revision of the checkpoint. Use a full commit SHA. "
+                "An unpinned Granite checkpoint needs `trust_remote_code=True`."
+            )
+        ),
+    ] = "main"
+    model_family: Annotated[
+        AsrModelFamily,
+        Field(
+            description=(
+                "Model family of the checkpoint. It selects the generation "
+                "arguments and how the output becomes timed text."
+            )
+        ),
+    ] = "whisper"
+    language: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Source language of the audio. Use an ISO 639-1 code (`en`, `fr`). "
+                "A Nemotron prompt key (`en-US`) is also accepted for that family. "
+                "When `None`, the model detects the language or uses its default."
+            ),
+            examples=["en", "fr", "de"],
+        ),
+    ] = None
+    task: Annotated[
+        Literal["transcribe", "translate"],
+        Field(
+            description=(
+                "`transcribe` keeps the source language. `translate` gives English "
+                "text, and only the `whisper` and `granite` families support it."
+            )
+        ),
+    ] = "transcribe"
+    prompt: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Text that guides the model: the initial prompt for `whisper`, and "
+                "the instruction for `granite`. Other families do not support it."
+            )
+        ),
+    ] = None
+    word_timestamps: Annotated[
+        bool,
+        Field(
+            description=(
+                "Generate word-level timestamps. Only the `whisper` family uses it."
+            )
+        ),
+    ] = True
+    chunk_search_window: Annotated[
+        float,
+        Field(
+            ge=0,
+            description=(
+                "Seconds that a window edge can move from `max_time_chunk` to reach "
+                "a pause in the speech. Applies to the Granite families, which "
+                "return no timestamps. A pause is not always a sentence boundary."
+            ),
+        ),
+    ] = 10.0
+    trust_remote_code: Annotated[
+        bool,
+        Field(
+            description=(
+                "Allow an unpinned Granite checkpoint. mlx-audio always loads the "
+                "Granite tokenizer with remote code enabled, so a moving revision "
+                "can change the code that runs. Other families do not use this."
+            )
+        ),
+    ] = False
+    supported_devices: Annotated[
+        list[AcceleratorDevice],
+        Field(description="Hardware accelerators supported by mlx-audio."),
+    ] = [AcceleratorDevice.MPS]
+
+    @model_validator(mode="after")
+    def _validate_chunk_search_window(self) -> "InlineAsrMlxAudioOptions":
+        if self.chunk_search_window >= self.max_time_chunk:
+            raise ValueError(
+                f"chunk_search_window ({self.chunk_search_window}) must be smaller "
+                f"than max_time_chunk ({self.max_time_chunk})."
+            )
+        return self
 
 
 # English-only WhisperS2T models (cannot transcribe non-English audio)

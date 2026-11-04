@@ -7,9 +7,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Protocol
+from typing import ClassVar, Final, Protocol
 
 import requests
 from docling_core.types.doc import (
@@ -24,6 +25,7 @@ from pydantic import BaseModel, Field
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.accelerator_options import (
+    AcceleratorDevice,
     AcceleratorOptions,
 )
 from docling.datamodel.asr_model_specs import (
@@ -44,6 +46,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.pipeline_options_asr_model import (
     ApiAsrOptions,
+    InlineAsrMlxAudioOptions,
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
     InlineAsrOptions,
@@ -51,6 +54,8 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrWhisperS2TOptions,
 )
 from docling.exceptions import OperationNotAllowed
+from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
+from docling.pipeline.asr_mlx_audio import MlxAudioAsrDecoder
 from docling.pipeline.asr_transformers import TransformersAsrDecoder
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
@@ -412,7 +417,83 @@ class _NativeWhisperModel:
         return convo
 
 
-class _MlxWhisperModel:
+class _LocalAudioTranscriber(ABC):
+    """Run a backend that transcribes a local audio file.
+
+    Holds the temporary file for `BytesIO` input, the FFmpeg check, the error
+    report, and the cleanup. A subclass implements `transcribe()`.
+    """
+
+    # A backend that decodes some formats itself clears this. It then reports a
+    # decoder failure through the transcription error instead.
+    _requires_ffmpeg: ClassVar[bool] = True
+
+    @abstractmethod
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]: ...
+
+    def run(self, conv_res: ConversionResult) -> ConversionResult:
+        assert conv_res.input._backend is not None
+        path_or_stream = conv_res.input._backend.path_or_stream
+        temp_file_path: Path | None = None
+
+        if not isinstance(path_or_stream, (BytesIO, Path)):
+            raise RuntimeError(
+                f"ASR pipeline requires a file path or BytesIO stream, "
+                f"but got {type(path_or_stream)}"
+            )
+
+        try:
+            if isinstance(path_or_stream, BytesIO):
+                suffix = Path(conv_res.input.file.name).suffix or ".wav"
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=suffix
+                ) as tmp_file:
+                    temp_file_path = Path(tmp_file.name)
+                    tmp_file.write(path_or_stream.getvalue())
+                audio_path = temp_file_path
+            else:
+                audio_path = path_or_stream
+
+            if self._requires_ffmpeg and shutil.which("ffmpeg") is None:
+                _log.error(MISSING_FFMPEG_MESSAGE)
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name="AsrPipeline",
+                        error_message=MISSING_FFMPEG_MESSAGE,
+                    )
+                )
+                conv_res.status = ConversionStatus.FAILURE
+                return conv_res
+
+            conversation = self.transcribe(audio_path)
+            _process_conversation(conversation, conv_res)
+            conv_res.status = ConversionStatus.SUCCESS
+            return conv_res
+
+        except Exception as exc:
+            _log.error(f"ASR transcription has an error: {exc}")
+            conv_res.errors.append(
+                ErrorItem(
+                    component_type=DoclingComponentType.PIPELINE,
+                    module_name="AsrPipeline",
+                    error_message=str(exc),
+                )
+            )
+            conv_res.status = ConversionStatus.FAILURE
+            return conv_res
+
+        finally:
+            if temp_file_path is not None and temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception as exc:
+                    _log.warning(
+                        f"Failed to delete temporary file {temp_file_path}: {exc}"
+                    )
+
+
+class _MlxWhisperModel(_LocalAudioTranscriber):
     def __init__(
         self,
         enabled: bool,
@@ -473,60 +554,6 @@ class _MlxWhisperModel:
             )
             self.initial_prompt = asr_options.initial_prompt
 
-    def run(self, conv_res: ConversionResult) -> ConversionResult:
-        assert conv_res.input._backend is not None
-        path_or_stream = conv_res.input._backend.path_or_stream
-        temp_file_path: Path | None = None
-
-        if not isinstance(path_or_stream, (BytesIO, Path)):
-            raise RuntimeError(
-                f"ASR pipeline requires a file path or BytesIO stream, "
-                f"but got {type(path_or_stream)}"
-            )
-
-        try:
-            if isinstance(path_or_stream, BytesIO):
-                suffix = Path(conv_res.input.file.name).suffix or ".wav"
-                with tempfile.NamedTemporaryFile(
-                    delete=False, suffix=suffix
-                ) as tmp_file:
-                    temp_file_path = Path(tmp_file.name)
-                    tmp_file.write(path_or_stream.getvalue())
-                audio_path = temp_file_path
-            else:
-                audio_path = path_or_stream
-
-            if shutil.which("ffmpeg") is None:
-                _log.error(MISSING_FFMPEG_MESSAGE)
-                conv_res.errors.append(
-                    ErrorItem(
-                        component_type=DoclingComponentType.PIPELINE,
-                        module_name="AsrPipeline",
-                        error_message=MISSING_FFMPEG_MESSAGE,
-                    )
-                )
-                conv_res.status = ConversionStatus.FAILURE
-                return conv_res
-
-            conversation = self.transcribe(audio_path)
-            _process_conversation(conversation, conv_res)
-            conv_res.status = ConversionStatus.SUCCESS
-            return conv_res
-
-        except Exception as exc:
-            _log.error(f"ASR transcription has an error: {exc}")
-            conv_res.status = ConversionStatus.FAILURE
-            return conv_res
-
-        finally:
-            if temp_file_path is not None and temp_file_path.exists():
-                try:
-                    temp_file_path.unlink()
-                except Exception as exc:
-                    _log.warning(
-                        f"Failed to delete temporary file {temp_file_path}: {exc}"
-                    )
-
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         """Transcribe audio using MLX Whisper.
 
@@ -550,18 +577,19 @@ class _MlxWhisperModel:
         if self.initial_prompt is not None:
             optional_kwargs["initial_prompt"] = self.initial_prompt
 
-        result = self.mlx_whisper.transcribe(
-            str(fpath),
-            path_or_hf_repo=self.model_path,
-            language=self.language,
-            task=self.task,
-            word_timestamps=self.word_timestamps,
-            no_speech_threshold=self.no_speech_threshold,
-            logprob_threshold=self.logprob_threshold,
-            compression_ratio_threshold=self.compression_ratio_threshold,
-            temperature=self.temperature,
-            **optional_kwargs,
-        )
+        with MLX_GLOBAL_LOCK:
+            result = self.mlx_whisper.transcribe(
+                str(fpath),
+                path_or_hf_repo=self.model_path,
+                language=self.language,
+                task=self.task,
+                word_timestamps=self.word_timestamps,
+                no_speech_threshold=self.no_speech_threshold,
+                logprob_threshold=self.logprob_threshold,
+                compression_ratio_threshold=self.compression_ratio_threshold,
+                temperature=self.temperature,
+                **optional_kwargs,
+            )
 
         convo: list[_ConversationItem] = []
 
@@ -590,7 +618,7 @@ class _MlxWhisperModel:
         return convo
 
 
-class _TransformersAsrModel(_MlxWhisperModel):
+class _TransformersAsrModel(_LocalAudioTranscriber):
     """Transcribe speech with a Transformers ASR pipeline."""
 
     def __init__(
@@ -672,6 +700,61 @@ class _TransformersAsrModel(_MlxWhisperModel):
                 end_time=_audio_duration_seconds(fpath),
                 text=text,
             )
+        ]
+
+
+class _MlxAudioModel(_LocalAudioTranscriber):
+    """Transcribe speech with mlx-audio on Apple Silicon, without torch."""
+
+    # mlx-audio decodes WAV, MP3, and FLAC itself. For other formats, it reports a
+    # missing FFmpeg through the transcription error.
+    _requires_ffmpeg: ClassVar[bool] = False
+
+    def __init__(
+        self,
+        enabled: bool,
+        artifacts_path: Path | None,
+        accelerator_options: AcceleratorOptions,
+        asr_options: InlineAsrMlxAudioOptions,
+    ):
+        self.enabled = enabled
+        if not enabled:
+            return
+        self.asr_options = asr_options
+        # `decide_device()` imports torch, which this backend must not need.
+        if accelerator_options.device not in {
+            AcceleratorDevice.AUTO,
+            AcceleratorDevice.MPS,
+        }:
+            _log.warning(
+                f"mlx-audio runs on Metal and ignores device "
+                f"'{accelerator_options.device}'."
+            )
+        checkpoint = (
+            _resolve_asr_artifacts(artifacts_path, asr_options.repo_id)
+            if artifacts_path is not None
+            else None
+        )
+        self.decoder = MlxAudioAsrDecoder(asr_options, checkpoint)
+
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
+        return [
+            _ConversationItem(
+                start_time=segment.start_time,
+                end_time=segment.end_time,
+                text=segment.text,
+                words=None
+                if segment.words is None
+                else [
+                    _ConversationWord(
+                        start_time=word.start_time,
+                        end_time=word.end_time,
+                        text=word.text,
+                    )
+                    for word in segment.words
+                ],
+            )
+            for segment in self.decoder.transcribe(fpath)
         ]
 
 
@@ -1114,6 +1197,13 @@ class _AsrModelFactory:
             )
         elif isinstance(asr_options, InlineAsrMlxWhisperOptions):
             return _MlxWhisperModel(
+                enabled=True,
+                artifacts_path=artifacts_path,
+                accelerator_options=accelerator_options,
+                asr_options=asr_options,
+            )
+        elif isinstance(asr_options, InlineAsrMlxAudioOptions):
+            return _MlxAudioModel(
                 enabled=True,
                 artifacts_path=artifacts_path,
                 accelerator_options=accelerator_options,
