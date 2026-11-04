@@ -70,6 +70,7 @@ from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.utils import trim_run_edges
 
 _log = logging.getLogger(__name__)
 
@@ -223,17 +224,13 @@ def _paragraph_fragments(element: etree._Element) -> list[tuple[DocItemLabel, st
 def _trim_fragment_edges(
     fragments: list[tuple[DocItemLabel, str]],
 ) -> list[tuple[DocItemLabel, str]]:
-    """Trim only the outer edges of a fragment sequence; interior whitespace is text.
-
-    Formulas are already stripped and text fragments never touch each other, so only
-    a text fragment at either end needs trimming.
-    """
-    fragments = list(fragments)
-    if fragments and fragments[0][0] != DocItemLabel.FORMULA:
-        fragments[0] = (fragments[0][0], fragments[0][1].lstrip())
-    if fragments and fragments[-1][0] != DocItemLabel.FORMULA:
-        fragments[-1] = (fragments[-1][0], fragments[-1][1].rstrip())
-    return [fragment for fragment in fragments if fragment[1]]
+    """Trim the outer edges of a fragment sequence; formulas are already stripped."""
+    return trim_run_edges(
+        fragments,
+        get_text=lambda fragment: fragment[1],
+        with_text=lambda fragment, text: (fragment[0], text),
+        is_trimmable=lambda fragment: fragment[0] != DocItemLabel.FORMULA,
+    )
 
 
 _SAFE_XML_PARSER: Final = etree.XMLParser(

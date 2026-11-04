@@ -10,6 +10,7 @@ source document on the fly.
 """
 
 import re
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument, TextItem
+from docling.utils.utils import trim_run_edges
 
 from .test_backend_jats import convert_jats_body
 
@@ -287,3 +289,46 @@ def test_asciidoc_link_text_keeps_its_edge_whitespace(
 
     assert [item.text for item in doc.texts] == expected_runs
     assert doc.export_to_markdown() == expected_markdown
+
+
+@dataclass(frozen=True)
+class _Run:
+    text: str
+    fixed: bool = False
+
+
+def _trim(runs: list[_Run]) -> list[_Run]:
+    return trim_run_edges(
+        runs,
+        get_text=lambda run: run.text,
+        with_text=lambda run, text: replace(run, text=text),
+        is_trimmable=lambda run: not run.fixed,
+    )
+
+
+@pytest.mark.parametrize(
+    ("texts", "expected"),
+    [
+        # Only the outer edges are trimmed; the boundary whitespace between runs stays.
+        (["  a ", " b  "], ["a ", " b"]),
+        (["  a  "], ["a"]),
+        # Blank edge runs are dropped, a blank interior run is a boundary and stays.
+        (["  ", "a", " ", "b", "\n"], ["a", " ", "b"]),
+        (["", "a", "", "b"], ["a", "b"]),
+        (["  ", " "], []),
+        ([], []),
+    ],
+)
+def test_trim_run_edges_keeps_the_boundary_between_runs(
+    texts: list[str], expected: list[str]
+):
+    runs = [_Run(text) for text in texts]
+
+    assert [run.text for run in _trim(runs)] == expected
+    assert [run.text for run in runs] == texts
+
+
+def test_trim_run_edges_stops_at_a_run_that_is_not_trimmable():
+    runs = [_Run("  "), _Run("x", fixed=True), _Run(" a "), _Run("y", fixed=True)]
+
+    assert _trim(runs) == [_Run("x", fixed=True), _Run(" a "), _Run("y", fixed=True)]

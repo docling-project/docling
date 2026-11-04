@@ -67,6 +67,7 @@ from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils.utils import trim_run_edges
 
 _ODFDO_AVAILABLE: bool = False
 _ODFDO_IMPORT_ERROR: ImportError | None = None
@@ -576,17 +577,11 @@ def _normalize_odf_text_runs(runs: list[_OdfTextRun]) -> list[_OdfTextRun]:
             )
         )
 
-    while merged_runs and merged_runs[0].text.strip() == "":
-        merged_runs.pop(0)
-    if merged_runs:
-        merged_runs[0].text = merged_runs[0].text.lstrip()
-
-    while merged_runs and merged_runs[-1].text.strip() == "":
-        merged_runs.pop()
-    if merged_runs:
-        merged_runs[-1].text = merged_runs[-1].text.rstrip()
-
-    return [run for run in merged_runs if run.text]
+    return trim_run_edges(
+        merged_runs,
+        get_text=lambda run: run.text,
+        with_text=lambda run, text: _OdfTextRun(text, run.formatting, run.hyperlink),
+    )
 
 
 def _odf_text_from_runs(runs: list[_OdfTextRun]) -> str:

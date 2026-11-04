@@ -55,6 +55,7 @@ from docling.datamodel.backend_options import JatsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.utils import trim_run_edges
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -815,24 +816,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _trim_segment_edges(segments: list[InlineSegment]) -> list[InlineSegment]:
-        """Trim the outer edges of a segment sequence, keeping interior whitespace.
-
-        Stripping *every* segment destroyed the run boundaries, forcing the serializers to
-        invent a separator. Adjacent equal-format runs are already coalesced by
-        ``_append_run``, so only the block edges need trimming (as in the ODF backend).
-        """
-        trimmed = list(segments)
-        while trimmed and not trimmed[0].text.strip():
-            trimmed.pop(0)
-        if trimmed:
-            trimmed[0] = replace(trimmed[0], text=trimmed[0].text.lstrip())
-
-        while trimmed and not trimmed[-1].text.strip():
-            trimmed.pop()
-        if trimmed:
-            trimmed[-1] = replace(trimmed[-1], text=trimmed[-1].text.rstrip())
-
-        return [segment for segment in trimmed if segment.text]
+        """Trim the outer edges of a segment sequence, keeping interior whitespace."""
+        return trim_run_edges(
+            segments,
+            get_text=lambda segment: segment.text,
+            with_text=lambda segment, text: replace(segment, text=text),
+        )
 
     @staticmethod
     def _walk_inline_formula(

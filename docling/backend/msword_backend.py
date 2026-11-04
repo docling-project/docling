@@ -65,6 +65,7 @@ from docling.datamodel.base_models import FormatToMimeType
 from docling.datamodel.document import InputDocument, InputFormat
 from docling.exceptions import DocumentLoadError, SecurityError
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
+from docling.utils.utils import trim_run_edges
 
 _log = logging.getLogger(__name__)
 
@@ -497,24 +498,12 @@ def _format_enum_counter(counter: int, num_fmt: str | None) -> str:
 def _trim_run_edges(
     runs: list[tuple[str, Formatting | None, AnyUrl | Path | None]],
 ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
-    """Trim only the outer edges of a run sequence, leaving interior whitespace intact.
-
-    Same shape as the ODF backend's ``_normalize_odf_text_runs``: leading and trailing
-    whitespace belongs to the block, whitespace between runs belongs to the text.
-    """
-    while runs and not runs[0][0].strip():
-        runs.pop(0)
-    if runs:
-        text, formatting, hyperlink = runs[0]
-        runs[0] = (text.lstrip(), formatting, hyperlink)
-
-    while runs and not runs[-1][0].strip():
-        runs.pop()
-    if runs:
-        text, formatting, hyperlink = runs[-1]
-        runs[-1] = (text.rstrip(), formatting, hyperlink)
-
-    return [run for run in runs if run[0]]
+    """Trim the outer edges of a paragraph's runs, leaving interior whitespace intact."""
+    return trim_run_edges(
+        runs,
+        get_text=lambda run: run[0],
+        with_text=lambda run, text: (text, run[1], run[2]),
+    )
 
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:

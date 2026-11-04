@@ -34,6 +34,7 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 from docling.utils.text_decoding import decode_text
+from docling.utils.utils import trim_run_edges
 
 _log = logging.getLogger(__name__)
 
@@ -902,16 +903,13 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             for part in (_InlineRun(lead), replace(run, text=core), _InlineRun(trail)):
                 if part.text:
                     spaced.append(part)
-        # Only the block's outer edges are trimmed.
-        while spaced and not spaced[0].text.strip():
-            spaced.pop(0)
-        while spaced and not spaced[-1].text.strip():
-            spaced.pop()
-        if spaced:
-            spaced[0] = replace(spaced[0], text=spaced[0].text.lstrip())
-            spaced[-1] = replace(spaced[-1], text=spaced[-1].text.rstrip())
+        trimmed = trim_run_edges(
+            spaced,
+            get_text=lambda run: run.text,
+            with_text=lambda run, text: replace(run, text=text),
+        )
         group = doc.add_inline_group(parent=parent)
-        for run in spaced:
+        for run in trimmed:
             hyperlink = (
                 _LINK_TARGET.validate_python(run.hyperlink) if run.hyperlink else None
             )

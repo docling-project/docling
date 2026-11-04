@@ -8,9 +8,10 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Final
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -41,12 +42,13 @@ from PIL import Image as PILImage
 from pydantic import AnyUrl, ValidationError
 
 from docling.utils.code_language import detect_code_language
+from docling.utils.utils import trim_run_edges
 from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
 
 _MAX_TABLE_GRID_CELLS = 1000
-_BR_SPACES = re.compile(r"(?<=\S) *\n *| *\n *(?=\S)")
+_BR_SPACES: Final = re.compile(r"(?<=\S) *\n *| *\n *(?=\S)")
 
 _LABEL_MAP = {
     "Title": DocItemLabel.TITLE,
@@ -445,18 +447,12 @@ class _ChandraDocumentBuilder:
             }:
                 continue
             merged.append(run)
-        # Runs keep their boundary whitespace (docling-core joins them with ""); only the
-        # block's outer edges are trimmed.
-        while merged and merged[0].label == DocItemLabel.TEXT:
-            merged[0].text = merged[0].text.lstrip()
-            if merged[0].text:
-                break
-            merged.pop(0)
-        while merged and merged[-1].label == DocItemLabel.TEXT:
-            merged[-1].text = merged[-1].text.rstrip()
-            if merged[-1].text:
-                break
-            merged.pop()
+        merged = trim_run_edges(
+            merged,
+            get_text=lambda run: run.text,
+            with_text=lambda run, text: replace(run, text=text),
+            is_trimmable=lambda run: run.label == DocItemLabel.TEXT,
+        )
         if not merged:
             return
         before = len(self.doc.texts)
