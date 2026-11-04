@@ -4,12 +4,13 @@
 import logging
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union
 
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -23,6 +24,7 @@ from docling_core.types.doc import (
     TableData,
     TextItem,
 )
+from pydantic import AnyUrl, TypeAdapter
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
@@ -30,15 +32,17 @@ from docling.datamodel.backend_options import AsciiDocBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import CodeLanguageLabel, detect_code_language
 from docling.utils.text_decoding import decode_text
 
 _log = logging.getLogger(__name__)
 
-# A line starting with // is a comment and never body content. //// opens a
-# delimited comment block: every line up to the matching //// is hidden.
-_LINE_COMMENT_RE = re.compile(r"^//")
-_COMMENT_BLOCK_DELIMITER = "////"
+# A line starting with exactly two slashes is a comment and never body content.
+# A line of four or more slashes opens a delimited comment block: every line up
+# to an identical line is a comment.
+_LINE_COMMENT_RE = re.compile(r"^//(?!/)")
+_COMMENT_BLOCK_DELIMITER_RE = re.compile(r"/{4,}")
 
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
@@ -46,13 +50,69 @@ _COMMENT_BLOCK_DELIMITER = "////"
 # "+" or "*", and either number may be omitted, so ".2+" is a rowspan on its
 # own. Requiring at least one of the two keeps a bare "+" from matching.
 _CELL_SPEC: Final = r"(?:(?:\d+(?:\.\d+)?|\.\d+)[*+])*[<^>]?(?:\.[<^>])?[adehlms]?"
-_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|\w+\.)\s+(.*)"
+# An ordered marker with a letter has one letter only ("a.", "B."), so a line
+# that starts with an abbreviation such as "Dr." or "Fig." stays text.
+_LIST_ITEM_PATTERN: Final = r"^(\s*)(\*+|-|\.+|\d+\.|[a-zA-Z]\.)\s+(.*)"
+
+# URL schemes that Asciidoctor turns into links without a macro name.
+_URL_SCHEME: Final = r"(?:https?|file|ftp|irc)://"
+# Asciidoctor only links a URL at the start of the text, after whitespace or
+# after one of >()[];"' so that a URL inside a word or an attribute stays text.
+_URL_START: Final = r"""(?<![^\s>()\[\];"'])"""
+# The attribute list of a link, between its brackets. A bracket in it must be
+# escaped, so an unclosed "[" ends the scan at the next one, not at the end of
+# the line, and a line with many of them still converts in linear time.
+_LINK_ATTRS: Final = r"(?:[^\[\]\\]|\\.)*"
+# A link target is a URL, or a relative path such as "docs/install.html".
+_LINK_TARGET: Final = TypeAdapter(AnyUrl | Path)
+
+# Links, then inline formatting marks. Links come first so that the "_" and
+# "*" in a URL are not read as formatting marks. The link forms follow
+# Asciidoctor: a URL with link text in brackets, a URL in angle brackets, a
+# bare URL (which ends before trailing punctuation), and the link: and mailto:
+# macros. Formatting marks are unconstrained (doubled, valid anywhere) before
+# constrained (single, valid only at word boundaries, so "snake_case" and
+# "2*3*4" stay plain text), as in Asciidoctor. A constrained span does not
+# contain its own mark, so each scan stops at the next mark on the line.
+_INLINE_FORMAT_RE: Final = re.compile(
+    rf"{_URL_START}(?P<url>{_URL_SCHEME}[^\s\[\]]+)\[(?P<url_text>{_LINK_ATTRS})\]"
+    rf"|<(?P<angle_url>{_URL_SCHEME}[^\s<>\[\]]+)>"
+    rf"|{_URL_START}(?P<bare_url>{_URL_SCHEME}[^\s\[\]<]*[^\s,.?!\[\]<)])"
+    r"|(?<![\w\\])(?:link|(?P<mailto>mailto)):"
+    rf"(?P<macro_target>[^:\s\[][^\s\[]*)\[(?P<macro_text>{_LINK_ATTRS})\]"
+    r"|``(?P<umono>.+?)``"
+    r"|\*\*(?P<ubold>.+?)\*\*"
+    r"|__(?P<uitalic>.+?)__"
+    r"|(?<!\w)`(?P<mono>[^`\s](?:[^`]*?[^`\s])?)`(?!\w)"
+    r"|(?<!\w)\*(?P<bold>[^*\s](?:[^*]*?[^*\s])?)\*(?!\w)"
+    r"|(?<!\w)_(?P<italic>[^_\s](?:[^_]*?[^_\s])?)_(?!\w)"
+)
+
+
+@dataclass(frozen=True)
+class _InlineRun:
+    text: str
+    bold: bool = False
+    italic: bool = False
+    code: bool = False
+    hyperlink: str | None = None
 
 
 @dataclass(frozen=True)
 class _LiteralBlock:
     text: str
     language: str | None = None  # set for [source,lang] listing blocks
+
+
+@dataclass(frozen=True)
+class _CommentBlock:
+    """An AsciiDoc comment, with its // or //// delimiters removed.
+
+    One block per comment: a run of consecutive // lines is one comment, and
+    so is everything between a pair of //// delimiters.
+    """
+
+    text: str
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -133,13 +193,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         preserve reading order, then any pending caption is emitted as a
         bold paragraph.
         """
-        if text_data:
-            doc.add_text(
-                text=" ".join(text_data),
-                label=DocItemLabel.PARAGRAPH,
-                parent=parent,
-            )
-            text_data = []
+        text_data = self._flush_text_data(doc=doc, text_data=text_data, parent=parent)
         if caption_data:
             caption_data = self._flush_caption_as_paragraph(doc, caption_data, parent)
         return caption_data, text_data
@@ -155,12 +209,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         Used for block titles whose target is not a floating item (picture,
         table, or code block), which have no caption slot.
         """
-        doc.add_text(
-            text=" ".join(caption_data),
-            label=DocItemLabel.PARAGRAPH,
-            parent=parent,
-            formatting=Formatting(bold=True),
-        )
+        self._flush_text_data(doc=doc, text_data=caption_data, parent=parent, bold=True)
         return []
 
     def _parse(self, doc: DoclingDocument):
@@ -192,6 +241,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         caption_data: list[str] = []
         last_list_item: ListItem | None = None
         list_continuation = False
+        # The marker kind of the list group at each level ("." for ordered,
+        # "*" or "-" for bullets), for the list being parsed. Reset when a new
+        # list starts, so a level that holds a section header is never mistaken
+        # for a list.
+        list_kinds: dict[int, str] = {}
 
         parents: dict[int, Union[GroupItem, None]] = {}
         indents: dict[int, Union[GroupItem, None]] = {}
@@ -201,9 +255,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             indents[i] = None
 
         for block in self._iter_blocks(self.lines):
-            if isinstance(block, _LiteralBlock):
+            if not isinstance(block, str):
                 text_data, caption_data, in_list, last_list_item, list_continuation = (
-                    self._add_literal_block(
+                    self._add_block(
                         doc=doc,
                         block=block,
                         text_data=text_data,
@@ -286,11 +340,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     # GroupItem has no caption slot; emit the pending block
                     # title as a bold paragraph immediately before the list.
                     if caption_data:
-                        doc.add_text(
-                            text=" ".join(caption_data),
-                            label=DocItemLabel.PARAGRAPH,
+                        self._flush_text_data(
+                            doc=doc,
+                            text_data=caption_data,
                             parent=parents[level],
-                            formatting=Formatting(bold=True),
+                            bold=True,
                         )
                         caption_data = []
 
@@ -298,12 +352,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         parent=parents[level], name="list", label=GroupLabel.LIST
                     )
                     indents[level + 1] = item["indent"]
+                    list_kinds = {level + 1: self._list_kind(item)}
 
                 elif in_list and item["indent"] > indents[level]:
+                    # A nested list belongs to the item above it. As a sibling
+                    # of the items, it is counted as an item of the outer list,
+                    # and the next ordered item is numbered one too high.
                     parents[level + 1] = doc.add_group(
-                        parent=parents[level], name="list", label=GroupLabel.LIST
+                        parent=last_list_item, name="list", label=GroupLabel.LIST
                     )
                     indents[level + 1] = item["indent"]
+                    list_kinds[level + 1] = self._list_kind(item)
 
                 elif in_list and item["indent"] < indents[level]:
                     while level > 0 and item["indent"] < indents[level]:
@@ -314,6 +373,15 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         parents[level] = None
                         indents[level] = None
                         level -= 1
+
+                self._match_list_kind(
+                    doc=doc,
+                    item=item,
+                    parents=parents,
+                    indents=indents,
+                    list_kinds=list_kinds,
+                    last_list_item=last_list_item,
+                )
 
                 last_list_item = doc.add_list_item(
                     item["text"],
@@ -370,11 +438,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_caption(line)
                 caption_data.append(item["text"])
 
-            elif (
-                len(line.strip()) > 0 and len(caption_data) > 0
-            ):  # allow multiline captions
+            elif len(line.strip()) > 0 and len(caption_data) > 0:
+                # A block title is a single line, so this line starts the
+                # paragraph it titles. A paragraph has no caption slot.
+                parent = self._get_current_parent(parents)
+                text_data = self._flush_text_data(
+                    doc=doc, text_data=text_data, parent=parent
+                )
+                caption_data = self._flush_caption_as_paragraph(
+                    doc, caption_data, parent
+                )
                 item = self._parse_text(line)
-                caption_data.append(item["text"])
+                text_data.append(item["text"])
 
             elif len(line.strip()) == 0:
                 caption_data, text_data = self._flush_blank_line(
@@ -388,13 +463,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 item = self._parse_text(line)
                 text_data.append(item["text"])
 
-        if len(text_data) > 0:
-            doc.add_text(
-                text=" ".join(text_data),
-                label=DocItemLabel.PARAGRAPH,
-                parent=self._get_current_parent(parents),
-            )
-            text_data = []
+        text_data = self._flush_text_data(
+            doc=doc, text_data=text_data, parent=self._get_current_parent(parents)
+        )
 
         if in_table:
             # An unclosed table still consumes its pending caption below.
@@ -437,12 +508,30 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 return True
         return False
 
+    @staticmethod
+    def _is_line_comment(line: str) -> bool:
+        """Is `line` a // comment line rather than text or a //// block delimiter?"""
+        return _LINE_COMMENT_RE.match(line) is not None
+
+    @staticmethod
+    def _make_comment(comment_lines: list[str]) -> _CommentBlock | None:
+        """Build a comment block, or None when the comment carries no text."""
+        text = "\n".join(comment_lines).strip()
+        return _CommentBlock(text=text) if text else None
+
     @classmethod
-    def _iter_blocks(cls, lines: list[str]) -> Iterator[str | _LiteralBlock]:
+    def _iter_blocks(
+        cls, lines: list[str]
+    ) -> Iterator[str | _LiteralBlock | _CommentBlock]:
         block_data: list[str] | None = None
         block_delimiter: str | None = None
         block_language: str | None = None
-        in_comment_block = False
+        comment_data: list[str] | None = None
+        comment_delimiter: str | None = None
+        # Content block delimiters still waiting for their closer, innermost
+        # last. The lines between a pair run through this loop like any other,
+        # so a comment inside such a block is a comment and not body text.
+        open_content_blocks: list[str] = []
 
         i = 0
         n = len(lines)
@@ -451,7 +540,8 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             stripped = line.strip()
 
             if block_data is not None:
-                # Inside a delimited block: only the matching closer ends it.
+                # Inside a verbatim block: only the matching closer ends it,
+                # and a "//" line here is content rather than a comment.
                 if stripped == block_delimiter:
                     yield _LiteralBlock(
                         text="\n".join(block_data), language=block_language
@@ -464,6 +554,38 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
+            # A comment block hides every construct, so it is checked ahead of
+            # the block openers: a "----" between //// delimiters is comment
+            # text, not the start of a listing.
+            if comment_data is not None:
+                if stripped == comment_delimiter:
+                    comment = cls._make_comment(comment_data)
+                    if comment is not None:
+                        yield comment
+                    comment_data = None
+                    comment_delimiter = None
+                else:
+                    comment_data.append(line.rstrip("\r\n"))
+                i += 1
+                continue
+
+            if _COMMENT_BLOCK_DELIMITER_RE.fullmatch(stripped):
+                comment_data = []
+                comment_delimiter = stripped
+                i += 1
+                continue
+
+            if cls._is_line_comment(line):
+                # Consecutive // lines read as one comment, so take the run.
+                comment_lines = []
+                while i < n and cls._is_line_comment(lines[i]):
+                    comment_lines.append(lines[i].rstrip("\r\n")[2:].strip())
+                    i += 1
+                comment = cls._make_comment(comment_lines)
+                if comment is not None:
+                    yield comment
+                continue
+
             if stripped in {"....", "----"}:
                 # "...." is a literal block; "----" a listing block. A
                 # "[source,lang]" attribute consumed just before a "----"
@@ -474,36 +596,23 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 i += 1
                 continue
 
-            if in_comment_block:
-                if stripped == _COMMENT_BLOCK_DELIMITER:
-                    in_comment_block = False
-                i += 1
-                continue
-
-            if stripped == _COMMENT_BLOCK_DELIMITER:
-                in_comment_block = True
-                i += 1
-                continue
-
-            if _LINE_COMMENT_RE.match(line):
+            if open_content_blocks and stripped == open_content_blocks[-1]:
+                # Closer of the innermost content block. Yield a trailing blank
+                # so the following text starts a fresh paragraph.
+                open_content_blocks.pop()
+                yield ""
                 i += 1
                 continue
 
             if stripped in cls._CONTENT_BLOCK_DELIMITERS:
-                has_closer = cls._has_matching_closer(lines, i, stripped)
-                if has_closer:
-                    # Consume both delimiters; yield inner lines and a trailing
-                    # blank so the following text starts a fresh paragraph.
-                    i += 1
-                    while i < n and lines[i].strip() != stripped:
-                        yield lines[i]
-                        i += 1
-                    i += 1
+                if cls._has_matching_closer(lines, i, stripped):
+                    open_content_blocks.append(stripped)
+                else:
+                    # Stray delimiter (no closer): break the paragraph, do not
+                    # render as text. The line must be consumed either way;
+                    # leaving `i` on it loops over the same line forever.
                     yield ""
-                elif stripped == "--":
-                    # Stray "--" (no closer): break the paragraph, do not render as text.
-                    yield ""
-                    i += 1
+                i += 1
                 continue
 
             source_attr = cls._SOURCE_ATTR_RE.match(stripped)
@@ -519,6 +628,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         if block_data is not None:
             yield _LiteralBlock(text="\n".join(block_data), language=block_language)
+        if comment_data is not None:
+            # An unclosed //// comments out the rest of the document, which is
+            # how Asciidoctor reads it.
+            comment = cls._make_comment(comment_data)
+            if comment is not None:
+                yield comment
 
     def _add_picture_item(
         self,
@@ -533,8 +648,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         """Add a picture with its pending caption, if any."""
         caption: Optional[TextItem] = None
         if len(caption_data) > 0:
+            text, hyperlink = self._caption_text(caption_data)
             caption = doc.add_text(
-                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+                text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
             )
 
         caption_data = []
@@ -555,6 +671,68 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             parent=last_list_item if in_list else self._get_current_parent(parents),
         )
         return caption_data, in_list, last_list_item
+
+    def _add_block(
+        self,
+        *,
+        doc: DoclingDocument,
+        block: _LiteralBlock | _CommentBlock,
+        text_data: list[str],
+        caption_data: list[str],
+        in_list: bool,
+        last_list_item: ListItem | None,
+        list_continuation: bool,
+        parents: dict[int, GroupItem | None],
+    ) -> tuple[list[str], list[str], bool, ListItem | None, bool]:
+        """Add a delimited block and return the parser state after it.
+
+        A comment is markup, not content: it neither ends the list nor the
+        paragraph it sits in, so the state passes through unchanged. A
+        literal block flushes the pending text and captions first.
+        """
+        if isinstance(block, _CommentBlock):
+            self._add_comment_block(
+                doc=doc,
+                block=block,
+                in_list=in_list,
+                last_list_item=last_list_item,
+                parents=parents,
+            )
+            return text_data, caption_data, in_list, last_list_item, list_continuation
+        return self._add_literal_block(
+            doc=doc,
+            block=block,
+            text_data=text_data,
+            caption_data=caption_data,
+            in_list=in_list,
+            last_list_item=last_list_item,
+            list_continuation=list_continuation,
+            parents=parents,
+        )
+
+    def _add_comment_block(
+        self,
+        *,
+        doc: DoclingDocument,
+        block: _CommentBlock,
+        in_list: bool,
+        last_list_item: ListItem | None,
+        parents: dict[int, GroupItem | None],
+    ) -> None:
+        """Add a comment to the notes content layer.
+
+        A comment between two lines of one paragraph lands just before that
+        paragraph, since flushing the text to place it would split the body
+        text in two.
+        """
+        if not self.options.capture_comments:
+            return
+        doc.add_text(
+            text=block.text,
+            label=DocItemLabel.TEXT,
+            content_layer=ContentLayer.NOTES,
+            parent=(last_list_item if in_list else self._get_current_parent(parents)),
+        )
 
     def _add_literal_block(
         self,
@@ -584,9 +762,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         )
         caption: Optional[TextItem] = None
         if caption_data:
+            text, hyperlink = self._caption_text(caption_data)
             caption = doc.add_text(
-                text=" ".join(caption_data),
-                label=DocItemLabel.CAPTION,
+                text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
             )
             caption_data = []
         code_language = (
@@ -621,9 +799,73 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         ):
             return in_list, last_list_item, list_continuation
 
+        # Close every level of the list, not only the innermost one. Otherwise
+        # the text after a nested list is added to the outer list group.
         level = cls._get_current_level(parents)
-        parents[level] = None
+        while (
+            isinstance(group := parents[level], GroupItem)
+            and group.label == GroupLabel.LIST
+        ):
+            parents[level] = None
+            level -= 1
         return False, None, False
+
+    @classmethod
+    def _match_list_kind(
+        cls,
+        *,
+        doc: DoclingDocument,
+        item: dict,
+        parents: dict[int, GroupItem | None],
+        indents: dict[int, GroupItem | None],
+        list_kinds: dict[int, str],
+        last_list_item: ListItem | None,
+    ) -> None:
+        """Keep items with different list markers out of the same list group.
+
+        AsciiDoc nests lists by marker, not by indentation. The item returns to
+        the closest enclosing list with its marker at the same indent, or else
+        opens a nested list under the item above it.
+        """
+        level = cls._get_current_level(parents)
+        kind = cls._list_kind(item)
+        if list_kinds.get(level) == kind:
+            return
+        outer = level - 1
+        while outer in list_kinds and indents[outer] == item["indent"]:
+            if list_kinds[outer] == kind:
+                for closed in range(outer + 1, level + 1):
+                    parents[closed] = None
+                    indents[closed] = None
+                return
+            outer -= 1
+        parents[level + 1] = doc.add_group(
+            parent=last_list_item, name="list", label=GroupLabel.LIST
+        )
+        indents[level + 1] = item["indent"]
+        list_kinds[level + 1] = kind
+
+    @staticmethod
+    def _list_kind(item: dict) -> str:
+        # All ordered markers ("." and "1.") count as one kind; a bullet's kind
+        # is its marker character, so "*" and "-" lists nest like Asciidoctor.
+        return "." if item["numbered"] else item["marker"][0]
+
+    @staticmethod
+    def _caption_text(
+        caption_data: list[str],
+    ) -> tuple[str, AnyUrl | Path | None]:
+        """Return the text and hyperlink of a caption.
+
+        A caption is one text item, so runs cannot be kept apart. The
+        hyperlink is kept only if every non-blank run has the same one.
+        """
+        runs = AsciiDocBackend._parse_inline(" ".join(caption_data))
+        text = "".join(run.text for run in runs).strip()
+        targets = {run.hyperlink for run in runs if run.text.strip()}
+        if len(targets) == 1 and (target := targets.pop()) is not None:
+            return text, _LINK_TARGET.validate_python(target)
+        return text, None
 
     @staticmethod
     def _flush_text_data(
@@ -631,14 +873,160 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         text_data: list[str],
         parent: GroupItem | None,
+        bold: bool = False,
     ) -> list[str]:
-        if len(text_data) > 0:
+        if len(text_data) == 0:
+            return []
+        text = " ".join(text_data)
+        runs = AsciiDocBackend._parse_inline(text, bold=bold)
+        if not any(
+            run.bold != bold or run.italic or run.code or run.hyperlink for run in runs
+        ):
             doc.add_text(
-                text=" ".join(text_data),
+                text="".join(run.text for run in runs) if bold else text,
                 label=DocItemLabel.PARAGRAPH,
                 parent=parent,
+                formatting=Formatting(bold=True) if bold else None,
             )
+            return []
+        # Mixed formatting and links need one item per run, kept together in an
+        # inline group like the Markdown backend does.
+        # Runs keep their boundary whitespace (docling-core joins them with ""); a
+        # code run's edge whitespace moves out into a plain run of its own.
+        spaced: list[_InlineRun] = []
+        for run in runs:
+            core = run.text.strip()
+            if not run.code or not core:
+                spaced.append(replace(run, code=False))
+                continue
+            lead, _, trail = run.text.partition(core)
+            for part in (_InlineRun(lead), replace(run, text=core), _InlineRun(trail)):
+                if part.text:
+                    spaced.append(part)
+        trimmed = trim_run_edges(
+            spaced,
+            get_text=lambda run: run.text,
+            with_text=lambda run, text: replace(run, text=text),
+        )
+        group = doc.add_inline_group(parent=parent)
+        for run in trimmed:
+            hyperlink = (
+                _LINK_TARGET.validate_python(run.hyperlink) if run.hyperlink else None
+            )
+            if run.code:
+                doc.add_code(text=run.text, parent=group, hyperlink=hyperlink)
+            else:
+                doc.add_text(
+                    text=run.text,
+                    label=DocItemLabel.TEXT,
+                    parent=group,
+                    formatting=(
+                        Formatting(bold=run.bold, italic=run.italic)
+                        if run.bold or run.italic
+                        else None
+                    ),
+                    hyperlink=hyperlink,
+                )
         return []
+
+    @staticmethod
+    def _parse_inline(
+        text: str,
+        bold: bool = False,
+        italic: bool = False,
+        hyperlink: str | None = None,
+    ) -> list[_InlineRun]:
+        """Split text into runs of plain, bold, italic, monospace and link text.
+
+        `hyperlink` is set inside the text of a link. A link has no links in
+        it, so a link form found there stays text of the outer link.
+        """
+        runs: list[_InlineRun] = []
+        position = 0
+        for match in _INLINE_FORMAT_RE.finditer(text):
+            if match.start() > position:
+                runs.append(
+                    _InlineRun(
+                        text[position : match.start()],
+                        bold=bold,
+                        italic=italic,
+                        hyperlink=hyperlink,
+                    )
+                )
+            if (link := AsciiDocBackend._match_link(match)) is not None:
+                target, link_text = link
+                if hyperlink is not None:
+                    runs.append(
+                        _InlineRun(match.group(0), bold, italic, hyperlink=hyperlink)
+                    )
+                elif link_text is None:
+                    # No link text: the target itself is shown, as written.
+                    shown = match.group("macro_target") or target
+                    runs.append(_InlineRun(shown, bold, italic, hyperlink=target))
+                    # Blank brackets have no link text, but their whitespace stays.
+                    blank = match.group("url_text") or match.group("macro_text") or ""
+                    if blank.isspace():
+                        runs.append(_InlineRun(blank, bold, italic))
+                else:
+                    runs.extend(
+                        AsciiDocBackend._parse_inline(link_text, bold, italic, target)
+                    )
+            elif (code := match.group("umono") or match.group("mono")) is not None:
+                runs.append(_InlineRun(code, code=True, hyperlink=hyperlink))
+            elif (inner := match.group("ubold") or match.group("bold")) is not None:
+                runs.extend(
+                    AsciiDocBackend._parse_inline(inner, True, italic, hyperlink)
+                )
+            else:
+                inner = match.group("uitalic") or match.group("italic")
+                runs.extend(AsciiDocBackend._parse_inline(inner, bold, True, hyperlink))
+            position = match.end()
+        if position < len(text):
+            runs.append(
+                _InlineRun(
+                    text[position:], bold=bold, italic=italic, hyperlink=hyperlink
+                )
+            )
+        return runs
+
+    @staticmethod
+    def _match_link(match: re.Match[str]) -> tuple[str, str | None] | None:
+        """Return the target and the link text of a link match.
+
+        The link text is None when the link has none, and then Asciidoctor
+        shows the target. Returns None when the match is not a link.
+        """
+        if url := match.group("url"):
+            return url, AsciiDocBackend._link_text(match.group("url_text"))
+        if url := match.group("angle_url") or match.group("bare_url"):
+            return url, None
+        if target := match.group("macro_target"):
+            if match.group("mailto"):
+                target = f"mailto:{target}"
+            return target, AsciiDocBackend._link_text(match.group("macro_text"))
+        return None
+
+    @staticmethod
+    def _link_text(attributes: str) -> str | None:
+        """Get the link text from the attribute list in the brackets of a link.
+
+        As in Asciidoctor, named attributes (e.g. `window=_blank`) can follow
+        the text, the text is then quoted if it contains a comma, and a final
+        `^` (open in a new window) is not part of the text.
+        """
+        text = re.sub(r"\\([\[\]])", r"\1", attributes)
+        if "=" in text:
+            quoted = re.match(r'\s*"((?:[^"\\]|\\.)*)"\s*(?:,|$)', text)
+            if quoted:
+                text = quoted.group(1).replace('\\"', '"')
+            else:
+                text = text.split(",", 1)[0].strip()
+                if re.match(r"[A-Za-z_][\w-]*\s*=", text):
+                    # Only named attributes, no link text.
+                    text = ""
+        if text.endswith("^"):
+            text = text[:-1]
+        return text if text.strip() else None
 
     #   =========   Title
     @staticmethod
@@ -646,8 +1034,18 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return re.match(r"^= ", line)
 
     @staticmethod
+    def _strip_closing_marker(text: str, marker: str) -> str:
+        """Drop the closing marks of a symmetric title such as "== Title ==".
+
+        Asciidoctor accepts a title closed by the same marks that open it,
+        separated by whitespace, and leaves them out of the title text.
+        """
+        return re.sub(rf"[ \t]+{re.escape(marker)}$", "", text)
+
+    @staticmethod
     def _parse_title(line):
-        return {"type": "title", "text": line[2:].strip(), "level": 0}
+        text = AsciiDocBackend._strip_closing_marker(line[2:].strip(), "=")
+        return {"type": "title", "text": text, "level": 0}
 
     #   =========   Section headers
     @staticmethod
@@ -665,7 +1063,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return {
             "type": "header",
             "level": header_level - 1,
-            "text": text.strip(),
+            "text": AsciiDocBackend._strip_closing_marker(text.strip(), marker),
         }
 
     #   =========   Lists
@@ -758,8 +1156,9 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         caption = None
         if caption_data:
+            text, hyperlink = AsciiDocBackend._caption_text(caption_data)
             caption = doc.add_text(
-                text=" ".join(caption_data), label=DocItemLabel.CAPTION
+                text=text, label=DocItemLabel.CAPTION, hyperlink=hyperlink
             )
 
         data = AsciiDocBackend._populate_table_as_grid(table_data)

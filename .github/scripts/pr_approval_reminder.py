@@ -6,9 +6,9 @@
 GitHub holds ``pull_request`` runs from new contributors' forks with the
 conclusion ``action_required`` until a maintainer approves them. These runs
 have an empty ``pull_requests`` list, so they are matched to open PRs by the
-head commit. The Slack message groups the PRs by their AI triage label and
-shows only the oldest PRs of each group. The full list goes to the GitHub
-Actions job summary, and the message links to it.
+head commit. The Slack message shows how many PRs wait in each AI triage
+group. The full list goes to the GitHub Actions job summary, and the message
+links to it.
 """
 
 from __future__ import annotations
@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 import urllib.request
@@ -27,10 +26,6 @@ from typing import Any
 
 APPROVAL_CONCLUSION = "action_required"
 AI_LABEL_PREFIX = "ai:"
-MAX_PRS_PER_GROUP = 5
-MAX_TITLE_CHARS = 60
-# Conventional-commit prefix such as "fix(docx): ", cut from Slack titles.
-TITLE_PREFIX = re.compile(r"^[a-z]+(\([^)]*\))?!?:\s*", re.IGNORECASE)
 # (heading, label that selects the group); None collects the rest.
 # The group that needs the most attention comes first.
 GROUPS: tuple[tuple[str, str | None], ...] = (
@@ -104,11 +99,6 @@ def find_waiting_prs(
     return sorted(prs, key=lambda pr: pr.waiting_since)
 
 
-def slack_escape(text: str) -> str:
-    """Escape text for Slack mrkdwn, so it cannot form links or mentions."""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
 def markdown_escape(text: str) -> str:
     """Escape text for a GitHub Markdown table cell."""
     return text.replace("&", "&amp;").replace("<", "&lt;").replace("|", "\\|")
@@ -131,21 +121,18 @@ def group_prs(prs: list[WaitingPr]) -> list[tuple[str, list[WaitingPr]]]:
     return groups
 
 
-def format_pr(pr: WaitingPr, now: datetime) -> str:
-    title = TITLE_PREFIX.sub("", pr.title, count=1) or pr.title
-    if len(title) > MAX_TITLE_CHARS:
-        title = title[: MAX_TITLE_CHARS - 1].rstrip() + "…"
-    title = slack_escape(title).replace("|", "¦")
-    return f"• <{pr.url}|#{pr.number} {title}> · {_age(pr.waiting_since, now)}"
-
-
 def build_message(
     prs: list[WaitingPr], repo: str, now: datetime, summary_url: str | None = None
 ) -> dict[str, Any]:
     count = len(prs)
     oldest = _age(min(pr.waiting_since for pr in prs), now)
-    pulls_url = f"https://github.com/{repo}/pulls"
-    more_url = summary_url or pulls_url
+    counts = "\n".join(
+        f"{heading}: *{len(members)}*" for heading, members in group_prs(prs)
+    )
+    if summary_url:
+        link = f"*<{summary_url}|:point_right: Open the full list of {count} PRs>*"
+    else:
+        link = f"*<https://github.com/{repo}/pulls|:point_right: Open the PRs>*"
     blocks: list[dict[str, Any]] = [
         {
             "type": "header",
@@ -154,33 +141,21 @@ def build_message(
                 "text": f"🚦 {count} PR(s) wait for CI approval · oldest {oldest}",
             },
         },
-    ]
-    for heading, members in group_prs(prs):
-        lines = [f"*{heading}* ({len(members)})"]
-        lines.extend(format_pr(pr, now) for pr in members[:MAX_PRS_PER_GROUP])
-        hidden = len(members) - MAX_PRS_PER_GROUP
-        if hidden > 0:
-            lines.append(f"      <{more_url}|+{hidden} more>")
-        blocks.append(
-            {"type": "section", "text": {"type": "mrkdwn", "text": "\n".join(lines)}}
-        )
-    links = [f"<{pulls_url}|Open PRs>"]
-    if summary_url:
-        links.insert(0, f"<{summary_url}|Full list ({count} PRs)>")
-    blocks.append(
+        {"type": "section", "text": {"type": "mrkdwn", "text": counts}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": link}},
         {
             "type": "context",
             "elements": [
                 {
                     "type": "mrkdwn",
                     "text": (
-                        "The `ai:*` labels are advisory. Read the PR before you"
-                        f" approve CI. {' · '.join(links)}"
+                        "The `ai:*` labels are advisory."
+                        " Read the PR before you approve CI."
                     ),
                 }
             ],
-        }
-    )
+        },
+    ]
     summary = f"{count} PR(s) in {repo} wait for a maintainer to approve CI"
     return {"text": summary, "blocks": blocks}
 

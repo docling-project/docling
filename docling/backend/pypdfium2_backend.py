@@ -1,9 +1,12 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import ctypes
 import logging
 import random
+from bisect import bisect_left, bisect_right
 from collections.abc import Iterable
+from dataclasses import dataclass
 from importlib.metadata import version
 from io import BytesIO
 from pathlib import Path
@@ -259,6 +262,116 @@ _INVISIBLE_TEXT_RENDER_MODES = frozenset(
 )
 
 
+@dataclass(frozen=True)
+class _PageChars:
+    """The characters of a PDFium text page, to select them by area.
+
+    ``PdfTextPage.get_text_bounded()`` selects every character whose box touches
+    the query rect. In tightly set lines the boxes of neighbouring lines overlap:
+    descenders (g, j, p, y, ą, ę) reach down into the next line and accents on
+    capitals (Ó, Ś, Ć, Ź) reach up into the previous one. A query for one line then
+    also returns these letters of its neighbours. ``text_in_rect`` selects a
+    character only when the centre of its box lies in the rect, and builds the
+    text with the same spacing and line-break rules as PDFium.
+
+    Attributes:
+        units: UTF-16 code unit of each character, by PDFium character index.
+        baselines: y of each character's origin, by PDFium character index.
+        centres: ``(y, x, index)`` of the box centre of each character whose box
+            is not empty, sorted by y.
+        centre_ys: The y of each entry in ``centres``, for bisection.
+    """
+
+    units: list[int]
+    baselines: list[float]
+    centres: list[tuple[float, float, int]]
+    centre_ys: list[float]
+
+    @classmethod
+    def from_text_page(cls, text_page: PdfTextPage) -> "_PageChars":
+        """Read every character of ``text_page``. The caller holds the PDFium lock."""
+        units: list[int] = []
+        baselines: list[float] = []
+        centres: list[tuple[float, float, int]] = []
+        origin_x = ctypes.c_double()
+        origin_y = ctypes.c_double()
+        for char_index in range(text_page.count_chars()):
+            units.append(pdfium_c.FPDFText_GetUnicode(text_page.raw, char_index))
+            pdfium_c.FPDFText_GetCharOrigin(
+                text_page.raw, char_index, origin_x, origin_y
+            )
+            baselines.append(origin_y.value)
+            left, bottom, right, top = text_page.get_charbox(char_index)
+            # PDFium never selects a character with an empty box (e.g. a
+            # generated line break), so it gets no centre here.
+            if right > left and top > bottom:
+                centres.append(((bottom + top) / 2, (left + right) / 2, char_index))
+        centres.sort()
+        return cls(
+            units=units,
+            baselines=baselines,
+            centres=centres,
+            centre_ys=[y for y, _, _ in centres],
+        )
+
+    def text_in_rect(self, rect: tuple[float, float, float, float]) -> str:
+        """Text of the characters whose box centre lies in ``rect``.
+
+        Args:
+            rect: ``(left, bottom, right, top)`` in the unrotated PDF frame, as
+                ``PdfTextPage.get_text_bounded()`` takes it.
+
+        Returns:
+            The text in character order. As in ``FPDFText_GetBoundedText``, a
+            space that directly follows a selected character is kept, and CRLF
+            separates selected characters on different baselines.
+        """
+        left, bottom, right, top = rect
+        candidates = self.centres[
+            bisect_left(self.centre_ys, bottom) : bisect_right(self.centre_ys, top)
+        ]
+        selected = {char_index for _, x, char_index in candidates if left <= x <= right}
+        if not selected:
+            return ""
+
+        first = min(selected)
+        pieces: list[str] = []
+        kept_previous = False
+        # PDFium walks the page from its first character: the characters before
+        # `first` are not selected, so they request a line break.
+        line_break = first > 0
+        line_y = 0.0
+        for char_index in range(first, min(max(selected) + 2, len(self.units))):
+            unit = self.units[char_index]
+            if char_index in selected:
+                if (
+                    line_break
+                    and not kept_previous
+                    and self.baselines[char_index] != line_y
+                ):
+                    line_y = self.baselines[char_index]
+                    if pieces:
+                        pieces.append("\r\n")
+                kept_previous = True
+                line_break = False
+                if unit:
+                    pieces.append(chr(unit))
+            elif unit == ord(" "):
+                if kept_previous:
+                    pieces.append(" ")
+                    kept_previous = False
+                    line_break = False
+            else:
+                kept_previous = False
+                line_break = True
+        # A character outside the BMP arrives as two surrogate code units.
+        return (
+            "".join(pieces)
+            .encode("utf-16-le", "surrogatepass")
+            .decode("utf-16-le", "ignore")
+        )
+
+
 class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
     def __init__(
         self,
@@ -313,9 +426,10 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         page_size = self.get_size()
 
         with pypdfium2_lock:
+            chars = _PageChars.from_text_page(self.text_page)
             for i in range(self.text_page.count_rects()):
                 rect = self.text_page.get_rect(i)
-                text_piece = self.text_page.get_text_bounded(*rect)
+                text_piece = chars.text_in_rect(rect)
                 # `rect` is in the unrotated frame, `page_size` in the rotated
                 # display frame: bring the rect over before converting origin.
                 x0, y0, x1, y1 = _rect_to_display_frame(
@@ -416,15 +530,13 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                     b=max(cell.rect.to_bounding_box().b for cell in group),
                 )
 
-                assert self.text_page is not None
                 bbox = merged_bbox.to_bottom_left_origin(page_size.height)
                 # Cells are stored in the display frame; PDFium only understands
                 # the unrotated one, so undo the rotation before querying it.
                 pdf_rect = _rect_to_pdf_frame(
                     bbox.as_tuple(), rotation, page_size, origin
                 )
-                with pypdfium2_lock:
-                    merged_text = self.text_page.get_text_bounded(*pdf_rect)
+                merged_text = chars.text_in_rect(pdf_rect)
 
                 return TextCell(
                     index=group[0].index,

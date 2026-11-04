@@ -92,8 +92,8 @@ def _runs(doc: DoclingDocument, item: NodeItem) -> list[TextItem]:
 
 
 def _note_text(doc: DoclingDocument, item: TextItem) -> str:
-    """Plain text of a note's inline runs joined."""
-    return " ".join(r.text for r in _runs(doc, item))
+    """Plain text of a note: its inline runs concatenated without a separator."""
+    return "".join(r.text for r in _runs(doc, item))
 
 
 def _assert_wrapper(table: TableItem, item: TextItem) -> None:
@@ -282,9 +282,9 @@ def test_inline_formula_is_a_formula_run_inside_the_wrapper():
     _assert_wrapper(table, wrapper)
     assert wrapper.text == ""
     assert [(r.label, r.text) for r in _runs(doc, wrapper)] == [
-        (DocItemLabel.FOOTNOTE, "Error bound is"),
+        (DocItemLabel.FOOTNOTE, "Error bound is "),
         (DocItemLabel.FORMULA, "\\epsilon < 0.5"),
-        (DocItemLabel.FOOTNOTE, "for all rows."),
+        (DocItemLabel.FOOTNOTE, " for all rows."),
     ]
 
     md = doc.export_to_markdown()
@@ -475,7 +475,7 @@ def test_json_roundtrip_preserves_footnote_refs_and_runs():
         _assert_wrapper(table, note)
     assert _note_text(restored, notes[0]) == "Plain roundtrip note."
     rich_runs = _runs(restored, notes[1])
-    assert [r.text for r in rich_runs] == ["Rich", "roundtrip", "note."]
+    assert [r.text for r in rich_runs] == ["Rich ", "roundtrip", " note."]
     bold = rich_runs[1].formatting
     assert bold is not None and bold.bold
     assert restored.export_to_markdown() == doc.export_to_markdown()
@@ -559,11 +559,11 @@ def test_paragraph_boundary_skips_comments_and_keeps_label_and_tails():
     )
     assert [r.text for r in _runs(doc, note)] == ["Before after"]
 
-    # The label join is marker behavior and is not changed here.
+    # A paragraph is a block, so it is also kept apart from a preceding label.
     doc, _, note = _single_note(
         '<fn id="l1"><label>a</label><p>One.</p><p>Two.</p></fn>'
     )
-    assert [r.text for r in _runs(doc, note)] == ["aOne. Two."]
+    assert [r.text for r in _runs(doc, note)] == ["a One. Two."]
 
     # Text around paragraphs keeps its source order and its existing join.
     doc, _, note = _single_note('<fn id="t1">lead <p>alpha</p>mid<p>beta</p> end</fn>')
@@ -573,7 +573,7 @@ def test_paragraph_boundary_skips_comments_and_keeps_label_and_tails():
 def test_paragraph_boundary_keeps_styled_and_formula_runs():
     doc, _, note = _single_note('<fn id="s1"><p><bold>alpha</bold></p><p>beta</p></fn>')
     runs = _runs(doc, note)
-    assert [r.text for r in runs] == ["alpha", "beta"]
+    assert [r.text for r in runs] == ["alpha", " beta"]
     assert runs[0].formatting is not None and runs[0].formatting.bold
     assert "**alpha** beta" in doc.export_to_markdown()
 
@@ -583,10 +583,10 @@ def test_paragraph_boundary_keeps_styled_and_formula_runs():
         "<tex-math>b^2</tex-math><p>y</p></fn>"
     )
     assert [(r.label, r.text) for r in _runs(doc, note)] == [
-        (DocItemLabel.FOOTNOTE, "x"),
+        (DocItemLabel.FOOTNOTE, "x "),
         (DocItemLabel.FORMULA, "a^2"),
         (DocItemLabel.FORMULA, "b^2"),
-        (DocItemLabel.FOOTNOTE, "y"),
+        (DocItemLabel.FOOTNOTE, " y"),
     ]
 
 

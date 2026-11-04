@@ -430,6 +430,7 @@ class NativePdfPipeline(ConvertPipeline):
         for page in conv_res.pages:
             if page._backend is not None:
                 page._backend.unload()
+                page._backend = None
         if conv_res.input._backend:
             conv_res.input._backend.unload()
 

@@ -1,0 +1,34 @@
+\documentclass{article}
+
+\begin{document}
+
+\section{Math Examples}
+
+Inline math: $E = mc^2$
+
+Display math:
+
+$$\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
+
+$$\begin{equation}
+\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}
+\end{equation}$$
+
+\section{Table Example}
+
+\begin{table}[h]
+\caption{Sample table}
+\begin{tabular}{|l|l|l|}
+\hline
+Name & Age & City \\ \hline
+Alice & 25 & Boston \\ \hline
+Bob & 30 & Seattle \\ \hline
+ &  &  \\ \hline
+\end{tabular}
+\end{table}
+
+\section{References}
+
+See [smith2020] for more details. Also refer to Section [sec:math].
+
+\end{document}

@@ -19,6 +19,12 @@ from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.archive_limits import (
+    ArchiveLimitError,
+    ArchiveLimits,
+    check_archive_limits,
+    read_member,
+)
 from docling.datamodel.backend_options import EpubBackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -35,10 +41,11 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
     for processing the XHTML structure.
 
     Note:
-        This module enforces limits when extracting EPUB archives for image processing.
-            These limits prevent malicious EPUBs from exhausting disk space or memory
-            through decompression bombs. Limits can be configured via
-            EpubBackendOptions.
+        This module limits the decompressed size of the archive members it reads
+            (container, package document and content documents) and of the
+            members it extracts for image processing. These limits keep the
+            memory and disk use proportional to the configured values. Limits
+            can be configured via EpubBackendOptions.
 
     Known Limitations:
         Internal anchor links (e.g., footnote references) are converted but
@@ -81,6 +88,9 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             self.valid = True
 
             _log.debug(f"Found {len(self.content_files)} content files in EPUB")
+        except ArchiveLimitError as e:
+            _log.error(f"EPUB archive exceeds the configured limits: {e}")
+            raise
         except Exception as e:
             _log.error(f"Failed to initialize EPUB backend: {e}")
             raise DocumentLoadError(
@@ -94,7 +104,10 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         # Read container.xml to find the content.opf file
         try:
-            container_data = self.epub_zip.read("META-INF/container.xml")
+            max_file_bytes = self.options.max_file_bytes
+            container_data = read_member(
+                self.epub_zip, "META-INF/container.xml", max_file_bytes
+            )
             container_root = ET.fromstring(container_data)
 
             # Find the content.opf path
@@ -109,7 +122,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 raise ValueError("Could not find full-path in rootfile")
 
             # Parse content.opf to get the reading order
-            opf_data = self.epub_zip.read(opf_path)
+            opf_data = read_member(self.epub_zip, opf_path, max_file_bytes)
             opf_root = ET.fromstring(opf_data)
 
             # Extract metadata
@@ -146,6 +159,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                     self.content_files.append(full_path)
 
             _log.debug(f"Content files in reading order: {self.content_files}")
+            self._check_content_sizes()
 
         except DefusedXmlException as e:
             _log.error(f"Security issue detected while parsing EPUB XML: {e}")
@@ -155,6 +169,26 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         except Exception as e:
             _log.error(f"Error parsing EPUB structure: {e}")
             raise
+
+    def _check_content_sizes(self) -> None:
+        """Check the declared sizes of the content documents before they are read.
+
+        Raises:
+            ArchiveLimitError: If a content document is larger than
+                ``max_file_bytes``, or all of them together are larger than
+                ``max_total_bytes``, or there are more than ``max_member_count``.
+        """
+        if not self.epub_zip:
+            return
+        names = set(self.epub_zip.namelist())
+        members = [
+            self.epub_zip.getinfo(name)
+            for name in dict.fromkeys(self.content_files)
+            if name in names
+        ]
+        check_archive_limits(
+            self.epub_zip, ArchiveLimits.from_options(self.options), members
+        )
 
     def _safe_extract_epub(self, target_dir: Path) -> bool:
         """Safely extract EPUB contents with zip-bomb protection.
@@ -404,7 +438,9 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Reading content file: {content_file}")
 
                 # Read the XHTML content
-                xhtml_data = self.epub_zip.read(content_file)
+                xhtml_data = read_member(
+                    self.epub_zip, content_file, self.options.max_file_bytes
+                )
                 xhtml_text = self._decode_content_file(xhtml_data)
 
                 # Extract the body content from the XHTML
@@ -429,6 +465,8 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
                 combined_html_parts.append(body_content)
 
+            except ArchiveLimitError:
+                raise
             except Exception as e:
                 _log.warning(f"Failed to read content file {content_file}: {e}")
                 continue

@@ -197,6 +197,26 @@ def test_backend_reports_missing_dependency_with_install_hint(
     assert "actionable-error-raised" in result.stdout
 
 
+def test_lightonocr_parser_reports_missing_markdown_dependency() -> None:
+    result = _run_with_blocked_module(
+        "marko",
+        "from docling.utils.lightonocr_utils import parse_lightonocr_markdown\n"
+        "from docling_core.types.doc import Size\n"
+        "try:\n"
+        "    parse_lightonocr_markdown(\n"
+        "        '![text](0,0,1000,1000)\\nRent: 1000',\n"
+        "        Size(width=600, height=800), page_no=1,\n"
+        "    )\n"
+        "except ImportError as exc:\n"
+        "    assert \"pip install 'docling-slim[format-markdown]'\" in str(exc), str(exc)\n"
+        "    print('actionable-error-raised')\n"
+        "else:\n"
+        "    raise AssertionError('expected ImportError when marko is missing')\n",
+    )
+    assert result.returncode == 0, result.stderr
+    assert "actionable-error-raised" in result.stdout
+
+
 def test_service_client_imports_without_pdf_pipeline_dependency() -> None:
     # The service client reaches docling.utils.pdf_outline (via noop_backend ->
     # datamodel.document, which needs only the _PdfOutlineItem model), so a

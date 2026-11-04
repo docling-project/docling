@@ -4,6 +4,8 @@
 import logging
 import os
 import re
+import threading
+import time
 from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,6 +15,7 @@ from docling_core.types.doc import (
     CodeItem,
     ContentLayer,
     DocItemLabel,
+    Formatting,
     GroupItem,
     ListGroup,
     ListItem,
@@ -28,10 +31,12 @@ from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
 from PIL import Image
+from pydantic import AnyUrl
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.utils.archive_limits import ArchiveLimitError, ArchiveLimits
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import (
@@ -184,10 +189,12 @@ def test_text_after_image_anchors(documents):
     name = "word_image_anchors.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
     texts = {item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)}
+    # Runs keep their own whitespace, so the spaces the source puts between the two runs of a
+    # paragraph stay on the left run.
     for expected in (
-        "This is test 1",
+        "This is test 1   ",
         "0:08\nCorrect, he is not.",
-        "This is test 2",
+        "This is test 2 ",
         "0:16\nYeah, exactly.",
     ):
         assert expected in texts
@@ -836,27 +843,26 @@ def test_strict_ooxml_rejects_zip_slip(evil_name):
     with zipfile.ZipFile(buffer) as archive:
         assert msword_backend_module._is_strict_ooxml(archive) is True
         with pytest.raises(SecurityError, match="ZIP slip"):
-            msword_backend_module._normalize_strict_ooxml(archive)
+            msword_backend_module._normalize_strict_ooxml(
+                archive, msword_backend_module._DEFAULT_ARCHIVE_LIMITS
+            )
 
 
 @pytest.mark.parametrize(
-    ("cap_attr", "message"),
+    ("limits", "message"),
     [
-        ("_MAX_TOTAL_UNCOMPRESSED_SIZE", "uncompressed size"),
-        ("_MAX_MEMBER_UNCOMPRESSED_SIZE", "oversized OOXML part"),
+        (ArchiveLimits(4096, 1024, 10), "max_total_bytes"),
+        (ArchiveLimits(1024, 1 << 20, 10), "max_file_bytes"),
     ],
 )
-def test_strict_ooxml_rejects_zip_bomb(monkeypatch, cap_attr, message):
+def test_strict_ooxml_rejects_oversized_package(limits, message):
     """A Strict package exceeding the per-member or total budget is rejected."""
     import zipfile
 
-    from docling.exceptions import SecurityError
-
-    monkeypatch.setattr(msword_backend_module, cap_attr, 128)
     buffer = _make_strict_zip({"word/document.xml": b"A" * 4096})
     with zipfile.ZipFile(buffer) as archive:
-        with pytest.raises(SecurityError, match=message):
-            msword_backend_module._normalize_strict_ooxml(archive)
+        with pytest.raises(ArchiveLimitError, match=message):
+            msword_backend_module._normalize_strict_ooxml(archive, limits)
 
 
 def test_load_msword_file_propagates_security_error():
@@ -1542,6 +1548,60 @@ def test_checkbox_labels_in_tables(documents):
     ), "No checkboxes found in table cells"
 
 
+def test_checkbox_paragraph_keeps_interior_run_whitespace(tmp_path):
+    """Only the leading checkbox symbol and the block edges are stripped."""
+    document = Document()
+    para = document.add_paragraph()
+    sdt = etree.SubElement(para._p, qn("w:sdt"))
+    sdt_pr = etree.SubElement(sdt, qn("w:sdtPr"))
+    etree.SubElement(
+        sdt_pr, "{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
+    )
+    para.add_run("☐ Buy ")
+    para.add_run("milk").bold = True
+    para.add_run(" now ")
+
+    doc = _convert_built(document, tmp_path)
+
+    runs = [
+        item for item in doc.texts if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+    assert [run.text for run in runs] == ["Buy ", "milk", " now"]
+
+
+def test_skip_empty_text_keeps_interior_whitespace_runs(tmp_path):
+    """A whitespace-only run between two runs is text; only an all-empty block is skipped."""
+    document = Document()
+    document.add_paragraph("x")
+    path = tmp_path / "case.docx"
+    document.save(str(path))
+    backend = InputDocument(
+        path_or_stream=path, format=InputFormat.DOCX, backend=MsWordDocumentBackend
+    )._backend
+
+    doc = DoclingDocument(name="test")
+    elements = [
+        ("See ", None, None),
+        ("docs", None, AnyUrl("https://example.com/")),
+        (" ", None, None),
+        ("now", Formatting(bold=True), None),
+    ]
+    backend._add_body_text_items(
+        doc=doc, paragraph_elements=elements, checkbox_label=None, skip_empty_text=True
+    )
+    assert [item.text for item in doc.texts] == ["See ", "docs", " ", "now"]
+
+    empty = DoclingDocument(name="empty")
+    refs = backend._add_body_text_items(
+        doc=empty,
+        paragraph_elements=[("", None, None)],
+        checkbox_label=None,
+        skip_empty_text=True,
+    )
+    assert refs == []
+    assert empty.texts == []
+
+
 def test_text_after_drawingml_images(documents):
     """Text in paragraphs containing DrawingML images was being omitted during conversion, both with and without LibreOffice."""
     name = "drawingml.docx"
@@ -1689,6 +1749,35 @@ def test_trailing_whitespace_run_keeps_paragraph_formatting(tmp_path):
     assert formatting["All bold text"].bold is True
     assert formatting["All italic text"].italic is True
     assert formatting["Plain text"].bold is False
+
+
+def test_cyclic_based_on_chain_does_not_hang(tmp_path):
+    """A ``basedOn`` cycle between paragraph styles must not stall the conversion.
+
+    Regression test: the bold lookup in ``_get_format_from_run`` followed
+    ``base_style`` links without a depth cap, so a malformed styles.xml in
+    which style A is based on B and B on A looped forever.
+    """
+    doc = Document()
+    style_a = doc.styles.add_style("Cycle A", WD_STYLE_TYPE.PARAGRAPH)
+    style_b = doc.styles.add_style("Cycle B", WD_STYLE_TYPE.PARAGRAPH)
+    style_a.base_style = style_b
+    style_b.base_style = style_a
+    doc.add_paragraph("Text in a cyclic style", style=style_a)
+    docx_path = tmp_path / "cyclic_styles.docx"
+    doc.save(docx_path)
+
+    # A bounded join turns a hang into a failure instead of a stuck test run.
+    results: list[DoclingDocument] = []
+    worker = threading.Thread(
+        target=lambda: results.append(_convert(docx_path)), daemon=True
+    )
+    worker.start()
+    worker.join(timeout=30)
+
+    assert not worker.is_alive(), "conversion did not finish: style chain loops"
+    assert results, "conversion raised; see the captured thread exception"
+    assert [item.text for item in results[0].texts] == ["Text in a cyclic style"]
 
 
 # ------ Code-block detection tests ------
@@ -1947,6 +2036,22 @@ def test_docx_code_detection(tmp_path):
     assert str(getattr(design.label, "value", design.label)).startswith("checkbox")
 
 
+def test_docx_code_call_pattern_is_bounded():
+    pattern = MsWordDocumentBackend._CODE_CALL_PATTERN
+    assert pattern.search("x = foo(1, 2)") is not None
+    assert pattern.search("party(ies)") is None
+
+    # Many unclosed calls in one paragraph must not take quadratic time.
+    for unit in ("a(", "a(,"):
+        text = unit * (64_000 // len(unit))
+        start = time.perf_counter()
+        assert pattern.search(text) is None
+        assert time.perf_counter() - start < 2.0
+
+    # Argument lists past the bound no longer count as a call.
+    assert pattern.search("foo(" + "a" * 300 + ", 1)") is None
+
+
 # ------ Content control (w:sdt) holding a picture ------
 
 
@@ -2051,12 +2156,12 @@ def test_list_returning_to_starting_level_above_zero_keeps_items(documents):
     assert isinstance(group_of_a, ListGroup)
     assert group_of_c.get_ref() == group_of_a.get_ref()
 
-    # The deeper item must nest inside the same list (as a sub-group of the
-    # outer ListGroup), not become a sibling top-level list -- which is what
-    # the bug produced for Item A/Item B.
+    # The deeper item must nest inside the same list (as a sub-group of
+    # Item A), not become a sibling top-level list -- which is what the bug
+    # produced for Item A/Item B.
     group_of_b = list_items[1].parent.resolve(doc)
     assert isinstance(group_of_b, ListGroup)
-    assert group_of_b.parent == group_of_a.get_ref()
+    assert group_of_b.parent == list_items[0].get_ref()
 
     # The markdown must reflect a single nested list, not two separate lists.
     markdown = doc.export_to_markdown()
@@ -2323,6 +2428,30 @@ def test_fragment_only_rel_does_not_crash_backend():
     assert text_items[0].hyperlink is None
 
 
+@pytest.mark.parametrize("body_style", ["Body Text", None])
+def test_list_style_type_does_not_fail_conversion(tmp_path, body_style):
+    """A style with the invalid type ``list`` must not fail the conversion.
+
+    python-docx raises ``ValueError`` when it reads that type. Both the default
+    style lookup on load and the style of a paragraph without ``w:pStyle``
+    read the type of every style.
+    """
+    document = Document()
+    document.add_paragraph("Quarterly results", style="Heading 1")
+    document.add_paragraph("Revenue grew 3%.", style=body_style)
+    list_style = OxmlElement("w:style")
+    list_style.set(qn("w:type"), "list")
+    list_style.set(qn("w:styleId"), "OutlineList")
+    document.styles.element.append(list_style)
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "Quarterly results",
+        "Revenue grew 3%.",
+    ]
+
+
 _PLAIN_FOOTNOTE_BODY = (
     "<w:p><w:r><w:t>Smith, J. (2020). Example Study.</w:t></w:r></w:p>"
 )
@@ -2490,3 +2619,148 @@ def test_footnote_body_text_is_not_dropped_outside_plain_paragraphs(
         if item.label == DocItemLabel.FOOTNOTE
     ]
     assert expected in footnote_items
+
+
+def test_hidden_footnote_paragraph_is_left_out():
+    """A hidden paragraph in a footnote is left out of the footnote text.
+
+    python-docx loads the footnotes part as a plain part, so this also checks
+    that ``w:vanish`` there is found when the body has none.
+    """
+    note_body = (
+        "<w:p><w:r><w:t>Shown note.</w:t></w:r></w:p>"
+        "<w:p><w:r><w:rPr><w:vanish/></w:rPr><w:t>Hidden note.</w:t></w:r></w:p>"
+    )
+    stream = DocumentStream(
+        name="notes.docx", stream=_docx_with_notes(footnote_body=note_body)
+    )
+    result = DocumentConverter(allowed_formats=[InputFormat.DOCX]).convert(
+        stream, raises_on_error=True
+    )
+
+    footnote_items = [
+        item.text
+        for item in result.document.texts
+        if item.label == DocItemLabel.FOOTNOTE
+    ]
+    assert footnote_items == ["Shown note.", "An endnote body."]
+
+
+_MC_BODY_BLOCK = """
+<mc:AlternateContent
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex">
+  <mc:Choice Requires="{requires}">
+    <w:p><w:r><w:t>CHOICE_BRANCH_ACTIVE</w:t></w:r></w:p>
+    <w:p><w:r><w:t>LEGITIMATE_DUPLICATE_PARAGRAPH</w:t></w:r></w:p>
+    <w:p><w:r><w:t>LEGITIMATE_DUPLICATE_PARAGRAPH</w:t></w:r></w:p>
+  </mc:Choice>
+  <mc:Fallback>
+    <w:p><w:r><w:t>FALLBACK_LEGACY_BRANCH</w:t></w:r></w:p>
+  </mc:Fallback>
+</mc:AlternateContent>
+"""
+
+
+def _body_texts_around_alternate_content(tmp_path, requires: str) -> list[str]:
+    document = Document()
+    document.add_paragraph("Paragraph before AlternateContent")
+    block = etree.fromstring(_MC_BODY_BLOCK.format(requires=requires))
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("Paragraph after AlternateContent")
+    doc = _convert_built(document, tmp_path)
+    return [item.text for item in doc.texts]
+
+
+def test_body_level_alternate_content_reads_the_supported_choice(tmp_path):
+    """A body-level ``mc:AlternateContent`` must not drop its paragraphs.
+
+    Only the supported ``mc:Choice`` is read, so the legacy ``mc:Fallback``
+    text does not appear and identical paragraphs in the Choice both stay.
+    """
+    texts = _body_texts_around_alternate_content(tmp_path, requires="wps")
+
+    assert texts == [
+        "Paragraph before AlternateContent",
+        "CHOICE_BRANCH_ACTIVE",
+        "LEGITIMATE_DUPLICATE_PARAGRAPH",
+        "LEGITIMATE_DUPLICATE_PARAGRAPH",
+        "Paragraph after AlternateContent",
+    ]
+
+
+def test_body_level_alternate_content_falls_back_when_choice_is_unsupported(
+    tmp_path,
+):
+    """A Choice that requires an unknown namespace yields to ``mc:Fallback``."""
+    texts = _body_texts_around_alternate_content(tmp_path, requires="w16se")
+
+    assert texts == [
+        "Paragraph before AlternateContent",
+        "FALLBACK_LEGACY_BRANCH",
+        "Paragraph after AlternateContent",
+    ]
+
+
+_MC_BODY_TEXTBOX_BLOCK = """
+<mc:AlternateContent
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    xmlns:v="urn:schemas-microsoft-com:vml">
+  <mc:Choice Requires="wps">
+    <w:p><w:r><wps:wsp><wps:txbx><w:txbxContent>
+      <w:p><w:r><w:t>TEXTBOX_TEXT</w:t></w:r></w:p>
+    </w:txbxContent></wps:txbx></wps:wsp></w:r></w:p>
+  </mc:Choice>
+  <mc:Fallback>
+    <w:p><w:r><w:pict><v:shape><v:textbox><w:txbxContent>
+      <w:p><w:r><w:t>TEXTBOX_TEXT</w:t></w:r></w:p>
+    </w:txbxContent></v:textbox></v:shape></w:pict></w:r></w:p>
+  </mc:Fallback>
+</mc:AlternateContent>
+"""
+
+
+def test_body_level_alternate_content_reads_a_text_box_once(tmp_path):
+    """A text box inside the chosen branch is read once, not once per detection pass.
+
+    The text-box detection runs over a body child with descendant paths. If it runs on the
+    ``mc:AlternateContent`` element and again on the Choice's own paragraph, the same text box is
+    emitted twice.
+    """
+    document = Document()
+    document.add_paragraph("before")
+    block = etree.fromstring(_MC_BODY_TEXTBOX_BLOCK)
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("after")
+
+    doc = _convert_built(document, tmp_path)
+
+    texts = [item.text for item in doc.texts]
+    # The paragraph that anchors a text box also gives an empty item, as it does outside
+    # ``mc:AlternateContent``, so the check is that the text box itself is read once.
+    assert texts.count("TEXTBOX_TEXT") == 1, texts
+    assert texts[0] == "before"
+    assert texts[-1] == "after"
+
+
+def test_body_level_alternate_content_with_no_usable_branch_adds_nothing(tmp_path):
+    """No supported Choice and no Fallback leaves the block out, rather than failing."""
+    document = Document()
+    document.add_paragraph("Paragraph before AlternateContent")
+    block = etree.fromstring(_MC_BODY_BLOCK.format(requires="w16se"))
+    mc_ns = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    for fallback in block.findall(f"{{{mc_ns}}}Fallback"):
+        block.remove(fallback)
+    document.element.body.sectPr.addprevious(block)
+    document.add_paragraph("Paragraph after AlternateContent")
+
+    doc = _convert_built(document, tmp_path)
+
+    assert [item.text for item in doc.texts] == [
+        "Paragraph before AlternateContent",
+        "Paragraph after AlternateContent",
+    ]

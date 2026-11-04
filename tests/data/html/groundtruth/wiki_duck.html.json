@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "wiki_duck",
   "origin": {
     "mimetype": "text/html",
@@ -6655,8 +6655,8 @@
       "content_layer": "furniture",
       "label": "text",
       "prov": [],
-      "orig": "Pages for logged out editors",
-      "text": "Pages for logged out editors"
+      "orig": "Pages for logged out editors ",
+      "text": "Pages for logged out editors "
     },
     {
       "self_ref": "#/texts/32",
@@ -6872,8 +6872,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "5 Behaviour",
-      "text": "5 Behaviour",
+      "orig": "5 Behaviour ",
+      "text": "5 Behaviour ",
       "hyperlink": "#Behaviour"
     },
     {
@@ -6994,8 +6994,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "6 Relationship with humans",
-      "text": "6 Relationship with humans",
+      "orig": "6 Relationship with humans ",
+      "text": "6 Relationship with humans ",
       "hyperlink": "#Relationship_with_humans"
     },
     {
@@ -7135,8 +7135,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "8 Notes",
-      "text": "8 Notes",
+      "orig": "8 Notes ",
+      "text": "8 Notes ",
       "hyperlink": "#Notes"
     },
     {
@@ -9923,8 +9923,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(Redirected from",
-      "text": "(Redirected from"
+      "orig": "(Redirected from ",
+      "text": "(Redirected from "
     },
     {
       "self_ref": "#/texts/241",
@@ -9960,8 +9960,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This article is about the bird. For duck as a food, see",
-      "text": "This article is about the bird. For duck as a food, see"
+      "orig": "This article is about the bird. For duck as a food, see ",
+      "text": "This article is about the bird. For duck as a food, see "
     },
     {
       "self_ref": "#/texts/244",
@@ -9985,8 +9985,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". For other uses, see",
-      "text": ". For other uses, see"
+      "orig": ". For other uses, see ",
+      "text": ". For other uses, see "
     },
     {
       "self_ref": "#/texts/246",
@@ -10022,8 +10022,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"Duckling\" redirects here. For other uses, see",
-      "text": "\"Duckling\" redirects here. For other uses, see"
+      "orig": "\"Duckling\" redirects here. For other uses, see ",
+      "text": "\"Duckling\" redirects here. For other uses, see "
     },
     {
       "self_ref": "#/texts/249",
@@ -10059,8 +10059,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Bufflehead",
-      "text": "Bufflehead",
+      "orig": "Bufflehead ",
+      "text": "Bufflehead ",
       "hyperlink": "/wiki/Bufflehead"
     },
     {
@@ -10232,8 +10232,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Duck",
-      "text": "Duck",
+      "orig": "Duck ",
+      "text": "Duck ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -10251,8 +10251,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is the common name for numerous species of",
-      "text": "is the common name for numerous species of"
+      "orig": "is the common name for numerous species of ",
+      "text": "is the common name for numerous species of "
     },
     {
       "self_ref": "#/texts/266",
@@ -10263,8 +10263,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "waterfowl",
-      "text": "waterfowl",
+      "orig": "waterfowl ",
+      "text": "waterfowl ",
       "hyperlink": "/wiki/Waterfowl"
     },
     {
@@ -10276,8 +10276,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in the",
-      "text": "in the"
+      "orig": "in the ",
+      "text": "in the "
     },
     {
       "self_ref": "#/texts/268",
@@ -10288,8 +10288,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "family",
-      "text": "family",
+      "orig": "family ",
+      "text": "family ",
       "hyperlink": "/wiki/Family_(biology)"
     },
     {
@@ -10314,8 +10314,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Ducks are generally smaller and shorter-necked than",
-      "text": ". Ducks are generally smaller and shorter-necked than"
+      "orig": ". Ducks are generally smaller and shorter-necked than ",
+      "text": ". Ducks are generally smaller and shorter-necked than "
     },
     {
       "self_ref": "#/texts/271",
@@ -10326,8 +10326,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "swans",
-      "text": "swans",
+      "orig": "swans ",
+      "text": "swans ",
       "hyperlink": "/wiki/Swan"
     },
     {
@@ -10339,8 +10339,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/273",
@@ -10364,8 +10364,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", which are members of the same family. Divided among several subfamilies, they are a",
-      "text": ", which are members of the same family. Divided among several subfamilies, they are a"
+      "orig": ", which are members of the same family. Divided among several subfamilies, they are a ",
+      "text": ", which are members of the same family. Divided among several subfamilies, they are a "
     },
     {
       "self_ref": "#/texts/275",
@@ -10389,8 +10389,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "; they do not represent a",
-      "text": "; they do not represent a"
+      "orig": "; they do not represent a ",
+      "text": "; they do not represent a "
     },
     {
       "self_ref": "#/texts/277",
@@ -10401,8 +10401,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "monophyletic group",
-      "text": "monophyletic group",
+      "orig": "monophyletic group ",
+      "text": "monophyletic group ",
       "hyperlink": "/wiki/Monophyletic_group"
     },
     {
@@ -10414,8 +10414,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(the group of all descendants of a single common ancestral species), since swans and geese are not considered ducks. Ducks are mostly",
-      "text": "(the group of all descendants of a single common ancestral species), since swans and geese are not considered ducks. Ducks are mostly"
+      "orig": "(the group of all descendants of a single common ancestral species), since swans and geese are not considered ducks. Ducks are mostly ",
+      "text": "(the group of all descendants of a single common ancestral species), since swans and geese are not considered ducks. Ducks are mostly "
     },
     {
       "self_ref": "#/texts/279",
@@ -10451,8 +10451,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks are sometimes confused with several types of unrelated water birds with similar forms, such as",
-      "text": "Ducks are sometimes confused with several types of unrelated water birds with similar forms, such as"
+      "orig": "Ducks are sometimes confused with several types of unrelated water birds with similar forms, such as ",
+      "text": "Ducks are sometimes confused with several types of unrelated water birds with similar forms, such as "
     },
     {
       "self_ref": "#/texts/282",
@@ -10463,8 +10463,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "loons",
-      "text": "loons",
+      "orig": "loons ",
+      "text": "loons ",
       "hyperlink": "/wiki/Loon"
     },
     {
@@ -10476,8 +10476,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "or divers,",
-      "text": "or divers,"
+      "orig": "or divers, ",
+      "text": "or divers, "
     },
     {
       "self_ref": "#/texts/284",
@@ -10501,8 +10501,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/286",
@@ -10513,8 +10513,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "gallinules",
-      "text": "gallinules",
+      "orig": "gallinules ",
+      "text": "gallinules ",
       "hyperlink": "/wiki/Gallinule"
     },
     {
@@ -10526,8 +10526,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/288",
@@ -10598,8 +10598,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The word",
-      "text": "The word"
+      "orig": "The word ",
+      "text": "The word "
     },
     {
       "self_ref": "#/texts/292",
@@ -10610,8 +10610,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "duck",
-      "text": "duck",
+      "orig": "duck ",
+      "text": "duck ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -10629,8 +10629,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "comes from",
-      "text": "comes from"
+      "orig": "comes from ",
+      "text": "comes from "
     },
     {
       "self_ref": "#/texts/294",
@@ -10641,8 +10641,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Old English",
-      "text": "Old English",
+      "orig": "Old English ",
+      "text": "Old English ",
       "hyperlink": "/wiki/Old_English"
     },
     {
@@ -10654,8 +10654,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dūce",
-      "text": "dūce",
+      "orig": "dūce ",
+      "text": "dūce ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -10685,8 +10685,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dūcan",
-      "text": "dūcan",
+      "orig": "dūcan ",
+      "text": "dūcan ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -10704,8 +10704,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "'to duck, bend down low as if to get under something, or dive', because of the way many species in the",
-      "text": "'to duck, bend down low as if to get under something, or dive', because of the way many species in the"
+      "orig": "'to duck, bend down low as if to get under something, or dive', because of the way many species in the ",
+      "text": "'to duck, bend down low as if to get under something, or dive', because of the way many species in the "
     },
     {
       "self_ref": "#/texts/299",
@@ -10716,8 +10716,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "dabbling duck",
-      "text": "dabbling duck",
+      "orig": "dabbling duck ",
+      "text": "dabbling duck ",
       "hyperlink": "/wiki/Dabbling_duck"
     },
     {
@@ -10729,8 +10729,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "group feed by upending; compare with",
-      "text": "group feed by upending; compare with"
+      "orig": "group feed by upending; compare with ",
+      "text": "group feed by upending; compare with "
     },
     {
       "self_ref": "#/texts/301",
@@ -10741,8 +10741,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Dutch",
-      "text": "Dutch",
+      "orig": "Dutch ",
+      "text": "Dutch ",
       "hyperlink": "/wiki/Dutch_language"
     },
     {
@@ -10754,8 +10754,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "duiken",
-      "text": "duiken",
+      "orig": "duiken ",
+      "text": "duiken ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -10773,8 +10773,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/304",
@@ -10785,8 +10785,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "German",
-      "text": "German",
+      "orig": "German ",
+      "text": "German ",
       "hyperlink": "/wiki/German_language"
     },
     {
@@ -10798,8 +10798,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "tauchen",
-      "text": "tauchen",
+      "orig": "tauchen ",
+      "text": "tauchen ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -10841,8 +10841,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This word replaced Old English",
-      "text": "This word replaced Old English"
+      "orig": "This word replaced Old English ",
+      "text": "This word replaced Old English "
     },
     {
       "self_ref": "#/texts/309",
@@ -10853,8 +10853,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ened",
-      "text": "ened",
+      "orig": "ened ",
+      "text": "ened ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -10884,8 +10884,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ænid",
-      "text": "ænid",
+      "orig": "ænid ",
+      "text": "ænid ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -10903,8 +10903,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "'duck', possibly to avoid confusion with other words, such as",
-      "text": "'duck', possibly to avoid confusion with other words, such as"
+      "orig": "'duck', possibly to avoid confusion with other words, such as ",
+      "text": "'duck', possibly to avoid confusion with other words, such as "
     },
     {
       "self_ref": "#/texts/313",
@@ -10915,8 +10915,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ende",
-      "text": "ende",
+      "orig": "ende ",
+      "text": "ende ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -10934,8 +10934,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "'end' with similar forms. Other Germanic languages still have similar words for",
-      "text": "'end' with similar forms. Other Germanic languages still have similar words for"
+      "orig": "'end' with similar forms. Other Germanic languages still have similar words for ",
+      "text": "'end' with similar forms. Other Germanic languages still have similar words for "
     },
     {
       "self_ref": "#/texts/315",
@@ -10965,8 +10965,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", for example, Dutch",
-      "text": ", for example, Dutch"
+      "orig": ", for example, Dutch ",
+      "text": ", for example, Dutch "
     },
     {
       "self_ref": "#/texts/317",
@@ -10996,8 +10996,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", German",
-      "text": ", German"
+      "orig": ", German ",
+      "text": ", German "
     },
     {
       "self_ref": "#/texts/319",
@@ -11008,8 +11008,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ente",
-      "text": "Ente",
+      "orig": "Ente ",
+      "text": "Ente ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -11027,8 +11027,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/321",
@@ -11039,8 +11039,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Norwegian",
-      "text": "Norwegian",
+      "orig": "Norwegian ",
+      "text": "Norwegian ",
       "hyperlink": "/wiki/Norwegian_language"
     },
     {
@@ -11071,8 +11071,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". The word",
-      "text": ". The word"
+      "orig": ". The word ",
+      "text": ". The word "
     },
     {
       "self_ref": "#/texts/324",
@@ -11083,8 +11083,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ened",
-      "text": "ened",
+      "orig": "ened ",
+      "text": "ened ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -11114,8 +11114,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ænid",
-      "text": "ænid",
+      "orig": "ænid ",
+      "text": "ænid ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -11133,8 +11133,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "was inherited from",
-      "text": "was inherited from"
+      "orig": "was inherited from ",
+      "text": "was inherited from "
     },
     {
       "self_ref": "#/texts/328",
@@ -11158,8 +11158,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ";",
-      "text": ";"
+      "orig": "; ",
+      "text": "; "
     },
     {
       "self_ref": "#/texts/330",
@@ -11170,8 +11170,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "cf.",
-      "text": "cf.",
+      "orig": "cf. ",
+      "text": "cf. ",
       "hyperlink": "/wiki/Cf."
     },
     {
@@ -11183,8 +11183,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Latin",
-      "text": "Latin",
+      "orig": "Latin ",
+      "text": "Latin ",
       "hyperlink": "/wiki/Latin"
     },
     {
@@ -11196,8 +11196,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "anas",
-      "text": "anas",
+      "orig": "anas ",
+      "text": "anas ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -11215,8 +11215,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"duck\",",
-      "text": "\"duck\","
+      "orig": "\"duck\", ",
+      "text": "\"duck\", "
     },
     {
       "self_ref": "#/texts/334",
@@ -11227,8 +11227,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Lithuanian",
-      "text": "Lithuanian",
+      "orig": "Lithuanian ",
+      "text": "Lithuanian ",
       "hyperlink": "/wiki/Lithuanian_language"
     },
     {
@@ -11240,8 +11240,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ántis",
-      "text": "ántis",
+      "orig": "ántis ",
+      "text": "ántis ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -11259,8 +11259,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "'duck',",
-      "text": "'duck',"
+      "orig": "'duck', ",
+      "text": "'duck', "
     },
     {
       "self_ref": "#/texts/337",
@@ -11271,8 +11271,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ancient Greek",
-      "text": "Ancient Greek",
+      "orig": "Ancient Greek ",
+      "text": "Ancient Greek ",
       "hyperlink": "/wiki/Ancient_Greek_language"
     },
     {
@@ -11284,8 +11284,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "νῆσσα / νῆττα (",
-      "text": "νῆσσα / νῆττα ("
+      "orig": "νῆσσα /νῆττα (",
+      "text": "νῆσσα /νῆττα ("
     },
     {
       "self_ref": "#/texts/339",
@@ -11296,8 +11296,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "nēssa",
-      "text": "nēssa",
+      "orig": "nēssa ",
+      "text": "nēssa ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -11346,8 +11346,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ") 'duck', and",
-      "text": ") 'duck', and"
+      "orig": ") 'duck', and ",
+      "text": ") 'duck', and "
     },
     {
       "self_ref": "#/texts/343",
@@ -11358,8 +11358,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Sanskrit",
-      "text": "Sanskrit",
+      "orig": "Sanskrit ",
+      "text": "Sanskrit ",
       "hyperlink": "/wiki/Sanskrit"
     },
     {
@@ -11371,8 +11371,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ātí",
-      "text": "ātí",
+      "orig": "ātí ",
+      "text": "ātí ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -11414,8 +11414,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 1 ]",
-      "text": "[ 1 ]",
+      "orig": "[1] ",
+      "text": "[1] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11446,8 +11446,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 2 ]",
-      "text": "[ 2 ]",
+      "orig": "[2] ",
+      "text": "[2] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11478,8 +11478,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "A male is called a",
-      "text": "A male is called a"
+      "orig": "A male is called a ",
+      "text": "A male is called a "
     },
     {
       "self_ref": "#/texts/352",
@@ -11490,8 +11490,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "drake",
-      "text": "drake",
+      "orig": "drake ",
+      "text": "drake ",
       "hyperlink": "https://en.wiktionary.org/wiki/drake"
     },
     {
@@ -11503,8 +11503,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and the female is called a duck, or in",
-      "text": "and the female is called a duck, or in"
+      "orig": "and the female is called a duck, or in ",
+      "text": "and the female is called a duck, or in "
     },
     {
       "self_ref": "#/texts/354",
@@ -11515,8 +11515,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ornithology",
-      "text": "ornithology",
+      "orig": "ornithology ",
+      "text": "ornithology ",
       "hyperlink": "/wiki/Ornithology"
     },
     {
@@ -11540,8 +11540,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 3 ]",
-      "text": "[ 3 ]",
+      "orig": "[3]",
+      "text": "[3]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11560,8 +11560,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 4 ]",
-      "text": "[ 4 ]",
+      "orig": "[4]",
+      "text": "[4]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11580,8 +11580,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Male mallard .",
-      "text": "Male mallard ."
+      "orig": "Male mallard.",
+      "text": "Male mallard."
     },
     {
       "self_ref": "#/texts/359",
@@ -11592,8 +11592,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Wood ducks .",
-      "text": "Wood ducks ."
+      "orig": "Wood ducks.",
+      "text": "Wood ducks."
     },
     {
       "self_ref": "#/texts/360",
@@ -11630,8 +11630,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "All ducks belong to the",
-      "text": "All ducks belong to the"
+      "orig": "All ducks belong to the ",
+      "text": "All ducks belong to the "
     },
     {
       "self_ref": "#/texts/362",
@@ -11642,8 +11642,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "biological order",
-      "text": "biological order",
+      "orig": "biological order ",
+      "text": "biological order ",
       "hyperlink": "/wiki/Order_(biology)"
     },
     {
@@ -11668,8 +11668,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", a group that contains the ducks, geese and swans, as well as the",
-      "text": ", a group that contains the ducks, geese and swans, as well as the"
+      "orig": ", a group that contains the ducks, geese and swans, as well as the ",
+      "text": ", a group that contains the ducks, geese and swans, as well as the "
     },
     {
       "self_ref": "#/texts/365",
@@ -11693,8 +11693,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", and the",
-      "text": ", and the"
+      "orig": ", and the ",
+      "text": ", and the "
     },
     {
       "self_ref": "#/texts/367",
@@ -11730,8 +11730,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 5 ]",
-      "text": "[ 5 ]",
+      "orig": "[5] ",
+      "text": "[5] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11750,8 +11750,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "All except the screamers belong to the",
-      "text": "All except the screamers belong to the"
+      "orig": "All except the screamers belong to the ",
+      "text": "All except the screamers belong to the "
     },
     {
       "self_ref": "#/texts/371",
@@ -11762,8 +11762,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "biological family",
-      "text": "biological family",
+      "orig": "biological family ",
+      "text": "biological family ",
       "hyperlink": "/wiki/Family_(biology)"
     },
     {
@@ -11800,8 +11800,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 5 ]",
-      "text": "[ 5 ]",
+      "orig": "[5] ",
+      "text": "[5] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11832,8 +11832,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 5 ]",
-      "text": "[ 5 ]",
+      "orig": "[5] ",
+      "text": "[5] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11852,8 +11852,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Some base their decisions on",
-      "text": "Some base their decisions on"
+      "orig": "Some base their decisions on ",
+      "text": "Some base their decisions on "
     },
     {
       "self_ref": "#/texts/378",
@@ -11889,8 +11889,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 6 ]",
-      "text": "[ 6 ]",
+      "orig": "[6]",
+      "text": "[6]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11909,8 +11909,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 7 ]",
-      "text": "[ 7 ]",
+      "orig": "[7] ",
+      "text": "[7] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11941,8 +11941,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 8 ]",
-      "text": "[ 8 ]",
+      "orig": "[8]",
+      "text": "[8]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11961,8 +11961,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 9 ]",
-      "text": "[ 9 ]",
+      "orig": "[9] ",
+      "text": "[9] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -11981,8 +11981,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The significant level of",
-      "text": "The significant level of"
+      "orig": "The significant level of ",
+      "text": "The significant level of "
     },
     {
       "self_ref": "#/texts/386",
@@ -11993,8 +11993,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "hybridisation",
-      "text": "hybridisation",
+      "orig": "hybridisation ",
+      "text": "hybridisation ",
       "hyperlink": "/wiki/Hybrid_(biology)"
     },
     {
@@ -12018,8 +12018,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 9 ]",
-      "text": "[ 9 ]",
+      "orig": "[9]",
+      "text": "[9]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12062,8 +12062,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 10 ]",
-      "text": "[ 10 ]",
+      "orig": "[10] ",
+      "text": "[10] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12094,8 +12094,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 11 ]",
-      "text": "[ 11 ]",
+      "orig": "[11] ",
+      "text": "[11] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12126,8 +12126,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 12 ]",
-      "text": "[ 12 ]",
+      "orig": "[12] ",
+      "text": "[12] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12158,8 +12158,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 13 ]",
-      "text": "[ 13 ]",
+      "orig": "[13] ",
+      "text": "[13] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12190,8 +12190,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 14 ]",
-      "text": "[ 14 ]",
+      "orig": "[14]",
+      "text": "[14]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12210,8 +12210,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "A number of other species called ducks are not considered to be 'true ducks', and are typically placed in other subfamilies or tribes. The",
-      "text": "A number of other species called ducks are not considered to be 'true ducks', and are typically placed in other subfamilies or tribes. The"
+      "orig": "A number of other species called ducks are not considered to be 'true ducks', and are typically placed in other subfamilies or tribes. The ",
+      "text": "A number of other species called ducks are not considered to be 'true ducks', and are typically placed in other subfamilies or tribes. The "
     },
     {
       "self_ref": "#/texts/401",
@@ -12222,8 +12222,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "whistling ducks",
-      "text": "whistling ducks",
+      "orig": "whistling ducks ",
+      "text": "whistling ducks ",
       "hyperlink": "/wiki/Whistling_duck"
     },
     {
@@ -12247,8 +12247,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 15 ]",
-      "text": "[ 15 ]",
+      "orig": "[15] ",
+      "text": "[15] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12279,8 +12279,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 9 ]",
-      "text": "[ 9 ]",
+      "orig": "[9]",
+      "text": "[9]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12299,8 +12299,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 16 ]",
-      "text": "[ 16 ]",
+      "orig": "[16] ",
+      "text": "[16] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12319,8 +12319,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The",
-      "text": "The"
+      "orig": "The ",
+      "text": "The "
     },
     {
       "self_ref": "#/texts/408",
@@ -12331,8 +12331,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "freckled duck",
-      "text": "freckled duck",
+      "orig": "freckled duck ",
+      "text": "freckled duck ",
       "hyperlink": "/wiki/Freckled_duck"
     },
     {
@@ -12356,8 +12356,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 15 ]",
-      "text": "[ 15 ]",
+      "orig": "[15] ",
+      "text": "[15] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12388,8 +12388,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 9 ]",
-      "text": "[ 9 ]",
+      "orig": "[9] ",
+      "text": "[9] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12408,8 +12408,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The",
-      "text": "The"
+      "orig": "The ",
+      "text": "The "
     },
     {
       "self_ref": "#/texts/414",
@@ -12420,8 +12420,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "shelducks",
-      "text": "shelducks",
+      "orig": "shelducks ",
+      "text": "shelducks ",
       "hyperlink": "/wiki/Shelduck"
     },
     {
@@ -12445,8 +12445,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 15 ]",
-      "text": "[ 15 ]",
+      "orig": "[15] ",
+      "text": "[15] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12477,8 +12477,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 17 ]",
-      "text": "[ 17 ]",
+      "orig": "[17] ",
+      "text": "[17] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12497,8 +12497,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "while the",
-      "text": "while the"
+      "orig": "while the ",
+      "text": "while the "
     },
     {
       "self_ref": "#/texts/420",
@@ -12509,8 +12509,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "steamer ducks",
-      "text": "steamer ducks",
+      "orig": "steamer ducks ",
+      "text": "steamer ducks ",
       "hyperlink": "/wiki/Steamer_duck"
     },
     {
@@ -12534,8 +12534,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 15 ]",
-      "text": "[ 15 ]",
+      "orig": "[15] ",
+      "text": "[15] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12566,8 +12566,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 9 ]",
-      "text": "[ 9 ]",
+      "orig": "[9] ",
+      "text": "[9] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12586,8 +12586,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The",
-      "text": "The"
+      "orig": "The ",
+      "text": "The "
     },
     {
       "self_ref": "#/texts/426",
@@ -12598,8 +12598,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "perching ducks",
-      "text": "perching ducks",
+      "orig": "perching ducks ",
+      "text": "perching ducks ",
       "hyperlink": "/wiki/Perching_duck"
     },
     {
@@ -12623,8 +12623,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 9 ]",
-      "text": "[ 9 ]",
+      "orig": "[9] ",
+      "text": "[9] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12643,8 +12643,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The",
-      "text": "The"
+      "orig": "The ",
+      "text": "The "
     },
     {
       "self_ref": "#/texts/430",
@@ -12655,8 +12655,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "torrent duck",
-      "text": "torrent duck",
+      "orig": "torrent duck ",
+      "text": "torrent duck ",
       "hyperlink": "/wiki/Torrent_duck"
     },
     {
@@ -12680,8 +12680,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 15 ]",
-      "text": "[ 15 ]",
+      "orig": "[15] ",
+      "text": "[15] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12712,8 +12712,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 18 ]",
-      "text": "[ 18 ]",
+      "orig": "[18] ",
+      "text": "[18] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12732,8 +12732,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The",
-      "text": "The"
+      "orig": "The ",
+      "text": "The "
     },
     {
       "self_ref": "#/texts/436",
@@ -12744,8 +12744,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "pink-eared duck",
-      "text": "pink-eared duck",
+      "orig": "pink-eared duck ",
+      "text": "pink-eared duck ",
       "hyperlink": "/wiki/Pink-eared_duck"
     },
     {
@@ -12769,8 +12769,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 15 ]",
-      "text": "[ 15 ]",
+      "orig": "[15] ",
+      "text": "[15] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12801,8 +12801,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 19 ]",
-      "text": "[ 19 ]",
+      "orig": "[19] ",
+      "text": "[19] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12833,8 +12833,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 15 ]",
-      "text": "[ 15 ]",
+      "orig": "[15]",
+      "text": "[15]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -12888,8 +12888,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The overall",
-      "text": "The overall"
+      "orig": "The overall ",
+      "text": "The overall "
     },
     {
       "self_ref": "#/texts/446",
@@ -12900,8 +12900,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "body plan",
-      "text": "body plan",
+      "orig": "body plan ",
+      "text": "body plan ",
       "hyperlink": "/wiki/Body_plan"
     },
     {
@@ -12913,8 +12913,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "of ducks is elongated and broad, and they are also relatively long-necked, albeit not as long-necked as the geese and swans. The body shape of diving ducks varies somewhat from this in being more rounded. The",
-      "text": "of ducks is elongated and broad, and they are also relatively long-necked, albeit not as long-necked as the geese and swans. The body shape of diving ducks varies somewhat from this in being more rounded. The"
+      "orig": "of ducks is elongated and broad, and they are also relatively long-necked, albeit not as long-necked as the geese and swans. The body shape of diving ducks varies somewhat from this in being more rounded. The ",
+      "text": "of ducks is elongated and broad, and they are also relatively long-necked, albeit not as long-necked as the geese and swans. The body shape of diving ducks varies somewhat from this in being more rounded. The "
     },
     {
       "self_ref": "#/texts/448",
@@ -12925,8 +12925,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "bill",
-      "text": "bill",
+      "orig": "bill ",
+      "text": "bill ",
       "hyperlink": "/wiki/Beak"
     },
     {
@@ -12938,8 +12938,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is usually broad and contains serrated",
-      "text": "is usually broad and contains serrated"
+      "orig": "is usually broad and contains serrated ",
+      "text": "is usually broad and contains serrated "
     },
     {
       "self_ref": "#/texts/450",
@@ -12963,8 +12963,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", which are particularly well defined in the filter-feeding species. In the case of some fishing species the bill is long and strongly serrated. The scaled legs are strong and well developed, and generally set far back on the body, more so in the highly aquatic species. The wings are very strong and are generally short and pointed, and the",
-      "text": ", which are particularly well defined in the filter-feeding species. In the case of some fishing species the bill is long and strongly serrated. The scaled legs are strong and well developed, and generally set far back on the body, more so in the highly aquatic species. The wings are very strong and are generally short and pointed, and the"
+      "orig": ", which are particularly well defined in the filter-feeding species. In the case of some fishing species the bill is long and strongly serrated. The scaled legs are strong and well developed, and generally set far back on the body, more so in the highly aquatic species. The wings are very strong and are generally short and pointed, and the ",
+      "text": ", which are particularly well defined in the filter-feeding species. In the case of some fishing species the bill is long and strongly serrated. The scaled legs are strong and well developed, and generally set far back on the body, more so in the highly aquatic species. The wings are very strong and are generally short and pointed, and the "
     },
     {
       "self_ref": "#/texts/452",
@@ -12975,8 +12975,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "flight",
-      "text": "flight",
+      "orig": "flight ",
+      "text": "flight ",
       "hyperlink": "/wiki/Bird_flight"
     },
     {
@@ -12988,8 +12988,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "of ducks requires fast continuous strokes, requiring in turn strong wing muscles. Three species of",
-      "text": "of ducks requires fast continuous strokes, requiring in turn strong wing muscles. Three species of"
+      "orig": "of ducks requires fast continuous strokes, requiring in turn strong wing muscles. Three species of ",
+      "text": "of ducks requires fast continuous strokes, requiring in turn strong wing muscles. Three species of "
     },
     {
       "self_ref": "#/texts/454",
@@ -13000,8 +13000,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "steamer duck",
-      "text": "steamer duck",
+      "orig": "steamer duck ",
+      "text": "steamer duck ",
       "hyperlink": "/wiki/Steamer_duck"
     },
     {
@@ -13013,8 +13013,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "are almost flightless, however. Many species of duck are temporarily flightless while",
-      "text": "are almost flightless, however. Many species of duck are temporarily flightless while"
+      "orig": "are almost flightless, however. Many species of duck are temporarily flightless while ",
+      "text": "are almost flightless, however. Many species of duck are temporarily flightless while "
     },
     {
       "self_ref": "#/texts/456",
@@ -13038,8 +13038,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "; they seek out protected habitat with good food supplies during this period. This moult typically precedes",
-      "text": "; they seek out protected habitat with good food supplies during this period. This moult typically precedes"
+      "orig": "; they seek out protected habitat with good food supplies during this period. This moult typically precedes ",
+      "text": "; they seek out protected habitat with good food supplies during this period. This moult typically precedes "
     },
     {
       "self_ref": "#/texts/458",
@@ -13075,8 +13075,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The drakes of northern species often have extravagant",
-      "text": "The drakes of northern species often have extravagant"
+      "orig": "The drakes of northern species often have extravagant ",
+      "text": "The drakes of northern species often have extravagant "
     },
     {
       "self_ref": "#/texts/461",
@@ -13100,8 +13100,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", but that is",
-      "text": ", but that is"
+      "orig": ", but that is ",
+      "text": ", but that is "
     },
     {
       "self_ref": "#/texts/463",
@@ -13112,8 +13112,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "moulted",
-      "text": "moulted",
+      "orig": "moulted ",
+      "text": "moulted ",
       "hyperlink": "/wiki/Moult"
     },
     {
@@ -13125,8 +13125,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in summer to give a more female-like appearance, the \"eclipse\" plumage. Southern resident species typically show less",
-      "text": "in summer to give a more female-like appearance, the \"eclipse\" plumage. Southern resident species typically show less"
+      "orig": "in summer to give a more female-like appearance, the \"eclipse\" plumage. Southern resident species typically show less ",
+      "text": "in summer to give a more female-like appearance, the \"eclipse\" plumage. Southern resident species typically show less "
     },
     {
       "self_ref": "#/texts/465",
@@ -13150,8 +13150,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", although there are exceptions such as the",
-      "text": ", although there are exceptions such as the"
+      "orig": ", although there are exceptions such as the ",
+      "text": ", although there are exceptions such as the "
     },
     {
       "self_ref": "#/texts/467",
@@ -13162,8 +13162,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "paradise shelduck",
-      "text": "paradise shelduck",
+      "orig": "paradise shelduck ",
+      "text": "paradise shelduck ",
       "hyperlink": "/wiki/Paradise_shelduck"
     },
     {
@@ -13175,8 +13175,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "of",
-      "text": "of"
+      "orig": "of ",
+      "text": "of "
     },
     {
       "self_ref": "#/texts/469",
@@ -13241,8 +13241,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "See also:",
-      "text": "See also:"
+      "orig": "See also: ",
+      "text": "See also: "
     },
     {
       "self_ref": "#/texts/473",
@@ -13266,8 +13266,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Flying steamer ducks in Ushuaia , Argentina",
-      "text": "Flying steamer ducks in Ushuaia , Argentina"
+      "orig": "Flying steamer ducks in Ushuaia, Argentina",
+      "text": "Flying steamer ducks in Ushuaia, Argentina"
     },
     {
       "self_ref": "#/texts/475",
@@ -13278,8 +13278,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks have a",
-      "text": "Ducks have a"
+      "orig": "Ducks have a ",
+      "text": "Ducks have a "
     },
     {
       "self_ref": "#/texts/476",
@@ -13315,8 +13315,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 5 ]",
-      "text": "[ 5 ]",
+      "orig": "[5] ",
+      "text": "[5] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -13335,8 +13335,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Several species manage to live on subantarctic islands, including",
-      "text": "Several species manage to live on subantarctic islands, including"
+      "orig": "Several species manage to live on subantarctic islands, including ",
+      "text": "Several species manage to live on subantarctic islands, including "
     },
     {
       "self_ref": "#/texts/480",
@@ -13347,8 +13347,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "South Georgia",
-      "text": "South Georgia",
+      "orig": "South Georgia ",
+      "text": "South Georgia ",
       "hyperlink": "/wiki/South_Georgia_and_the_South_Sandwich_Islands"
     },
     {
@@ -13360,8 +13360,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and the",
-      "text": "and the"
+      "orig": "and the ",
+      "text": "and the "
     },
     {
       "self_ref": "#/texts/482",
@@ -13397,8 +13397,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 20 ]",
-      "text": "[ 20 ]",
+      "orig": "[20] ",
+      "text": "[20] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -13417,8 +13417,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks have reached a number of isolated oceanic islands, including the",
-      "text": "Ducks have reached a number of isolated oceanic islands, including the"
+      "orig": "Ducks have reached a number of isolated oceanic islands, including the ",
+      "text": "Ducks have reached a number of isolated oceanic islands, including the "
     },
     {
       "self_ref": "#/texts/486",
@@ -13442,8 +13442,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/488",
@@ -13454,8 +13454,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Micronesia",
-      "text": "Micronesia",
+      "orig": "Micronesia ",
+      "text": "Micronesia ",
       "hyperlink": "/wiki/Micronesia"
     },
     {
@@ -13467,8 +13467,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and the",
-      "text": "and the"
+      "orig": "and the ",
+      "text": "and the "
     },
     {
       "self_ref": "#/texts/490",
@@ -13492,8 +13492,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", where they are often",
-      "text": ", where they are often"
+      "orig": ", where they are often ",
+      "text": ", where they are often "
     },
     {
       "self_ref": "#/texts/492",
@@ -13504,8 +13504,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "vagrants",
-      "text": "vagrants",
+      "orig": "vagrants ",
+      "text": "vagrants ",
       "hyperlink": "/wiki/Glossary_of_bird_terms#vagrants"
     },
     {
@@ -13517,8 +13517,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and less often",
-      "text": "and less often"
+      "orig": "and less often ",
+      "text": "and less often "
     },
     {
       "self_ref": "#/texts/494",
@@ -13554,8 +13554,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 21 ]",
-      "text": "[ 21 ]",
+      "orig": "[21]",
+      "text": "[21]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -13574,8 +13574,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 22 ]",
-      "text": "[ 22 ]",
+      "orig": "[22] ",
+      "text": "[22] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -13594,8 +13594,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "A handful are",
-      "text": "A handful are"
+      "orig": "A handful are ",
+      "text": "A handful are "
     },
     {
       "self_ref": "#/texts/499",
@@ -13606,8 +13606,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "endemic",
-      "text": "endemic",
+      "orig": "endemic ",
+      "text": "endemic ",
       "hyperlink": "/wiki/Endemic"
     },
     {
@@ -13631,8 +13631,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 21 ]",
-      "text": "[ 21 ]",
+      "orig": "[21]",
+      "text": "[21]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -13651,8 +13651,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Female mallard in Cornwall , England",
-      "text": "Female mallard in Cornwall , England"
+      "orig": "Female mallard in Cornwall, England",
+      "text": "Female mallard in Cornwall, England"
     },
     {
       "self_ref": "#/texts/503",
@@ -13675,8 +13675,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 23 ]",
-      "text": "[ 23 ]",
+      "orig": "[23]",
+      "text": "[23]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -13783,8 +13783,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks eat food sources such as",
-      "text": "Ducks eat food sources such as"
+      "orig": "Ducks eat food sources such as ",
+      "text": "Ducks eat food sources such as "
     },
     {
       "self_ref": "#/texts/510",
@@ -13808,8 +13808,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", aquatic plants, fish, insects, small amphibians, worms, and small",
-      "text": ", aquatic plants, fish, insects, small amphibians, worms, and small"
+      "orig": ", aquatic plants, fish, insects, small amphibians, worms, and small ",
+      "text": ", aquatic plants, fish, insects, small amphibians, worms, and small "
     },
     {
       "self_ref": "#/texts/512",
@@ -13845,8 +13845,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Dabbling ducks",
-      "text": "Dabbling ducks",
+      "orig": "Dabbling ducks ",
+      "text": "Dabbling ducks ",
       "hyperlink": "/wiki/Dabbling_duck"
     },
     {
@@ -13870,8 +13870,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 24 ]",
-      "text": "[ 24 ]",
+      "orig": "[24] ",
+      "text": "[24] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -13890,8 +13890,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Along the edge of the bill, there is a comb-like structure called a",
-      "text": "Along the edge of the bill, there is a comb-like structure called a"
+      "orig": "Along the edge of the bill, there is a comb-like structure called a ",
+      "text": "Along the edge of the bill, there is a comb-like structure called a "
     },
     {
       "self_ref": "#/texts/518",
@@ -13927,8 +13927,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Diving ducks",
-      "text": "Diving ducks",
+      "orig": "Diving ducks ",
+      "text": "Diving ducks ",
       "hyperlink": "/wiki/Diving_duck"
     },
     {
@@ -13940,8 +13940,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/522",
@@ -13952,8 +13952,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "sea ducks",
-      "text": "sea ducks",
+      "orig": "sea ducks ",
+      "text": "sea ducks ",
       "hyperlink": "/wiki/Sea_duck"
     },
     {
@@ -13977,8 +13977,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "A few specialized species such as the",
-      "text": "A few specialized species such as the"
+      "orig": "A few specialized species such as the ",
+      "text": "A few specialized species such as the "
     },
     {
       "self_ref": "#/texts/525",
@@ -13989,8 +13989,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "mergansers",
-      "text": "mergansers",
+      "orig": "mergansers ",
+      "text": "mergansers ",
       "hyperlink": "/wiki/Merganser"
     },
     {
@@ -14014,8 +14014,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The others have the characteristic wide flat bill adapted to",
-      "text": "The others have the characteristic wide flat bill adapted to"
+      "orig": "The others have the characteristic wide flat bill adapted to ",
+      "text": "The others have the characteristic wide flat bill adapted to "
     },
     {
       "self_ref": "#/texts/528",
@@ -14039,8 +14039,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-type jobs such as pulling up waterweed, pulling worms and small molluscs out of mud, searching for insect larvae, and bulk jobs such as dredging out, holding, turning head first, and swallowing a squirming frog. To avoid injury when digging into sediment it has no",
-      "text": "-type jobs such as pulling up waterweed, pulling worms and small molluscs out of mud, searching for insect larvae, and bulk jobs such as dredging out, holding, turning head first, and swallowing a squirming frog. To avoid injury when digging into sediment it has no"
+      "orig": "-type jobs such as pulling up waterweed, pulling worms and small molluscs out of mud, searching for insect larvae, and bulk jobs such as dredging out, holding, turning head first, and swallowing a squirming frog. To avoid injury when digging into sediment it has no ",
+      "text": "-type jobs such as pulling up waterweed, pulling worms and small molluscs out of mud, searching for insect larvae, and bulk jobs such as dredging out, holding, turning head first, and swallowing a squirming frog. To avoid injury when digging into sediment it has no "
     },
     {
       "self_ref": "#/texts/530",
@@ -14076,8 +14076,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The Guardian",
-      "text": "The Guardian",
+      "orig": "The Guardian ",
+      "text": "The Guardian ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -14096,8 +14096,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "published an article advising that ducks should not be fed with bread because it",
-      "text": "published an article advising that ducks should not be fed with bread because it"
+      "orig": "published an article advising that ducks should not be fed with bread because it ",
+      "text": "published an article advising that ducks should not be fed with bread because it "
     },
     {
       "self_ref": "#/texts/534",
@@ -14108,8 +14108,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "damages the health of the ducks",
-      "text": "damages the health of the ducks",
+      "orig": "damages the health of the ducks ",
+      "text": "damages the health of the ducks ",
       "hyperlink": "/wiki/Angel_wing"
     },
     {
@@ -14133,8 +14133,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 25 ]",
-      "text": "[ 25 ]",
+      "orig": "[25]",
+      "text": "[25]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -14185,8 +14185,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks generally",
-      "text": "Ducks generally"
+      "orig": "Ducks generally ",
+      "text": "Ducks generally "
     },
     {
       "self_ref": "#/texts/540",
@@ -14222,8 +14222,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 26 ]",
-      "text": "[ 26 ]",
+      "orig": "[26] ",
+      "text": "[26] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -14254,8 +14254,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 27 ]",
-      "text": "[ 27 ]",
+      "orig": "[27] ",
+      "text": "[27] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -14299,8 +14299,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "/summer or wet seasons). Ducks also tend to make a",
-      "text": "/summer or wet seasons). Ducks also tend to make a"
+      "orig": "/summer or wet seasons). Ducks also tend to make a ",
+      "text": "/summer or wet seasons). Ducks also tend to make a "
     },
     {
       "self_ref": "#/texts/548",
@@ -14311,8 +14311,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "nest",
-      "text": "nest",
+      "orig": "nest ",
+      "text": "nest ",
       "hyperlink": "/wiki/Bird_nest"
     },
     {
@@ -14324,8 +14324,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "before breeding, and, after hatching, lead their ducklings to water. Mother ducks are very caring and protective of their young, but may abandon some of their ducklings if they are physically stuck in an area they cannot get out of (such as nesting in an enclosed",
-      "text": "before breeding, and, after hatching, lead their ducklings to water. Mother ducks are very caring and protective of their young, but may abandon some of their ducklings if they are physically stuck in an area they cannot get out of (such as nesting in an enclosed"
+      "orig": "before breeding, and, after hatching, lead their ducklings to water. Mother ducks are very caring and protective of their young, but may abandon some of their ducklings if they are physically stuck in an area they cannot get out of (such as nesting in an enclosed ",
+      "text": "before breeding, and, after hatching, lead their ducklings to water. Mother ducks are very caring and protective of their young, but may abandon some of their ducklings if they are physically stuck in an area they cannot get out of (such as nesting in an enclosed "
     },
     {
       "self_ref": "#/texts/550",
@@ -14361,8 +14361,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 28 ]",
-      "text": "[ 28 ]",
+      "orig": "[28]",
+      "text": "[28]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -14401,8 +14401,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Female",
-      "text": "Female"
+      "orig": "Female ",
+      "text": "Female "
     },
     {
       "self_ref": "#/texts/555",
@@ -14413,8 +14413,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "mallard",
-      "text": "mallard",
+      "orig": "mallard ",
+      "text": "mallard ",
       "hyperlink": "/wiki/Mallard"
     },
     {
@@ -14426,8 +14426,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ducks (as well as several other species in the genus",
-      "text": "ducks (as well as several other species in the genus"
+      "orig": "ducks (as well as several other species in the genus ",
+      "text": "ducks (as well as several other species in the genus "
     },
     {
       "self_ref": "#/texts/557",
@@ -14457,8 +14457,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", such as the",
-      "text": ", such as the"
+      "orig": ", such as the ",
+      "text": ", such as the "
     },
     {
       "self_ref": "#/texts/559",
@@ -14469,8 +14469,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "American",
-      "text": "American",
+      "orig": "American ",
+      "text": "American ",
       "hyperlink": "/wiki/American_black_duck"
     },
     {
@@ -14482,8 +14482,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/561",
@@ -14507,8 +14507,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/563",
@@ -14532,8 +14532,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/565",
@@ -14544,8 +14544,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "northern pintail",
-      "text": "northern pintail",
+      "orig": "northern pintail ",
+      "text": "northern pintail ",
       "hyperlink": "/wiki/Northern_pintail"
     },
     {
@@ -14557,8 +14557,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/567",
@@ -14594,8 +14594,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 29 ]",
-      "text": "[ 29 ]",
+      "orig": "[29]",
+      "text": "[29]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -14653,8 +14653,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "]",
-      "text": "]",
+      "orig": "] ",
+      "text": "] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -14684,8 +14684,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 30 ]",
-      "text": "[ 30 ]",
+      "orig": "[30] ",
+      "text": "[30] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -14704,8 +14704,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In general, ducks make a range of",
-      "text": "In general, ducks make a range of"
+      "orig": "In general, ducks make a range of ",
+      "text": "In general, ducks make a range of "
     },
     {
       "self_ref": "#/texts/576",
@@ -14729,8 +14729,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", including whistles, cooing, yodels and grunts. For example, the",
-      "text": ", including whistles, cooing, yodels and grunts. For example, the"
+      "orig": ", including whistles, cooing, yodels and grunts. For example, the ",
+      "text": ", including whistles, cooing, yodels and grunts. For example, the "
     },
     {
       "self_ref": "#/texts/578",
@@ -14741,8 +14741,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "scaup",
-      "text": "scaup",
+      "orig": "scaup ",
+      "text": "scaup ",
       "hyperlink": "/wiki/Scaup"
     },
     {
@@ -14754,8 +14754,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "– which are",
-      "text": "- which are"
+      "orig": "– which are ",
+      "text": "- which are "
     },
     {
       "self_ref": "#/texts/580",
@@ -14766,8 +14766,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "diving ducks",
-      "text": "diving ducks",
+      "orig": "diving ducks ",
+      "text": "diving ducks ",
       "hyperlink": "/wiki/Diving_duck"
     },
     {
@@ -14791,8 +14791,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "A common",
-      "text": "A common"
+      "orig": "A common ",
+      "text": "A common "
     },
     {
       "self_ref": "#/texts/583",
@@ -14803,8 +14803,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "urban legend",
-      "text": "urban legend",
+      "orig": "urban legend ",
+      "text": "urban legend ",
       "hyperlink": "/wiki/Urban_legend"
     },
     {
@@ -14816,8 +14816,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "claims that duck quacks do not echo; however, this has been proven to be false. This myth was first debunked by the Acoustics Research Centre at the",
-      "text": "claims that duck quacks do not echo; however, this has been proven to be false. This myth was first debunked by the Acoustics Research Centre at the"
+      "orig": "claims that duck quacks do not echo; however, this has been proven to be false. This myth was first debunked by the Acoustics Research Centre at the ",
+      "text": "claims that duck quacks do not echo; however, this has been proven to be false. This myth was first debunked by the Acoustics Research Centre at the "
     },
     {
       "self_ref": "#/texts/585",
@@ -14828,8 +14828,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "University of Salford",
-      "text": "University of Salford",
+      "orig": "University of Salford ",
+      "text": "University of Salford ",
       "hyperlink": "/wiki/University_of_Salford"
     },
     {
@@ -14841,8 +14841,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in 2003 as part of the",
-      "text": "in 2003 as part of the"
+      "orig": "in 2003 as part of the ",
+      "text": "in 2003 as part of the "
     },
     {
       "self_ref": "#/texts/587",
@@ -14878,8 +14878,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 31 ]",
-      "text": "[ 31 ]",
+      "orig": "[31] ",
+      "text": "[31] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -14898,8 +14898,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "It was also debunked in",
-      "text": "It was also debunked in"
+      "orig": "It was also debunked in ",
+      "text": "It was also debunked in "
     },
     {
       "self_ref": "#/texts/591",
@@ -14910,8 +14910,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "one of the earlier episodes",
-      "text": "one of the earlier episodes",
+      "orig": "one of the earlier episodes ",
+      "text": "one of the earlier episodes ",
       "hyperlink": "/wiki/MythBusters_(2003_season)#Does_a_Duck's_Quack_Echo?"
     },
     {
@@ -14923,8 +14923,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "of the popular Discovery Channel television show",
-      "text": "of the popular Discovery Channel television show"
+      "orig": "of the popular Discovery Channel television show ",
+      "text": "of the popular Discovery Channel television show "
     },
     {
       "self_ref": "#/texts/593",
@@ -14967,8 +14967,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 32 ]",
-      "text": "[ 32 ]",
+      "orig": "[32]",
+      "text": "[32]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15023,8 +15023,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks have many predators. Ducklings are particularly vulnerable, since their inability to fly makes them easy prey not only for predatory birds but also for large fish like",
-      "text": "Ducks have many predators. Ducklings are particularly vulnerable, since their inability to fly makes them easy prey not only for predatory birds but also for large fish like"
+      "orig": "Ducks have many predators. Ducklings are particularly vulnerable, since their inability to fly makes them easy prey not only for predatory birds but also for large fish like ",
+      "text": "Ducks have many predators. Ducklings are particularly vulnerable, since their inability to fly makes them easy prey not only for predatory birds but also for large fish like "
     },
     {
       "self_ref": "#/texts/599",
@@ -15048,8 +15048,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/601",
@@ -15073,8 +15073,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", predatory",
-      "text": ", predatory"
+      "orig": ", predatory ",
+      "text": ", predatory "
     },
     {
       "self_ref": "#/texts/603",
@@ -15085,8 +15085,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "testudines",
-      "text": "testudines",
+      "orig": "testudines ",
+      "text": "testudines ",
       "hyperlink": "/wiki/Testudines"
     },
     {
@@ -15098,8 +15098,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "such as the",
-      "text": "such as the"
+      "orig": "such as the ",
+      "text": "such as the "
     },
     {
       "self_ref": "#/texts/605",
@@ -15123,8 +15123,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", and other aquatic hunters, including fish-eating birds such as",
-      "text": ", and other aquatic hunters, including fish-eating birds such as"
+      "orig": ", and other aquatic hunters, including fish-eating birds such as ",
+      "text": ", and other aquatic hunters, including fish-eating birds such as "
     },
     {
       "self_ref": "#/texts/607",
@@ -15148,8 +15148,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Ducks' nests are raided by land-based predators, and brooding females may be caught unaware on the nest by mammals, such as",
-      "text": ". Ducks' nests are raided by land-based predators, and brooding females may be caught unaware on the nest by mammals, such as"
+      "orig": ". Ducks' nests are raided by land-based predators, and brooding females may be caught unaware on the nest by mammals, such as ",
+      "text": ". Ducks' nests are raided by land-based predators, and brooding females may be caught unaware on the nest by mammals, such as "
     },
     {
       "self_ref": "#/texts/609",
@@ -15173,8 +15173,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", or large birds, such as",
-      "text": ", or large birds, such as"
+      "orig": ", or large birds, such as ",
+      "text": ", or large birds, such as "
     },
     {
       "self_ref": "#/texts/611",
@@ -15185,8 +15185,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "hawks",
-      "text": "hawks",
+      "orig": "hawks ",
+      "text": "hawks ",
       "hyperlink": "/wiki/Hawk"
     },
     {
@@ -15198,8 +15198,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "or",
-      "text": "or"
+      "orig": "or ",
+      "text": "or "
     },
     {
       "self_ref": "#/texts/613",
@@ -15235,8 +15235,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Adult ducks are fast fliers, but may be caught on the water by large aquatic predators including big fish such as the North American",
-      "text": "Adult ducks are fast fliers, but may be caught on the water by large aquatic predators including big fish such as the North American"
+      "orig": "Adult ducks are fast fliers, but may be caught on the water by large aquatic predators including big fish such as the North American ",
+      "text": "Adult ducks are fast fliers, but may be caught on the water by large aquatic predators including big fish such as the North American "
     },
     {
       "self_ref": "#/texts/616",
@@ -15247,8 +15247,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "muskie",
-      "text": "muskie",
+      "orig": "muskie ",
+      "text": "muskie ",
       "hyperlink": "/wiki/Muskellunge"
     },
     {
@@ -15260,8 +15260,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and the European",
-      "text": "and the European"
+      "orig": "and the European ",
+      "text": "and the European "
     },
     {
       "self_ref": "#/texts/618",
@@ -15285,8 +15285,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". In flight, ducks are safe from all but a few predators such as humans and the",
-      "text": ". In flight, ducks are safe from all but a few predators such as humans and the"
+      "orig": ". In flight, ducks are safe from all but a few predators such as humans and the ",
+      "text": ". In flight, ducks are safe from all but a few predators such as humans and the "
     },
     {
       "self_ref": "#/texts/620",
@@ -15371,8 +15371,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Main article:",
-      "text": "Main article:"
+      "orig": "Main article: ",
+      "text": "Main article: "
     },
     {
       "self_ref": "#/texts/625",
@@ -15396,8 +15396,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Humans have hunted ducks since prehistoric times. Excavations of",
-      "text": "Humans have hunted ducks since prehistoric times. Excavations of"
+      "orig": "Humans have hunted ducks since prehistoric times. Excavations of ",
+      "text": "Humans have hunted ducks since prehistoric times. Excavations of "
     },
     {
       "self_ref": "#/texts/627",
@@ -15408,8 +15408,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "middens",
-      "text": "middens",
+      "orig": "middens ",
+      "text": "middens ",
       "hyperlink": "/wiki/Midden"
     },
     {
@@ -15421,8 +15421,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in California dating to 7800 – 6400",
-      "text": "in California dating to 7800 - 6400"
+      "orig": "in California dating to 7800 – 6400 ",
+      "text": "in California dating to 7800 - 6400 "
     },
     {
       "self_ref": "#/texts/629",
@@ -15433,8 +15433,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "BP",
-      "text": "BP",
+      "orig": "BP ",
+      "text": "BP ",
       "hyperlink": "/wiki/Before_present"
     },
     {
@@ -15458,8 +15458,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 33 ]",
-      "text": "[ 33 ]",
+      "orig": "[33] ",
+      "text": "[33] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15478,8 +15478,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks were captured in \"significant numbers\" by",
-      "text": "Ducks were captured in \"significant numbers\" by"
+      "orig": "Ducks were captured in \"significant numbers\" by ",
+      "text": "Ducks were captured in \"significant numbers\" by "
     },
     {
       "self_ref": "#/texts/633",
@@ -15490,8 +15490,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Holocene",
-      "text": "Holocene",
+      "orig": "Holocene ",
+      "text": "Holocene ",
       "hyperlink": "/wiki/Holocene"
     },
     {
@@ -15503,8 +15503,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "inhabitants of the lower",
-      "text": "inhabitants of the lower"
+      "orig": "inhabitants of the lower ",
+      "text": "inhabitants of the lower "
     },
     {
       "self_ref": "#/texts/635",
@@ -15515,8 +15515,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ohio River",
-      "text": "Ohio River",
+      "orig": "Ohio River ",
+      "text": "Ohio River ",
       "hyperlink": "/wiki/Ohio_River"
     },
     {
@@ -15540,8 +15540,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 34 ]",
-      "text": "[ 34 ]",
+      "orig": "[34] ",
+      "text": "[34] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15572,8 +15572,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 35 ]",
-      "text": "[ 35 ]",
+      "orig": "[35] ",
+      "text": "[35] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15604,8 +15604,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 36 ]",
-      "text": "[ 36 ]",
+      "orig": "[36] ",
+      "text": "[36] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15636,8 +15636,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 37 ]",
-      "text": "[ 37 ]",
+      "orig": "[37] ",
+      "text": "[37] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15668,8 +15668,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 38 ]",
-      "text": "[ 38 ]",
+      "orig": "[38] ",
+      "text": "[38] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15700,8 +15700,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 39 ]",
-      "text": "[ 39 ]",
+      "orig": "[39] ",
+      "text": "[39] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15720,8 +15720,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Archeological evidence shows that",
-      "text": "Archeological evidence shows that"
+      "orig": "Archeological evidence shows that ",
+      "text": "Archeological evidence shows that "
     },
     {
       "self_ref": "#/texts/649",
@@ -15732,8 +15732,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Māori people",
-      "text": "Māori people",
+      "orig": "Māori people ",
+      "text": "Māori people ",
       "hyperlink": "/wiki/M%C4%81ori_people"
     },
     {
@@ -15745,8 +15745,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in New Zealand hunted the flightless",
-      "text": "in New Zealand hunted the flightless"
+      "orig": "in New Zealand hunted the flightless ",
+      "text": "in New Zealand hunted the flightless "
     },
     {
       "self_ref": "#/texts/651",
@@ -15782,8 +15782,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 40 ]",
-      "text": "[ 40 ]",
+      "orig": "[40] ",
+      "text": "[40] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15802,8 +15802,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "A similar end awaited the",
-      "text": "A similar end awaited the"
+      "orig": "A similar end awaited the ",
+      "text": "A similar end awaited the "
     },
     {
       "self_ref": "#/texts/655",
@@ -15839,8 +15839,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 41 ]",
-      "text": "[ 41 ]",
+      "orig": "[41] ",
+      "text": "[41] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15871,8 +15871,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 35 ]",
-      "text": "[ 35 ]",
+      "orig": "[35]",
+      "text": "[35]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15891,8 +15891,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 42 ]",
-      "text": "[ 42 ]",
+      "orig": "[42]",
+      "text": "[42]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15923,8 +15923,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 43 ]",
-      "text": "[ 43 ]",
+      "orig": "[43] ",
+      "text": "[43] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -15943,8 +15943,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "by shooting, or by being trapped using",
-      "text": "by shooting, or by being trapped using"
+      "orig": "by shooting, or by being trapped using ",
+      "text": "by shooting, or by being trapped using "
     },
     {
       "self_ref": "#/texts/664",
@@ -15968,8 +15968,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Because an idle floating duck or a duck squatting on land cannot react to fly or move quickly, \"a sitting duck\" has come to mean \"an easy target\". These ducks may be",
-      "text": ". Because an idle floating duck or a duck squatting on land cannot react to fly or move quickly, \"a sitting duck\" has come to mean \"an easy target\". These ducks may be"
+      "orig": ". Because an idle floating duck or a duck squatting on land cannot react to fly or move quickly, \"a sitting duck\" has come to mean \"an easy target\". These ducks may be ",
+      "text": ". Because an idle floating duck or a duck squatting on land cannot react to fly or move quickly, \"a sitting duck\" has come to mean \"an easy target\". These ducks may be "
     },
     {
       "self_ref": "#/texts/666",
@@ -15980,8 +15980,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "contaminated by pollutants",
-      "text": "contaminated by pollutants",
+      "orig": "contaminated by pollutants ",
+      "text": "contaminated by pollutants ",
       "hyperlink": "/wiki/Duck_(food)#Pollution"
     },
     {
@@ -15993,8 +15993,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "such as",
-      "text": "such as"
+      "orig": "such as ",
+      "text": "such as "
     },
     {
       "self_ref": "#/texts/668",
@@ -16030,8 +16030,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 44 ]",
-      "text": "[ 44 ]",
+      "orig": "[44]",
+      "text": "[44]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16073,8 +16073,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Main article:",
-      "text": "Main article:"
+      "orig": "Main article: ",
+      "text": "Main article: "
     },
     {
       "self_ref": "#/texts/673",
@@ -16098,8 +16098,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Indian Runner ducks , a common breed of domestic ducks",
-      "text": "Indian Runner ducks , a common breed of domestic ducks"
+      "orig": "Indian Runner ducks, a common breed of domestic ducks",
+      "text": "Indian Runner ducks, a common breed of domestic ducks"
     },
     {
       "self_ref": "#/texts/675",
@@ -16110,8 +16110,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their",
-      "text": "Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their"
+      "orig": "Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their ",
+      "text": "Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their "
     },
     {
       "self_ref": "#/texts/676",
@@ -16147,8 +16147,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 45 ]",
-      "text": "[ 45 ]",
+      "orig": "[45] ",
+      "text": "[45] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16167,8 +16167,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the",
-      "text": "They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the"
+      "orig": "They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the ",
+      "text": "They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the "
     },
     {
       "self_ref": "#/texts/680",
@@ -16179,8 +16179,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "mallard",
-      "text": "mallard",
+      "orig": "mallard ",
+      "text": "mallard ",
       "hyperlink": "/wiki/Mallard"
     },
     {
@@ -16223,8 +16223,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "), apart from the",
-      "text": "), apart from the"
+      "orig": "), apart from the ",
+      "text": "), apart from the "
     },
     {
       "self_ref": "#/texts/684",
@@ -16235,8 +16235,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Muscovy duck",
-      "text": "Muscovy duck",
+      "orig": "Muscovy duck ",
+      "text": "Muscovy duck ",
       "hyperlink": "/wiki/Muscovy_duck"
     },
     {
@@ -16291,8 +16291,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 46 ]",
-      "text": "[ 46 ]",
+      "orig": "[46]",
+      "text": "[46]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16311,8 +16311,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 47 ]",
-      "text": "[ 47 ]",
+      "orig": "[47] ",
+      "text": "[47] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16331,8 +16331,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The",
-      "text": "The"
+      "orig": "The ",
+      "text": "The "
     },
     {
       "self_ref": "#/texts/691",
@@ -16343,8 +16343,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Call duck",
-      "text": "Call duck",
+      "orig": "Call duck ",
+      "text": "Call duck ",
       "hyperlink": "/wiki/Call_duck"
     },
     {
@@ -16368,8 +16368,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 48 ]",
-      "text": "[ 48 ]",
+      "orig": "[48]",
+      "text": "[48]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16408,8 +16408,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Three black-colored ducks in the coat of arms of Maaninka [ 49 ]",
-      "text": "Three black-colored ducks in the coat of arms of Maaninka [ 49 ]"
+      "orig": "Three black-colored ducks in the coat of arms of Maaninka[49]",
+      "text": "Three black-colored ducks in the coat of arms of Maaninka[49]"
     },
     {
       "self_ref": "#/texts/696",
@@ -16420,8 +16420,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks appear on several",
-      "text": "Ducks appear on several"
+      "orig": "Ducks appear on several ",
+      "text": "Ducks appear on several "
     },
     {
       "self_ref": "#/texts/697",
@@ -16445,8 +16445,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", including the coat of arms of",
-      "text": ", including the coat of arms of"
+      "orig": ", including the coat of arms of ",
+      "text": ", including the coat of arms of "
     },
     {
       "self_ref": "#/texts/699",
@@ -16457,8 +16457,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Lubāna",
-      "text": "Lubāna",
+      "orig": "Lubāna ",
+      "text": "Lubāna ",
       "hyperlink": "/wiki/Lub%C4%81na"
     },
     {
@@ -16507,8 +16507,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 50 ]",
-      "text": "[ 50 ]",
+      "orig": "[50] ",
+      "text": "[50] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16527,8 +16527,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and the coat of arms of",
-      "text": "and the coat of arms of"
+      "orig": "and the coat of arms of ",
+      "text": "and the coat of arms of "
     },
     {
       "self_ref": "#/texts/705",
@@ -16539,8 +16539,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Föglö",
-      "text": "Föglö",
+      "orig": "Föglö ",
+      "text": "Föglö ",
       "hyperlink": "/wiki/F%C3%B6gl%C3%B6"
     },
     {
@@ -16589,8 +16589,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 51 ]",
-      "text": "[ 51 ]",
+      "orig": "[51]",
+      "text": "[51]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16629,8 +16629,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "In 2002, psychologist",
-      "text": "In 2002, psychologist"
+      "orig": "In 2002, psychologist ",
+      "text": "In 2002, psychologist "
     },
     {
       "self_ref": "#/texts/712",
@@ -16641,8 +16641,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Richard Wiseman",
-      "text": "Richard Wiseman",
+      "orig": "Richard Wiseman ",
+      "text": "Richard Wiseman ",
       "hyperlink": "/wiki/Richard_Wiseman"
     },
     {
@@ -16654,8 +16654,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and colleagues at the",
-      "text": "and colleagues at the"
+      "orig": "and colleagues at the ",
+      "text": "and colleagues at the "
     },
     {
       "self_ref": "#/texts/714",
@@ -16679,8 +16679,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", ",
+      "text": ", "
     },
     {
       "self_ref": "#/texts/716",
@@ -16704,8 +16704,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", finished a year-long",
-      "text": ", finished a year-long"
+      "orig": ", finished a year-long ",
+      "text": ", finished a year-long "
     },
     {
       "self_ref": "#/texts/718",
@@ -16716,8 +16716,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "LaughLab",
-      "text": "LaughLab",
+      "orig": "LaughLab ",
+      "text": "LaughLab ",
       "hyperlink": "/wiki/LaughLab"
     },
     {
@@ -16741,8 +16741,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 52 ]",
-      "text": "[ 52 ]",
+      "orig": "[52] ",
+      "text": "[52] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16761,8 +16761,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The word \"duck\" may have become an",
-      "text": "The word \"duck\" may have become an"
+      "orig": "The word \"duck\" may have become an ",
+      "text": "The word \"duck\" may have become an "
     },
     {
       "self_ref": "#/texts/722",
@@ -16773,8 +16773,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "inherently funny word",
-      "text": "inherently funny word",
+      "orig": "inherently funny word ",
+      "text": "inherently funny word ",
       "hyperlink": "/wiki/Inherently_funny_word"
     },
     {
@@ -16786,8 +16786,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "in many languages, possibly because ducks are seen as silly in their looks or behavior. Of the many",
-      "text": "in many languages, possibly because ducks are seen as silly in their looks or behavior. Of the many"
+      "orig": "in many languages, possibly because ducks are seen as silly in their looks or behavior. Of the many ",
+      "text": "in many languages, possibly because ducks are seen as silly in their looks or behavior. Of the many "
     },
     {
       "self_ref": "#/texts/724",
@@ -16811,8 +16811,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", many are cartoon characters, such as",
-      "text": ", many are cartoon characters, such as"
+      "orig": ", many are cartoon characters, such as ",
+      "text": ", many are cartoon characters, such as "
     },
     {
       "self_ref": "#/texts/726",
@@ -16836,8 +16836,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "'s",
-      "text": "'s"
+      "orig": "'s ",
+      "text": "'s "
     },
     {
       "self_ref": "#/texts/728",
@@ -16861,8 +16861,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", and",
-      "text": ", and"
+      "orig": ", and ",
+      "text": ", and "
     },
     {
       "self_ref": "#/texts/730",
@@ -16886,8 +16886,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "'",
-      "text": "'"
+      "orig": "' ",
+      "text": "' "
     },
     {
       "self_ref": "#/texts/732",
@@ -16911,8 +16911,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/734",
@@ -16923,8 +16923,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Howard the Duck",
-      "text": "Howard the Duck",
+      "orig": "Howard the Duck ",
+      "text": "Howard the Duck ",
       "hyperlink": "/wiki/Howard_the_Duck"
     },
     {
@@ -16948,8 +16948,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 53 ]",
-      "text": "[ 53 ]",
+      "orig": "[53]",
+      "text": "[53]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16968,8 +16968,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 54 ]",
-      "text": "[ 54 ]",
+      "orig": "[54] ",
+      "text": "[54] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -16988,8 +16988,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and was made into a",
-      "text": "and was made into a"
+      "orig": "and was made into a ",
+      "text": "and was made into a "
     },
     {
       "self_ref": "#/texts/739",
@@ -17000,8 +17000,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "movie",
-      "text": "movie",
+      "orig": "movie ",
+      "text": "movie ",
       "hyperlink": "/wiki/Howard_the_Duck_(film)"
     },
     {
@@ -17025,8 +17025,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The 1992 Disney film",
-      "text": "The 1992 Disney film"
+      "orig": "The 1992 Disney film ",
+      "text": "The 1992 Disney film "
     },
     {
       "self_ref": "#/texts/742",
@@ -17057,8 +17057,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", starring",
-      "text": ", starring"
+      "orig": ", starring ",
+      "text": ", starring "
     },
     {
       "self_ref": "#/texts/744",
@@ -17082,8 +17082,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", chose the duck as the mascot for the fictional youth hockey team who are protagonists of the movie, based on the duck being described as a fierce fighter. This led to the duck becoming the nickname and mascot for the eventual",
-      "text": ", chose the duck as the mascot for the fictional youth hockey team who are protagonists of the movie, based on the duck being described as a fierce fighter. This led to the duck becoming the nickname and mascot for the eventual"
+      "orig": ", chose the duck as the mascot for the fictional youth hockey team who are protagonists of the movie, based on the duck being described as a fierce fighter. This led to the duck becoming the nickname and mascot for the eventual ",
+      "text": ", chose the duck as the mascot for the fictional youth hockey team who are protagonists of the movie, based on the duck being described as a fierce fighter. This led to the duck becoming the nickname and mascot for the eventual "
     },
     {
       "self_ref": "#/texts/746",
@@ -17094,8 +17094,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "National Hockey League",
-      "text": "National Hockey League",
+      "orig": "National Hockey League ",
+      "text": "National Hockey League ",
       "hyperlink": "/wiki/National_Hockey_League"
     },
     {
@@ -17107,8 +17107,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "professional team of the",
-      "text": "professional team of the"
+      "orig": "professional team of the ",
+      "text": "professional team of the "
     },
     {
       "self_ref": "#/texts/748",
@@ -17183,8 +17183,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "]",
-      "text": "]",
+      "orig": "] ",
+      "text": "] ",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -17202,8 +17202,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The duck is also the nickname of the",
-      "text": "The duck is also the nickname of the"
+      "orig": "The duck is also the nickname of the ",
+      "text": "The duck is also the nickname of the "
     },
     {
       "self_ref": "#/texts/754",
@@ -17214,8 +17214,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "University of Oregon",
-      "text": "University of Oregon",
+      "orig": "University of Oregon ",
+      "text": "University of Oregon ",
       "hyperlink": "/wiki/University_of_Oregon"
     },
     {
@@ -17227,8 +17227,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "sports teams as well as the",
-      "text": "sports teams as well as the"
+      "orig": "sports teams as well as the ",
+      "text": "sports teams as well as the "
     },
     {
       "self_ref": "#/texts/756",
@@ -17239,8 +17239,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Long Island Ducks",
-      "text": "Long Island Ducks",
+      "orig": "Long Island Ducks ",
+      "text": "Long Island Ducks ",
       "hyperlink": "/wiki/Long_Island_Ducks"
     },
     {
@@ -17252,8 +17252,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "minor league",
-      "text": "minor league"
+      "orig": "minor league ",
+      "text": "minor league "
     },
     {
       "self_ref": "#/texts/758",
@@ -17264,8 +17264,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "baseball",
-      "text": "baseball",
+      "orig": "baseball ",
+      "text": "baseball ",
       "hyperlink": "/wiki/Baseball"
     },
     {
@@ -17289,8 +17289,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "[ 55 ]",
-      "text": "[ 55 ]",
+      "orig": "[55]",
+      "text": "[55]",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -17493,8 +17493,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -17526,8 +17526,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/775",
@@ -17557,8 +17557,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Houghton Mifflin Company. 2006 . Retrieved 2015-05-22 .",
-      "text": ". Houghton Mifflin Company. 2006 . Retrieved 2015-05-22 ."
+      "orig": ". Houghton Mifflin Company. 2006. Retrieved 2015-05-22.",
+      "text": ". Houghton Mifflin Company. 2006. Retrieved 2015-05-22."
     },
     {
       "self_ref": "#/texts/777",
@@ -17587,8 +17587,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -17620,8 +17620,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/781",
@@ -17651,8 +17651,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". K. Dictionaries Ltd. 2000–2006 . Retrieved 2015-05-22 .",
-      "text": ". K. Dictionaries Ltd. 2000-2006 . Retrieved 2015-05-22 ."
+      "orig": ". K. Dictionaries Ltd. 2000–2006. Retrieved 2015-05-22.",
+      "text": ". K. Dictionaries Ltd. 2000-2006. Retrieved 2015-05-22."
     },
     {
       "self_ref": "#/texts/783",
@@ -17681,8 +17681,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -17701,8 +17701,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Dohner, Janet Vorwald (2001).",
-      "text": "Dohner, Janet Vorwald (2001)."
+      "orig": "Dohner, Janet Vorwald (2001). ",
+      "text": "Dohner, Janet Vorwald (2001). "
     },
     {
       "self_ref": "#/texts/786",
@@ -17733,8 +17733,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Yale University Press.",
-      "text": ". Yale University Press."
+      "orig": ". Yale University Press. ",
+      "text": ". Yale University Press. "
     },
     {
       "self_ref": "#/texts/788",
@@ -17745,8 +17745,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -17801,8 +17801,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -17821,8 +17821,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Visca, Curt; Visca, Kelley (2003).",
-      "text": "Visca, Curt; Visca, Kelley (2003)."
+      "orig": "Visca, Curt; Visca, Kelley (2003). ",
+      "text": "Visca, Curt; Visca, Kelley (2003). "
     },
     {
       "self_ref": "#/texts/794",
@@ -17853,8 +17853,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". The Rosen Publishing Group.",
-      "text": ". The Rosen Publishing Group."
+      "orig": ". The Rosen Publishing Group. ",
+      "text": ". The Rosen Publishing Group. "
     },
     {
       "self_ref": "#/texts/796",
@@ -17865,8 +17865,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -17921,8 +17921,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^"
+      "orig": "^ ",
+      "text": "^ "
     },
     {
       "self_ref": "#/texts/801",
@@ -17933,8 +17933,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "a",
-      "text": "a",
+      "orig": "a ",
+      "text": "a ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -17953,8 +17953,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "b",
-      "text": "b",
+      "orig": "b ",
+      "text": "b ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -17973,8 +17973,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "c",
-      "text": "c",
+      "orig": "c ",
+      "text": "c ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -17993,8 +17993,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "d",
-      "text": "d",
+      "orig": "d ",
+      "text": "d ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18056,8 +18056,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18119,8 +18119,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18182,8 +18182,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18245,8 +18245,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^"
+      "orig": "^ ",
+      "text": "^ "
     },
     {
       "self_ref": "#/texts/821",
@@ -18257,8 +18257,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "a",
-      "text": "a",
+      "orig": "a ",
+      "text": "a ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18277,8 +18277,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "b",
-      "text": "b",
+      "orig": "b ",
+      "text": "b ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18297,8 +18297,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "c",
-      "text": "c",
+      "orig": "c ",
+      "text": "c ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18317,8 +18317,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "d",
-      "text": "d",
+      "orig": "d ",
+      "text": "d ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18337,8 +18337,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "e",
-      "text": "e",
+      "orig": "e ",
+      "text": "e ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18357,8 +18357,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "f",
-      "text": "f",
+      "orig": "f ",
+      "text": "f ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18420,8 +18420,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18483,8 +18483,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18546,8 +18546,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18609,8 +18609,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18672,8 +18672,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18735,8 +18735,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^"
+      "orig": "^ ",
+      "text": "^ "
     },
     {
       "self_ref": "#/texts/851",
@@ -18747,8 +18747,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "a",
-      "text": "a",
+      "orig": "a ",
+      "text": "a ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18767,8 +18767,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "b",
-      "text": "b",
+      "orig": "b ",
+      "text": "b ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18787,8 +18787,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "c",
-      "text": "c",
+      "orig": "c ",
+      "text": "c ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18807,8 +18807,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "d",
-      "text": "d",
+      "orig": "d ",
+      "text": "d ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18827,8 +18827,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "e",
-      "text": "e",
+      "orig": "e ",
+      "text": "e ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18847,8 +18847,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "f",
-      "text": "f",
+      "orig": "f ",
+      "text": "f ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18867,8 +18867,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "g",
-      "text": "g",
+      "orig": "g ",
+      "text": "g ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -18930,8 +18930,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -18993,8 +18993,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19056,8 +19056,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19119,8 +19119,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19182,8 +19182,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19245,8 +19245,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^"
+      "orig": "^ ",
+      "text": "^ "
     },
     {
       "self_ref": "#/texts/882",
@@ -19257,8 +19257,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "a",
-      "text": "a",
+      "orig": "a ",
+      "text": "a ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -19277,8 +19277,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "b",
-      "text": "b",
+      "orig": "b ",
+      "text": "b ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -19340,8 +19340,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19403,8 +19403,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19436,8 +19436,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/894",
@@ -19467,8 +19467,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Retrieved 2018-04-27 .",
-      "text": ". Retrieved 2018-04-27 ."
+      "orig": ". Retrieved 2018-04-27.",
+      "text": ". Retrieved 2018-04-27."
     },
     {
       "self_ref": "#/texts/896",
@@ -19497,8 +19497,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19517,8 +19517,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ogden, Evans.",
-      "text": "Ogden, Evans."
+      "orig": "Ogden, Evans. ",
+      "text": "Ogden, Evans. "
     },
     {
       "self_ref": "#/texts/899",
@@ -19542,8 +19542,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". CWE . Retrieved 2006-11-02 .",
-      "text": ". CWE . Retrieved 2006-11-02 ."
+      "orig": ". CWE. Retrieved 2006-11-02.",
+      "text": ". CWE. Retrieved 2006-11-02."
     },
     {
       "self_ref": "#/texts/901",
@@ -19572,8 +19572,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19592,8 +19592,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Karl Mathiesen (16 March 2015).",
-      "text": "Karl Mathiesen (16 March 2015)."
+      "orig": "Karl Mathiesen (16 March 2015). ",
+      "text": "Karl Mathiesen (16 March 2015). "
     },
     {
       "self_ref": "#/texts/904",
@@ -19617,8 +19617,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/906",
@@ -19648,8 +19648,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Retrieved 13 November 2016 .",
-      "text": ". Retrieved 13 November 2016 ."
+      "orig": ". Retrieved 13 November 2016.",
+      "text": ". Retrieved 13 November 2016."
     },
     {
       "self_ref": "#/texts/908",
@@ -19678,8 +19678,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19698,8 +19698,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Rohwer, Frank C.; Anderson, Michael G. (1988). \"Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl\".",
-      "text": "Rohwer, Frank C.; Anderson, Michael G. (1988). \"Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl\"."
+      "orig": "Rohwer, Frank C.; Anderson, Michael G. (1988). \"Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl\". ",
+      "text": "Rohwer, Frank C.; Anderson, Michael G. (1988). \"Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl\". "
     },
     {
       "self_ref": "#/texts/911",
@@ -19729,8 +19729,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". pp. 187–221.",
-      "text": ". pp. 187-221."
+      "orig": ". pp. 187–221. ",
+      "text": ". pp. 187-221. "
     },
     {
       "self_ref": "#/texts/913",
@@ -19779,8 +19779,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/917",
@@ -19791,8 +19791,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -19847,8 +19847,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19867,8 +19867,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000).",
-      "text": "Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000)."
+      "orig": "Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). ",
+      "text": "Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). "
     },
     {
       "self_ref": "#/texts/923",
@@ -19892,8 +19892,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/925",
@@ -19923,8 +19923,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/927",
@@ -19935,8 +19935,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "102",
-      "text": "102",
+      "orig": "102 ",
+      "text": "102 ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -19954,8 +19954,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(1): 201–205.",
-      "text": "(1): 201-205."
+      "orig": "(1): 201–205. ",
+      "text": "(1): 201-205. "
     },
     {
       "self_ref": "#/texts/929",
@@ -20004,8 +20004,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/933",
@@ -20084,8 +20084,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -20117,8 +20117,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/941",
@@ -20148,8 +20148,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Archived from",
-      "text": ". Archived from"
+      "orig": ". Archived from ",
+      "text": ". Archived from "
     },
     {
       "self_ref": "#/texts/943",
@@ -20160,8 +20160,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "the original",
-      "text": "the original",
+      "orig": "the original ",
+      "text": "the original ",
       "hyperlink": "https://wildliferehabber.com/content/if-you-find-duckling"
     },
     {
@@ -20173,8 +20173,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "on 2018-09-23 . Retrieved 2018-12-22 .",
-      "text": "on 2018-09-23 . Retrieved 2018-12-22 ."
+      "orig": "on 2018-09-23. Retrieved 2018-12-22.",
+      "text": "on 2018-09-23. Retrieved 2018-12-22."
     },
     {
       "self_ref": "#/texts/945",
@@ -20203,8 +20203,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -20223,8 +20223,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Carver, Heather (2011).",
-      "text": "Carver, Heather (2011)."
+      "orig": "Carver, Heather (2011). ",
+      "text": "Carver, Heather (2011). "
     },
     {
       "self_ref": "#/texts/948",
@@ -20255,8 +20255,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Lulu.com.",
-      "text": ". Lulu.com."
+      "orig": ". Lulu.com. ",
+      "text": ". Lulu.com. "
     },
     {
       "self_ref": "#/texts/950",
@@ -20267,8 +20267,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -20381,8 +20381,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -20401,8 +20401,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Titlow, Budd (2013-09-03).",
-      "text": "Titlow, Budd (2013-09-03)."
+      "orig": "Titlow, Budd (2013-09-03). ",
+      "text": "Titlow, Budd (2013-09-03). "
     },
     {
       "self_ref": "#/texts/959",
@@ -20433,8 +20433,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Rowman & Littlefield.",
-      "text": ". Rowman & Littlefield."
+      "orig": ". Rowman & Littlefield. ",
+      "text": ". Rowman & Littlefield. "
     },
     {
       "self_ref": "#/texts/961",
@@ -20445,8 +20445,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -20501,8 +20501,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -20521,8 +20521,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Amos, Jonathan (2003-09-08).",
-      "text": "Amos, Jonathan (2003-09-08)."
+      "orig": "Amos, Jonathan (2003-09-08). ",
+      "text": "Amos, Jonathan (2003-09-08). "
     },
     {
       "self_ref": "#/texts/967",
@@ -20546,8 +20546,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/969",
@@ -20577,8 +20577,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Retrieved 2006-11-02 .",
-      "text": ". Retrieved 2006-11-02 ."
+      "orig": ". Retrieved 2006-11-02.",
+      "text": ". Retrieved 2006-11-02."
     },
     {
       "self_ref": "#/texts/971",
@@ -20607,8 +20607,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -20670,8 +20670,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -20733,8 +20733,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -20796,8 +20796,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^"
+      "orig": "^ ",
+      "text": "^ "
     },
     {
       "self_ref": "#/texts/985",
@@ -20808,8 +20808,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "a",
-      "text": "a",
+      "orig": "a ",
+      "text": "a ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -20828,8 +20828,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "b",
-      "text": "b",
+      "orig": "b ",
+      "text": "b ",
       "formatting": {
         "bold": true,
         "italic": true,
@@ -20891,8 +20891,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -20954,8 +20954,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21017,8 +21017,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21080,8 +21080,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21143,8 +21143,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21206,8 +21206,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21269,8 +21269,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21332,8 +21332,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21352,8 +21352,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Livingston, A. D. (1998-01-01).",
-      "text": "Livingston, A. D. (1998-01-01)."
+      "orig": "Livingston, A. D. (1998-01-01). ",
+      "text": "Livingston, A. D. (1998-01-01). "
     },
     {
       "self_ref": "#/texts/1020",
@@ -21384,8 +21384,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Wordsworth Editions, Limited.",
-      "text": ". Wordsworth Editions, Limited."
+      "orig": ". Wordsworth Editions, Limited. ",
+      "text": ". Wordsworth Editions, Limited. "
     },
     {
       "self_ref": "#/texts/1022",
@@ -21396,8 +21396,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -21452,8 +21452,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21472,8 +21472,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl\"",
-      "text": "\"Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl\"",
+      "orig": "\"Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl\" ",
+      "text": "\"Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl\" ",
       "hyperlink": "https://www.dec.ny.gov/docs/fish_marine_pdf/wfp09a.pdf"
     },
     {
@@ -21485,8 +21485,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(PDF) .",
-      "text": "(PDF) ."
+      "orig": "(PDF). ",
+      "text": "(PDF). "
     },
     {
       "self_ref": "#/texts/1029",
@@ -21516,8 +21516,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". US Department of Commerce. December 2008. p. 3.",
-      "text": ". US Department of Commerce. December 2008. p. 3."
+      "orig": ". US Department of Commerce. December 2008. p. 3. ",
+      "text": ". US Department of Commerce. December 2008. p. 3. "
     },
     {
       "self_ref": "#/texts/1031",
@@ -21528,8 +21528,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Archived",
-      "text": "Archived",
+      "orig": "Archived ",
+      "text": "Archived ",
       "hyperlink": "https://ghostarchive.org/archive/20221009/https://www.dec.ny.gov/docs/fish_marine_pdf/wfp09a.pdf"
     },
     {
@@ -21541,8 +21541,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(PDF) from the original on 2022-10-09 . Retrieved 2 July 2019 .",
-      "text": "(PDF) from the original on 2022-10-09 . Retrieved 2 July 2019 ."
+      "orig": "(PDF) from the original on 2022-10-09. Retrieved 2 July 2019.",
+      "text": "(PDF) from the original on 2022-10-09. Retrieved 2 July 2019."
     },
     {
       "self_ref": "#/texts/1033",
@@ -21571,8 +21571,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21604,8 +21604,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1037",
@@ -21635,8 +21635,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Retrieved 2019-10-25 .",
-      "text": ". Retrieved 2019-10-25 ."
+      "orig": ". Retrieved 2019-10-25.",
+      "text": ". Retrieved 2019-10-25."
     },
     {
       "self_ref": "#/texts/1039",
@@ -21665,8 +21665,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21698,8 +21698,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Digimorph.org . Retrieved 2012-12-23 .",
-      "text": ". Digimorph.org . Retrieved 2012-12-23 ."
+      "orig": ". Digimorph.org. Retrieved 2012-12-23.",
+      "text": ". Digimorph.org. Retrieved 2012-12-23."
     },
     {
       "self_ref": "#/texts/1043",
@@ -21728,8 +21728,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21748,8 +21748,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Sy Montgomery.",
-      "text": "Sy Montgomery."
+      "orig": "Sy Montgomery. ",
+      "text": "Sy Montgomery. "
     },
     {
       "self_ref": "#/texts/1046",
@@ -21773,8 +21773,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1048",
@@ -21804,8 +21804,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Retrieved 2012-12-23 .",
-      "text": ". Retrieved 2012-12-23 ."
+      "orig": ". Retrieved 2012-12-23.",
+      "text": ". Retrieved 2012-12-23."
     },
     {
       "self_ref": "#/texts/1050",
@@ -21834,8 +21834,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21854,8 +21854,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Glenday, Craig (2014).",
-      "text": "Glenday, Craig (2014)."
+      "orig": "Glenday, Craig (2014). ",
+      "text": "Glenday, Craig (2014). "
     },
     {
       "self_ref": "#/texts/1053",
@@ -21886,8 +21886,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Guinness World Records Limited. pp.",
-      "text": ". Guinness World Records Limited. pp."
+      "orig": ". Guinness World Records Limited. pp. ",
+      "text": ". Guinness World Records Limited. pp. "
     },
     {
       "self_ref": "#/texts/1055",
@@ -21911,8 +21911,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1057",
@@ -21923,8 +21923,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -21979,8 +21979,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -21999,8 +21999,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Suomen kunnallisvaakunat",
-      "text": "Suomen kunnallisvaakunat",
+      "orig": "Suomen kunnallisvaakunat ",
+      "text": "Suomen kunnallisvaakunat ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -22018,8 +22018,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(in Finnish). Suomen Kunnallisliitto. 1982. p. 147.",
-      "text": "(in Finnish). Suomen Kunnallisliitto. 1982. p. 147."
+      "orig": "(in Finnish). Suomen Kunnallisliitto. 1982. p. 147. ",
+      "text": "(in Finnish). Suomen Kunnallisliitto. 1982. p. 147. "
     },
     {
       "self_ref": "#/texts/1064",
@@ -22030,8 +22030,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -22086,8 +22086,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -22106,8 +22106,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"Lubānas simbolika\"",
-      "text": "\"Lubānas simbolika\"",
+      "orig": "\"Lubānas simbolika\" ",
+      "text": "\"Lubānas simbolika\" ",
       "hyperlink": "http://www.lubana.lv/index.php/lv/homepage/lubanas-pilseta-2"
     },
     {
@@ -22119,8 +22119,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(in Latvian) . Retrieved September 9, 2021 .",
-      "text": "(in Latvian) . Retrieved September 9, 2021 ."
+      "orig": "(in Latvian). Retrieved September 9, 2021.",
+      "text": "(in Latvian). Retrieved September 9, 2021."
     },
     {
       "self_ref": "#/texts/1071",
@@ -22149,8 +22149,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -22169,8 +22169,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"Föglö\"",
-      "text": "\"Föglö\"",
+      "orig": "\"Föglö\" ",
+      "text": "\"Föglö\" ",
       "hyperlink": "http://digi.narc.fi/digi/view.ka?kuid=1738595"
     },
     {
@@ -22182,8 +22182,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(in Swedish) . Retrieved September 9, 2021 .",
-      "text": "(in Swedish) . Retrieved September 9, 2021 ."
+      "orig": "(in Swedish). Retrieved September 9, 2021.",
+      "text": "(in Swedish). Retrieved September 9, 2021."
     },
     {
       "self_ref": "#/texts/1075",
@@ -22212,8 +22212,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -22232,8 +22232,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Young, Emma.",
-      "text": "Young, Emma."
+      "orig": "Young, Emma. ",
+      "text": "Young, Emma. "
     },
     {
       "self_ref": "#/texts/1078",
@@ -22257,8 +22257,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1080",
@@ -22288,8 +22288,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Retrieved 7 January 2019 .",
-      "text": ". Retrieved 7 January 2019 ."
+      "orig": ". Retrieved 7 January 2019.",
+      "text": ". Retrieved 7 January 2019."
     },
     {
       "self_ref": "#/texts/1082",
@@ -22318,8 +22318,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -22351,8 +22351,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1086",
@@ -22413,8 +22413,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -22446,8 +22446,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "; Gilbert, Laura (2008). \"1970s\".",
-      "text": "; Gilbert, Laura (2008). \"1970s\"."
+      "orig": "; Gilbert, Laura (2008). \"1970s\". ",
+      "text": "; Gilbert, Laura (2008). \"1970s\". "
     },
     {
       "self_ref": "#/texts/1092",
@@ -22477,8 +22477,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". London, United Kingdom:",
-      "text": ". London, United Kingdom:"
+      "orig": ". London, United Kingdom: ",
+      "text": ". London, United Kingdom: "
     },
     {
       "self_ref": "#/texts/1094",
@@ -22502,8 +22502,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". p. 161.",
-      "text": ". p. 161."
+      "orig": ". p. 161. ",
+      "text": ". p. 161. "
     },
     {
       "self_ref": "#/texts/1096",
@@ -22514,8 +22514,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -22570,8 +22570,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "^",
-      "text": "^",
+      "orig": "^ ",
+      "text": "^ ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -22603,8 +22603,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1103",
@@ -22634,8 +22634,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Retrieved 2022-01-20 .",
-      "text": ". Retrieved 2022-01-20 ."
+      "orig": ". Retrieved 2022-01-20.",
+      "text": ". Retrieved 2022-01-20."
     },
     {
       "self_ref": "#/texts/1105",
@@ -22681,8 +22681,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "American Ornithologists' Union (1998).",
-      "text": "American Ornithologists' Union (1998)."
+      "orig": "American Ornithologists' Union (1998). ",
+      "text": "American Ornithologists' Union (1998). "
     },
     {
       "self_ref": "#/texts/1108",
@@ -22693,8 +22693,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Checklist of North American Birds",
-      "text": "Checklist of North American Birds",
+      "orig": "Checklist of North American Birds ",
+      "text": "Checklist of North American Birds ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -22713,8 +22713,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(PDF) . Washington, DC: American Ornithologists' Union.",
-      "text": "(PDF) . Washington, DC: American Ornithologists' Union."
+      "orig": "(PDF). Washington, DC: American Ornithologists' Union. ",
+      "text": "(PDF). Washington, DC: American Ornithologists' Union. "
     },
     {
       "self_ref": "#/texts/1110",
@@ -22725,8 +22725,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -22751,8 +22751,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1113",
@@ -22763,8 +22763,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Archived",
-      "text": "Archived",
+      "orig": "Archived ",
+      "text": "Archived ",
       "hyperlink": "https://ghostarchive.org/archive/20221009/https://americanornithology.org/wp-content/uploads/2019/07/AOSChecklistTin-Falcon.pdf"
     },
     {
@@ -22806,8 +22806,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.).",
-      "text": "Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.)."
+      "orig": "Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.). ",
+      "text": "Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.). "
     },
     {
       "self_ref": "#/texts/1117",
@@ -22837,8 +22837,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions.",
-      "text": ". Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions."
+      "orig": ". Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions. ",
+      "text": ". Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions. "
     },
     {
       "self_ref": "#/texts/1119",
@@ -22849,8 +22849,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -22905,8 +22905,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Christidis, Les; Boles, Walter E., eds. (2008).",
-      "text": "Christidis, Les; Boles, Walter E., eds. (2008)."
+      "orig": "Christidis, Les; Boles, Walter E., eds. (2008). ",
+      "text": "Christidis, Les; Boles, Walter E., eds. (2008). "
     },
     {
       "self_ref": "#/texts/1124",
@@ -22936,8 +22936,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Collingwood, VIC: Csiro Publishing.",
-      "text": ". Collingwood, VIC: Csiro Publishing."
+      "orig": ". Collingwood, VIC: Csiro Publishing. ",
+      "text": ". Collingwood, VIC: Csiro Publishing. "
     },
     {
       "self_ref": "#/texts/1126",
@@ -22948,8 +22948,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -23004,8 +23004,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). \"A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis\".",
-      "text": "Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). \"A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis\"."
+      "orig": "Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). \"A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis\". ",
+      "text": "Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). \"A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis\". "
     },
     {
       "self_ref": "#/texts/1131",
@@ -23035,8 +23035,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1133",
@@ -23047,8 +23047,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "23",
-      "text": "23",
+      "orig": "23 ",
+      "text": "23 ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -23066,8 +23066,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(3): 339–356.",
-      "text": "(3): 339-356."
+      "orig": "(3): 339–356. ",
+      "text": "(3): 339-356. "
     },
     {
       "self_ref": "#/texts/1135",
@@ -23116,8 +23116,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1139",
@@ -23166,8 +23166,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1143",
@@ -23178,8 +23178,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "PMID",
-      "text": "PMID",
+      "orig": "PMID ",
+      "text": "PMID ",
       "hyperlink": "/wiki/PMID_(identifier)"
     },
     {
@@ -23234,8 +23234,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001).",
-      "text": "Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001)."
+      "orig": "Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001). ",
+      "text": "Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001). "
     },
     {
       "self_ref": "#/texts/1148",
@@ -23265,8 +23265,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". London: Christopher Helm.",
-      "text": ". London: Christopher Helm."
+      "orig": ". London: Christopher Helm. ",
+      "text": ". London: Christopher Helm. "
     },
     {
       "self_ref": "#/texts/1150",
@@ -23277,8 +23277,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -23333,8 +23333,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Erlandson, Jon M. (1994).",
-      "text": "Erlandson, Jon M. (1994)."
+      "orig": "Erlandson, Jon M. (1994). ",
+      "text": "Erlandson, Jon M. (1994). "
     },
     {
       "self_ref": "#/texts/1155",
@@ -23365,8 +23365,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". New York, NY: Springer Science & Business Media.",
-      "text": ". New York, NY: Springer Science & Business Media."
+      "orig": ". New York, NY: Springer Science & Business Media. ",
+      "text": ". New York, NY: Springer Science & Business Media. "
     },
     {
       "self_ref": "#/texts/1157",
@@ -23377,8 +23377,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -23433,8 +23433,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Fieldhouse, Paul (2002).",
-      "text": "Fieldhouse, Paul (2002)."
+      "orig": "Fieldhouse, Paul (2002). ",
+      "text": "Fieldhouse, Paul (2002). "
     },
     {
       "self_ref": "#/texts/1162",
@@ -23465,8 +23465,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Vol. I: A–K. Santa Barbara: ABC-CLIO.",
-      "text": ". Vol. I: A-K. Santa Barbara: ABC-CLIO."
+      "orig": ". Vol. I: A–K. Santa Barbara: ABC-CLIO. ",
+      "text": ". Vol. I: A-K. Santa Barbara: ABC-CLIO. "
     },
     {
       "self_ref": "#/texts/1164",
@@ -23477,8 +23477,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -23533,8 +23533,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Fitter, Julian; Fitter, Daniel; Hosking, David (2000).",
-      "text": "Fitter, Julian; Fitter, Daniel; Hosking, David (2000)."
+      "orig": "Fitter, Julian; Fitter, Daniel; Hosking, David (2000). ",
+      "text": "Fitter, Julian; Fitter, Daniel; Hosking, David (2000). "
     },
     {
       "self_ref": "#/texts/1169",
@@ -23564,8 +23564,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Princeton, NJ: Princeton University Press.",
-      "text": ". Princeton, NJ: Princeton University Press."
+      "orig": ". Princeton, NJ: Princeton University Press. ",
+      "text": ". Princeton, NJ: Princeton University Press. "
     },
     {
       "self_ref": "#/texts/1171",
@@ -23576,8 +23576,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -23632,8 +23632,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Higman, B. W. (2012).",
-      "text": "Higman, B. W. (2012)."
+      "orig": "Higman, B. W. (2012). ",
+      "text": "Higman, B. W. (2012). "
     },
     {
       "self_ref": "#/texts/1176",
@@ -23664,8 +23664,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Chichester, UK: John Wiley & Sons.",
-      "text": ". Chichester, UK: John Wiley & Sons."
+      "orig": ". Chichester, UK: John Wiley & Sons. ",
+      "text": ". Chichester, UK: John Wiley & Sons. "
     },
     {
       "self_ref": "#/texts/1178",
@@ -23676,8 +23676,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -23732,8 +23732,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Hume, Julian H. (2012).",
-      "text": "Hume, Julian H. (2012)."
+      "orig": "Hume, Julian H. (2012). ",
+      "text": "Hume, Julian H. (2012). "
     },
     {
       "self_ref": "#/texts/1183",
@@ -23764,8 +23764,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". London: Christopher Helm.",
-      "text": ". London: Christopher Helm."
+      "orig": ". London: Christopher Helm. ",
+      "text": ". London: Christopher Helm. "
     },
     {
       "self_ref": "#/texts/1185",
@@ -23776,8 +23776,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -23832,8 +23832,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Jeffries, Richard (2008).",
-      "text": "Jeffries, Richard (2008)."
+      "orig": "Jeffries, Richard (2008). ",
+      "text": "Jeffries, Richard (2008). "
     },
     {
       "self_ref": "#/texts/1190",
@@ -23864,8 +23864,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Tuscaloosa: University of Alabama Press.",
-      "text": ". Tuscaloosa: University of Alabama Press."
+      "orig": ". Tuscaloosa: University of Alabama Press. ",
+      "text": ". Tuscaloosa: University of Alabama Press. "
     },
     {
       "self_ref": "#/texts/1192",
@@ -23876,8 +23876,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -23932,8 +23932,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Kear, Janet, ed. (2005).",
-      "text": "Kear, Janet, ed. (2005)."
+      "orig": "Kear, Janet, ed. (2005). ",
+      "text": "Kear, Janet, ed. (2005). "
     },
     {
       "self_ref": "#/texts/1197",
@@ -23963,8 +23963,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Cairina",
-      "text": "Cairina"
+      "orig": "Cairina ",
+      "text": "Cairina "
     },
     {
       "self_ref": "#/texts/1199",
@@ -23975,8 +23975,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "to",
-      "text": "to",
+      "orig": "to ",
+      "text": "to ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -24025,8 +24025,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Bird Families of the World. Oxford: Oxford University Press.",
-      "text": ". Bird Families of the World. Oxford: Oxford University Press."
+      "orig": ". Bird Families of the World. Oxford: Oxford University Press. ",
+      "text": ". Bird Families of the World. Oxford: Oxford University Press. "
     },
     {
       "self_ref": "#/texts/1203",
@@ -24037,8 +24037,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -24093,8 +24093,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Livezey, Bradley C. (October 1986).",
-      "text": "Livezey, Bradley C. (October 1986)."
+      "orig": "Livezey, Bradley C. (October 1986). ",
+      "text": "Livezey, Bradley C. (October 1986). "
     },
     {
       "self_ref": "#/texts/1208",
@@ -24105,8 +24105,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"A phylogenetic analysis of recent Anseriform genera using morphological characters\"",
-      "text": "\"A phylogenetic analysis of recent Anseriform genera using morphological characters\"",
+      "orig": "\"A phylogenetic analysis of recent Anseriform genera using morphological characters\" ",
+      "text": "\"A phylogenetic analysis of recent Anseriform genera using morphological characters\" ",
       "hyperlink": "https://sora.unm.edu/sites/default/files/journals/auk/v103n04/p0737-p0754.pdf"
     },
     {
@@ -24118,8 +24118,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(PDF) .",
-      "text": "(PDF) ."
+      "orig": "(PDF). ",
+      "text": "(PDF). "
     },
     {
       "self_ref": "#/texts/1210",
@@ -24149,8 +24149,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1212",
@@ -24161,8 +24161,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "103",
-      "text": "103",
+      "orig": "103 ",
+      "text": "103 ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -24180,8 +24180,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(4): 737–754.",
-      "text": "(4): 737-754."
+      "orig": "(4): 737–754. ",
+      "text": "(4): 737-754. "
     },
     {
       "self_ref": "#/texts/1214",
@@ -24230,8 +24230,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1218",
@@ -24242,8 +24242,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Archived",
-      "text": "Archived",
+      "orig": "Archived ",
+      "text": "Archived ",
       "hyperlink": "https://ghostarchive.org/archive/20221009/https://sora.unm.edu/sites/default/files/journals/auk/v103n04/p0737-p0754.pdf"
     },
     {
@@ -24285,8 +24285,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988).",
-      "text": "Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988)."
+      "orig": "Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988). ",
+      "text": "Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988). "
     },
     {
       "self_ref": "#/texts/1222",
@@ -24297,8 +24297,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "\"A partial classification of waterfowl (Anatidae) based on single-copy DNA\"",
-      "text": "\"A partial classification of waterfowl (Anatidae) based on single-copy DNA\"",
+      "orig": "\"A partial classification of waterfowl (Anatidae) based on single-copy DNA\" ",
+      "text": "\"A partial classification of waterfowl (Anatidae) based on single-copy DNA\" ",
       "hyperlink": "https://sora.unm.edu/sites/default/files/journals/auk/v105n03/p0452-p0459.pdf"
     },
     {
@@ -24310,8 +24310,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(PDF) .",
-      "text": "(PDF) ."
+      "orig": "(PDF). ",
+      "text": "(PDF). "
     },
     {
       "self_ref": "#/texts/1224",
@@ -24341,8 +24341,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1226",
@@ -24353,8 +24353,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "105",
-      "text": "105",
+      "orig": "105 ",
+      "text": "105 ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -24372,8 +24372,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(3): 452–459.",
-      "text": "(3): 452-459."
+      "orig": "(3): 452–459. ",
+      "text": "(3): 452-459. "
     },
     {
       "self_ref": "#/texts/1228",
@@ -24422,8 +24422,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". ",
+      "text": ". "
     },
     {
       "self_ref": "#/texts/1232",
@@ -24434,8 +24434,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Archived",
-      "text": "Archived",
+      "orig": "Archived ",
+      "text": "Archived ",
       "hyperlink": "https://ghostarchive.org/archive/20221009/https://sora.unm.edu/sites/default/files/journals/auk/v105n03/p0452-p0459.pdf"
     },
     {
@@ -24477,8 +24477,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Maisels, Charles Keith (1999).",
-      "text": "Maisels, Charles Keith (1999)."
+      "orig": "Maisels, Charles Keith (1999). ",
+      "text": "Maisels, Charles Keith (1999). "
     },
     {
       "self_ref": "#/texts/1236",
@@ -24509,8 +24509,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". London: Routledge.",
-      "text": ". London: Routledge."
+      "orig": ". London: Routledge. ",
+      "text": ". London: Routledge. "
     },
     {
       "self_ref": "#/texts/1238",
@@ -24521,8 +24521,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -24577,8 +24577,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987).",
-      "text": "Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987)."
+      "orig": "Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987). ",
+      "text": "Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987). "
     },
     {
       "self_ref": "#/texts/1243",
@@ -24608,8 +24608,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Princeton, NJ: Princeton University Press.",
-      "text": ". Princeton, NJ: Princeton University Press."
+      "orig": ". Princeton, NJ: Princeton University Press. ",
+      "text": ". Princeton, NJ: Princeton University Press. "
     },
     {
       "self_ref": "#/texts/1245",
@@ -24620,8 +24620,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -24676,8 +24676,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Rau, Charles (1876).",
-      "text": "Rau, Charles (1876)."
+      "orig": "Rau, Charles (1876). ",
+      "text": "Rau, Charles (1876). "
     },
     {
       "self_ref": "#/texts/1250",
@@ -24708,8 +24708,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". New York: Harper & Brothers.",
-      "text": ". New York: Harper & Brothers."
+      "orig": ". New York: Harper & Brothers. ",
+      "text": ". New York: Harper & Brothers. "
     },
     {
       "self_ref": "#/texts/1252",
@@ -24720,8 +24720,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "LCCN",
-      "text": "LCCN",
+      "orig": "LCCN ",
+      "text": "LCCN ",
       "hyperlink": "/wiki/LCCN_(identifier)"
     },
     {
@@ -24776,8 +24776,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Shirihai, Hadoram (2008).",
-      "text": "Shirihai, Hadoram (2008)."
+      "orig": "Shirihai, Hadoram (2008). ",
+      "text": "Shirihai, Hadoram (2008). "
     },
     {
       "self_ref": "#/texts/1257",
@@ -24807,8 +24807,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Princeton, NJ, US: Princeton University Press.",
-      "text": ". Princeton, NJ, US: Princeton University Press."
+      "orig": ". Princeton, NJ, US: Princeton University Press. ",
+      "text": ". Princeton, NJ, US: Princeton University Press. "
     },
     {
       "self_ref": "#/texts/1259",
@@ -24819,8 +24819,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -24875,8 +24875,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Sued-Badillo, Jalil (2003).",
-      "text": "Sued-Badillo, Jalil (2003)."
+      "orig": "Sued-Badillo, Jalil (2003). ",
+      "text": "Sued-Badillo, Jalil (2003). "
     },
     {
       "self_ref": "#/texts/1264",
@@ -24907,8 +24907,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". General History of the Caribbean. Paris: UNESCO.",
-      "text": ". General History of the Caribbean. Paris: UNESCO."
+      "orig": ". General History of the Caribbean. Paris: UNESCO. ",
+      "text": ". General History of the Caribbean. Paris: UNESCO. "
     },
     {
       "self_ref": "#/texts/1266",
@@ -24919,8 +24919,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -24975,8 +24975,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Thorpe, I. J. (1996).",
-      "text": "Thorpe, I. J. (1996)."
+      "orig": "Thorpe, I. J. (1996). ",
+      "text": "Thorpe, I. J. (1996). "
     },
     {
       "self_ref": "#/texts/1271",
@@ -25007,8 +25007,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". New York: Routledge.",
-      "text": ". New York: Routledge."
+      "orig": ". New York: Routledge. ",
+      "text": ". New York: Routledge. "
     },
     {
       "self_ref": "#/texts/1273",
@@ -25019,8 +25019,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "ISBN",
-      "text": "ISBN",
+      "orig": "ISBN ",
+      "text": "ISBN ",
       "hyperlink": "/wiki/ISBN_(identifier)"
     },
     {
@@ -25104,8 +25104,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Duck",
-      "text": "Duck",
+      "orig": "Duck ",
+      "text": "Duck ",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -25123,8 +25123,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "at Wikipedia's",
-      "text": "at Wikipedia's"
+      "orig": "at Wikipedia's ",
+      "text": "at Wikipedia's "
     },
     {
       "self_ref": "#/texts/1279",
@@ -25169,8 +25169,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Definitions",
-      "text": "Definitions",
+      "orig": "Definitions ",
+      "text": "Definitions ",
       "hyperlink": "https://en.wiktionary.org/wiki/duck"
     },
     {
@@ -25215,8 +25215,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Media",
-      "text": "Media",
+      "orig": "Media ",
+      "text": "Media ",
       "hyperlink": "https://commons.wikimedia.org/wiki/Anatidae"
     },
     {
@@ -25261,8 +25261,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Quotations",
-      "text": "Quotations",
+      "orig": "Quotations ",
+      "text": "Quotations ",
       "hyperlink": "https://en.wikiquote.org/wiki/Birds"
     },
     {
@@ -25307,8 +25307,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Recipes",
-      "text": "Recipes",
+      "orig": "Recipes ",
+      "text": "Recipes ",
       "hyperlink": "https://en.wikibooks.org/wiki/Cookbook:Duck"
     },
     {
@@ -25353,8 +25353,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Taxa",
-      "text": "Taxa",
+      "orig": "Taxa ",
+      "text": "Taxa ",
       "hyperlink": "https://species.wikimedia.org/wiki/Anatidae"
     },
     {
@@ -25399,8 +25399,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Data",
-      "text": "Data",
+      "orig": "Data ",
+      "text": "Data ",
       "hyperlink": "https://www.wikidata.org/wiki/Q3736439"
     },
     {
@@ -25442,8 +25442,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "list of books",
-      "text": "list of books",
+      "orig": "list of books ",
+      "text": "list of books ",
       "hyperlink": "https://web.archive.org/web/20060613210555/http://seaducks.org/subjects/MIGRATION%20AND%20FLIGHT.htm"
     },
     {
@@ -25485,8 +25485,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks on postage stamps",
-      "text": "Ducks on postage stamps",
+      "orig": "Ducks on postage stamps ",
+      "text": "Ducks on postage stamps ",
       "hyperlink": "http://www.stampsbook.org/subject/Duck.html"
     },
     {
@@ -25498,8 +25498,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Archived",
-      "text": "Archived",
+      "orig": "Archived ",
+      "text": "Archived ",
       "hyperlink": "https://web.archive.org/web/20130513022903/http://www.stampsbook.org/subject/Duck.html"
     },
     {
@@ -25511,8 +25511,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "2013-05-13 at the",
-      "text": "2013-05-13 at the"
+      "orig": "2013-05-13 at the ",
+      "text": "2013-05-13 at the "
     },
     {
       "self_ref": "#/texts/1305",
@@ -25554,8 +25554,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Ducks at a Distance, by Rob Hines",
-      "text": "Ducks at a Distance, by Rob Hines",
+      "orig": "Ducks at a Distance, by Rob Hines ",
+      "text": "Ducks at a Distance, by Rob Hines ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -25574,8 +25574,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "at",
-      "text": "at"
+      "orig": "at ",
+      "text": "at "
     },
     {
       "self_ref": "#/texts/1309",
@@ -25586,8 +25586,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Project Gutenberg",
-      "text": "Project Gutenberg",
+      "orig": "Project Gutenberg ",
+      "text": "Project Gutenberg ",
       "hyperlink": "/wiki/Project_Gutenberg"
     },
     {
@@ -26251,8 +26251,8 @@
       "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
-      "orig": "This page was last edited on 21 September 2024, at 12:11 (UTC) .",
-      "text": "This page was last edited on 21 September 2024, at 12:11 (UTC) .",
+      "orig": "This page was last edited on 21 September 2024, at 12:11 (UTC).",
+      "text": "This page was last edited on 21 September 2024, at 12:11 (UTC).",
       "enumerated": false,
       "marker": ""
     },
@@ -26283,8 +26283,8 @@
       "content_layer": "furniture",
       "label": "text",
       "prov": [],
-      "orig": "Text is available under the",
-      "text": "Text is available under the"
+      "orig": "Text is available under the ",
+      "text": "Text is available under the "
     },
     {
       "self_ref": "#/texts/1358",
@@ -26308,8 +26308,8 @@
       "content_layer": "furniture",
       "label": "text",
       "prov": [],
-      "orig": "; additional terms may apply. By using this site, you agree to the",
-      "text": "; additional terms may apply. By using this site, you agree to the"
+      "orig": "; additional terms may apply. By using this site, you agree to the ",
+      "text": "; additional terms may apply. By using this site, you agree to the "
     },
     {
       "self_ref": "#/texts/1360",
@@ -26320,8 +26320,8 @@
       "content_layer": "furniture",
       "label": "text",
       "prov": [],
-      "orig": "Terms of Use",
-      "text": "Terms of Use",
+      "orig": "Terms of Use ",
+      "text": "Terms of Use ",
       "hyperlink": "//foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use"
     },
     {
@@ -26333,8 +26333,8 @@
       "content_layer": "furniture",
       "label": "text",
       "prov": [],
-      "orig": "and",
-      "text": "and"
+      "orig": "and ",
+      "text": "and "
     },
     {
       "self_ref": "#/texts/1362",
@@ -26358,8 +26358,8 @@
       "content_layer": "furniture",
       "label": "text",
       "prov": [],
-      "orig": ". Wikipedia® is a registered trademark of the",
-      "text": ". Wikipedia® is a registered trademark of the"
+      "orig": ". Wikipedia® is a registered trademark of the ",
+      "text": ". Wikipedia® is a registered trademark of the "
     },
     {
       "self_ref": "#/texts/1364",

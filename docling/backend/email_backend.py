@@ -213,8 +213,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for attachment in message.attachments:
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
+            # Only filename and MIME type are needed; pass an empty payload to avoid
+            # copying attachment content into the RFC 822 byte stream.
             email_message.add_attachment(
-                attachment.file_bytes or b"",
+                b"",
                 maintype=maintype or "application",
                 subtype=subtype or "octet-stream",
                 filename=attachment.file_name,
@@ -309,7 +311,12 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             paragraphs = []
             for part in self.mail.text_html:
                 html_doc = self._convert_html_part(part)
-                paragraphs.extend(self._split_paragraphs(html_doc.export_to_markdown()))
+                # The paragraphs become plain text items, and every export of
+                # the email escapes them, so do not escape them here as well.
+                markdown = html_doc.export_to_markdown(
+                    escape_html=False, escape_underscores=False
+                )
+                paragraphs.extend(self._split_paragraphs(markdown))
             if paragraphs:
                 return paragraphs
 
