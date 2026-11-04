@@ -318,7 +318,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _get_text(node: etree._Element, sep: str | None = None) -> str:
-        skip_tags = ["term", "disp-formula", "inline-formula"]
+        skip_tags = ["disp-formula", "inline-formula"]
         text: str = (
             node.text.replace("\n", " ")
             if (node.tag not in skip_tags and node.text)
@@ -1335,7 +1335,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         formatting: Formatting | None = None,
         hyperlink: AnyUrl | Path | None = None,
     ) -> list[InlineSegment]:
-        skip_tags = ["term"]
         flush_tags = ["ack", "sec", "list", "boxed-text", "disp-formula", "fig"]
         new_parent: NodeItem = parent
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
@@ -1345,7 +1344,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if ext_link is not None:
                 current_hyperlink = ext_link
         inline_segments: list[InlineSegment] = []
-        if node.tag not in skip_tags and node.text:
+        if node.text:
             JatsDocumentBackend._append_run(
                 inline_segments, node.text, current, current_hyperlink
             )
