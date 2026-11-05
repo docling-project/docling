@@ -317,9 +317,9 @@ def test_trailing_plus_is_a_hard_line_break() -> None:
     texts = [item.text for item in doc.texts]
     assert texts == [
         "Roses are red,\nviolets are blue.",
-        "A",
+        "A ",
         "bold",
-        "line\nand more.",
+        " line\nand more.",
     ]
 
 
