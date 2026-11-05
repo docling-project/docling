@@ -67,6 +67,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
 | `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |
+| `script_position_options` | Mark superscript and subscript runs; off by default |
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
@@ -284,6 +285,30 @@ pipeline_options = VlmPipelineOptions(
     vlm_options=VlmConvertOptions.from_preset("unlimited_ocr2_mlx"),
 )
 ```
+
+For Surya 2.5, use the `surya_ocr2_5` preset. Auto-inline picks MLX on Apple
+Silicon, and Transformers or vLLM elsewhere. To use a server instead, for example
+`vllm serve datalab-to/surya-ocr-2.5`, pass `ApiVlmEngineOptions`:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "surya_ocr2_5",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:8000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+The `surya-ocr` package is not needed. With `llama-server`, add `--special`, or the
+reply loses its block labels and boxes.
 
 Model presets (`docling.datamodel.vlm_model_specs`):
 

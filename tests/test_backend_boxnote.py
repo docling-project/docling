@@ -325,3 +325,54 @@ def test_ordered_list_without_valid_order_starts_at_one(attrs):
     doc = get_converter().convert(_boxnote_stream(payload)).document
 
     assert doc.export_to_markdown() == "1. First\n2. Second"
+
+
+def test_empty_leading_paragraph_keeps_the_following_paragraph_in_order():
+    # The first block of a list item becomes its text only when it is a
+    # paragraph. An empty one must not let a later paragraph take that place,
+    # which moved the nested list behind it.
+    payload = {
+        "doc": {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "bullet_list",
+                    "content": [
+                        {
+                            "type": "list_item",
+                            "content": [
+                                {"type": "paragraph", "content": []},
+                                {
+                                    "type": "bullet_list",
+                                    "content": [
+                                        {
+                                            "type": "list_item",
+                                            "content": [
+                                                {
+                                                    "type": "paragraph",
+                                                    "content": [
+                                                        {
+                                                            "type": "text",
+                                                            "text": "Inner",
+                                                        }
+                                                    ],
+                                                }
+                                            ],
+                                        }
+                                    ],
+                                },
+                                {
+                                    "type": "paragraph",
+                                    "content": [{"type": "text", "text": "After"}],
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    assert [text.text for text in doc.texts if text.text] == ["Inner", "After"]
