@@ -17,8 +17,9 @@ output/
 *.dclg
 !tests/data/latex/groundtruth/*.dclg
 *.xml
+!tests/data/xbrl/**/*.xml
 *.zip
-!tests/data/**/*.zip
+!tests/data/xbrl/**/*.zip
 \#*\#
 /.emacs.desktop
 /.emacs.desktop.lock
