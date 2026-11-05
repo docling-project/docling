@@ -22,6 +22,7 @@ from docling_core.types.doc import (
     GroupLabel,
     ListItem,
     PictureItem,
+    RichTableCell,
     TextItem,
 )
 from docling_core.types.doc.document import Script
@@ -1536,3 +1537,49 @@ def test_jats_table_with_an_empty_label_produces_no_caption():
     )
 
     assert _caption_texts(doc) == []
+
+
+def test_jats_table_cell_keeps_scripts_and_their_whitespace():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td> H<sub>2</sub>O in km<sup>2</sup> <!-- note --></td><td>plain</td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    rich, plain = doc.tables[0].data.table_cells
+    assert not isinstance(plain, RichTableCell)
+    assert isinstance(rich, RichTableCell)
+    inline = rich.ref.resolve(doc).children[0].resolve(doc)
+    runs = [child.resolve(doc) for child in inline.children]
+    assert [run.text for run in runs] == ["H", "2", "O in km", "2"]
+    assert [run.formatting.script if run.formatting else None for run in runs] == [
+        None,
+        Script.SUB,
+        None,
+        Script.SUPER,
+    ]
+    assert "H2O in km2" in doc.export_to_markdown()
+    assert "H<sub>2</sub>O in km<sup>2</sup>" in doc.export_to_html()
+
+
+def test_jats_table_cell_with_only_a_blank_script_stays_plain():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td><sub> </sub></td><td> <sup> </sup>x</td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    blank, text = doc.tables[0].data.table_cells
+    assert not isinstance(blank, RichTableCell)
+    assert not isinstance(text, RichTableCell)
+    assert doc.groups == []
+
+
+def test_jats_nested_table_is_skipped_and_keeps_no_table_item():
+    doc = convert_jats_body(
+        """<sec><p>Text.</p><table-wrap id="t1"><table><tbody><tr><td>
+        <table><tbody><tr><td>x<sub>1</sub></td></tr></tbody></table>
+        </td></tr></tbody></table></table-wrap></sec>"""
+    )
+
+    assert doc.tables == []

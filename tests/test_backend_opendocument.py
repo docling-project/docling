@@ -2426,3 +2426,33 @@ def test_odt_master_variant_order_and_shared_text(tmp_path: Path):
         "page footer"
     ] * 3
     assert [item.text for item in document.texts] == ["Same text"] * 6
+
+
+def test_odt_table_cell_keeps_scripts(tmp_path: Path):
+    source = OdfDocument("text")
+    source.body.clear()
+    sub_style = Style("text", name="sub_style")
+    sub_style.set_properties(area="text", **{"style:text-position": "sub 58%"})
+    source.insert_style(sub_style, automatic=True)
+    paragraph = Paragraph()
+    paragraph.append("H")
+    paragraph.append(Span("2", style="sub_style"))
+    paragraph.append("O")
+    cell = Cell()
+    cell.append(paragraph)
+    row = Row()
+    row.append(cell)
+    table = Table("Table1")
+    table.append(row)
+    source.body.append(table)
+
+    document = _convert_odt_source(source, tmp_path / "table_sub.odt")
+
+    rich = document.tables[0].data.table_cells[0]
+    assert isinstance(rich, RichTableCell)
+    inline = rich.ref.resolve(document).children[0].resolve(document)
+    assert inline.label == GroupLabel.INLINE
+    runs = [child.resolve(document) for child in inline.children]
+    assert [run.text for run in runs] == ["H", "2", "O"]
+    assert runs[1].formatting.script == Script.SUB
+    assert "H<sub>2</sub>O" in document.export_to_html()

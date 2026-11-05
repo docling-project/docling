@@ -972,7 +972,7 @@ def _odf_cell_has_rich_content(cell: Any) -> bool:
         elif isinstance(child, Paragraph):
             if _clean_odf_text_lines(child.text_recursive):
                 non_empty_paragraphs += 1
-            if child.get_images():
+            if child.get_images() or child.get_elements("text:span | text:a"):
                 return True
         elif isinstance(child, OdfTable):
             if _odf_table_has_content(child):

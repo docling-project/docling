@@ -38,8 +38,10 @@ from docling_core.types.doc import (
     GroupLabel,
     ImageRef,
     NodeItem,
+    RichTableCell,
     TableCell,
     TableData,
+    TableItem,
     TextItem,
 )
 from docling_core.types.doc.document import Formatting, Script
@@ -61,6 +63,7 @@ _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from bs4 import BeautifulSoup, NavigableString, Tag
+    from bs4.element import PreformattedString
     from lxml import etree
 
     _BS4_AVAILABLE = True
@@ -1080,7 +1083,45 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return
 
     @staticmethod
-    def parse_table_data(element: Tag) -> TableData | None:
+    def _walk_table_cell(
+        node: Tag,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
+    ) -> list[InlineSegment]:
+        """Walk the inline content of a parsed table cell into text segments."""
+        segments: list[InlineSegment] = []
+        for child in node.children:
+            if isinstance(child, PreformattedString):
+                continue
+            if isinstance(child, NavigableString):
+                JatsDocumentBackend._append_run(
+                    segments, str(child), formatting, hyperlink
+                )
+            elif isinstance(child, Tag):
+                href = child.get("xlink:href") if child.name == "ext-link" else None
+                JatsDocumentBackend._extend_segments(
+                    segments,
+                    JatsDocumentBackend._walk_table_cell(
+                        child,
+                        JatsDocumentBackend._merge_formatting(formatting, child.name),
+                        JatsDocumentBackend._parse_ext_link_href(href)
+                        if isinstance(href, str)
+                        else hyperlink,
+                    ),
+                )
+        return segments
+
+    @staticmethod
+    def parse_table_data(
+        element: Tag,
+        doc: DoclingDocument | None = None,
+        table_item: TableItem | None = None,
+    ) -> TableData | None:
+        """Parse a table into its data.
+
+        With ``doc`` and ``table_item``, a cell with a subscript or a superscript becomes
+        a rich cell that holds its runs under ``table_item``.
+        """
         # TODO, see how to implement proper support for rich tables from HTML backend
         nested_tables = element.find("table")
         if nested_tables is not None:
@@ -1183,8 +1224,29 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     start_col_offset_idx=col_idx,
                     end_col_offset_idx=col_idx + col_span,
                     column_header=col_header,
-                    row_header=((not col_header) and html_cell.name == "th"),
+                    row_header=(not col_header) and html_cell.name == "th",
                 )
+                segments = JatsDocumentBackend._trim_segment_edges(
+                    JatsDocumentBackend._walk_table_cell(html_cell)
+                )
+                if (
+                    doc is not None
+                    and table_item is not None
+                    and any(
+                        segment.formatting is not None
+                        and segment.formatting.script != Script.BASELINE
+                        for segment in segments
+                    )
+                ):
+                    group = doc.add_group(
+                        label=GroupLabel.UNSPECIFIED,
+                        name=f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}",
+                        parent=table_item,
+                    )
+                    JatsDocumentBackend._emit_inline(doc, group, segments)
+                    table_cell = RichTableCell(
+                        **table_cell.model_dump(), ref=group.get_ref()
+                    )
                 data.table_cells.append(table_cell)
 
         return data
@@ -1197,7 +1259,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         if not isinstance(table_tag, Tag):
             return
 
-        data = JatsDocumentBackend.parse_table_data(table_tag)
         # TODO: format label vs caption once styling is supported
         label = table_xml_component["label"]
         caption = table_xml_component["caption"]
@@ -1207,8 +1268,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if table_text
             else None
         )
-        if data is not None:
-            doc.add_table(data=data, parent=parent, caption=table_caption)
+        # Rich cells hold their runs under the table, so it must exist first.
+        table_item = doc.add_table(
+            data=TableData(num_rows=0, num_cols=0, table_cells=[]),
+            parent=parent,
+            caption=table_caption,
+        )
+        data = JatsDocumentBackend.parse_table_data(table_tag, doc, table_item)
+        if data is None:
+            doc.delete_items(node_items=[table_item])
+        else:
+            table_item.data = data
 
         return
 
