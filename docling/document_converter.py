@@ -303,7 +303,7 @@ class XBRLFormatOption(FormatOption):
         An http(s) URL is downloaded into a stream before it reaches the
         backend, which then cannot resolve the relative references of the
         report to its schemas and linkbases. Local paths and streams are passed
-        on unchanged.
+        on unchanged, and so is a URL that includes credentials.
         """
         options = self.backend_options
         if (
@@ -313,12 +313,17 @@ class XBRLFormatOption(FormatOption):
         ):
             return options
         try:
-            # Validated, so that a URL that is not http(s) or that includes
-            # credentials is not kept.
+            TypeAdapter(AnyHttpUrl).validate_python(source)
+        except ValidationError:
+            return options
+        try:
             return XBRLBackendOptions.model_validate(
                 {**options.model_dump(), "source_uri": source}
             )
         except ValidationError:
+            _log.warning(
+                "The URL of the source includes credentials, so it is ignored."
+            )
             return options
 
 

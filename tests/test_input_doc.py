@@ -49,6 +49,7 @@ from docling.document_converter import (
     OdsFormatOption,
     OdtFormatOption,
     PdfFormatOption,
+    XBRLFormatOption,
 )
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
@@ -616,6 +617,82 @@ def test_guess_format_odf_mimetype_member(tmp_path, mimetype, expected):
     stream = DocumentStream(name="upload", stream=BytesIO(data))
     assert dci._guess_format(stream) == expected
     assert stream.stream.tell() == 0
+
+
+_IXBRL_NS = b"http://www.xbrl.org/2013/inlineXBRL"
+_LATE_NAMESPACES = b"".join(
+    b' xmlns:p%d="http://example.org/ns/%d"' % (i, i) for i in range(30)
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "content", "expected"),
+    [
+        (
+            "late_namespace.htm",
+            b'<?xml version="1.0"?><!-- header -->\n<html xmlns="http://www.w3.org/1999/xhtml"'
+            + _LATE_NAMESPACES
+            + b' xmlns:ix="'
+            + _IXBRL_NS
+            + b'"><body/></html>',
+            InputFormat.XML_XBRL,
+        ),
+        (
+            "single_quotes.html",
+            b"<html xmlns:ixbrl='http://www.xbrl.org/2008/inlineXBRL'><body/></html>",
+            InputFormat.XML_XBRL,
+        ),
+        (
+            "tutorial.html",
+            b'<html><body><p>Declare xmlns:ix="' + _IXBRL_NS + b'" on the root.</p>'
+            b"</body></html>",
+            InputFormat.HTML,
+        ),
+        (
+            "commented.html",
+            b'<!-- <html xmlns:ix="' + _IXBRL_NS + b'"> --><html><body/></html>',
+            InputFormat.HTML,
+        ),
+        (
+            "nested_namespace.html",
+            b'<html><body><div xmlns:ix="' + _IXBRL_NS + b'"/></body></html>',
+            InputFormat.HTML,
+        ),
+        (
+            "plain.html",
+            b"<!DOCTYPE html><html><body>text</body></html>",
+            InputFormat.HTML,
+        ),
+    ],
+)
+def test_guess_format_ixbrl_markers(tmp_path, name, content, expected):
+    """Only a root element that declares the inline XBRL namespace is iXBRL."""
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) == expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) == expected
+
+
+_IXBRL_REPORT = (
+    b'<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="'
+    + _IXBRL_NS
+    + b'"><head><title>Report</title></head><body><p>Hello</p></body></html>'
+)
+
+
+def test_html_only_converter_skips_ixbrl_report(tmp_path):
+    """An iXBRL report is not silently converted as HTML when XBRL is not allowed."""
+    doc_path = tmp_path / "report.htm"
+    doc_path.write_bytes(_IXBRL_REPORT)
+    converter = DocumentConverter(allowed_formats=[InputFormat.HTML])
+
+    result = converter.convert(doc_path, raises_on_error=False)
+
+    assert result.input.format == InputFormat.XML_XBRL
+    assert result.status == ConversionStatus.SKIPPED
 
 
 def test_guess_format(tmp_path):

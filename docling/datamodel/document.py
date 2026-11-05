@@ -77,16 +77,11 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.progress import ProgressReporter
 from docling.datamodel.settings import DocumentLimits
-from docling.datamodel.xbrl_models import (
-    IXBRL_SNIFF_BYTES,
-    XBRL_AVAILABLE,
-    is_ixbrl,
-    is_xbrl,
-)
 from docling.exceptions import DocumentLoadError
 from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
+from docling.utils.xbrl_utils import is_ixbrl, is_xbrl
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import BaseFormatOption
@@ -968,17 +963,10 @@ class _DocumentConversionInput(BaseModel):
             # maps to its format the same way it does for a DocumentStream.
             obj_ext = obj.suffix[1:].lower() if obj.suffix else ""
             ext_mime = _DocumentConversionInput._mime_from_extension(obj_ext)
-            # HTML files have no binary magic bytes, so filetype always returns
-            # None for them.  When XBRL is available we need a short read to
-            # sniff for iXBRL markers; reuse those bytes for filetype so the
-            # file is opened only once.
-            if (
-                XBRL_AVAILABLE
-                and ext_mime is not None
-                and ext_mime.lower() == "text/html"
-            ):
+            # Read the head of HTML files to tell iXBRL apart from HTML.
+            if ext_mime is not None and ext_mime.lower() == "text/html":
                 with obj.open("rb") as f:
-                    content = f.read(IXBRL_SNIFF_BYTES)
+                    content = f.read(_CONTENT_SNIFF_BYTES)
                 mime = filetype.guess_mime(content) or ext_mime
             else:
                 mime = filetype.guess_mime(str(obj)) or ext_mime
@@ -1052,11 +1040,7 @@ class _DocumentConversionInput(BaseModel):
         mime = mime or _DocumentConversionInput._detect_calendar(content, obj_ext)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
-        if (
-            XBRL_AVAILABLE
-            and mime.lower() == "text/html"
-            and is_ixbrl(content[:IXBRL_SNIFF_BYTES])
-        ):
+        if mime.lower() == "text/html" and is_ixbrl(content):
             mime = "application/xhtml+xml"
         formats = MimeTypeToFormat.get(mime, [])
         _log.info(f"detected formats: {formats}")

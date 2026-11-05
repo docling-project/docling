@@ -750,7 +750,9 @@ class XBRLBackendOptions(BaseBackendOptions):
 
     @field_validator("source_uri")
     @classmethod
-    def _source_uri_without_credentials(cls, value: AnyHttpUrl | None):
+    def _source_uri_without_credentials(
+        cls, value: AnyHttpUrl | None
+    ) -> AnyHttpUrl | None:
         if value is not None and (value.username or value.password):
             raise ValueError("source_uri must not include credentials")
         return value

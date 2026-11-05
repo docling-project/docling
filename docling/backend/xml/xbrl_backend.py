@@ -48,7 +48,7 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError, OperationNotAllowed, SecurityError
+from docling.exceptions import DocumentLoadError, OperationNotAllowed
 
 if TYPE_CHECKING:
     from arelle import (
@@ -262,11 +262,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             # leave stale files behind instead of raising.
             with TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
                 tmp_path: Path = Path(tmpdir)
-                arelle_load_path: str
                 zip_paths: list[str] = []
 
-                # Plain instance file: materialize to temp dir and (optionally)
-                # copy the separate taxonomy directory alongside it.
                 if isinstance(path_or_stream, BytesIO):
                     # Preserve the original file extension so Arelle recognizes
                     # the document type (e.g. .htm for iXBRL, .xml for XBRL).
@@ -304,7 +301,6 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                             str(self.options.source_uri),
                         )
                     )
-                arelle_load_path = str(instance_path)
 
                 cntlr = Cntlr.Cntlr()
                 # Apply the fetch options to every document that Arelle resolves.
@@ -337,7 +333,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
 
                 try:
                     model = cntlr.modelManager.load(
-                        arelle_load_path, taxonomyPackages=zip_paths
+                        str(instance_path), taxonomyPackages=zip_paths
                     )
                 finally:
                     if zip_paths:
