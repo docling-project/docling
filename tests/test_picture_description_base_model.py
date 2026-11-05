@@ -22,6 +22,7 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionVlmEngineOptions,
     PipelineOptions,
 )
+from docling.datamodel.progress import ProgressReporter
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.api_image_request import ApiImageRequestResult
@@ -129,6 +130,7 @@ def test_picture_description_batch_size_controls_pipeline_chunking() -> None:
         document=_make_picture_doc(count=5),
         timings={},
         status="success",
+        _progress=ProgressReporter(),
     )
 
     pipeline._enrich_document(conv_res)
@@ -215,14 +217,10 @@ def test_picture_description_scale_must_be_positive() -> None:
 
 
 def test_picture_description_preset_batch_size_must_be_positive() -> None:
-    options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm", batch_size=0)
-
     with pytest.raises(ValueError, match="batch_size"):
-        _ConfiguredPictureDescriptionModel(options)
+        PictureDescriptionVlmEngineOptions.from_preset("smolvlm", batch_size=0)
 
 
 def test_picture_description_preset_scale_must_be_positive() -> None:
-    options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm", scale=0)
-
     with pytest.raises(ValueError, match="scale"):
-        _ConfiguredPictureDescriptionModel(options)
+        PictureDescriptionVlmEngineOptions.from_preset("smolvlm", scale=0)

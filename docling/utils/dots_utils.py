@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Optional
 
 from docling_core.types.doc import (
@@ -33,14 +34,85 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     ImageRef,
+    NodeItem,
     ProvenanceItem,
     Size,
+    TableData,
 )
 from PIL import Image as PILImage
 
-from docling.utils.chandra_utils import _parse_table_html
+from docling.utils.chandra_utils import _add_html_fragment, _add_html_table
+from docling.utils.code_language import detect_code_language
+from docling.utils.markdown_math import _MATH, create_markdown_parser
+from docling.utils.vlm_utils import (
+    link_adjacent_captions,
+    normalize_section_header_levels,
+    parse_markdown_heading,
+)
 
 _log = logging.getLogger(__name__)
+
+_FENCED_CODE_PATTERN = re.compile(
+    r"^```(?P<hint>[^`\r\n]*)\r?\n(?P<text>.*?)(?:\r?\n)?```[ \t]*$",
+    re.DOTALL,
+)
+_HTML_TAG_PATTERN = re.compile(
+    r"</?(?:a|b|br|code|del|div|em|i|math|p|s|span|strong|sub|sup|table|tbody|td|tfoot|th|thead|tr|u)(?=[\s/>])",
+    re.IGNORECASE,
+)
+_LITERAL_INLINE_PATTERN = re.compile(
+    rf"{_MATH.pattern}|<code\b[^>]*>[\s\S]*?</code>",
+    re.IGNORECASE,
+)
+# Literal spans and code spans pass through; `\\` keeps `\\*` from unescaping.
+# A code span opens only at a full backtick run, read atomically in a lookahead:
+# a backtracking `(`+)` takes cubic time on a long unclosed run.
+_MARKDOWN_ESCAPE_PATTERN = re.compile(
+    rf"{_LITERAL_INLINE_PATTERN.pattern}"
+    r"|(?<!`)(?=(?P<ticks>`+))(?P=ticks)[\s\S]*?(?<!`)(?P=ticks)(?!`)"
+    r"|\\(?P<escape>[*_])|\\\\",
+    re.IGNORECASE,
+)
+
+
+def _unescape_markdown_literals(text: str) -> str:
+    r"""Turn the Markdown escapes `\*` and `\_` into literal characters."""
+    return _MARKDOWN_ESCAPE_PATTERN.sub(
+        lambda match: match.group("escape") or match.group(0), text
+    )
+
+
+def _markdown_inline_html(text: str) -> str:
+    """Render Markdown emphasis as inline HTML; unescape other text."""
+    html_text = text
+    if any(token in text for token in ("*", "_", "$", r"\(", r"\[", "`")):
+        rendered = create_markdown_parser(inline_only=True).convert(text)
+        if re.search(r"<(?:strong|em|math)\b", rendered):
+            # Keep soft and hard line breaks as <br>.
+            html_text = re.sub(r"(?:<br />)?\n", "<br>", rendered.strip())
+        else:
+            html_text = _unescape_markdown_literals(text)
+    return html_text
+
+
+def _add_inline_text(
+    doc: DoclingDocument,
+    text: str,
+    *,
+    label: DocItemLabel,
+    prov: ProvenanceItem | None = None,
+    parent: NodeItem | None = None,
+) -> bool:
+    """Map Markdown emphasis and inline HTML through the rich HTML builder."""
+    html_text = _markdown_inline_html(text)
+    if not _HTML_TAG_PATTERN.search(html_text):
+        return False
+    if parent is None:
+        parent = doc.add_text(label=label, text="", orig=text, prov=prov)
+        label = DocItemLabel.TEXT
+        prov = None
+    return _add_html_fragment(doc, html_text, label=label, prov=prov, parent=parent)
+
 
 # Mapping from dots.ocr/dots.mocr category strings to DocItemLabel.
 _LABEL_MAP: dict[str, DocItemLabel] = {
@@ -87,6 +159,8 @@ def parse_dots_json(
     filename: str = "file",
     page_image: PILImage.Image | None = None,
     model_image_size: Size | None = None,
+    *,
+    normalize_heading_levels: bool = True,
 ) -> DoclingDocument:
     """Parse dots.ocr / dots.mocr JSON output into a DoclingDocument.
 
@@ -98,6 +172,8 @@ def parse_dots_json(
         page_image: Optional PIL image of the page.
         model_image_size: If provided, bbox pixel coords are rescaled from
             this resolution to *original_page_size*.
+        normalize_heading_levels: If False, keep raw heading depths for a later
+            document-wide :func:`normalize_section_header_levels`.
 
     Returns:
         DoclingDocument populated with parsed elements.
@@ -148,12 +224,20 @@ def parse_dots_json(
         return doc
 
     current_list_group = None
-
-    for elem in elements:
+    block_starts: list[int] = []
+    caption_owners: dict[int, set[DocItemLabel]] = {}
+    for index, elem in enumerate(elements):
+        block_starts.append(len(doc.body.children))
         if not isinstance(elem, dict):
             continue
 
         category = elem.get("category", "")
+        if category == "Caption":
+            caption_owners[index] = {
+                DocItemLabel.TABLE,
+                DocItemLabel.PICTURE,
+                DocItemLabel.CODE,
+            }
         raw_bbox = elem.get("bbox")
         text = elem.get("text", "")
 
@@ -178,23 +262,72 @@ def parse_dots_json(
 
         if category == "Table":
             current_list_group = None
-            table_data = _parse_table_html(text)
-            doc.add_table(data=table_data, prov=prov)
+            try:
+                table = _add_html_table(doc, text, prov)
+            except ValueError as exc:
+                # Like the Chandra mapper: drop the grid, keep the page.
+                _log.warning("dots table is too large to map: %s", exc)
+                table = None
+            if table is None:
+                _log.warning("Invalid dots HTML table; preserving an empty table")
+                doc.add_table(data=TableData(num_rows=0, num_cols=0), prov=prov)
         elif category == "Picture":
             current_list_group = None
             doc.add_picture(prov=prov)
         elif category == "Title":
             current_list_group = None
-            doc.add_title(text=text, prov=prov)
+            clean_text, _ = parse_markdown_heading(text)
+            item = doc.add_title(text="", orig=text, prov=prov)
+            if not _add_inline_text(
+                doc, clean_text, label=DocItemLabel.TEXT, parent=item
+            ):
+                item.text = _unescape_markdown_literals(clean_text)
         elif category == "Section-header":
             current_list_group = None
-            doc.add_heading(text=text, prov=prov)
+            clean_text, markdown_level = parse_markdown_heading(text)
+            item = doc.add_heading(
+                text="",
+                orig=text,
+                # Raw markup depth, normalized per document later.
+                level=markdown_level if markdown_level is not None else 2,
+                prov=prov,
+            )
+            if not _add_inline_text(
+                doc, clean_text, label=DocItemLabel.TEXT, parent=item
+            ):
+                item.text = _unescape_markdown_literals(clean_text)
         elif category == "List-item":
             if current_list_group is None:
                 current_list_group = doc.add_list_group()
-            doc.add_list_item(text=text, parent=current_list_group, prov=prov)
+            item = doc.add_list_item(
+                text="", orig=text, parent=current_list_group, prov=prov
+            )
+            if not _add_inline_text(doc, text, label=DocItemLabel.TEXT, parent=item):
+                item.text = _unescape_markdown_literals(text)
         else:
             current_list_group = None
-            doc.add_text(label=doc_label, text=text, prov=prov)
+            code = _FENCED_CODE_PATTERN.fullmatch(text)
+            if code is not None:
+                code_text = code.group("text")
+                doc.add_code(
+                    text=code_text,
+                    orig=text,
+                    prov=prov,
+                    code_language=detect_code_language(
+                        code_text, hint=code.group("hint").strip() or None
+                    ),
+                )
+            elif category == "Formula":
+                doc.add_text(label=doc_label, text=text, prov=prov)
+            elif not _add_inline_text(doc, text, label=doc_label, prov=prov):
+                doc.add_text(
+                    label=doc_label,
+                    text=_unescape_markdown_literals(text),
+                    orig=text,
+                    prov=prov,
+                )
 
+    link_adjacent_captions(doc, block_starts, caption_owners)
+    if normalize_heading_levels:
+        normalize_section_header_levels(doc)
     return doc

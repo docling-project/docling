@@ -17,8 +17,9 @@ INPUT_FILE = "./tests/data/pdf/sources/2206.01062.pdf"
     "cls",
     [DoclingParseV2DocumentBackend, DoclingParseV4DocumentBackend],
 )
-def test_emits_future_warning(cls):
-    with pytest.warns(FutureWarning, match="DoclingParse"):
-        InputDocument(
+def test_emits_deprecation_warning(cls):
+    with pytest.warns(DeprecationWarning, match="ThreadedDoclingParseDocumentBackend"):
+        in_doc = InputDocument(
             path_or_stream=Path(INPUT_FILE), format=InputFormat.PDF, backend=cls
         )
+    in_doc._backend.unload()

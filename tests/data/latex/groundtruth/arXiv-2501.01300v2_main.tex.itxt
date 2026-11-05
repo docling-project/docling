@@ -1,112 +1,387 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: text: 1
-.001
-  item-2 at level 1: text: Thermodynamics of charmed hadron ... r from lattice QCD    
-S.Sharma et al.
-  item-3 at level 1: title: [
-  item-4 at level 1: text: mode = title]Thermodynamics of c ... ross chiral crossover from lattice QCD
-  item-5 at level 1: text: [
-  item-6 at level 1: text: 1]Sipaz Sharma[orcid=0000-0001-6 ... ,
- postcode=D-85748, 
- country=Germany
-  item-7 at level 1: text: [
-  item-8 at level 1: text: 2]Frithjof Karsch
-        [2]org ...  	postcode=D-33615, 
- 	country=Germany
-  item-9 at level 1: text: [
-  item-10 at level 1: text: 3]Peter Petreczky
-        [3]org ... , NY,
- 	postcode=11973, 
- 	country=USA
-  item-11 at level 1: section_header: Abstract
-  item-12 at level 1: text: We use up to fourth-order charm  ...  temperature-dependent in-medium mass.
-  item-13 at level 1: text: _set:nn stm / mktitle nologo
-  item-14 at level 1: section_header: Introduction
-  item-15 at level 1: text: Lattice studies in the recent ye ... g resonances in the open charm sector.
-  item-16 at level 1: paragraph: Until now, lattice QCD predictio ... s at the chiral crossover temperature,
-  item-17 at level 1: text: ${T_{pc}=(156.5\pm1.5)}$ MeV [Ho ...  charmed baryonic and mesonic sectors.
-  item-18 at level 1: paragraph: The chiral crossover also exhibi ... e of charm quark degrees of freedom at
-  item-19 at level 1: text: $T_{pc}$, arising due to the dis ... nd mesons across the chiral crossover.
-  item-20 at level 1: section_header: Calculating generalized susceptibilities on the lattice
-  item-21 at level 1: text: To project out the relevant degr ... ate derivatives of the total pressure,
-  item-22 at level 1: formula: P=\frac{T}{V}\ln Z(T,V,\hat{\mu} ... u}_Q,\hat{\mu}_S,\hat{\mu}_C)
+  item-1 at level 1: text: Thermodynamics of charmed hadron ... sover from lattice QCD S.Sharma et al.
+  item-2 at level 1: unspecified: group metadata
+    item-3 at level 2: title: Thermodynamics of charmed hadron ... oss chiral crossover  from lattice QCD
+  item-4 at level 1: text: 1]Sipaz Sharma[orcid=0000-0001-6916-2233] sipaz.sharma@tum.de
+  item-5 at level 1: text: 1]organization=Physik Department ... hen, postcode=D-85748, country=Germany
+  item-6 at level 1: text: 2]Frithjof Karsch
+  item-7 at level 1: text: 2]organization=Fakultät für Phys ... eld, postcode=D-33615, country=Germany
+  item-8 at level 1: text: 3]Peter Petreczky
+  item-9 at level 1: text: 3]organization=Physics Departmen ... Upton, NY, postcode=11973, country=USA
+  item-10 at level 1: section_header: Abstract
+  item-11 at level 1: text: 
+    item-12 at level 2: inline: group group
+      item-13 at level 3: text: We use up to fourth-order charm  ...  the survival of low-lying non-radial 
+      item-14 at level 3: formula: 1S
+      item-15 at level 3: text:  and 
+      item-16 at level 3: formula: 1P
+      item-17 at level 3: text:  hadron-like excitations above t ...  temperature-dependent in-medium mass.
+  item-18 at level 1: text: _set:nn stm / mktitle nologo
+  item-19 at level 1: section_header: Introduction
+  item-20 at level 1: text: Lattice studies in the recent ye ... g resonances in the open charm sector.
+  item-21 at level 1: text: 
+    item-22 at level 2: inline: group group
+      item-23 at level 3: text: Until now, lattice QCD predictio ...  at the chiral crossover temperature, 
+      item-24 at level 3: formula: {T_{pc}=(156.5\pm1.5)}
+      item-25 at level 3: text:  MeV [HotQCD:2018pds, Borsanyi:2 ...  charmed baryonic and mesonic sectors.
+  item-26 at level 1: text: 
+    item-27 at level 2: inline: group group
+      item-28 at level 3: text: The chiral crossover also exhibi ...  of charm quark degrees of freedom at 
+      item-29 at level 3: formula: T_{pc}
+      item-30 at level 3: text: , arising due to the disappearan ... not all charmed hadrons dissociate at 
+      item-31 at level 3: formula: T_{pc}
+      item-32 at level 3: text: . Furthermore, recent lattice QC ... nd mesons across the chiral crossover.
+  item-33 at level 1: section_header: Calculating generalized susceptibilities on the lattice
+  item-34 at level 1: text: 
+    item-35 at level 2: inline: group group
+      item-36 at level 3: text: To project out the relevant degr ... tes the generalized susceptibilities, 
+      item-37 at level 3: formula: {\chi^{BQSC}_{klmn}}
+      item-38 at level 3: text: , of the conserved charges: baryon number, 
+      item-39 at level 3: formula: B
+      item-40 at level 3: text: , electric charge, 
+      item-41 at level 3: formula: Q
+      item-42 at level 3: text: , strangeness, 
+      item-43 at level 3: formula: S
+      item-44 at level 3: text: , and charm, 
+      item-45 at level 3: formula: C
+      item-46 at level 3: text: . This involves taking appropriate derivatives of the total pressure,
+  item-47 at level 1: formula: \begin{equation}
+    P=\frac{T}{ ... ,\hat{\mu}_C)
     \; ,
-  item-23 at level 1: text: which contains contributions fro ... ber combinations one is interested in,
-  item-24 at level 1: formula: {\chi^{BQSC}_{klmn}=\dfrac{\part ... bigg|_{\overrightarrow{\mu}=0}\text{,}
-  item-25 at level 1: text: where $\vec{\mu}=(\mu_B, \mu_Q,  ... the zero subscript will be suppressed.
-  item-26 at level 1: paragraph: Generalized susceptibilities up  ...  generated by the HotQCD collaboration
-  item-27 at level 1: text: [Bollweg:2021vqf] for the physic ... e random noise method [Mitra:2022vtf].
-  item-28 at level 1: paragraph: Lattice cutoff effects cancel to ... f various generalized susceptibilities
-  item-29 at level 1: text: [Bazavov:2023xzm]. These ratios, ... e given in a forthcoming  publication.
-  item-30 at level 1: section_header: Boltzmann Approximation
-  item-31 at level 1: section: group figure
-    item-32 at level 2: picture
-      item-32 at level 3: caption: Image: BQSC-1003.pdf
-    item-33 at level 2: picture
-      item-33 at level 3: caption: Image: D-BQSC-0004-1003.pdf
-    item-34 at level 2: text: Comparison of QM-HRG and PDG-HRG ... present $T_{pc}$ with its uncertainty.
-  item-35 at level 1: caption: Image: BQSC-1003.pdf
-  item-36 at level 1: caption: Image: D-BQSC-0004-1003.pdf
-  item-37 at level 1: section_header: Charmed Hadrons
-  item-38 at level 1: text: Hadron resonance gas model (HRG) ... e the following forms [Allton:2005gk]:
-  item-39 at level 1: formula: \begin{gather}
+
+\end{equation}
+  item-48 at level 1: text: 
+    item-49 at level 2: inline: group group
+      item-50 at level 3: text: which contains contributions from the total charm pressure, 
+      item-51 at level 3: formula: P_C
+      item-52 at level 3: text: . These derivatives are taken with respect to the chemical potentials, 
+      item-53 at level 3: formula: {\hat{\mu}_X = \mu_X/T}
+      item-54 at level 3: text: , 
+      item-55 at level 3: formula: {\forall X \in \{B, Q, S, C\}}
+      item-56 at level 3: text: , of the quantum number combinations one is interested in,
+  item-57 at level 1: formula: \begin{equation} 
+	{\chi^{BQSC}_ ... arrow{\mu}=0}\text{,}
+	
+\end{equation}
+  item-58 at level 1: text: 
+    item-59 at level 2: inline: group group
+      item-60 at level 3: text: where 
+      item-61 at level 3: formula: \vec{\mu}=(\mu_B, \mu_Q, \mu_S, \mu_C)
+      item-62 at level 3: text: . Note that 
+      item-63 at level 3: formula: {\chi^{BQSC}_{klmn}}
+      item-64 at level 3: text:  will be non-zero only for 
+      item-65 at level 3: formula: {(k+l+m+n) \in \text{even}}
+      item-66 at level 3: text: . In the following, if the subsc ... the zero subscript will be suppressed.
+  item-67 at level 1: text: 
+    item-68 at level 2: inline: group group
+      item-69 at level 3: text: Generalized susceptibilities up  ... al strange to light quark mass ratio, 
+      item-70 at level 3: formula: {m_s/m_{l}}=27
+      item-71 at level 3: text: . The temperature scale was set using the 
+      item-72 at level 3: formula: f_K
+      item-73 at level 3: text:  scale [Bollweg:2021vqf]. The ch ... psilon term for charm quark to remove 
+      item-74 at level 3: formula: \mathcal{O}((am_c)^4)
+      item-75 at level 3: text:  tree-level lattice artifacts [F ... 6rc,MILC:2010pul]. The calculation of 
+      item-76 at level 3: formula: \chi^{BQSC}_{klmn}
+      item-77 at level 3: text:  involves derivatives of the pre ... derivatives  of the fermion matrices (
+      item-78 at level 3: formula: D
+      item-79 at level 3: text: )  using the random noise method [Mitra:2022vtf].
+  item-80 at level 1: text: 
+    item-81 at level 2: inline: group group
+      item-82 at level 3: text: Lattice cutoff effects cancel to ... ttices with a finite lattice spacing, 
+      item-83 at level 3: formula: a
+      item-84 at level 3: text: , are close to the continuum lim ... alized susceptibilities normalized by 
+      item-85 at level 3: formula: \chi^C_4
+      item-86 at level 3: text:  calculated on lattices with a fixed temporal extent, 
+      item-87 at level 3: formula: N_\tau=8
+      item-88 at level 3: text: , where 
+      item-89 at level 3: formula: N_\tau=(aT)^{-1}
+      item-90 at level 3: text: .   In order to understand the c ... Ps) to tune the bare charm quark mass 
+      item-91 at level 3: formula: am_c
+      item-92 at level 3: text: .  The first LCP (LCP
+      item-93 at level 3: formula: _{[a]}
+      item-94 at level 3: text: ) corresponds to keeping the spin-averaged charmonium mass, 
+      item-95 at level 3: formula: {(3m_{J/\psi}+m_{\eta_{c\bar{c}}})/4}
+      item-96 at level 3: text: , fixed to its physical value [Sharma:2022ztl]. The second LCP (LCP
+      item-97 at level 3: formula: _{[b]}
+      item-98 at level 3: text: )  is defined by the physical (PDG) charm to strange quark mass ratio, 
+      item-99 at level 3: formula: m_c/m_s=11.76
+      item-100 at level 3: text:  [ParticleDataGroup:2022pth].  F ... ated on lattices with temporal extent 
+      item-101 at level 3: formula: N_\tau=8
+      item-102 at level 3: text:  on LCP
+      item-103 at level 3: formula: _{[b]}
+      item-104 at level 3: text:  because of their relatively sma ... alized susceptibilities normalized by 
+      item-105 at level 3: formula: \chi^C_4
+      item-106 at level 3: text:  into absolute numbers we use continuum extrapolated results for 
+      item-107 at level 3: formula: \chi^C_4
+      item-108 at level 3: text: . Details of the continuum extra ... e given in a forthcoming  publication.
+  item-109 at level 1: section_header: Boltzmann Approximation
+  item-110 at level 1: section: group figure
+    item-111 at level 2: picture
+      item-111 at level 3: caption: 
+    item-112 at level 2: picture
+    item-113 at level 2: caption: 
+      item-114 at level 3: inline: group group
+        item-115 at level 4: text: Comparison of QM-HRG and PDG-HRG ... ns [Left] and charmed mesons [Right]. 
+        item-116 at level 4: formula: \Delta=100 |1-\text{QM-HRG}/\text{PDG-HRG}|_{T_{pc}}
+        item-117 at level 4: text: . The yellow bands represent 
+        item-118 at level 4: formula: T_{pc}
+        item-119 at level 4: text:  with its uncertainty.
+  item-120 at level 1: section_header: Charmed Hadrons
+  item-121 at level 1: text: 
+    item-122 at level 2: inline: group group
+      item-123 at level 3: text: Hadron resonance gas model (HRG) ... calculate the hadronic pressure below 
+      item-124 at level 3: formula: {T_{pc}}
+      item-125 at level 3: text:  [ANDRONIC2019759]. In the Boltz ... ial pressures from the charmed meson, 
+      item-126 at level 3: formula: {P^C_{M}},
+      item-127 at level 3: text:   and the charmed baryon, 
+      item-128 at level 3: formula: {P^C_{B}}
+      item-129 at level 3: text: , sectors take the following forms [Allton:2005gk]:
+  item-130 at level 1: formula: \begin{gather}
 	\begin{aligned}
  ... ext{ .}
 		
 	\end{aligned}
 \end{gather}
-  item-40 at level 1: paragraph: In above equations, at a given t ... C-mesons/baryons) with masses given by
-  item-41 at level 1: text: ${m_i}$; degeneracy factors of t ... \chi_2^C\approx\chi_n^C$, for $n$even.
-  item-42 at level 1: paragraph: Charm fluctuations calculated in ... predicted via Quark-Model calculations
-  item-43 at level 1: text: [Ebert:2009ua, Ebert:2011kk, Che ... jym,Chen:2017gnu] have confirmed this.
-  item-44 at level 1: section_header: Charm Quarks
-  item-45 at level 1: text: Charm quarks offer an advantage  ... uark pressure, $P^C_{q}$, is given by,
-  item-46 at level 1: formula: P^C_{q}(T,\overrightarrow{\mu})& ... at{\mu}_B+\hat{\mu}_C\bigg) \text { ,}
-  item-47 at level 1: text: where $m_q^C$is the pole mass of ... quark, and the degeneracy factor is 6.
-  item-48 at level 1: section_header: Enhancement of charmed hadrons
-  item-49 at level 1: section: group figure
-    item-50 at level 2: picture
-      item-50 at level 3: caption: Image: P_B.pdf
-    item-51 at level 2: picture
-      item-51 at level 3: caption: Image: P_M.pdf
-    item-52 at level 2: text: Shown are partial charmed baryon ... present $T_{pc}$ with its uncertainty.
-  item-53 at level 1: caption: Image: P_B.pdf
-  item-54 at level 1: caption: Image: P_M.pdf
-  item-55 at level 1: text: To investigate the nature of cha ... sure based on Ref.[Mukherjee:2015mxc],
-  item-56 at level 1: formula: \begin{align}
+  item-131 at level 1: text: 
+    item-132 at level 2: inline: group group
+      item-133 at level 3: text: In above equations, at a given t ... -mesons/baryons) with masses given by 
+      item-134 at level 3: formula: {m_i}
+      item-135 at level 3: text: ; degeneracy factors of the stat ... me quantum numbers are represented by 
+      item-136 at level 3: formula: {g_i}
+      item-137 at level 3: text: ; 
+      item-138 at level 3: formula: {K_2(x)}
+      item-139 at level 3: text:  is a modified Bessel function,  ... large argument can be approximated by 
+      item-140 at level 3: formula: {K_2(x)}\sim\sqrt{\pi/2x}\;e^{-x}\;[1+\mathbb{O}(x^{-1})]
+      item-141 at level 3: text: . Consequently, if a charmed sta ... relevant temperature scale, such that 
+      item-142 at level 3: formula: {m_i\gg T}
+      item-143 at level 3: text: , then the contribution to 
+      item-144 at level 3: formula: {P_C}
+      item-145 at level 3: text:  from that particular state will ...  suppressed, e.g., the singly-charmed 
+      item-146 at level 3: formula: {\Lambda}_c^{+}
+      item-147 at level 3: text:  baryon has a PDG mass of about 
+      item-148 at level 3: formula: 2286
+      item-149 at level 3: text: MeV, whereas the doubly-charmed 
+      item-150 at level 3: formula: {\Xi_{cc}^{++}}
+      item-151 at level 3: text:  baryon's mass as tabulated in PDG records is about 
+      item-152 at level 3: formula: 3621
+      item-153 at level 3: text:  MeV, hence at 
+      item-154 at level 3: formula: {T_{pc}}
+      item-155 at level 3: text: , the contribution to 
+      item-156 at level 3: formula: {P^C_{B}}
+      item-157 at level 3: text:  from 
+      item-158 at level 3: formula: {\Xi_{cc}^{++}}
+      item-159 at level 3: text:  will be suppressed by a factor of 
+      item-160 at level 3: formula: 10^{-4}
+      item-161 at level 3: text:  in relation to 
+      item-162 at level 3: formula: {\Lambda}_c^{+}
+      item-163 at level 3: text:  contribution. Therefore, in the ... Eq. [eq:McBc] in Eq. [eq:chi] implies 
+      item-164 at level 3: formula: P_C(T,\vec{\mu})\approx\chi_2^C\approx\chi_n^C
+      item-165 at level 3: text: , for 
+      item-166 at level 3: formula: n
+      item-167 at level 3: text:  even.
+  item-168 at level 1: text: 
+    item-169 at level 2: inline: group group
+      item-170 at level 3: text: Charm fluctuations calculated in ... 2asf]. In the validity regime of HRG, 
+      item-171 at level 3: formula: \chi^{nm}_{BC}\approx P^C_{B}
+      item-172 at level 3: text: , and 
+      item-173 at level 3: formula: P^C_{M} = P_C-P^C_{B}
+      item-174 at level 3: text: . Fig. [fig:barCmesC] [Left] shows that the QM-HRG predicts a 
+      item-175 at level 3: formula: 92\%
+      item-176 at level 3: text:  enhancement of the partial charmed baryon pressure at 
+      item-177 at level 3: formula: T_{pc}
+      item-178 at level 3: text:  compared to the PDG-HRG expecta ... artial charmed meson pressure is only 
+      item-179 at level 3: formula: 15\%
+      item-180 at level 3: text: . These results suggest that, ba ... the experimental discovery of various 
+      item-181 at level 3: formula: \Lambda_C
+      item-182 at level 3: text:  and 
+      item-183 at level 3: formula: \Omega_C
+      item-184 at level 3: text:  resonances, in particular by LH ... jym,Chen:2017gnu] have confirmed this.
+  item-185 at level 1: section_header: Charm Quarks
+  item-186 at level 1: text: 
+    item-187 at level 2: inline: group group
+      item-188 at level 3: text: Charm quarks offer an advantage  ...  because for temperatures a few times 
+      item-189 at level 3: formula: T_{pc}
+      item-190 at level 3: text: , the Boltzmann approximation wo ... ionless partial charm quark pressure, 
+      item-191 at level 3: formula: P^C_{q}
+      item-192 at level 3: text: , is given by,
+  item-193 at level 1: formula: \begin{eqnarray}
+	P^C_{q}(T,\ove ... u}_C\bigg) \text { ,}
+	
+\end{eqnarray}
+  item-194 at level 1: text: 
+    item-195 at level 2: inline: group group
+      item-196 at level 3: text: where 
+      item-197 at level 3: formula: m_q^C
+      item-198 at level 3: text:  is the pole mass of the charm quark, and the degeneracy factor is 6.
+  item-199 at level 1: section_header: Enhancement of charmed hadrons
+  item-200 at level 1: section: group figure
+    item-201 at level 2: picture
+      item-201 at level 3: caption: 
+    item-202 at level 2: picture
+    item-203 at level 2: caption: 
+      item-204 at level 3: inline: group group
+        item-205 at level 4: text: Shown are partial charmed baryon ... edictions. The yellow bands represent 
+        item-206 at level 4: formula: T_{pc}
+        item-207 at level 4: text:  with its uncertainty.
+  item-208 at level 1: text: 
+    item-209 at level 2: inline: group group
+      item-210 at level 3: text: To investigate the nature of charm degrees of freedom above  
+      item-211 at level 3: formula: T_{pc}
+      item-212 at level 3: text: , we extend the simple hadron ga ... sure based on Ref.[Mukherjee:2015mxc],
+  item-213 at level 1: formula: \begin{align}
 	P_C(T,\vec{\mu})= ... ^C_{q}(T,\vec{\mu}) \, .
 	
 \end{align}
-  item-57 at level 1: text: In our recent works [Bazavov:202 ... neralized susceptibilities as follows,
-  item-58 at level 1: formula: \begin{align}
+  item-214 at level 1: text: 
+    item-215 at level 2: inline: group group
+      item-216 at level 3: text: In our recent works [Bazavov:202 ... aryon- and meson-like excitations for 
+      item-217 at level 3: formula: \vec{\mu}=0
+      item-218 at level 3: text:  can be expressed in terms of the generalized susceptibilities as follows,
+  item-219 at level 1: formula: \begin{align}
 	P^C_{q}&=9(\chi^{ ... 22}-4\chi^{BC}_{13} \; .
 	
 \end{align}
-  item-59 at level 1: text: Note that in the validity regime ... chi^4_C-\chi^{BC}_{13}$, respectively.
-  item-60 at level 1: paragraph: Continuum estimates for charmed  ...  meson partial pressures shown in Fig.
-  item-61 at level 1: text: [fig:enhan] are obtained by mult ... ictions quoted in Fig. [fig:barCmesC].
-  item-62 at level 1: section_header: Charm degrees of freedom in QGP
-  item-63 at level 1: section: group figure
-    item-64 at level 2: picture
-      item-64 at level 3: caption: Image: P_q.pdf
-    item-65 at level 2: picture
-      item-65 at level 3: caption: Image: m_q.pdf
-    item-66 at level 2: text: Shown is the partial pressure co ... present $T_{pc}$ with its uncertainty.
-  item-67 at level 1: caption: Image: P_q.pdf
-  item-68 at level 1: caption: Image: m_q.pdf
-  item-69 at level 1: text: Fig. [fig:Pq] [Left] shows that  ... dron-like excitations will go to zero.
-  item-70 at level 1: paragraph: Departure of charmed hadronic pr ...  charmed hadrons start dissociating at
-  item-71 at level 1: text: $T_{pc}$, whereas the ground sta ... d baryons missing from the PDG record.
-  item-72 at level 1: paragraph: In the coexistence phase of charmed hadron and quark-like excitations,
-  item-73 at level 1: text: $m^C_q$ in Eq. [eq:Qc] becomes t ... l become the pole mass of charm quark.
-  item-74 at level 1: section_header: Conclusions
-  item-75 at level 1: text: In this work, for the first time ... omplete than the charmed meson sector.
-  item-76 at level 1: paragraph: We showed that above chiral cros ... citations. At the highest temperature,
-  item-77 at level 1: text: $T \sim 176$ MeV, studied by us, ... can exist in Quark Gluon Plasma (QGP).
-  item-78 at level 1: section_header: Acknowledgments
-  item-79 at level 1: paragraph: This work was supported by The D ... f Nuclear Physics through Contract No.
-  item-80 at level 1: text: DE-SC0012704 and the Topical Col ... lefeld HPC.NRW team for their support.
-  item-81 at level 1: paragraph: All computations in this work were performed using
-  item-82 at level 1: text: SIMULATeQCD code [HotQCD:2023ghu ... HotQCD Collaboration [Clarke:2023sfy].
-  item-83 at level 1: text: cas-model2-names
-  item-84 at level 1: text: refs
+  item-220 at level 1: text: 
+    item-221 at level 2: inline: group group
+      item-222 at level 3: text: Note that in the validity regime of HRG, 
+      item-223 at level 3: formula: \chi^{BC}_{22}\approx\chi^{BC}_{13}
+      item-224 at level 3: text: . Hence, in this phase the parti ... ribution from quark-like excitations, 
+      item-225 at level 3: formula: P^C_q
+      item-226 at level 3: text:  is, by construction, zero, and 
+      item-227 at level 3: formula: P^C_B
+      item-228 at level 3: text:  and 
+      item-229 at level 3: formula: P^C_M
+      item-230 at level 3: text:  reduce to 
+      item-231 at level 3: formula: \chi^{BC}_{13}
+      item-232 at level 3: text:  and 
+      item-233 at level 3: formula: \chi^4_C-\chi^{BC}_{13}
+      item-234 at level 3: text: , respectively.
+  item-235 at level 1: text: 
+    item-236 at level 2: inline: group group
+      item-237 at level 3: text: Continuum estimates for charmed  ... by multiplying continuum extrapolated 
+      item-238 at level 3: formula: \chi^C_4
+      item-239 at level 3: text:  values to ratios 
+      item-240 at level 3: formula: P^C_B/P_C
+      item-241 at level 3: text:  and 
+      item-242 at level 3: formula: P^C_M/P_C
+      item-243 at level 3: text:   shown in our previous work [Ba ...  are largely cut-off independent. For 
+      item-244 at level 3: formula: T<T_{pc}
+      item-245 at level 3: text: , Fig. [fig:enhan] shows a clear ... over, in the charmed baryonic sector, 
+      item-246 at level 3: formula: P^C_B
+      item-247 at level 3: text:  calculated on the lattice is al ... e as the PDG-HRG expectation, whereas 
+      item-248 at level 3: formula: P^C_M
+      item-249 at level 3: text:  calculated on the lattice is around 
+      item-250 at level 3: formula: 20\%
+      item-251 at level 3: text:  larger than the  PDG-HRG predic ... ictions quoted in Fig. [fig:barCmesC].
+  item-252 at level 1: section_header: Charm degrees of freedom in QGP
+  item-253 at level 1: section: group figure
+    item-254 at level 2: picture
+      item-254 at level 3: caption: 
+    item-255 at level 2: picture
+    item-256 at level 2: caption: 
+      item-257 at level 3: inline: group group
+        item-258 at level 4: text: Shown is the partial pressure co ...  of charm quark-like excitation above 
+        item-259 at level 4: formula: T_{pc}
+        item-260 at level 4: text:  [Left] and the temperature depe ... f a charm quark-like excitation above 
+        item-261 at level 4: formula: T_{pc}
+        item-262 at level 4: text:  [Right]. The yellow bands represent 
+        item-263 at level 4: formula: T_{pc}
+        item-264 at level 4: text:  with its uncertainty.
+  item-265 at level 1: text: 
+    item-266 at level 2: inline: group group
+      item-267 at level 3: text: Fig. [fig:Pq] [Left] shows that the partial pressure contribution to 
+      item-268 at level 3: formula: P_C
+      item-269 at level 3: text:  from charm quark-like excitation becomes non-zero at 
+      item-270 at level 3: formula: T_{pc}
+      item-271 at level 3: text: , and starts increasing as a function of temperature. This increasing 
+      item-272 at level 3: formula: P^C_q
+      item-273 at level 3: text:  results in a decreasing relative partial pressure contribution to 
+      item-274 at level 3: formula: P_C
+      item-275 at level 3: text:  from hadron-like excitations. A ... fig:enhan] and [fig:Pq] [Left], i.e., 
+      item-276 at level 3: formula: 175
+      item-277 at level 3: text:  MeV, the relative partial press ... this trend, it is expected that above 
+      item-278 at level 3: formula: T\sim175
+      item-279 at level 3: text:  MeV, 
+      item-280 at level 3: formula: P^C_q
+      item-281 at level 3: text:  will become the dominant contribution. Therefore, eventually 
+      item-282 at level 3: formula: P^C_B
+      item-283 at level 3: text:  and 
+      item-284 at level 3: formula: P^C_M
+      item-285 at level 3: text:  shown in Fig. [fig:enhan] will  ... dron-like excitations will go to zero.
+  item-286 at level 1: text: 
+    item-287 at level 2: inline: group group
+      item-288 at level 3: text: Departure of charmed hadronic pr ... charmed hadrons start dissociating at 
+      item-289 at level 3: formula: T_{pc}
+      item-290 at level 3: text: , whereas the ground state charm ... l calculation based on the low-lying, 
+      item-291 at level 3: formula: 1S
+      item-292 at level 3: text:  and 
+      item-293 at level 3: formula: 1P
+      item-294 at level 3: text: , charmed hadrons tabulated in [ ... 2asf]  we label this as 1S1P-HRG. For 
+      item-295 at level 3: formula: T_{pc}<T\leq 166.1
+      item-296 at level 3: text: MeV, both 
+      item-297 at level 3: formula: P^C_B
+      item-298 at level 3: text:  and 
+      item-299 at level 3: formula: P^C_M
+      item-300 at level 3: text:  in Fig. [fig:enhan] are described by 1S1P-HRG. For 
+      item-301 at level 3: formula: P^C_M
+      item-302 at level 3: text: , both PDG-HRG and 1S1P-HRG almo ... HRG contains one charmed-light meson: 
+      item-303 at level 3: formula: D_3^*(2750)
+      item-304 at level 3: text:  and two charmed-strange mesons: 
+      item-305 at level 3: formula: D_{s1}^*(2700)
+      item-306 at level 3: text:  and 
+      item-307 at level 3: formula: D_{s3}^*(2860)
+      item-308 at level 3: text: . We used PDG masses of 
+      item-309 at level 3: formula: D
+      item-310 at level 3: text: , 
+      item-311 at level 3: formula: D^*
+      item-312 at level 3: text: , 
+      item-313 at level 3: formula: D^*_0
+      item-314 at level 3: text:  and 
+      item-315 at level 3: formula: D_1
+      item-316 at level 3: text:  charmed-light mesons. If chiral partners were to get degenerate at 
+      item-317 at level 3: formula: T_{pc}
+      item-318 at level 3: text: , then the scalar and axial-vect ... hter, making 1S1P-HRG curve overshoot 
+      item-319 at level 3: formula: P^C_M
+      item-320 at level 3: text:  above 
+      item-321 at level 3: formula: T_{pc}
+      item-322 at level 3: text: . This indicates that the charm  ... degenerate only at temperatures above 
+      item-323 at level 3: formula: 2T_{pc}
+      item-324 at level 3: text:  [Bazavov:2014cta]. Similar obse ... HRG prediction can very well describe 
+      item-325 at level 3: formula: P^C_B
+      item-326 at level 3: text:  in Fig. [fig:enhan] [Left]. The ...  that 1S1P-HRG lies above PDG-HRG for 
+      item-327 at level 3: formula: P^C_B
+      item-328 at level 3: text:  indicates that there are many l ... d baryons missing from the PDG record.
+  item-329 at level 1: text: 
+    item-330 at level 2: inline: group group
+      item-331 at level 3: text: In the coexistence phase of charmed hadron and quark-like excitations, 
+      item-332 at level 3: formula: m^C_q
+      item-333 at level 3: text:  in Eq. [eq:Qc] becomes temperat ... quantum numbers of charm quark. Given 
+      item-334 at level 3: formula: P^C_q(T)
+      item-335 at level 3: text:  as a function of temperature, o ...  and obtain temperature dependence of 
+      item-336 at level 3: formula: m^C_q
+      item-337 at level 3: text: . In Fig. [fig:Pq] [Right], at each temperature, the error on 
+      item-338 at level 3: formula: m^C_q
+      item-339 at level 3: text:  is the standard deviation of 
+      item-340 at level 3: formula: m^C_q
+      item-341 at level 3: text:  values obtained after solving Eq.[eq:Qc] for 
+      item-342 at level 3: formula: 50
+      item-343 at level 3: text:  fake Gaussian samples. Fig. [fig:Pq] [Right] shows that at 
+      item-344 at level 3: formula: T=162.4
+      item-345 at level 3: text:  MeV, 
+      item-346 at level 3: formula: m^C_q
+      item-347 at level 3: text:  is around the mass of D-meson,  ... ns, but the temperature dependence of 
+      item-348 at level 3: formula: m^C_q
+      item-349 at level 3: text:  encodes the in-medium interacti ...  the non-interacting quark gas limit, 
+      item-350 at level 3: formula: m^C_q
+      item-351 at level 3: text:  will become the pole mass of charm quark.
+  item-352 at level 1: section_header: Conclusions
+  item-353 at level 1: text: In this work, for the first time ... omplete than the charmed meson sector.
+  item-354 at level 1: text: 
+    item-355 at level 2: inline: group group
+      item-356 at level 3: text: We showed that above chiral cros ... itations. At the highest temperature, 
+      item-357 at level 3: formula: T \sim 176
+      item-358 at level 3: text:  MeV, studied by us, the charm p ... can exist in Quark Gluon Plasma (QGP).
+  item-359 at level 1: section_header: Acknowledgments
+  item-360 at level 1: text: This work was supported by The D ... lefeld HPC.NRW team for their support.
+  item-361 at level 1: text: All computations in this work we ... HotQCD Collaboration [Clarke:2023sfy].
+  item-362 at level 1: text: refs

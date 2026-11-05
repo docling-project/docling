@@ -25,7 +25,7 @@ from docling.cli.export_utils import (
     _parse_page_range,
     _split_list,
 )
-from docling.cli.main import ChunkerType
+from docling.cli.main import FAIL_ON_HELP, ChunkerType, FailOn
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import ProcessingPipeline
 from docling.datamodel.service.options import (
@@ -36,8 +36,31 @@ from docling.service_client import (
     DoclingServiceClient,
     StatusWatcherKind,
 )
+from docling.utils.ocr_language import OcrLanguageResolver
 
 _log = logging.getLogger(__name__)
+
+
+def _canonicalize_ocr_lang(raw: Optional[str]) -> Optional[list[str]]:
+    """Canonicalize --ocr-lang locally, so a malformed tag fails here and not remotely.
+
+    This command has no `--ocr-engine`, so only a request written behind the
+    `iso:` prefix can be checked: a bare value is a code of whichever engine the
+    service runs, and travels verbatim.
+    """
+    # `_split_list` returns None only when the option was not given, so an
+    # explicitly empty value survives as `[]`: "let the engine choose".
+    tags = _split_list(raw)
+    if tags is None:
+        return None
+    try:
+        return [
+            language.tag()
+            for language in OcrLanguageResolver.canonicalize_ocr_languages(tags)
+        ]
+    except ValueError as err:
+        raise typer.BadParameter(str(err), param_hint="--ocr-lang") from err
+
 
 _REMOTE_HELP = """\
 Convert documents through a remote docling-serve service instead of locally.
@@ -56,8 +79,9 @@ Authentication (precedence: flag > environment variable > .env file):
   A .env file in the working directory is loaded automatically when present.
 
 Exit codes:
-  0  success
+  0  success; partially converted documents are written too (see --fail-on)
   1  runtime or connection failure (service unreachable, conversion error)
+     or a failed document (see --fail-on)
   2  usage/config error (no service URL resolved from flag, env, or .env)
 
 Examples:
@@ -85,7 +109,7 @@ def _collect_sources(
     # Imported here to reuse the exact source-collection helpers from `convert`.
     from docling.cli.main import (
         _is_http_url,
-        _is_temporary_word_file,
+        _is_office_lock_file,
         _iter_input_paths_from_directory,
         err_console,
     )
@@ -101,8 +125,8 @@ def _collect_sources(
             raise typer.Exit(1)
         if local_path.is_dir():
             sources.extend(_iter_input_paths_from_directory(local_path, from_formats))
-        elif _is_temporary_word_file(local_path):
-            _log.info(f"Ignoring temporary Word file: {local_path}")
+        elif _is_office_lock_file(local_path):
+            _log.info(f"Ignoring temporary Office file: {local_path}")
         else:
             sources.append(local_path)
     return sources
@@ -184,6 +208,14 @@ def convert_remote(
             help="If enabled, the service extracts table structure.",
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help="If enabled, the service infers section-header levels for PDF and "
+            "image inputs.",
+        ),
+    ] = False,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(help="Pipeline the service uses to process PDF or image files."),
@@ -191,7 +223,18 @@ def convert_remote(
     ocr_lang: Annotated[
         Optional[str],
         typer.Option(
-            help="Comma-separated list of OCR languages (engine-specific names).",
+            help=(
+                "Comma-separated list of OCR languages. The OCR language can be provided in 2 ways:"
+                " As a 'native' tag, which is specific to the selected OCR engine/backend, or as a"
+                " canonicalized BCP-47 tag (e.g. 'en,de' or 'zh-Hant')."
+                " By default the language is handled as a native tag and is passed through verbatim"
+                " to the OCR engine."
+                f" A BCP-47 tag must be prefixed with '{OcrLanguageResolver._ISO_PREFIX}'."
+                " When an empty language is provided the OCR engine chooses the language."
+                " An empty language triggers the OSD script detection for Tesseract and selects a "
+                " default language for the other engines."
+                " To skip OCR entirely use --no-ocr."
+            ),
         ),
     ] = None,
     enrich_code: Annotated[
@@ -242,6 +285,10 @@ def convert_remote(
             help="If enabled, the service aborts the batch on the first error.",
         ),
     ] = False,
+    fail_on: Annotated[
+        FailOn,
+        typer.Option("--fail-on", help=FAIL_ON_HELP),
+    ] = FailOn.FAILURE,
     max_concurrency: Annotated[
         int,
         typer.Option(
@@ -309,8 +356,9 @@ def convert_remote(
         "to_formats": to_formats,
         "do_ocr": ocr,
         "force_ocr": force_ocr,
-        "ocr_lang": _split_list(ocr_lang),
+        "ocr_lang": _canonicalize_ocr_lang(ocr_lang),
         "do_table_structure": tables,
+        "do_pdf_heading_hierarchy": heading_hierarchy,
         "pipeline": pipeline,
         "do_code_enrichment": enrich_code,
         "do_formula_enrichment": enrich_formula,
@@ -348,7 +396,7 @@ def convert_remote(
         output.mkdir(parents=True, exist_ok=True)
         conv_results = client.convert_all(source=sources, options=options)
         try:
-            export_documents(
+            summary = export_documents(
                 conv_results,
                 output_dir=output,
                 **_export_flags_from_formats(to_formats),
@@ -364,6 +412,8 @@ def convert_remote(
             raise
         except Exception as e:
             err_console.print(f"[red]Conversion failed: {e}[/red]")
+            raise typer.Exit(1)
+        if summary.should_fail(fail_on):
             raise typer.Exit(1)
 
 

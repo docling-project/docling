@@ -22,3 +22,7 @@
 tests/data/** linguist-vendored
 tests/data_scanned/** linguist-vendored
 docs/** linguist-vendored
+# Test inputs: keep the committed bytes (some CSV/XML sources are CRLF on purpose)
+tests/data/** -text
+# Generated ground truth: LF in the repo and in every checkout
+tests/data/**/groundtruth/** text eol=lf

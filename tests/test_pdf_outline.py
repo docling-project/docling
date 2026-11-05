@@ -7,26 +7,31 @@ from docling.utils.pdf_outline import extract_outline_from_docling_parse
 class _MockTocNode:
     """Duck-typed stand-in for docling_parse's PdfTableOfContents node.
 
-    extract_outline_from_docling_parse only accesses .children, .text, and
-    .orig on each node, so a lightweight mock is sufficient and avoids a
+    A lightweight mock is sufficient and avoids a
     dependency on constructing a real PDF with an outline.
     """
 
-    def __init__(self, text="", children=None):
+    def __init__(self, text="", children=None, destination=None):
         self.text = text
         self.orig = text
         self.children = children or []
+        self.destination = destination
+
+    def iterate(self):
+        stack = [(child, 0) for child in reversed(self.children)]
+        while stack:
+            node, level = stack.pop()
+            yield level, node
+            stack.extend((child, level + 1) for child in reversed(node.children))
 
 
-class _MockPdfDocument:
-    """Duck-typed stand-in for docling_parse's PdfDocument, exposing only
-    the one method extract_outline_from_docling_parse calls."""
+class _MockDestination:
+    def __init__(self, page_no, y):
+        self.page_no = page_no
+        self.point = type("Point", (), {"y": y})()
 
-    def __init__(self, toc_root):
-        self._toc_root = toc_root
-
-    def get_table_of_contents(self):
-        return self._toc_root
+    def to_top_left_origin(self):
+        return self
 
 
 def _build_chain(depth: int) -> _MockTocNode:
@@ -42,11 +47,7 @@ def _build_chain(depth: int) -> _MockTocNode:
 
 
 def test_outline_no_toc_returns_empty_list():
-    class _NoTocDoc:
-        def get_table_of_contents(self):
-            return None
-
-    assert extract_outline_from_docling_parse(_NoTocDoc()) == []
+    assert extract_outline_from_docling_parse(None) == []
 
 
 def test_outline_flat_structure():
@@ -54,7 +55,7 @@ def test_outline_flat_structure():
         "root",
         children=[_MockTocNode("First"), _MockTocNode("Second"), _MockTocNode("Third")],
     )
-    items = extract_outline_from_docling_parse(_MockPdfDocument(root))
+    items = extract_outline_from_docling_parse(root)
     assert [(item.title, item.level) for item in items] == [
         ("First", 0),
         ("Second", 0),
@@ -73,7 +74,7 @@ def test_outline_nested_structure_preserves_order_and_levels():
             _MockTocNode("Chapter 2"),
         ],
     )
-    items = extract_outline_from_docling_parse(_MockPdfDocument(root))
+    items = extract_outline_from_docling_parse(root)
     assert [(item.title, item.level) for item in items] == [
         ("Chapter 1", 0),
         ("1.1", 1),
@@ -91,7 +92,7 @@ def test_outline_blank_and_whitespace_titles_are_excluded():
             _MockTocNode("  Real Title  "),
         ],
     )
-    items = extract_outline_from_docling_parse(_MockPdfDocument(root))
+    items = extract_outline_from_docling_parse(root)
     assert [(item.title, item.level) for item in items] == [("Real Title", 0)]
 
 
@@ -105,10 +106,24 @@ def test_outline_deep_chain_does_not_raise_recursion_error():
     depth = 5000
     root = _build_chain(depth)
 
-    items = extract_outline_from_docling_parse(_MockPdfDocument(root))
+    items = extract_outline_from_docling_parse(root)
 
     assert len(items) == depth - 1
     assert items[0].title == "level_1"
     assert items[0].level == 0
     assert items[-1].title == f"level_{depth - 1}"
     assert items[-1].level == depth - 2
+
+
+def test_outline_preserves_native_destination():
+    root = _MockTocNode(
+        "root",
+        children=[
+            _MockTocNode("Chapter", destination=_MockDestination(page_no=3, y=42.5))
+        ],
+    )
+
+    [item] = extract_outline_from_docling_parse(root)
+
+    assert item.page_no == 3
+    assert item.y_top == 42.5

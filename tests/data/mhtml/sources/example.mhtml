@@ -1,0 +1,36 @@
+From: <Saved by Blink>
+Snapshot-Content-Location: https://example.com/
+Subject: Example Domain
+Date: Wed, 1 Jul 2026 14:03:05 +0200
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----MultipartBoundary--VXUzz2TwpuJtNtLg7deUJYyCgk5PD6sFeG0QBvIbaY----"
+
+
+------MultipartBoundary--VXUzz2TwpuJtNtLg7deUJYyCgk5PD6sFeG0QBvIbaY----
+Content-Type: text/html
+Content-ID: <frame-0DFE2207A7392C068C5E6492FDC04B83@mhtml.blink>
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://example.com/
+
+<!DOCTYPE html><html lang=3D"en"><head><meta http-equiv=3D"Content-Type" co=
+ntent=3D"text/html; charset=3Dwindows-1252"><link rel=3D"stylesheet" type=
+=3D"text/css" href=3D"cid:css-21cdd020-a757-4055-a27e-c9f22deb5160@mhtml.bl=
+ink" /><title>Example Domain</title><link rel=3D"icon" href=3D"data:"><met=
+a name=3D"viewport" content=3D"width=3Ddevice-width, initial-scale=3D1"></h=
+ead><body><div><h1>Example Domain</h1><p>This domain is for use in document=
+ation examples without needing permission. Avoid use in operations.</p><p><=
+a href=3D"https://iana.org/domains/example">Learn more</a></p></div>
+</body></html>
+------MultipartBoundary--VXUzz2TwpuJtNtLg7deUJYyCgk5PD6sFeG0QBvIbaY----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-21cdd020-a757-4055-a27e-c9f22deb5160@mhtml.blink
+
+@charset "windows-1252";
+
+body { background: rgb(238, 238, 238); width: 60vw; margin: 15vh auto; font=
+-family: system-ui, sans-serif; }
+
+------MultipartBoundary--VXUzz2TwpuJtNtLg7deUJYyCgk5PD6sFeG0QBvIbaY------

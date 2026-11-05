@@ -51,3 +51,19 @@ Empty fenced code block:
 ```
 
 ```
+
+Ordered list starting at a non-1 number:
+
+5. Fifth step
+6. Sixth step
+7. Seventh step
+
+Ordered list split by a prose paragraph (numbers must continue, not restart):
+
+1. Install the package.
+2. Set the API key.
+
+Restart the shell before continuing.
+
+3. Run the import.
+4. Check the output.

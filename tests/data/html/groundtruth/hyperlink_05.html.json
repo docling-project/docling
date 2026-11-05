@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "hyperlink_05",
   "origin": {
     "mimetype": "text/html",
@@ -92,8 +92,7 @@
       "label": "caption",
       "prov": [],
       "orig": "This is an example caption for the image.",
-      "text": "This is an example caption for the image.",
-      "hyperlink": "#caption"
+      "text": "This is an example caption for the image."
     }
   ],
   "pictures": [

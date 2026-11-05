@@ -146,3 +146,74 @@ def test_api_vlm_engine_preserves_user_params_exclusivity(
     assert captured_api_call["model_id"] == "vendor-model"
     assert captured_api_call["project_id"] == "proj"
     assert "model" not in captured_api_call
+
+
+def test_api_vlm_engine_forwards_a_failed_request_as_inference_error(
+    monkeypatch,
+) -> None:
+    """The engine must not turn a failed call back into a plain empty output:
+    stop_reason and the reason travel on to the prediction (#4009)."""
+
+    def _failing_api_image_request(**kwargs):
+        return ApiImageRequestResult(
+            "",
+            0,
+            VlmStopReason.INFERENCE_ERROR,
+            error="HTTP 400: unsupported parameter",
+        )
+
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.api_openai_compatible_engine.api_image_request",
+        _failing_api_image_request,
+    )
+    engine = ApiVlmEngine(
+        enable_remote_services=True,
+        options=ApiVlmEngineOptions(engine_type=VlmEngineType.API_OPENAI, url=_API_URL),
+    )
+
+    (output,) = engine.predict_batch([_make_input()])
+
+    assert output.text == ""
+    assert output.stop_reason == VlmStopReason.INFERENCE_ERROR
+    assert output.metadata["error"] == "HTTP 400: unsupported parameter"
+
+
+@pytest.mark.parametrize(
+    "user_params,expected_penalty", [({}, 1.0), ({"repetition_penalty": 1.2}, 1.2)]
+)
+def test_api_vlm_engine_forwards_per_stage_sampling(
+    captured_api_call, user_params, expected_penalty
+) -> None:
+    engine = ApiVlmEngine(
+        enable_remote_services=True,
+        options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API, url=_API_URL, params=user_params
+        ),
+        model_config=EngineModelConfig(
+            extra_config={
+                "api_params": {
+                    "model": "nemotron-parse",
+                    "repetition_penalty": 1.1,
+                    "top_k": 1,
+                }
+            }
+        ),
+    )
+    engine.predict_batch(
+        [
+            _make_input(
+                temperature=0.1,
+                extra_generation_config={
+                    "api_params": {
+                        "repetition_penalty": 1.0,
+                        "top_k": 50,
+                        "skip_special_tokens": False,
+                    }
+                },
+            )
+        ]
+    )
+    assert captured_api_call["temperature"] == 0.1
+    assert captured_api_call["repetition_penalty"] == expected_penalty
+    assert captured_api_call["top_k"] == 50
+    assert captured_api_call["skip_special_tokens"] is False

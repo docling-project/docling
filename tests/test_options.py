@@ -9,7 +9,6 @@ import pytest
 from pydantic import ValidationError
 
 from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -166,6 +165,26 @@ def test_page_range(test_doc_path):
     assert doc_result.status == ConversionStatus.FAILURE
 
 
+def test_page_range_beyond_int64():
+    # (1, sys.maxsize) after a JavaScript JSON round-trip becomes (1, 2**63),
+    # which the docling-parse native binding cannot accept unless clamped.
+    pipeline_options = PdfPipelineOptions(do_ocr=False, do_table_structure=False)
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+                backend=ThreadedDoclingParseDocumentBackend,
+            )
+        }
+    )
+    doc_result: ConversionResult = converter.convert(
+        Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf"), page_range=(1, 2**63)
+    )
+
+    assert doc_result.status == ConversionStatus.SUCCESS
+    assert doc_result.document.num_pages() == 1
+
+
 def test_document_timeout(test_doc_path):
     from docling.datamodel.base_models import FailureCategory
 
@@ -191,9 +210,7 @@ def test_document_timeout(test_doc_path):
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=PdfPipelineOptions(document_timeout=1),
                 pipeline_cls=LegacyStandardPdfPipeline,
-                # The legacy pipeline needs random page access, which the
-                # default (threaded) backend does not provide.
-                backend=DoclingParseDocumentBackend,
+                backend=PyPdfiumDocumentBackend,
             )
         }
     )
@@ -512,7 +529,6 @@ def test_parser_backends(test_doc_path):
     pipeline_options.do_table_structure = False
 
     for backend_t in [
-        DoclingParseDocumentBackend,
         ThreadedDoclingParseDocumentBackend,
         PyPdfiumDocumentBackend,
     ]:
@@ -582,17 +598,13 @@ def test_pipeline_cache_with_chart_extraction():
 
     with (
         patch(
-            "docling.models.stages.chart_extraction.granite_vision.ChartExtractionModelGraniteVision"
-        ) as mock_chart_v1,
-        patch(
-            "docling.models.stages.chart_extraction.granite_vision.ChartExtractionModelGraniteVisionV4"
-        ) as mock_chart_v4,
+            "docling.models.stages.chart_extraction.granite_vision.ChartExtractionVlmEngineModel"
+        ) as mock_chart,
         patch(
             "docling.pipeline.base_pipeline.DocumentPictureClassifier"
         ) as mock_classifier,
     ):
-        mock_chart_v1.return_value = Mock(enabled=True)
-        mock_chart_v4.return_value = Mock(enabled=True)
+        mock_chart.return_value = Mock(enabled=True)
         mock_classifier.return_value = Mock(enabled=True)
 
         converter = DocumentConverter(

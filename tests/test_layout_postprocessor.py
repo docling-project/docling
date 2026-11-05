@@ -94,6 +94,22 @@ def test_sort_cells_uses_native_cell_index_order() -> None:
     assert [cell.index for cell in cells] == [3, 1, 2]
 
 
+def test_checkbox_keeps_its_drawn_box_left_of_its_text() -> None:
+    # The model boxes a checkbox together with its label; the drawn square
+    # holds no text cell, so shrinking to the cells would cut it off.
+    checkbox = _cluster(
+        1, BoundingBox(l=55, t=10, r=540, b=30), DocItemLabel.CHECKBOX_UNSELECTED
+    )
+    text = _cluster(2, BoundingBox(l=55, t=40, r=540, b=50))
+    checkbox.cells = [_text_cell(0, BoundingBox(l=73, t=12, r=530, b=28))]
+    text.cells = [_text_cell(1, BoundingBox(l=73, t=41, r=530, b=49))]
+
+    _postprocessor()._adjust_cluster_bboxes([checkbox, text])
+
+    assert checkbox.bbox == BoundingBox(l=55, t=10, r=540, b=30)
+    assert text.bbox == BoundingBox(l=73, t=41, r=530, b=49)
+
+
 def test_assign_cells_to_clusters_matches_exhaustive_selection() -> None:
     clusters = [
         _cluster(0, BoundingBox(l=0, t=0, r=100, b=100)),

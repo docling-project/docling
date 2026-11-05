@@ -181,3 +181,22 @@ def test_multiline_item_text_is_not_truncated():
     # marker + the separating whitespace + text must account for the whole original.
     for item in items:
         assert item.orig == f"{item.marker} {item.text}"
+
+
+def test_private_use_font_bullets_are_markers():
+    """PDFs exported from Word often carry Symbol/Wingdings bullets as private-use code points."""
+    processor = ListItemMarkerProcessor()
+    doc = DoclingDocument(name="Word export")
+    group = doc.add_list_group()
+    for bullet in ("\uf0b7", "\uf0a7", "\uf0d8"):
+        item = processor.process_list_item(
+            doc.add_list_item(
+                text=f"{bullet} Transcribo: converts audio to text", parent=group
+            )
+        )
+        assert item.marker == bullet
+        assert item.text == "Transcribo: converts audio to text"
+        assert item.enumerated is False
+
+    assert "\uf0b7" not in doc.export_to_markdown()
+    assert processor._is_bullet_marker("\uf0b7")

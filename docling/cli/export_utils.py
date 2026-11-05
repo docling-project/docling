@@ -17,6 +17,7 @@ _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
         OutputFormat.VTT,
         OutputFormat.DOCLANG,
         OutputFormat.CHUNKS,
+        OutputFormat.LATEX,
     }
 )
 
@@ -51,6 +52,7 @@ def _export_flags_from_formats(to_formats: list[OutputFormat]) -> dict[str, bool
         "export_doclang": OutputFormat.DOCLANG in to_formats,
         "export_dclx": OutputFormat.DCLX in to_formats,
         "export_chunks": OutputFormat.CHUNKS in to_formats,
+        "export_latex": OutputFormat.LATEX in to_formats,
     }
 
 
@@ -83,9 +85,13 @@ def _parse_page_range(raw: str | None) -> PageRange | None:
 
 
 def _split_list(raw: str | None) -> list[str] | None:
+    """Split a comma/semicolon-separated CLI value, dropping blanks.
+
+    Stripping matters: `--ocr-lang "en, de"` must yield `de`, not `" de"`.
+    """
     if raw is None:
         return None
-    return re.split(r"[;,]", raw)
+    return [item.strip() for item in re.split(r"[;,]", raw) if item.strip()]
 
 
 def _is_empty_output(path: Path) -> bool:

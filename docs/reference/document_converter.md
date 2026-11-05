@@ -19,6 +19,7 @@ This is an automatic generated API reference of the main components of Docling.
             - MarkdownFormatOption
             - AsciiDocFormatOption
             - HTMLFormatOption
+            - AfpFormatOption
             - SimplePipeline
         show_if_no_docstring: true
         show_submodules: true

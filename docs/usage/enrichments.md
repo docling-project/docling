@@ -76,6 +76,20 @@ result = converter.convert("https://arxiv.org/pdf/2501.17887")
 doc = result.document
 ```
 
+Each formula is cropped from the page with a margin of 18% of its width and height on every side. A wide margin can take in an equation number or a line of the surrounding text, and the model may then keep repeating filler such as `\quad \quad ...` after the formula. Docling stops such a generation early and removes the repeated tail. Both behaviours can be tuned through `code_formula_options`:
+
+```py
+from docling.datamodel.pipeline_options import CodeFormulaVlmOptions
+
+pipeline_options.code_formula_options = CodeFormulaVlmOptions.from_preset(
+    "codeformulav2",
+    expansion_factor=0.08,  # crop margin around each formula; default 0.18
+    stop_on_repetition=True,  # default
+)
+```
+
+With an inline engine (Transformers, MLX) only the looping formula is stopped; the rest of its batch keeps generating. API and vLLM engines run to `max_new_tokens`, and only the repeated tail is removed from their output.
+
 ### Picture classification
 
 The picture classification step classifies the `PictureItem` elements in the document with the `DocumentFigureClassifier` model.

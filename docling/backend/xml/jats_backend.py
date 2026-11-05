@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import traceback
+import warnings
 from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
@@ -35,6 +36,7 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupItem,
     GroupLabel,
+    ImageRef,
     NodeItem,
     TableCell,
     TableData,
@@ -42,13 +44,18 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import Formatting, Script
 from lxml import etree
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.table_spans import table_width
+from docling.datamodel.backend_options import JatsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils._inline_runs import trim_run_edges
 
 _BS4_AVAILABLE: bool = False
 _BS4_IMPORT_ERROR: ImportError | None = None
@@ -73,6 +80,24 @@ DEFAULT_HEADER_ABSTRACT: Final[str] = "Abstract"
 DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
+_XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
+# `list-type` values that number the items, from the JATS 1.3 tag library.
+_ORDERED_LIST_TYPES: Final[frozenset[str]] = frozenset(
+    {"order", "alpha-lower", "alpha-upper", "roman-lower", "roman-upper"}
+)
+# Elements that hold a whole article inside another one, such as a decision
+# letter or an author reply, from the JATS 1.3 tag library.
+_SUB_ARTICLE_TAGS: Final[tuple[str, ...]] = ("sub-article", "response")
+_NOT_IN_SUB_ARTICLE: Final[str] = "not(ancestor::sub-article or ancestor::response)"
+
+_RASTER_IMAGE_SUFFIXES: Final[tuple[str, ...]] = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".tif",
+    ".tiff",
+    ".gif",
+)
 
 # Maps JATS formatting tags to docling-core formatting attributes.
 _JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, bool | Script]]] = {
@@ -96,16 +121,28 @@ class InlineSegment:
             is a formula.
         formatting: Emphasis accumulated from the enclosing tags (bold, italic,
             underline, strike, sub, sup), or ``None`` when the run is unstyled.
+        hyperlink: External link target inherited from an enclosing ``ext-link``,
+            or ``None`` when the run is unlinked.
     """
 
     label: DocItemLabel
     text: str
     formatting: Formatting | None = None
+    hyperlink: AnyUrl | Path | None = None
+
+
+class AbstractSection(TypedDict):
+    """A single titled section inside a structured abstract."""
+
+    title: str
+    # Raw <p> nodes are walked at emit time to preserve inline styling.
+    paragraphs: list[etree._Element]
 
 
 class Abstract(TypedDict):
     label: str
-    content: str
+    paragraphs: list[etree._Element]
+    sections: list[AbstractSection]  # structured sub-sections (<sec> children)
 
 
 class Author(TypedDict):
@@ -157,11 +194,32 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     """
 
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: JatsBackendOptions | None = None,
+    ) -> None:
         if not _BS4_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
-        super().__init__(in_doc, path_or_stream)
+        if options is None:
+            options = JatsBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
+        self.options: JatsBackendOptions
         self.path_or_stream = path_or_stream
+        self.base_path: str | None = (
+            str(options.source_uri)
+            if options.source_uri is not None
+            else (
+                str(path_or_stream)
+                if options.enable_local_fetch and isinstance(path_or_stream, Path)
+                else None
+            )
+        )
+        self._image_loader = ImageResourceLoader(
+            enable_local_fetch=options.enable_local_fetch,
+            enable_remote_fetch=options.enable_remote_fetch,
+        )
 
         # Initialize the root of the document hierarchy
         self.root: NodeItem | None = None
@@ -236,14 +294,24 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             self._add_metadata(doc, xml_components)
 
             # walk over the XML body
-            body = self.tree.xpath("//body")
+            body = self.tree.xpath(f"//body[{_NOT_IN_SUB_ARTICLE}]")
             if self.root and len(body) > 0:
                 self._walk_linear(doc, self.root, body[0])
 
             # walk over the XML back matter
-            back = self.tree.xpath("//back")
+            back = self.tree.xpath(f"//back[{_NOT_IN_SUB_ARTICLE}]")
             if self.root and len(back) > 0:
                 self._walk_linear(doc, self.root, back[0])
+
+            # walk over the sub-articles
+            sub_articles = self.tree.xpath(
+                " | ".join(
+                    f"//{tag}[{_NOT_IN_SUB_ARTICLE}]" for tag in _SUB_ARTICLE_TAGS
+                )
+            )
+            if self.root:
+                for sub_article in sub_articles:
+                    self._add_sub_article(doc, self.root, sub_article)
         except Exception:
             _log.error(traceback.format_exc())
 
@@ -251,7 +319,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _get_text(node: etree._Element, sep: str | None = None) -> str:
-        skip_tags = ["term", "disp-formula", "inline-formula"]
+        skip_tags = ["disp-formula", "inline-formula"]
         text: str = (
             node.text.replace("\n", " ")
             if (node.tag not in skip_tags and node.text)
@@ -268,6 +336,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return text
 
     @staticmethod
+    def _get_label(node: etree._Element) -> str:
+        """Return the text of the `<label>` child of `node`, or an empty string."""
+        label = node.find("label")
+        return JatsDocumentBackend._get_text(label).strip() if label is not None else ""
+
+    @staticmethod
     def _normalize_whitespace(text: str | None) -> str:
         return " ".join(text.split()) if text else ""
 
@@ -276,39 +350,28 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return JatsDocumentBackend._normalize_whitespace(" ".join(node.itertext()))
 
     @staticmethod
-    def _parse_abstract_section(section_node: etree._Element) -> str:
-        section_texts: list[str] = []
-
-        for child_node in section_node:
-            if child_node.tag == "p":
-                paragraph_text = JatsDocumentBackend._normalize_whitespace(
-                    JatsDocumentBackend._get_text(child_node)
-                )
-                if paragraph_text:
-                    section_texts.append(paragraph_text)
-            elif child_node.tag == "sec":
-                section_text = JatsDocumentBackend._parse_abstract_section(child_node)
-                if section_text:
-                    section_texts.append(section_text)
-
-        section_content = JatsDocumentBackend._normalize_whitespace(
-            " ".join(section_texts)
+    def _parse_abstract_section(section_node: etree._Element) -> AbstractSection:
+        """Parse an abstract section while retaining its paragraph nodes."""
+        title_nodes = section_node.xpath("title|label")
+        title = (
+            JatsDocumentBackend._get_node_text(title_nodes[0]) if title_nodes else ""
         )
-        if not section_content:
-            return ""
 
-        label_node = section_node.xpath("title|label")
-        if len(label_node) > 0:
-            label = JatsDocumentBackend._get_node_text(label_node[0])
-            if label:
-                return f"{label}: {section_content}"
+        paragraphs: list[etree._Element] = [
+            child_node
+            for child_node in section_node
+            if child_node.tag == "p" and "".join(child_node.itertext()).strip()
+        ]
 
-        return section_content
+        return AbstractSection(title=title, paragraphs=paragraphs)
 
     @staticmethod
-    def _parse_structured_name(name_node: etree._Element) -> str:
+    def _parse_structured_name(
+        name_node: etree._Element,
+        order: tuple[str, ...] = ("prefix", "given-names", "surname", "suffix"),
+    ) -> str:
         name_parts: list[str] = []
-        for tag_name in ["prefix", "given-names", "surname", "suffix"]:
+        for tag_name in order:
             for part_node in name_node.xpath(tag_name):
                 part_text = JatsDocumentBackend._get_node_text(part_node)
                 if part_text:
@@ -381,31 +444,28 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         abs_list: list[Abstract] = []
 
         for abs_node in self.tree.xpath(".//abstract"):
-            abstract: Abstract = dict(label="", content="")
-            texts: list[str] = []
+            paragraphs: list[etree._Element] = []
+            sections: list[AbstractSection] = []
 
             for child_node in abs_node:
                 if child_node.tag == "p":
-                    paragraph_text = JatsDocumentBackend._normalize_whitespace(
-                        JatsDocumentBackend._get_text(child_node)
-                    )
-                    if paragraph_text:
-                        texts.append(paragraph_text)
+                    if "".join(child_node.itertext()).strip():
+                        paragraphs.append(child_node)
                 elif child_node.tag == "sec":
-                    section_text = JatsDocumentBackend._parse_abstract_section(
-                        child_node
-                    )
-                    if section_text:
-                        texts.append(section_text)
-
-            abstract["content"] = JatsDocumentBackend._normalize_whitespace(
-                " ".join(texts)
-            )
+                    section = JatsDocumentBackend._parse_abstract_section(child_node)
+                    if section["paragraphs"]:
+                        sections.append(section)
 
             label_node = abs_node.xpath("title|label")
-            if len(label_node) > 0:
-                abstract["label"] = JatsDocumentBackend._get_node_text(label_node[0])
+            label = (
+                JatsDocumentBackend._get_node_text(label_node[0]) if label_node else ""
+            )
 
+            abstract: Abstract = Abstract(
+                label=label,
+                paragraphs=paragraphs,
+                sections=sections,
+            )
             abs_list.append(abstract)
 
         return abs_list
@@ -466,7 +526,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         title_names: list[str] = ["article-title", "subtitle", "title", "label"]
         titles: list[str] = [
             " ".join(
-                elem.text.replace("\n", " ").strip()
+                JatsDocumentBackend._normalize_whitespace(elem.text)
                 for elem in list(title_node)
                 if elem.tag in title_names
             ).strip()
@@ -492,18 +552,36 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, xml_components: XMLComponents
     ) -> None:
         for abstract in xml_components["abstract"]:
-            text: str = abstract["content"]
-            title: str = abstract["label"] or DEFAULT_HEADER_ABSTRACT
-            if not text:
+            sections = abstract["sections"]
+            paragraphs = abstract["paragraphs"]
+            title = abstract["label"] or DEFAULT_HEADER_ABSTRACT
+
+            # Skip empty abstracts.
+            if not paragraphs and not sections:
                 continue
-            parent = doc.add_heading(
+
+            abstract_heading = doc.add_heading(
                 parent=self.root, text=title, level=self.hlevel + 1
             )
-            doc.add_text(
-                parent=parent,
-                text=text,
-                label=DocItemLabel.TEXT,
-            )
+
+            # Inline-group serializer spacing is tracked in docling-core#693.
+            for paragraph in paragraphs:
+                self._walk_linear(doc, abstract_heading, paragraph)
+
+            # Structured abstract: emit each <sec> as a sub-heading with
+            # its own paragraph(s) beneath the abstract heading.
+            for section in sections:
+                section_title = section["title"]
+                if section_title:
+                    section_parent: NodeItem = doc.add_heading(
+                        parent=abstract_heading,
+                        text=section_title,
+                        level=self.hlevel + 2,
+                    )
+                else:
+                    section_parent = abstract_heading
+                for paragraph in section["paragraphs"]:
+                    self._walk_linear(doc, section_parent, paragraph)
 
         return
 
@@ -541,6 +619,32 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
+    def _add_mixed_citation(
+        self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
+    ) -> None:
+        """Add a `<mixed-citation>` with the styling and links of a paragraph.
+
+        A citation with one text run stays a single list item. A citation with
+        more runs, such as text and an `<ext-link>`, becomes an empty list item
+        with an inline group of the runs.
+        """
+        segments = JatsDocumentBackend._trim_segment_edges(
+            self._walk_linear(doc, parent, node)
+        )
+        if not (isinstance(parent, GroupItem) and parent.label == GroupLabel.LIST):
+            JatsDocumentBackend._emit_inline(doc, parent, segments)
+        elif len(segments) == 1 and segments[0].label == DocItemLabel.TEXT:
+            doc.add_list_item(
+                text=segments[0].text,
+                enumerated=False,
+                formatting=segments[0].formatting,
+                hyperlink=segments[0].hyperlink,
+                parent=parent,
+            )
+        else:
+            list_item = doc.add_list_item(text="", enumerated=False, parent=parent)
+            JatsDocumentBackend._emit_inline(doc, list_item, segments)
+
     def _parse_element_citation(self, node: etree._Element) -> str:
         citation: Citation = {
             "author_names": "",
@@ -556,15 +660,14 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         _log.debug("Citation parsing started")
 
-        # Author names
+        # Author names: surname before given-names (citation format).
         names = []
         for name_node in node.xpath(".//name"):
-            name_str = (
-                name_node.xpath("surname")[0].text.replace("\n", " ").strip()
-                + " "
-                + name_node.xpath("given-names")[0].text.replace("\n", " ").strip()
+            name_str = JatsDocumentBackend._parse_structured_name(
+                name_node, order=("surname", "given-names")
             )
-            names.append(name_str)
+            if name_str:
+                names.append(name_str)
         etal_node = node.xpath(".//etal")
         if len(etal_node) > 0:
             etal_text = etal_node[0].text or DEFAULT_TEXT_ETAL
@@ -588,7 +691,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         citation["title"] = (
             JatsDocumentBackend._get_text(title_node)
             if title_node is not None
-            else node.text.replace("\n", " ").strip()
+            else JatsDocumentBackend._normalize_whitespace(node.text)
         )
 
         # Journal, year, publisher name, publisher location, volume, elocation
@@ -603,7 +706,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             item_node = node.xpath(item)
             if len(item_node) > 0:
                 citation[item.replace("-", "_")] = (  # type: ignore[literal-required]
-                    item_node[0].text.replace("\n", " ").strip()
+                    JatsDocumentBackend._normalize_whitespace(item_node[0].text)
                 )
 
         # Publication identifier
@@ -625,15 +728,19 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Pages
         if len(node.xpath("elocation-id")) > 0:
-            citation["page"] = (
-                node.xpath("elocation-id")[0].text.replace("\n", " ").strip()
+            citation["page"] = JatsDocumentBackend._normalize_whitespace(
+                node.xpath("elocation-id")[0].text
             )
         elif len(node.xpath("fpage")) > 0:
-            citation["page"] = node.xpath("fpage")[0].text.replace("\n", " ").strip()
+            citation["page"] = JatsDocumentBackend._normalize_whitespace(
+                node.xpath("fpage")[0].text
+            )
             if len(node.xpath("lpage")) > 0:
-                citation["page"] += (
-                    "–" + node.xpath("lpage")[0].text.replace("\n", " ").strip()  # noqa: RUF001
+                lpage = JatsDocumentBackend._normalize_whitespace(
+                    node.xpath("lpage")[0].text
                 )
+                if lpage:
+                    citation["page"] += "–" + lpage  # noqa: RUF001
 
         # Flatten the citation to string
 
@@ -699,26 +806,40 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return base.model_copy(update=_JATS_FORMAT_TAG_MAP[tag])
 
     @staticmethod
-    def _strip_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
-        stripped: list[InlineSegment] = []
-        for segment in segments:
-            text = segment.text.strip()
-            if text:
-                stripped.append(replace(segment, text=text))
-        return stripped
+    def _parse_ext_link_href(href: str | None) -> AnyUrl | Path | None:
+        if href is None or not (href := href.strip()):
+            return None
+        try:
+            return AnyUrl(href)
+        except ValidationError:
+            return Path(href)
+
+    @staticmethod
+    def _trim_segment_edges(segments: list[InlineSegment]) -> list[InlineSegment]:
+        """Trim the outer edges of a segment sequence, keeping interior whitespace."""
+        return trim_run_edges(
+            segments,
+            get_text=lambda segment: segment.text,
+            with_text=lambda segment, text: replace(segment, text=text),
+        )
 
     @staticmethod
     def _walk_inline_formula(
-        node: etree._Element, formatting: Formatting | None = None
+        node: etree._Element,
+        formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ) -> list[InlineSegment]:
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
         segments: list[InlineSegment] = []
         if node.text:
-            text = node.text.replace("\n", " ")
+            text = JatsDocumentBackend._normalize_xml_line_breaks(node.text)
             if text:
                 segments.append(
                     InlineSegment(
-                        label=DocItemLabel.TEXT, text=text, formatting=current
+                        label=DocItemLabel.TEXT,
+                        text=text,
+                        formatting=current,
+                        hyperlink=hyperlink,
                     )
                 )
         for child in node:
@@ -730,50 +851,95 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 formula = JatsDocumentBackend._extract_tex_math(child)
                 if formula is not None:
                     segments.append(
-                        InlineSegment(label=DocItemLabel.FORMULA, text=formula)
+                        InlineSegment(
+                            label=DocItemLabel.FORMULA,
+                            text=formula,
+                            hyperlink=hyperlink,
+                        )
                     )
             else:
-                segments.extend(
-                    JatsDocumentBackend._walk_inline_formula(child, current)
+                child_segments = JatsDocumentBackend._walk_inline_formula(
+                    child, current, hyperlink
                 )
+                if (
+                    tag == "p"
+                    and segments
+                    and child_segments
+                    and not segments[-1].text[-1:].isspace()
+                    and not child_segments[0].text[:1].isspace()
+                ):
+                    # A paragraph is a block: keep the boundary to what precedes it
+                    # (`<fn><label>1</label><p>See` reads "1 See").
+                    segments.append(InlineSegment(label=DocItemLabel.TEXT, text=" "))
+                segments.extend(child_segments)
             if child.tail:
-                tail = child.tail.replace("\n", " ")
+                tail = JatsDocumentBackend._normalize_xml_line_breaks(child.tail)
                 if tail:
                     segments.append(
                         InlineSegment(
-                            label=DocItemLabel.TEXT, text=tail, formatting=current
+                            label=DocItemLabel.TEXT,
+                            text=tail,
+                            formatting=current,
+                            hyperlink=hyperlink,
                         )
                     )
         return segments
 
     @staticmethod
+    def _normalize_xml_line_breaks(text: str) -> str:
+        """Collapse XML formatting whitespace around line breaks."""
+        if "\n" not in text:
+            return text
+
+        chunks = text.split("\n")
+        middle = [chunk.strip(" \t") for chunk in chunks[1:-1]]
+        normalized = [
+            chunks[0].rstrip(" \t"),
+            *(chunk for chunk in middle if chunk),
+            chunks[-1].lstrip(" \t"),
+        ]
+        return " ".join(normalized)
+
+    @staticmethod
     def _append_run(
-        segments: list[InlineSegment], text: str, formatting: Formatting | None
+        segments: list[InlineSegment],
+        text: str,
+        formatting: Formatting | None,
+        hyperlink: AnyUrl | Path | None = None,
     ) -> None:
-        """Append a text run, coalescing into the previous run when formatting matches."""
-        text = text.replace("\n", " ")
+        """Append text, coalescing when formatting and hyperlink both match."""
+        text = JatsDocumentBackend._normalize_xml_line_breaks(text)
         if not text:
             return
         if (
             segments
             and segments[-1].label == DocItemLabel.TEXT
             and segments[-1].formatting == formatting
+            and segments[-1].hyperlink == hyperlink
         ):
             segments[-1] = replace(segments[-1], text=segments[-1].text + text)
         else:
             segments.append(
-                InlineSegment(label=DocItemLabel.TEXT, text=text, formatting=formatting)
+                InlineSegment(
+                    label=DocItemLabel.TEXT,
+                    text=text,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
             )
 
     @staticmethod
     def _extend_segments(
         segments: list[InlineSegment], more: list[InlineSegment]
     ) -> None:
-        """Extend ``segments`` with ``more``, coalescing adjacent equal-format text."""
+        """Extend ``segments``, coalescing text with equal formatting and hyperlink."""
         for segment in more:
             if segment.label == DocItemLabel.TEXT:
                 JatsDocumentBackend._append_run(
-                    segments, segment.text, segment.formatting
+                    segments,
+                    segment.text,
+                    segment.formatting,
+                    segment.hyperlink,
                 )
             else:
                 segments.append(segment)
@@ -783,7 +949,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument, parent: NodeItem, segments: list[InlineSegment]
     ) -> None:
         """Emit inline segments under ``parent``, wrapping many in an inline group."""
-        segments = JatsDocumentBackend._strip_segments(segments)
+        segments = JatsDocumentBackend._trim_segment_edges(segments)
         if not segments:
             return
         container = doc.add_inline_group(parent=parent) if len(segments) > 1 else parent
@@ -792,6 +958,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 label=segment.label,
                 text=segment.text,
                 formatting=segment.formatting,
+                hyperlink=segment.hyperlink,
                 parent=container,
             )
 
@@ -804,16 +971,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
 
         caption_node = node.xpath("caption")
-        caption: str | None
+        caption: str = ""
         if len(caption_node) > 0:
-            caption = ""
             for caption_par in list(caption_node[0]):
                 if caption_par.xpath(".//supplementary-material"):
                     continue
                 caption += JatsDocumentBackend._get_text(caption_par).strip() + " "
             caption = caption.strip()
-        else:
-            caption = None
 
         # TODO: format label vs caption once styling is supported
         fig_text: str = f"{label}{' ' if label and caption else ''}{caption}"
@@ -823,9 +987,88 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             else None
         )
 
-        doc.add_picture(parent=parent, caption=fig_caption)
+        doc.add_picture(
+            parent=parent,
+            caption=fig_caption,
+            image=self._load_figure_image(node),
+        )
 
         return
+
+    def _load_figure_image(self, node: etree._Element) -> ImageRef | None:
+        """Load an explicitly enabled local JATS figure image."""
+        if (
+            not self.options.fetch_images
+            or self.base_path is None
+            or not ImageResourceLoader.is_local_path(self.base_path)
+        ):
+            return None
+
+        graphic_nodes = node.xpath("graphic | alternatives/graphic")
+        if not graphic_nodes:
+            return None
+
+        missing_hrefs: list[str] = []
+        for graphic_node in graphic_nodes:
+            href = graphic_node.get(_XLINK_HREF)
+            if href is None or not href.strip():
+                continue
+
+            href = href.strip()
+            if not ImageResourceLoader.is_local_path(href):
+                continue
+
+            # An absolute rendition is invalid for a confined local base, but it
+            # must not prevent a later relative rendition from being used.
+            if ImageResourceLoader.is_absolute_path(href):
+                warnings.warn(
+                    "Could not process an image from "
+                    f"{href}: Absolute paths are not allowed with local base_path."
+                )
+                continue
+
+            if Path(href).suffix.lower() == ".svg":
+                _log.warning("Skipping unsupported JATS SVG figure image: %s", href)
+                continue
+
+            candidate_hrefs = [href]
+            if not Path(href).suffix:
+                candidate_hrefs.extend(
+                    f"{href}{suffix}" for suffix in _RASTER_IMAGE_SUFFIXES
+                )
+
+            found_candidate = False
+            for candidate_href in candidate_hrefs:
+                try:
+                    resolved_href = self._image_loader.resolve_relative_path(
+                        candidate_href, self.base_path
+                    )
+                except ValueError as e:
+                    warnings.warn(f"Could not process an image from {href}: {e}")
+                    return None
+
+                # Extensionless JATS references require probing several conventional
+                # suffixes. Check readability first so expected probe misses do not
+                # emit one warning per suffix; decoding remains centralized in the
+                # loader.
+                if Path(resolved_href).is_file():
+                    found_candidate = True
+                    image_ref = self._image_loader.create_image_ref(
+                        resolved_href, self.base_path
+                    )
+                    if image_ref is not None:
+                        return image_ref
+
+            if not found_candidate:
+                missing_hrefs.append(href)
+
+        if missing_hrefs:
+            warnings.warn(
+                "Could not process JATS figure image(s) "
+                f"{', '.join(missing_hrefs)}: no matching local file exists."
+            )
+
+        return None
 
     def _add_metadata(
         self, doc: DoclingDocument, xml_components: XMLComponents
@@ -846,9 +1089,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Find the number of rows and columns (taking into account spans)
         num_rows = 0
-        num_cols = 0
+        row_cell_spans: list[list[tuple[int, int]]] = []
         for row in element("tr"):
-            col_count = 0
+            cell_spans: list[tuple[int, int]] = []
             is_row_header = True
             if not isinstance(row, Tag):
                 continue
@@ -857,12 +1100,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     continue
                 cell_tag = cast(Tag, cell)
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
-                col_count += col_span
+                cell_spans.append((col_span, row_span))
                 if cell_tag.name == "td" or row_span == 1:
                     is_row_header = False
-            num_cols = max(num_cols, col_count)
+            row_cell_spans.append(cell_spans)
             if not is_row_header:
                 num_rows += 1
+        num_cols = table_width(row_cell_spans)
 
         _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
 
@@ -917,9 +1161,14 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     row_span -= 1
                 while (
                     col_idx < num_cols
+                    and row_idx + start_row_span < num_rows
                     and grid[row_idx + start_row_span][col_idx] is not None
                 ):
                     col_idx += 1
+                # Keep the cell within the table so the fill below stays
+                # proportional to the table size, not to the declared spans.
+                row_span = min(row_span, max(num_rows - (row_idx + start_row_span), 1))
+                col_span = min(col_span, max(num_cols - col_idx, 1))
                 for r in range(start_row_span, start_row_span + row_span):
                     for c in range(col_span):
                         if row_idx + r < num_rows and col_idx + c < num_cols:
@@ -995,7 +1244,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Label
         if len(node.xpath("label")) > 0:
-            table["label"] = node.xpath("label")[0].text
+            # lxml sets .text to None for an empty element; fall back to "".
+            table["label"] = node.xpath("label")[0].text or ""
 
         try:
             self._add_table(doc, parent, table)
@@ -1018,11 +1268,25 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         parent: NodeItem,
         node: etree._Element,
     ) -> None:
-        footnotes: list[str] = [
-            JatsDocumentBackend._normalize_whitespace(JatsDocumentBackend._get_text(fn))
-            for fn in node.iterchildren(tag="fn")
-        ]
-        if not footnotes:
+        footnote_segments: list[list[InlineSegment]] = []
+        for fn in node.iterchildren(tag="fn"):
+            segments = JatsDocumentBackend._trim_segment_edges(
+                JatsDocumentBackend._walk_inline_formula(fn)
+            )
+            if segments:
+                # Keep the FOOTNOTE label on plain text runs; formulas stay
+                # labeled as formulas.
+                footnote_segments.append(
+                    [
+                        (
+                            replace(segment, label=DocItemLabel.FOOTNOTE)
+                            if segment.label == DocItemLabel.TEXT
+                            else segment
+                        )
+                        for segment in segments
+                    ]
+                )
+        if not footnote_segments:
             return
         title = node.xpath("title")
         title_text = (
@@ -1037,14 +1301,43 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             name="footnotes",
             parent=heading,
         )
-        for item in footnotes:
+        for segments in footnote_segments:
             list_item = doc.add_list_item(parent=footnote_group, text="")
-            inline_item = doc.add_inline_group(parent=list_item)
-            doc.add_text(
-                label=DocItemLabel.FOOTNOTE,
-                text=item,
-                parent=inline_item,
+            JatsDocumentBackend._emit_inline(doc, list_item, segments)
+
+    def _add_sub_article(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem,
+        node: etree._Element,
+    ) -> None:
+        """Add the body and back matter of a `<sub-article>` or `<response>`.
+
+        Like a `<sec>`, the content goes under a heading with the title of the
+        sub-article, if it has one. A nested sub-article goes under the
+        heading of the sub-article that contains it.
+        """
+        title = node.xpath(
+            "front-stub/title-group/article-title"
+            " | front/article-meta/title-group/article-title"
+        )
+        text = (
+            JatsDocumentBackend._normalize_whitespace(
+                JatsDocumentBackend._get_text(title[0])
             )
+            if title
+            else ""
+        )
+        new_parent = parent
+        if text:
+            self.hlevel += 1
+            new_parent = doc.add_heading(text=text, parent=parent, level=self.hlevel)
+        for child in node.iterchildren("body", "back"):
+            self._walk_linear(doc, new_parent, child)
+        for child in node.iterchildren(*_SUB_ARTICLE_TAGS):
+            self._add_sub_article(doc, new_parent, child)
+        if text:
+            self.hlevel -= 1
 
     def _walk_linear(
         self,
@@ -1052,14 +1345,21 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         parent: NodeItem,
         node: etree._Element,
         formatting: Formatting | None = None,
+        hyperlink: AnyUrl | Path | None = None,
     ) -> list[InlineSegment]:
-        skip_tags = ["term"]
         flush_tags = ["ack", "sec", "list", "boxed-text", "disp-formula", "fig"]
         new_parent: NodeItem = parent
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
+        current_hyperlink = hyperlink
+        if node.tag == "ext-link":
+            ext_link = JatsDocumentBackend._parse_ext_link_href(node.get(_XLINK_HREF))
+            if ext_link is not None:
+                current_hyperlink = ext_link
         inline_segments: list[InlineSegment] = []
-        if node.tag not in skip_tags and node.text:
-            JatsDocumentBackend._append_run(inline_segments, node.text, current)
+        if node.text:
+            JatsDocumentBackend._append_run(
+                inline_segments, node.text, current, current_hyperlink
+            )
 
         for child in list(node):
             stop_walk: bool = False
@@ -1089,7 +1389,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "list-item":
                 # TODO: address non-paragraph, non-list content inside list-item
                 #       (e.g. disp-formula, fig, table-wrap)
-                # TODO: address list type and item label
                 text_parts: list[str] = []
                 nested_lists: list[etree._Element] = []
 
@@ -1103,11 +1402,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
                 new_parent = doc.add_list_item(
                     text=text,
+                    enumerated=node.get("list-type", "").strip().lower()
+                    in _ORDERED_LIST_TYPES,
+                    marker=JatsDocumentBackend._get_label(child),
                     parent=parent,
                 )
 
                 for nested in nested_lists:
-                    self._walk_linear(doc, new_parent, nested)
+                    nested_group = doc.add_group(
+                        label=GroupLabel.LIST, name="list", parent=new_parent
+                    )
+                    self._walk_linear(doc, nested_group, nested)
 
                 stop_walk = True
 
@@ -1142,8 +1447,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 self._add_citation(doc, parent, text)
                 stop_walk = True
             elif child.tag == "mixed-citation":
-                text = JatsDocumentBackend._get_text(child).strip()
-                self._add_citation(doc, parent, text)
+                self._add_mixed_citation(doc, parent, child)
                 stop_walk = True
             elif child.tag == "tex-math":
                 self._add_equation(doc, parent, child)
@@ -1152,13 +1456,17 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 # Inline formula: tex-math stays inline, unlike block <disp-formula>.
                 JatsDocumentBackend._extend_segments(
                     inline_segments,
-                    JatsDocumentBackend._walk_inline_formula(child, current),
+                    JatsDocumentBackend._walk_inline_formula(
+                        child, current, current_hyperlink
+                    ),
                 )
                 stop_walk = True
 
             # step into child
             if not stop_walk:
-                child_segments = self._walk_linear(doc, new_parent, child, current)
+                child_segments = self._walk_linear(
+                    doc, new_parent, child, current, current_hyperlink
+                )
                 if not (node.getparent().tag == "p" and node.tag in flush_tags):
                     JatsDocumentBackend._extend_segments(
                         inline_segments, child_segments
@@ -1168,7 +1476,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
             # pick up the tail text
             if child.tail:
-                JatsDocumentBackend._append_run(inline_segments, child.tail, current)
+                JatsDocumentBackend._append_run(
+                    inline_segments, child.tail, current, current_hyperlink
+                )
 
         # emit the paragraph, or backpropagate inline content to the parent
         if node.tag == "p":

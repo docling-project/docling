@@ -16,6 +16,7 @@ from PIL import Image as PILImage
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import (
+    NemotronParseInference,
     Page,
     VlmPrediction,
     VlmPredictionToken,
@@ -23,6 +24,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
+from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.models.base_model import BasePageModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
@@ -31,16 +33,28 @@ from docling.models.inference_engines.vlm import (
     VlmEngineType,
     create_vlm_engine,
 )
+from docling.utils.mineru_utils import (
+    MINERU2_LAYOUT_PROMPT,
+    parse_mineru2_layout,
+    prepare_mineru2_crops,
+    prepare_mineru2_layout_image,
+    serialize_mineru2_transcript,
+)
+from docling.utils.nemotron_parse_multipass import (
+    NEMOTRON_DETECT_PROMPT,
+    merge_nemotron_crops,
+    prepare_nemotron_crops,
+    remap_nemotron_crop,
+)
+from docling.utils.nemotron_parse_v3_5_utils import NemotronParseBlock
 from docling.utils.profiling import TimeRecorder
+from docling.utils.stop_reason import normalize_stop_reason
 
 _log = logging.getLogger(__name__)
-_VLM_STOP_REASON_VALUES = {reason.value for reason in VlmStopReason}
 
 
 def _prediction_from_engine_output(output: VlmEngineOutput) -> VlmPrediction:
-    stop_reason = VlmStopReason.UNSPECIFIED
-    if output.stop_reason in _VLM_STOP_REASON_VALUES:
-        stop_reason = VlmStopReason(output.stop_reason)
+    stop_reason = normalize_stop_reason(output.stop_reason)
 
     metadata = output.metadata or {}
 
@@ -63,6 +77,8 @@ def _prediction_from_engine_output(output: VlmEngineOutput) -> VlmPrediction:
         num_tokens=metadata.get("num_tokens"),
         usage=metadata.get("usage"),
         generated_tokens=generated_tokens,
+        error_message=metadata.get("error"),
+        nemotron_parse=metadata.get("nemotron_parse"),
     )
 
 
@@ -156,6 +172,245 @@ class VlmConvertModel(BasePageModel):
             for image, prompt in zip(images, prompts)
         ]
 
+    @staticmethod
+    def _mineru2_stop_reason(
+        layout_output: VlmEngineOutput,
+        recognition_outputs: list[VlmEngineOutput],
+    ) -> str | None:
+        incomplete_reasons = {
+            VlmStopReason.LENGTH.value,
+            VlmStopReason.CONTENT_FILTERED.value,
+        }
+        outputs = [layout_output, *recognition_outputs]
+        for output in outputs:
+            if output.stop_reason in incomplete_reasons:
+                return output.stop_reason
+        return layout_output.stop_reason
+
+    def _predict_mineru2(self, images: list[PILImage.Image]) -> list[VlmEngineOutput]:
+        """Run MinerU2 layout detection followed by region recognition."""
+        layout_images = [prepare_mineru2_layout_image(image) for image in images]
+        layout_inputs = self._build_engine_inputs(
+            layout_images, [MINERU2_LAYOUT_PROMPT] * len(layout_images)
+        )
+        layout_outputs = self.engine.predict_batch(layout_inputs)
+        if len(layout_outputs) != len(images):
+            raise RuntimeError(
+                "MinerU2 layout output count does not match the input page count"
+            )
+
+        regions_by_page = [
+            parse_mineru2_layout(output.text) for output in layout_outputs
+        ]
+        crop_images: list[PILImage.Image] = []
+        crop_prompts: list[str] = []
+        crop_targets: list[tuple[int, int]] = []
+        for page_index, (image, regions) in enumerate(zip(images, regions_by_page)):
+            for crop in prepare_mineru2_crops(image, regions):
+                crop_images.append(crop.image)
+                crop_prompts.append(crop.prompt)
+                crop_targets.append((page_index, crop.region_index))
+
+        recognition_outputs = (
+            self.engine.predict_batch(
+                self._build_engine_inputs(crop_images, crop_prompts)
+            )
+            if crop_images
+            else []
+        )
+        if len(recognition_outputs) != len(crop_targets):
+            raise RuntimeError(
+                "MinerU2 recognition output count does not match the region count"
+            )
+
+        outputs_by_page: list[list[tuple[int, VlmEngineOutput]]] = [
+            [] for _image in images
+        ]
+        for (page_index, region_index), output in zip(
+            crop_targets, recognition_outputs
+        ):
+            outputs_by_page[page_index].append((region_index, output))
+
+        combined_outputs = []
+        for layout_output, indexed_page_outputs in zip(layout_outputs, outputs_by_page):
+            indexed_page_outputs.sort(key=lambda item: item[0])
+            page_outputs = [output for _region_index, output in indexed_page_outputs]
+            all_outputs = [layout_output, *page_outputs]
+            combined_outputs.append(
+                VlmEngineOutput(
+                    text=serialize_mineru2_transcript(
+                        layout_output.text,
+                        [
+                            (region_index, output.text)
+                            for region_index, output in indexed_page_outputs
+                        ],
+                    ),
+                    stop_reason=self._mineru2_stop_reason(layout_output, page_outputs),
+                    metadata={
+                        "generation_time": sum(
+                            output.metadata.get("generation_time") or 0
+                            for output in all_outputs
+                        ),
+                        "num_tokens": sum(
+                            output.metadata.get("num_tokens") or 0
+                            for output in all_outputs
+                        ),
+                    },
+                )
+            )
+        return combined_outputs
+
+    @staticmethod
+    def _nemotron_complete(output: VlmEngineOutput) -> bool:
+        return (
+            output.stop_reason
+            in (None, "stop", "eos", "end_of_sequence", "unspecified")
+            and not output.metadata.get("error")
+            and bool(output.text.strip())
+        )
+
+    def _nemotron_inputs(
+        self, images: list[PILImage.Image], prompts: list[str], *, stage: str
+    ) -> list[VlmEngineInput]:
+        inputs = self._build_engine_inputs(images, prompts)
+        for item in inputs:
+            item.temperature = 0.1 if stage == "crop" else 0.2
+            item.max_new_tokens = 4096 if stage == "detection" else 8744
+            settings = {
+                "repetition_penalty": 1.0 if stage == "crop" else 1.05,
+                "top_k": 50,
+                "top_p": 1.0,
+            }
+            if VlmEngineType.is_api_variant(self._resolve_runtime_engine_type()):
+                item.extra_generation_config["api_params"] = {
+                    **settings,
+                    "skip_special_tokens": False,
+                }
+            else:
+                item.extra_generation_config.update(settings)
+        return inputs
+
+    def _nemotron_optional_batch(
+        self, inputs: list[VlmEngineInput]
+    ) -> list[VlmEngineOutput]:
+        """A failed optional stage must not discard the page parse."""
+        try:
+            outputs = self.engine.predict_batch(inputs)
+        except Exception as exc:
+            _log.warning(
+                "Nemotron optional stage failed; retaining page output: %s", exc
+            )
+            return [
+                VlmEngineOutput(
+                    text="", stop_reason="inference_error", metadata={"error": str(exc)}
+                )
+                for _ in inputs
+            ]
+        if len(outputs) != len(inputs):
+            raise RuntimeError(
+                "Nemotron optional output count does not match the input count"
+            )
+        return outputs
+
+    def _predict_nemotron(
+        self, images: list[PILImage.Image], prompts: list[str]
+    ) -> list[VlmEngineOutput]:
+        """Batch page, optional detection, and bounded crop stages on one engine."""
+        options = self.options.nemotron_parse
+        page_inputs = (
+            self._build_engine_inputs(images, prompts)
+            if options.passes == "single"
+            else self._nemotron_inputs(images, prompts, stage="fullpage")
+        )
+        outputs = self.engine.predict_batch(page_inputs)
+        if len(outputs) != len(images):
+            raise RuntimeError(
+                "Nemotron page output count does not match the input count"
+            )
+        inference = [
+            NemotronParseInference(
+                passes=options.passes,
+                triple_regions=options.triple_regions
+                if options.passes == "triple"
+                else None,
+            )
+            for _ in images
+        ]
+        detections: dict[int, VlmEngineOutput] = {}
+        valid_indices = [
+            i for i, output in enumerate(outputs) if self._nemotron_complete(output)
+        ]
+        if options.passes == "triple" and valid_indices:
+            detection_outputs = self._nemotron_optional_batch(
+                self._nemotron_inputs(
+                    [images[i] for i in valid_indices],
+                    [NEMOTRON_DETECT_PROMPT] * len(valid_indices),
+                    stage="detection",
+                )
+            )
+            for index, output in zip(valid_indices, detection_outputs):
+                inference[index].detection_requests = 1
+                detections[index] = output
+        targets = []
+        if options.passes != "single":
+            for index in valid_indices:
+                detection = detections.get(index)
+                # A failed detector must not turn detector-only mode into double-pass.
+                if detection is not None and not self._nemotron_complete(detection):
+                    continue
+                for crop in prepare_nemotron_crops(
+                    images[index],
+                    outputs[index].text,
+                    detection.text if detection else None,
+                    union=options.triple_regions == "union",
+                ):
+                    targets.append((index, crop))
+        candidates: list[list[NemotronParseBlock]] = [[] for _ in images]
+        stage_outputs = [[output] for output in outputs]
+        for index, output in detections.items():
+            stage_outputs[index].append(output)
+        for start in range(0, len(targets), options.crop_batch_size):
+            batch = targets[start : start + options.crop_batch_size]
+            crop_outputs = self._nemotron_optional_batch(
+                self._nemotron_inputs(
+                    [crop.image for _, crop in batch],
+                    [self.options.model_spec.prompt] * len(batch),
+                    stage="crop",
+                )
+            )
+            for (index, crop), output in zip(batch, crop_outputs):
+                inference[index].crop_requests += 1
+                stage_outputs[index].append(output)
+                mapped = (
+                    remap_nemotron_crop(output.text, crop)
+                    if self._nemotron_complete(output)
+                    else []
+                )
+                if not mapped:
+                    inference[index].rejected_crop_requests += 1
+                candidates[index].extend(mapped)
+        for index, output in enumerate(outputs):
+            output.text = merge_nemotron_crops(output.text, candidates[index])
+            # Discard page token logprobs: the combined text has different tokens.
+            metadata = dict(output.metadata)
+            if options.passes != "single":
+                metadata.pop("logprobs", None)
+                for key in ("generation_time", "num_tokens"):
+                    values = [part.metadata.get(key) for part in stage_outputs[index]]
+                    metadata[key] = (
+                        sum(value for value in values if value is not None)
+                        if any(value is not None for value in values)
+                        else (-1 if key == "generation_time" else None)
+                    )
+                metadata["usage"] = [
+                    part.metadata["usage"]
+                    for part in stage_outputs[index]
+                    if part.metadata.get("usage") is not None
+                ] or None
+            metadata["nemotron_parse"] = inference[index].model_dump()
+            output.metadata = metadata
+        return outputs
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -212,16 +467,31 @@ class VlmConvertModel(BasePageModel):
             )
 
             try:
-                # Create batch of runtime inputs (shared generation template)
-                engine_inputs = self._build_engine_inputs(images, prompts)
-
                 # Run batch inference
                 batch_start = time.perf_counter()
-                outputs = self.engine.predict_batch(engine_inputs)
-                _log.debug(
-                    "Processed %s pages through VLM engine in %.3fs",
-                    len(engine_inputs),
-                    time.perf_counter() - batch_start,
+                if (
+                    self.options.model_spec.response_format
+                    == ResponseFormat.NEMOTRON_PARSE_V3_5
+                ):
+                    outputs = self._predict_nemotron(images, prompts)
+                elif self.options.model_spec.response_format == ResponseFormat.MINERU2:
+                    outputs = self._predict_mineru2(images)
+                else:
+                    engine_inputs = self._build_engine_inputs(images, prompts)
+                    outputs = self.engine.predict_batch(engine_inputs)
+                batch_time = time.perf_counter() - batch_start
+
+                # Engines report generated (not prompt) token counts, so this is
+                # decode throughput for the batch.
+                batch_tokens = sum(
+                    output.metadata.get("num_tokens") or 0 for output in outputs
+                )
+                _log.info(
+                    "Processed %s page(s): %s tokens in %.2f sec. (%.2f tok/s)",
+                    len(images),
+                    batch_tokens,
+                    batch_time,
+                    batch_tokens / batch_time if batch_time > 0 else 0.0,
                 )
 
                 # Attach predictions to pages
@@ -279,11 +549,15 @@ class VlmConvertModel(BasePageModel):
                 )
             prompts = prompt
 
-        # Process batch of images (shared generation template)
-        engine_inputs = self._build_engine_inputs(images, prompts)
-
-        # Run batch inference
-        outputs = self.engine.predict_batch(engine_inputs)
+        if (
+            self.options.model_spec.response_format
+            == ResponseFormat.NEMOTRON_PARSE_V3_5
+        ):
+            outputs = self._predict_nemotron(images, prompts)
+        else:
+            outputs = self.engine.predict_batch(
+                self._build_engine_inputs(images, prompts)
+            )
 
         # Convert outputs to VlmPredictions
         for output in outputs:

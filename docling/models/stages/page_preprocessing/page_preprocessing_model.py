@@ -19,7 +19,9 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
+from docling.models.base_ocr_model import segregate_by_visibility
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_quality import is_broken_text_layer
 
 
 def resolve_skip_cell_extraction(pipeline_options: PdfPipelineOptions) -> bool:
@@ -41,6 +43,9 @@ class PagePreprocessingOptions(BaseModel):
     skip_cell_extraction: bool = (
         False  # Skip text cell extraction for VLM-only processing
     )
+    capture_reading_order_separators: bool = False
+    # Score a broken text layer as poor, for OcrOptions.replace_broken_text_layer.
+    detect_broken_text_layer: bool = False
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -65,6 +70,8 @@ class PagePreprocessingModel(BasePageModel):
             else:
                 with TimeRecorder(conv_res, "page_parse"):
                     page = self._populate_page_images(page)
+                    if self.options.capture_reading_order_separators:
+                        page = self._capture_shape_geometry(page)
                     if not self.options.skip_cell_extraction:
                         page = self._parse_page_cells(conv_res, page)
                 yield page
@@ -86,6 +93,14 @@ class PagePreprocessingModel(BasePageModel):
 
         return page
 
+    def _capture_shape_geometry(self, page: Page) -> Page:
+        """Retain visible vector geometry needed after the backend is released."""
+        assert page._backend is not None
+
+        page._shape_lines = page._backend.get_shape_lines()
+        page._shape_bounding_boxes = page._backend.get_connected_shape_bounding_boxes()
+        return page
+
     # Extract and populate the page cells and store it in the page object
     def _parse_page_cells(self, conv_res: ConversionResult, page: Page) -> Page:
         assert page._backend is not None
@@ -103,11 +118,22 @@ class PagePreprocessingModel(BasePageModel):
             warnings.filterwarnings(
                 "ignore", "Mean of empty slice", RuntimeWarning, "numpy"
             )
-            conv_res.confidence.pages[page.page_no].parse_score = float(
+            parse_score = float(
                 np.nanquantile(
                     text_scores, q=0.10
                 )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
             )
+
+        # Some broken text layers only show across the whole page, such as an
+        # unmapped font encoding. Judged on visible text, only when the OCR may
+        # replace the layer. Only this check replaces a page: a low per-cell score
+        # also comes from a few unmapped glyphs, such as bullets, on a good page.
+        if self.options.detect_broken_text_layer and not np.isnan(parse_score):
+            visible_cells, _ = segregate_by_visibility(page.cells)
+            if is_broken_text_layer("\n".join(c.text for c in visible_cells)):
+                page._broken_text_layer = True
+                parse_score = 0.0
+        conv_res.confidence.pages[page.page_no].parse_score = parse_score
 
         def draw_cell_boxes(
             image: Image,

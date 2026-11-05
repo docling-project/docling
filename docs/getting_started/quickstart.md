@@ -36,7 +36,7 @@ The CLI provides various options, such as 🥚[GraniteDocling](https://huggingfa
 docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
 ```
 
-For all available options, run `docling --help` or check the [CLI reference](../reference/cli.md).
+For all available options, run `docling --help` (or `docling -h`) or check the [CLI reference](../reference/cli.md).
 
 ## What's next
 

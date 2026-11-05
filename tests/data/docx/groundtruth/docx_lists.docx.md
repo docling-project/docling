@@ -92,3 +92,23 @@ Tomato seedlings leaned toward the glass as afternoon light warmed the trays.
     - 3.1. Bench Setup
 
 The spare clamps were sorted into labeled tins along the lower shelf.
+
+##### Test 10: Non-decimal lvlText suffix
+
+1. Parent decimal item
+    - a) Child lettered first
+    - b) Child lettered second
+2. Parent decimal two
+
+#### Test 11: List starting above indent level 0
+
+- 1.1. Item A
+    - 1.1.1. Item B
+- 1.2. Item C
+
+#### Test 12: List starting at indent level 0
+
+1. Item A
+    - 1.1. Item B
+        - 1.1.1. Item C
+    - 1.2. Item D

@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
+import signal
 import subprocess
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -13,11 +15,34 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import TYPE_CHECKING, Callable, Final, Optional
 
-import pypdfium2
 from PIL import Image, ImageChops
 
 if TYPE_CHECKING:
     from docx.document import Document
+
+# pypdfium2 ships with the PDF extras, not with format-docx/pptx/xlsx, but this
+# module is imported eagerly by the Word, PowerPoint, and Excel backends. A
+# module-level import therefore breaks those backends on installs that omit the
+# PDF extras. Guard it here and report the absence once from
+# `get_docx_to_pdf_converter`, which every caller goes through.
+# See https://github.com/docling-project/docling/issues/3613.
+_PYPDFIUM2_AVAILABLE: bool = False
+try:  # pragma: no cover - import-time guard
+    import pypdfium2
+
+    _PYPDFIUM2_AVAILABLE = True
+except ImportError:  # pragma: no cover - import-time guard
+    pass
+
+_PYPDFIUM2_INSTALL_HINT = (
+    "The 'pypdfium2' package is required to rasterize the PDF that LibreOffice "
+    "produces, so charts and EMF/WMF pictures will be skipped. Install it with "
+    "`pip install 'docling-slim[format-pdf-pypdfium2]'`."
+)
+
+_log = logging.getLogger(__name__)
+
+_pypdfium2_warning_emitted = False
 
 LIBREOFFICE_TIMEOUT_S: Final[int] = 60
 """Maximum seconds to wait for a single LibreOffice conversion.
@@ -26,12 +51,156 @@ Without this, a hung ``soffice`` process (e.g. a modal dialog it can't
 show in headless mode) blocks the calling thread forever.
 """
 
+LIBREOFFICE_HARDENING_FLAGS: Final[tuple[str, ...]] = (
+    "--headless",
+    "--norestore",
+    "--nologo",
+    "--nolockcheck",
+    "--nodefault",
+)
+"""Flags that constrain a throwaway ``soffice`` invocation.
+
+``--headless`` avoids any GUI/dialogs; ``--norestore`` stops LibreOffice
+from trying to reopen documents from a previous crashed session (which can
+include attacker files); ``--nologo``/``--nodefault`` suppress the start
+splash and the empty default document; ``--nolockcheck`` avoids stalling on
+a stale lock file inside the throwaway profile.
+"""
+
+
+def _registrymodifications_xcu() -> str:
+    """Return the contents of a hardening ``registrymodifications.xcu``.
+
+    The file is seeded into the throwaway user profile so that the very
+    first (and only) ``soffice`` launch already runs with a locked-down
+    configuration instead of relying on the build's implicit defaults:
+
+    * ``MacroSecurityLevel = 3`` (Very High / maximum) and
+      ``DisableMacrosExecution = true`` prevent document macros from
+      running during conversion.
+    * ``.../Writer/Content/Update/Link = 0`` and the Calc equivalent set
+      "update links when loading" to *never*, so opening an attacker file
+      does not fetch external/DDE-linked content (an SSRF / file-inclusion
+      vector via e.g. ``TargetMode="External"`` relationships).
+
+    Registry nodes for DDE, OLE-object, and remote-image resolution are
+    *not* set here because no single well-documented key covers those
+    vectors across LibreOffice versions.
+    """
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        "<oor:items "
+        'xmlns:oor="http://openoffice.org/2001/registry" '
+        'xmlns:xs="http://www.w3.org/2001/XMLSchema" '
+        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n'
+        ' <item oor:path="/org.openoffice.Office.Common/Security/Scripting">\n'
+        '  <prop oor:name="MacroSecurityLevel" oor:op="fuse">\n'
+        "   <value>3</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        ' <item oor:path="/org.openoffice.Office.Common/Security/Scripting">\n'
+        '  <prop oor:name="DisableMacrosExecution" oor:op="fuse">\n'
+        "   <value>true</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        ' <item oor:path="/org.openoffice.Office.Writer/Content/Update">\n'
+        '  <prop oor:name="Link" oor:op="fuse">\n'
+        "   <value>0</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        ' <item oor:path="/org.openoffice.Office.Calc/Content/Update">\n'
+        '  <prop oor:name="Link" oor:op="fuse">\n'
+        "   <value>0</value>\n"
+        "  </prop>\n"
+        " </item>\n"
+        "</oor:items>\n"
+    )
+
+
+def _build_soffice_command(
+    libreoffice_cmd: str,
+    profile_arg: str,
+    *,
+    target_format: str,
+    outdir: str,
+    input_path: str,
+) -> list[str]:
+    """Assemble a hardened ``soffice`` argv for a single conversion.
+
+    Kept as a pure function so the exact flags can be asserted in unit
+    tests without a LibreOffice binary present.
+    """
+    return [
+        libreoffice_cmd,
+        profile_arg,
+        *LIBREOFFICE_HARDENING_FLAGS,
+        "--convert-to",
+        target_format,
+        "--outdir",
+        outdir,
+        str(input_path),
+    ]
+
+
+def _kill_soffice_process_group(proc: subprocess.Popen) -> None:
+    """Best-effort SIGKILL of the whole ``soffice`` process group.
+
+    ``soffice`` is a thin wrapper that forks ``soffice.bin``; killing only
+    the wrapper (as ``subprocess.run(timeout=...)`` does) can leave the real
+    worker alive to accumulate. Launching with ``start_new_session=True``
+    puts the wrapper in its own process group so the whole tree can be
+    signalled here.
+    """
+    if hasattr(os, "killpg") and hasattr(os, "getpgid"):
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            proc.kill()
+    else:  # pragma: no cover - Windows has no process groups
+        proc.kill()
+    try:
+        proc.wait(timeout=5)
+    except Exception:
+        pass
+
+
+def _run_hardened_soffice(args: list[str], timeout_s: int) -> None:
+    """Run ``soffice`` in its own process group with a hard timeout.
+
+    On timeout, the entire process group is killed so ``soffice.bin``
+    cannot survive.
+
+    Args:
+        args: The ``soffice`` command line to execute.
+        timeout_s: Timeout in seconds for the subprocess.
+
+    Raises:
+        subprocess.CalledProcessError: If ``soffice`` exits with a non-zero
+            status.
+        subprocess.TimeoutExpired: If ``soffice`` does not exit within
+            ``timeout_s`` seconds.
+    """
+    proc = subprocess.Popen(
+        args,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    try:
+        returncode = proc.wait(timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        _kill_soffice_process_group(proc)
+        raise
+    if returncode != 0:
+        raise subprocess.CalledProcessError(returncode, args)
+
 
 def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
     """Return the libreoffice cmd and optionally test it."""
 
     libreoffice_cmd = (
-        shutil.which("libreoffice")
+        os.environ.get("DOCLING_LIBREOFFICE_CMD")
+        or shutil.which("libreoffice")
         or shutil.which("soffice")
         or (
             "/Applications/LibreOffice.app/Contents/MacOS/soffice"
@@ -67,13 +236,23 @@ def _isolated_libreoffice_profile() -> Iterator[str]:
     handling simultaneous requests) share the default profile and collide
     on that lock, causing conversions to fail intermittently and silently.
 
+    The profile is also seeded with a hardening ``registrymodifications.xcu``
+    (see `_registrymodifications_xcu`) so the conversion runs with
+    macros disabled and external link updates turned off.
+
     Yields:
         A ``-env:UserInstallation=<uri>`` CLI argument pointing at a freshly
-        created, empty profile directory. The directory is removed again
+        created profile directory that contains only the hardening
+        ``registrymodifications.xcu``. The directory is removed again
         once the ``with`` block exits.
     """
     profile_dir = Path(mkdtemp(prefix="docling_lo_profile_"))
     try:
+        user_dir = profile_dir / "user"
+        user_dir.mkdir(parents=True, exist_ok=True)
+        (user_dir / "registrymodifications.xcu").write_text(
+            _registrymodifications_xcu(), encoding="utf-8"
+        )
         yield f"-env:UserInstallation={profile_dir.as_uri()}"
     finally:
         shutil.rmtree(profile_dir, ignore_errors=True)
@@ -127,21 +306,15 @@ def convert_to_modern_format(
             input_path = source
 
         with _isolated_libreoffice_profile() as profile_arg:
-            subprocess.run(
-                [
+            _run_hardened_soffice(
+                _build_soffice_command(
                     libreoffice_cmd,
                     profile_arg,
-                    "--headless",
-                    "--convert-to",
-                    target_suffix,
-                    "--outdir",
-                    str(tmp_dir),
-                    str(input_path),
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
-                timeout=timeout_s,
+                    target_format=target_suffix,
+                    outdir=str(tmp_dir),
+                    input_path=str(input_path),
+                ),
+                timeout_s=timeout_s,
             )
 
         converted_path = tmp_dir / (input_path.stem + "." + target_suffix)
@@ -159,8 +332,17 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
     """
     Detects the best available DOCX to PDF tool and returns a conversion function.
     The returned function accepts (input_path, output_path).
-    Returns None if no tool is available.
+    Returns None if no tool is available, or if pypdfium2 is missing: every caller
+    rasterizes the resulting PDF with it, so the conversion would be useless.
     """
+    # Every consumer feeds the LibreOffice PDF straight into pypdfium2, so report
+    # the missing package here once rather than in each backend.
+    global _pypdfium2_warning_emitted
+    if not _PYPDFIUM2_AVAILABLE:
+        if not _pypdfium2_warning_emitted:
+            _log.warning(_PYPDFIUM2_INSTALL_HINT)
+            _pypdfium2_warning_emitted = True
+        return None
 
     # Try LibreOffice
     libreoffice_cmd = get_libreoffice_cmd()
@@ -183,21 +365,15 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
                 output_path: Desired path for the converted PDF.
             """
             with _isolated_libreoffice_profile() as profile_arg:
-                subprocess.run(
-                    [
+                _run_hardened_soffice(
+                    _build_soffice_command(
                         libreoffice_cmd,
                         profile_arg,
-                        "--headless",
-                        "--convert-to",
-                        "pdf",
-                        "--outdir",
-                        os.path.dirname(output_path),
-                        input_path,
-                    ],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    check=True,
-                    timeout=LIBREOFFICE_TIMEOUT_S,
+                        target_format="pdf",
+                        outdir=os.path.dirname(output_path),
+                        input_path=str(input_path),
+                    ),
+                    timeout_s=LIBREOFFICE_TIMEOUT_S,
                 )
 
             expected_output = os.path.join(

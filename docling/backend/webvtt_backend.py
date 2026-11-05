@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 from pathlib import Path
 
 from docling_core.types.doc import (
@@ -30,6 +30,7 @@ from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.text_decoding import UTF8_BOM_ENCODING
 
 _log = logging.getLogger(__name__)
 
@@ -68,11 +69,16 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
 
         self.content: str = ""
+        # The WebVTT file body grammar allows an optional U+FEFF before the
+        # "WEBVTT" signature, and keeping it makes verify_signature() reject the
+        # file. UTF8_BOM_ENCODING drops it, and reads as utf-8 when there is none.
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                self.content = self.path_or_stream.getvalue().decode("utf-8")
+                self.content = TextIOWrapper(
+                    BytesIO(self.path_or_stream.getvalue()), encoding=UTF8_BOM_ENCODING
+                ).read()
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
+                with open(self.path_or_stream, encoding=UTF8_BOM_ENCODING) as f:
                     self.content = f.read()
         except Exception as e:
             raise DocumentLoadError(
@@ -123,7 +129,6 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
             nonlocal cue_text, parents
             if not cue_text:
                 cue_text.append(AnnotatedPar(items=[]))
-            par = cue_text[-1]
             for comp in payload:
                 item: AnnotatedText = (
                     parents[-1].copy_meta("") if parents else AnnotatedText(text="")
@@ -131,7 +136,9 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                 component: WebVTTCueComponent = comp.component
                 if isinstance(component, WebVTTCueTextSpan):
                     item.text = component.text
-                    par.items.append(item)
+                    # a line terminator inside a nested span starts a new paragraph,
+                    # so the current paragraph is always the last one
+                    cue_text[-1].items.append(item)
                 else:
                     # configure metadata based on span type
                     if isinstance(component, WebVTTCueBoldSpan):
@@ -156,7 +163,6 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
 
                 if comp.terminator is not None:
                     cue_text.append(AnnotatedPar(items=[]))
-                    par = cue_text[-1]
 
         def _add_text_item(
             text: str,

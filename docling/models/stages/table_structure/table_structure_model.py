@@ -12,6 +12,7 @@ import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,
+    TextCell,
     TextCellUnit,
 )
 from PIL import ImageDraw
@@ -24,12 +25,54 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 from docling.datamodel.settings import settings
-from docling.models.base_table_model import BaseTableStructureModel
+from docling.datamodel.spatial import BoundingBoxSpatialIndex
+from docling.models.base_table_model import (
+    BaseTableStructureModel,
+    degenerate_structure_reason,
+    keep_table_text_as_child,
+)
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.text_normalization import normalize_extracted_text
 
 _log = logging.getLogger(__name__)
+
+
+def _uncovered(cells: Sequence[TextCell], covers: Sequence[TextCell]) -> list[TextCell]:
+    """The cells that overlap none of `covers`."""
+    if not cells or not covers:
+        return list(cells)
+
+    idx = BoundingBoxSpatialIndex()
+    for i, cover in enumerate(covers):
+        idx.insert(i, cover.rect.to_bounding_box())
+    return [
+        c
+        for c in cells
+        if not any(True for _ in idx.intersection(c.rect.to_bounding_box()))
+    ]
+
+
+def _words_and_ocr_cells(
+    word_cells: Sequence[TextCell], cluster_cells: Sequence[TextCell]
+) -> list[TextCell]:
+    """Table tokens: the finest cells of the text the OCR merge kept.
+
+    The OCR cells of the table cluster are the OCR lines that survived the
+    merge with the native text. Without them, a table with a few native words
+    (e.g. a scanned form with filled-in fields) loses all its OCR text.
+
+    - A native word under a surviving OCR line is dropped, as the merge
+      dropped its line.
+    - An OCR engine may also report word cells (e.g. third-party OCR plugins).
+      An OCR word on a kept native word is dropped, as the merge rejected its
+      line there. The other OCR words replace the OCR line they sit in.
+    """
+    ocr_lines = [c for c in cluster_cells if c.from_ocr]
+    native_words = _uncovered([w for w in word_cells if not w.from_ocr], ocr_lines)
+    ocr_words = _uncovered([w for w in word_cells if w.from_ocr], native_words)
+    return native_words + ocr_words + _uncovered(ocr_lines, ocr_words)
 
 
 class TableStructureModel(BaseTableStructureModel):
@@ -227,13 +270,22 @@ class TableStructureModel(BaseTableStructureModel):
                     "image": numpy.asarray(page.get_image(scale=self.scale)),
                 }
 
+                # Resolved once per page: the segmented page is the same for
+                # every table on it, and get_cells_in_bbox already walks all of
+                # its cells per call. Use the page's own copy, not the backend's:
+                # in full-page OCR mode the native decode is skipped and the
+                # backend would re-parse and return native words OCR replaced.
+                sp = page.parsed_page
+
                 for table_cluster, tbl_box in in_tables:
                     # Check if word-level cells are available from backend:
-                    sp = page._backend.get_segmented_page()
                     if sp is not None:
-                        tcells = sp.get_cells_in_bbox(
-                            cell_unit=TextCellUnit.WORD,
-                            bbox=table_cluster.bbox,
+                        tcells = _words_and_ocr_cells(
+                            sp.get_cells_in_bbox(
+                                cell_unit=TextCellUnit.WORD,
+                                bbox=table_cluster.bbox,
+                            ),
+                            table_cluster.cells,
                         )
                         if len(tcells) == 0:
                             # In case word-level cells yield empty
@@ -251,7 +303,9 @@ class TableStructureModel(BaseTableStructureModel):
                             )
                             tokens.append(
                                 {
-                                    "id": new_cell.index,
+                                    # Native word and OCR cell indices can collide,
+                                    # and the cell matcher keys tokens by id.
+                                    "id": len(tokens),
                                     "text": new_cell.text,
                                     "bbox": new_cell.rect.to_bounding_box().model_dump(),
                                 }
@@ -274,6 +328,7 @@ class TableStructureModel(BaseTableStructureModel):
                         tc = TableCell.model_validate(element)
                         if tc.bbox is not None:
                             tc.bbox = tc.bbox.scaled(1 / self.scale)
+                        tc.text = normalize_extracted_text(tc.text)
                         table_cells.append(tc)
 
                     assert "predict_details" in table_out
@@ -286,6 +341,23 @@ class TableStructureModel(BaseTableStructureModel):
                         .get("prediction", {})
                         .get("rs_seq", [])
                     )
+
+                    reason = degenerate_structure_reason(
+                        otsl_seq, self.tm_config["predict"]["max_steps"]
+                    )
+                    if reason is not None:
+                        _log.warning(
+                            "Discarding the %dx%d structure predicted for table "
+                            "%d on page %d because %s; its text is kept as a "
+                            "single cell.",
+                            num_rows,
+                            num_cols,
+                            table_cluster.id,
+                            page.page_no,
+                            reason,
+                        )
+                        num_rows, num_cols, table_cells = 0, 0, []
+                        keep_table_text_as_child(table_cluster, page)
 
                     tbl = Table(
                         otsl_seq=otsl_seq,

@@ -64,19 +64,39 @@ class S3Coordinates(BaseModel):
         ),
     ] = True
 
-    access_key: Annotated[
-        StrictStr,
+    region: Annotated[
+        Optional[str],
         Field(
-            description=("S3 access key. Required."),
+            description=(
+                "AWS region of the S3 bucket, e.g. 'us-east-2'. Required for "
+                "correctly signed requests (including presigned URLs) against "
+                "real AWS S3 buckets outside the default 'us-east-1' region. "
+                "Optional, defaults to unset for S3-compatible services "
+                "(e.g. IBM COS, MinIO) that don't require it."
+            ),
+            examples=["us-east-2", "eu-de"],
         ),
-    ]
+    ] = None
+
+    access_key: Annotated[
+        StrictStr | None,
+        Field(
+            description=(
+                "S3 access key. Optional; provide together with secret_key, or omit "
+                "both to use ambient credentials."
+            ),
+        ),
+    ] = None
 
     secret_key: Annotated[
-        StrictStr,
+        StrictStr | None,
         Field(
-            description=("S3 secret key. Required."),
+            description=(
+                "S3 secret key. Optional; provide together with access_key, or omit "
+                "both to use ambient credentials."
+            ),
         ),
-    ]
+    ] = None
 
     bucket: Annotated[
         str,
@@ -104,6 +124,14 @@ class S3Coordinates(BaseModel):
             ge=1,
         ),
     ] = None
+
+    @model_validator(mode="after")
+    def validate_credentials(self) -> "S3Coordinates":
+        has_access_key = self.access_key is not None
+        has_secret_key = self.secret_key is not None
+        if has_access_key != has_secret_key:
+            raise ValueError("access_key and secret_key must be provided together")
+        return self
 
 
 class AzureBlobCoordinates(BaseModel):

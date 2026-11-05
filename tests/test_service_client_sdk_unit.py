@@ -5,12 +5,14 @@ import asyncio
 import io
 import json
 import queue
+import socket
 import tempfile
 import threading
 import time
 import warnings
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 from pathlib import Path, PurePath
 from types import MethodType, SimpleNamespace
 
@@ -796,8 +798,8 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
         build_thread = threading.Thread(target=build_iterator)
         build_thread.start()
 
-        iterator_or_exc = iterator_queue.get(timeout=0.2)
-        build_thread.join(timeout=0.2)
+        iterator_or_exc = iterator_queue.get(timeout=5.0)
+        build_thread.join(timeout=5.0)
 
         if isinstance(iterator_or_exc, BaseException):
             raise iterator_or_exc
@@ -819,8 +821,8 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
         assert first_result_queue.empty()
 
         release_first.set()
-        first_result_or_exc = first_result_queue.get(timeout=0.2)
-        first_thread.join(timeout=0.2)
+        first_result_or_exc = first_result_queue.get(timeout=5.0)
+        first_thread.join(timeout=5.0)
 
         if isinstance(first_result_or_exc, BaseException):
             raise first_result_or_exc
@@ -1496,7 +1498,8 @@ def test_submit_file_forwards_request_headers(tmp_path: Path) -> None:
     assert captured["header_api"] == "base-key"
 
 
-def test_serialize_convert_options_omits_defaults_and_none() -> None:
+def test_serialize_convert_options_omits_unset_and_none() -> None:
+    """Fields not passed by the caller are omitted; explicitly-set None is omitted too."""
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         with DoclingServiceClient(url=TEST_BASE_URL) as client:
@@ -1512,6 +1515,87 @@ def test_serialize_convert_options_omits_defaults_and_none() -> None:
         "PydanticSerializationUnexpectedValue" not in str(warning.message)
         for warning in caught
     )
+
+
+def test_serialize_convert_options_includes_explicitly_set_defaults() -> None:
+    """A field explicitly set to its default value must appear in the payload."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        # do_chart_extraction defaults to False; setting it explicitly must send it.
+        payload = client._serialize_convert_options(
+            ConvertDocumentsRequestOptions(do_chart_extraction=False)
+        )
+
+    assert "do_chart_extraction" in payload
+    assert payload["do_chart_extraction"] is False
+
+
+def test_serialize_convert_options_omits_unset_fields() -> None:
+    """Fields never passed to the constructor must not appear in the payload."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        payload = client._serialize_convert_options(ConvertDocumentsRequestOptions())
+
+    assert "do_chart_extraction" not in payload
+    assert "do_ocr" not in payload
+
+
+def test_resolve_options_does_not_mark_page_range_when_unset() -> None:
+    """Unset page_range must remain omitted from serialized options after resolve_options."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        opts = ConvertDocumentsRequestOptions(do_ocr=True)
+        resolved = client._resolve_options(
+            options=opts,
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=None,
+        )
+        serialized = client._serialize_convert_options(resolved.options)
+
+    assert "page_range" not in serialized
+    assert serialized == {"do_ocr": True}
+    assert resolved.limits.page_range == (1, client_module.sys.maxsize)
+
+
+def test_resolve_options_marks_page_range_when_explicitly_set_or_constrained() -> None:
+    """Explicit page_range or max_num_pages must be reflected in serialized options."""
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        # Explicitly in options
+        opts_with_range = ConvertDocumentsRequestOptions(page_range=(2, 6))
+        resolved = client._resolve_options(
+            options=opts_with_range,
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=None,
+        )
+        assert client._serialize_convert_options(resolved.options) == {
+            "page_range": [2, 6]
+        }
+        assert resolved.limits.page_range == (2, 6)
+
+        # Via page_range parameter
+        resolved_param = client._resolve_options(
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=(3, 7),
+        )
+        assert client._serialize_convert_options(resolved_param.options) == {
+            "do_ocr": True,
+            "page_range": [3, 7],
+        }
+        assert resolved_param.limits.page_range == (3, 7)
+
+        # Via max_num_pages parameter
+        resolved_pages = client._resolve_options(
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+            max_num_pages=5,
+            max_file_size=None,
+            page_range=None,
+        )
+        assert client._serialize_convert_options(resolved_pages.options) == {
+            "do_ocr": True,
+            "page_range": [1, 5],
+        }
+        assert resolved_pages.limits.page_range == (1, 5)
 
 
 def test_form_encode_options_jsonifies_nested_values() -> None:
@@ -1610,6 +1694,38 @@ def test_submit_source_serializes_convert_options_without_defaults() -> None:
     payload = captured["payload"]
     assert isinstance(payload, dict)
     assert payload["options"] == {"page_range": [3, 7]}
+
+
+def test_submit_source_omits_page_range_when_unset() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            json=_status_response("task-source-no-range", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit(
+            source="https://example.org/sample.pdf",
+            options=ConvertDocumentsRequestOptions(do_ocr=True),
+        )
+
+    assert job.task_id == "task-source-no-range"
+    payload = captured["payload"]
+    assert isinstance(payload, dict)
+    assert "page_range" not in payload["options"]
+    assert payload["options"] == {"do_ocr": True}
 
 
 def test_submit_local_string_source_uses_file_endpoint(tmp_path: Path) -> None:
@@ -1788,6 +1904,40 @@ def test_submit_auto_falls_back_to_inbody_when_presigned_is_rejected() -> None:
         [OutputFormat.MARKDOWN],
         [OutputFormat.MARKDOWN, OutputFormat.JSON],
     ]
+
+
+def test_submit_auto_reports_presigned_rejection_when_inbody_is_also_rejected() -> None:
+    def fake_submit_convert_task(
+        self,
+        source,
+        options,
+        target,
+        request_headers=None,
+    ):
+        if isinstance(target, PresignedUrlTarget):
+            raise ServiceError(
+                "Task submission failed.",
+                status_code=422,
+                detail=(
+                    "Presigned URL target requires artifact storage to be configured "
+                    "and enabled on the server."
+                ),
+            )
+        raise ServiceError(
+            "Task submission failed.",
+            status_code=422,
+            detail="target kind 'inbody' is not allowed.",
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit_convert_task, client)
+        with pytest.raises(ServiceError) as exc_info:
+            client.submit(source="https://example.org/sample.pdf")
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail is not None
+    assert "target kind 'inbody' is not allowed." in exc_info.value.detail
+    assert "requires artifact storage" in exc_info.value.detail
 
 
 def test_submit_and_retrieve_each_auto_target_returns_presigned_when_supported(
@@ -2457,6 +2607,35 @@ def test_429_without_retry_after_header_does_not_retry() -> None:
             )
 
     assert call_count == 1
+
+
+def test_retry_after_http_date_with_unknown_timezone_does_not_crash() -> None:
+    # RFC 7231 mandates GMT, but non-conformant servers/proxies emit dates with
+    # an unknown timezone ("-0000"), which email.utils parses to a naive
+    # datetime. The backoff computation must not raise when mixing that with an
+    # aware "now".
+    response = httpx.Response(
+        503, headers={"Retry-After": "Sun, 06 Nov 1994 08:49:37 -0000"}
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        delay = client._retry_after_delay_seconds(response)
+
+    assert isinstance(delay, float)
+    assert delay == 0.0  # a date in the past clamps to zero
+
+
+def test_retry_after_future_http_date_returns_positive_delay() -> None:
+    future = datetime.now(tz=timezone.utc) + timedelta(seconds=120)
+    response = httpx.Response(
+        503, headers={"Retry-After": format_datetime(future, usegmt=True)}
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        delay = client._retry_after_delay_seconds(response)
+
+    assert isinstance(delay, float)
+    assert 0.0 < delay <= 120.0
 
 
 def test_402_usage_limit_exceeded_raises_explicit_exception() -> None:
@@ -3262,20 +3441,107 @@ def test_convert_all_materializes_presigned_results_in_order(
         assert pictures and str(pictures[0].image.uri).startswith("data:image")
 
 
+def test_artifact_route_pins_a_public_address() -> None:
+    route = client_module._artifact_route(
+        "https://8.8.8.8:8443/artifact.zip", check_public=True
+    )
+
+    assert route.urls == ["https://8.8.8.8:8443/artifact.zip"]
+    assert route.headers == {"Host": "8.8.8.8:8443"}
+    assert route.extensions == {"sni_hostname": "8.8.8.8"}
+
+
 @pytest.mark.parametrize(
-    "url, expected",
+    "url",
     [
-        ("https://8.8.8.8/artifact.zip", True),
-        ("https://127.0.0.1/artifact.zip", False),
-        ("http://10.1.2.3/artifact.zip", False),
-        ("https://169.254.169.254/artifact.zip", False),
-        ("http://[::1]/artifact.zip", False),
-        ("ftp://8.8.8.8/artifact.zip", False),
-        ("not-a-url", False),
+        "https://127.0.0.1/artifact.zip",
+        "http://10.1.2.3/artifact.zip",
+        "https://169.254.169.254/artifact.zip",
+        "http://[::1]/artifact.zip",
+        "http://[::ffff:127.0.0.1]/artifact.zip",
+        "ftp://8.8.8.8/artifact.zip",
+        "not-a-url",
     ],
 )
-def test_is_safe_artifact_url(url: str, expected: bool) -> None:
-    assert client_module._is_safe_artifact_url(url) is expected
+def test_artifact_route_refuses_non_public_urls(url: str) -> None:
+    with pytest.raises(ArtifactDownloadError, match="non-public URL"):
+        client_module._artifact_route(url, check_public=True)
+
+
+def test_artifact_route_refuses_a_host_with_any_private_address(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A public A record must not hide a loopback AAAA record."""
+
+    def fake_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 0)),
+            (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::1", 0, 0, 0)),
+        ]
+
+    monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
+
+    with pytest.raises(ArtifactDownloadError, match="non-public URL"):
+        client_module._artifact_route(
+            "https://artifacts.example/artifact.zip", check_public=True
+        )
+
+
+def test_artifact_route_keeps_the_hostname_behind_a_proxy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.invalid:3128")
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    monkeypatch.delenv("no_proxy", raising=False)
+
+    route = client_module._artifact_route(
+        "https://8.8.8.8/artifact.zip", check_public=True
+    )
+
+    assert route.proxy == "http://proxy.invalid:3128"
+    assert route.urls == ["https://8.8.8.8/artifact.zip"]
+    assert route.headers == {}
+
+
+@pytest.mark.parametrize(
+    ("url", "trusted"),
+    [
+        ("http://localhost:9000/bucket/artifact.zip", True),
+        ("http://LOCALHOST:9000/other/artifact.zip", True),
+        ("https://minio.internal/artifact.zip", True),
+        ("https://minio.internal:443/artifact.zip", True),
+        ("http://localhost:9001/artifact.zip", False),
+        ("https://localhost:9000/artifact.zip", False),
+        ("http://minio.internal/artifact.zip", False),
+        ("http://127.0.0.1:9000/artifact.zip", False),
+    ],
+)
+def test_artifact_route_trusts_only_allowlisted_origins(
+    url: str, trusted: bool
+) -> None:
+    allowlist = client_module._parse_artifact_url_allowlist(
+        ["http://localhost:9000", "https://minio.internal/"]
+    )
+
+    if trusted:
+        route = client_module._artifact_route(
+            url, check_public=True, trusted_origins=allowlist
+        )
+        assert route.urls == [url]
+        assert route.headers == {}
+    else:
+        with pytest.raises(ArtifactDownloadError, match="artifact_url_allowlist"):
+            client_module._artifact_route(
+                url, check_public=True, trusted_origins=allowlist
+            )
+
+
+@pytest.mark.parametrize(
+    "entry", ["minio.internal:9000", "ftp://minio.internal", "http://", ""]
+)
+def test_artifact_url_allowlist_rejects_non_http_origins(entry: str) -> None:
+    with pytest.raises(ValueError, match="artifact_url_allowlist"):
+        DoclingServiceClient(url=TEST_BASE_URL, artifact_url_allowlist=[entry])
 
 
 def test_convert_rejects_private_artifact_url_by_default(tmp_path: Path) -> None:

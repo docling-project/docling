@@ -2,7 +2,7 @@
 
 Before the table
 
-| ## A  text | B |
+| A  text | B |
 | - | - |
 | 1... | 2... |
 

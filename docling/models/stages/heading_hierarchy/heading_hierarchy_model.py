@@ -38,10 +38,11 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from statistics import median
 
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import DocItemLabel, DoclingDocument
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 from docling_core.types.doc.page import PdfTextCell, SegmentedPdfPage
 
+from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.utils.font_style import parse_font_style, weight_class
@@ -52,6 +53,8 @@ from docling.utils.pdf_outline import _PdfOutlineItem
 _DEFAULT_FAMILY_ORDER = [
     "part",  # PART I / TITLE I / BOOK I
     "chapter",  # CHAPTER 1
+    "division",  # DIVISION I / Division 1 / Division A
+    "subdivision",  # SUBDIVISION A / Subdivision a
     "article",  # ARTICLE 1 / SECTION 1 / Clause / § 1
     "roman_u",  # I. II. III.
     "arabic",  # 1. 2. 3.  (and dotted 1.1, 1.1.1 by depth)
@@ -69,18 +72,42 @@ _ROMAN_RE = re.compile(
     r"^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$", re.IGNORECASE
 )
 
-_KW_PART = re.compile(r"^(part|title|book)\b", re.IGNORECASE)
-_KW_CHAPTER = re.compile(r"^(chapter)\b", re.IGNORECASE)
+# Part/chapter/article keywords are ordinary words too ("Rule Definition", "Part-Year
+# Method"), so they only count as numbering when they stand alone ("APPENDIX", "Annex:")
+# or the next token is an enumerator; see :func:`_keyword_marker`.
+_KW_TAIL = r"(?:\s+([^\s.,:;)\]\u2013\u2014-]+)|\s*(?:[.:\u2013\u2014]|-\s|$))"
+_KW_PART = re.compile(r"^(?:part|title|book)" + _KW_TAIL, re.IGNORECASE)
+# Skip statute citations like "Chapter A-15" (letter-dash-digit); real chapters still match.
+_KW_CHAPTER = re.compile(r"^chapter(?!\s+[a-z]-\d)" + _KW_TAIL, re.IGNORECASE)
 _KW_ARTICLE = re.compile(
-    r"^(article|section|clause|schedule|annex|appendix|rule)\b", re.IGNORECASE
+    r"^(?:article|section|clause|schedule|annex|appendix|rule)" + _KW_TAIL,
+    re.IGNORECASE,
 )
+_NUMBER_WORDS = frozenset(
+    "one two three four five six seven eight nine ten eleven twelve thirteen fourteen"
+    " fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy"
+    " eighty ninety first second third fourth fifth sixth seventh eighth ninth tenth"
+    " eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth eighteenth"
+    " nineteenth twentieth".split()
+)
+# "Division"/"Subdivision" are stricter: they only count as numbering when an explicit
+# enumerator (an Arabic index, a Roman numeral, or a single letter) follows. The enumerator
+# must be terminated by whitespace, end-of-string, or separator punctuation, so a French
+# elision such as "Division d'appel" (a letter followed by an apostrophe) is not read as a
+# marker.
+_KW_ENUM = r"\s+(\d+|[a-z]|[ivxlcdm]+)(?=\s|$|[.,:;)\]\u2013\u2014-])"
+_KW_DIVISION = re.compile(r"^division" + _KW_ENUM, re.IGNORECASE)
+_KW_SUBDIVISION = re.compile(r"^subdivision" + _KW_ENUM, re.IGNORECASE)
 _SECTION_SYMBOL = re.compile(r"^§+\s*\d")  # § 1 / §§ 1.2
-# Dotted decimal outline (1.1, 1.1.1, ...), terminated by space/end/punctuation.
-_DOTTED = re.compile(r"^(\d+(?:\.\d+)+)(?:[.)\]\s]|$)")
-# Single Arabic index (1. / 2)).
-_ARABIC = re.compile(r"^(\d+)[.)]")
-# Single/multi letter marker, optionally parenthesized: (a) / A. / (iv) / IV.
-_LETTER = re.compile(r"^\(?\s*([A-Za-z]+)\s*[).]")
+_SEP = r"(?:[)\]]|[:\-\u2013\u2014](?=\s|$))"
+# Dotted decimal outline (1.1, 1.1.1, ...), terminated by punctuation/space/end.
+_DOTTED = re.compile(r"^\(?\s*(\d+(?:\.\d+)+)(?:[.)\]\s]|[:\-\u2013\u2014](?=\s|$)|$)")
+# Single Arabic index (1. / 1) / (1) / 1: / 1 -).
+_ARABIC = re.compile(r"^\(?\s*(\d+)\s*(?:\.(?!\d)|" + _SEP + r")")
+# A bare index is only accepted with document-wide sequence evidence.
+_BARE_ARABIC = re.compile(r"^(\d+)\s+\S")
+# Single/multi letter marker, optionally parenthesized: (a) / A. / (iv) / IV. / A: / A -
+_LETTER = re.compile(r"^\(?\s*([A-Za-z]+)\s*(?:\.|" + _SEP + r")")
 
 
 @dataclass
@@ -114,17 +141,51 @@ def _classify_letter(token: str) -> _Marker | None:
     return None
 
 
+def _keyword_enumerator(m: re.Match[str] | None) -> bool:
+    """True when a keyword match carries a real enumerator (digit, letter, or Roman).
+
+    Multi-letter tokens are only accepted when they are valid Roman numerals, so
+    "Division Civil Remedies" (all Roman-numeral letters) is not mistaken for a marker.
+    """
+    if m is None:
+        return False
+    tok = m.group(1)
+    return tok.isdigit() or len(tok) == 1 or _is_roman(tok)
+
+
+def _keyword_marker(m: re.Match[str] | None) -> bool:
+    """True when a part/chapter/article keyword stands alone or precedes an enumerator.
+
+    The enumerator may contain a digit ("Chapter 2D", "Rule 12(b)"), or be a single letter,
+    a valid Roman numeral, or a number word ("CHAPTER ONE", "ARTICLE FIRST").
+    """
+    if m is None:
+        return False
+    tok = m.group(1)
+    return (
+        tok is None
+        or any(c.isdigit() for c in tok)
+        or len(tok) == 1
+        or _is_roman(tok)
+        or tok.lower() in _NUMBER_WORDS
+    )
+
+
 def _parse_marker(text: str) -> _Marker | None:
     """Extract the leading numbering marker from a heading, or None if unnumbered."""
     s = (text or "").strip()
     if not s:
         return None
 
-    if _KW_PART.match(s):
+    if _keyword_marker(_KW_PART.match(s)):
         return _Marker(family="part")
-    if _KW_CHAPTER.match(s):
+    if _keyword_enumerator(_KW_DIVISION.match(s)):
+        return _Marker(family="division")
+    if _keyword_enumerator(_KW_SUBDIVISION.match(s)):
+        return _Marker(family="subdivision")
+    if _keyword_marker(_KW_CHAPTER.match(s)):
         return _Marker(family="chapter")
-    if _KW_ARTICLE.match(s) or _SECTION_SYMBOL.match(s):
+    if _keyword_marker(_KW_ARTICLE.match(s)) or _SECTION_SYMBOL.match(s):
         return _Marker(family="article")
 
     m = _DOTTED.match(s)
@@ -183,6 +244,39 @@ def _family_rank(family: str, order: list[str]) -> int:
         return len(order)  # unknown scheme -> lowest priority
 
 
+def _resolve_bare_arabic(
+    headings: list[SectionHeaderItem], markers: list[_Marker | None]
+) -> None:
+    """Accept bare Arabic indices in consecutive runs starting at 1, with at least two entries.
+
+    A leading number alone may be a year or quantity. Require a chapter sequence before treating
+    it as numbering, allowing explicit Arabic markers to provide evidence too. Dotted sections
+    and unnumbered headings may intervene. A gap such as ``1 Intro``, ``2 Methods``, ``4 Results``
+    ends the run, leaving the bare ``4`` unrecognized. A 1-based run of incidental headings, such
+    as ``1 January``, ``2 February`` or ``1 kg``, ``2 kg``, can still be misclassified.
+    """
+    sequence: list[int] = []
+    for i, heading in enumerate(headings):
+        marker = markers[i]
+        if marker is not None and marker.family != "arabic":
+            continue
+        text = heading.text.strip()
+        match = _ARABIC.match(text) if marker is not None else _BARE_ARABIC.match(text)
+        if match is None:
+            continue
+        number = int(match.group(1))
+        if number == 1:
+            sequence = [i]
+        elif sequence and number == len(sequence) + 1:
+            sequence.append(i)
+            # Confirm the first entry when 2 arrives, then only the newly extended pair.
+            for index in sequence[-2:]:
+                if markers[index] is None:
+                    markers[index] = _Marker(family="arabic")
+        else:
+            sequence = []
+
+
 def _infer_from_numbering(
     headings: list[SectionHeaderItem], options: HeadingHierarchyOptions
 ) -> dict[int, int]:
@@ -190,6 +284,7 @@ def _infer_from_numbering(
     order = options.numbering_schemes or _DEFAULT_FAMILY_ORDER
     markers = [_parse_marker(h.text) for h in headings]
     _resolve_ambiguous(markers)
+    _resolve_bare_arabic(headings, markers)
 
     keys: dict[int, tuple[int, int]] = {}
     for i, m in enumerate(markers):
@@ -219,6 +314,9 @@ class _HeadingStyle:
 
 # Share of the heading's characters that must be italic for the heading to count as italic.
 _ITALIC_RATIO = 0.6
+
+# Layout labels whose text lines the style signal reads.
+_STYLE_LABELS = frozenset({DocItemLabel.SECTION_HEADER, DocItemLabel.LIST_ITEM})
 
 
 def _is_all_caps(text: str) -> bool:
@@ -343,12 +441,12 @@ def _infer_from_style(
 # matches an on-page heading "1.1 Definitions" (and vice-versa).
 _LEADING_MARKER = re.compile(
     r"^\s*(?:"
-    r"(?:part|title|book|chapter|article|section|clause|schedule|annex|appendix|rule)"
+    r"(?:part|title|book|division|subdivision|chapter|article|section|clause|schedule|annex|appendix|rule)"
     r"\b[\s.:]*[0-9ivxlcdm]*"
     r"|§+\s*[0-9.]+"
-    r"|\(?[0-9]+(?:\.[0-9]+)*[).]?"
-    r"|\(?[A-Za-z]{1,2}[).]"
-    r")[\s.:)\-]*",
+    r"|\(?[0-9]+(?:\.[0-9]+)*[.)\]]?"
+    r"|\(?[A-Za-z]{1,2}(?:[.)\]]|(?=\s*[:\-\u2013\u2014]))"
+    r")[\s.:)\-\u2013\u2014]*",
     re.IGNORECASE,
 )
 
@@ -491,6 +589,41 @@ class HeadingHierarchyModel:
 
     def __init__(self, options: HeadingHierarchyOptions):
         self.options = options
+
+    def retain_parsed_lines(self, page: Page) -> SegmentedPdfPage | None:
+        """Return the part of a finished page's ``parsed_page`` that this stage reads later.
+
+        The pipeline releases the parsed pages before assembly to save memory, but the style
+        signal reads the text lines of the headings during assembly. Only the text lines that
+        overlap a section header, or a list item that a bookmark can promote, are kept.
+        """
+        parsed = page.parsed_page
+        layout = page.predictions.layout
+        if not (self.options.enabled and self.options.use_style) or (
+            parsed is None or layout is None
+        ):
+            return None
+        height = parsed.dimension.height
+        boxes = [
+            cluster.bbox.to_top_left_origin(height)
+            for cluster in layout.clusters
+            if cluster.label in _STYLE_LABELS
+        ]
+        lines = [
+            cell
+            for cell in parsed.textline_cells
+            if any(
+                box.overlaps(cell.rect.to_bounding_box().to_top_left_origin(height))
+                for box in boxes
+            )
+        ]
+        return SegmentedPdfPage(
+            dimension=parsed.dimension,
+            char_cells=[],
+            word_cells=[],
+            textline_cells=lines,
+            has_lines=bool(lines),
+        )
 
     def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
         document = conv_res.document

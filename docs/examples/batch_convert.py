@@ -32,7 +32,7 @@ from pathlib import Path
 import yaml
 from docling_core.types.doc import ImageRefMode
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -73,11 +73,6 @@ def export_documents(
                 output_dir / f"{doc_filename}.md",
                 image_mode=ImageRefMode.PLACEHOLDER,
             )
-            conv_res.document.save_as_markdown(
-                output_dir / f"{doc_filename}.txt",
-                image_mode=ImageRefMode.PLACEHOLDER,
-                strict_text=True,
-            )
 
             # Export Docling document format to YAML:
             with (output_dir / f"{doc_filename}.yaml").open("w") as fp:
@@ -93,7 +88,7 @@ def export_documents(
 
             # Export Docling document format to text:
             with (output_dir / f"{doc_filename}.txt").open("w") as fp:
-                fp.write(conv_res.document.export_to_markdown(strict_text=True))
+                fp.write(conv_res.document.export_to_text())
 
         elif conv_res.status == ConversionStatus.PARTIAL_SUCCESS:
             _log.info(
@@ -146,7 +141,8 @@ def main():
     doc_converter = DocumentConverter(
         format_options={
             InputFormat.PDF: PdfFormatOption(
-                pipeline_options=pipeline_options, backend=DoclingParseDocumentBackend
+                pipeline_options=pipeline_options,
+                backend=ThreadedDoclingParseDocumentBackend,
             )
         }
     )
