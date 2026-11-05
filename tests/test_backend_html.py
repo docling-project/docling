@@ -71,6 +71,70 @@ def _convert_html(raw_html: bytes) -> DoclingDocument:
     return backend.convert()
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        "<span>hello</span>\n<span>world</span>",
+        "<div><span>hello</span>\n<span>world</span></div>",
+        "<div><em>hello</em>\n<em>world</em></div>",
+        "<div><strong>hello</strong>\n<em>world</em></div>",
+        "<div><code>hello</code>\n<code>world</code></div>",
+        '<div><a href="https://example.com/">hello</a>\n<span>world</span></div>',
+        "<div><span>hello</span>\r\n<span>world</span></div>",
+        "<div><span>hello</span>\n\n<span>world</span></div>",
+        "<p><span>hello</span>\n<span>world</span></p>",
+        "<div>hello\nworld</div>",
+        "<div><span>hello</span> <span>world</span></div>",
+    ],
+)
+def test_newlines_between_inline_siblings_preserve_word_boundary(content: str):
+    doc = _convert_html(f"<html><body>{content}</body></html>".encode())
+    assert doc.export_to_text() == "hello world"
+
+
+def test_source_newlines_around_blocks_do_not_create_text_items():
+    doc = _convert_html(
+        b"<html><body>\n<div>\n<p>hello</p>\n<p>world</p>\n</div>\n</body></html>"
+    )
+    assert [item.text for item in doc.texts] == ["hello", "world"]
+    assert len(doc.body.children) == 2
+
+
+@pytest.mark.parametrize(
+    ("first", "second", "expected"),
+    [
+        ("<em>hello</em>", "<em>world</em>", "*hello* *world*"),
+        ("<code>hello</code>", "<code>world</code>", "`hello` `world`"),
+        (
+            '<a href="https://example.com/">hello</a>',
+            "<span>world</span>",
+            "[hello](https://example.com/) world",
+        ),
+    ],
+)
+def test_inline_newline_keeps_formatting_and_block_ownership(
+    first: str, second: str, expected: str
+):
+    doc = _convert_html(
+        f"<html><body><div>{first}\n{second}</div><p>tail</p></body></html>".encode()
+    )
+    assert doc.export_to_markdown() == f"{expected}\n\ntail"
+    group = doc.groups[0]
+    assert group.label == GroupLabel.INLINE
+    assert group.parent == doc.body.get_ref()
+    assert doc.body.children == [group.get_ref(), doc.texts[-1].get_ref()]
+    assert doc.texts[-1].text == "tail"
+    assert doc.texts[-1].parent == doc.body.get_ref()
+    assert all(item.parent == group.get_ref() for item in doc.texts[:-1])
+
+
+def test_adjacent_inline_siblings_do_not_gain_a_space():
+    doc = _convert_html(
+        b"<html><body><span>hello</span><span>world</span></body></html>"
+    )
+    assert doc.export_to_text() == "helloworld"
+
+
 def test_html_backend_options():
     options = HTMLBackendOptions()
     assert options.kind == "html"
