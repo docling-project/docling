@@ -148,6 +148,8 @@ def test_table_fits_a_narrow_terminal_without_cut_names():
         (["--asr"], "parakeet_ctc_1_1b", "granite_docling"),
         (["--vlm"], "granite_docling", "parakeet_ctc_1_1b"),
         (["--family", "parakeet"], "parakeet_ctc_1_1b", "whisper_tiny"),
+        (["--family", "datalab"], "chandra_ocr2", "granite_docling"),
+        (["--family", "datalab"], "surya_ocr2_5", "granite_docling"),
     ],
 )
 def test_models_command_filters(args, present, absent):
