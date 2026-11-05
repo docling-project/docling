@@ -313,7 +313,8 @@ def _apply(document: DoclingDocument, rewrite: _Rewrite) -> None:
             prov=provs[0],
             parent=group,
             formatting=formatting,
-            hyperlink=item.hyperlink,
+            # Each linked run exports as a link of its own, so a marker stays out of it.
+            hyperlink=item.hyperlink if run.script == Script.BASELINE else None,
             content_layer=item.content_layer,
         )
         text_item.prov.extend(provs[1:])

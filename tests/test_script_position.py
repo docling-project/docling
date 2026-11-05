@@ -351,6 +351,25 @@ def test_paragraphs_stay_separate_blocks_in_html():
     assert len(re.findall(r"<p>\s*<span class='inline-group'>", html)) == 2
 
 
+def test_linked_item_keeps_one_link_for_a_footnote():
+    chars = _line(("1", 7, 4.5), ("Note text", 12, 0))
+    document = DoclingDocument(name="test")
+    document.add_page(page_no=1, size=Size(width=612, height=792))
+    document.add_text(
+        label=DocItemLabel.TEXT,
+        text="1 Note text",
+        hyperlink="https://example.com/x",
+        prov=ProvenanceItem(page_no=1, bbox=_box(chars), charspan=(0, 11)),
+    )
+    _stage(document, {1: chars})
+
+    assert document.export_to_markdown() == "1[Note text](https://example.com/x)"
+    assert (
+        '<sup>1</sup><a href="https://example.com/x">Note text</a>'
+        in document.export_to_html()
+    )
+
+
 def test_run_crossing_a_page_break_keeps_both_pages():
     """The text after a script can continue on the next page."""
     page_1 = _line(("Water is H", 12, 0), ("2", 7, -2.5), ("O and", 12, 0), y=60.0)
