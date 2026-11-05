@@ -502,6 +502,34 @@ def test_guess_format_latex_without_tex_extension(tmp_path, name, content, expec
     assert dci._guess_format(stream) is expected
 
 
+_ICS = (
+    b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nSUMMARY:a;b,c\r\nEND:VEVENT\r\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "content", "expected"),
+    [
+        ("invite", _ICS, InputFormat.CALENDAR),
+        ("invite", b"\xef\xbb\xbf" + _ICS, InputFormat.CALENDAR),
+        ("invite", b"\r\n\r\n" + _ICS.lower(), InputFormat.CALENDAR),
+        ("invite", _ICS.decode().encode("utf-16"), InputFormat.CALENDAR),
+        ("busy.ifb", _ICS, InputFormat.CALENDAR),
+        ("invite.txt", _ICS, InputFormat.MD),
+        ("notes", b"Agenda\r\nBEGIN:VCALENDAR\r\n", None),
+    ],
+)
+def test_guess_format_calendar(tmp_path, name, content, expected):
+    """An iCalendar file is recognized by its first line when the name does not say."""
+    doc_path = tmp_path / name
+    doc_path.write_bytes(content)
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    assert dci._guess_format(doc_path) is expected
+    stream = DocumentStream(name=name, stream=BytesIO(content))
+    assert dci._guess_format(stream) is expected
+
+
 @pytest.mark.parametrize(
     ("suffix", "content", "expected"),
     [
@@ -509,6 +537,7 @@ def test_guess_format_latex_without_tex_extension(tmp_path, name, content, expec
         ("ADOC", b"= Title\n\nSome text\n", InputFormat.ASCIIDOC),
         ("HTML", b"<p>no doctype and no html tag</p>\n", InputFormat.HTML),
         ("EML", b"From: a@b.c\nTo: d@e.f\nSubject: hi\n\nbody\n", InputFormat.EMAIL),
+        ("ICS", b"BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n", InputFormat.CALENDAR),
     ],
 )
 def test_guess_format_upper_case_extension_path(tmp_path, suffix, content, expected):
