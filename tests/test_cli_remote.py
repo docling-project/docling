@@ -22,10 +22,10 @@ pytestmark = pytest.mark.external_service
 
 
 class _FakeDoc:
-    def save_as_markdown(self, *, filename, image_mode):
+    def save_as_markdown(self, *, filename, artifacts_dir, image_mode):
         Path(filename).write_text("# converted\n", encoding="utf-8")
 
-    def save_as_json(self, *, filename, image_mode):
+    def save_as_json(self, *, filename, artifacts_dir, image_mode):
         Path(filename).write_text("{}", encoding="utf-8")
 
 
