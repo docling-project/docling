@@ -184,7 +184,11 @@ def _format_excel_value(value: Any, number_format: str) -> str:
 
 
 def _format_excel_number(value: int | float, fmt: str) -> str:
-    """Apply simple currency/percent sections, with Excel's rounding rule."""
+    """Apply simple number, currency and percent sections, with Excel's rounding rule.
+
+    Fixed decimals and thousands separators apply also without a currency or
+    percent sign, as in the built-in formats ``0.00`` and ``#,##0``.
+    """
     # Conditions, unsupported locale markers, optional decimals and scaling
     # must not be silently removed and mistaken for a supported number format.
     without_colors = re.sub(
@@ -222,8 +226,6 @@ def _format_excel_number(value: int | float, fmt: str) -> str:
         normalized,
     )
     if match is None or normalized.count("%") > 1 or normalized.count("$") > 1:
-        return str(value)
-    if "$" not in normalized and "%" not in normalized:
         return str(value)
     amount = Decimal(str(abs(value)))
     if not amount.is_finite():
