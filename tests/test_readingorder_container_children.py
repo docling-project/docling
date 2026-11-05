@@ -20,6 +20,7 @@ from docling_core.types.doc.document import (
     TableItem,
     TextItem,
 )
+from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.base_models import (
     AssembledUnit,
@@ -605,3 +606,28 @@ def test_container_between_texts_prevents_merge() -> None:
     )
 
     assert [text.text for text in doc.texts] == ["foo", "bar"]
+
+
+def test_picture_child_text_is_normalized_like_body_text() -> None:
+    """Text inside a picture gets the same ligature and quote normalization."""
+    text_cluster = _cluster(2, DocItemLabel.TEXT, (20, 20, 180, 40))
+    text_cluster.cells = [
+        TextCell(
+            index=i,
+            text=text,
+            orig=text,
+            from_ocr=False,
+            rect=BoundingRectangle.from_bounding_box(text_cluster.bbox),
+        )
+        for i, text in enumerate(["\ufb01 eld", "\u201cview\u201d"])
+    ]
+    picture_cluster = _cluster(1, DocItemLabel.PICTURE, (10, 10, 200, 200))
+    picture_cluster.children = [text_cluster]
+    picture = FigureElement(
+        label=DocItemLabel.PICTURE, id=1, page_no=1, cluster=picture_cluster
+    )
+
+    doc = ReadingOrderModel(ReadingOrderOptions())(_conversion_result([picture]))
+
+    child = doc.pictures[0].children[0].resolve(doc)
+    assert child.text == 'field "view"'

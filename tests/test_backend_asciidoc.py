@@ -3,14 +3,19 @@
 
 import glob
 import threading
+import time
 from io import BytesIO
 from pathlib import Path
 
+import pytest
 from docling_core.types.doc import (
     CodeItem,
     CodeLanguageLabel,
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
+    Formatting,
+    GroupLabel,
     ImageRefMode,
     ListItem,
 )
@@ -298,6 +303,26 @@ def test_stray_dashes_are_not_swallowed() -> None:
     assert texts == ["before", "after"]
 
 
+def test_trailing_plus_is_a_hard_line_break() -> None:
+    # A line ending in " +" breaks the line in AsciiDoc; the "+" is not text.
+    src = b"Roses are red, +\nviolets are blue.\n\nA *bold* line +\nand more.\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="hard_line_break.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item in doc.texts]
+    assert texts == [
+        "Roses are red,\nviolets are blue.",
+        "A",
+        "bold",
+        "line\nand more.",
+    ]
+
+
 def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
     # "[cols=...]", "[[id]]" and admonition names like "[NOTE]" are block
     # metadata for whatever follows; they used to leak into the document body
@@ -368,6 +393,46 @@ If the installer fails, check the log file.
     ]
     assert all(item.enumerated for item in list_items)
     assert "If the installer fails, check the log file." in doc.export_to_markdown()
+
+
+def test_ordered_list_start_attribute_sets_the_first_number() -> None:
+    # "[start=4]" was skipped as metadata, so the list was numbered from 1.
+    source = b"""[start=4]
+. four
+. five
+.. nested
+. six
+
+.Steps
+[arabic, start="2"]
+
+. two
+. three
+
+[start=7]
+Not a list.
+
+. one
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="list-start.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert doc.export_to_markdown() == (
+        "4. four\n"
+        "5. five\n"
+        "    1. nested\n"
+        "6. six\n\n"
+        "**Steps**\n\n"
+        "2. two\n"
+        "3. three\n\n"
+        "Not a list.\n\n"
+        "1. one"
+    )
 
 
 def test_line_starting_with_an_abbreviation_is_not_a_list_item() -> None:
@@ -876,9 +941,258 @@ No marks here.
         "both": (True, True),
     }
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["mono"]
-    plain = [item.text for item in doc.texts if item.formatting is None]
-    assert "and snake_case_name and 2*3*4." in plain
-    assert "No marks here." in plain
+    # Runs carry their own boundary whitespace; only the block edges are trimmed.
+    assert [item.text for item in doc.texts] == [
+        "Some ",
+        "bold",
+        ", ",
+        "italic",
+        " and ",
+        "mono",
+        " text, with ",
+        "st",
+        "rong.",
+        "both",
+        " and snake_case_name and 2*3*4.",
+        "No marks here.",
+    ]
+    assert doc.export_to_markdown() == (
+        "Some **bold**, *italic* and `mono` text, with **st**rong.\n\n"
+        "***both*** and snake\\_case\\_name and 2*3*4.\n\n"
+        "No marks here."
+    )
+
+
+def test_inline_formatting_marks_and_spans() -> None:
+    source = b"""Text with __ui__, ``um`` and *a b c* marks.
+
+Nested **bold _and italic_** text.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="inline-spans.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    styled = [
+        (item.text, item.formatting.bold, item.formatting.italic)
+        for item in doc.texts
+        if item.formatting is not None
+    ]
+    assert styled == [
+        ("ui", False, True),
+        ("a b c", True, False),
+        ("bold ", True, False),
+        ("and italic", True, True),
+    ]
+    assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["um"]
+    assert doc.export_to_markdown() == (
+        "Text with *ui*, `um` and **a b c** marks.\n\n"
+        "Nested **bold** ***and italic*** text."
+    )
+
+
+def test_links_in_paragraphs() -> None:
+    # URL and link macros used to stay in the text as literal markup, such as
+    # "https://example.com[Example]". They are now text with a hyperlink.
+    source = b"""See https://example.com[Example site], link:docs/install.html[Install]
+and mailto:team@example.com[].
+
+Bare https://example.com/a_b/c.html, <https://example.com/x> and
+https://example.com[Docs, window=_blank] or https://example.com[*Bold* link^].
+
+Not linked: word:https://example.com.
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="links.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [
+        (item.text, str(item.hyperlink), item.formatting is not None)
+        for item in doc.texts
+        if item.hyperlink is not None
+    ]
+    assert links == [
+        ("Example site", "https://example.com/", False),
+        ("Install", str(Path("docs/install.html")), False),
+        ("team@example.com", "mailto:team@example.com", False),
+        ("https://example.com/a_b/c.html", "https://example.com/a_b/c.html", False),
+        ("https://example.com/x", "https://example.com/x", False),
+        ("Docs", "https://example.com/", False),
+        ("Bold", "https://example.com/", True),
+        (" link", "https://example.com/", False),
+    ]
+    plain = [item.text for item in doc.texts if item.hyperlink is None]
+    assert "Not linked: word:https://example.com." in plain
+    md = doc.export_to_markdown()
+    assert "[Example site](https://example.com/)" in md
+    assert "example.com[" not in md
+    assert "link:" not in md
+
+
+@pytest.mark.parametrize(
+    "source, expected_text",
+    [
+        ('https://example.com["Docs, API", window=_blank]', "Docs, API"),
+        (
+            r'https://example.com["Say \"hello\", API", window=_blank]',
+            'Say "hello", API',
+        ),
+        ("https://example.com[window=_blank]", "https://example.com"),
+        (r"https://example.com[Array \[index\], window=_blank]", "Array [index]"),
+    ],
+)
+def test_link_labels_and_attributes(source: str, expected_text: str) -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source.encode()),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="link-attributes.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(links) == 1
+    assert links[0].text == expected_text
+    assert str(links[0].hyperlink) == "https://example.com/"
+    assert links[0].parent is not None
+    assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
+    assert "window=_blank" not in doc.export_to_markdown()
+
+
+def test_url_in_link_label_keeps_outer_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://outer.example[https://inner.example]"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="url-label.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert [(item.text, str(item.hyperlink)) for item in links] == [
+        ("https://inner.example", "https://outer.example/")
+    ]
+    assert "[https://inner.example](https://outer.example/)" in doc.export_to_markdown()
+
+
+def test_inline_code_link_keeps_code_item_and_hyperlink() -> None:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(b"https://example.com[`API`]"),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="code-link.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    links = [item for item in doc.texts if item.hyperlink is not None]
+    assert len(links) == 1
+    assert isinstance(links[0], CodeItem)
+    assert links[0].text == "API"
+    assert str(links[0].hyperlink) == "https://example.com/"
+    assert links[0].parent is not None
+    assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
+    assert "[`API`](https://example.com/)" in doc.export_to_markdown()
+
+
+def test_links_in_block_titles_of_paragraphs_and_lists() -> None:
+    doc = _convert_adoc(
+        b".Caption https://example.com[Docs]\n"
+        b"Para after title.\n\n"
+        b".Steps https://example.com[Docs]\n"
+        b"* one\n"
+    )
+
+    links = [
+        (
+            item.text,
+            str(item.hyperlink),
+            item.formatting is not None and item.formatting.bold,
+        )
+        for item in doc.texts
+        if item.hyperlink is not None
+    ]
+    assert links == [("Docs", "https://example.com/", True)] * 2
+    for item in doc.texts:
+        if item.hyperlink is not None:
+            assert item.parent is not None
+            assert item.parent.resolve(doc).label == GroupLabel.INLINE
+    bold = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.bold
+    ]
+    assert "Caption " in bold
+    assert "Steps " in bold
+    paragraph = next(item for item in doc.texts if item.text == "Para after title.")
+    assert paragraph.formatting is None
+    assert all("example.com[" not in item.text for item in doc.texts)
+    assert "example.com[" not in doc.export_to_markdown()
+
+
+def test_links_in_block_titles_strip_inline_marks() -> None:
+    doc = _convert_adoc(b".The *main* step\nPara after title.\n")
+
+    bold = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.bold
+    ]
+    assert bold == ["The main step"]
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        pytest.param(b"image::x.png[]", id="picture"),
+        pytest.param(b"|===\n|a\n|===", id="table"),
+        pytest.param(b"----\nx = 1\n----", id="code"),
+    ],
+)
+@pytest.mark.parametrize(
+    "title, expected_text, expected_link",
+    [
+        (b".See https://example.com[Docs]", "See Docs", None),
+        (b".https://example.com[Docs]", "Docs", "https://example.com/"),
+    ],
+)
+def test_links_in_block_titles_of_pictures_tables_and_code(
+    target: bytes, title: bytes, expected_text: str, expected_link: str | None
+) -> None:
+    doc = _convert_adoc(title + b"\n" + target + b"\n")
+
+    captions = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert len(captions) == 1
+    assert captions[0].text == expected_text
+    actual = None if captions[0].hyperlink is None else str(captions[0].hyperlink)
+    assert actual == expected_link
+
+
+@pytest.mark.parametrize("mark", ["*", "_", "`"])
+def test_many_unclosed_inline_marks_stay_plain_text(mark: str) -> None:
+    # A long line of opening marks that never close must convert in linear
+    # time and keep the marks as plain text.
+    line = f" {mark}a" * 16_000
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(line.encode()),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="unclosed-marks.adoc",
+    )
+
+    start = time.monotonic()
+    doc = in_doc._backend.convert()
+    elapsed = time.monotonic() - start
+
+    assert [item.text for item in doc.texts] == [line.strip()]
+    assert doc.texts[0].formatting is None
+    assert elapsed < 2.0
 
 
 def test_heading_flushes_pending_paragraph() -> None:
@@ -899,6 +1213,31 @@ def test_heading_flushes_pending_paragraph() -> None:
         if item.label.value == "paragraph"
     }
     assert paras == {"body": "S1.1", "body2": "S2"}
+
+
+def test_symmetric_titles_drop_their_closing_marks() -> None:
+    # Asciidoctor accepts titles closed by the marks that open them
+    # ("== Title =="); the closing marks used to end up in the heading text.
+    # Marks of a different length are part of the title, as in Asciidoctor.
+    src = b"= Doc =\n\n== Intro ==\n\ntext\n\n=== Details ==\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="symmetric.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    headings = [
+        (item.label, item.text)
+        for item in doc.texts
+        if item.label in (DocItemLabel.TITLE, DocItemLabel.SECTION_HEADER)
+    ]
+    assert headings == [
+        (DocItemLabel.TITLE, "Doc"),
+        (DocItemLabel.SECTION_HEADER, "Intro"),
+        (DocItemLabel.SECTION_HEADER, "Details =="),
+    ]
 
 
 def test_block_title_without_floating_target_keeps_content() -> None:
@@ -947,7 +1286,21 @@ def test_text_before_block_title_is_not_merged_with_text_after() -> None:
     doc = in_doc._backend.convert()
 
     texts = [item.text for item, _ in doc.iterate_items()]
-    assert texts == ["text1", "Caption text2", "text3"]
+    assert texts == ["text1", "Caption", "text2", "text3"]
+
+
+def test_block_title_is_not_merged_into_the_paragraph_it_titles() -> None:
+    # A block title is a single line; the paragraph after it is ordinary text.
+    doc = _convert_adoc(
+        b"Intro.\n\n.Block title\nTitled paragraph,\nsecond line.\n\nAfter.\n"
+    )
+
+    assert [(item.text, item.formatting) for item in doc.texts] == [
+        ("Intro.", None),
+        ("Block title", Formatting(bold=True)),
+        ("Titled paragraph, second line.", None),
+        ("After.", None),
+    ]
 
 
 def test_content_block_delimiters_not_leaked() -> None:
@@ -1018,6 +1371,142 @@ def test_comment_block_hides_content() -> None:
     assert "visible" in texts
 
 
+def _convert_adoc(
+    src: bytes, options: AsciiDocBackendOptions | None = None
+) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="comments.adoc",
+        backend_options=options,
+    )
+    return in_doc._backend.convert()
+
+
+def _notes(doc: DoclingDocument) -> list[str]:
+    return [
+        item.text
+        for item, _ in doc.iterate_items(
+            included_content_layers={ContentLayer.NOTES},
+        )
+    ]
+
+
+def test_comments_are_kept_in_the_notes_layer() -> None:
+    doc = _convert_adoc(b"// a review note\nreal para\n")
+
+    assert _notes(doc) == ["a review note"]
+    assert "real para" in [item.text for item, _ in doc.iterate_items()]
+
+
+def test_comment_run_is_one_note_with_its_lines_kept() -> None:
+    # consecutive // lines are one comment; the line breaks inside it survive
+    doc = _convert_adoc(b"// ask legal about this\n// and check the date\n\nbody\n")
+
+    assert _notes(doc) == ["ask legal about this\nand check the date"]
+
+
+def test_comment_block_is_kept_verbatim_in_the_notes_layer() -> None:
+    # the content of a //// block may be disabled markup, so it is not reflowed
+    doc = _convert_adoc(b"////\n* disabled item\n* another\n////\nvisible\n")
+
+    assert _notes(doc) == ["* disabled item\n* another"]
+    assert "visible" in [item.text for item, _ in doc.iterate_items()]
+
+
+def test_empty_comments_add_no_note() -> None:
+    doc = _convert_adoc(b"//\n//\n\nbody\n")
+
+    assert _notes(doc) == []
+
+
+def test_comments_stay_out_of_default_exports() -> None:
+    # markdown and HTML leave the notes layer out, so #4394's output stands
+    doc = _convert_adoc(b"// a review note\nreal para\n")
+
+    assert doc.export_to_markdown() == "real para"
+    assert "a review note" not in doc.export_to_html()
+    assert "a review note" in doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.NOTES}
+    )
+
+
+def test_capture_comments_disabled_drops_comments() -> None:
+    doc = _convert_adoc(
+        b"// a review note\nreal para\n",
+        AsciiDocBackendOptions(capture_comments=False),
+    )
+
+    assert _notes(doc) == []
+    assert "real para" in [item.text for item, _ in doc.iterate_items()]
+
+
+def test_comment_inside_a_content_block_is_a_note_not_body_text() -> None:
+    # the lines of an example/sidebar/quote/passthrough/open block used to be
+    # passed through unfiltered, so a comment in one leaked as body text
+    for delim in (b"====", b"****", b"____", b"++++", b"--"):
+        src = delim + b"\n// a note inside\ninner text\n" + delim + b"\n"
+        doc = _convert_adoc(src)
+
+        texts = [item.text for item, _ in doc.iterate_items()]
+        assert _notes(doc) == ["a note inside"], f"{delim!r}"
+        assert "inner text" in texts, f"{delim!r}: {texts}"
+        assert not any("a note inside" in t for t in texts), f"{delim!r}: {texts}"
+
+
+def test_comment_block_hides_a_verbatim_delimiter() -> None:
+    # a "----" between //// delimiters is comment text; it used to open a
+    # listing block and leak the commented-out lines as a code item
+    doc = _convert_adoc(b"before\n\n////\n----\nhidden code\n----\n////\n\nafter\n")
+
+    texts = [item.text for item, _ in doc.iterate_items()]
+    assert texts == ["before", "after"], texts
+    assert _notes(doc) == ["----\nhidden code\n----"]
+
+
+def test_comment_does_not_break_the_list_it_sits_in() -> None:
+    doc = _convert_adoc(b"* item one\n// a note on item one\n* item two\n")
+
+    items = [item.text for item, _ in doc.iterate_items() if isinstance(item, ListItem)]
+    assert items == ["item one", "item two"]
+    assert _notes(doc) == ["a note on item one"]
+
+
+def test_comment_markers_inside_a_listing_stay_code() -> None:
+    doc = _convert_adoc(b"----\n// not a comment, this is code\ncode()\n----\n")
+
+    assert _notes(doc) == []
+    codes = [item.text for item, _ in doc.iterate_items() if isinstance(item, CodeItem)]
+    assert codes == ["// not a comment, this is code\ncode()"]
+
+
+def test_unclosed_comment_block_comments_out_the_rest() -> None:
+    doc = _convert_adoc(b"visible before\n\n////\nhidden rest\nmore hidden\n")
+
+    assert [item.text for item, _ in doc.iterate_items()] == ["visible before"]
+    assert _notes(doc) == ["hidden rest\nmore hidden"]
+
+
+def test_three_slashes_are_body_text_not_a_comment() -> None:
+    # only exactly two slashes start a line comment, as in Asciidoctor
+    doc = _convert_adoc(b"/// not a comment\n//// nor this\n\n// a note\n")
+
+    assert [item.text for item, _ in doc.iterate_items()] == [
+        "/// not a comment //// nor this"
+    ]
+    assert _notes(doc) == ["a note"]
+
+
+@pytest.mark.parametrize("delimiter", ["/////", "///////"])
+def test_longer_comment_delimiter_needs_an_identical_closer(delimiter: str) -> None:
+    src = f"before\n\n{delimiter}\nhidden\n////\nstill hidden\n{delimiter}\n\nafter\n"
+    doc = _convert_adoc(src.encode())
+
+    assert [item.text for item, _ in doc.iterate_items()] == ["before", "after"]
+    assert _notes(doc) == ["hidden\n////\nstill hidden"]
+
+
 def _convert_within(src: bytes, seconds: float = 10.0) -> DoclingDocument:
     """Convert `src`, failing rather than hanging if the parser never returns.
 
@@ -1026,17 +1515,9 @@ def _convert_within(src: bytes, seconds: float = 10.0) -> DoclingDocument:
     the thread dies with the interpreter.
     """
     result: list[DoclingDocument] = []
-
-    def run() -> None:
-        in_doc = InputDocument(
-            path_or_stream=BytesIO(src),
-            format=InputFormat.ASCIIDOC,
-            backend=AsciiDocBackend,
-            filename="unclosed.adoc",
-        )
-        result.append(in_doc._backend.convert())
-
-    worker = threading.Thread(target=run, daemon=True)
+    worker = threading.Thread(
+        target=lambda: result.append(_convert_adoc(src)), daemon=True
+    )
     worker.start()
     worker.join(seconds)
     assert not worker.is_alive(), (

@@ -155,6 +155,7 @@ class VideoPipeline(BasePipeline):
 
     def _process_video(self, conv_res: ConversionResult) -> None:
         # 1. Resolve input to a local path
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         temp_video: Path | None = None
 

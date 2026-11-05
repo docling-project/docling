@@ -50,9 +50,6 @@
           "$ref": "#/texts/2"
         },
         {
-          "$ref": "#/groups/2"
-        },
-        {
           "$ref": "#/texts/7"
         },
         {
@@ -66,7 +63,7 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/texts/2"
       },
       "children": [
         {
@@ -74,9 +71,6 @@
         },
         {
           "$ref": "#/texts/4"
-        },
-        {
-          "$ref": "#/groups/3"
         }
       ],
       "content_layer": "body",
@@ -86,7 +80,7 @@
     {
       "self_ref": "#/groups/3",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/4"
       },
       "children": [
         {
@@ -206,7 +200,11 @@
       "parent": {
         "$ref": "#/groups/1"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/2"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
@@ -248,7 +246,11 @@
       "parent": {
         "$ref": "#/groups/2"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/3"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],

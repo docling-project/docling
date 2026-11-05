@@ -7,6 +7,7 @@ Each of them reads a whole user-supplied file as text, and each decodes the
 path and the stream separately, so every case here is checked on both routes.
 """
 
+import codecs
 import logging
 from io import BytesIO
 
@@ -253,3 +254,37 @@ def test_crlf_csv_keeps_a_quoted_field_spanning_lines_in_one_cell(tmp_path):
 
     assert stream_export == file_export
     assert "first line second line" in stream_export
+
+
+@pytest.mark.parametrize(
+    "bom, body, encoding",
+    [
+        (codecs.BOM_UTF8, b"\xff", "utf-8-sig"),
+        (codecs.BOM_UTF16_LE, b"A", "utf-16"),
+        (codecs.BOM_UTF16_BE, b"\x00", "utf-16"),
+        (codecs.BOM_UTF32_LE, b"A\x00\x00", "utf-32"),
+        (codecs.BOM_UTF32_BE, b"\x00\x00\x00", "utf-32"),
+    ],
+    ids=["utf8", "utf16-le", "utf16-be", "utf32-le", "utf32-be"],
+)
+def test_damaged_bom_input_reports_detected_encoding(bom, body, encoding, tmp_path):
+    raw = bom + body
+    path = tmp_path / "damaged.txt"
+    path.write_bytes(raw)
+
+    for source in (BytesIO(raw), path):
+        with pytest.raises(DocumentLoadError, match=encoding) as error:
+            decode_text(source)
+        assert isinstance(error.value.__cause__, UnicodeDecodeError)
+
+
+@pytest.mark.parametrize("fmt, suffix, text", FORMATS)
+@pytest.mark.parametrize("encoding", ["utf-8-sig", "utf-16", "utf-32"])
+def test_damaged_bom_document_reports_decode_error(
+    fmt, suffix, text, encoding, tmp_path
+):
+    raw = text.encode(encoding) + b"\xff"
+
+    for error in _both_routes_raise(fmt, suffix, raw, tmp_path):
+        assert encoding in str(error)
+        assert isinstance(error.__cause__, UnicodeDecodeError)

@@ -20,6 +20,11 @@ from pydantic import (
     model_validator,
 )
 
+# Default limit on the pixels of one decoded image or image frame. It is the
+# default of Pillow's ``Image.MAX_IMAGE_PIXELS`` (about 268 MB once decoded to
+# RGB), fixed here so that the limit does not depend on global Pillow state.
+DEFAULT_MAX_IMAGE_PIXELS = 89_478_485
+
 
 class BaseBackendOptions(BaseModel):
     """Common options for all declarative document backends."""
@@ -80,6 +85,16 @@ class AsciiDocBackendOptions(TextBackendOptions):
             ),
         ),
     ] = None
+    capture_comments: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to keep AsciiDoc comments (`//` lines and `////` blocks) in "
+                "the notes content layer, which exports leave out by default. When "
+                "disabled, comments are dropped."
+            )
+        ),
+    ] = True
 
 
 class HTMLBackendOptions(BaseBackendOptions):
@@ -186,6 +201,13 @@ class HTMLBackendOptions(BaseBackendOptions):
         20 * 1024 * 1024,  # 20 MB
         description="The maximum number of bytes for remote image downloads.",
     )
+    max_image_pixels: PositiveInt = Field(
+        DEFAULT_MAX_IMAGE_PIXELS,
+        description=(
+            "The maximum number of pixels (width x height) of an embedded or "
+            "fetched image. Larger images are skipped with a warning."
+        ),
+    )
     max_redirects: Annotated[int, Field(ge=0)] = Field(
         5,
         description="Maximum number of HTTP redirects to follow when fetching remote resources. Set to 0 to disable redirects.",
@@ -226,6 +248,13 @@ class MarkdownBackendOptions(TextBackendOptions):
         20 * 1024 * 1024,  # 20 MB
         description="The maximum number of base64 data bytes that the backend will accept.",
     )
+    max_image_pixels: PositiveInt = Field(
+        DEFAULT_MAX_IMAGE_PIXELS,
+        description=(
+            "The maximum number of pixels (width x height) of an embedded or "
+            "fetched image. Larger images are skipped with a warning."
+        ),
+    )
 
 
 class JatsBackendOptions(BaseBackendOptions):
@@ -258,13 +287,20 @@ class EpubBackendOptions(BaseBackendOptions):
     max_total_bytes: Annotated[
         PositiveInt,
         Field(
-            description="Maximum cumulative size in bytes of all data extracted from the EPUB archive during processing"
+            description=(
+                "Maximum cumulative size in bytes of the content documents read "
+                "from the EPUB archive, and of all data extracted from it for "
+                "image processing"
+            )
         ),
     ] = 100 * 1024 * 1024  # 100 MB
     max_file_bytes: Annotated[
         PositiveInt,
         Field(
-            description="Maximum size in bytes for any single file extracted from the EPUB archive"
+            description=(
+                "Maximum size in bytes for any single file read or extracted "
+                "from the EPUB archive"
+            )
         ),
     ] = 10 * 1024 * 1024  # 10 MB
     max_member_count: Annotated[
@@ -294,6 +330,14 @@ class PdfBackendOptions(BaseBackendOptions):
             "embedded in the page, in addition to their bounding boxes. Needed to "
             "extract native picture images (e.g. by the native PDF pipeline); "
             "decoding costs time and memory, so it is off by default."
+        ),
+    )
+    max_image_pixels: PositiveInt = Field(
+        DEFAULT_MAX_IMAGE_PIXELS,
+        description=(
+            "The maximum number of pixels (width x height) of one page of an "
+            "image input, such as one frame of a multi-page TIFF. Used by the "
+            "image backend; an image with a larger page is rejected."
         ),
     )
 
@@ -469,6 +513,28 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "Set to None (default) to include all sheets."
         ),
     )
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum cumulative decompressed size in bytes of all members of "
+                "the XLSX archive. The archive is checked before it is parsed."
+            )
+        ),
+    ] = 512 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum decompressed size in bytes of any single member of the "
+                "XLSX archive."
+            )
+        ),
+    ] = 128 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt,
+        Field(description="Maximum number of members in the XLSX archive"),
+    ] = 10_000
 
 
 class MsPowerpointBackendOptions(BaseBackendOptions):
@@ -521,6 +587,28 @@ class MsWordBackendOptions(BaseBackendOptions):
             )
         ),
     ] = True
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum cumulative decompressed size in bytes of all members of "
+                "the DOCX archive. The archive is checked before it is parsed."
+            )
+        ),
+    ] = 512 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description=(
+                "Maximum decompressed size in bytes of any single member of the "
+                "DOCX archive."
+            )
+        ),
+    ] = 128 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt,
+        Field(description="Maximum number of members in the DOCX archive"),
+    ] = 10_000
 
 
 class OdsBackendOptions(BaseBackendOptions):
@@ -582,11 +670,19 @@ class LatexBackendOptions(BaseBackendOptions):
         description=(
             "The engine to use for rendering Tikz diagrams into images. "
             "Set to 'tectonic' to enable asynchronous image generation. "
-            "Without shell escape, Tectonic runs with --untrusted and "
-            "--only-cached, and diagrams whose source names absolute or "
-            "parent-directory files are kept as TikZ code instead of rendered. "
-            "This check is best-effort: process untrusted LaTeX in an isolated "
-            "environment."
+            "Tectonic can read and write files outside the working directory, "
+            "so it runs only when tikz_engine_trusted_input is True. Otherwise "
+            "diagrams are kept as TikZ code."
+        ),
+    )
+    tikz_engine_trusted_input: bool = Field(
+        False,
+        description=(
+            "Confirm that the LaTeX input is trusted, which is required to "
+            "render TikZ diagrams with Tectonic. Tectonic can read and write "
+            "files that the process can access, and the source pre-check is "
+            "not a security boundary. Enable only for trusted input, or run the "
+            "conversion in an isolated environment."
         ),
     )
     tikz_engine_timeout: float = Field(
@@ -597,8 +693,8 @@ class LatexBackendOptions(BaseBackendOptions):
         False,
         description=(
             "Allow Tectonic TikZ rendering to enable shell escape during "
-            "compilation. Disabled by default for safer rendering of untrusted "
-            "LaTeX; enable only for trusted input."
+            "compilation. Has no effect unless tikz_engine_trusted_input is "
+            "True; enable only for trusted input."
         ),
     )
 

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 from PIL import Image
 
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import Page, VlmStopReason
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
@@ -17,7 +17,10 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineOutput, VlmEngineType
-from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
+from docling.models.stages.vlm_convert.vlm_convert_model import (
+    VlmConvertModel,
+    _prediction_from_engine_output,
+)
 
 
 class _CapturingEngine:
@@ -206,3 +209,34 @@ def test_process_images_uses_selected_auto_inline_engine_for_runtime_input_confi
         engine_input.extra_generation_config["transformers_prompt_style"]
         == TransformersPromptStyle.RAW
     )
+
+
+def test_prediction_keeps_the_incomplete_stop_reasons() -> None:
+    """A truncated or filtered call must stay reported as incomplete."""
+    length = _prediction_from_engine_output(
+        VlmEngineOutput(text="a", stop_reason="length")
+    )
+    filtered = _prediction_from_engine_output(
+        VlmEngineOutput(text="", stop_reason="content_filter")
+    )
+
+    assert length.stop_reason == VlmStopReason.LENGTH
+    assert filtered.stop_reason == VlmStopReason.CONTENT_FILTERED
+
+
+def test_prediction_reports_a_completed_call() -> None:
+    """A sequence that reached its end token is a complete output."""
+    completed = _prediction_from_engine_output(
+        VlmEngineOutput(text="a", stop_reason="end_of_sequence")
+    )
+
+    assert completed.stop_reason == VlmStopReason.END_OF_SEQUENCE
+
+
+def test_prediction_reads_a_vllm_stop_as_a_completed_call() -> None:
+    """vLLM reports stop for a sequence that emitted its end token."""
+    completed = _prediction_from_engine_output(
+        VlmEngineOutput(text="a", stop_reason="stop")
+    )
+
+    assert completed.stop_reason == VlmStopReason.END_OF_SEQUENCE

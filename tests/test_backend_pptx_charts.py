@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Tests for PowerPoint combination charts: several plots in one chart."""
+"""Tests for PowerPoint chart plots: every plot type and combination charts."""
 
 import datetime
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import pytest
 from docling_core.types.doc import PictureClassificationLabel, PictureItem
@@ -125,6 +125,41 @@ def _save_combo_chart_deck(
     prs.save(path)
 
 
+def _single_plot_deck(plot: str) -> tuple[Any, Any]:
+    """Return a deck whose chart has one ``c:<plot>`` plot, and that plot element.
+
+    The plot has one series "2026" with 10, 20 and 30 over Q1 to Q3. python-pptx
+    writes only the plot types that it has a class for, so the series and axis
+    ids of a clustered column chart move into a new ``c:<plot>`` element.
+    """
+    from lxml import etree
+    from pptx import Presentation
+    from pptx.chart.data import CategoryChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.oxml.ns import qn
+    from pptx.util import Inches
+
+    chart_data = CategoryChartData()
+    chart_data.categories = ["Q1", "Q2", "Q3"]
+    chart_data.add_series("2026", (10, 20, 30))
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    chart = slide.shapes.add_chart(
+        XL_CHART_TYPE.COLUMN_CLUSTERED,
+        Inches(1),
+        Inches(1),
+        Inches(6),
+        Inches(4),
+        chart_data,
+    ).chart
+    bar_chart = chart.element.chart.plotArea.find(qn("c:barChart"))
+    other_plot = etree.Element(qn(f"c:{plot}"))
+    other_plot.extend(bar_chart.findall(qn("c:ser")) + bar_chart.findall(qn("c:axId")))
+    bar_chart.addnext(other_plot)
+    bar_chart.getparent().remove(bar_chart)
+    return prs, other_plot
+
+
 def _only_chart(path: Path) -> PictureItem:
     doc = get_converter().convert(path).document
     pictures = list(doc.pictures)
@@ -168,27 +203,84 @@ def test_combo_chart_lists_each_plot_type_and_keeps_all_series(tmp_path: Path):
     assert len(grid) == 1 + len(_MONTHS)
 
 
-def test_unreadable_plot_keeps_the_data_of_the_other_plots(tmp_path: Path, caplog):
-    """A plot type python-pptx cannot read does not drop the other plots' data.
+def test_stock_plot_keeps_its_series_next_to_the_other_plots(tmp_path: Path):
+    """The series of a stock plot follow the column series in the data table.
 
-    python-pptx has no plot class for a stock plot. Before, the whole chart
-    lost its data table. Now the column series stay, the stock plot counts as
-    another chart type, and a warning names the plot that was skipped.
+    python-pptx has no plot class for a stock plot. Before, its series were
+    skipped with a warning. Now they are read, and the stock plot counts as
+    another chart type.
     """
     path = tmp_path / "stock_combo_chart.pptx"
     _save_combo_chart_deck(path, second_plot="stockChart")
+
+    picture = _only_chart(path)
+
+    assert _labels(picture) == [
+        PictureClassificationLabel.BAR_CHART.value,
+        PictureClassificationLabel.OTHER_CHART.value,
+    ]
+    grid = _grid(picture)
+    assert grid[0][1:] == [*_BARS, *_LINES]
+    assert grid[1][1:] == ["85", "94", "91", "71", "0.126", "0.091"]
+
+
+@pytest.mark.parametrize(
+    ("plot", "label"),
+    [
+        ("bar3DChart", PictureClassificationLabel.BAR_CHART),
+        ("line3DChart", PictureClassificationLabel.LINE_CHART),
+        ("pie3DChart", PictureClassificationLabel.PIE_CHART),
+        ("area3DChart", PictureClassificationLabel.OTHER_CHART),
+        ("ofPieChart", PictureClassificationLabel.OTHER_CHART),
+        ("stockChart", PictureClassificationLabel.OTHER_CHART),
+        ("surfaceChart", PictureClassificationLabel.OTHER_CHART),
+        ("surface3DChart", PictureClassificationLabel.OTHER_CHART),
+    ],
+)
+def test_plot_without_a_python_pptx_class_keeps_its_data(
+    tmp_path: Path, plot: str, label: PictureClassificationLabel
+):
+    """A plot that python-pptx has no class for is classified by its tag.
+
+    Before, such a chart was "other_chart" with no data table, and a 3-D area
+    chart stopped the conversion of the whole presentation, because python-pptx
+    has a plot class but no series class for it. Now the chart keeps its type
+    and its data.
+    """
+    prs, _ = _single_plot_deck(plot)
+    path = tmp_path / f"{plot}.pptx"
+    prs.save(path)
+
+    picture = _only_chart(path)
+
+    assert _labels(picture) == [label.value]
+    assert _grid(picture) == [["", "2026"], ["Q1", "10"], ["Q2", "20"], ["Q3", "30"]]
+
+
+def test_malformed_series_drops_only_the_chart_data(tmp_path: Path, caplog):
+    """A series without ``c:order`` loses the chart's data, not the presentation.
+
+    python-pptx raises ``InvalidXmlError`` when a required element is missing.
+    That error must not stop the conversion of the whole presentation. The
+    chart keeps its type without a data table, and a warning names the missing
+    element.
+    """
+    from pptx.oxml.ns import qn
+
+    prs, stock_plot = _single_plot_deck("stockChart")
+    series = stock_plot.find(qn("c:ser"))
+    series.remove(series.find(qn("c:order")))
+    path = tmp_path / "stock_chart_without_order.pptx"
+    prs.save(path)
 
     with caplog.at_level(
         logging.WARNING, logger="docling.backend.mspowerpoint_backend"
     ):
         picture = _only_chart(path)
 
-    assert _labels(picture) == [
-        PictureClassificationLabel.BAR_CHART.value,
-        PictureClassificationLabel.OTHER_CHART.value,
-    ]
-    assert _grid(picture)[0][1:] == list(_BARS)
-    assert "stockChart" in caplog.text
+    assert _labels(picture) == [PictureClassificationLabel.OTHER_CHART.value]
+    assert picture.meta is not None and picture.meta.tabular_chart is None
+    assert "c:order" in caplog.text
 
 
 def test_date_axis_categories_are_iso_dates(tmp_path: Path):
