@@ -66,7 +66,7 @@ def test_jats_license_and_funding_statements_are_furniture():
 
     assert _furniture_statements(doc) == [
         [
-            ("CHARLIE-LICENCE terms of the", None),
+            ("CHARLIE-LICENCE terms of the ", None),
             ("licence", "https://example.org/c3-licence"),
             (".", None),
         ],
