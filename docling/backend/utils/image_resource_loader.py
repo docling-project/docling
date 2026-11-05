@@ -5,8 +5,8 @@
 
 Turns an image source (a URI, a local file, or a remote URL) into a DoclingDocument
 `ImageRef`, enforcing the relevant safety limits: a path-traversal guard when resolving
-relative paths, the `enable_local_fetch` / `enable_remote_fetch` toggles, and the
-base64 and remote download size caps.
+relative paths, the `enable_local_fetch` / `enable_remote_fetch` toggles, the
+base64 and remote download size caps, and a limit on the decoded image pixels.
 """
 
 import base64
@@ -23,6 +23,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
 from urllib.parse import urljoin, urlparse, urlsplit
+from urllib.request import url2pathname
 
 import certifi
 import requests
@@ -32,7 +33,9 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import ValidationError
 from requests.utils import get_environ_proxies, select_proxy
 
+from docling.datamodel.backend_options import DEFAULT_MAX_IMAGE_PIXELS
 from docling.exceptions import OperationNotAllowed
+from docling.utils.image_utils import check_image_pixels
 
 _log = logging.getLogger(__name__)
 
@@ -267,6 +270,7 @@ class ImageResourceLoader:
         enable_remote_fetch: bool = False,
         max_image_data_base64_bytes: int = 20 * 1024 * 1024,
         max_remote_image_bytes: int = 20 * 1024 * 1024,
+        max_image_pixels: int = DEFAULT_MAX_IMAGE_PIXELS,
         max_redirects: int = 5,
         headers: Optional[dict[str, str]] = None,
         header_origins: Iterable[str] = (),
@@ -275,6 +279,7 @@ class ImageResourceLoader:
         self.enable_remote_fetch = enable_remote_fetch
         self.max_image_data_base64_bytes = max_image_data_base64_bytes
         self.max_remote_image_bytes = max_remote_image_bytes
+        self.max_image_pixels = max_image_pixels
         self.max_redirects = max_redirects
         self.headers = headers
         # Only requests to these origins carry the configured `headers`.
@@ -306,6 +311,20 @@ class ImageResourceLoader:
             and not parsed_loc.netloc
         )
 
+    @staticmethod
+    def _local_base_path(value: str) -> str:
+        """Return a filesystem path for a local path or ``file://`` URI."""
+        parsed = urlparse(value)
+        if parsed.scheme.lower() != "file":
+            return value
+
+        path = parsed.path
+        if parsed.netloc and parsed.netloc.lower() != "localhost":
+            path = f"//{parsed.netloc}{path}"
+        if not path:
+            raise ValueError("Invalid file URI: empty path")
+        return url2pathname(path)
+
     def resolve_relative_path(self, loc: str, base_path: Optional[str]) -> str:
         loc = loc.strip()
 
@@ -316,6 +335,7 @@ class ImageResourceLoader:
         abs_loc = loc
 
         if base_path:
+            base_path = self._local_base_path(base_path)
             if loc.startswith("//"):
                 abs_loc = "https:" + loc
             elif not loc.startswith(("http://", "https://", "data:", "#")):
@@ -348,8 +368,12 @@ class ImageResourceLoader:
             img_data = self.load_image_data(src_url, base_path)
             if img_data:
                 img = Image.open(BytesIO(img_data))
+                # Image.open reads only the header: check the size before
+                # ImageRef.from_pil decodes the pixels.
+                check_image_pixels(img.size, self.max_image_pixels)
                 return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
         except (
+            Image.DecompressionBombError,
             requests.RequestException,
             urllib3.exceptions.HTTPError,
             ValidationError,
@@ -454,6 +478,14 @@ class ImageResourceLoader:
             return self.fetch_remote(src_loc).content
         elif src_loc.startswith("data:"):
             encoded_data = re.sub(r"^data:image/.+;base64,", "", src_loc)
+            # Check the size before decoding: 4 base64 characters hold 3
+            # bytes, less one byte for each "=" padding character.
+            padding = len(encoded_data[-2:]) - len(encoded_data[-2:].rstrip("="))
+            decoded_size = len(encoded_data) * 3 // 4 - padding
+            if decoded_size > self.max_image_data_base64_bytes:
+                raise ValueError(
+                    f"Decoded image exceeds size limit of {self.max_image_data_base64_bytes} bytes."
+                )
             decoded_data = base64.b64decode(encoded_data)
 
             if len(decoded_data) > self.max_image_data_base64_bytes:

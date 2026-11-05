@@ -8,9 +8,10 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Final
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -22,7 +23,6 @@ from docling_core.types.doc import (
     DocumentOrigin,
     Formatting,
     ImageRef,
-    ListItem,
     MoleculeMetaField,
     NodeItem,
     PictureItem,
@@ -35,15 +35,20 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
     TableItem,
+    TextItem,
+    TitleItem,
 )
 from PIL import Image as PILImage
 from pydantic import AnyUrl, ValidationError
 
+from docling.utils._inline_runs import trim_run_edges
 from docling.utils.code_language import detect_code_language
+from docling.utils.vlm_utils import normalize_section_header_levels
 
 _log = logging.getLogger(__name__)
 
 _MAX_TABLE_GRID_CELLS = 1000
+_BR_SPACES: Final = re.compile(r"(?<=\S) *\n *| *\n *(?=\S)")
 
 _LABEL_MAP = {
     "Title": DocItemLabel.TITLE,
@@ -179,6 +184,10 @@ class _HTMLTreeParser(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         self.stack[-1].children.append(data)
+
+
+def _has_content(node: _Element) -> bool:
+    return bool(node.text().strip()) or any(True for _ in node.elements())
 
 
 def _span(value: str, maximum: int, default: int = 1) -> int:
@@ -329,7 +338,13 @@ def _inline_runs(
         text = "" if kind in {"checkbox", "radio"} else node.text()
         yield _Run(text, label, formatting, hyperlink)
     elif label is not None:
-        yield _Run(node.text().strip(), label, formatting, hyperlink)
+        # A boundary space never goes inside a code or formula run: move it out.
+        text = node.text()
+        if text[:1].isspace():
+            yield _Run(" ", formatting=formatting, hyperlink=hyperlink)
+        yield _Run(text.strip(), label, formatting, hyperlink)
+        if text.strip() and text[-1:].isspace():
+            yield _Run(" ", formatting=formatting, hyperlink=hyperlink)
     elif node.tag == "br":
         yield _Run("\n", formatting=formatting, hyperlink=hyperlink)
     elif node.tag not in {"script", "style", "head"}:
@@ -338,25 +353,35 @@ def _inline_runs(
 
 
 class _ChandraDocumentBuilder:
-    def __init__(self, doc: DoclingDocument, size: Size, page_no: int):
+    def __init__(
+        self,
+        doc: DoclingDocument,
+        size: Size,
+        page_no: int,
+        warn_bbox: bool = True,
+    ):
         self.doc = doc
         self.size = size
         self.page_no = page_no
+        self.warn_bbox = warn_bbox
 
     def _provenance(self, node: _Element) -> ProvenanceItem | None:
         raw = node.attrs.get("data-bbox", "")
         try:
             x0, y0, x1, y1 = (float(c) for c in raw.split())
         except ValueError:
-            _log.warning(
-                "Missing or invalid Chandra bbox %r; preserving content without coordinates",
-                raw,
-            )
+            if self.warn_bbox:
+                _log.warning(
+                    "Missing or invalid Chandra bbox %r; preserving content without coordinates",
+                    raw,
+                )
             return None
         if not (0 <= x0 <= x1 <= 1000 and 0 <= y0 <= y1 <= 1000):
-            _log.warning(
-                "Invalid Chandra bbox %r; preserving content without coordinates", raw
-            )
+            if self.warn_bbox:
+                _log.warning(
+                    "Invalid Chandra bbox %r; preserving content without coordinates",
+                    raw,
+                )
             return None
         return ProvenanceItem(
             page_no=self.page_no,
@@ -383,6 +408,12 @@ class _ChandraDocumentBuilder:
     ) -> None:
         merged: list[_Run] = []
         for run in runs:
+            if run.label == DocItemLabel.TEXT and merged:
+                if merged[-1].text[-1:].isspace():
+                    # HTML collapses a boundary to one space; the left run carries it.
+                    run.text = run.text.lstrip(" \t")
+                if not run.text:
+                    continue
             if (
                 merged
                 and run.label == merged[-1].label == DocItemLabel.TEXT
@@ -392,19 +423,39 @@ class _ChandraDocumentBuilder:
                 merged[-1].text += run.text
             else:
                 merged.append(run)
-        merged = [
-            run
-            for run in merged
-            if run.text.strip()
-            or run.label
-            in {
+        heading = isinstance(parent, (SectionHeaderItem, TitleItem)) or label in {
+            DocItemLabel.SECTION_HEADER,
+            DocItemLabel.TITLE,
+        }
+        # A break inside one run of a multi-run heading would end the heading line.
+        collapse = heading and len(merged) > 1
+        runs, merged = merged, []
+        for run in runs:
+            if run.label != DocItemLabel.TEXT:
+                # Code, formula and field runs never own boundary whitespace.
+                run.text = run.text.strip()
+            elif collapse:
+                run.text = re.sub(r"\s+", " ", run.text)
+            else:
+                # Like a browser, drop the spaces around a `<br/>` line break. A run of
+                # nothing but spaces and a break is the separator between two others.
+                run.text = _BR_SPACES.sub("\n", run.text)
+            if not run.text and run.label not in {
                 DocItemLabel.FIELD_VALUE,
                 DocItemLabel.CHECKBOX_SELECTED,
                 DocItemLabel.CHECKBOX_UNSELECTED,
-            }
-        ]
+            }:
+                continue
+            merged.append(run)
+        merged = trim_run_edges(
+            merged,
+            get_text=lambda run: run.text,
+            with_text=lambda run, text: replace(run, text=text),
+            is_trimmable=lambda run: run.label == DocItemLabel.TEXT,
+        )
         if not merged:
             return
+        before = len(self.doc.texts)
         layer = (
             ContentLayer.FURNITURE
             if label in {DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER}
@@ -426,10 +477,7 @@ class _ChandraDocumentBuilder:
             else:
                 # An equation block mixing prose and inline math is text, not one formula.
                 label = DocItemLabel.TEXT
-        if len(merged) > 1 or any(
-            run.formatting and run.formatting.script in (Script.SUB, Script.SUPER)
-            for run in merged
-        ):
+        if len(merged) > 1:
             if label != DocItemLabel.TEXT:
                 parent = self.doc.add_text(
                     label=label,
@@ -445,15 +493,16 @@ class _ChandraDocumentBuilder:
                 if run.label == DocItemLabel.TEXT and len(merged) == 1
                 else run.label
             )
-            text = run.text.strip()
+            text = run.text
             if (
-                isinstance(parent, ListItem)
+                isinstance(parent, TextItem)
                 and not parent.children
                 and not parent.text
                 and len(merged) == 1
                 and run_label == DocItemLabel.TEXT
             ):
-                parent.text = parent.orig = text
+                parent.text = text
+                parent.orig = parent.orig or text
                 parent.formatting = (
                     run.formatting if run.formatting != Formatting() else None
                 )
@@ -473,6 +522,10 @@ class _ChandraDocumentBuilder:
             )
             if run_label == DocItemLabel.FIELD_VALUE:
                 item.kind = "fillable"
+        for item in self.doc.texts[before:]:
+            if isinstance(item, SectionHeaderItem):
+                # Without <hN>, a section header has raw depth 2, like "##".
+                item.level = 2
 
     def walk(
         self,
@@ -592,6 +645,7 @@ class _ChandraDocumentBuilder:
             if re.fullmatch(r"h[1-6]", node.tag):
                 for item in self.doc.texts[before:]:
                     if isinstance(item, SectionHeaderItem):
+                        # Raw markup depth, normalized per document later.
                         item.level = int(node.tag[1])
 
     def _list(self, node: _Element, parent: NodeItem | None) -> None:
@@ -604,14 +658,15 @@ class _ChandraDocumentBuilder:
             pending = _Element("li")
             for child in node.children:
                 if isinstance(child, _Element) and child.tag in {"li", "p", "br"}:
-                    if pending.children:
+                    # Whitespace between the item tags is HTML layout, not an item.
+                    if _has_content(pending):
                         children.append(pending)
                         pending = _Element("li")
                     if child.tag != "br":
                         children.append(child)
                 else:
                     pending.children.append(child)
-            if pending.text().strip() or any(True for _ in pending.elements()):
+            if _has_content(pending):
                 children.append(pending)
         for child in children:
             if isinstance(child, str) and not child.strip():
@@ -637,8 +692,16 @@ class _ChandraDocumentBuilder:
     def _table(
         self, node: _Element, parent: NodeItem | None, prov: _Provenance | None
     ) -> None:
-        parsed = _table_cells(node)
-        if not parsed:
+        parsed: list[tuple[TableCell, _Element]] | None
+        try:
+            parsed = _table_cells(node)
+        except ValueError as exc:
+            # Like the Nemotron Parse mapper: drop the grid, keep the page.
+            _log.warning(
+                "Chandra table is too large to map (%s); preserving an empty table", exc
+            )
+            parsed = None
+        if parsed is not None and not parsed:
             _log.warning("Chandra table contains no cells; preserving its content")
             self.walk(node.children, parent, prov)
             return
@@ -648,7 +711,7 @@ class _ChandraDocumentBuilder:
             prov=prov.take() if prov is not None else None,
         )
         cells: list[TableCell] = []
-        for cell, cell_node in parsed:
+        for cell, cell_node in parsed or []:
             if any(child.tag != "span" for child in cell_node.elements()):
                 group = self.doc.add_group(parent=table)
                 self.walk(cell_node.children, group)
@@ -727,14 +790,18 @@ def _add_html_fragment(
     label: DocItemLabel,
     prov: ProvenanceItem | None = None,
     parent: NodeItem | None = None,
+    warn_bbox: bool = True,
 ) -> bool:
-    """Add an HTML fragment using Chandra's dependency-free rich tree mapping."""
+    """Add an HTML fragment using Chandra's dependency-free rich tree mapping.
+
+    Set ``warn_bbox`` to False when the caller reports bad boxes in its own words.
+    """
     root = _HTMLTreeParser(html_content).root
     if not any(True for _ in root.elements()):
         return False
     page_no = prov.page_no if prov is not None else next(iter(doc.pages))
     size = doc.pages[page_no].size
-    _ChandraDocumentBuilder(doc, size, page_no).walk(
+    _ChandraDocumentBuilder(doc, size, page_no, warn_bbox).walk(
         root.children,
         parent=parent,
         prov=_Provenance(prov, text_owner=True) if prov is not None else None,
@@ -768,6 +835,8 @@ def parse_chandra_html(
     page_no: int,
     filename: str = "file",
     page_image: PILImage.Image | None = None,
+    *,
+    normalize_heading_levels: bool = True,
 ) -> DoclingDocument:
     """Map Chandra layout blocks and their HTML contents to document primitives.
 
@@ -775,7 +844,9 @@ def parse_chandra_html(
     block; derived children remain unlocated unless they declare their own bbox.
     Bare HTML is recovered without provenance; non-HTML responses raise ValueError.
     Caption/footnote links require explicit nesting. Separate layout blocks are
-    neither associated nor merged by proximity.
+    neither associated nor merged by proximity. Set ``normalize_heading_levels``
+    to False to keep raw heading depths for a later document-wide
+    :func:`normalize_section_header_levels`.
     """
     doc = DoclingDocument(
         name=Path(filename).stem,
@@ -827,4 +898,6 @@ def parse_chandra_html(
         block.attrs.get("data-label") == "Blank-Page" for block in blocks
     ):
         raise ValueError("Chandra HTML contains no document content")
+    if normalize_heading_levels:
+        normalize_section_header_levels(doc)
     return doc

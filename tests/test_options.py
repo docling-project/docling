@@ -165,6 +165,26 @@ def test_page_range(test_doc_path):
     assert doc_result.status == ConversionStatus.FAILURE
 
 
+def test_page_range_beyond_int64():
+    # (1, sys.maxsize) after a JavaScript JSON round-trip becomes (1, 2**63),
+    # which the docling-parse native binding cannot accept unless clamped.
+    pipeline_options = PdfPipelineOptions(do_ocr=False, do_table_structure=False)
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+                backend=ThreadedDoclingParseDocumentBackend,
+            )
+        }
+    )
+    doc_result: ConversionResult = converter.convert(
+        Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf"), page_range=(1, 2**63)
+    )
+
+    assert doc_result.status == ConversionStatus.SUCCESS
+    assert doc_result.document.num_pages() == 1
+
+
 def test_document_timeout(test_doc_path):
     from docling.datamodel.base_models import FailureCategory
 

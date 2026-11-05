@@ -95,7 +95,15 @@ class DoclingJSONBackend(DeclarativeDocumentBackend):
             else:
                 raise RuntimeError(f"Unexpected: {type(self.path_or_stream)=}")
             doc = DoclingDocument.model_validate_json(json_data=json_data)
-            if not self.options.enable_local_fetch:
+            if self.options.enable_local_fetch:
+                # docling-core gates local image reads; opting in reads them now,
+                # resolving relative paths against the JSON file's directory
+                doc.load_local_images(
+                    base_dir=self.path_or_stream.parent
+                    if isinstance(self.path_or_stream, Path)
+                    else None
+                )
+            else:
                 self._drop_local_image_refs(doc)
             return doc
         except Exception as e:

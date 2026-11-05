@@ -1,0 +1,33 @@
+\title{Sample Document}
+
+\documentclass{article}
+
+\begin{document}
+
+\maketitle
+
+Test Author
+
+\section{Introduction}
+
+This is the first paragraph of the introduction.
+
+\section{Background}
+
+Some background information here with bold and italic text.
+
+\begin{itemize}
+\item First item in unordered list
+\item Second item in unordered list
+\end{itemize}
+
+\begin{itemize}
+\item First item in ordered list
+\item Second item in ordered list
+\end{itemize}
+
+\subsection{Nested Section}
+
+A subsection with more content.
+
+\end{document}

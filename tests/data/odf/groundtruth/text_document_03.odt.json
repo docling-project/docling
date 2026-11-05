@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "text_document_03",
   "origin": {
     "mimetype": "application/vnd.oasis.opendocument.text",
@@ -24,43 +24,43 @@
         "$ref": "#/tables/0"
       },
       {
-        "$ref": "#/texts/33"
+        "$ref": "#/texts/22"
       },
       {
-        "$ref": "#/texts/34"
+        "$ref": "#/texts/23"
       },
       {
         "$ref": "#/tables/1"
       },
       {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       {
-        "$ref": "#/texts/52"
+        "$ref": "#/texts/34"
       },
       {
         "$ref": "#/tables/4"
       },
       {
-        "$ref": "#/texts/56"
+        "$ref": "#/texts/38"
       },
       {
         "$ref": "#/tables/5"
       },
       {
-        "$ref": "#/texts/61"
+        "$ref": "#/texts/43"
       },
       {
         "$ref": "#/tables/6"
       },
       {
-        "$ref": "#/texts/66"
+        "$ref": "#/texts/48"
       },
       {
         "$ref": "#/tables/7"
       },
       {
-        "$ref": "#/texts/75"
+        "$ref": "#/texts/57"
       },
       {
         "$ref": "#/tables/8"
@@ -243,34 +243,53 @@
       },
       "children": [
         {
-          "$ref": "#/groups/10"
+          "$ref": "#/texts/20"
+        },
+        {
+          "$ref": "#/texts/21"
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_0_1_2",
+      "name": "rich_cell_group_0_0_3",
       "label": "unspecified"
     },
     {
       "self_ref": "#/groups/10",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/tables/1"
       },
       "children": [
         {
-          "$ref": "#/texts/20"
-        },
-        {
-          "$ref": "#/texts/21"
-        },
-        {
-          "$ref": "#/texts/22"
-        },
-        {
-          "$ref": "#/texts/23"
-        },
+          "$ref": "#/tables/2"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_0_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/tables/1"
+      },
+      "children": [
         {
           "$ref": "#/texts/24"
         },
+        {
+          "$ref": "#/tables/3"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_2_1_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
         {
           "$ref": "#/texts/25"
         },
@@ -288,168 +307,23 @@
         },
         {
           "$ref": "#/texts/30"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/11",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/31"
         },
         {
           "$ref": "#/texts/32"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_0_0_3",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/12",
-      "parent": {
-        "$ref": "#/tables/1"
-      },
-      "children": [
+        },
         {
-          "$ref": "#/groups/13"
+          "$ref": "#/texts/33"
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_1_1_1",
-      "label": "unspecified"
+      "name": "group",
+      "label": "inline"
     },
     {
       "self_ref": "#/groups/13",
-      "parent": {
-        "$ref": "#/groups/12"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/35"
-        },
-        {
-          "$ref": "#/texts/36"
-        },
-        {
-          "$ref": "#/texts/37"
-        },
-        {
-          "$ref": "#/texts/38"
-        },
-        {
-          "$ref": "#/texts/39"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/14",
-      "parent": {
-        "$ref": "#/tables/1"
-      },
-      "children": [
-        {
-          "$ref": "#/tables/2"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_0_2",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/15",
-      "parent": {
-        "$ref": "#/tables/2"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/40"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_2_0_1",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/16",
-      "parent": {
-        "$ref": "#/tables/1"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/41"
-        },
-        {
-          "$ref": "#/tables/3"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_2_1_2",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/17",
-      "parent": {
-        "$ref": "#/tables/3"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/42"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_3_0_1",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/18",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/43"
-        },
-        {
-          "$ref": "#/texts/44"
-        },
-        {
-          "$ref": "#/texts/45"
-        },
-        {
-          "$ref": "#/texts/46"
-        },
-        {
-          "$ref": "#/texts/47"
-        },
-        {
-          "$ref": "#/texts/48"
-        },
-        {
-          "$ref": "#/texts/49"
-        },
-        {
-          "$ref": "#/texts/50"
-        },
-        {
-          "$ref": "#/texts/51"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/19",
       "parent": {
         "$ref": "#/tables/4"
       },
@@ -458,7 +332,7 @@
           "$ref": "#/pictures/0"
         },
         {
-          "$ref": "#/texts/53"
+          "$ref": "#/texts/35"
         }
       ],
       "content_layer": "body",
@@ -466,19 +340,19 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/20",
+      "self_ref": "#/groups/14",
       "parent": {
         "$ref": "#/tables/4"
       },
       "children": [
         {
-          "$ref": "#/texts/54"
+          "$ref": "#/texts/36"
         },
         {
           "$ref": "#/pictures/1"
         },
         {
-          "$ref": "#/texts/55"
+          "$ref": "#/texts/37"
         }
       ],
       "content_layer": "body",
@@ -486,9 +360,102 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/21",
+      "self_ref": "#/groups/15",
       "parent": {
         "$ref": "#/tables/5"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/16"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_5_0_0",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/16",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/39"
+        },
+        {
+          "$ref": "#/texts/40"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/17",
+      "parent": {
+        "$ref": "#/tables/5"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/18"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_5_0_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/18",
+      "parent": {
+        "$ref": "#/groups/17"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/41"
+        },
+        {
+          "$ref": "#/texts/42"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/19",
+      "parent": {
+        "$ref": "#/tables/6"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/20"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_6_0_0",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/20",
+      "parent": {
+        "$ref": "#/groups/19"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/44"
+        },
+        {
+          "$ref": "#/texts/45"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/21",
+      "parent": {
+        "$ref": "#/tables/6"
       },
       "children": [
         {
@@ -496,7 +463,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_5_0_0",
+      "name": "rich_cell_group_6_0_1",
       "label": "unspecified"
     },
     {
@@ -506,10 +473,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/57"
+          "$ref": "#/texts/46"
         },
         {
-          "$ref": "#/texts/58"
+          "$ref": "#/texts/47"
         }
       ],
       "content_layer": "body",
@@ -519,7 +486,7 @@
     {
       "self_ref": "#/groups/23",
       "parent": {
-        "$ref": "#/tables/5"
+        "$ref": "#/tables/7"
       },
       "children": [
         {
@@ -527,7 +494,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_5_0_1",
+      "name": "rich_cell_group_7_0_0",
       "label": "unspecified"
     },
     {
@@ -537,10 +504,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/59"
+          "$ref": "#/texts/49"
         },
         {
-          "$ref": "#/texts/60"
+          "$ref": "#/texts/50"
         }
       ],
       "content_layer": "body",
@@ -550,7 +517,7 @@
     {
       "self_ref": "#/groups/25",
       "parent": {
-        "$ref": "#/tables/6"
+        "$ref": "#/tables/7"
       },
       "children": [
         {
@@ -558,7 +525,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_6_0_0",
+      "name": "rich_cell_group_7_1_0",
       "label": "unspecified"
     },
     {
@@ -568,10 +535,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/62"
+          "$ref": "#/texts/51"
         },
         {
-          "$ref": "#/texts/63"
+          "$ref": "#/texts/52"
         }
       ],
       "content_layer": "body",
@@ -581,7 +548,7 @@
     {
       "self_ref": "#/groups/27",
       "parent": {
-        "$ref": "#/tables/6"
+        "$ref": "#/tables/7"
       },
       "children": [
         {
@@ -589,7 +556,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_6_0_1",
+      "name": "rich_cell_group_7_0_1",
       "label": "unspecified"
     },
     {
@@ -599,10 +566,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/64"
+          "$ref": "#/texts/53"
         },
         {
-          "$ref": "#/texts/65"
+          "$ref": "#/texts/54"
         }
       ],
       "content_layer": "body",
@@ -620,7 +587,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_7_0_0",
+      "name": "rich_cell_group_7_1_1",
       "label": "unspecified"
     },
     {
@@ -630,10 +597,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/67"
+          "$ref": "#/texts/55"
         },
         {
-          "$ref": "#/texts/68"
+          "$ref": "#/texts/56"
         }
       ],
       "content_layer": "body",
@@ -643,7 +610,7 @@
     {
       "self_ref": "#/groups/31",
       "parent": {
-        "$ref": "#/tables/7"
+        "$ref": "#/tables/8"
       },
       "children": [
         {
@@ -651,7 +618,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_7_1_0",
+      "name": "rich_cell_group_8_0_0",
       "label": "unspecified"
     },
     {
@@ -661,103 +628,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/69"
+          "$ref": "#/texts/58"
         },
         {
-          "$ref": "#/texts/70"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/33",
-      "parent": {
-        "$ref": "#/tables/7"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/34"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_7_0_1",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/34",
-      "parent": {
-        "$ref": "#/groups/33"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/71"
-        },
-        {
-          "$ref": "#/texts/72"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/35",
-      "parent": {
-        "$ref": "#/tables/7"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/36"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_7_1_1",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/36",
-      "parent": {
-        "$ref": "#/groups/35"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/73"
-        },
-        {
-          "$ref": "#/texts/74"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/37",
-      "parent": {
-        "$ref": "#/tables/8"
-      },
-      "children": [
-        {
-          "$ref": "#/groups/38"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_8_0_0",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/38",
-      "parent": {
-        "$ref": "#/groups/37"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/76"
-        },
-        {
-          "$ref": "#/texts/77"
+          "$ref": "#/texts/59"
         }
       ],
       "content_layer": "body",
@@ -1061,174 +935,7 @@
     {
       "self_ref": "#/texts/20",
       "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "This is simple text with ",
-      "text": "This is simple text with "
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "bold",
-      "text": "bold",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/22",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", ",
-      "text": ", "
-    },
-    {
-      "self_ref": "#/texts/23",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "strikethrough",
-      "text": "strikethrough",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": true,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": " and ",
-      "text": " and "
-    },
-    {
-      "self_ref": "#/texts/25",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "italic",
-      "text": "italic",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/26",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": " formatting with x",
-      "text": " formatting with x"
-    },
-    {
-      "self_ref": "#/texts/27",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "2",
-      "text": "2",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "super"
-      }
-    },
-    {
-      "self_ref": "#/texts/28",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": " and H",
-      "text": " and H"
-    },
-    {
-      "self_ref": "#/texts/29",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "2",
-      "text": "2",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "sub"
-      }
-    },
-    {
-      "self_ref": "#/texts/30",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "O",
-      "text": "O"
-    },
-    {
-      "self_ref": "#/texts/31",
-      "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -1238,9 +945,9 @@
       "text": "This is a paragraph"
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/21",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -1250,7 +957,7 @@
       "text": "This is another paragraph"
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/body"
       },
@@ -1263,7 +970,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/body"
       },
@@ -1275,102 +982,9 @@
       "text": "Before table"
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/24",
       "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Simple cell with ",
-      "text": "Simple cell with "
-    },
-    {
-      "self_ref": "#/texts/36",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "bold",
-      "text": "bold",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/37",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": " and ",
-      "text": " and "
-    },
-    {
-      "self_ref": "#/texts/38",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "italic",
-      "text": "italic",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/39",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": " text",
-      "text": " text"
-    },
-    {
-      "self_ref": "#/texts/40",
-      "parent": {
-        "$ref": "#/groups/15"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Cell 1",
-      "text": "Cell 1",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/41",
-      "parent": {
-        "$ref": "#/groups/16"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -1380,28 +994,9 @@
       "text": "Rich cell\nA nested table"
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/25",
       "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Cell 1",
-      "text": "Cell 1",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": true,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/43",
-      "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1411,9 +1006,9 @@
       "text": "After table with "
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/26",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1430,9 +1025,9 @@
       }
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/27",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1442,9 +1037,9 @@
       "text": ", "
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1461,9 +1056,9 @@
       }
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/29",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1473,9 +1068,9 @@
       "text": ", "
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/30",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1492,9 +1087,9 @@
       }
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/31",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1504,9 +1099,9 @@
       "text": ", and "
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/32",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1523,9 +1118,9 @@
       }
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/33",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1535,7 +1130,7 @@
       "text": " formatting"
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/body"
       },
@@ -1548,9 +1143,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/35",
       "parent": {
-        "$ref": "#/groups/19"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -1560,9 +1155,9 @@
       "text": "Owner avatar"
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/36",
       "parent": {
-        "$ref": "#/groups/20"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1572,9 +1167,9 @@
       "text": "Text and picture"
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/37",
       "parent": {
-        "$ref": "#/groups/20"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1584,7 +1179,7 @@
       "text": "Owner avatar"
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -1597,9 +1192,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/39",
       "parent": {
-        "$ref": "#/groups/22"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -1611,9 +1206,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/40",
       "parent": {
-        "$ref": "#/groups/22"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -1625,9 +1220,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/41",
       "parent": {
-        "$ref": "#/groups/24"
+        "$ref": "#/groups/18"
       },
       "children": [],
       "content_layer": "body",
@@ -1639,9 +1234,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/42",
       "parent": {
-        "$ref": "#/groups/24"
+        "$ref": "#/groups/18"
       },
       "children": [],
       "content_layer": "body",
@@ -1653,7 +1248,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/43",
       "parent": {
         "$ref": "#/body"
       },
@@ -1666,9 +1261,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/groups/26"
+        "$ref": "#/groups/20"
       },
       "children": [],
       "content_layer": "body",
@@ -1680,9 +1275,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/45",
       "parent": {
-        "$ref": "#/groups/26"
+        "$ref": "#/groups/20"
       },
       "children": [],
       "content_layer": "body",
@@ -1694,9 +1289,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/46",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/22"
       },
       "children": [],
       "content_layer": "body",
@@ -1708,9 +1303,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/47",
       "parent": {
-        "$ref": "#/groups/28"
+        "$ref": "#/groups/22"
       },
       "children": [],
       "content_layer": "body",
@@ -1722,7 +1317,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/body"
       },
@@ -1735,9 +1330,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/49",
       "parent": {
-        "$ref": "#/groups/30"
+        "$ref": "#/groups/24"
       },
       "children": [],
       "content_layer": "body",
@@ -1749,9 +1344,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/50",
       "parent": {
-        "$ref": "#/groups/30"
+        "$ref": "#/groups/24"
       },
       "children": [],
       "content_layer": "body",
@@ -1763,9 +1358,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/51",
       "parent": {
-        "$ref": "#/groups/32"
+        "$ref": "#/groups/26"
       },
       "children": [],
       "content_layer": "body",
@@ -1777,9 +1372,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/52",
       "parent": {
-        "$ref": "#/groups/32"
+        "$ref": "#/groups/26"
       },
       "children": [],
       "content_layer": "body",
@@ -1791,9 +1386,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/53",
       "parent": {
-        "$ref": "#/groups/34"
+        "$ref": "#/groups/28"
       },
       "children": [],
       "content_layer": "body",
@@ -1805,9 +1400,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/54",
       "parent": {
-        "$ref": "#/groups/34"
+        "$ref": "#/groups/28"
       },
       "children": [],
       "content_layer": "body",
@@ -1819,9 +1414,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/55",
       "parent": {
-        "$ref": "#/groups/36"
+        "$ref": "#/groups/30"
       },
       "children": [],
       "content_layer": "body",
@@ -1833,9 +1428,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/56",
       "parent": {
-        "$ref": "#/groups/36"
+        "$ref": "#/groups/30"
       },
       "children": [],
       "content_layer": "body",
@@ -1847,7 +1442,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -1860,9 +1455,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/58",
       "parent": {
-        "$ref": "#/groups/38"
+        "$ref": "#/groups/32"
       },
       "children": [],
       "content_layer": "body",
@@ -1874,9 +1469,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/59",
       "parent": {
-        "$ref": "#/groups/38"
+        "$ref": "#/groups/32"
       },
       "children": [],
       "content_layer": "body",
@@ -1892,7 +1487,7 @@
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/groups/19"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -1908,14 +1503,14 @@
           "width": 48.0,
           "height": 48.0
         },
-        "uri": "data:image/png;base64,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"
+        "uri": "data:image/png;base64,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"
       },
       "annotations": []
     },
     {
       "self_ref": "#/pictures/1",
       "parent": {
-        "$ref": "#/groups/20"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1931,7 +1526,7 @@
           "width": 48.0,
           "height": 48.0
         },
-        "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAScElEQVR4nM1ZCXhUVZb+36tXlUpVZd/NWlmAhM4GCWERWVxQcExAIdCTuCAEaAUbAUU+GGwcsVtE5ZOMLNINTT5pUQggyGITCEgnSEhkEUzSxnRCyL5WUlRqO/Pd+6qKBB3ttumZOd9369Zb7n1nP+eeA9xl0Ov194SFhQXgfwmEu7VRbGxs5IcffrgrPT19gt1ut73xxhv/UV9f3zhixIjUoKCgoIaGhobCwsL9RUVFX9jtdvy/gdjY2PCVK1cubWhoqK2rq6O1a9dSeXk5MbBardTX10cDwWw2G0tLS0+vWbNmRXx8vP7/BGlRFPH4449PLSoqOsLwZIj19vZSVFQURQUqKSUlhXJycsjd3Z0A0JAhQyg/P59sNtsgYojIdu7cuZM5OTmPS5J017ThR2HmzJmPVlVVXXFhYLPRuXPnaM6cOZQxREPn303gSD/1oD/9df9D1HVwDK2eFcDvaTQaysjIoJdffplKSkoGUVJbW1vJCPmXIR4cHOx34MCBD50fZBzftGkTRUdHc+TYeDDVk+jsI7TqCX+ynnqAzJ+m0TOTvUklCa53Bo64uDi+h8FgcBFy7NixwrCwsKC7ivz9998/rqOjo9mhw7Rx40by9PQchMzQUBW98G9+1PGnZKJjo4n+PF4en99LdCyDDHsTqfh1Pa2eGUDDw90GrfXy8uKEWCwWTkRPT09HZmbmlLuC/MKFC3MtFouJbVxVVUWpqamDPj4pUUun/jOa6OR9RF9mEV3JJbr6JFFFNtHXT90e7N5Xs4nOPcIJ+uINPU0f7TFor/T0dKqpqXEKw7pq1aol/xTyL774Yp5zt8LCQq7DLq5pRCpYGkb0aQrRibFEx0fLSDOOH0wkOjWJ6NIviYofIDqaTnQ+czBBF2cSnRhDZRtjKFWvdu2r0+no8OHDLpVau3btsh/D8X+0/Dlz5mQVFBR8IoqiYs+ePcjNzYXNZuPPkqPccHBVJCIDVQN2EgBBBOzyO3DTAJZ+x7UAePoCRgNABNwTA6i18n9DB/ob6/Cr/Dr8/mQXXypJEnbv3o3Zs2ezS/uCBQue2rZtW8HfTcCIESOGl5SUXFCpVO47duxAXl4enMEnc5QH9iwPh7tKxM8CpZtMqM0KqNRAYCTzy0BDNTZ8VIeXdjU7+CFg+/btePbZZxnjzJMmTRp39uzZsp8kQKvVqisqKsri4uKGnz59mhmwC/nJiVocWxsF5d1y2R6+gFcAICoASQXcrMavN1dj0+EOlyQYDuPGjcONGzdqkpKSkjs7O3sHbvE9Nr711luvM+QbGhrwxBNPuJAfHu6GA6si7h7yDAwdwI1KoO4aYGgHQuOwcaEekxI1/LHVasWMGTPQ1NSEsLCw6Pfee++dO7cYhM3QoUOjrl69WilJkmratGn47LPPZCoFoPztGCRHqQcvvZux090D8AkGJCW+vXAJwxZVwupImaZPn479+/ezv/a0tLSkixcvfv2DEli3bt2rDPkTJ064kGew6CEfJIeqAIsdsBJgY8MuDzvJgwaOn0HALQNXIXS3IiYhEnlTfF2PCgsLUVxczPHdsGHDWwOXuXgYHR0dWllZWcMIyMjIwJdffsnvqxRAzbvRCPVRym9zbzNgpfN64P+B14O+4rhwXhOBMVl0vucED1/U1LQhNu8a5weDe++9F2fPnuX/R48enXL+/PlLnCLnmiVLlix2ct+JPIPZGR4I1Yoy99kw27CzqBNJK2rg8VQlQvKq8KttjejqtgIWm+Mdx7sDB9MHh+S+qTfh4d/Uwn3WNage/xoJz1dj77nu25IzdCA6RI2JwzXQuglchb/44gunFPD8888/78RPdLqsnJycXPZ/69at/IFGJXMle6R2ECIr9rTi1RNqTMleAr/gCDR12/D+n7sw7tW/yUQMRN7sIMh1bcfV725h/Oo6xE+Yh/sfmsq18PqNfmRvqMe7n7bdVktzP6ak6mDsJ6ToZdtz4jZ9+vQnVCqV5OJyenp6Iot6RqOR3NzkPCUxRMnnvrcjiDZHEeVH0cVX7uH3nJlkaWnpoFRg0URPog9iiHbEyuP3sUR/iCPa6Ri74mhMrJoWLVrkirRBQUGu9ZIC1LQ1juhPw4g+iqeitRH8fu59XnxWq9VkMvGshlh+5pLApEmTJrGZiai/vx9KEQjxEBGoE8EdmoOD+8pkF1xfXz9odsIn7PmdqsPUyiGVHoMV5781oaamhr/f1tYGg8HgWm+1AccuGlxr9b4yk8N9FFAqAJPJ5LKDiRMnTnQRkJaWNorNZ86c4Q9/ESzBaCb4axy6zxAw29HcbYO/vz9LM5CamuoM9S5o7XW+O0B1BqhUZ7eVa8fx48cRGRmJmJgYGI1G1/qAgAC0c1uSCfdWyvf7++1IDHPj/0+dOuXUmlEuAoYNGzaMzZcuccPGMD8JLIMn5gIGcDPaWwTzUCwn+uqrr1y5kROifBQ/IAGHFCx23KMRoHZobl1dHXp6egatZ3sP8b+9h40Rz5AkYFiwTE15eTkG4swJiIyMjGBzdXU1fxjpKcJbBTT33v643WyHWuDvYsiQIbgTWNhflCEb/HfNFuQWtOEXbzYicUMj5u9px812C5Q2wjOjtFAqHawdAJMnT4ZSEmEy3ZZca4eFP/NyExDpI1NeWVnJ59DQ0EiFQgGJbebpyVJF8JDNwF8lIMJDxKe3CF0GG7zVzJUJeDxOhcx9O/Dkc2vQ1dXFVY5totFoEGq4gqUZIk5X38LiPxvw9uu52PXQNJDViMMHCvDA+iLszPLGmw97oc2mQI93Ajo7O+Hm5sbzrfb2dtw49QGmjvaT1U6QvRODME8R7X2yNBobG/ksSZKbl5eXVtDpdEqDwWB2HtaZ2uRP1kAlCZh/og97HtVhdrybKwAxV/7pt2b8pUMLZWAMTJ1NGKVtQfZwNS61WpHzmQGfbxqJ4BCGSDXAcidtHP5WV4NHn6/GoZk+iPRW4KMrt1BN4VBpPUGtf8UjMXak3KMaFCyXHOzCji97cTwvEFeaLPjVvk6OvMVi4RIPCQnxl6wsY3IAiweMALuVkOArIkAt4A+XTZgdczsKKwQgK0pClt4MCNeBSLZShfIbZjx51IC9SwPw9q5reP3ffaB0EwGlAHPPdWze04Htq0Iw/bWb2DvDG3MSWFrdykwfiGYIS7LqOL5jJcL+K0ZkhKsg2QnkTIwGADu1ScyvmkymbrVa7aXT6bhh9fXbIdpETI+WsO2aBX+5YcHYYMXg1EAQUNVlw75vLShrtqLBRDgw1xuBoh3NTWYIXRaAnRmUAhQKAY03zBjmLWDXqmDMeqsFwzQCUoIkzB6uRpS34naK4RgFl0xo6LFj2Vg3HsV7b8kEuLu7c+4DsHV2dhq4ETc2NnLlDwqSiwH9jtD/RKQEnQQsKTbC2j/Ys9wy2TC10ADJYsWykUqU5nggNiwenv5J2JWXDkmKBIRwQIyEQopBwUv3wdsvDcn6GFx8MwTzMz1hNFjw4O5O2ds40xCLHX1GG1afNCDCU8SoIIknkK0G2eMFBwfzuaOjo8VsNts5KVVVVZV6vX5oXFwc90Q3DXZoHInJykQlVldY8MIXt5A/hold5pRolxlc22GHymLGrXYrwqovQu3jB8nvHkiePhDc1GD+mCxG2PqaYelugrGrBzVNFnzdbOMc1jHtHKA6jM9zDxs4DvkPaqFgRmcntPXKBAwdOhROnLkxs5+KioqKKVOmPJaSksLT6NJWO95MJlzrJ9wfIKBaL+K/vrHy2LApXQWFCDCzPvuIO9ZfNuPN5kDo+nTo62iFtr8B/m4N8JQESKKcXTMG91gIbRYBJo0fvPwiuCuNxtc4M0ML0UEAy9TnFxmxt9KM55LckOqn4JoQoBVxqVk21REjRvC5vLy8wkVAcXFx8cqVK1l4xvr163Gpi2A12xEiAY0mYIFeAbID+ZVWXGi1IT9diTRfEX4ikBUqojxwCD/0OwwLfX19fLDQz9wsc5VarRZqtVoOjgC++eYbtBz6GlrGc4uAU41WLD1nwqV2OxYkKJETp+TIs3TeSxDwVYssAeZynTg7zZH5cVVnZ2eX3W539/Hx4R/enixibqSIqwaCkRcWBBS12vG7Kjt6rMAYPwEdZsBDCURMnM5KMK5DEAuSDGGW8xw5coS7PZYmMPEzKefn5+PcuXOcmDCNgAB3ARXtdvi5Aa8kqzAuWHIZc4KvAp/UWPDsaROPNyx2SJJkCwoK8mtra+vmEjAajeajR48ezMzMnM2Okvv27cP739kxLxSIVwNXDICZCJN8gC/9BZzsEvDIZF+MDlfh8AUDPjxzBlu2bOFIMsTYqK2t5URMnTqVH8q9vLxw/fp1/p7YUY66D4Yg2FvCsXIDNh5sg9BuxMKhSozzF+WzgyAgykOAJxG2XOVhCllZWVCpVCyAnmTI89jl9KnbWQ0DwPz582Ud6wGKWonnIdyy7MC+m3acNylwfn0U1jzsDaHfhqXp7jyrZHnRzp07eaLGCFm+fDneeecdzvVDhw7htdde44Hy9KkifPhsIIKUBMlux6MjPXDqNT12vRCKTVVWHKy1ysZgtcMDhNMNFlxok13ovHnz+Lxz584/uGLXwMBQXl5ekpqaOnrUqFG4cOECUjyAI2kC6kwCGk2EOZcIxeuikMFiQo8FnS39GLetFd90Elc7xh1nms3S3pKSEk4cy2DHjx+PpKQkJA6Px5J7dXgsSYMJw7WAm0I+t6pEXKjtx32rapCfokCClwgvlYDcUgsudhLGjh3LJVtfX/9tbGzsULOZpbx3QGZm5kPssPD555+7Dhkv6UElY0SaFQzKGqmTDyxvR1DpfD96aZQ7/TJOSaNHj6aysjLau3cv3bx5884eALW0tNC+ffuovr6eQkNDKT1YQfVL/OjIk75EvwslejeC6H09PwC98JA3jfcDlUyQ6JWhXP58nD59mu81d+7cOfgxOHPmzHH2YlZWlnxKEkDbfyGQjwQ6/kII0cZworXBREt9afdEuaZZUFDAy+3Hjx+nNWvW8F5Bbm4ur2I3NDQMIuaTTz4hrVKgADXoxtOeRMt8iVYFEP0mmOi3oXR5RTD/5s5kgdxEGflZs2bxtUxDWLozEL5X2UlISIgpKyv7qru7W5ecnIyWlhZ4SYCRgJ71YVAbLbhea8LSk71QEqHWJ4HFEW477DQXHx/PjXbkyJE89WVebdmyZbh27RpXM4ZAc3MzdIIFLyVIuNxN+GCiOzRaiauTVSVC/dtW6BQAO9uEhITwc4q3t3f/2LFj08rKyq7ip2DBggU5jOLi4mISRVmMPu4CNS0LIPq1D9FcHa1PVPD7Z8+epZMnT/LqdWdnJ3333Xf0xz/+kYma5s2bx++xFhPrlzmhsbHR1Rh5Y5hAlCURZbsRPamh5lwdKR2cVygUvPvDYMWKFc/hH4GPP/54F1u4detWEgS5wxLnLVLNTA2ZZqgo1Qv09NNP881bW1tp9+7dlJeXR9nZ2XTo0CEXsgcOHOAqxYB1YtatW8cP8klJSTKSAmhTPIgeEan2fpGG6G4XCbZs2cLXHT16dP+dqvOTwMoWx44d2882YBx1SsJTAo3zATdcVsX4IXByu6mpiXOf1ftffPFFjviYMWNo4cKFfMaAikZmIMhLus15xhAGzCY1Go18IP5HQa1WK0+cOHHAyUnWfOAll8REam9v/0HkB3I+PDycPDw8KCIigqZOnUrLly/nbdj169dTQIDc+MMdg7WunA2OkpKSIp1O5/5jOP6kXJjo9uzZsyM7O3sui3VssJSho6MDN2/e5H6enSHYNTNOlj6wKMzSBFZ1YGmFt7c3z4dYnGC5PDuK7tq163vfYsbPminh4eHYtm3bu4sXL15hNptdB66fBYwDtbW1VcxQWWGJdRaZBPz8/L7HPWYrPj4+FBgYyP19TEwM1/Xx48fTY489Rs888wzvHzMVGbjOz8+P6ztTPdbgmzt3bjbuFqxevXoZEycTKzNOp96zmTWv9Xr9D6rC3zNiYmJo8+bNrm4+a+Oydi7uJmzevHkD25xx5siRI/sWL16cN23atEnsv81ms7BGN3O3S5cupREjRpBSKZckf2iwZyNHjuQGzdyvTe7c24qKij6bMGECL1T9o/CTNiCKouDr6+vBWjs2G6u83obQ0NCAnJycX86YMWNGWlraWFEUJZY6M7tg5Y/e3l5uCx4eHjwgsZzIUROyV1RUnC8sLCzcvXt3QW1trVwr+VcQ8PeCv7+/Z0ZGRnpiYmKSXq/XBwcHB7u7u2sZA/r6+vpaW1tbamtray9fvny5tLT0fEtLi9yS/CfhvwEPv/IpB1dpMAAAAABJRU5ErkJggg=="
+        "uri": "data:image/png;base64,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"
       },
       "annotations": []
     }
@@ -1954,9 +1549,6 @@
         },
         {
           "$ref": "#/groups/9"
-        },
-        {
-          "$ref": "#/groups/11"
         }
       ],
       "content_layer": "body",
@@ -2052,10 +1644,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/9"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -2070,7 +1659,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/11"
+              "$ref": "#/groups/9"
             }
           },
           {
@@ -2214,13 +1803,10 @@
       },
       "children": [
         {
-          "$ref": "#/groups/12"
+          "$ref": "#/groups/10"
         },
         {
-          "$ref": "#/groups/14"
-        },
-        {
-          "$ref": "#/groups/16"
+          "$ref": "#/groups/11"
         }
       ],
       "content_layer": "body",
@@ -2281,10 +1867,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/12"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -2299,7 +1882,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/14"
+              "$ref": "#/groups/10"
             }
           },
           {
@@ -2315,7 +1898,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/16"
+              "$ref": "#/groups/11"
             }
           }
         ],
@@ -2414,13 +1997,9 @@
     {
       "self_ref": "#/tables/2",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/10"
       },
-      "children": [
-        {
-          "$ref": "#/groups/15"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "table",
       "prov": [],
@@ -2479,10 +2058,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/15"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -2604,13 +2180,9 @@
     {
       "self_ref": "#/tables/3",
       "parent": {
-        "$ref": "#/groups/16"
+        "$ref": "#/groups/11"
       },
-      "children": [
-        {
-          "$ref": "#/groups/17"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "table",
       "prov": [],
@@ -2669,10 +2241,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/17"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -2798,10 +2367,10 @@
       },
       "children": [
         {
-          "$ref": "#/groups/19"
+          "$ref": "#/groups/13"
         },
         {
-          "$ref": "#/groups/20"
+          "$ref": "#/groups/14"
         }
       ],
       "content_layer": "body",
@@ -2864,7 +2433,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/19"
+              "$ref": "#/groups/13"
             }
           },
           {
@@ -2880,7 +2449,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/20"
+              "$ref": "#/groups/14"
             }
           },
           {
@@ -2996,10 +2565,10 @@
       },
       "children": [
         {
-          "$ref": "#/groups/21"
+          "$ref": "#/groups/15"
         },
         {
-          "$ref": "#/groups/23"
+          "$ref": "#/groups/17"
         }
       ],
       "content_layer": "body",
@@ -3023,7 +2592,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/21"
+              "$ref": "#/groups/15"
             }
           },
           {
@@ -3039,7 +2608,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/23"
+              "$ref": "#/groups/17"
             }
           }
         ],
@@ -3088,10 +2657,10 @@
       },
       "children": [
         {
-          "$ref": "#/groups/25"
+          "$ref": "#/groups/19"
         },
         {
-          "$ref": "#/groups/27"
+          "$ref": "#/groups/21"
         }
       ],
       "content_layer": "body",
@@ -3115,7 +2684,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/25"
+              "$ref": "#/groups/19"
             }
           },
           {
@@ -3131,7 +2700,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/27"
+              "$ref": "#/groups/21"
             }
           }
         ],
@@ -3180,16 +2749,16 @@
       },
       "children": [
         {
+          "$ref": "#/groups/23"
+        },
+        {
+          "$ref": "#/groups/25"
+        },
+        {
+          "$ref": "#/groups/27"
+        },
+        {
           "$ref": "#/groups/29"
-        },
-        {
-          "$ref": "#/groups/31"
-        },
-        {
-          "$ref": "#/groups/33"
-        },
-        {
-          "$ref": "#/groups/35"
         }
       ],
       "content_layer": "body",
@@ -3213,7 +2782,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/29"
+              "$ref": "#/groups/23"
             }
           },
           {
@@ -3229,7 +2798,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/31"
+              "$ref": "#/groups/25"
             }
           },
           {
@@ -3245,7 +2814,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/33"
+              "$ref": "#/groups/27"
             }
           },
           {
@@ -3261,7 +2830,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/35"
+              "$ref": "#/groups/29"
             }
           }
         ],
@@ -3336,7 +2905,7 @@
       },
       "children": [
         {
-          "$ref": "#/groups/37"
+          "$ref": "#/groups/31"
         }
       ],
       "content_layer": "body",
@@ -3360,7 +2929,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/37"
+              "$ref": "#/groups/31"
             }
           },
           {

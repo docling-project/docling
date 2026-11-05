@@ -68,9 +68,9 @@ def test_only_current_head_commits_of_ready_prs_count() -> None:
     assert prs[0].ai_labels == ["ai:ci-safe"]
 
 
-def test_message_groups_by_triage_label_and_escapes_titles() -> None:
+def test_message_shows_counts_and_links_the_full_list() -> None:
     safe = reminder.WaitingPr(
-        1, "fix: a <!channel> & b|c", "u1", "alice", NOW, ["Run CI"], ["ai:ci-safe"]
+        1, "fix: a", "u1", "alice", NOW, ["Run CI"], ["ai:ci-safe"]
     )
     care = reminder.WaitingPr(
         2,
@@ -79,29 +79,42 @@ def test_message_groups_by_triage_label_and_escapes_titles() -> None:
         "bob",
         datetime(2026, 10, 5, 6, tzinfo=timezone.utc),
         ["Run CI"],
-        ["ai:ci-needs-care", "ai:possible-duplicate"],
+        ["ai:ci-needs-care"],
     )
     plain = reminder.WaitingPr(3, "docs: y", "u3", "carol", NOW, ["Run CI"], [])
-    payload = reminder.build_message([care, safe, plain], "o/r", NOW)
+    run = "https://github.com/o/r/actions/runs/1"
+    payload = reminder.build_message([safe, plain, care, safe], "o/r", NOW, run)
     sections = [b["text"]["text"] for b in payload["blocks"] if b["type"] == "section"]
-    assert len(sections) == 3
-    assert sections[0].startswith(
-        "*:white_check_mark: AI triage found no CI concern* (1)"
-    )
-    assert "&lt;!channel&gt; &amp; b¦c" in sections[0]
-    assert sections[1].startswith("*:warning: AI triage asks for care* (1)")
-    assert "waiting 3 d · `ai:possible-duplicate`" in sections[1]
-    assert sections[2].startswith("*:grey_question: Not triaged* (1)")
-    assert payload["text"] == "3 PR(s) in o/r wait for a maintainer to approve CI"
+    assert sections == [
+        ":warning: Needs care: *1*\n"
+        ":grey_question: Not triaged: *1*\n"
+        ":white_check_mark: No CI concern: *2*",
+        f"*<{run}|:point_right: Open the full list of 4 PRs>*",
+    ]
+    assert payload["blocks"][0]["text"]["text"].endswith("oldest 3 d")
+    assert payload["text"] == "4 PR(s) in o/r wait for a maintainer to approve CI"
+
+    fallback = reminder.build_message([plain], "o/r", NOW)
+    assert "<https://github.com/o/r/pulls|" in fallback["blocks"][2]["text"]["text"]
 
 
-def test_long_lists_are_split_and_capped() -> None:
+def test_summary_lists_every_pr_with_escaped_titles() -> None:
     prs = [
-        reminder.WaitingPr(n, "t" * 90, f"https://x/{n}", "u", NOW, ["CI"], [])
+        reminder.WaitingPr(n, "fix: t", f"https://x/{n}", "u", NOW, ["CI"], [])
         for n in range(60)
     ]
-    payload = reminder.build_message(prs, "o/r", NOW)
-    sections = [b for b in payload["blocks"] if b["type"] == "section"]
-    assert len(sections) > 1
-    assert all(len(b["text"]["text"]) <= reminder.MAX_SECTION_CHARS for b in sections)
-    assert "… and 20 more" in payload["blocks"][-2]["elements"][0]["text"]
+    prs.append(
+        reminder.WaitingPr(
+            99,
+            "fix: a <b> | c",
+            "https://x/99",
+            "u",
+            NOW,
+            ["CI"],
+            ["ai:ci-safe", "ai:review-lgtm"],
+        )
+    )
+    summary = reminder.build_summary(prs, "o/r", NOW)
+    assert summary.count("| [#") == 61
+    assert "## :grey_question: Not triaged (60)" in summary
+    assert "| fix: a &lt;b> \\| c | @u | 0 h | CI | `ai:review-lgtm` |" in summary

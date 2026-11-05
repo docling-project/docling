@@ -5,7 +5,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from docling_core.types.doc import ContentLayer, DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
@@ -165,7 +165,9 @@ def test_latex_items_outside_list_environments(env_name, items, expected):
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    assert [t.text for t in doc.texts] == expected
+    assert [
+        t.text for t in doc.texts if t.content_layer == ContentLayer.BODY
+    ] == expected
 
 
 def test_latex_item_term_without_text():

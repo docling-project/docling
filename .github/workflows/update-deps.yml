@@ -1,0 +1,264 @@
+name: "Update Locked Docling Deps"
+
+# Upgrades the locked Docling dependencies in uv.lock, regenerates the
+# reference test data against the new lock, and opens (or refreshes) one PR.
+
+on:
+  schedule:
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: "Space-separated packages to upgrade in uv.lock."
+        required: false
+        default: "docling-core docling-parse docling-ibm-models"
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  DEFAULT_PACKAGES: "docling-core docling-parse docling-ibm-models"
+  PR_BRANCH: "ci/update-locked-deps"
+  PYTHON_VERSION: "3.10"
+
+permissions:
+  contents: read
+
+jobs:
+  lock:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.repository == 'docling-project/docling' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-ubuntu-ci
+        with:
+          python_version: ${{ env.PYTHON_VERSION }}
+          enable_cache: "false"
+
+      - name: Upgrade locked packages
+        env:
+          PACKAGES: ${{ inputs.packages || env.DEFAULT_PACKAGES }}
+        run: |
+          read -ra pkgs <<< "$PACKAGES"
+          args=()
+          for pkg in "${pkgs[@]}"; do
+            args+=(--upgrade-package "$pkg")
+          done
+          uv lock "${args[@]}"
+
+      - name: Summarize version changes
+        id: diff
+        env:
+          PACKAGES: ${{ inputs.packages || env.DEFAULT_PACKAGES }}
+        run: |
+          if git diff --quiet -- uv.lock; then
+            echo "uv.lock is already up to date."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+          locked_version() {
+            awk -v name="name = \"$1\"" '$0 == name { getline; gsub(/version = |"/, ""); print; exit }'
+          }
+          read -ra pkgs <<< "$PACKAGES"
+          {
+            echo "| Package | Old | New |"
+            echo "| --- | --- | --- |"
+            for pkg in "${pkgs[@]}"; do
+              old=$(git show HEAD:uv.lock | locked_version "$pkg")
+              new=$(locked_version "$pkg" < uv.lock)
+              if [ "$old" != "$new" ]; then
+                echo "| \`$pkg\` | ${old:-n/a} | ${new:-n/a} |"
+              fi
+            done
+          } > versions.md
+          cat versions.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ steps.diff.outputs.changed == 'true' }}
+        with:
+          name: uv-lock
+          path: |
+            uv.lock
+            versions.md
+          retention-days: 7
+
+  regenerate:
+    needs: lock
+    if: ${{ needs.lock.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ["core", "ocr", "pdf-model", "vlm", "asr"]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: uv-lock
+          path: ${{ runner.temp }}/uv-lock
+      - name: Use the upgraded lock
+        run: cp "$RUNNER_TEMP/uv-lock/uv.lock" uv.lock
+
+      - uses: ./.github/actions/setup-ubuntu-ci
+        with:
+          python_version: ${{ env.PYTHON_VERSION }}
+          uv_sync_args: --frozen --group dev --all-extras --all-packages --no-group docs --no-group examples
+          install_system_deps: "true"
+          cache_models: "true"
+
+      - name: Pre-download OCR models
+        if: ${{ matrix.suite == 'ocr' }}
+        run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+
+      # Failures are recorded, not fatal: the PR reports them so that a
+      # maintainer can fix the code on the same branch.
+      - name: Regenerate reference data
+        env:
+          SUITE: ${{ matrix.suite }}
+          DOCLING_GEN_TEST_DATA: "1"
+        run: |
+          if [ "$SUITE" = "core" ]; then
+            mapfile -t SUITE_ARGS < <(uv run --no-sync python .github/scripts/pytest_marker_selection.py core-ignore-args)
+          else
+            SUITE_MARKER=$(uv run --no-sync python .github/scripts/pytest_marker_selection.py suite-marker "$SUITE")
+            mapfile -t SUITE_ARGS < <(uv run --no-sync python .github/scripts/pytest_marker_selection.py suite-args "$SUITE")
+            SUITE_ARGS=(-m "$SUITE_MARKER" "${SUITE_ARGS[@]}")
+          fi
+          status=passed
+          uv run --no-sync pytest -p no:tach --durations=10 \
+            --deselect tests/test_data_gen_flag.py::test_gen_test_data_flag \
+            "${SUITE_ARGS[@]}" || status=failed
+          echo "| \`$SUITE\` | $status |" > "groundtruth-$SUITE.status"
+
+      - name: Collect reference data changes
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          git add --all -- tests
+          git diff --cached --binary -- tests > "groundtruth-$SUITE.patch"
+          git diff --cached --stat -- tests | tail -n 1
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: groundtruth-${{ matrix.suite }}
+          path: |
+            groundtruth-${{ matrix.suite }}.patch
+            groundtruth-${{ matrix.suite }}.status
+          retention-days: 7
+
+  open-pr:
+    needs: [lock, regenerate]
+    if: ${{ !cancelled() && needs.lock.outputs.changed == 'true' && needs.regenerate.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # The app token lets the PR trigger the regular CI workflows.
+      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        id: app-token
+        with:
+          app-id: ${{ vars.CI_APP_ID }}
+          private-key: ${{ secrets.CI_PRIVATE_KEY }}
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: ${{ runner.temp }}/results
+          merge-multiple: true
+
+      - name: Apply the lock and reference data changes
+        run: |
+          cp "$RUNNER_TEMP/results/uv.lock" uv.lock
+          for patch in "$RUNNER_TEMP"/results/groundtruth-*.patch; do
+            if [ -s "$patch" ]; then
+              git apply --binary "$patch"
+            fi
+          done
+          git status --short
+
+      - name: Commit and push
+        id: push
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          bot_user="${APP_SLUG}[bot]"
+          bot_id=$(gh api "/users/${bot_user}" --jq .id)
+          bot_email="${bot_id}+${bot_user}@users.noreply.github.com"
+          git config user.name "$bot_user"
+          git config user.email "$bot_email"
+
+          # Do not overwrite fixes that maintainers pushed to the PR branch.
+          if git fetch origin "$PR_BRANCH" 2>/dev/null &&
+            git log --format=%ae "HEAD..origin/$PR_BRANCH" | grep -qvxF "$bot_email"; then
+            echo "::warning title=PR branch has manual commits::Not updating $PR_BRANCH."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git switch -C "$PR_BRANCH"
+          git add --all -- uv.lock tests
+          git commit -s -m "chore: update locked docling dependencies"
+
+          if git rev-parse --verify --quiet "origin/$PR_BRANCH" >/dev/null &&
+            git diff --quiet "origin/$PR_BRANCH" HEAD; then
+            echo "The PR branch already has these changes."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          else
+            git push --force origin "$PR_BRANCH"
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update the PR
+        if: ${{ steps.push.outputs.pushed == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          results="$RUNNER_TEMP/results"
+          {
+            echo "Automated update of the locked Docling dependencies."
+            echo
+            echo "## Versions"
+            echo
+            cat "$results/versions.md"
+            echo
+            echo "## Reference data regeneration"
+            echo
+            echo "| Suite | Tests with \`DOCLING_GEN_TEST_DATA=1\` |"
+            echo "| --- | --- |"
+            cat "$results"/groundtruth-*.status
+            echo
+            if git diff --quiet HEAD~1 HEAD -- tests; then
+              echo "No reference data changed."
+            else
+              echo "Changed reference files:"
+              echo
+              echo '```text'
+              git diff --stat HEAD~1 HEAD -- tests
+              echo '```'
+            fi
+            echo
+            echo "Review the reference data changes before you merge. A \`failed\` suite"
+            echo "needs a code fix on this branch. The nightly job stops updating this"
+            echo "branch once it has commits from other authors."
+            echo "Generated by [this run]($RUN_URL)."
+          } > pr-body.md
+
+          if gh pr view "$PR_BRANCH" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit "$PR_BRANCH" --body-file pr-body.md
+          else
+            gh pr create --base main --head "$PR_BRANCH" \
+              --title "chore: update locked docling dependencies" \
+              --body-file pr-body.md
+          fi

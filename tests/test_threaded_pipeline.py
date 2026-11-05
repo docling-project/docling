@@ -3,6 +3,7 @@
 
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -25,6 +26,7 @@ from docling.pipeline.standard_pdf_pipeline import (
     StandardPdfPipeline,
     ThreadedItem,
     ThreadedPipelineStage,
+    ThreadedQueue,
 )
 
 _TEST_FILES = [
@@ -168,6 +170,22 @@ def test_threaded_pipeline_page_range():
     assert [p.page_no for p in result.pages] == [2, 3, 4]
 
 
+def test_threaded_pipeline_drops_page_backends_when_kept_for_enrichment():
+    """Enrichment options set keep_backend; the returned result must still not
+    hold the native page backends after the conversion finishes."""
+    converter = _make_threaded_converter()
+    converter.initialize_pipeline(InputFormat.PDF)
+    pipeline = converter._get_pipeline(InputFormat.PDF)
+    assert pipeline is not None
+    pipeline.keep_backend = True
+
+    result = converter.convert(_SINGLE_FILE, raises_on_error=True, page_range=(1, 2))
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert len(result.pages) == 2
+    assert all(page._backend is None for page in result.pages)
+
+
 def test_threaded_pipeline_stage_shutdown_timeout():
     """A stage stuck in a blocking model call is abandoned after
     `shutdown_timeout`, not the hardcoded 15s the pipeline used to have."""
@@ -205,3 +223,185 @@ def test_threaded_pipeline_stage_shutdown_timeout():
         release.set()
         if stage._thread is not None:
             stage._thread.join(timeout=5.0)
+
+
+def test_threaded_pipeline_model_raises_timeout():
+    """A model's own TimeoutError fails the page instead of being retried forever."""
+
+    class TimingOutModel:
+        def __call__(self, conv_res, pages):
+            raise TimeoutError("remote model timed out")
+
+    output = ThreadedQueue(10)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        stage = ThreadedPipelineStage(
+            name="timing_out",
+            model=TimingOutModel(),
+            batch_size=1,
+            batch_timeout=0.05,
+            queue_max_size=10,
+            model_executor=executor,
+        )
+        stage.add_output_queue(output)
+        stage.start()
+        try:
+            stage.input_queue.put(
+                ThreadedItem(
+                    payload=Page(page_no=1), run_id=1, page_no=1, conv_res=None
+                )
+            )
+            processed = output.get_batch(1, timeout=5.0)
+        finally:
+            stage.stop()
+
+    assert len(processed) == 1
+    assert processed[0].is_failed
+    assert isinstance(processed[0].error, TimeoutError)
+
+
+_MODEL_ATTRS = {
+    "ocr": "ocr_model",
+    "layout": "layout_model",
+    "layout_postprocess": "layout_postprocessing_model",
+    "table": "table_model",
+    "assemble": "assemble_model",
+}
+
+
+class _InterceptedModel:
+    """Calls `before_call(stage)` and then the wrapped model; other attributes are forwarded."""
+
+    def __init__(self, stage, model, before_call):
+        self._stage = stage
+        self._model = model
+        self._before_call = before_call
+
+    def __call__(self, conv_res, pages):
+        self._before_call(self._stage)
+        return self._model(conv_res, pages)
+
+    def __getattr__(self, name):
+        return getattr(self._model, name)
+
+
+def _intercepting_converter(before_call, **options) -> DocumentConverter:
+    class InterceptingPipeline(StandardPdfPipeline):
+        def _init_models(self) -> None:
+            super()._init_models()
+            for stage, attr in _MODEL_ATTRS.items():
+                model = getattr(self, attr)
+                setattr(self, attr, _InterceptedModel(stage, model, before_call))
+
+    return DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=InterceptingPipeline,
+                backend=ThreadedDoclingParseDocumentBackend,
+                pipeline_options=ThreadedPdfPipelineOptions(
+                    do_table_structure=False, do_ocr=False, **options
+                ),
+            )
+        }
+    )
+
+
+def test_threaded_pipeline_reuses_model_threads_across_documents():
+    """Regression test for #2788."""
+    threads_by_stage: dict[str, set[threading.Thread]] = {}
+
+    def record(stage):
+        threads_by_stage.setdefault(stage, set()).add(threading.current_thread())
+
+    converter = _intercepting_converter(record)
+    for _ in range(2):
+        result = converter.convert(
+            _SINGLE_FILE, raises_on_error=True, page_range=(1, 2)
+        )
+        assert result.status == ConversionStatus.SUCCESS
+
+    assert set(threads_by_stage) == set(_MODEL_ATTRS)
+    for stage, threads in threads_by_stage.items():
+        assert len(threads) == 1, stage
+        assert next(iter(threads)).name.startswith("Model-"), stage
+
+
+def test_threaded_pipeline_recovers_after_a_model_error():
+    calls = 0
+
+    def fail_first_layout_call(stage):
+        nonlocal calls
+        if stage == "layout":
+            calls += 1
+            if calls == 1:
+                raise RuntimeError("layout failed")
+
+    converter = _intercepting_converter(fail_first_layout_call)
+    failed = converter.convert(_SINGLE_FILE, raises_on_error=False, page_range=(1, 1))
+    assert failed.status != ConversionStatus.SUCCESS
+
+    result = converter.convert(_SINGLE_FILE, raises_on_error=True, page_range=(1, 1))
+    assert result.status == ConversionStatus.SUCCESS
+
+
+def test_threaded_pipeline_recovers_after_a_hung_model():
+    release = threading.Event()
+    calls = 0
+
+    def hang_first_layout_call(stage):
+        nonlocal calls
+        if stage == "layout":
+            calls += 1
+            if calls == 1:
+                release.wait()
+
+    converter = _intercepting_converter(
+        hang_first_layout_call,
+        document_timeout=10.0,
+        stage_shutdown_timeout_seconds=1.0,
+    )
+    try:
+        timed_out = converter.convert(
+            _SINGLE_FILE, raises_on_error=False, page_range=(1, 1)
+        )
+        assert timed_out.status != ConversionStatus.SUCCESS
+        assert calls == 1, "first run timed out before it reached the layout call"
+
+        result = converter.convert(
+            _SINGLE_FILE, raises_on_error=True, page_range=(1, 1)
+        )
+        assert result.status == ConversionStatus.SUCCESS
+    finally:
+        release.set()
+
+
+def test_threaded_pipeline_parallel_conversions_use_separate_model_threads():
+    both_in_layout = threading.Barrier(2, timeout=60)
+    layout_threads: set[threading.Thread] = set()
+    parallel = threading.Event()
+    parallel.set()
+
+    def meet_in_layout(stage):
+        if stage == "layout":
+            layout_threads.add(threading.current_thread())
+            if parallel.is_set():
+                both_in_layout.wait()  # fails if layout calls run one at a time
+
+    converter = _intercepting_converter(meet_in_layout)
+    converter.initialize_pipeline(InputFormat.PDF)
+    statuses: list[ConversionStatus | None] = [None, None]
+
+    def convert(slot: int) -> None:
+        statuses[slot] = converter.convert(_SINGLE_FILE, page_range=(1, 1)).status
+
+    workers = [threading.Thread(target=convert, args=(slot,)) for slot in range(2)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(timeout=120)
+        assert not worker.is_alive(), f"{worker.name} did not finish within 120 s"
+    assert statuses == [ConversionStatus.SUCCESS] * 2
+    assert len(layout_threads) == 2
+
+    parallel.clear()
+    converter.convert(_SINGLE_FILE, raises_on_error=True, page_range=(1, 1))
+    assert len(layout_threads) == 2  # the next document reuses an idle set

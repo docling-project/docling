@@ -23,6 +23,25 @@ Docling supports a wide array of [file formats](./supported_formats.md) and, as 
 [architecture](../concepts/architecture.md) guide, provides a versatile document model along with a full suite of
 supported operations.
 
+#### Releasing input resources
+
+After conversion, call `result.input.release()` when you have finished any work
+that needs the input backend. This unloads the backend, closes input streams it
+owns, and drops the backend reference. The converted document and input metadata
+remain available, so you can still export or otherwise use the result:
+
+```python
+result = converter.convert(source)
+result.input.release()
+print(result.document.export_to_markdown())
+```
+
+Calling `release()` more than once is safe, including when the pipeline has
+already unloaded the backend or the input was rejected before a backend opened.
+Do not call it while conversion or another operation is using the input backend.
+If cleanup raises an exception, the backend reference is retained so you can
+retry `release()`.
+
 ### CLI
 
 You can additionally use Docling directly from your terminal, for instance:

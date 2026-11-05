@@ -140,6 +140,9 @@ class ApiVlmEngine(BaseVlmEngine):
             if input_data.max_new_tokens:
                 api_params["max_tokens"] = input_data.max_new_tokens
 
+            # Per-request API settings can differ between multi-pass stages.
+            api_params.update(input_data.extra_generation_config.get("api_params", {}))
+
             # 3. User params override everything
             api_params.update(self.user_params)
 
@@ -171,12 +174,8 @@ class ApiVlmEngine(BaseVlmEngine):
                 )
                 generated_text = api_response.text
                 num_tokens = api_response.num_tokens
-
-                # Check if stopped by custom criteria
-                for stopper in custom_stoppers:
-                    if stopper.should_stop(generated_text):
-                        stop_reason = "custom_criteria"
-                        break
+                stop_reason = api_response.stop_reason
+                error = api_response.error
             else:
                 # Non-streaming path
                 api_response = api_image_request(

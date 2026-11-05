@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
+import sys
 import warnings
 from collections.abc import Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
-from docling_core.types.doc import BoundingBox, Size
+from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
     PdfCellRenderingMode,
     PdfTextCell,
@@ -161,12 +162,17 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         if self._seg_page is None:
             seg_page = self._result.get_page()
             page_height = seg_page.dimension.height
-            for tc in seg_page.textline_cells:
+            for tc in (
+                *seg_page.textline_cells,
+                *seg_page.char_cells,
+                *seg_page.word_cells,
+            ):
                 tc.to_top_left_origin(page_height)
-            for tc in seg_page.char_cells:
-                tc.to_top_left_origin(page_height)
-            for tc in seg_page.word_cells:
-                tc.to_top_left_origin(page_height)
+                # docling-parse emits U+0000 for a glyph it cannot map to Unicode.
+                # U+FFFD keeps the loss visible and counted by is_broken_text_layer,
+                # and does not truncate text in C-string based storage.
+                tc.text = tc.text.replace("\x00", "\ufffd")
+                tc.orig = tc.orig.replace("\x00", "\ufffd")
             self._seg_page = seg_page
         return self._seg_page
 
@@ -243,6 +249,31 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
             )
         ]
 
+    def get_thin_shape_boxes(
+        self, *, max_thickness: float
+    ) -> Optional[list[BoundingBox]]:
+        if not self.is_valid():
+            return []
+
+        page_height = self.get_size().height
+        boxes = []
+        # docling-parse exposes the individual painted paths only through its
+        # page decoder; get_connected_shape_bounding_boxes merges them first.
+        for shape in self._result._require_page_decoder().get_page_shapes():
+            xs, ys = list(shape.get_x()), list(shape.get_y())
+            if not xs or not ys:
+                continue
+            box = BoundingBox(
+                l=min(xs),
+                b=min(ys),
+                r=max(xs),
+                t=max(ys),
+                coord_origin=CoordOrigin.BOTTOMLEFT,
+            )
+            if min(box.width, box.height) <= max_thickness:
+                boxes.append(box.to_top_left_origin(page_height))
+        return boxes
+
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
@@ -312,13 +343,18 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             include_bitmap_bytes=self.options.include_bitmap_images,
         )
 
+        parser_config = ThreadedPdfParserConfig(
+            loglevel="fatal",
+            threads=parser_threads,
+            render_config=render_config,
+            page_content_config=content_config,
+        )
+        if threaded_options.max_concurrent_results is not None:
+            parser_config.max_concurrent_results = (
+                threaded_options.max_concurrent_results
+            )
         self.parser = DoclingThreadedPdfParser(
-            parser_config=ThreadedPdfParserConfig(
-                loglevel="fatal",
-                threads=parser_threads,
-                render_config=render_config,
-                page_content_config=content_config,
-            ),
+            parser_config=parser_config,
             decode_config=decode_config,
         )
         try:
@@ -327,10 +363,13 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             # whole document.
             if isinstance(self.path_or_stream, BytesIO):
                 self.path_or_stream.seek(0)
+            # The native binding only accepts int64 values, so clamp the range in
+            # case the limits were built without validation.
+            start, end = in_doc.limits.page_range
             self.doc_key = self.parser.load(
                 self.path_or_stream,
                 password=password,
-                page_range=in_doc.limits.page_range,
+                page_range=(min(start, sys.maxsize), min(end, sys.maxsize)),
             )
         except (RuntimeError, ValueError) as e:
             # The threaded parser surfaces native parse failures on unreadable bytes
