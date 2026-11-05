@@ -17,6 +17,7 @@ output/
 *.dclg
 !tests/data/latex/groundtruth/*.dclg
 *.xml
+!tests/data/**/*.xml
 *.zip
 !tests/data/**/*.zip
 \#*\#
