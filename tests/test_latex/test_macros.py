@@ -732,6 +732,31 @@ def test_latex_legacy_font_switches():
     assert "Normal content here" in md
 
 
+def test_latex_text_symbol_macros():
+    """Test text-mode symbol macros (\\S, \\ldots, \\copyright) become their characters."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    As shown in \S 3, the path C:\textbackslash tmp holds 1, 2, \ldots, n files.
+    \copyright{} 2024 ACME. Typeset with \LaTeX.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    texts = [t.text for t in doc.texts if t.content_layer == ContentLayer.BODY]
+    assert texts == [
+        "As shown in §3, the path C:\\tmp holds 1, 2, …, n files. "
+        "© 2024 ACME. Typeset with LaTeX."
+    ]
+
+
 def test_latex_accent_macro():
     """Test accent macros (\\'{e}, \\`{a}) are converted to Unicode characters."""
     latex_content = rb"""

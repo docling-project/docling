@@ -24,6 +24,7 @@ from docling.backend.latex.constants import (
     MACROS_STRUCTURAL,
     MACROS_TEXT_FORMATTING,
     MACROS_TEXT_STYLE,
+    MACROS_TEXT_SYMBOLS,
 )
 from docling.backend.latex.handlers.math import InlineFormula
 from docling.backend.latex.utils.latex_context import LATEX_CONTEXT_DB
@@ -81,9 +82,10 @@ class TextHelperMixin:
         def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
 
     def _char_macro_to_text(self, node: LatexMacroNode) -> str | None:
-        """Return the Unicode text of an accent or letter macro.
+        """Return the Unicode text of an accent, letter or symbol macro.
 
-        ``\\'e`` gives ``é``, ``\\~n`` gives ``ñ`` and ``\\ss`` gives ``ß``.
+        ``\\'e`` gives ``é``, ``\\~n`` gives ``ñ``, ``\\ss`` gives ``ß`` and
+        ``\\S`` gives ``§``.
         ``None`` means the node is not one of these: another macro, or a name
         the document redefines.
         """
@@ -99,6 +101,8 @@ class TextHelperMixin:
                 text = LatexNodes2Text().nodelist_to_text([node])
         elif name in MACROS_LETTERS:
             text = LatexNodes2Text().nodelist_to_text([node])
+        elif name in MACROS_TEXT_SYMBOLS:
+            text = MACROS_TEXT_SYMBOLS[name]
         else:
             return None
         # \~{} and \^{} are the usual way to typeset a literal ~ or ^, which
