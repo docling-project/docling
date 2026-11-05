@@ -86,10 +86,6 @@ jobs:
         with:
           filters: |
             run_ci:
-              - "AGENTS.md"
-              - ".agents/skills/**"
-              - ".codex/skills/**"
-              - ".claude/skills/**"
               - ".github/workflows/**"
               - ".github/scripts/**"
               - ".github/actions/**"
@@ -97,8 +93,8 @@ jobs:
               - ".github/dprint.json"
               - ".pre-commit-config.yaml"
               - "pyproject.toml"
-              - "scripts/checks/check_max_lines.py"
-              - "scripts/checks/check_tach_module_coverage.py"
+              - "scripts/check_max_lines.py"
+              - "scripts/check_tach_module_coverage.py"
               - "tach.toml"
               - "uv.lock"
               - "Dockerfile"
