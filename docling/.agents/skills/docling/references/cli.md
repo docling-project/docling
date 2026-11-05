@@ -58,6 +58,7 @@ docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model lightonocr3_08b --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model lightonocr3_4b --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model surya_ocr2_5 --output /tmp/
 docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
@@ -73,6 +74,11 @@ CLI has no option for the API URL. Use the SDK for these presets. See
 [python-sdk.md](python-sdk.md).
 
 `unlimited_ocr2_mlx` runs in-process on Apple Silicon and needs `mlx-vlm>=0.7.11`.
+
+`surya_ocr2_5` runs in-process with MLX (`mlx-vlm>=0.7.6`), Transformers
+(`transformers>=5.12.1`, not on MPS), or vLLM (`vllm>=0.25.1`). It does not need the
+`surya-ocr` package. The model weights have a modified OpenRAIL-M license with limits
+on commercial use.
 
 The `lightonocr3_*` presets map charts to the `other_chart` class. JSON, Markdown,
 and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raises
