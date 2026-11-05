@@ -881,9 +881,26 @@ No marks here.
         "both": (True, True),
     }
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["mono"]
-    plain = [item.text for item in doc.texts if item.formatting is None]
-    assert "and snake_case_name and 2*3*4." in plain
-    assert "No marks here." in plain
+    # Runs carry their own boundary whitespace; only the block edges are trimmed.
+    assert [item.text for item in doc.texts] == [
+        "Some ",
+        "bold",
+        ", ",
+        "italic",
+        " and ",
+        "mono",
+        " text, with ",
+        "st",
+        "rong.",
+        "both",
+        " and snake_case_name and 2*3*4.",
+        "No marks here.",
+    ]
+    assert doc.export_to_markdown() == (
+        "Some **bold**, *italic* and `mono` text, with **st**rong.\n\n"
+        "***both*** and snake\\_case\\_name and 2*3*4.\n\n"
+        "No marks here."
+    )
 
 
 def test_inline_formatting_marks_and_spans() -> None:
@@ -907,10 +924,14 @@ Nested **bold _and italic_** text.
     assert styled == [
         ("ui", False, True),
         ("a b c", True, False),
-        ("bold", True, False),
+        ("bold ", True, False),
         ("and italic", True, True),
     ]
     assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["um"]
+    assert doc.export_to_markdown() == (
+        "Text with *ui*, `um` and **a b c** marks.\n\n"
+        "Nested **bold** ***and italic*** text."
+    )
 
 
 def test_links_in_paragraphs() -> None:
@@ -945,7 +966,7 @@ Not linked: word:https://example.com.
         ("https://example.com/x", "https://example.com/x", False),
         ("Docs", "https://example.com/", False),
         ("Bold", "https://example.com/", True),
-        ("link", "https://example.com/", False),
+        (" link", "https://example.com/", False),
     ]
     plain = [item.text for item in doc.texts if item.hyperlink is None]
     assert "Not linked: word:https://example.com." in plain
@@ -1018,6 +1039,79 @@ def test_inline_code_link_keeps_code_item_and_hyperlink() -> None:
     assert links[0].parent is not None
     assert links[0].parent.resolve(doc).label == GroupLabel.INLINE
     assert "[`API`](https://example.com/)" in doc.export_to_markdown()
+
+
+def test_links_in_block_titles_of_paragraphs_and_lists() -> None:
+    doc = _convert_adoc(
+        b".Caption https://example.com[Docs]\n"
+        b"Para after title.\n\n"
+        b".Steps https://example.com[Docs]\n"
+        b"* one\n"
+    )
+
+    links = [
+        (
+            item.text,
+            str(item.hyperlink),
+            item.formatting is not None and item.formatting.bold,
+        )
+        for item in doc.texts
+        if item.hyperlink is not None
+    ]
+    assert links == [("Docs", "https://example.com/", True)] * 2
+    for item in doc.texts:
+        if item.hyperlink is not None:
+            assert item.parent is not None
+            assert item.parent.resolve(doc).label == GroupLabel.INLINE
+    bold = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.bold
+    ]
+    assert "Caption " in bold
+    assert "Steps " in bold
+    paragraph = next(item for item in doc.texts if item.text == "Para after title.")
+    assert paragraph.formatting is None
+    assert all("example.com[" not in item.text for item in doc.texts)
+    assert "example.com[" not in doc.export_to_markdown()
+
+
+def test_links_in_block_titles_strip_inline_marks() -> None:
+    doc = _convert_adoc(b".The *main* step\nPara after title.\n")
+
+    bold = [
+        item.text
+        for item in doc.texts
+        if item.formatting is not None and item.formatting.bold
+    ]
+    assert bold == ["The main step"]
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        pytest.param(b"image::x.png[]", id="picture"),
+        pytest.param(b"|===\n|a\n|===", id="table"),
+        pytest.param(b"----\nx = 1\n----", id="code"),
+    ],
+)
+@pytest.mark.parametrize(
+    "title, expected_text, expected_link",
+    [
+        (b".See https://example.com[Docs]", "See Docs", None),
+        (b".https://example.com[Docs]", "Docs", "https://example.com/"),
+    ],
+)
+def test_links_in_block_titles_of_pictures_tables_and_code(
+    target: bytes, title: bytes, expected_text: str, expected_link: str | None
+) -> None:
+    doc = _convert_adoc(title + b"\n" + target + b"\n")
+
+    captions = [item for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert len(captions) == 1
+    assert captions[0].text == expected_text
+    actual = None if captions[0].hyperlink is None else str(captions[0].hyperlink)
+    assert actual == expected_link
 
 
 @pytest.mark.parametrize("mark", ["*", "_", "`"])

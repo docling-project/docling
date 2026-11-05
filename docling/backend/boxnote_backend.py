@@ -385,11 +385,13 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
     def _add_image(
         self, attrs: dict[str, Any], doc: DoclingDocument, parent: NodeItem | None
     ) -> None:
-        caption = None
+        picture = doc.add_picture(parent=parent)
         label = attrs.get("alt") or attrs.get("fileName")
         if label:
-            caption = doc.add_text(label=DocItemLabel.CAPTION, text=label)
-        doc.add_picture(caption=caption, parent=parent)
+            caption = doc.add_text(
+                label=DocItemLabel.CAPTION, text=label, parent=picture
+            )
+            picture.captions.append(caption.get_ref())
 
     def _collapse(self, content: list[dict]) -> _Run:
         """Reduce inline content to a single run.

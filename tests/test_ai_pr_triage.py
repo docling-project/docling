@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import string
+import subprocess
 import sys
 from pathlib import Path
 
@@ -286,6 +287,27 @@ def test_comment_states_failed_analysis() -> None:
     comment = triage.render_comment(context, None, set())
     assert "did not finish" in comment
     assert "| #7 | open |" in comment
+
+
+def test_failed_reference_lookup_does_not_stop_the_triage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_gh_api(path: str, **_: object) -> object:
+        if path.endswith("/issues/99999"):
+            raise subprocess.CalledProcessError(
+                1, "gh", stderr="gh: Not Found (HTTP 404)\n"
+            )
+        if path.endswith("/issues/7"):
+            return {"number": 7, "title": "x", "state": "open", "pull_request": {}}
+        if "/pulls?" in path:
+            return []
+        if path.endswith("/pulls/7/files?per_page=100"):
+            return []
+        raise AssertionError(f"unexpected call: {path}")
+
+    monkeypatch.setattr(triage, "gh_api", fake_gh_api)
+    found = triage.find_candidates(REPO, 10, [99999, 7], [])
+    assert [candidate.number for candidate, _ in found] == [7]
 
 
 def test_model_topics_must_come_from_the_repository_label_set() -> None:

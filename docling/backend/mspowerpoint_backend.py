@@ -70,6 +70,7 @@ from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils._inline_runs import trim_run_edges
 
 _log = logging.getLogger(__name__)
 
@@ -218,6 +219,18 @@ def _paragraph_fragments(element: etree._Element) -> list[tuple[DocItemLabel, st
     if text:
         fragments.append((DocItemLabel.TEXT, text))
     return fragments
+
+
+def _trim_fragment_edges(
+    fragments: list[tuple[DocItemLabel, str]],
+) -> list[tuple[DocItemLabel, str]]:
+    """Trim the outer edges of a fragment sequence; formulas are already stripped."""
+    return trim_run_edges(
+        fragments,
+        get_text=lambda fragment: fragment[1],
+        with_text=lambda fragment, text: (fragment[0], text),
+        is_trimmable=lambda fragment: fragment[0] != DocItemLabel.FORMULA,
+    )
 
 
 _SAFE_XML_PARSER: Final = etree.XMLParser(
@@ -1172,7 +1185,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     inline_group = doc.add_inline_group(
                         parent=current.last_item, content_layer=content_layer
                     )
-                    for label, text in fragments:
+                    for label, text in _trim_fragment_edges(fragments):
                         doc.add_text(
                             label=label,
                             parent=inline_group,
@@ -1213,8 +1226,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         if has_text
                         else fragment_parent
                     )
-                    for label, text in fragments:
-                        if text.strip():
+                    for label, text in _trim_fragment_edges(fragments):
+                        # Without an inline group the formulas are separate blocks.
+                        if has_text or label == DocItemLabel.FORMULA:
                             doc.add_text(
                                 label=label,
                                 parent=parent,
