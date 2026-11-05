@@ -525,17 +525,6 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                 # decimals
                 decimals_text = str(fact.decimals) if fact.decimals is not None else ""
 
-                # dimensions
-                dimensions = []
-                if fact.context is not None and fact.context.qnameDims:
-                    for dim_qname, dim_value in fact.context.qnameDims.items():
-                        dimensions.append(
-                            (
-                                f"{dim_qname.localName}: {dim_value.memberQname.localName}",
-                                "dimension",
-                            )
-                        )
-
                 key_id = self._kv_idx
                 self._cells.append(
                     GraphCell(

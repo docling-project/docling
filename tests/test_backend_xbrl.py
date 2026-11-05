@@ -98,6 +98,32 @@ def test_e2e_xbrl_conversions(documents):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), "export to json"
 
 
+def test_ixbrl_report_converts_offline():
+    """An iXBRL report converts offline with a taxonomy package.
+
+    IBM's 10-Q has facts with typed dimensions, which have no member QName.
+    """
+    ixbrl_dir = _SOURCES_DIR.parent / "ixbrl"
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XML_XBRL],
+        format_options={
+            InputFormat.XML_XBRL: XBRLFormatOption(
+                backend_options=XBRLBackendOptions(
+                    enable_local_fetch=True, taxonomy=ixbrl_dir / "ibm-taxonomy"
+                )
+            )
+        },
+    )
+    doc = converter.convert(ixbrl_dir / "ibm-20260930.htm").document
+
+    assert (
+        doc.texts[0].text
+        == "10-Q INTERNATIONAL BUSINESS MACHINES CORPORATION 2026-09-30"
+    )
+    assert len(doc.tables) > 0
+    assert len(doc.key_value_items[0].graph.links) > 0
+
+
 def test_xbrl_divide_unit_keeps_denominator(documents):
     """A fact measured in a divide unit must report both of its measures.
 
