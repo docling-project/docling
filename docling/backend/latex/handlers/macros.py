@@ -817,7 +817,13 @@ class MacroHandlerMixin:
                     if text:
                         parts.append(text)
                 else:
-                    text = arg.latex_verbatim().strip("{} ")
+                    # A characters argument (\verb's content) is kept as is: its own
+                    # braces and spaces are part of the text.
+                    text = (
+                        arg.chars
+                        if isinstance(arg, LatexCharsNode)
+                        else arg.latex_verbatim().strip("{} ")
+                    )
                     if text:
                         parts.append(text)
 
