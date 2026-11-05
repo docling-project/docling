@@ -61,547 +61,864 @@ item-0 at level 0: unspecified: group _root_
         item-59 at level 4: caption: Table 1 Descriptive characteristics of the herd.
         item-60 at level 4: table with [13x3]
           item-60 at level 5: caption: Table 1 Descriptive characteristics of the herd.
-      item-61 at level 3: section_header: Data sources and livestock system description
-        item-62 at level 4: inline: group group
-          item-63 at level 5: text: The individual feed requirements ... cows that received both 75 and 50% of 
-          item-64 at level 5: text: ad libitum
-          item-65 at level 5: text:  TMR intake with access to grazing a tropical pasture (pearl-millet, 
-          item-66 at level 5: text: Pennisetum glaucum
-          item-67 at level 5: text:  ‘Campeiro’) compared to cows receiving 
+          item-61 at level 5: unspecified: group rich_cell_group_1_1_2
+            item-62 at level 6: inline: group group
+              item-63 at level 7: text: kg year
+              item-64 at level 7: text: -1
+      item-65 at level 3: section_header: Data sources and livestock system description
+        item-66 at level 4: inline: group group
+          item-67 at level 5: text: The individual feed requirements ... cows that received both 75 and 50% of 
           item-68 at level 5: text: ad libitum
-          item-69 at level 5: text:  TMR intake. Cows grazing on a temperate pasture (ryegrass, 
-          item-70 at level 5: text: Lolium multiflorum
-          item-71 at level 5: text:  ‘Maximus’) did not need changes to ECM production compared to the 
+          item-69 at level 5: text:  TMR intake with access to grazing a tropical pasture (pearl-millet, 
+          item-70 at level 5: text: Pennisetum glaucum
+          item-71 at level 5: text:  ‘Campeiro’) compared to cows receiving 
           item-72 at level 5: text: ad libitum
-          item-73 at level 5: text:  TMR intake group.
-        item-74 at level 4: inline: group group
-          item-75 at level 5: text: Using experimental data, three s ... valuated during the lactation period: 
+          item-73 at level 5: text:  TMR intake. Cows grazing on a temperate pasture (ryegrass, 
+          item-74 at level 5: text: Lolium multiflorum
+          item-75 at level 5: text:  ‘Maximus’) did not need changes to ECM production compared to the 
           item-76 at level 5: text: ad libitum
-          item-77 at level 5: text:  TMR intake, and 75, and 50% of 
-          item-78 at level 5: text: ad libitum
-          item-79 at level 5: text:  TMR intake with access to grazi ... ction of month ([26], Civiero et al., 
-          item-80 at level 5: text: in press
-          item-81 at level 5: text: ). From April to October (210 da ... med during an entire lactation period.
-      item-82 at level 3: section_header: Impact assessment
-        item-83 at level 4: inline: group group
-          item-84 at level 5: text: The CO
-          item-85 at level 5: text: 2
-          item-86 at level 5: text: e emissions were calculated by multiplying the emissions of CO
-          item-87 at level 5: text: 2
-          item-88 at level 5: text: , CH
-          item-89 at level 5: text: 4
-          item-90 at level 5: text:  and N
+          item-77 at level 5: text:  TMR intake group.
+        item-78 at level 4: inline: group group
+          item-79 at level 5: text: Using experimental data, three s ... valuated during the lactation period: 
+          item-80 at level 5: text: ad libitum
+          item-81 at level 5: text:  TMR intake, and 75, and 50% of 
+          item-82 at level 5: text: ad libitum
+          item-83 at level 5: text:  TMR intake with access to grazi ... ction of month ([26], Civiero et al., 
+          item-84 at level 5: text: in press
+          item-85 at level 5: text: ). From April to October (210 da ... med during an entire lactation period.
+      item-86 at level 3: section_header: Impact assessment
+        item-87 at level 4: inline: group group
+          item-88 at level 5: text: The CO
+          item-89 at level 5: text: 2
+          item-90 at level 5: text: e emissions were calculated by multiplying the emissions of CO
           item-91 at level 5: text: 2
-          item-92 at level 5: text: O by their 100-year global warming potential (GWP
-          item-93 at level 5: text: 100
-          item-94 at level 5: text: ), based on IPCC assessment report 5 (AR5; [27]). The values of GWP
-          item-95 at level 5: text: 100
-          item-96 at level 5: text:  are 1, 28 and 265 for CO
-          item-97 at level 5: text: 2
-          item-98 at level 5: text: , CH
-          item-99 at level 5: text: 4
-          item-100 at level 5: text:  and N
+          item-92 at level 5: text: , CH
+          item-93 at level 5: text: 4
+          item-94 at level 5: text:  and N
+          item-95 at level 5: text: 2
+          item-96 at level 5: text: O by their 100-year global warming potential (GWP
+          item-97 at level 5: text: 100
+          item-98 at level 5: text: ), based on IPCC assessment report 5 (AR5; [27]). The values of GWP
+          item-99 at level 5: text: 100
+          item-100 at level 5: text:  are 1, 28 and 265 for CO
           item-101 at level 5: text: 2
-          item-102 at level 5: text: O, respectively.
-      item-103 at level 3: section_header: Feed production
-        item-104 at level 4: section_header: Diets composition
-          item-105 at level 5: inline: group group
-            item-106 at level 6: text: The DM intake of each ingredient ... nnial tropical pasture (kikuyu grass, 
-            item-107 at level 6: text: Pennisetum clandestinum
-            item-108 at level 6: text: ). The DM intake of calves, heif ...  meet the net energy for lactation (NE
-            item-109 at level 6: text: L
-            item-110 at level 6: text: ) and metabolizable protein (MP) ... grated in the software INRAtion 4.07 (
-            item-111 at level 6: text: https://www.inration.educagri.fr/fr/forum.php
-            item-112 at level 6: text: ). The nutrient intake was calcu ...  collected throughout the experiments.
-          item-113 at level 5: caption: Table 2 Dairy cows’ diets in different scenariosa.
-          item-114 at level 5: table with [21x11]
-            item-114 at level 6: caption: Table 2 Dairy cows’ diets in different scenariosa.
-        item-115 at level 4: section_header: GHG emissions from crop and pasture production
-          item-116 at level 5: inline: group group
-            item-117 at level 6: text: GHG emission factors used for of ... s productions were 3300 and 1500 kg CO
-            item-118 at level 6: text: 2
-            item-119 at level 6: text: e ha
-            item-120 at level 6: text: -1
-            item-121 at level 6: text: , respectively [32]. The DM production (kg ha
-            item-122 at level 6: text: -1
-            item-123 at level 6: text: ) of corn silage and pastures we ... onsume 70% of pastures during grazing.
-          item-124 at level 5: caption: Table 3 GHG emission factors for Off- and On-farm feed production.
-          item-125 at level 5: table with [9x5]
-            item-125 at level 6: caption: Table 3 GHG emission factors for Off- and On-farm feed production.
-          item-126 at level 5: inline: group group
-            item-127 at level 6: text: Emissions from on-farm feed prod ... ary sources were direct and indirect N
-            item-128 at level 6: text: 2
-            item-129 at level 6: text: O-N emissions from organic and s ... tilizers and crop/pasture residues, CO
-            item-130 at level 6: text: 2
-            item-131 at level 6: text: -C emissions from lime and urea  ...  well as fuel combustion. The direct N
-            item-132 at level 6: text: 2
-            item-133 at level 6: text: O-N emission factor (kg (kg N input)
-            item-134 at level 6: text: -1
-            item-135 at level 6: text: ) is based on a local study performed previously [37]. For indirect N
-            item-136 at level 6: text: 2
-            item-137 at level 6: text: O-N emissions (kg N
-            item-138 at level 6: text: 2
-            item-139 at level 6: text: O-N (kg NH
-            item-140 at level 6: text: 3
-            item-141 at level 6: text: -N + NO
-            item-142 at level 6: text: x
-            item-143 at level 6: text: )
-            item-144 at level 6: text: -1
-            item-145 at level 6: text: ), as well as CO
-            item-146 at level 6: text: 2
-            item-147 at level 6: text: -C emissions from lime + urea, d ... stures, a C sequestration of 0.57 t ha
+          item-102 at level 5: text: , CH
+          item-103 at level 5: text: 4
+          item-104 at level 5: text:  and N
+          item-105 at level 5: text: 2
+          item-106 at level 5: text: O, respectively.
+      item-107 at level 3: section_header: Feed production
+        item-108 at level 4: section_header: Diets composition
+          item-109 at level 5: inline: group group
+            item-110 at level 6: text: The DM intake of each ingredient ... nnial tropical pasture (kikuyu grass, 
+            item-111 at level 6: text: Pennisetum clandestinum
+            item-112 at level 6: text: ). The DM intake of calves, heif ...  meet the net energy for lactation (NE
+            item-113 at level 6: text: L
+            item-114 at level 6: text: ) and metabolizable protein (MP) ... grated in the software INRAtion 4.07 (
+            item-115 at level 6: text: https://www.inration.educagri.fr/fr/forum.php
+            item-116 at level 6: text: ). The nutrient intake was calcu ...  collected throughout the experiments.
+          item-117 at level 5: caption: Table 2 Dairy cows’ diets in different scenariosa.
+          item-118 at level 5: table with [21x11]
+            item-118 at level 6: caption: Table 2 Dairy cows’ diets in different scenariosa.
+            item-119 at level 6: unspecified: group rich_cell_group_2_0_3
+              item-120 at level 7: inline: group group
+                item-121 at level 8: text: DM intake, kg d
+                item-122 at level 8: text: -1
+            item-123 at level 6: unspecified: group rich_cell_group_2_0_4
+              item-124 at level 7: inline: group group
+                item-125 at level 8: text: Ingredients, g (kg DM)
+                item-126 at level 8: text: -1
+            item-127 at level 6: unspecified: group rich_cell_group_2_0_11
+              item-128 at level 7: inline: group group
+                item-129 at level 8: text: Chemical composition, g (kg DM)
+                item-130 at level 8: text: -1
+            item-131 at level 6: unspecified: group rich_cell_group_2_0_19
+              item-132 at level 7: inline: group group
+                item-133 at level 8: text: NE
+                item-134 at level 8: text: L
+                item-135 at level 8: text: , Mcal (kg DM)
+                item-136 at level 8: text: -1
+            item-137 at level 6: unspecified: group rich_cell_group_2_0_20
+              item-138 at level 7: inline: group group
+                item-139 at level 8: text: MP, g (kg DM)
+                item-140 at level 8: text: -1
+        item-141 at level 4: section_header: GHG emissions from crop and pasture production
+          item-142 at level 5: inline: group group
+            item-143 at level 6: text: GHG emission factors used for of ... s productions were 3300 and 1500 kg CO
+            item-144 at level 6: text: 2
+            item-145 at level 6: text: e ha
+            item-146 at level 6: text: -1
+            item-147 at level 6: text: , respectively [32]. The DM production (kg ha
             item-148 at level 6: text: -1
-            item-149 at level 6: text:  was used based on a 9-year stud ... red was 8.9 (no-tillage) and 14.3 L ha
-            item-150 at level 6: text: -1
-            item-151 at level 6: text:  (disking) for annual tropical a ... te pastures, respectively [40]. The CO
-            item-152 at level 6: text: 2
-            item-153 at level 6: text:  from fuel combustion was 2.7 kg CO
-            item-154 at level 6: text: 2
-            item-155 at level 6: text:  L
-            item-156 at level 6: text: -1
-            item-157 at level 6: text:  [41]. Secondary sources of emis ... factors described by Rotz et al. [42].
-          item-158 at level 5: caption: Table 4 GHG emissions from On-farm feed production.
-          item-159 at level 5: table with [28x5]
-            item-159 at level 6: caption: Table 4 GHG emissions from On-farm feed production.
-      item-160 at level 3: section_header: Animal husbandry
-        item-161 at level 4: inline: group group
-          item-162 at level 5: text: The CH
-          item-163 at level 5: text: 4
-          item-164 at level 5: text:  emissions from enteric fermentation intensity (g (kg ECM)
-          item-165 at level 5: text: -1
-          item-166 at level 5: text: ) was a function of estimated CH
-          item-167 at level 5: text: 4
-          item-168 at level 5: text:  yield (g (kg DM intake)
-          item-169 at level 5: text: -1
-          item-170 at level 5: text: ), actual DM intake and ECM. The enteric CH
-          item-171 at level 5: text: 4
-          item-172 at level 5: text:  yield was estimated as a functi ... proposed by Niu et al. [43], where: CH
-          item-173 at level 5: text: 4
-          item-174 at level 5: text:  yield (g (kg DM intake)
-          item-175 at level 5: text: -1
-          item-176 at level 5: text: ) = 13.8 + 0.185 × NDF (% DM intake).
-      item-177 at level 3: section_header: Manure from confined cows and urine and dung from grazing animals
-        item-178 at level 4: inline: group group
-          item-179 at level 5: text: The CH
-          item-180 at level 5: text: 4
-          item-181 at level 5: text:  emission from manure (kg (kg ECM)
-          item-182 at level 5: text: -1
-          item-183 at level 5: text: ) was a function of daily CH
-          item-184 at level 5: text: 4
-          item-185 at level 5: text:  emission from manure (kg cow
-          item-186 at level 5: text: -1
-          item-187 at level 5: text: ) and daily ECM (kg cow
-          item-188 at level 5: text: -1
-          item-189 at level 5: text: ). The daily CH
-          item-190 at level 5: text: 4
-          item-191 at level 5: text:  emission from manure was estima ... olatile solid (VS) excreted (kg DM cow
-          item-192 at level 5: text: -1
-          item-193 at level 5: text: ) in manure. The daily VS was es ... n an organic matter (OM) basis (kg day
-          item-194 at level 5: text: -1
-          item-195 at level 5: text: ), NDOMI = non-digestible OM intake (kg day
-          item-196 at level 5: text: -1
-          item-197 at level 5: text: ): (1- OM digestibility) × OM in ... .04), GE = gross energy intake (MJ day
-          item-198 at level 5: text: -1
-          item-199 at level 5: text: ), OM = organic matter (g), 18.4 ... tor for dietary GE per kg of DM (MJ kg
-          item-200 at level 5: text: -1
-          item-201 at level 5: text: ).
-        item-202 at level 4: text: The OM digestibility was estimat ... h were 31%, 26% and 46%, respectively.
-        item-203 at level 4: inline: group group
-          item-204 at level 5: text: The N
-          item-205 at level 5: text: 2
-          item-206 at level 5: text: O-N emissions from urine and fec ... ations 10 and 12, respectively). The N
-          item-207 at level 5: text: 2
-          item-208 at level 5: text: O emissions from stored manure a ... alculated based on the conversion of N
-          item-209 at level 5: text: 2
-          item-210 at level 5: text: O-N emissions to N
-          item-211 at level 5: text: 2
-          item-212 at level 5: text: O emissions, where N
-          item-213 at level 5: text: 2
-          item-214 at level 5: text: O emissions = N
-          item-215 at level 5: text: 2
-          item-216 at level 5: text: O-N emissions × 44/28. The emission factors were 0.002 kg N
-          item-217 at level 5: text: 2
-          item-218 at level 5: text: O-N (kg N)
-          item-219 at level 5: text: -1
-          item-220 at level 5: text:  stored in a pit below animal confinements, and 0.02 kg N
-          item-221 at level 5: text: 2
-          item-222 at level 5: text: O-N (kg of urine and dung)
-          item-223 at level 5: text: -1
-          item-224 at level 5: text:  deposited on pasture [38]. The indirect N
-          item-225 at level 5: text: 2
-          item-226 at level 5: text: O emissions from storage manure  ...  using the IPCC [38] emission factors.
-      item-227 at level 3: section_header: Farm management
-        item-228 at level 4: text: Emissions due to farm management ...  crop and pasture production’ section.
-        item-229 at level 4: caption: Table 5 Factors for major resource inputs in farm management.
-        item-230 at level 4: table with [12x4]
-          item-230 at level 5: caption: Table 5 Factors for major resource inputs in farm management.
-        item-231 at level 4: inline: group group
-          item-232 at level 5: text: The amount of fuel use for manur ... quired for manure handling (L diesel t
-          item-233 at level 5: text: -1
-          item-234 at level 5: text: ) [42]. The amount of manure was estimated from OM excretions (kg cow
-          item-235 at level 5: text: -1
-          item-236 at level 5: text: ), assuming that the manure has  ... me that animals stayed on confinement.
-        item-237 at level 4: inline: group group
-          item-238 at level 5: text: The emissions from fuel were est ... uired for manure handling (L) × (kg CO
-          item-239 at level 5: text: 2
-          item-240 at level 5: text: e L
-          item-241 at level 5: text: -1
-          item-242 at level 5: text: ) [41]. The secondary emissions  ... roduction and transport of fuel (kg CO
-          item-243 at level 5: text: 2
-          item-244 at level 5: text: e L
-          item-245 at level 5: text: -1
-          item-246 at level 5: text: ) [41]. Emissions from manufactu ... w (t) × (kg machinery mass (kg manure)
-          item-247 at level 5: text: -1
-          item-248 at level 5: text:  × 10
-          item-249 at level 5: text: −3
-          item-250 at level 5: text: ) [42] × kg CO
-          item-251 at level 5: text: 2
-          item-252 at level 5: text: e (kg machinery mass)
-          item-253 at level 5: text: -1
-          item-254 at level 5: text:  [42].
-        item-255 at level 4: inline: group group
-          item-256 at level 5: text: Emissions from electricity for m ... ated using two emission factors (kg CO
-          item-257 at level 5: text: 2
-          item-258 at level 5: text:  kWh
-          item-259 at level 5: text: -1
-          item-260 at level 5: text: ). The first one is based on Uni ... ivities is 0.06 kWh (kg milk produced)
-          item-261 at level 5: text: -1
-          item-262 at level 5: text:  [47]. The annual electricity use for lighting was 75 kWh cow
-          item-263 at level 5: text: -1
-          item-264 at level 5: text: , which is the value considered  ... ws in naturally ventilated barns [47].
-      item-265 at level 3: section_header: Co-product allocation
-        item-266 at level 4: inline: group group
-          item-267 at level 5: text: The C footprint for milk produce ... ibed by Thoma et al. [48]. Briefly, AR
-          item-268 at level 5: text: milk
-          item-269 at level 5: text:  = 1–6.04 × BMR, where
-          item-270 at level 5: text: :
-          item-271 at level 5: text:  AR
-          item-272 at level 5: text: milk
-          item-273 at level 5: text:  is the allocation ratio for mil ...  during cow`s entire life (kg). The AR
-          item-274 at level 5: text: milk
-          item-275 at level 5: text:  were 0.854 and 0.849 for TMR an ... asture scenarios, respectively. The AR
-          item-276 at level 5: text: milk
-          item-277 at level 5: text:  was applied to the whole emissi ...  directly assigned to milk production.
-      item-278 at level 3: section_header: Sensitivity analysis
-        item-279 at level 4: text: A sensitivity index was calculat ... ses a similar change in the footprint.
-    item-280 at level 2: section_header: Results and discussion
-      item-281 at level 3: text: The study has assessed the impac ... , feed production and electricity use.
-      item-282 at level 3: section_header: Greenhouse gas emissions
-        item-283 at level 4: inline: group group
-          item-284 at level 5: text: Depending on emission factors us ...  2A and 2B) or decreased by 0.04 kg CO
-          item-285 at level 5: text: 2
-          item-286 at level 5: text: e (kg ECM)
-          item-287 at level 5: text: -1
-          item-288 at level 5: text:  (Fig 2C and 2D) in scenarios that included pastures compared to 
-          item-289 at level 5: text: ad libitum
-          item-290 at level 5: text:  TMR intake. Due to differences  ...  values ranged from 0.92 to 1.04 kg CO
-          item-291 at level 5: text: 2
-          item-292 at level 5: text: e (kg ECM)
-          item-293 at level 5: text: -1
-          item-294 at level 5: text:  for dairy cows receiving TMR exclusively, and from 0.88 to 1.04 kg CO
-          item-295 at level 5: text: 2
-          item-296 at level 5: text: e (kg ECM)
-          item-297 at level 5: text: -1
-          item-298 at level 5: text:  for cows with access to pasture ... ocal emission factors for estimating N
-          item-299 at level 5: text: 2
-          item-300 at level 5: text: O-N emissions [37], manure emiss ... more than 5% of overall GHG emissions.
-        item-301 at level 4: caption: Fig 2 Overall greenhouse gas emi ... lectricity = 0.205 kg CO2e kWh-1 [46].
-        item-302 at level 4: picture
-          item-302 at level 5: caption: Fig 2 Overall greenhouse gas emissions in dairy cattle systems under various scenarios. TMR = ad libitum TMR intake, 75TMR = 75% of ad libitum TMR intake with access to pasture, 50TMR = 50% of ad libitum TMR intake with access to pasture. (a) N2O emission factors for urine and dung from IPCC [38], feed production emission factors from Table 3 without accounting for sequestered CO2-C from perennial pasture, production of electricity = 0.73 kg CO2e kWh-1 [41]. (b) N2O emission factors for urine and dung from IPCC [38], feed production emission factors from Table 3 without accounting for sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46]; (c) N2O emission factors for urine and dung from local data [37], feed production EF from Table 4 without accounting for sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46]. (d) N2O emission factors for urine and dung from local data [37], feed production emission factors from Table 4 accounting for sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46].
-        item-303 at level 4: inline: group group
-          item-304 at level 5: text: Considering IPCC emission factors for N
-          item-305 at level 5: text: 2
-          item-306 at level 5: text: O emissions from urine and dung  ... otprint ranged from 0.99 to 1.04 kg CO
-          item-307 at level 5: text: 2
-          item-308 at level 5: text: e (kg ECM)
-          item-309 at level 5: text: -1
-          item-310 at level 5: text: , and was close to those reporte ... , which ranged from 0.98 to 1.16 kg CO
-          item-311 at level 5: text: 2
-          item-312 at level 5: text: e (kg ECM)
-          item-313 at level 5: text: -1
-          item-314 at level 5: text: . When local emission factors for N
-          item-315 at level 5: text: 2
-          item-316 at level 5: text: O emissions from urine and dung  ...  without accounting for sequestered CO
-          item-317 at level 5: text: 2
-          item-318 at level 5: text: -C from perennial pasture—0.91 kg CO
-          item-319 at level 5: text: 2
-          item-320 at level 5: text: e (kg ECM)
-          item-321 at level 5: text: -1
-          item-322 at level 5: text: —was lower than the range of val ... , which ranged from 0.52 to 0.89 kg CO
-          item-323 at level 5: text: 2
-          item-324 at level 5: text: e (kg ECM)
-          item-325 at level 5: text: -1
-          item-326 at level 5: text: . Regardless of which emission f ... nt, which ranged from 1.4 to 2.3 kg CO
-          item-327 at level 5: text: 2
-          item-328 at level 5: text: e (kg ECM)
-          item-329 at level 5: text: -1
-          item-330 at level 5: text:  [8,55]. Thus, even though diffe ... e emissions estimation, sequestered CO
-          item-331 at level 5: text: 2
-          item-332 at level 5: text: -C, etc.), herd productivity and ...  the C footprint of the dairy systems.
-        item-333 at level 4: inline: group group
-          item-334 at level 5: text: The similarity of C footprint be ... served that an increase of 1000 kg cow
-          item-335 at level 5: text: -1
-          item-336 at level 5: text:  (5000 to 6000 kg ECM) reduced the C footprint by 0.12 kg CO
-          item-337 at level 5: text: 2
-          item-338 at level 5: text: e (kg ECM)
-          item-339 at level 5: text: -1
-          item-340 at level 5: text: , which may explain an apparent  ...  milk production of around 7000 kg cow
-          item-341 at level 5: text: -1
-          item-342 at level 5: text: . Experimental data showed a red ... of TMR was replaced by pasture access.
-        item-343 at level 4: inline: group group
-          item-344 at level 5: text: The lower C footprint in scenari ...  emission factors [37] were used for N
-          item-345 at level 5: text: 2
-          item-346 at level 5: text: O emissions from urine and dung  ... narios including pastures compared to 
-          item-347 at level 5: text: ad libitum
-          item-348 at level 5: text:  TMR intake. Whereas the IPCC [38] considers an emission of 0.02 kg N
-          item-349 at level 5: text: 2
-          item-350 at level 5: text: O-N (kg N)
-          item-351 at level 5: text: -1
-          item-352 at level 5: text:  for urine and dung from grazing ... five times lower, averaging 0.004 kg N
-          item-353 at level 5: text: 2
-          item-354 at level 5: text: O-N kg
-          item-355 at level 5: text: -1
-          item-356 at level 5: text:  [37].
-      item-357 at level 3: section_header: Methane emissions
-        item-358 at level 4: inline: group group
-          item-359 at level 5: text: The enteric CH
-          item-360 at level 5: text: 4
-          item-361 at level 5: text:  intensity was similar between d ... Fig 3). The large effect of enteric CH
-          item-362 at level 5: text: 4
-          item-363 at level 5: text:  emissions on the whole C footpr ... cted, because the impact of enteric CH
-          item-364 at level 5: text: 4
-          item-365 at level 5: text:  on GHG emissions of milk produc ... o range from 44 to 60% of the total CO
-          item-366 at level 5: text: 2
-          item-367 at level 5: text: e [50,52,57,58]. However, emissi ... trate feeds are greater than 0.7 kg CO
-          item-368 at level 5: text: 2
-          item-369 at level 5: text: e kg
-          item-370 at level 5: text: -1
-          item-371 at level 5: text:  [59], which did not happen in this study.
-        item-372 at level 4: caption: Fig 3 Sensitivity of the C footp ... lectricity = 0.205 kg CO2e kWh-1 [46].
-        item-373 at level 4: picture
-          item-373 at level 5: caption: Fig 3 Sensitivity of the C footprint. Sensitivity index = percentage change in C footprint for a 10% change in the given emission source divided by 10% of. (a) N2O emission factors for urine and dung from IPCC [38], feed production emission factors from Table 3, production of electricity = 0.73 kg CO2e kWh-1 [41]. (b) N2O emission factors for urine and dung from IPCC [38], feed production emission factors from Table 3, production of electricity = 0.205 kg CO2e kWh-1 [46]; (c) N2O emission factors for urine and dung from local data [37], feed production EF from Table 4 without accounting sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46]. (d) N2O emission factors for urine and dung from local data [37], feed production emission factors from Table 4 accounting sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46].
-        item-374 at level 4: inline: group group
-          item-375 at level 5: text: The lack of difference in enteric CH
-          item-376 at level 5: text: 4
-          item-377 at level 5: text:  emissions in different systems  ... nual temperate pastures (495 g (kg DM)
-          item-378 at level 5: text: -1
-          item-379 at level 5: text: ) compared to corn silage (550 g (kg DM)
-          item-380 at level 5: text: -1
-          item-381 at level 5: text: ). Hence, an expected, increase  ...  have shown that the actual enteric CH
-          item-382 at level 5: text: 4
-          item-383 at level 5: text:  emissions may decrease with inc ... ybean meal [60] or increase enteric CH
-          item-384 at level 5: text: 4
-          item-385 at level 5: text:  emissions when dairy cows grazi ...  silage [61]. Additionally, enteric CH
-          item-386 at level 5: text: 4
-          item-387 at level 5: text:  emissions did not differ betwee ...  same scenarios as in this study [26].
-      item-388 at level 3: section_header: Emissions from excreta and feed production
-        item-389 at level 4: inline: group group
-          item-390 at level 5: text: Using IPCC emission factors for N
-          item-391 at level 5: text: 2
-          item-392 at level 5: text: O emissions from urine and dung [38] and those from Table 3, CH
-          item-393 at level 5: text: 4
-          item-394 at level 5: text:  emissions from manure decreased 0.07 kg CO
-          item-395 at level 5: text: 2
-          item-396 at level 5: text: e (kg ECM)
-          item-397 at level 5: text: -1
-          item-398 at level 5: text: , but N
-          item-399 at level 5: text: 2
-          item-400 at level 5: text: O emissions from manure increased 0.09 kg CO
-          item-401 at level 5: text: 2
-          item-402 at level 5: text: e (kg ECM)
-          item-403 at level 5: text: -1
-          item-404 at level 5: text: , as TMR intake was restricted to 50% 
-          item-405 at level 5: text: ad libitum
-          item-406 at level 5: text:  (Fig 4A). Emissions for pastures increased by 0.06 kg CO
-          item-407 at level 5: text: 2
-          item-408 at level 5: text: e (kg ECM)
-          item-409 at level 5: text: -1
-          item-410 at level 5: text: , whereas emissions for producin ... nd corn silage decreased by 0.09 kg CO
-          item-411 at level 5: text: 2
-          item-412 at level 5: text: e (kg ECM)
-          item-413 at level 5: text: -1
-          item-414 at level 5: text: , as TMR intake decreased (Fig 4 ... ctating dairy cow diets. The greater N
-          item-415 at level 5: text: 2
-          item-416 at level 5: text: O-N emissions from manure with pasture was a consequence of higher N
-          item-417 at level 5: text: 2
-          item-418 at level 5: text: O-N emissions due to greater CP  ... g CP content from 185 to 152 g (kg DM)
-          item-419 at level 5: text: -1
-          item-420 at level 5: text: , N intake decreased by 20% and  ... g dairy cows ranged from 150 g (kg DM)
-          item-421 at level 5: text: -1
-          item-422 at level 5: text:  on TMR system to 198 g (kg DM)
-          item-423 at level 5: text: -1
-          item-424 at level 5: text:  on 50% TMR with pasture. Additi ...  may not be captured by microbes [65].
-        item-425 at level 4: caption: Fig 4 Greenhouse gas emissions ( ... uestered CO2-C from perennial pasture.
-        item-426 at level 4: picture
-          item-426 at level 5: caption: Fig 4 Greenhouse gas emissions (GHG) from manure and feed production in dairy cattle systems. TMR = ad libitum TMR intake, 75TMR = 75% of ad libitum TMR intake with access to pasture, 50TMR = 50% of ad libitum TMR intake with access to pasture. (a) N2O emission factors for urine and dung from IPCC [38]. (b) Feed production emission factors from Table 3. (c) N2O emission factors for urine and dung from local data [37]. (d) Feed production emission factors from Table 4 accounting sequestered CO2-C from perennial pasture.
-        item-427 at level 4: inline: group group
-          item-428 at level 5: text: Using local emission factors for N
-          item-429 at level 5: text: 2
-          item-430 at level 5: text: O emissions from urine and dung  ... d those from Table 4, reductions in CH
-          item-431 at level 5: text: 4
-          item-432 at level 5: text:  emissions from stocked manure,  ... iets, did not offset by increases in N
-          item-433 at level 5: text: 2
-          item-434 at level 5: text: O emissions from excreta (Fig 4C ... much lower emission factors used for N
-          item-435 at level 5: text: 2
-          item-436 at level 5: text: O emissions from urine and dung. ... be revised for the subtropical region.
-        item-437 at level 4: text: Emissions for feed production de ... act, particularly in confinements [9].
-      item-438 at level 3: section_header: Farm management
-        item-439 at level 4: text: The lower impact of emissions fr ...  greater than 5% of total C footprint.
-        item-440 at level 4: inline: group group
-          item-441 at level 5: text: Emissions from farm management d ... or electricity generation (0.205 kg CO
-          item-442 at level 5: text: 2
-          item-443 at level 5: text: e kWh
-          item-444 at level 5: text: -1
-          item-445 at level 5: text:  [46]) is much lower than that in a LCA study conducted in US (0.73 kg CO
-          item-446 at level 5: text: 2
-          item-447 at level 5: text: e kWh
-          item-448 at level 5: text: -1
-          item-449 at level 5: text:  [42]). This apparent discrepanc ...  has an emission factor of 0.074 kg CO
-          item-450 at level 5: text: 2
-          item-451 at level 5: text: e kWh
-          item-452 at level 5: text: -1
-          item-453 at level 5: text:  against 0.382 and 0.926 kg CO
-          item-454 at level 5: text: 2
-          item-455 at level 5: text: e kWh
-          item-456 at level 5: text: -1
-          item-457 at level 5: text:  produced by natural gas and hard coal, respectively [46].
-      item-458 at level 3: section_header: Assumptions and limitations
-        item-459 at level 4: inline: group group
-          item-460 at level 5: text: The milk production and composit ... sion factors for direct and indirect N
-          item-461 at level 5: text: 2
-          item-462 at level 5: text: O emissions from urine and dung  ... sary to reduce the uncertainty. The CO
-          item-463 at level 5: text: 2
-          item-464 at level 5: text:  emitted from lime and urea appl ... ions as a function of soil management.
-      item-465 at level 3: section_header: Further considerations
-        item-466 at level 4: inline: group group
-          item-467 at level 5: text: The potential for using pasture  ...  reduced the C footprint by 0.12 kg CO
+            item-149 at level 6: text: ) of corn silage and pastures we ... onsume 70% of pastures during grazing.
+          item-150 at level 5: caption: Table 3 GHG emission factors for Off- and On-farm feed production.
+          item-151 at level 5: table with [9x5]
+            item-151 at level 6: caption: Table 3 GHG emission factors for Off- and On-farm feed production.
+            item-152 at level 6: unspecified: group rich_cell_group_3_1_0
+              item-153 at level 7: inline: group group
+                item-154 at level 8: text: DM yield (kg ha
+                item-155 at level 8: text: -1
+                item-156 at level 8: text: )
+            item-157 at level 6: unspecified: group rich_cell_group_3_3_0
+              item-158 at level 7: inline: group group
+                item-159 at level 8: text: Unit
+                item-160 at level 8: text: a
+            item-161 at level 6: unspecified: group rich_cell_group_3_3_2
+              item-162 at level 7: inline: group group
+                item-163 at level 8: text: kg CO
+                item-164 at level 8: text: 2
+                item-165 at level 8: text: e (kg grain)
+                item-166 at level 8: text: -1
+            item-167 at level 6: unspecified: group rich_cell_group_3_3_3
+              item-168 at level 7: inline: group group
+                item-169 at level 8: text: kg CO
+                item-170 at level 8: text: 2
+                item-171 at level 8: text: e (kg grain)
+                item-172 at level 8: text: -1
+            item-173 at level 6: unspecified: group rich_cell_group_3_0_5
+              item-174 at level 7: inline: group group
+                item-175 at level 8: text: Corn silage
+                item-176 at level 8: text: b
+            item-177 at level 6: unspecified: group rich_cell_group_3_3_5
+              item-178 at level 7: inline: group group
+                item-179 at level 8: text: kg CO
+                item-180 at level 8: text: 2
+                item-181 at level 8: text: e (kg DM)
+                item-182 at level 8: text: -1
+            item-183 at level 6: unspecified: group rich_cell_group_3_0_6
+              item-184 at level 7: inline: group group
+                item-185 at level 8: text: Annual ryegrass
+                item-186 at level 8: text: c
+            item-187 at level 6: unspecified: group rich_cell_group_3_3_6
+              item-188 at level 7: inline: group group
+                item-189 at level 8: text: kg CO
+                item-190 at level 8: text: 2
+                item-191 at level 8: text: e (kg DM)
+                item-192 at level 8: text: -1
+            item-193 at level 6: unspecified: group rich_cell_group_3_0_7
+              item-194 at level 7: inline: group group
+                item-195 at level 8: text: Pearl millet
+                item-196 at level 8: text: d
+            item-197 at level 6: unspecified: group rich_cell_group_3_3_7
+              item-198 at level 7: inline: group group
+                item-199 at level 8: text: kg CO
+                item-200 at level 8: text: 2
+                item-201 at level 8: text: e (kg DM)
+                item-202 at level 8: text: -1
+            item-203 at level 6: unspecified: group rich_cell_group_3_0_8
+              item-204 at level 7: inline: group group
+                item-205 at level 8: text: Kikuyu grass
+                item-206 at level 8: text: e
+            item-207 at level 6: unspecified: group rich_cell_group_3_3_8
+              item-208 at level 7: inline: group group
+                item-209 at level 8: text: kg CO
+                item-210 at level 8: text: 2
+                item-211 at level 8: text: e (kg DM)
+                item-212 at level 8: text: -1
+          item-213 at level 5: inline: group group
+            item-214 at level 6: text: Emissions from on-farm feed prod ... ary sources were direct and indirect N
+            item-215 at level 6: text: 2
+            item-216 at level 6: text: O-N emissions from organic and s ... tilizers and crop/pasture residues, CO
+            item-217 at level 6: text: 2
+            item-218 at level 6: text: -C emissions from lime and urea  ...  well as fuel combustion. The direct N
+            item-219 at level 6: text: 2
+            item-220 at level 6: text: O-N emission factor (kg (kg N input)
+            item-221 at level 6: text: -1
+            item-222 at level 6: text: ) is based on a local study performed previously [37]. For indirect N
+            item-223 at level 6: text: 2
+            item-224 at level 6: text: O-N emissions (kg N
+            item-225 at level 6: text: 2
+            item-226 at level 6: text: O-N (kg NH
+            item-227 at level 6: text: 3
+            item-228 at level 6: text: -N + NO
+            item-229 at level 6: text: x
+            item-230 at level 6: text: )
+            item-231 at level 6: text: -1
+            item-232 at level 6: text: ), as well as CO
+            item-233 at level 6: text: 2
+            item-234 at level 6: text: -C emissions from lime + urea, d ... stures, a C sequestration of 0.57 t ha
+            item-235 at level 6: text: -1
+            item-236 at level 6: text:  was used based on a 9-year stud ... red was 8.9 (no-tillage) and 14.3 L ha
+            item-237 at level 6: text: -1
+            item-238 at level 6: text:  (disking) for annual tropical a ... te pastures, respectively [40]. The CO
+            item-239 at level 6: text: 2
+            item-240 at level 6: text:  from fuel combustion was 2.7 kg CO
+            item-241 at level 6: text: 2
+            item-242 at level 6: text:  L
+            item-243 at level 6: text: -1
+            item-244 at level 6: text:  [41]. Secondary sources of emis ... factors described by Rotz et al. [42].
+          item-245 at level 5: caption: Table 4 GHG emissions from On-farm feed production.
+          item-246 at level 5: table with [28x5]
+            item-246 at level 6: caption: Table 4 GHG emissions from On-farm feed production.
+            item-247 at level 6: unspecified: group rich_cell_group_4_0_1
+              item-248 at level 7: inline: group group
+                item-249 at level 8: text: DM yield, kg ha
+                item-250 at level 8: text: -1
+            item-251 at level 6: unspecified: group rich_cell_group_4_0_2
+              item-252 at level 7: inline: group group
+                item-253 at level 8: text: Direct N
+                item-254 at level 8: text: 2
+                item-255 at level 8: text: O emissions to air
+            item-256 at level 6: unspecified: group rich_cell_group_4_0_3
+              item-257 at level 7: inline: group group
+                item-258 at level 8: text: N organic fertilizer, kg ha
+                item-259 at level 8: text: -1a
+            item-260 at level 6: unspecified: group rich_cell_group_4_0_5
+              item-261 at level 7: inline: group group
+                item-262 at level 8: text: N from residual DM, kg ha
+                item-263 at level 8: text: -1b
+            item-264 at level 6: unspecified: group rich_cell_group_4_0_6
+              item-265 at level 7: inline: group group
+                item-266 at level 8: text: Emission fator, kg N
+                item-267 at level 8: text: 2
+                item-268 at level 8: text: O-N (kg N)
+                item-269 at level 8: text: -1c
+            item-270 at level 6: unspecified: group rich_cell_group_4_0_7
+              item-271 at level 7: inline: group group
+                item-272 at level 8: text: kg N
+                item-273 at level 8: text: 2
+                item-274 at level 8: text: O ha
+                item-275 at level 8: text: -1
+                item-276 at level 8: text:  from direct emissions
+            item-277 at level 6: unspecified: group rich_cell_group_4_0_8
+              item-278 at level 7: inline: group group
+                item-279 at level 8: text: Indirect N
+                item-280 at level 8: text: 2
+                item-281 at level 8: text: O emissions to air
+            item-282 at level 6: unspecified: group rich_cell_group_4_0_9
+              item-283 at level 7: inline: group group
+                item-284 at level 8: text: kg NH
+                item-285 at level 8: text: 3
+                item-286 at level 8: text: -N+NO
+                item-287 at level 8: text: x
+                item-288 at level 8: text: -N (kg organic N)
+                item-289 at level 8: text: -1b
+            item-290 at level 6: unspecified: group rich_cell_group_4_0_10
+              item-291 at level 7: inline: group group
+                item-292 at level 8: text: kg NH
+                item-293 at level 8: text: 3
+                item-294 at level 8: text: -N+NO
+                item-295 at level 8: text: x
+                item-296 at level 8: text: -N (kg synthetic N)
+                item-297 at level 8: text: -1b
+            item-298 at level 6: unspecified: group rich_cell_group_4_0_11
+              item-299 at level 7: inline: group group
+                item-300 at level 8: text: kg N
+                item-301 at level 8: text: 2
+                item-302 at level 8: text: O-N (kg NH
+                item-303 at level 8: text: 3
+                item-304 at level 8: text: -N+NO
+                item-305 at level 8: text: x
+                item-306 at level 8: text: -N)
+                item-307 at level 8: text: -1b
+            item-308 at level 6: unspecified: group rich_cell_group_4_0_12
+              item-309 at level 7: inline: group group
+                item-310 at level 8: text: kg N
+                item-311 at level 8: text: 2
+                item-312 at level 8: text: O ha
+                item-313 at level 8: text: -1
+                item-314 at level 8: text:  from NH
+                item-315 at level 8: text: 3
+                item-316 at level 8: text: +NO
+                item-317 at level 8: text: x
+                item-318 at level 8: text:  volatilized
+            item-319 at level 6: unspecified: group rich_cell_group_4_0_13
+              item-320 at level 7: inline: group group
+                item-321 at level 8: text: Indirect N
+                item-322 at level 8: text: 2
+                item-323 at level 8: text: O emissions to soil
+            item-324 at level 6: unspecified: group rich_cell_group_4_0_14
+              item-325 at level 7: inline: group group
+                item-326 at level 8: text: kg N losses by leaching (kg N)
+                item-327 at level 8: text: -1b
+            item-328 at level 6: unspecified: group rich_cell_group_4_0_15
+              item-329 at level 7: inline: group group
+                item-330 at level 8: text: kg N
+                item-331 at level 8: text: 2
+                item-332 at level 8: text: O-N (kg N leaching)
+                item-333 at level 8: text: -1
+            item-334 at level 6: unspecified: group rich_cell_group_4_0_16
+              item-335 at level 7: inline: group group
+                item-336 at level 8: text: kg N
+                item-337 at level 8: text: 2
+                item-338 at level 8: text: O ha
+                item-339 at level 8: text: -1
+                item-340 at level 8: text:  from N losses by leaching
+            item-341 at level 6: unspecified: group rich_cell_group_4_0_17
+              item-342 at level 7: inline: group group
+                item-343 at level 8: text: kg N
+                item-344 at level 8: text: 2
+                item-345 at level 8: text: O ha
+                item-346 at level 8: text: -1
+                item-347 at level 8: text:  (direct + indirect emissions)
+            item-348 at level 6: unspecified: group rich_cell_group_4_0_18
+              item-349 at level 7: inline: group group
+                item-350 at level 8: text: kg CO
+                item-351 at level 8: text: 2
+                item-352 at level 8: text: e ha
+                item-353 at level 8: text: -1
+                item-354 at level 8: text:  from N
+                item-355 at level 8: text: 2
+                item-356 at level 8: text: 0 emissions
+                item-357 at level 8: text: d
+            item-358 at level 6: unspecified: group rich_cell_group_4_0_19
+              item-359 at level 7: inline: group group
+                item-360 at level 8: text: kg CO
+                item-361 at level 8: text: 2
+                item-362 at level 8: text:  ha
+                item-363 at level 8: text: -1
+                item-364 at level 8: text:  from lime+urea
+                item-365 at level 8: text: b
+            item-366 at level 6: unspecified: group rich_cell_group_4_0_20
+              item-367 at level 7: inline: group group
+                item-368 at level 8: text: kg CO
+                item-369 at level 8: text: 2
+                item-370 at level 8: text:  ha
+                item-371 at level 8: text: -1
+                item-372 at level 8: text:  from diesel combustion
+                item-373 at level 8: text: e
+            item-374 at level 6: unspecified: group rich_cell_group_4_0_21
+              item-375 at level 7: inline: group group
+                item-376 at level 8: text: kg CO
+                item-377 at level 8: text: 2
+                item-378 at level 8: text: e from secondary sources
+                item-379 at level 8: text: f
+            item-380 at level 6: unspecified: group rich_cell_group_4_0_22
+              item-381 at level 7: inline: group group
+                item-382 at level 8: text: Total CO
+                item-383 at level 8: text: 2
+                item-384 at level 8: text: e emitted, kg ha
+                item-385 at level 8: text: -1
+            item-386 at level 6: unspecified: group rich_cell_group_4_0_23
+              item-387 at level 7: inline: group group
+                item-388 at level 8: text: Emission factor, kg CO
+                item-389 at level 8: text: 2
+                item-390 at level 8: text: e (kg DM)
+                item-391 at level 8: text: -1g
+            item-392 at level 6: unspecified: group rich_cell_group_4_0_24
+              item-393 at level 7: inline: group group
+                item-394 at level 8: text: Carbon sequestered, kg ha
+                item-395 at level 8: text: -1h
+            item-396 at level 6: unspecified: group rich_cell_group_4_0_25
+              item-397 at level 7: inline: group group
+                item-398 at level 8: text: Sequestered CO
+                item-399 at level 8: text: 2
+                item-400 at level 8: text: -C, kg ha
+                item-401 at level 8: text: -1
+            item-402 at level 6: unspecified: group rich_cell_group_4_0_26
+              item-403 at level 7: inline: group group
+                item-404 at level 8: text: kg CO
+                item-405 at level 8: text: 2
+                item-406 at level 8: text: e ha
+                item-407 at level 8: text: -1
+                item-408 at level 8: text:  (emitted—sequestered)
+            item-409 at level 6: unspecified: group rich_cell_group_4_0_27
+              item-410 at level 7: inline: group group
+                item-411 at level 8: text: Emission factor, kg CO
+                item-412 at level 8: text: 2
+                item-413 at level 8: text: e (kg DM)
+                item-414 at level 8: text: -1i
+      item-415 at level 3: section_header: Animal husbandry
+        item-416 at level 4: inline: group group
+          item-417 at level 5: text: The CH
+          item-418 at level 5: text: 4
+          item-419 at level 5: text:  emissions from enteric fermentation intensity (g (kg ECM)
+          item-420 at level 5: text: -1
+          item-421 at level 5: text: ) was a function of estimated CH
+          item-422 at level 5: text: 4
+          item-423 at level 5: text:  yield (g (kg DM intake)
+          item-424 at level 5: text: -1
+          item-425 at level 5: text: ), actual DM intake and ECM. The enteric CH
+          item-426 at level 5: text: 4
+          item-427 at level 5: text:  yield was estimated as a functi ... proposed by Niu et al. [43], where: CH
+          item-428 at level 5: text: 4
+          item-429 at level 5: text:  yield (g (kg DM intake)
+          item-430 at level 5: text: -1
+          item-431 at level 5: text: ) = 13.8 + 0.185 × NDF (% DM intake).
+      item-432 at level 3: section_header: Manure from confined cows and urine and dung from grazing animals
+        item-433 at level 4: inline: group group
+          item-434 at level 5: text: The CH
+          item-435 at level 5: text: 4
+          item-436 at level 5: text:  emission from manure (kg (kg ECM)
+          item-437 at level 5: text: -1
+          item-438 at level 5: text: ) was a function of daily CH
+          item-439 at level 5: text: 4
+          item-440 at level 5: text:  emission from manure (kg cow
+          item-441 at level 5: text: -1
+          item-442 at level 5: text: ) and daily ECM (kg cow
+          item-443 at level 5: text: -1
+          item-444 at level 5: text: ). The daily CH
+          item-445 at level 5: text: 4
+          item-446 at level 5: text:  emission from manure was estima ... olatile solid (VS) excreted (kg DM cow
+          item-447 at level 5: text: -1
+          item-448 at level 5: text: ) in manure. The daily VS was es ... n an organic matter (OM) basis (kg day
+          item-449 at level 5: text: -1
+          item-450 at level 5: text: ), NDOMI = non-digestible OM intake (kg day
+          item-451 at level 5: text: -1
+          item-452 at level 5: text: ): (1- OM digestibility) × OM in ... .04), GE = gross energy intake (MJ day
+          item-453 at level 5: text: -1
+          item-454 at level 5: text: ), OM = organic matter (g), 18.4 ... tor for dietary GE per kg of DM (MJ kg
+          item-455 at level 5: text: -1
+          item-456 at level 5: text: ).
+        item-457 at level 4: text: The OM digestibility was estimat ... h were 31%, 26% and 46%, respectively.
+        item-458 at level 4: inline: group group
+          item-459 at level 5: text: The N
+          item-460 at level 5: text: 2
+          item-461 at level 5: text: O-N emissions from urine and fec ... ations 10 and 12, respectively). The N
+          item-462 at level 5: text: 2
+          item-463 at level 5: text: O emissions from stored manure a ... alculated based on the conversion of N
+          item-464 at level 5: text: 2
+          item-465 at level 5: text: O-N emissions to N
+          item-466 at level 5: text: 2
+          item-467 at level 5: text: O emissions, where N
           item-468 at level 5: text: 2
-          item-469 at level 5: text: e (kg ECM)
-          item-470 at level 5: text: -1
-          item-471 at level 5: text: , whereas an increase from 10,00 ... ced the C footprint by only 0.06 kg CO
+          item-469 at level 5: text: O emissions = N
+          item-470 at level 5: text: 2
+          item-471 at level 5: text: O-N emissions × 44/28. The emission factors were 0.002 kg N
           item-472 at level 5: text: 2
-          item-473 at level 5: text: e (kg ECM)
+          item-473 at level 5: text: O-N (kg N)
           item-474 at level 5: text: -1
-          item-475 at level 5: text: . Hence, the impact of increasin ... C footprint may increase by 0.03 kg CO
+          item-475 at level 5: text:  stored in a pit below animal confinements, and 0.02 kg N
           item-476 at level 5: text: 2
-          item-477 at level 5: text: e (kg ECM)
+          item-477 at level 5: text: O-N (kg of urine and dung)
           item-478 at level 5: text: -1
-          item-479 at level 5: text:  in subclinical ketosis [71] and by 0.02 kg CO
+          item-479 at level 5: text:  deposited on pasture [38]. The indirect N
           item-480 at level 5: text: 2
-          item-481 at level 5: text: e (kg ECM)
-          item-482 at level 5: text: -1
-          item-483 at level 5: text:  in case of foot lesions [72].
-        item-484 at level 4: inline: group group
-          item-485 at level 5: text: Grazing lands may also improve b ... n subtropical areas by 0.5 to 1.5 t ha
-          item-486 at level 5: text: -1
-          item-487 at level 5: text:  [75]. If 50% of tilled areas were under perennial grasslands, 1.0 t C ha
-          item-488 at level 5: text: -1
-          item-489 at level 5: text:  would be sequestered, further r ... e C footprint by 0.015 and 0.025 kg CO
-          item-490 at level 5: text: 2
-          item-491 at level 5: text: e (kg ECM)
-          item-492 at level 5: text: -1
-          item-493 at level 5: text:  for the scenarios using 75 and  ... emissions would be 0.03 and 0.05 kg CO
-          item-494 at level 5: text: 2
-          item-495 at level 5: text: e (kg ECM)
-          item-496 at level 5: text: -1
-          item-497 at level 5: text:  for 75 and 50% TMR, respectivel ...  C storage, so that net exchange of CO
-          item-498 at level 5: text: 2
-          item-499 at level 5: text:  would be negligible [76].
-    item-500 at level 2: section_header: Conclusions
-      item-501 at level 3: inline: group group
-        item-502 at level 4: text: This study assessed the C footpr ...  attributable to the evidence of low N
-        item-503 at level 4: text: 2
-        item-504 at level 4: text: O emissions from urine and dung  ... ical areas. Even though the enteric CH
-        item-505 at level 4: text: 4
-        item-506 at level 4: text:  intensity was the largest source of CO
-        item-507 at level 4: text: 2
-        item-508 at level 4: text: e emissions, it did not change b ... on with or without access to pastures.
-    item-509 at level 2: section_header: Acknowledgments
-      item-510 at level 3: text: Thanks to Anna Naranjo for helpf ...  of the herd considered in this study.
-    item-511 at level 2: section_header: References
-      item-512 at level 3: list: group list
-        item-513 at level 4: list_item: IPCC. Climate Change and Land. Chapter 5: Food Security. 2019.
-        item-514 at level 4: list_item: HerreroM, HendersonB, HavlíkP, T ...  2016;6: 452–461. 10.1038/nclimate2925
-        item-515 at level 4: list_item: Rivera-FerreMG, López-i-GelatsF, ... hang. 2016;7: 869–892. 10.1002/wcc.421
-        item-516 at level 4: list_item: van ZantenHHE, MollenhorstH, Klo ... 21: 747–758. 10.1007/s11367-015-0944-1
-        item-517 at level 4: list_item: HristovAN, OhJ, FirkinsL, Dijkst ... 5–5069. 10.2527/jas.2013-6583 24045497
-        item-518 at level 4: list_item: HristovAN, OttT, TricaricoJ, Rot ... 5–5113. 10.2527/jas.2013-6585 24045470
-        item-519 at level 4: list_item: MontesF, MeinenR, DellC, RotzA,  ... 0–5094. 10.2527/jas.2013-6584 24045493
-        item-520 at level 4: list_item: LedgardSF, WeiS, WangX, Falconer ... : 155–163. 10.1016/j.agwat.2018.10.009
-        item-521 at level 4: list_item: O’BrienD, ShallooL, PattonJ, Buc ... 107: 33–46. 10.1016/j.agsy.2011.11.004
-        item-522 at level 4: list_item: SalouT, Le MouëlC, van der WerfH ... od. 2017 10.1016/j.jclepro.2016.05.019
-        item-523 at level 4: list_item: LizarraldeC, PicassoV, RotzCA, C ... gric Res. 2014;3: 1 10.5539/sar.v3n2p1
-        item-524 at level 4: list_item: ClarkCEF, KaurR, MillapanLO, Gol ... –5465. 10.3168/jds.2017-13388 29550132
-        item-525 at level 4: list_item: Food and Agriculture Organization. FAOSTAT. 2017.
-        item-526 at level 4: list_item: VogelerI, MackayA, VibartR, Rend ... .1016/j.scitotenv.2016.05.006 27203517
-        item-527 at level 4: list_item: WilkinsonJM, LeeMRF, RiveroMJ, C ... 0;75: 1–17. 10.1111/gfs.12458 32109974
-        item-528 at level 4: list_item: WalesWJ, MarettLC, GreenwoodJS,  ... i. 2013;53: 1167–1178. 10.1071/AN13207
-        item-529 at level 4: list_item: BargoF, MullerLD, DelahoyJE, Cas ... 168/jds.S0022-0302(02)74381-6 12487461
-        item-530 at level 4: list_item: VibartRE, FellnerV, BurnsJC, Hun ... 80. 10.1017/S0022029908003361 18701000
-        item-531 at level 4: list_item: MendozaA, CajarvilleC, RepettoJL ... –1944. 10.3168/jds.2015-10257 26778319
-        item-532 at level 4: list_item: NRC. Nutrient Requirements of Da ... gton DC: National Academy Press; 2001.
-        item-533 at level 4: list_item: INRA. INRA Feeding System for Ru ... shiers; 2018 10.3920/978-90-8686-872-8
-        item-534 at level 4: list_item: LorenzH, ReinschT, HessS, TaubeF ... 161–170. 10.1016/j.jclepro.2018.11.113
-        item-535 at level 4: list_item: ISO 14044. INTERNATIONAL STANDAR ... rements and guidelines. 2006;2006: 46.
-        item-536 at level 4: list_item: ISO 14040. The International Sta ... ;2006: 1–28. 10.1136/bmj.332.7550.1107
-        item-537 at level 4: list_item: 
-          item-538 at level 5: inline: group group
-            item-539 at level 6: text: FAO. Environmental Performance o ... or. Rome, Italy: FAO; 2016 Available: 
-            item-540 at level 6: text: http://www.fao.org/partnerships/leap/resources/guidelines/en/
-        item-541 at level 4: list_item: CivieroM, Ribeiro-FilhoHMN, Scha ... nce,. Foz do Iguaçu; 2019 pp. 141–141.
-        item-542 at level 4: list_item: 
-          item-543 at level 5: inline: group group
-            item-544 at level 6: text: IPCC—Intergovernmental Panel on  ... ted Version). 2014. Available: ttps://
-            item-545 at level 6: text: www.ipcc.ch/site/assets/uploads/2018/05/SYR_AR5_FINAL_full_wcover.pdf
-        item-546 at level 4: list_item: INRA. Alimentation des bovins, o ... Inra 2007. 4th ed. INRA, editor. 2007.
-        item-547 at level 4: list_item: DelagardeR, FaverdinP, BaratteC, ... 5–60. 10.1111/j.1365-2494.2010.00770.x
-        item-548 at level 4: list_item: MaBL, LiangBC, BiswasDK, Morriso ... 2;94: 15–31. 10.1007/s10705-012-9522-0
-        item-549 at level 4: list_item: RauccciGS, MoreiraCS, AlvesPS, M ... State. J Clean Prod. 2015;96: 418–425.
-        item-550 at level 4: list_item: CamargoGGT, RyanMR, RichardTL. E ... 3;63: 263–273. 10.1525/bio.2013.63.4.6
-        item-551 at level 4: list_item: da SilvaMSJ, JobimCC, PoppiEC, T ... 3–313. 10.1590/S1806-92902015000900001
-        item-552 at level 4: list_item: Duchini PGPGGuzatti GCGC, Ribeir ... Sci. 2016;67: 574–581. 10.1071/CP15170
-        item-553 at level 4: list_item: ScaravelliLFB, PereiraLET, Olivo ... teiras. Cienc Rural. 2007;37: 841–846.
-        item-554 at level 4: list_item: SbrissiaAF, DuchiniPG, ZaniniGD, ... : 945–954. 10.2135/cropsci2017.07.0447
-        item-555 at level 4: list_item: AlmeidaJGR, Dall-OrsolettaAC, Oz ... 12. 10.1017/S1751731119003057 31907089
-        item-556 at level 4: list_item: Intergovernamental Panel on Clim ... Global Environmental Strategies; 2006.
-        item-557 at level 4: list_item: RamalhoB, DieckowJ, BarthG, Simo ... il Sci. 2020; 1–14. 10.1111/ejss.12933
-        item-558 at level 4: list_item: FernandesHC, da SilveiraJCM, Rin ... –1587. 10.1590/s1413-70542008000500034
-        item-559 at level 4: list_item: 
-          item-560 at level 5: inline: group group
-            item-561 at level 6: text: Wang M Q. GREET 1.8a Spreadsheet Model. 2007. Available: 
-            item-562 at level 6: text: http://www.transportation.anl.gov/software/GREET/
-        item-563 at level 4: list_item: RotzCAA, MontesF, ChianeseDS, Ch ... 6–1282. 10.3168/jds.2009-2162 20172247
-        item-564 at level 4: list_item: NiuM, KebreabE, HristovAN, OhJ,  ...  3368–3389. 10.1111/gcb.14094 29450980
-        item-565 at level 4: list_item: EugèneM, SauvantD, NozièreP, Via ... 10.1016/j.jenvman.2018.10.086 30602259
-        item-566 at level 4: list_item: ReedKF, MoraesLE, CasperDP, Kebr ... 5–3035. 10.3168/jds.2014-8397 25747829
-        item-567 at level 4: list_item: BarrosMV, PiekarskiCM, De Franci ... . Energies. 2018;11 10.3390/en11061412
-        item-568 at level 4: list_item: LudingtonD, JohnsonE. Dairy Farm ...  York State Energy Res Dev Auth. 2003.
-        item-569 at level 4: list_item: ThomaG, JollietO, WangY. A bioph ...  2013;31 10.1016/j.idairyj.2012.08.012
-        item-570 at level 4: list_item: NaranjoA, JohnsonA, RossowH. Gre ... . 2020 10.3168/jds.2019-16576 32037166
-        item-571 at level 4: list_item: JayasundaraS, WordenD, WeersinkA ... 18–1028. 10.1016/j.jclepro.2019.04.013
-        item-572 at level 4: list_item: WilliamsSRO, FisherPD, Berrisfor ... 4;19: 69–78. 10.1007/s11367-013-0619-8
-        item-573 at level 4: list_item: GollnowS, LundieS, MooreAD, McLa ... : 31–38. 10.1016/j.idairyj.2014.02.005
-        item-574 at level 4: list_item: O’BrienD, CapperJL, GarnsworthyP ... i. 2014 10.3168/jds.2013-7174 24440256
-        item-575 at level 4: list_item: ChobtangJ, McLarenSJ, LedgardSF, ... 2017;21: 1139–1152. 10.1111/jiec.12484
-        item-576 at level 4: list_item: GargMR, PhondbaBT, SherasiaPL, M ... Sci. 2016;56: 423–436. 10.1071/AN15464
-        item-577 at level 4: list_item: de LéisCM, CherubiniE, RuviaroCF ... 5;20: 46–60. 10.1007/s11367-014-0813-3
-        item-578 at level 4: list_item: O’BrienD, GeogheganA, McNamaraK, ... Sci. 2016;56: 495–500. 10.1071/AN15490
-        item-579 at level 4: list_item: O’BrienD, BrennanP, HumphreysJ,  ... : 1469–1481. 10.1007/s11367-014-0755-9
-        item-580 at level 4: list_item: BaekCY, LeeKM, ParkKH. Quantific ... : 50–60. 10.1016/j.jclepro.2014.02.010
-        item-581 at level 4: list_item: Dall-OrsolettaAC, AlmeidaJGR, Ca ... –4383. 10.3168/jds.2015-10396 27016830
-        item-582 at level 4: list_item: Dall-OrsolettaAC, OziemblowskiMM ... 5–73. 10.1016/j.anifeedsci.2019.05.009
-        item-583 at level 4: list_item: NiuM, AppuhamyJADRN, LeytemAB, D ... Sci. 2016;56: 312–321. 10.1071/AN15498
-        item-584 at level 4: list_item: WaghornGC, LawN, BryantM, Pachec ... i. 2019;59: 1261–1270. 10.1071/AN18018
-        item-585 at level 4: list_item: DickhoeferU, GlowackiS, GómezCA, ...  109–118. 10.1016/j.livsci.2018.08.004
-        item-586 at level 4: list_item: SchwabCG, BroderickGA. A 100-Yea ... 10112. 10.3168/jds.2017-13320 29153157
-        item-587 at level 4: list_item: SordiA, DieckowJ, BayerC, Alburq ... 90: 94–103. 10.1016/j.agee.2013.09.004
-        item-588 at level 4: list_item: SimonPL, DieckowJ, de KleinCAM,  ... 267: 74–82. 10.1016/j.agee.2018.08.013
-        item-589 at level 4: list_item: WangX, LedgardS, LuoJ, GuoY, Zha ... .1016/j.scitotenv.2017.12.259 29291563
-        item-590 at level 4: list_item: PirloG, LolliS. Environmental im ... 962–971. 10.1016/j.jclepro.2018.11.070
-        item-591 at level 4: list_item: HerzogA, WincklerC, ZollitschW.  ... 7: 174–187. 10.1016/j.agee.2018.07.029
-        item-592 at level 4: list_item: MostertPF, van MiddelaarCE, Bokk ... od. 2018 10.1016/j.jclepro.2017.10.019
-        item-593 at level 4: list_item: MostertPF, van MiddelaarCE, de B ... 7: 206–212. 10.1016/j.agsy.2018.09.006
-        item-594 at level 4: list_item: FoleyJA, RamankuttyN, BraumanKA, ...  337–342. 10.1038/nature10452 21993620
-        item-595 at level 4: list_item: LalR. Soil Carbon Sequestration  ... 1627. 10.1126/science.1097396 15192216
-        item-596 at level 4: list_item: BoddeyRM, JantaliaCP, ConceiçaoP ... –795. 10.1111/j.1365-2486.2009.02020.x
-        item-597 at level 4: list_item: McConkeyB, AngersD, BenthamM, Bo ...  the LULUCF sector for NIR 2014. 2014.
+          item-481 at level 5: text: O emissions from storage manure  ...  using the IPCC [38] emission factors.
+      item-482 at level 3: section_header: Farm management
+        item-483 at level 4: text: Emissions due to farm management ...  crop and pasture production’ section.
+        item-484 at level 4: caption: Table 5 Factors for major resource inputs in farm management.
+        item-485 at level 4: table with [12x4]
+          item-485 at level 5: caption: Table 5 Factors for major resource inputs in farm management.
+          item-486 at level 5: unspecified: group rich_cell_group_5_2_0
+            item-487 at level 6: inline: group group
+              item-488 at level 7: text: Unit
+              item-489 at level 7: text: a
+          item-490 at level 5: unspecified: group rich_cell_group_5_2_1
+            item-491 at level 6: inline: group group
+              item-492 at level 7: text: kg CO
+              item-493 at level 7: text: 2
+              item-494 at level 7: text: e L
+              item-495 at level 7: text: -1
+          item-496 at level 5: unspecified: group rich_cell_group_5_2_2
+            item-497 at level 6: inline: group group
+              item-498 at level 7: text: kg CO
+              item-499 at level 7: text: 2
+              item-500 at level 7: text: e L
+              item-501 at level 7: text: -1
+          item-502 at level 5: unspecified: group rich_cell_group_5_0_3
+            item-503 at level 6: inline: group group
+              item-504 at level 7: text: Production of electricity
+              item-505 at level 7: text: b
+          item-506 at level 5: unspecified: group rich_cell_group_5_2_3
+            item-507 at level 6: inline: group group
+              item-508 at level 7: text: kg CO
+              item-509 at level 7: text: 2
+              item-510 at level 7: text: e kWh
+              item-511 at level 7: text: -1
+          item-512 at level 5: unspecified: group rich_cell_group_5_0_4
+            item-513 at level 6: inline: group group
+              item-514 at level 7: text: Production of electricity (alternative)
+              item-515 at level 7: text: c
+          item-516 at level 5: unspecified: group rich_cell_group_5_2_4
+            item-517 at level 6: inline: group group
+              item-518 at level 7: text: kg CO
+              item-519 at level 7: text: 2
+              item-520 at level 7: text: e kWh
+              item-521 at level 7: text: -1
+          item-522 at level 5: unspecified: group rich_cell_group_5_2_5
+            item-523 at level 6: inline: group group
+              item-524 at level 7: text: kg CO
+              item-525 at level 7: text: 2
+              item-526 at level 7: text: e (kg mm)
+              item-527 at level 7: text: -1
+          item-528 at level 5: unspecified: group rich_cell_group_5_2_7
+            item-529 at level 6: inline: group group
+              item-530 at level 7: text: L diesel tonne
+              item-531 at level 7: text: -1
+          item-532 at level 5: unspecified: group rich_cell_group_5_2_8
+            item-533 at level 6: inline: group group
+              item-534 at level 7: text: kg mm kg
+              item-535 at level 7: text: -1
+          item-536 at level 5: unspecified: group rich_cell_group_5_2_10
+            item-537 at level 6: inline: group group
+              item-538 at level 7: text: kWh (kg milk)
+              item-539 at level 7: text: -1
+          item-540 at level 5: unspecified: group rich_cell_group_5_0_11
+            item-541 at level 6: inline: group group
+              item-542 at level 7: text: Electricity for lighting
+              item-543 at level 7: text: d
+          item-544 at level 5: unspecified: group rich_cell_group_5_2_11
+            item-545 at level 6: inline: group group
+              item-546 at level 7: text: kWh cow
+              item-547 at level 7: text: -1
+        item-548 at level 4: inline: group group
+          item-549 at level 5: text: The amount of fuel use for manur ... quired for manure handling (L diesel t
+          item-550 at level 5: text: -1
+          item-551 at level 5: text: ) [42]. The amount of manure was estimated from OM excretions (kg cow
+          item-552 at level 5: text: -1
+          item-553 at level 5: text: ), assuming that the manure has  ... me that animals stayed on confinement.
+        item-554 at level 4: inline: group group
+          item-555 at level 5: text: The emissions from fuel were est ... uired for manure handling (L) × (kg CO
+          item-556 at level 5: text: 2
+          item-557 at level 5: text: e L
+          item-558 at level 5: text: -1
+          item-559 at level 5: text: ) [41]. The secondary emissions  ... roduction and transport of fuel (kg CO
+          item-560 at level 5: text: 2
+          item-561 at level 5: text: e L
+          item-562 at level 5: text: -1
+          item-563 at level 5: text: ) [41]. Emissions from manufactu ... w (t) × (kg machinery mass (kg manure)
+          item-564 at level 5: text: -1
+          item-565 at level 5: text:  × 10
+          item-566 at level 5: text: −3
+          item-567 at level 5: text: ) [42] × kg CO
+          item-568 at level 5: text: 2
+          item-569 at level 5: text: e (kg machinery mass)
+          item-570 at level 5: text: -1
+          item-571 at level 5: text:  [42].
+        item-572 at level 4: inline: group group
+          item-573 at level 5: text: Emissions from electricity for m ... ated using two emission factors (kg CO
+          item-574 at level 5: text: 2
+          item-575 at level 5: text:  kWh
+          item-576 at level 5: text: -1
+          item-577 at level 5: text: ). The first one is based on Uni ... ivities is 0.06 kWh (kg milk produced)
+          item-578 at level 5: text: -1
+          item-579 at level 5: text:  [47]. The annual electricity use for lighting was 75 kWh cow
+          item-580 at level 5: text: -1
+          item-581 at level 5: text: , which is the value considered  ... ws in naturally ventilated barns [47].
+      item-582 at level 3: section_header: Co-product allocation
+        item-583 at level 4: inline: group group
+          item-584 at level 5: text: The C footprint for milk produce ... ibed by Thoma et al. [48]. Briefly, AR
+          item-585 at level 5: text: milk
+          item-586 at level 5: text:  = 1–6.04 × BMR, where
+          item-587 at level 5: text: :
+          item-588 at level 5: text:  AR
+          item-589 at level 5: text: milk
+          item-590 at level 5: text:  is the allocation ratio for mil ...  during cow`s entire life (kg). The AR
+          item-591 at level 5: text: milk
+          item-592 at level 5: text:  were 0.854 and 0.849 for TMR an ... asture scenarios, respectively. The AR
+          item-593 at level 5: text: milk
+          item-594 at level 5: text:  was applied to the whole emissi ...  directly assigned to milk production.
+      item-595 at level 3: section_header: Sensitivity analysis
+        item-596 at level 4: text: A sensitivity index was calculat ... ses a similar change in the footprint.
+    item-597 at level 2: section_header: Results and discussion
+      item-598 at level 3: text: The study has assessed the impac ... , feed production and electricity use.
+      item-599 at level 3: section_header: Greenhouse gas emissions
+        item-600 at level 4: inline: group group
+          item-601 at level 5: text: Depending on emission factors us ...  2A and 2B) or decreased by 0.04 kg CO
+          item-602 at level 5: text: 2
+          item-603 at level 5: text: e (kg ECM)
+          item-604 at level 5: text: -1
+          item-605 at level 5: text:  (Fig 2C and 2D) in scenarios that included pastures compared to 
+          item-606 at level 5: text: ad libitum
+          item-607 at level 5: text:  TMR intake. Due to differences  ...  values ranged from 0.92 to 1.04 kg CO
+          item-608 at level 5: text: 2
+          item-609 at level 5: text: e (kg ECM)
+          item-610 at level 5: text: -1
+          item-611 at level 5: text:  for dairy cows receiving TMR exclusively, and from 0.88 to 1.04 kg CO
+          item-612 at level 5: text: 2
+          item-613 at level 5: text: e (kg ECM)
+          item-614 at level 5: text: -1
+          item-615 at level 5: text:  for cows with access to pasture ... ocal emission factors for estimating N
+          item-616 at level 5: text: 2
+          item-617 at level 5: text: O-N emissions [37], manure emiss ... more than 5% of overall GHG emissions.
+        item-618 at level 4: caption: Fig 2 Overall greenhouse gas emi ... lectricity = 0.205 kg CO2e kWh-1 [46].
+        item-619 at level 4: picture
+          item-619 at level 5: caption: Fig 2 Overall greenhouse gas emissions in dairy cattle systems under various scenarios. TMR = ad libitum TMR intake, 75TMR = 75% of ad libitum TMR intake with access to pasture, 50TMR = 50% of ad libitum TMR intake with access to pasture. (a) N2O emission factors for urine and dung from IPCC [38], feed production emission factors from Table 3 without accounting for sequestered CO2-C from perennial pasture, production of electricity = 0.73 kg CO2e kWh-1 [41]. (b) N2O emission factors for urine and dung from IPCC [38], feed production emission factors from Table 3 without accounting for sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46]; (c) N2O emission factors for urine and dung from local data [37], feed production EF from Table 4 without accounting for sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46]. (d) N2O emission factors for urine and dung from local data [37], feed production emission factors from Table 4 accounting for sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46].
+        item-620 at level 4: inline: group group
+          item-621 at level 5: text: Considering IPCC emission factors for N
+          item-622 at level 5: text: 2
+          item-623 at level 5: text: O emissions from urine and dung  ... otprint ranged from 0.99 to 1.04 kg CO
+          item-624 at level 5: text: 2
+          item-625 at level 5: text: e (kg ECM)
+          item-626 at level 5: text: -1
+          item-627 at level 5: text: , and was close to those reporte ... , which ranged from 0.98 to 1.16 kg CO
+          item-628 at level 5: text: 2
+          item-629 at level 5: text: e (kg ECM)
+          item-630 at level 5: text: -1
+          item-631 at level 5: text: . When local emission factors for N
+          item-632 at level 5: text: 2
+          item-633 at level 5: text: O emissions from urine and dung  ...  without accounting for sequestered CO
+          item-634 at level 5: text: 2
+          item-635 at level 5: text: -C from perennial pasture—0.91 kg CO
+          item-636 at level 5: text: 2
+          item-637 at level 5: text: e (kg ECM)
+          item-638 at level 5: text: -1
+          item-639 at level 5: text: —was lower than the range of val ... , which ranged from 0.52 to 0.89 kg CO
+          item-640 at level 5: text: 2
+          item-641 at level 5: text: e (kg ECM)
+          item-642 at level 5: text: -1
+          item-643 at level 5: text: . Regardless of which emission f ... nt, which ranged from 1.4 to 2.3 kg CO
+          item-644 at level 5: text: 2
+          item-645 at level 5: text: e (kg ECM)
+          item-646 at level 5: text: -1
+          item-647 at level 5: text:  [8,55]. Thus, even though diffe ... e emissions estimation, sequestered CO
+          item-648 at level 5: text: 2
+          item-649 at level 5: text: -C, etc.), herd productivity and ...  the C footprint of the dairy systems.
+        item-650 at level 4: inline: group group
+          item-651 at level 5: text: The similarity of C footprint be ... served that an increase of 1000 kg cow
+          item-652 at level 5: text: -1
+          item-653 at level 5: text:  (5000 to 6000 kg ECM) reduced the C footprint by 0.12 kg CO
+          item-654 at level 5: text: 2
+          item-655 at level 5: text: e (kg ECM)
+          item-656 at level 5: text: -1
+          item-657 at level 5: text: , which may explain an apparent  ...  milk production of around 7000 kg cow
+          item-658 at level 5: text: -1
+          item-659 at level 5: text: . Experimental data showed a red ... of TMR was replaced by pasture access.
+        item-660 at level 4: inline: group group
+          item-661 at level 5: text: The lower C footprint in scenari ...  emission factors [37] were used for N
+          item-662 at level 5: text: 2
+          item-663 at level 5: text: O emissions from urine and dung  ... narios including pastures compared to 
+          item-664 at level 5: text: ad libitum
+          item-665 at level 5: text:  TMR intake. Whereas the IPCC [38] considers an emission of 0.02 kg N
+          item-666 at level 5: text: 2
+          item-667 at level 5: text: O-N (kg N)
+          item-668 at level 5: text: -1
+          item-669 at level 5: text:  for urine and dung from grazing ... five times lower, averaging 0.004 kg N
+          item-670 at level 5: text: 2
+          item-671 at level 5: text: O-N kg
+          item-672 at level 5: text: -1
+          item-673 at level 5: text:  [37].
+      item-674 at level 3: section_header: Methane emissions
+        item-675 at level 4: inline: group group
+          item-676 at level 5: text: The enteric CH
+          item-677 at level 5: text: 4
+          item-678 at level 5: text:  intensity was similar between d ... Fig 3). The large effect of enteric CH
+          item-679 at level 5: text: 4
+          item-680 at level 5: text:  emissions on the whole C footpr ... cted, because the impact of enteric CH
+          item-681 at level 5: text: 4
+          item-682 at level 5: text:  on GHG emissions of milk produc ... o range from 44 to 60% of the total CO
+          item-683 at level 5: text: 2
+          item-684 at level 5: text: e [50,52,57,58]. However, emissi ... trate feeds are greater than 0.7 kg CO
+          item-685 at level 5: text: 2
+          item-686 at level 5: text: e kg
+          item-687 at level 5: text: -1
+          item-688 at level 5: text:  [59], which did not happen in this study.
+        item-689 at level 4: caption: Fig 3 Sensitivity of the C footp ... lectricity = 0.205 kg CO2e kWh-1 [46].
+        item-690 at level 4: picture
+          item-690 at level 5: caption: Fig 3 Sensitivity of the C footprint. Sensitivity index = percentage change in C footprint for a 10% change in the given emission source divided by 10% of. (a) N2O emission factors for urine and dung from IPCC [38], feed production emission factors from Table 3, production of electricity = 0.73 kg CO2e kWh-1 [41]. (b) N2O emission factors for urine and dung from IPCC [38], feed production emission factors from Table 3, production of electricity = 0.205 kg CO2e kWh-1 [46]; (c) N2O emission factors for urine and dung from local data [37], feed production EF from Table 4 without accounting sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46]. (d) N2O emission factors for urine and dung from local data [37], feed production emission factors from Table 4 accounting sequestered CO2-C from perennial pasture, production of electricity = 0.205 kg CO2e kWh-1 [46].
+        item-691 at level 4: inline: group group
+          item-692 at level 5: text: The lack of difference in enteric CH
+          item-693 at level 5: text: 4
+          item-694 at level 5: text:  emissions in different systems  ... nual temperate pastures (495 g (kg DM)
+          item-695 at level 5: text: -1
+          item-696 at level 5: text: ) compared to corn silage (550 g (kg DM)
+          item-697 at level 5: text: -1
+          item-698 at level 5: text: ). Hence, an expected, increase  ...  have shown that the actual enteric CH
+          item-699 at level 5: text: 4
+          item-700 at level 5: text:  emissions may decrease with inc ... ybean meal [60] or increase enteric CH
+          item-701 at level 5: text: 4
+          item-702 at level 5: text:  emissions when dairy cows grazi ...  silage [61]. Additionally, enteric CH
+          item-703 at level 5: text: 4
+          item-704 at level 5: text:  emissions did not differ betwee ...  same scenarios as in this study [26].
+      item-705 at level 3: section_header: Emissions from excreta and feed production
+        item-706 at level 4: inline: group group
+          item-707 at level 5: text: Using IPCC emission factors for N
+          item-708 at level 5: text: 2
+          item-709 at level 5: text: O emissions from urine and dung [38] and those from Table 3, CH
+          item-710 at level 5: text: 4
+          item-711 at level 5: text:  emissions from manure decreased 0.07 kg CO
+          item-712 at level 5: text: 2
+          item-713 at level 5: text: e (kg ECM)
+          item-714 at level 5: text: -1
+          item-715 at level 5: text: , but N
+          item-716 at level 5: text: 2
+          item-717 at level 5: text: O emissions from manure increased 0.09 kg CO
+          item-718 at level 5: text: 2
+          item-719 at level 5: text: e (kg ECM)
+          item-720 at level 5: text: -1
+          item-721 at level 5: text: , as TMR intake was restricted to 50% 
+          item-722 at level 5: text: ad libitum
+          item-723 at level 5: text:  (Fig 4A). Emissions for pastures increased by 0.06 kg CO
+          item-724 at level 5: text: 2
+          item-725 at level 5: text: e (kg ECM)
+          item-726 at level 5: text: -1
+          item-727 at level 5: text: , whereas emissions for producin ... nd corn silage decreased by 0.09 kg CO
+          item-728 at level 5: text: 2
+          item-729 at level 5: text: e (kg ECM)
+          item-730 at level 5: text: -1
+          item-731 at level 5: text: , as TMR intake decreased (Fig 4 ... ctating dairy cow diets. The greater N
+          item-732 at level 5: text: 2
+          item-733 at level 5: text: O-N emissions from manure with pasture was a consequence of higher N
+          item-734 at level 5: text: 2
+          item-735 at level 5: text: O-N emissions due to greater CP  ... g CP content from 185 to 152 g (kg DM)
+          item-736 at level 5: text: -1
+          item-737 at level 5: text: , N intake decreased by 20% and  ... g dairy cows ranged from 150 g (kg DM)
+          item-738 at level 5: text: -1
+          item-739 at level 5: text:  on TMR system to 198 g (kg DM)
+          item-740 at level 5: text: -1
+          item-741 at level 5: text:  on 50% TMR with pasture. Additi ...  may not be captured by microbes [65].
+        item-742 at level 4: caption: Fig 4 Greenhouse gas emissions ( ... uestered CO2-C from perennial pasture.
+        item-743 at level 4: picture
+          item-743 at level 5: caption: Fig 4 Greenhouse gas emissions (GHG) from manure and feed production in dairy cattle systems. TMR = ad libitum TMR intake, 75TMR = 75% of ad libitum TMR intake with access to pasture, 50TMR = 50% of ad libitum TMR intake with access to pasture. (a) N2O emission factors for urine and dung from IPCC [38]. (b) Feed production emission factors from Table 3. (c) N2O emission factors for urine and dung from local data [37]. (d) Feed production emission factors from Table 4 accounting sequestered CO2-C from perennial pasture.
+        item-744 at level 4: inline: group group
+          item-745 at level 5: text: Using local emission factors for N
+          item-746 at level 5: text: 2
+          item-747 at level 5: text: O emissions from urine and dung  ... d those from Table 4, reductions in CH
+          item-748 at level 5: text: 4
+          item-749 at level 5: text:  emissions from stocked manure,  ... iets, did not offset by increases in N
+          item-750 at level 5: text: 2
+          item-751 at level 5: text: O emissions from excreta (Fig 4C ... much lower emission factors used for N
+          item-752 at level 5: text: 2
+          item-753 at level 5: text: O emissions from urine and dung. ... be revised for the subtropical region.
+        item-754 at level 4: text: Emissions for feed production de ... act, particularly in confinements [9].
+      item-755 at level 3: section_header: Farm management
+        item-756 at level 4: text: The lower impact of emissions fr ...  greater than 5% of total C footprint.
+        item-757 at level 4: inline: group group
+          item-758 at level 5: text: Emissions from farm management d ... or electricity generation (0.205 kg CO
+          item-759 at level 5: text: 2
+          item-760 at level 5: text: e kWh
+          item-761 at level 5: text: -1
+          item-762 at level 5: text:  [46]) is much lower than that in a LCA study conducted in US (0.73 kg CO
+          item-763 at level 5: text: 2
+          item-764 at level 5: text: e kWh
+          item-765 at level 5: text: -1
+          item-766 at level 5: text:  [42]). This apparent discrepanc ...  has an emission factor of 0.074 kg CO
+          item-767 at level 5: text: 2
+          item-768 at level 5: text: e kWh
+          item-769 at level 5: text: -1
+          item-770 at level 5: text:  against 0.382 and 0.926 kg CO
+          item-771 at level 5: text: 2
+          item-772 at level 5: text: e kWh
+          item-773 at level 5: text: -1
+          item-774 at level 5: text:  produced by natural gas and hard coal, respectively [46].
+      item-775 at level 3: section_header: Assumptions and limitations
+        item-776 at level 4: inline: group group
+          item-777 at level 5: text: The milk production and composit ... sion factors for direct and indirect N
+          item-778 at level 5: text: 2
+          item-779 at level 5: text: O emissions from urine and dung  ... sary to reduce the uncertainty. The CO
+          item-780 at level 5: text: 2
+          item-781 at level 5: text:  emitted from lime and urea appl ... ions as a function of soil management.
+      item-782 at level 3: section_header: Further considerations
+        item-783 at level 4: inline: group group
+          item-784 at level 5: text: The potential for using pasture  ...  reduced the C footprint by 0.12 kg CO
+          item-785 at level 5: text: 2
+          item-786 at level 5: text: e (kg ECM)
+          item-787 at level 5: text: -1
+          item-788 at level 5: text: , whereas an increase from 10,00 ... ced the C footprint by only 0.06 kg CO
+          item-789 at level 5: text: 2
+          item-790 at level 5: text: e (kg ECM)
+          item-791 at level 5: text: -1
+          item-792 at level 5: text: . Hence, the impact of increasin ... C footprint may increase by 0.03 kg CO
+          item-793 at level 5: text: 2
+          item-794 at level 5: text: e (kg ECM)
+          item-795 at level 5: text: -1
+          item-796 at level 5: text:  in subclinical ketosis [71] and by 0.02 kg CO
+          item-797 at level 5: text: 2
+          item-798 at level 5: text: e (kg ECM)
+          item-799 at level 5: text: -1
+          item-800 at level 5: text:  in case of foot lesions [72].
+        item-801 at level 4: inline: group group
+          item-802 at level 5: text: Grazing lands may also improve b ... n subtropical areas by 0.5 to 1.5 t ha
+          item-803 at level 5: text: -1
+          item-804 at level 5: text:  [75]. If 50% of tilled areas were under perennial grasslands, 1.0 t C ha
+          item-805 at level 5: text: -1
+          item-806 at level 5: text:  would be sequestered, further r ... e C footprint by 0.015 and 0.025 kg CO
+          item-807 at level 5: text: 2
+          item-808 at level 5: text: e (kg ECM)
+          item-809 at level 5: text: -1
+          item-810 at level 5: text:  for the scenarios using 75 and  ... emissions would be 0.03 and 0.05 kg CO
+          item-811 at level 5: text: 2
+          item-812 at level 5: text: e (kg ECM)
+          item-813 at level 5: text: -1
+          item-814 at level 5: text:  for 75 and 50% TMR, respectivel ...  C storage, so that net exchange of CO
+          item-815 at level 5: text: 2
+          item-816 at level 5: text:  would be negligible [76].
+    item-817 at level 2: section_header: Conclusions
+      item-818 at level 3: inline: group group
+        item-819 at level 4: text: This study assessed the C footpr ...  attributable to the evidence of low N
+        item-820 at level 4: text: 2
+        item-821 at level 4: text: O emissions from urine and dung  ... ical areas. Even though the enteric CH
+        item-822 at level 4: text: 4
+        item-823 at level 4: text:  intensity was the largest source of CO
+        item-824 at level 4: text: 2
+        item-825 at level 4: text: e emissions, it did not change b ... on with or without access to pastures.
+    item-826 at level 2: section_header: Acknowledgments
+      item-827 at level 3: text: Thanks to Anna Naranjo for helpf ...  of the herd considered in this study.
+    item-828 at level 2: section_header: References
+      item-829 at level 3: list: group list
+        item-830 at level 4: list_item: IPCC. Climate Change and Land. Chapter 5: Food Security. 2019.
+        item-831 at level 4: list_item: HerreroM, HendersonB, HavlíkP, T ...  2016;6: 452–461. 10.1038/nclimate2925
+        item-832 at level 4: list_item: Rivera-FerreMG, López-i-GelatsF, ... hang. 2016;7: 869–892. 10.1002/wcc.421
+        item-833 at level 4: list_item: van ZantenHHE, MollenhorstH, Klo ... 21: 747–758. 10.1007/s11367-015-0944-1
+        item-834 at level 4: list_item: HristovAN, OhJ, FirkinsL, Dijkst ... 5–5069. 10.2527/jas.2013-6583 24045497
+        item-835 at level 4: list_item: HristovAN, OttT, TricaricoJ, Rot ... 5–5113. 10.2527/jas.2013-6585 24045470
+        item-836 at level 4: list_item: MontesF, MeinenR, DellC, RotzA,  ... 0–5094. 10.2527/jas.2013-6584 24045493
+        item-837 at level 4: list_item: LedgardSF, WeiS, WangX, Falconer ... : 155–163. 10.1016/j.agwat.2018.10.009
+        item-838 at level 4: list_item: O’BrienD, ShallooL, PattonJ, Buc ... 107: 33–46. 10.1016/j.agsy.2011.11.004
+        item-839 at level 4: list_item: SalouT, Le MouëlC, van der WerfH ... od. 2017 10.1016/j.jclepro.2016.05.019
+        item-840 at level 4: list_item: LizarraldeC, PicassoV, RotzCA, C ... gric Res. 2014;3: 1 10.5539/sar.v3n2p1
+        item-841 at level 4: list_item: ClarkCEF, KaurR, MillapanLO, Gol ... –5465. 10.3168/jds.2017-13388 29550132
+        item-842 at level 4: list_item: Food and Agriculture Organization. FAOSTAT. 2017.
+        item-843 at level 4: list_item: VogelerI, MackayA, VibartR, Rend ... .1016/j.scitotenv.2016.05.006 27203517
+        item-844 at level 4: list_item: WilkinsonJM, LeeMRF, RiveroMJ, C ... 0;75: 1–17. 10.1111/gfs.12458 32109974
+        item-845 at level 4: list_item: WalesWJ, MarettLC, GreenwoodJS,  ... i. 2013;53: 1167–1178. 10.1071/AN13207
+        item-846 at level 4: list_item: BargoF, MullerLD, DelahoyJE, Cas ... 168/jds.S0022-0302(02)74381-6 12487461
+        item-847 at level 4: list_item: VibartRE, FellnerV, BurnsJC, Hun ... 80. 10.1017/S0022029908003361 18701000
+        item-848 at level 4: list_item: MendozaA, CajarvilleC, RepettoJL ... –1944. 10.3168/jds.2015-10257 26778319
+        item-849 at level 4: list_item: NRC. Nutrient Requirements of Da ... gton DC: National Academy Press; 2001.
+        item-850 at level 4: list_item: INRA. INRA Feeding System for Ru ... shiers; 2018 10.3920/978-90-8686-872-8
+        item-851 at level 4: list_item: LorenzH, ReinschT, HessS, TaubeF ... 161–170. 10.1016/j.jclepro.2018.11.113
+        item-852 at level 4: list_item: ISO 14044. INTERNATIONAL STANDAR ... rements and guidelines. 2006;2006: 46.
+        item-853 at level 4: list_item: ISO 14040. The International Sta ... ;2006: 1–28. 10.1136/bmj.332.7550.1107
+        item-854 at level 4: list_item: 
+          item-855 at level 5: inline: group group
+            item-856 at level 6: text: FAO. Environmental Performance o ... or. Rome, Italy: FAO; 2016 Available: 
+            item-857 at level 6: text: http://www.fao.org/partnerships/leap/resources/guidelines/en/
+        item-858 at level 4: list_item: CivieroM, Ribeiro-FilhoHMN, Scha ... nce,. Foz do Iguaçu; 2019 pp. 141–141.
+        item-859 at level 4: list_item: 
+          item-860 at level 5: inline: group group
+            item-861 at level 6: text: IPCC—Intergovernmental Panel on  ... ted Version). 2014. Available: ttps://
+            item-862 at level 6: text: www.ipcc.ch/site/assets/uploads/2018/05/SYR_AR5_FINAL_full_wcover.pdf
+        item-863 at level 4: list_item: INRA. Alimentation des bovins, o ... Inra 2007. 4th ed. INRA, editor. 2007.
+        item-864 at level 4: list_item: DelagardeR, FaverdinP, BaratteC, ... 5–60. 10.1111/j.1365-2494.2010.00770.x
+        item-865 at level 4: list_item: MaBL, LiangBC, BiswasDK, Morriso ... 2;94: 15–31. 10.1007/s10705-012-9522-0
+        item-866 at level 4: list_item: RauccciGS, MoreiraCS, AlvesPS, M ... State. J Clean Prod. 2015;96: 418–425.
+        item-867 at level 4: list_item: CamargoGGT, RyanMR, RichardTL. E ... 3;63: 263–273. 10.1525/bio.2013.63.4.6
+        item-868 at level 4: list_item: da SilvaMSJ, JobimCC, PoppiEC, T ... 3–313. 10.1590/S1806-92902015000900001
+        item-869 at level 4: list_item: Duchini PGPGGuzatti GCGC, Ribeir ... Sci. 2016;67: 574–581. 10.1071/CP15170
+        item-870 at level 4: list_item: ScaravelliLFB, PereiraLET, Olivo ... teiras. Cienc Rural. 2007;37: 841–846.
+        item-871 at level 4: list_item: SbrissiaAF, DuchiniPG, ZaniniGD, ... : 945–954. 10.2135/cropsci2017.07.0447
+        item-872 at level 4: list_item: AlmeidaJGR, Dall-OrsolettaAC, Oz ... 12. 10.1017/S1751731119003057 31907089
+        item-873 at level 4: list_item: Intergovernamental Panel on Clim ... Global Environmental Strategies; 2006.
+        item-874 at level 4: list_item: RamalhoB, DieckowJ, BarthG, Simo ... il Sci. 2020; 1–14. 10.1111/ejss.12933
+        item-875 at level 4: list_item: FernandesHC, da SilveiraJCM, Rin ... –1587. 10.1590/s1413-70542008000500034
+        item-876 at level 4: list_item: 
+          item-877 at level 5: inline: group group
+            item-878 at level 6: text: Wang M Q. GREET 1.8a Spreadsheet Model. 2007. Available: 
+            item-879 at level 6: text: http://www.transportation.anl.gov/software/GREET/
+        item-880 at level 4: list_item: RotzCAA, MontesF, ChianeseDS, Ch ... 6–1282. 10.3168/jds.2009-2162 20172247
+        item-881 at level 4: list_item: NiuM, KebreabE, HristovAN, OhJ,  ...  3368–3389. 10.1111/gcb.14094 29450980
+        item-882 at level 4: list_item: EugèneM, SauvantD, NozièreP, Via ... 10.1016/j.jenvman.2018.10.086 30602259
+        item-883 at level 4: list_item: ReedKF, MoraesLE, CasperDP, Kebr ... 5–3035. 10.3168/jds.2014-8397 25747829
+        item-884 at level 4: list_item: BarrosMV, PiekarskiCM, De Franci ... . Energies. 2018;11 10.3390/en11061412
+        item-885 at level 4: list_item: LudingtonD, JohnsonE. Dairy Farm ...  York State Energy Res Dev Auth. 2003.
+        item-886 at level 4: list_item: ThomaG, JollietO, WangY. A bioph ...  2013;31 10.1016/j.idairyj.2012.08.012
+        item-887 at level 4: list_item: NaranjoA, JohnsonA, RossowH. Gre ... . 2020 10.3168/jds.2019-16576 32037166
+        item-888 at level 4: list_item: JayasundaraS, WordenD, WeersinkA ... 18–1028. 10.1016/j.jclepro.2019.04.013
+        item-889 at level 4: list_item: WilliamsSRO, FisherPD, Berrisfor ... 4;19: 69–78. 10.1007/s11367-013-0619-8
+        item-890 at level 4: list_item: GollnowS, LundieS, MooreAD, McLa ... : 31–38. 10.1016/j.idairyj.2014.02.005
+        item-891 at level 4: list_item: O’BrienD, CapperJL, GarnsworthyP ... i. 2014 10.3168/jds.2013-7174 24440256
+        item-892 at level 4: list_item: ChobtangJ, McLarenSJ, LedgardSF, ... 2017;21: 1139–1152. 10.1111/jiec.12484
+        item-893 at level 4: list_item: GargMR, PhondbaBT, SherasiaPL, M ... Sci. 2016;56: 423–436. 10.1071/AN15464
+        item-894 at level 4: list_item: de LéisCM, CherubiniE, RuviaroCF ... 5;20: 46–60. 10.1007/s11367-014-0813-3
+        item-895 at level 4: list_item: O’BrienD, GeogheganA, McNamaraK, ... Sci. 2016;56: 495–500. 10.1071/AN15490
+        item-896 at level 4: list_item: O’BrienD, BrennanP, HumphreysJ,  ... : 1469–1481. 10.1007/s11367-014-0755-9
+        item-897 at level 4: list_item: BaekCY, LeeKM, ParkKH. Quantific ... : 50–60. 10.1016/j.jclepro.2014.02.010
+        item-898 at level 4: list_item: Dall-OrsolettaAC, AlmeidaJGR, Ca ... –4383. 10.3168/jds.2015-10396 27016830
+        item-899 at level 4: list_item: Dall-OrsolettaAC, OziemblowskiMM ... 5–73. 10.1016/j.anifeedsci.2019.05.009
+        item-900 at level 4: list_item: NiuM, AppuhamyJADRN, LeytemAB, D ... Sci. 2016;56: 312–321. 10.1071/AN15498
+        item-901 at level 4: list_item: WaghornGC, LawN, BryantM, Pachec ... i. 2019;59: 1261–1270. 10.1071/AN18018
+        item-902 at level 4: list_item: DickhoeferU, GlowackiS, GómezCA, ...  109–118. 10.1016/j.livsci.2018.08.004
+        item-903 at level 4: list_item: SchwabCG, BroderickGA. A 100-Yea ... 10112. 10.3168/jds.2017-13320 29153157
+        item-904 at level 4: list_item: SordiA, DieckowJ, BayerC, Alburq ... 90: 94–103. 10.1016/j.agee.2013.09.004
+        item-905 at level 4: list_item: SimonPL, DieckowJ, de KleinCAM,  ... 267: 74–82. 10.1016/j.agee.2018.08.013
+        item-906 at level 4: list_item: WangX, LedgardS, LuoJ, GuoY, Zha ... .1016/j.scitotenv.2017.12.259 29291563
+        item-907 at level 4: list_item: PirloG, LolliS. Environmental im ... 962–971. 10.1016/j.jclepro.2018.11.070
+        item-908 at level 4: list_item: HerzogA, WincklerC, ZollitschW.  ... 7: 174–187. 10.1016/j.agee.2018.07.029
+        item-909 at level 4: list_item: MostertPF, van MiddelaarCE, Bokk ... od. 2018 10.1016/j.jclepro.2017.10.019
+        item-910 at level 4: list_item: MostertPF, van MiddelaarCE, de B ... 7: 206–212. 10.1016/j.agsy.2018.09.006
+        item-911 at level 4: list_item: FoleyJA, RamankuttyN, BraumanKA, ...  337–342. 10.1038/nature10452 21993620
+        item-912 at level 4: list_item: LalR. Soil Carbon Sequestration  ... 1627. 10.1126/science.1097396 15192216
+        item-913 at level 4: list_item: BoddeyRM, JantaliaCP, ConceiçaoP ... –795. 10.1111/j.1365-2486.2009.02020.x
+        item-914 at level 4: list_item: McConkeyB, AngersD, BenthamM, Bo ...  the LULUCF sector for NIR 2014. 2014.

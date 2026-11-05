@@ -303,6 +303,26 @@ def test_stray_dashes_are_not_swallowed() -> None:
     assert texts == ["before", "after"]
 
 
+def test_trailing_plus_is_a_hard_line_break() -> None:
+    # A line ending in " +" breaks the line in AsciiDoc; the "+" is not text.
+    src = b"Roses are red, +\nviolets are blue.\n\nA *bold* line +\nand more.\n"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="hard_line_break.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    texts = [item.text for item in doc.texts]
+    assert texts == [
+        "Roses are red,\nviolets are blue.",
+        "A ",
+        "bold",
+        " line\nand more.",
+    ]
+
+
 def test_block_attributes_and_anchors_are_not_emitted_as_text() -> None:
     # "[cols=...]", "[[id]]" and admonition names like "[NOTE]" are block
     # metadata for whatever follows; they used to leak into the document body
@@ -373,6 +393,46 @@ If the installer fails, check the log file.
     ]
     assert all(item.enumerated for item in list_items)
     assert "If the installer fails, check the log file." in doc.export_to_markdown()
+
+
+def test_ordered_list_start_attribute_sets_the_first_number() -> None:
+    # "[start=4]" was skipped as metadata, so the list was numbered from 1.
+    source = b"""[start=4]
+. four
+. five
+.. nested
+. six
+
+.Steps
+[arabic, start="2"]
+
+. two
+. three
+
+[start=7]
+Not a list.
+
+. one
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(source),
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
+        filename="list-start.adoc",
+    )
+    doc = in_doc._backend.convert()
+
+    assert doc.export_to_markdown() == (
+        "4. four\n"
+        "5. five\n"
+        "    1. nested\n"
+        "6. six\n\n"
+        "**Steps**\n\n"
+        "2. two\n"
+        "3. three\n\n"
+        "Not a list.\n\n"
+        "1. one"
+    )
 
 
 def test_line_starting_with_an_abbreviation_is_not_a_list_item() -> None:

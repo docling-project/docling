@@ -1028,6 +1028,61 @@ def test_table_row_with_grid_before_is_preserved(tmp_path):
     assert b1.column_header and not b2.column_header
 
 
+@pytest.mark.parametrize("declared_cols", [0, 1, 2], ids=["missing", "one", "two"])
+def test_table_with_incomplete_grid(tmp_path: Path, declared_cols: int) -> None:
+    source = Document()
+    table = source.add_table(rows=1, cols=3)
+    table.cell(0, 0).merge(table.cell(0, 1)).text = "Merged"
+    table.cell(0, 2).text = "Last"
+
+    grid = table._tbl.tblGrid
+    if declared_cols == 0:
+        table._tbl.remove(grid)
+    else:
+        for column in list(grid)[declared_cols:]:
+            grid.remove(column)
+
+    path = tmp_path / "incomplete-grid.docx"
+    source.save(path)
+    doc = _convert(path)
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (1, 3)
+    assert [
+        (cell.text, cell.start_col_offset_idx, cell.end_col_offset_idx)
+        for cell in data.table_cells
+    ] == [("Merged", 0, 2), ("Last", 2, 3)]
+
+
+def test_table_with_short_grid_and_omitted_trailing_cells(tmp_path: Path) -> None:
+    source = Document()
+    table = source.add_table(rows=2, cols=3)
+    table.cell(0, 0).text = "A1"
+    table.cell(1, 0).text = "A2"
+    for row in table.rows:
+        tr = row._tr
+        grid_after = OxmlElement("w:gridAfter")
+        grid_after.set(qn("w:val"), "2")
+        tr.get_or_add_trPr().append(grid_after)
+        for cell in tr.tc_lst[1:]:
+            tr.remove(cell)
+
+    grid = table._tbl.tblGrid
+    grid.remove(grid[-1])
+    path = tmp_path / "short-grid-with-grid-after.docx"
+    source.save(path)
+
+    doc = _convert(path)
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 3)
+    assert [
+        (cell.text, cell.start_row_offset_idx, cell.start_col_offset_idx)
+        for cell in data.table_cells
+    ] == [("A1", 0, 0), ("A2", 1, 0)]
+
+
 def test_vertical_merge_survives_grid_before_row(tmp_path):
     """A vertical merge keeps its row span across a row that starts late.
 
