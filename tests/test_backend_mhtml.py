@@ -214,6 +214,24 @@ def test_embedded_images_resolve_by_location_and_cid():
     assert all(picture.get_image(doc).size == (1, 1) for picture in doc.pictures)
 
 
+def test_embedded_image_with_zero_dpi_defaults_to_72_dpi():
+    buffer = BytesIO()
+    Image.new("RGB", (1, 1)).save(buffer, format="PNG", dpi=(0, 0))
+    png = base64.b64encode(buffer.getvalue()).decode()
+    parts = (
+        "--B\r\nContent-Type: image/png\r\n"
+        "Content-ID: <zero-dpi@example>\r\n"
+        f"Content-Transfer-Encoding: base64\r\n\r\n{png}\r\n"
+    )
+    html = '<html><body><img src="cid:zero-dpi@example"></body></html>'
+    doc = _convert_stream(
+        _archive(html, parts), options=HTMLBackendOptions(fetch_images=True)
+    )
+
+    assert doc.pictures[0].image is not None
+    assert doc.pictures[0].image.dpi == 72
+
+
 def test_embedded_relative_location_resolves_with_file_root():
     png = base64.b64encode(_red_png()).decode()
     parts = (

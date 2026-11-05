@@ -36,8 +36,8 @@ Table 1 Categorization of potential factors influencing pre-TAS results.
 | - | - | - | - | - | - | - | - |
 | Prevalence | Baseline prevalence | 5% cut off | Maximum reported mapping or baseline sentinel site prevalence | <5% | Maximum | Varies | Programmatic data |
 | Prevalence | Baseline prevalence | 10% cut off | Maximum reported mapping or baseline sentinel site prevalence | <10% | Maximum | Varies | Programmatic data |
-| Agent | Parasite | Parasite | Predominate parasite in district | W. bancrofti & mixed | Binary value | 2018 | Programmatic data |
-| Environment | Vector | Vector | Predominate vector in district | Anopheles & Mansonia | Binary value | 2018 | Country expert |
+| Agent | Parasite | Parasite | Predominate parasite in district | *W*. *bancrofti* &amp; mixed | Binary value | 2018 | Programmatic data |
+| Environment | Vector | Vector | Predominate vector in district | *Anopheles* &amp; *Mansonia* | Binary value | 2018 | Country expert |
 | Environment | Geography | Elevation | Elevation measured in meters | >350 | Mean | 2000 | CGIAR-CSI SRTM [9] |
 | Environment | Geography | District area | Area measured in km2 | >2,500 | Maximum sum | Static | Programmatic data |
 | Environment | Climate | EVI | Enhanced vegetation index | > 0.3 | Mean | 2015 | MODIS [10] |
@@ -130,17 +130,17 @@ Sensitivity analyses were conducted using the same model with different subsets 
 
 Table 2 Adjusted risk ratios for pre-TAS failure from log-binomial model sensitivity analysis.
 
-|  | Full Model | (1) - Without Cameroon districts | (2) - Only districts in Africa | (3) - Only W. bancrofti parasite districts | (4) - Only Anopheles vector districts |
+|  | Full Model | (1) - Without Cameroon districts | (2) - Only districts in Africa | (3) - Only *W*. *bancrofti* parasite districts | (4) - Only Anopheles vector districts |
 | - | - | - | - | - | - |
 | Number of Failures | 74 | 74 | 44 | 72 | 46 |
 | Number of total districts | (N = 554) | (N = 420) | (N = 407) | (N = 518) | (N = 414) |
 | Covariate | RR (95% CI) | RR (95% CI) | RR (95% CI) | RR (95% CI) | RR (95% CI) |
-| Baseline prevalence > = 10% & used FTS test | 2.38 (0.96–5.90) | 1.23 (0.52–2.92) | 14.52 (1.79–117.82) | 2.61 (1.03–6.61) | 15.80 (1.95–127.67) |
+| Baseline prevalence > = 10% & used FTS test | 2.38 (0.96–5.90) | 1.23 (0.52–2.92) | **14.52 (1.79–117.82)** | **2.61 (1.03–6.61)** | **15.80 (1.95–127.67)** |
 | Baseline prevalence > = 10% & used ICT test | 0.80 (0.20–3.24) | 0.42 (0.11–1.68) | 1.00 (0.00–0.00) | 0.88 (0.21–3.60) | 1.00 (0.00–0.00) |
-| +Used FTS test | 1.16 (0.52–2.59) | 2.40 (1.12–5.11) | 0.15 (0.02–1.11) | 1.03 (0.45–2.36) | 0.13 (0.02–0.96) |
-| +Used ICT test | 0.92 (0.32–2.67) | 1.47 (0.51–4.21) | 0.33 (0.04–2.54) | 0.82 (0.28–2.43) | 0.27 (0.03–2.04) |
-| +Baseline prevalence > = 10% | 2.52 (1.37–4.64) | 2.42 (1.31–4.47) | 2.03 (1.06–3.90) | 2.30 (1.21–4.36) | 2.01 (1.07–3.77) |
-| Elevation < 350m | 3.07 (1.95–4.83) | 2.21 (1.42–3.43) | 4.68 (2.22–9.87) | 3.04 (1.93–4.79) | 3.76 (1.92–7.37) |
+| *+Used FTS test* | *1*.*16 (0*.*52–2*.*59)* | **2.40 (1.12–5.11)** | 0.15 (0.02–1.11) | 1.03 (0.45–2.36) | 0.13 (0.02–0.96) |
+| *+Used ICT test* | *0*.*92 (0*.*32–2*.*67)* | 1.47 (0.51–4.21) | 0.33 (0.04–2.54) | 0.82 (0.28–2.43) | 0.27 (0.03–2.04) |
+| *+Baseline prevalence &gt; = 10%* | ***2*****.*****52 (1*****.*****37–4*****.*****64)*** | **2.42 (1.31–4.47)** | **2.03 (1.06–3.90)** | **2.30 (1.21–4.36)** | **2.01 (1.07–3.77)** |
+| Elevation < 350m | **3.07 (1.95–4.83)** | **2.21 (1.42–3.43)** | **4.68 (2.22–9.87)** | **3.04 (1.93–4.79)** | **3.76 (1.92–7.37)** |
 
 
 
