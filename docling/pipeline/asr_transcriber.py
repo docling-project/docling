@@ -642,7 +642,10 @@ class _TransformersAsrModel(_MlxWhisperModel):
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         if self.asr_options.model_family == "whisper":
-            generate_kwargs: dict[str, str] = {"task": self.asr_options.task}
+            generate_kwargs: dict[str, str | float] = {
+                "task": self.asr_options.task,
+                "temperature": self.asr_options.temperature,
+            }
             if self.asr_options.language is not None:
                 generate_kwargs["language"] = self.asr_options.language
             result = self.asr_pipeline(
