@@ -326,10 +326,17 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             HTML content with fixed internal links
         """
-        pattern = r'href="(?!\w+:|//)([^"]*\.(?:xhtml|xht|html?))(#[^"]*)"'
+        # Group 1: the opening quote (" or '), which single-quoted markup makes
+        # as legal as a double quote. Group 3: the fragment, up to the matching
+        # closing quote.
+        pattern = (
+            r"""href=(["'])(?!\w+:|//)"""
+            r"""((?:(?!\1)[\s\S])*\.(?:xhtml|xht|html?))"""
+            r"""(#(?:(?!\1)[\s\S])*)\1"""
+        )
 
         # Replace with just the anchor part
-        fixed_content = re.sub(pattern, r'href="\2"', html_content)
+        fixed_content = re.sub(pattern, r"href=\1\3\1", html_content)
 
         return fixed_content
 
