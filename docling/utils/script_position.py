@@ -33,6 +33,9 @@ BODY_SIZE_RATIO = 0.9
 TOUCH_GAP = 0.6
 # Letters this close to body letters on both sides sit inside a word ("LaTeX").
 IN_WORD_GAP = 0.15
+# Smallest gap (share of the larger size) for a space beside a script to be real. The
+# parser also adds a space where a raised script touches its text.
+MIN_WORD_GAP = 0.1
 # A new line starts where the baseline moves by this share of the line's size, or where
 # the pen returns to the line's start (within this share of the size; a narrow base
 # letter, as under a stacked script, is wider).
@@ -107,9 +110,10 @@ def script_runs(text: str, chars: Sequence[ScriptChar]) -> list[ScriptRun] | Non
     """Split an item's text into baseline, superscript and subscript runs.
 
     The text is matched to the PDF characters first, since it differs from them in
-    ligatures, dashes and spaces, and only the matched characters are measured. As in the
-    Word backend, a run has no whitespace at its edges. Returns None when the text has no
-    script or cannot be matched.
+    ligatures, dashes and spaces, and only the matched characters are measured. Runs carry
+    the spaces between them, since serializers join runs with nothing, and a space that the
+    PDF does not show beside a script is dropped. Returns None when the text has no script
+    or cannot be matched.
     """
     mapping = _align(text, chars)
     if mapping is None:
@@ -135,11 +139,19 @@ def script_runs(text: str, chars: Sequence[ScriptChar]) -> list[ScriptRun] | Non
         )
         after = next((roles[j] for j in solid[k + 1 :] if roles[j] is not None), None)
         roles[index] = before if before == after and before else Script.BASELINE
-    # Whitespace inside a run belongs to it; whitespace between runs is left out.
+    # Whitespace inside a run belongs to it; whitespace between runs stays where the PDF
+    # shows it, in the baseline run and out of the script.
     for left, right in itertools.pairwise(solid):
-        if roles[left] == roles[right]:
-            for i in range(left + 1, right):
-                roles[i] = roles[left]
+        if (
+            roles[left] != roles[right]
+            and left in mapping
+            and right in mapping
+            and not _is_word_gap(chars[mapping[left]], chars[mapping[right]])
+        ):
+            continue
+        owner = roles[right] if roles[right] == Script.BASELINE else roles[left]
+        for i in range(left + 1, right):
+            roles[i] = owner
 
     pieces: list[tuple[str, Script, list[int], list[int]]] = []
     for i, ch in enumerate(text):
@@ -310,6 +322,14 @@ def _distance(char: ScriptChar, chars: Sequence[ScriptChar], run: list[int]) -> 
     left = min(chars[i].left for i in run)
     right = max(chars[i].right for i in run)
     return max(0.0, char.left - right, left - char.right)
+
+
+def _is_word_gap(left: ScriptChar, right: ScriptChar) -> bool:
+    """Tell whether the PDF shows a space between two characters, or a line break."""
+    size = max(left.size, right.size)
+    if abs(right.baseline - left.baseline) > LINE_JUMP * size or right.left < left.left:
+        return True
+    return right.left - left.right >= MIN_WORD_GAP * size
 
 
 def _folded(text: str) -> list[tuple[str, int]]:

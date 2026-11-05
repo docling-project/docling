@@ -73,10 +73,11 @@ def test_marks_superscript_and_subscript_runs():
         ("rd", Script.SUPER),
         ("[12]", Script.SUPER),
     ]
-    # As in the Word backend, a run has no whitespace at its edges.
-    assert runs[0][:2] == [
+    # The PDF has no space before the "2", and a space after it.
+    assert runs[0] == [
         ("Einstein wrote E = mc", Script.BASELINE),
         ("2", Script.SUPER),
+        (" in 1905.", Script.BASELINE),
     ]
     # A line without scripts stays a plain text item.
     assert any(
@@ -96,6 +97,16 @@ def test_marks_scripts_with_the_pypdfium2_backend():
         ("rd", Script.SUPER),
         ("[12]", Script.SUPER),
     ]
+
+
+def test_exports_keep_the_spaces_of_the_pdf():
+    document = _convert(ThreadedDoclingParseDocumentBackend, enabled=True)
+    html = document.export_to_html()
+    assert "Water is H<sub>2</sub>O and carbon dioxide is CO<sub>2</sub>." in html
+    assert "On the 21<sup>st</sup> of June the 3<sup>rd</sup> team won." in html
+    markdown = document.export_to_markdown()
+    assert "Water is H2O and carbon dioxide is CO2." in markdown
+    assert "On the 21st of June the 3rd team won." in markdown
 
 
 def test_disabled_leaves_the_document_unchanged():

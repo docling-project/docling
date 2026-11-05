@@ -177,14 +177,53 @@ def test_footnote_marker_starting_a_tightly_set_line():
     assert _marked(chars) == "thelineaboveit<super>3</super>Notetext"
 
 
-def test_runs_have_no_whitespace_at_their_edges():
-    # As the Word backend's runs: the space between two runs is left to the export.
+def test_runs_keep_the_spaces_the_pdf_shows():
+    # The parser reports a space before the raised "2", where the characters touch.
     chars = _line(("E = mc", 12, 0), ("2", 7, 4.5), (" in 1905.", 12, 0))
-    assert _runs(" E = mc 2 in 1905. ", chars) == [
+    text = " E = mc 2 in 1905. "
+    assert _runs(text, chars) == [
         ("E = mc", B),
         ("2", SUP),
-        ("in 1905.", B),
+        (" in 1905.", B),
     ]
+    # The offsets count the space that a run starts with.
+    runs = script_runs(text, chars)
+    assert runs is not None
+    assert all(
+        run.text[offset] == chars[index].text
+        for run in runs
+        for index, offset in zip(run.chars, run.offsets, strict=True)
+    )
+
+
+@pytest.mark.parametrize(
+    "gap, after", [(0.09, "in"), (0.11, " in")], ids=["too_small", "word_gap"]
+)
+def test_space_beside_a_script_needs_a_word_gap(gap, after):
+    chars = _line(("mc", 12, 0), ("2", 7, 4.5))
+    chars += _line(("in", 12, 0), x=chars[-1].right + gap * 12)
+    assert _runs("mc 2 in", chars) == [("mc", B), ("2", SUP), (after, B)]
+
+
+def test_space_is_kept_at_a_line_break():
+    chars = _line(("x", 12, 0), ("2", 7, 4.5), y=700.0)
+    chars += _line(("more", 12, 0), y=680.0)
+    assert _runs("x 2 more", chars) == [("x", B), ("2", SUP), (" more", B)]
+
+
+def test_space_is_kept_beside_an_unmatched_character():
+    # The gap cannot be measured to the "Q", which is not among the PDF characters.
+    chars = _line(("abcde", 12, 0), ("2", 7, 4.5), ("fgh", 12, 0))
+    assert _runs("abcde 2 Q fgh", chars) == [
+        ("abcde", B),
+        ("2", SUP),
+        (" Q fgh", B),
+    ]
+
+
+def test_runs_never_add_a_space():
+    chars = _line(("H", 12, 0), ("2", 7, -2.5), ("  O", 12, 0))
+    assert _runs("H2O", chars) == [("H", B), ("2", SUB), ("O", B)]
 
 
 def test_runs_match_through_ligatures_and_dashes():
@@ -263,7 +302,7 @@ def test_stage_rewrites_paragraphs_and_list_items():
 
     groups = [g for g in document.groups if isinstance(g, InlineGroup)]
     assert [_item_runs(document, g) for g in groups] == [
-        [("E = mc", B), ("2", SUP), ("here", B)],
+        [("E = mc", B), ("2", SUP), (" here", B)],
         [("H", B), ("2", SUB), ("O", B)],
     ]
     # Each item keeps its place and holds its runs; the list item keeps its marker.

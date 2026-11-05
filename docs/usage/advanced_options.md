@@ -381,6 +381,10 @@ doc_converter = DocumentConverter(
 A text item holding superscript or subscript text keeps its place, and its text moves into
 an inline group of runs that the item holds.
 
+The runs keep a space beside a script only where the PDF shows a gap, so that "On the 21 st of
+June" becomes `21<sup>st</sup> of June`. Markdown and plain text have no script marks, so they
+give "21st of June".
+
 ### PowerPoint and Excel charts
 
 A chart on a PowerPoint slide or an Excel sheet becomes a picture classified by
