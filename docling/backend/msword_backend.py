@@ -1181,11 +1181,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             vml_images = [x for x in _raw_vml_images if not _in_textbox(x)]
 
             # Check for textbox content - check multiple textbox formats.
-            # Skip container elements (tbl, sdt) that recursively walk their
-            # children, as descendant XPaths would otherwise extract textboxes
-            # before the table or SDT is processed and duplicate them later.
+            # Skip container elements (tbl, sdt, customXml) that recursively
+            # walk their children, as descendant XPaths would otherwise extract
+            # textboxes before the container's children are processed, out of
+            # reading order, and duplicate them later.
             if (
-                tag_name not in {"tbl", "sdt"}
+                tag_name not in {"tbl", "sdt", "customXml"}
                 and element not in self.processed_textbox_elements
             ):
                 # Modern Word textboxes

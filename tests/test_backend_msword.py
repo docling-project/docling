@@ -964,6 +964,39 @@ def test_paragraphs_and_tables_in_block_custom_xml_are_read(tmp_path):
     assert [cell.text for cell in doc.tables[0].data.table_cells] == ["Name", "Value"]
 
 
+def test_textbox_in_block_custom_xml_keeps_its_place(tmp_path):
+    """A textbox in custom XML markup is read after the paragraphs before it."""
+    textbox = (
+        f'<w:r><w:pict><v:shape xmlns:v="{_VML_NS}" id="s1" '
+        'style="width:100pt;height:40pt"><v:textbox><w:txbxContent>'
+        f"<w:p>{_w_run('In the textbox')}</w:p>"
+        "</w:txbxContent></v:textbox></v:shape></w:pict></w:r>"
+    )
+    d = Document()
+    d.add_paragraph("Before")
+    _append_to_body(
+        d,
+        f'<w:customXml {_W_NS} w:element="clause">'
+        f"<w:p>{_w_run('First in custom XML')}</w:p>"
+        f"<w:p>{textbox}</w:p>"
+        f"<w:p>{_w_run('Last in custom XML')}</w:p>"
+        "</w:customXml>",
+    )
+    d.add_paragraph("After")
+
+    doc = _convert_built(d, tmp_path)
+
+    # The anchor paragraph that only holds the textbox adds an empty text item,
+    # as it does outside custom XML.
+    assert [item.text for item in doc.texts if item.text] == [
+        "Before",
+        "First in custom XML",
+        "In the textbox",
+        "Last in custom XML",
+        "After",
+    ]
+
+
 def test_block_sdt_tables_are_extracted():
     """Test tables wrapped in block-level SDT content controls."""
     docx_path = Path("./tests/data/docx/sources/docx_rich_tables_01.docx")
