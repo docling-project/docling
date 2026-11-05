@@ -19,6 +19,7 @@ Warning:
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 import shutil
@@ -28,6 +29,8 @@ from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Final
+from urllib.parse import unquote, urljoin, urlparse
+from xml.sax.saxutils import escape as xml_escape
 
 from docling_core.types.doc import (
     DoclingDocument,
@@ -74,6 +77,96 @@ _log = logging.getLogger(__name__)
 
 
 _WEB_CACHE_TIMEOUT: Final[int] = 10
+
+
+# Elements that reference schemas and linkbases of an XBRL or iXBRL document. The
+# prefixes of the element and of the `href` attribute are not fixed by the
+# specification. The tag body excludes `<` and `>`, so that the pattern stays
+# linear on malformed input.
+_REF_TAG_RE: Final = re.compile(
+    rb"<(?:[\w.-]+:)?(?:schemaRef|linkbaseRef|roleRef|arcroleRef)\b[^<>]*>"
+)
+_HREF_ATTR_RE: Final = re.compile(
+    rb"(?<![\w.:-])((?:[\w.-]+:)?href\s*=\s*)(?:\"([^\"]*)\"|'([^']*)')"
+)
+
+
+def _is_local_file(base_dir: Path, reference: str) -> bool:
+    """Tell whether a reference points to an existing file inside ``base_dir``.
+
+    A reference that leaves ``base_dir`` (``..`` segments or an absolute path)
+    never counts as local, so that a document cannot probe the file system.
+    """
+    try:
+        root = base_dir.resolve()
+        target = (root / reference).resolve()
+        return target.is_relative_to(root) and target.exists()
+    except (OSError, ValueError):
+        return False
+
+
+def _absolutize_missing_refs(content: bytes, base_dir: Path, source_uri: str) -> bytes:
+    """Make the relative references that are not found locally absolute.
+
+    Relative references to schemas and linkbases are resolved against the URL
+    where the document was published, unless the referenced file exists in
+    ``base_dir`` (e.g. it was provided in the ``taxonomy`` folder). The result
+    is escaped for XML, and it always stays on the origin of ``source_uri``. The fetch
+    policy of the web cache still applies to every resulting URL.
+
+    Args:
+        content: The XBRL or iXBRL document.
+        base_dir: The folder that holds the local copy of the document.
+        source_uri: The http(s) URL where the document was published.
+
+    Returns:
+        The document with the missing relative references replaced.
+    """
+
+    def _replace_href(match: re.Match[bytes]) -> bytes:
+        quote = b'"' if match.group(2) is not None else b"'"
+        raw = match.group(2) if match.group(2) is not None else match.group(3)
+        href = html.unescape(raw.decode("utf-8", errors="replace")).strip()
+        path_part = href.split("#", 1)[0]
+        if (
+            not path_part
+            or urlparse(href).scheme
+            or _is_local_file(base_dir, unquote(path_part))
+        ):
+            return match.group(0)
+        absolute = urljoin(source_uri, href)
+        # A relative reference must stay on the origin of the source URL. This
+        # drops, for instance, the network-path reference `//other.host/x.xsd`.
+        origin, resolved = urlparse(source_uri), urlparse(absolute)
+        if (resolved.scheme, resolved.netloc) != (origin.scheme, origin.netloc):
+            return match.group(0)
+        _log.debug(f"Resolving reference {href!r} to {absolute!r}")
+        escaped = xml_escape(absolute, {'"': "&quot;", "'": "&apos;"})
+        return match.group(1) + quote + escaped.encode("utf-8") + quote
+
+    def _replace_tag(match: re.Match[bytes]) -> bytes:
+        return _HREF_ATTR_RE.sub(_replace_href, match.group(0), count=1)
+
+    return _REF_TAG_RE.sub(_replace_tag, content)
+
+
+def _warn_unresolved_facts(model: ModelXbrl) -> None:
+    """Warn when the facts of the instance cannot be linked to their concepts.
+
+    Arelle does not raise an error when a schema or linkbase of the report is not
+    found. The facts stay without a concept, and the numeric facts and text blocks
+    are silently dropped from the converted document.
+    """
+    total = len(model.facts)
+    unresolved = sum(1 for fact in model.facts if fact.concept is None)
+    if unresolved:
+        _log.warning(
+            f"{unresolved} of {total} facts could not be linked to a concept, so"
+            " they are not converted. The taxonomy of the report was not found."
+            " Check the `taxonomy` folder (a taxonomy package with a catch-all"
+            " catalog needs the extension taxonomy files next to it),"
+            " `enable_remote_fetch` and `source_uri`."
+        )
 
 
 def _remove_transient_packages(
@@ -201,6 +294,16 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                     ]
                 if zip_paths:
                     _log.debug(f"Files to be passed as taxonomy packages: {zip_paths}")
+                if self.options.enable_remote_fetch and self.options.source_uri:
+                    # Taxonomy files that were not provided locally are fetched
+                    # from where the document was published.
+                    instance_path.write_bytes(
+                        _absolutize_missing_refs(
+                            instance_path.read_bytes(),
+                            tmp_path,
+                            str(self.options.source_uri),
+                        )
+                    )
                 arelle_load_path = str(instance_path)
 
                 cntlr = Cntlr.Cntlr()
@@ -262,6 +365,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                     )
                 if model.errors:
                     raise ValueError(f"XBRL loaded with errors: {model.errors}")
+                _warn_unresolved_facts(model)
 
             self.model_xbrl = model
             self.valid = True

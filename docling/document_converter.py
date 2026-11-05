@@ -295,6 +295,32 @@ class XBRLFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
     backend_options: XBRLBackendOptions | None = None
 
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> XBRLBackendOptions | None:
+        """Keep the URL of a remote source.
+
+        An http(s) URL is downloaded into a stream before it reaches the
+        backend, which then cannot resolve the relative references of the
+        report to its schemas and linkbases. Local paths and streams are passed
+        on unchanged.
+        """
+        options = self.backend_options
+        if (
+            options is None
+            or options.source_uri is not None
+            or not isinstance(source, str)
+        ):
+            return options
+        try:
+            # Validated, so that a URL that is not http(s) or that includes
+            # credentials is not kept.
+            return XBRLBackendOptions.model_validate(
+                {**options.model_dump(), "source_uri": source}
+            )
+        except ValidationError:
+            return options
+
 
 class ImageFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
