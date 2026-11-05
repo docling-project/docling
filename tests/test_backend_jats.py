@@ -1562,6 +1562,58 @@ def test_jats_table_cell_keeps_scripts_and_their_whitespace():
     assert "H<sub>2</sub>O in km<sup>2</sup>" in doc.export_to_html()
 
 
+def test_jats_table_cell_is_rich_only_when_more_than_plain_text():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody><tr>
+        <td>a <bold>b</bold></td>
+        <td><ext-link xmlns:xlink="http://www.w3.org/1999/xlink"
+            xlink:href="https://example.com/">site</ext-link></td>
+        <td>a <inline-formula><alternatives><tex-math>$$x^2$$</tex-math>
+            <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>x</mml:mi></mml:math>
+            </alternatives></inline-formula> b</td>
+        <td>a <named-content>b</named-content></td>
+        </tr></tbody></table></table-wrap>"""
+    )
+
+    bold, link, formula, plain = doc.tables[0].data.table_cells
+    assert not isinstance(plain, RichTableCell)
+
+    assert isinstance(bold, RichTableCell)
+    inline = bold.ref.resolve(doc).children[0].resolve(doc)
+    assert inline.children[1].resolve(doc).formatting.bold
+
+    assert isinstance(link, RichTableCell)
+    run = link.ref.resolve(doc).children[0].resolve(doc)
+    assert (run.text, str(run.hyperlink)) == ("site", "https://example.com/")
+
+    assert isinstance(formula, RichTableCell)
+    inline = formula.ref.resolve(doc).children[0].resolve(doc)
+    runs = [child.resolve(doc) for child in inline.children]
+    assert [run.label for run in runs] == [
+        DocItemLabel.TEXT,
+        DocItemLabel.FORMULA,
+        DocItemLabel.TEXT,
+    ]
+    assert runs[1].text == "x^2"
+
+
+def test_jats_rich_table_cell_keeps_the_boundary_between_blocks():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td><p>x<sup>1</sup></p><p>Next</p></td>
+        <td><list><list-item><p>a<sup>2</sup></p></list-item>
+        <list-item><p>b</p></list-item></list></td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    paragraphs, items = doc.tables[0].data.table_cells
+    assert isinstance(paragraphs, RichTableCell)
+    assert isinstance(items, RichTableCell)
+    markdown = doc.export_to_markdown()
+    assert "x1 Next" in markdown
+    assert "a2 b" in markdown
+
+
 def test_jats_table_cell_with_only_a_blank_script_stays_plain():
     doc = convert_jats_body(
         """<table-wrap id="t1"><table><tbody>

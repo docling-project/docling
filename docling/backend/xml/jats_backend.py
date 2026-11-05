@@ -790,7 +790,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _extract_tex_math(node: etree._Element) -> str | None:
         if not node.text:
             return None
-        text = node.text.strip()
+        return JatsDocumentBackend._strip_tex_delimiters(node.text)
+
+    @staticmethod
+    def _strip_tex_delimiters(tex: str) -> str | None:
+        text = tex.strip()
         for delimiter in ("$$", "$"):
             if (
                 len(text) > 2 * len(delimiter)
@@ -1098,17 +1102,47 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     segments, str(child), formatting, hyperlink
                 )
             elif isinstance(child, Tag):
+                if child.name == "tex-math":
+                    formula = JatsDocumentBackend._strip_tex_delimiters(
+                        child.get_text()
+                    )
+                    if formula is not None:
+                        segments.append(
+                            InlineSegment(
+                                label=DocItemLabel.FORMULA,
+                                text=formula,
+                                hyperlink=hyperlink,
+                            )
+                        )
+                    continue
+                if (
+                    child.name.endswith("math")
+                    and child.parent is not None
+                    and child.parent.find("tex-math", recursive=False) is not None
+                ):
+                    # The MathML alternative of a formula already kept as tex-math.
+                    continue
                 href = child.get("xlink:href") if child.name == "ext-link" else None
-                JatsDocumentBackend._extend_segments(
-                    segments,
-                    JatsDocumentBackend._walk_table_cell(
-                        child,
-                        JatsDocumentBackend._merge_formatting(formatting, child.name),
-                        JatsDocumentBackend._parse_ext_link_href(href)
-                        if isinstance(href, str)
-                        else hyperlink,
-                    ),
+                child_segments = JatsDocumentBackend._walk_table_cell(
+                    child,
+                    JatsDocumentBackend._merge_formatting(formatting, child.name),
+                    JatsDocumentBackend._parse_ext_link_href(href)
+                    if isinstance(href, str)
+                    else hyperlink,
                 )
+                if (
+                    child.name in {"p", "list-item"}
+                    and segments
+                    and child_segments
+                    and not segments[-1].text[-1:].isspace()
+                    and not child_segments[0].text[:1].isspace()
+                ):
+                    # A block keeps its boundary to what precedes it, as the plain
+                    # cell text does (`<p>x</p><p>y</p>` reads "x y").
+                    JatsDocumentBackend._append_run(
+                        segments, " ", formatting, hyperlink
+                    )
+                JatsDocumentBackend._extend_segments(segments, child_segments)
         return segments
 
     @staticmethod
@@ -1188,6 +1222,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 if not isinstance(html_cell, Tag):
                     continue
 
+                # Walk the runs first: the plain text below replaces the formulas.
+                segments = JatsDocumentBackend._trim_segment_edges(
+                    JatsDocumentBackend._walk_table_cell(html_cell)
+                )
+
                 # extract inline formulas
                 for formula in html_cell("inline-formula"):
                     math_parts = formula.text.split("$$")
@@ -1226,15 +1265,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     column_header=col_header,
                     row_header=(not col_header) and html_cell.name == "th",
                 )
-                segments = JatsDocumentBackend._trim_segment_edges(
-                    JatsDocumentBackend._walk_table_cell(html_cell)
-                )
                 if (
                     doc is not None
                     and table_item is not None
                     and any(
-                        segment.formatting is not None
-                        and segment.formatting.script != Script.BASELINE
+                        segment.label != DocItemLabel.TEXT
+                        or segment.formatting is not None
+                        or segment.hyperlink is not None
                         for segment in segments
                     )
                 ):

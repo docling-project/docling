@@ -1741,6 +1741,57 @@ def test_e2e_odf_conversions(odf_documents):
     _test_e2e_odf_conversions_impl(odf_documents)
 
 
+def test_ods_singleton_with_formatting_or_link_stays_a_table(tmp_path: Path):
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    source = OdfDocument("spreadsheet")
+    source.body.clear()
+    bold_style = Style("text", name="bold_style")
+    bold_style.set_properties(area="text", **{"fo:font-weight": "bold"})
+    source.insert_style(bold_style, automatic=True)
+
+    bold_paragraph = Paragraph()
+    bold_paragraph.append(Span("bold", style="bold_style"))
+    link_paragraph = Paragraph()
+    link_paragraph.append(Link("https://example.com/", text="site"))
+    plain_paragraph = Paragraph()
+    plain_paragraph.append(Span("span", style="no_such_style"))
+
+    sheet = Table("Sheet1", width=1, height=7)
+    for name, paragraph in (
+        ("A1", bold_paragraph),
+        ("A3", link_paragraph),
+        ("A5", plain_paragraph),
+    ):
+        cell = Cell()
+        cell.set_attribute("office:value-type", "string")
+        cell.append(paragraph)
+        sheet.set_cell(name, cell)
+    sheet.set_value("A7", "value")
+    source.body.append(sheet)
+    path = tmp_path / "singletons.ods"
+    source.save(path)
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODS],
+        format_options={
+            InputFormat.ODS: OdsFormatOption(
+                backend_options=OdsBackendOptions(treat_singleton_as_text=True)
+            )
+        },
+    )
+    document = converter.convert(path).document
+
+    bold, link = (table.data.table_cells[0] for table in document.tables)
+    assert isinstance(bold, RichTableCell)
+    assert bold.ref.resolve(document).children[0].resolve(document).formatting.bold
+    assert isinstance(link, RichTableCell)
+    run = link.ref.resolve(document).children[0].resolve(document)
+    assert (run.text, str(run.hyperlink)) == ("site", "https://example.com/")
+    assert {"span", "value"} <= {item.text for item in document.texts}
+
+
 def test_ods_treat_singleton_as_text(tmp_path: Path):
     """Test that singleton cells are treated as TextItem when option is enabled.
 
@@ -2428,27 +2479,53 @@ def test_odt_master_variant_order_and_shared_text(tmp_path: Path):
     assert [item.text for item in document.texts] == ["Same text"] * 6
 
 
-def test_odt_table_cell_keeps_scripts(tmp_path: Path):
+def test_odt_table_cell_is_rich_only_when_more_than_plain_text(tmp_path: Path):
     source = OdfDocument("text")
     source.body.clear()
     sub_style = Style("text", name="sub_style")
     sub_style.set_properties(area="text", **{"style:text-position": "sub 58%"})
     source.insert_style(sub_style, automatic=True)
-    paragraph = Paragraph()
-    paragraph.append("H")
-    paragraph.append(Span("2", style="sub_style"))
-    paragraph.append("O")
-    cell = Cell()
-    cell.append(paragraph)
+    italic_style = Style("text", name="italic_style")
+    italic_style.set_properties(area="text", **{"fo:font-style": "italic"})
+    source.insert_style(italic_style, automatic=True)
+    script_paragraph = Paragraph()
+    script_paragraph.append("H")
+    script_paragraph.append(Span("2", style="sub_style"))
+    script_paragraph.append("O")
+    italic_paragraph = Paragraph()
+    italic_paragraph.append(Span("word", style="italic_style"))
+    link_paragraph = Paragraph()
+    link_paragraph.append(Link("https://example.com/", text="site"))
+    plain_paragraph = Paragraph()
+    plain_paragraph.append(Span("word", style="no_such_style"))
     row = Row()
-    row.append(cell)
+    for paragraph in (
+        script_paragraph,
+        italic_paragraph,
+        link_paragraph,
+        plain_paragraph,
+    ):
+        cell = Cell()
+        # A typed cell has a value, so only its runs can make it rich.
+        cell.set_attribute("office:value-type", "string")
+        cell.append(paragraph)
+        row.append(cell)
     table = Table("Table1")
     table.append(row)
     source.body.append(table)
 
     document = _convert_odt_source(source, tmp_path / "table_sub.odt")
 
-    rich = document.tables[0].data.table_cells[0]
+    rich, italic, link, plain = document.tables[0].data.table_cells
+    assert not isinstance(plain, RichTableCell)
+    assert plain.text == "word"
+    assert isinstance(italic, RichTableCell)
+    assert italic.ref.resolve(document).children[0].resolve(document).formatting.italic
+    assert isinstance(link, RichTableCell)
+    assert (
+        str(link.ref.resolve(document).children[0].resolve(document).hyperlink)
+        == "https://example.com/"
+    )
     assert isinstance(rich, RichTableCell)
     inline = rich.ref.resolve(document).children[0].resolve(document)
     assert inline.label == GroupLabel.INLINE
