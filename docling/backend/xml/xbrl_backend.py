@@ -529,11 +529,14 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                 dimensions = []
                 if fact.context is not None and fact.context.qnameDims:
                     for dim_qname, dim_value in fact.context.qnameDims.items():
+                        # Typed dimensions have no member QName: the member is
+                        # an arbitrary XML element with a text value.
+                        if dim_value.isTyped:
+                            member = (dim_value.typedMember.text or "").strip()
+                        else:
+                            member = dim_value.memberQname.localName
                         dimensions.append(
-                            (
-                                f"{dim_qname.localName}: {dim_value.memberQname.localName}",
-                                "dimension",
-                            )
+                            (f"{dim_qname.localName}: {member}", "dimension")
                         )
 
                 key_id = self._kv_idx
