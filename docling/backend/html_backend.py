@@ -5509,9 +5509,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     image = Image.open(BytesIO(image_data))
                     check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
-                    return ImageRef.from_pil(
-                        image, dpi=int(image.info.get("dpi", (72,))[0])
-                    )
+                    # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
+                    dpi = int(image.info.get("dpi", (72,))[0]) or 72
+                    return ImageRef.from_pil(image, dpi=dpi)
                 except (
                     Image.DecompressionBombError,
                     UnidentifiedImageError,

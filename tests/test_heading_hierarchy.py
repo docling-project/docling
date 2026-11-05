@@ -171,6 +171,28 @@ def test_keyword_part_and_article():
     assert _parse_marker("Article 1 - Scope").family == "article"
     assert _parse_marker("Section 2").family == "article"
     assert _parse_marker("§ 1.2 Liability").family == "article"
+    assert _parse_marker("Part One.").family == "part"
+    assert _parse_marker("CHAPTER ONE").family == "chapter"
+    assert _parse_marker("ARTICLE FIRST").family == "article"
+    assert _parse_marker("Rule 12(b) Motions").family == "article"
+    assert _parse_marker("Appendix A1").family == "article"
+    assert _parse_marker("APPENDIX").family == "article"
+    assert _parse_marker("Annex: Glossary").family == "article"
+    assert _parse_marker("Appendix \u2013 Data Tables").family == "article"
+
+
+def test_keyword_followed_by_a_word_is_not_a_marker():
+    """A keyword used as an ordinary word must not outrank the real numbering."""
+    assert _parse_marker("Rule Definition") is None
+    assert _parse_marker("Part-Year Method") is None
+    assert _parse_marker("Title Insurance") is None
+    assert _parse_marker("Book Review") is None
+    assert _parse_marker("Chapter Summary") is None
+    assert _parse_marker("Section Overview") is None
+    assert _parse_marker("Schedule of Fees") is None
+
+    levels = _levels(["1. Overview", "Rule Definition", "2. Rules", "2.1 Syntax"])
+    assert levels == {0: 1, 2: 1, 3: 2}
 
 
 def test_keyword_division_and_subdivision():

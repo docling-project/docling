@@ -885,6 +885,19 @@ def test_jats_plain_paragraph_stays_a_single_text_item():
     assert texts == ["Plain text with a 1 citation."]
 
 
+def test_jats_inline_term_keeps_its_text():
+    # <term> marks a defined term inside running text; its words are part of the sentence.
+    doc = convert_jats_body(
+        "<sec><title>The <term>PCR</term> step</title>"
+        "<p>The <term>polymerase chain reaction</term> amplifies DNA.</p></sec>"
+    )
+
+    headings = [t.text for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert headings == ["The PCR step"]
+    assert texts == ["The polymerase chain reaction amplifies DNA."]
+
+
 @pytest.mark.parametrize(
     ("body", "expected"),
     [

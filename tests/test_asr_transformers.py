@@ -77,6 +77,37 @@ def test_transformers_uses_local_checkpoint_and_keeps_timestamps(
     assert asr_pipeline.call_args.kwargs["return_timestamps"] is True
 
 
+@pytest.mark.parametrize("temperature", [0.0, 0.2])
+def test_transformers_whisper_forwards_temperature(
+    temperature: float, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    checkpoint = tmp_path / "openai--whisper-tiny"
+    checkpoint.mkdir()
+    (checkpoint / "config.json").write_text("{}")
+    asr_pipeline = Mock(
+        return_value={"chunks": [{"text": " hello", "timestamp": (0.2, 1.4)}]}
+    )
+    transformers = ModuleType("transformers")
+    transformers.pipeline = Mock(return_value=asr_pipeline)
+    monkeypatch.setitem(sys.modules, "transformers", transformers)
+    monkeypatch.setattr(
+        "docling.pipeline.asr_transcriber.decide_device", lambda *args, **kwargs: "cpu"
+    )
+
+    model = _AsrModelFactory.create(
+        InlineAsrTransformersOptions(
+            repo_id="openai/whisper-tiny", temperature=temperature
+        ),
+        tmp_path,
+        AcceleratorOptions(),
+    )
+    model.transcribe(Path("sample.wav"))
+    assert asr_pipeline.call_args.kwargs["generate_kwargs"] == {
+        "task": "transcribe",
+        "temperature": temperature,
+    }
+
+
 def test_local_checkpoint_is_required_without_hub_fallback(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):

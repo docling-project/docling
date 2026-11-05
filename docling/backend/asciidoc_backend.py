@@ -43,6 +43,11 @@ _log = logging.getLogger(__name__)
 # to an identical line is a comment.
 _LINE_COMMENT_RE = re.compile(r"^//(?!/)")
 _COMMENT_BLOCK_DELIMITER_RE = re.compile(r"/{4,}")
+# The "start" attribute of an ordered list, e.g. "[start=4]" or
+# "[loweralpha,start=4]", sets the number of its first item.
+_LIST_START_ATTR_RE = re.compile(
+    r'^\[(?:[^\]]*,)?\s*start\s*=\s*"?(\d+)"?\s*(?:,[^\]]*)?\]$'
+)
 
 # Cell format specifier that may precede a "|" delimiter, e.g. "^.^h" in
 # "^.^h|Header": span (3*, 2+, .2+, 2.3+), alignment (<, ^, >, .^), style
@@ -246,6 +251,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         # list starts, so a level that holds a section header is never mistaken
         # for a list.
         list_kinds: dict[int, str] = {}
+        # The "start" value of a block attribute line, kept until the block
+        # it applies to, and the next number of each ordered list that does
+        # not start at 1, by the reference of its group.
+        pending_list_start: int | None = None
+        next_list_numbers: dict[str, int] = {}
 
         parents: dict[int, Union[GroupItem, None]] = {}
         indents: dict[int, Union[GroupItem, None]] = {}
@@ -256,6 +266,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         for block in self._iter_blocks(self.lines):
             if not isinstance(block, str):
+                pending_list_start = None
                 text_data, caption_data, in_list, last_list_item, list_continuation = (
                     self._add_block(
                         doc=doc,
@@ -292,7 +303,15 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 or re.match(r"^\[[^\[\]]+\]$", stripped_line)
                 or re.match(r"^:[\w.-]+:(\s.*)?$", stripped_line)
             ):
+                start_match = _LIST_START_ATTR_RE.match(stripped_line)
+                pending_list_start = (
+                    int(start_match.group(1)) if start_match else pending_list_start
+                )
                 continue
+
+            list_start, pending_list_start = self._take_list_start(
+                line, pending_list_start
+            )
 
             # Title
             if self._is_title(line):
@@ -348,11 +367,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                         )
                         caption_data = []
 
-                    parents[level + 1] = doc.add_group(
+                    list_group = doc.add_group(
                         parent=parents[level], name="list", label=GroupLabel.LIST
                     )
+                    parents[level + 1] = list_group
                     indents[level + 1] = item["indent"]
                     list_kinds = {level + 1: self._list_kind(item)}
+                    if list_start is not None:
+                        next_list_numbers[list_group.self_ref] = list_start
 
                 elif in_list and item["indent"] > indents[level]:
                     # A nested list belongs to the item above it. As a sibling
@@ -383,11 +405,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     last_list_item=last_list_item,
                 )
 
+                list_parent = self._get_current_parent(parents)
                 last_list_item = doc.add_list_item(
                     item["text"],
                     enumerated=item["numbered"],
-                    marker=(item["marker"] if item["marker"][:-1].isdigit() else None),
-                    parent=self._get_current_parent(parents),
+                    marker=self._list_item_marker(item, list_parent, next_list_numbers),
+                    parent=list_parent,
                 )
                 list_continuation = False
 
@@ -845,6 +868,36 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         indents[level + 1] = item["indent"]
         list_kinds[level + 1] = kind
 
+    @classmethod
+    def _take_list_start(
+        cls, line: str, pending_list_start: int | None
+    ) -> tuple[int | None, int | None]:
+        """Return the list start that applies to this line, and the one to keep.
+
+        Block attributes apply to the next block, past blank lines and its
+        block title.
+        """
+        if line.strip() and not cls._is_caption(line):
+            return pending_list_start, None
+        return pending_list_start, pending_list_start
+
+    @staticmethod
+    def _list_item_marker(
+        item: dict,
+        parent: NodeItem | None,
+        next_list_numbers: dict[str, int],
+    ) -> str | None:
+        """Return the marker of a list item, numbered from the list start."""
+        if (
+            item["numbered"]
+            and parent is not None
+            and parent.self_ref in next_list_numbers
+        ):
+            number = next_list_numbers[parent.self_ref]
+            next_list_numbers[parent.self_ref] = number + 1
+            return f"{number}."
+        return item["marker"] if item["marker"][:-1].isdigit() else None
+
     @staticmethod
     def _list_kind(item: dict) -> str:
         # All ordered markers ("." and "1.") count as one kind; a bullet's kind
@@ -868,6 +921,23 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return text, None
 
     @staticmethod
+    def _join_lines(lines: list[str]) -> str:
+        """Join the lines of a paragraph with spaces.
+
+        A line ending in " +" is an AsciiDoc hard line break, so the next line
+        starts on a new line, as with a hard break in Markdown.
+        """
+        text = ""
+        for i, line in enumerate(lines):
+            if i == len(lines) - 1:
+                text += line
+            elif line.endswith(" +"):
+                text += line[:-2].rstrip() + "\n"
+            else:
+                text += line + " "
+        return text
+
+    @staticmethod
     def _flush_text_data(
         *,
         doc: DoclingDocument,
@@ -877,7 +947,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     ) -> list[str]:
         if len(text_data) == 0:
             return []
-        text = " ".join(text_data)
+        text = AsciiDocBackend._join_lines(text_data)
         runs = AsciiDocBackend._parse_inline(text, bold=bold)
         if not any(
             run.bold != bold or run.italic or run.code or run.hyperlink for run in runs
