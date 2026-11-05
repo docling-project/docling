@@ -868,6 +868,23 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return text, None
 
     @staticmethod
+    def _join_lines(lines: list[str]) -> str:
+        """Join the lines of a paragraph with spaces.
+
+        A line ending in " +" is an AsciiDoc hard line break, so the next line
+        starts on a new line, as with a hard break in Markdown.
+        """
+        text = ""
+        for i, line in enumerate(lines):
+            if i == len(lines) - 1:
+                text += line
+            elif line.endswith(" +"):
+                text += line[:-2].rstrip() + "\n"
+            else:
+                text += line + " "
+        return text
+
+    @staticmethod
     def _flush_text_data(
         *,
         doc: DoclingDocument,
@@ -877,7 +894,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     ) -> list[str]:
         if len(text_data) == 0:
             return []
-        text = " ".join(text_data)
+        text = AsciiDocBackend._join_lines(text_data)
         runs = AsciiDocBackend._parse_inline(text, bold=bold)
         if not any(
             run.bold != bold or run.italic or run.code or run.hyperlink for run in runs
