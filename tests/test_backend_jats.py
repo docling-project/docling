@@ -1635,6 +1635,8 @@ def test_jats_nested_table_is_skipped_and_keeps_no_table_item():
     )
 
     assert doc.tables == []
+
+
 def test_jats_title_with_inline_markup_is_complete():
     doc = convert_jats_article_meta(
         "<title-group><article-title>Effects of <italic>Escherichia coli</italic> on health</article-title></title-group>"
@@ -1692,4 +1694,3 @@ def test_jats_citation_source_with_inline_markup_is_kept():
     ]
     assert len(citations) == 1
     assert "Nature" in citations[0].text
-
