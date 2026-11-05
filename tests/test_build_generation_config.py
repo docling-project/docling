@@ -35,3 +35,16 @@ def test_pad_token_falls_back_to_eos_only_when_unset() -> None:
         GenerationConfig(), pad_token_id=7, eos_token_id=123
     )
     assert config.pad_token_id == 7
+
+
+def test_from_model_config_flag_is_cleared_to_preserve_use_cache() -> None:
+    # Checkpoints such as docling-project/CodeFormulaV2 ship with
+    # _from_model_config=True and use_cache=False in generation_config.json /
+    # config.json. If _from_model_config stays True, transformers'
+    # PreTrainedModel._prepare_generation_config() resets use_cache=True back
+    # to model.config.use_cache (False).
+    base = GenerationConfig(_from_model_config=True, use_cache=False)
+    config = build_generation_config(base, use_cache=True)
+    assert config.use_cache is True
+    assert config._from_model_config is False
+
