@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import threading
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import List, Optional
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
@@ -135,3 +138,70 @@ def decide_device(
 
     _log.info("Accelerator device: '%s'", device)
     return device
+
+
+class _CudnnAttentionSwitch:
+    """Reference-counted switch for PyTorch's process-wide cuDNN attention flag.
+
+    The first user turns cuDNN attention off and remembers whether it was on; the
+    last user restores that. Overlapping users on several threads therefore never
+    turn it back on while another user still needs it off.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._users = 0
+        self._was_enabled = True
+
+    def acquire(
+        self, *, is_enabled: Callable[[], bool], enable: Callable[[bool], None]
+    ) -> None:
+        with self._lock:
+            if self._users == 0:
+                self._was_enabled = is_enabled()
+                enable(False)
+            self._users += 1
+
+    def release(self, *, enable: Callable[[bool], None]) -> None:
+        with self._lock:
+            self._users -= 1
+            if self._users == 0:
+                enable(self._was_enabled)
+
+
+_CUDNN_ATTENTION_SWITCH = _CudnnAttentionSwitch()
+
+
+@contextmanager
+def cudnn_attention_disabled(device: Optional[str]) -> Iterator[None]:
+    """Keep PyTorch's cuDNN attention backend off while a model generates on CUDA.
+
+    On recent NVIDIA GPUs (SM 9.x and 10.x, such as H100),
+    ``scaled_dot_product_attention`` prefers cuDNN, and PyTorch caches one cuDNN graph
+    per query and key/value length without a limit (pytorch/pytorch#202607). Every
+    decode step of ``generate()`` has a new key/value length, so host memory grows
+    with every document and is never freed. The flash, memory-efficient, and math
+    backends cache no graphs and are left as they are.
+
+    The cuDNN flag is process-wide, so the switch is reference-counted (see
+    ``_CudnnAttentionSwitch``). Other devices, and torch versions without the cuDNN
+    attention backend, are left unchanged.
+    """
+    if device is None or not device.startswith("cuda"):
+        yield
+        return
+    try:
+        from torch.backends.cuda import (
+            cudnn_sdp_enabled,
+            enable_cudnn_sdp,
+        )
+    except ImportError:  # torch without the cuDNN attention backend
+        yield
+        return
+    _CUDNN_ATTENTION_SWITCH.acquire(
+        is_enabled=cudnn_sdp_enabled, enable=enable_cudnn_sdp
+    )
+    try:
+        yield
+    finally:
+        _CUDNN_ATTENTION_SWITCH.release(enable=enable_cudnn_sdp)

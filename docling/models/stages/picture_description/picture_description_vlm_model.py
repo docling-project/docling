@@ -19,7 +19,7 @@ from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import cudnn_attention_disabled, decide_device
 
 # Global lock for model initialization to prevent threading issues
 _model_init_lock = threading.Lock()
@@ -129,10 +129,11 @@ class PictureDescriptionVlmModel(
             pad_token_id=getattr(tokenizer, "pad_token_id", None),
             eos_token_id=getattr(tokenizer, "eos_token_id", None),
         )
-        generated_ids = cast(Any, self.model).generate(
-            **inputs,
-            generation_config=generation_config,
-        )
+        with cudnn_attention_disabled(self.device):
+            generated_ids = cast(Any, self.model).generate(
+                **inputs,
+                generation_config=generation_config,
+            )
         generated_texts = self.processor.batch_decode(
             generated_ids[:, inputs["input_ids"].shape[1] :],
             skip_special_tokens=True,

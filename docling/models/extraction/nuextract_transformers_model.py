@@ -22,7 +22,7 @@ from docling.models.utils.generation_utils import build_generation_config
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import cudnn_attention_disabled, decide_device
 
 _log = logging.getLogger(__name__)
 
@@ -276,7 +276,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         }
 
         start_time = time.time()
-        with torch.inference_mode():
+        with torch.inference_mode(), cudnn_attention_disabled(self.device):
             from typing import cast
 
             generated_ids = cast(Any, self.vlm_model).generate(**gen_kwargs)

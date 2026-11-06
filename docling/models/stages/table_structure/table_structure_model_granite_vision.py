@@ -18,7 +18,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import cudnn_attention_disabled, decide_device
 from docling.utils.granite_vision_utils import granite_vision_4_needs_remote_code
 from docling.utils.otsl import parse_otsl_output
 from docling.utils.profiling import TimeRecorder
@@ -192,11 +192,12 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                     do_pad=True,
                 ).to(self.device)
 
-                output_ids = cast(Any, self._model).generate(
-                    **inputs,
-                    max_new_tokens=self._model_max_length,
-                    use_cache=True,
-                )
+                with cudnn_attention_disabled(self.device):
+                    output_ids = cast(Any, self._model).generate(
+                        **inputs,
+                        max_new_tokens=self._model_max_length,
+                        use_cache=True,
+                    )
 
                 # Decode only generated tokens (strip input prompt tokens)
                 output_texts = [

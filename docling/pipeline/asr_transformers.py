@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from docling.datamodel.pipeline_options_asr_model import InlineAsrTransformersOptions
+from docling.utils.accelerator_utils import cudnn_attention_disabled
 
 if TYPE_CHECKING:
     import torch
@@ -89,7 +90,8 @@ class TransformersAsrDecoder:
                     device=self.device,
                     return_tensors="pt",
                 ).to(self.device)
-                output = self.model.generate(**inputs)
+                with cudnn_attention_disabled(self.device):
+                    output = self.model.generate(**inputs)
                 return self.processor.batch_decode(output, skip_special_tokens=True)[
                     0
                 ].strip()
@@ -111,12 +113,13 @@ class TransformersAsrDecoder:
                 device=self.device,
                 return_tensors="pt",
             ).to(self.device)
-            output = self.model.generate(
-                **inputs,
-                max_new_tokens=self.options.max_new_tokens,
-                do_sample=False,
-                num_beams=1,
-            )
+            with cudnn_attention_disabled(self.device):
+                output = self.model.generate(
+                    **inputs,
+                    max_new_tokens=self.options.max_new_tokens,
+                    do_sample=False,
+                    num_beams=1,
+                )
             generated = output[:, inputs["input_ids"].shape[-1] :]
             return self.processor.tokenizer.batch_decode(
                 generated, skip_special_tokens=True

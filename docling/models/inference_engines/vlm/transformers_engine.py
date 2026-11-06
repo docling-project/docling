@@ -52,7 +52,7 @@ from docling.models.utils.generation_utils import (
 )
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
-from docling.utils.accelerator_utils import decide_device
+from docling.utils.accelerator_utils import cudnn_attention_disabled, decide_device
 from docling.utils.granite_vision_utils import (
     GRANITE_VISION_4_REPO_ID,
     granite_vision_4_needs_remote_code,
@@ -554,7 +554,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             first_input.max_new_tokens,
         )
         start_time = time.time()
-        with torch.inference_mode():
+        with torch.inference_mode(), cudnn_attention_disabled(self.device):
             generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
         generation_time = time.time() - start_time
 
