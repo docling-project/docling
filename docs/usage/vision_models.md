@@ -20,8 +20,14 @@ For running Docling using local models with the `VlmPipeline`:
 === "CLI"
 
     ```bash
+    # Use the default VLM preset.
     docling --pipeline vlm FILE
+
+    # Use a specific preset. --vlm-model selects the VLM pipeline.
+    docling --vlm-model granite_docling FILE
     ```
+
+    Docling gives an error if you combine `--vlm-model` with a different `--pipeline` value.
 
 === "Python"
 
@@ -48,7 +54,7 @@ classifies pictures before chart extraction and skips fields already present in
 the VLM output.
 
 ```bash
-docling --from image --to dclx IMAGE.png --pipeline vlm \
+docling --from image --to dclx IMAGE.png \
     --vlm-model mineru2_pro --enrich-chart-extraction
 ```
 
@@ -136,7 +142,7 @@ pip install 'docling-slim[format-markdown]'
 ```
 
 ```bash
-docling contract.pdf --pipeline vlm --vlm-model lightonocr3_08b
+docling contract.pdf --vlm-model lightonocr3_08b
 ```
 
 ```python
@@ -184,7 +190,7 @@ at a pinned revision. It reads English and Chinese pages and returns text and Ma
 Local inference requires the `models-vlm-inline` extra and `transformers>=5.21.0`.
 
 ```bash
-docling contract.pdf --pipeline vlm --vlm-model minicpm_ocr
+docling contract.pdf --vlm-model minicpm_ocr
 ```
 
 ```python
