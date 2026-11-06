@@ -8,8 +8,8 @@ each ``TN.SheetArchive`` lists what is drawn on it, and every drawable read is a
 table, a chart, a picture or a sticky note. Tables themselves are the same
 ``TST`` archives Pages embeds, so :mod:`docling.backend.iwork.tables` reads them;
 what is added here is everything around them — the sheets, the frames that
-position them, and the values and pictures a spreadsheet cell holds that a Pages
-cell never does.
+position them, and the pictures a spreadsheet cell holds that a Pages cell never
+does.
 
 Only the message and field numbers are format knowledge; the container layer
 lives in :mod:`docling.backend.iwork.iwa`.

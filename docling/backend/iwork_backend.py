@@ -266,9 +266,11 @@ class IWorkPagesDocumentBackend(DeclarativeDocumentBackend):
     """Extract text from Apple Pages documents of either generation.
 
     Known limitations:
-        * Only text cells are read from a table, in either of the two storage
-          layouts Pages has used. A cell holding a number, a date or a formula
-          result is left empty rather than guessed at.
+        * Table cells are read in either of the two storage layouts Pages has
+          used, as in the Numbers backend. The number format beside a value is
+          not read, so a currency, percentage or scientific cell reads as the
+          plain number it holds, and a pop-up menu cell in a 2013+ document
+          yields the index Pages stores rather than the label it shows.
         * A picture is placed where the document anchors it, but its caption,
           its cropping and its accessibility description are not read.
         * Bold, italic, underline, strikethrough, superscript, subscript and
@@ -386,9 +388,11 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     default.
 
     Known limitations:
-        * Only text cells are read from a table, in either of the two storage
-          layouts Keynote has used. A cell holding a number, a date or a formula
-          result is left empty rather than guessed at.
+        * Table cells are read in either of the two storage layouts Keynote has
+          used, as in the Numbers backend. The number format beside a value is
+          not read, so a currency, percentage or scientific cell reads as the
+          plain number it holds, and a pop-up menu cell in a 2013+ document
+          yields the index Keynote stores rather than the label it shows.
         * A picture is placed where the slide anchors it, but its caption, its
           cropping and its accessibility description are not read.
         * A chart becomes a picture classified by its kind, carrying the data it

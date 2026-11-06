@@ -188,7 +188,7 @@ DECIMAL128_BIAS = 6176
 
 
 def iwa_cell_text(storage: bytes, start: int, values: CellValues) -> str | None:
-    """Read the text of one packed cell, or None when it holds none.
+    """Read what one packed cell shows, or None when it shows nothing.
 
     Args:
         storage: The row's packed cell buffer.
@@ -196,10 +196,9 @@ def iwa_cell_text(storage: bytes, start: int, values: CellValues) -> str | None:
         values: The table's shared value lists.
 
     Returns:
-        The cell's text, or None for an empty cell or one holding a number.
+        The cell's value as text, or None for an empty cell.
     """
-    decoded = iwa_cell(storage, start, values)
-    return decoded.text if decoded is not None else None
+    return render(iwa_cell(storage, start, values))
 
 
 def render(decoded: Cell | None) -> str | None:

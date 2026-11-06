@@ -300,7 +300,10 @@ def legacy_table(model: Element) -> TableData | None:
     """Build table data from one ``sf:tabular-model`` of an '09 document.
 
     Cells are stored flat in ``sf:datasource``, in row-major order, so the grid
-    dimensions on ``sf:grid`` are what give them their positions.
+    dimensions on ``sf:grid`` are what give them their positions. The datasource
+    holds one element per cell of the grid, named for what the cell holds:
+    ``sf:t`` for text, ``sf:n`` for a number, and so on. A cell with no value still
+    takes its place, or everything after it shifts along a column.
 
     Args:
         model: An ``sf:tabular-model`` element.
@@ -322,7 +325,7 @@ def legacy_table(model: Element) -> TableData | None:
     if source is None:
         return None
 
-    values = [legacy_cell_text(cell) for cell in source]
+    values = [clean(legacy_cell_value(cell) or "").strip() for cell in source]
     if not any(values):
         return None
 
@@ -341,28 +344,6 @@ def legacy_table(model: Element) -> TableData | None:
         )
 
     return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
-
-
-def legacy_cell_text(cell: Element) -> str:
-    """Read one cell of an '09 table, which is empty unless it holds text.
-
-    The datasource holds one element per cell of the grid, in row-major order,
-    named for what the cell turned out to hold: ``sf:t`` for text, ``sf:n`` for
-    a number, and so on. Only text is recovered — a number, a date or a formula
-    result is left empty rather than guessed at from the stored value and the
-    format beside it — but every cell still takes its place, or everything after
-    the first non-text one shifts along a column.
-
-    Args:
-        cell: One child of an ``sf:datasource``.
-
-    Returns:
-        The cell's text, or an empty string when it holds none.
-    """
-    text = next(iter(cell.iter(SF_CELL_TEXT)), None)
-    if text is None:
-        return ""
-    return clean(text.get(SFA_ATTR_STRING) or "".join(text.itertext())).strip()
 
 
 def legacy_cell_value(cell: Element) -> str | None:
