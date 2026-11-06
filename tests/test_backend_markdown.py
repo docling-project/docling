@@ -11,8 +11,11 @@ from docling_core.types.doc import (
     CodeItem,
     CodeLanguageLabel,
     DocItemLabel,
+    FormulaItem,
+    InlineGroup,
     ListItem,
     PictureItem,
+    RichTableCell,
 )
 from PIL import Image
 
@@ -220,6 +223,200 @@ def _png_data_uri(width: int, height: int) -> str:
     Image.new("RGB", (width, height), color=(255, 0, 0)).save(buffer, format="PNG")
     encoded = base64.b64encode(buffer.getvalue()).decode()
     return f"data:image/png;base64,{encoded}"
+
+
+@pytest.mark.parametrize(
+    "source, latex, display",
+    [
+        (r"$x_i^2$", r"x_i^2", False),
+        (r"\(x_i^2\)", r"x_i^2", False),
+        (r"$\|x_i\|$", r"\|x_i\|", False),
+        (r"$$x_i^2$$", r"x_i^2", True),
+        (r"\[x_i^2\]", r"x_i^2", True),
+        (
+            "$$\n\\begin{aligned}\na &= b \\\\\nc &= d\n\\end{aligned}\n$$",
+            "\\begin{aligned}\na &= b \\\\\nc &= d\n\\end{aligned}",
+            True,
+        ),
+    ],
+)
+def test_math_option_preserves_formula_body_and_scope(
+    source: str, latex: str, display: bool
+):
+    markdown = f"Before\n{source}\nafter." if display else f"Before {source} after."
+    doc = _convert_markdown(markdown, MarkdownBackendOptions(enable_latex_math=True))
+    formulas = [item for item in doc.texts if isinstance(item, FormulaItem)]
+    assert [item.text for item in formulas] == [latex]
+    assert formulas[0].orig == source
+    parent = formulas[0].parent.resolve(doc)
+    assert isinstance(parent, InlineGroup) is not display
+    expected = (
+        f"Before\n\n$${latex}$$\n\nafter." if display else f"Before ${latex}$ after."
+    )
+    assert doc.export_to_markdown() == expected
+
+
+@pytest.mark.parametrize(
+    "source, expected", [("$x$", "$x$"), ("Before\n$x$\nafter.", "Before $x$ after.")]
+)
+def test_inline_math_keeps_scope_and_adjacent_line_breaks(source: str, expected: str):
+    doc = _convert_markdown(source, MarkdownBackendOptions(enable_latex_math=True))
+    formulas = [item for item in doc.texts if isinstance(item, FormulaItem)]
+    assert [item.text for item in formulas] == ["x"]
+    assert isinstance(formulas[0].parent.resolve(doc), InlineGroup)
+    assert doc.export_to_markdown() == expected
+
+
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_math_keeps_heading_list_and_rich_cell_ownership(html_suffix: str):
+    source = (
+        "## Before $h_1$ after\n\n## $h_2$\n\n"
+        "- Before $l_1$ after\n- $l_2$\n\nFollowing paragraph.\n\n"
+        "| Value |\n| --- |\n| $t_1$ |\n| Before $t_2$ after |"
+    )
+    doc = _convert_markdown(
+        source + html_suffix, MarkdownBackendOptions(enable_latex_math=True)
+    )
+    formulas = [
+        item for item, _ in doc.iterate_items() if isinstance(item, FormulaItem)
+    ]
+    assert [item.text for item in formulas] == [
+        "h_1",
+        "h_2",
+        "l_1",
+        "l_2",
+        "t_1",
+        "t_2",
+    ]
+    for formula, label in zip(
+        formulas[:4], [DocItemLabel.SECTION_HEADER] * 2 + [DocItemLabel.LIST_ITEM] * 2
+    ):
+        group = formula.parent.resolve(doc)
+        assert isinstance(group, InlineGroup)
+        assert group.parent.resolve(doc).label == label
+    table = doc.tables[0]
+    assert (table.data.num_rows, table.data.num_cols) == (3, 1)
+    for cell, formula in zip(table.data.table_cells[1:], formulas[4:]):
+        assert isinstance(cell, RichTableCell)
+        assert any(
+            item is formula
+            for item, _ in doc.iterate_items(
+                root=cell.ref.resolve(doc), with_groups=True
+            )
+        )
+    following = next(item for item in doc.texts if item.text == "Following paragraph.")
+    assert following.label == DocItemLabel.TEXT
+    assert not isinstance(following.parent.resolve(doc), ListItem | InlineGroup)
+    exported = doc.export_to_markdown()
+    assert "## Before $h_1$ after\n\n## $h_2$" in exported
+    assert "- Before $l_1$ after\n- $l_2$" in exported
+    assert "$t_1$" in exported and "Before $t_2$ after" in exported
+    assert "docling-md-formula" not in exported
+
+
+def test_math_survives_internal_html_roundtrip():
+    latex = r"\frac{x_1}{y_2} < 3"
+    source = (
+        f"Before ${latex}$ after.\n\n${latex}$\n\n$$\n{latex}\n$$\n\n"
+        f"![plot]({_png_data_uri(7, 5)})\n\n"
+        "<table><tr><td>HTML</td></tr></table>\n\n"
+        "<p><code>urn:docling:md-formula:other:#/texts/0</code></p>"
+    )
+    doc = _convert_markdown(
+        source, MarkdownBackendOptions(enable_latex_math=True, fetch_images=True)
+    )
+    formulas = [item for item in doc.texts if isinstance(item, FormulaItem)]
+    assert [item.text for item in formulas] == [latex] * 3
+    assert [isinstance(item.parent.resolve(doc), InlineGroup) for item in formulas] == [
+        True,
+        True,
+        False,
+    ]
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].get_image(doc).size == (7, 5)
+    exported = doc.export_to_markdown()
+    assert f"Before ${latex}$ after.\n\n${latex}$\n\n$${latex}$$" in exported
+    assert "urn:docling:md-formula:other:#/texts/0" in exported
+    assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == [
+        "urn:docling:md-formula:other:#/texts/0"
+    ]
+
+
+def test_math_option_keeps_code_currency_and_default_markdown_behavior():
+    source = (
+        r"Price $5-$10; literal `$x_i$`; cost \$5; ~~old~~ and $x_i$."
+        + "\n\n```tex\n$x_i$\n```"
+    )
+    doc = _convert_markdown(source, MarkdownBackendOptions(enable_latex_math=True))
+    assert [item.text for item in doc.texts if isinstance(item, FormulaItem)] == ["x_i"]
+    assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == [
+        "$x_i$",
+        "$x_i$",
+    ]
+    assert any(
+        item.text == "old" and item.formatting.strikethrough for item in doc.texts
+    )
+    assert (
+        "Price $5-$10; literal `$x_i$`; cost $5; ~~old~~ and $x_i$."
+        in doc.export_to_markdown()
+    )
+    ordinary = (
+        get_converter()
+        .convert_string(r"Before \(x_i\) after.", format=InputFormat.MD)
+        .document
+    )
+    assert not any(isinstance(item, FormulaItem) for item in ordinary.texts)
+    assert ordinary.export_to_markdown() == r"Before (x\_i) after."
+
+
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_math_keeps_literal_html_code_and_adjacent_formulas(html_suffix: str):
+    source = r"Before <code>$x_i$ &amp; raw</code> and \(a_i\)\(b_j\)`literal`."
+    doc = _convert_markdown(
+        source + html_suffix, MarkdownBackendOptions(enable_latex_math=True)
+    )
+    assert [
+        item.text for item, _ in doc.iterate_items() if isinstance(item, FormulaItem)
+    ] == ["a_i", "b_j"]
+    assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == [
+        "$x_i$ & raw",
+        "literal",
+    ]
+    assert "Before `$x_i$ & raw` and $a_i$$b_j$`literal`." in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_display_math_keeps_rich_cell_order(html_suffix: str):
+    source = "| Value |\n| --- |\n| Before $$x_i$$ after |"
+    doc = _convert_markdown(
+        source + html_suffix, MarkdownBackendOptions(enable_latex_math=True)
+    )
+    cell = doc.tables[0].data.table_cells[1]
+    assert isinstance(cell, RichTableCell)
+    items = [item for item, _ in doc.iterate_items(root=cell.ref.resolve(doc))]
+    assert [item.text.strip() for item in items] == ["Before", "x_i", "after"]
+    formula = items[1]
+    assert isinstance(formula, FormulaItem)
+    assert not isinstance(formula.parent.resolve(doc), InlineGroup)
+
+
+def test_math_html_references_do_not_replace_other_formula_indices():
+    source = (
+        "Before $a$ after.\n\n"
+        + "\n\n".join(["Paragraph."] * 7)
+        + "\n\n| Value |\n| --- |\n| $b$ |\n\n"
+        + "<table><tr><td>HTML</td></tr></table>"
+    )
+    doc = _convert_markdown(source, MarkdownBackendOptions(enable_latex_math=True))
+    cell = doc.tables[0].data.table_cells[1]
+    assert isinstance(cell, RichTableCell)
+    assert cell.text == "$b$"
 
 
 def test_convert_embedded_base64_image():

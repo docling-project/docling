@@ -67,3 +67,30 @@ def test_concurrent_conversions_keep_references_and_math_in_their_document() -> 
         f'<p><a href="https://example.com/{index}">name</a> and <math>x_{index}</math></p>\n'
         for index in range(32)
     ]
+
+
+def test_math_extension_composes_with_markdown_and_keeps_parser_modes_isolated() -> (
+    None
+):
+    import marko
+
+    from docling.utils.markdown_math import create_math_extension
+
+    source = r"# $x_i$ and `\(code\)`; $5-$10"
+    expected = "<h1><math>x_i</math> and <code>\\(code\\)</code>; $5-$10</h1>\n"
+    assert (
+        marko.Markdown(extensions=[create_math_extension()]).convert(source) == expected
+    )
+
+    def convert(index: int) -> str:
+        inline = index % 2 == 0
+        return create_markdown_parser(inline_only=inline).convert(source)
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        rendered = list(executor.map(convert, range(16)))
+    assert rendered == [
+        "<p># <math>x_i</math> and <code>\\(code\\)</code>; $5-$10</p>\n"
+        if index % 2 == 0
+        else expected
+        for index in range(16)
+    ]
