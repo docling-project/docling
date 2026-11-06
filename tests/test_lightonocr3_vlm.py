@@ -561,6 +561,21 @@ def test_unclosed_native_code_fence_remains_literal(fence: str):
     assert not doc.pictures
 
 
+@pytest.mark.parametrize("fence", ["```", "~~~~"])
+@pytest.mark.parametrize("padding", ["  \n{}", "{}\n\t  "])
+def test_native_code_fence_with_blank_padding(fence: str, padding: str):
+    body = padding.format(f"{fence}python\nx = 1\n{fence}")
+    doc = parse_lightonocr_markdown(
+        f"![code](100,200,900,400)\n{body}\n![text](100,500,900,600) After.",
+        PAGE_SIZE,
+        page_no=3,
+    )
+    assert isinstance(doc.texts[0], CodeItem)
+    assert doc.texts[0].text == "x = 1"
+    assert doc.texts[0].code_language == CodeLanguageLabel.PYTHON
+    assert [item.text for item in doc.texts[1:]] == ["After."]
+
+
 @pytest.mark.parametrize("heading", ["Contract", "# Contract"])
 def test_title_without_section_markup_is_the_title(heading: str):
     doc = parse_lightonocr_markdown(

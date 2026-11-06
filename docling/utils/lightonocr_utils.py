@@ -123,7 +123,9 @@ def _render_code(body: str) -> str:
     """Parse a complete enclosing fence; keep other explicit code literal."""
     from marko.block import BlankLine, FencedCode
 
-    lines = body.strip("\r\n").splitlines()
+    # Whitespace-only padding is valid outside a fence. Keep the original body
+    # for parsing so indentation and blank lines inside the code stay literal.
+    lines = [line for line in body.splitlines() if line.strip()]
     opening = re.match(r"^ {0,3}(`{3,}|~{3,})", lines[0]) if lines else None
     closing = (
         re.fullmatch(r" {0,3}(`{3,}|~{3,})[ \t]*", lines[-1])
