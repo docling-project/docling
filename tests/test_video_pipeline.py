@@ -516,3 +516,19 @@ def test_merge_into_sentences_splits_on_full_width_punctuation() -> None:
         (1.0, 2.0),
         (2.0, 4.0),
     ]
+
+
+def test_merge_into_sentences_splits_unpunctuated_words_on_a_pause() -> None:
+    items = [
+        _ConversationItem(text="hello", start_time=0.10, end_time=0.40),
+        _ConversationItem(text="there", start_time=0.45, end_time=0.80),
+        _ConversationItem(text="good", start_time=1.70, end_time=2.00),
+        _ConversationItem(text="morning", start_time=2.05, end_time=2.40),
+    ]
+
+    merged = _merge_into_sentences(items)
+
+    assert [(item.text, item.start_time, item.end_time) for item in merged] == [
+        ("hello there", 0.10, 0.80),
+        ("good morning", 1.70, 2.40),
+    ]
