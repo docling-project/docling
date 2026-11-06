@@ -7,7 +7,7 @@ import html
 import logging
 import re
 import warnings
-from copy import deepcopy
+from copy import copy, deepcopy
 from enum import Enum
 from html import unescape
 from io import BytesIO
@@ -172,39 +172,59 @@ def _only_plain_line_breaks(children: list) -> bool:
     )
 
 
-def _contains_math(children: list) -> bool:
+def _contains_math(children: list, *, display_only: bool = False) -> bool:
     return any(
-        isinstance(child, MathData)
+        (isinstance(child, MathData) and (not display_only or child.display))
         or (
             isinstance(child, marko.inline.InlineElement)
             and isinstance(child.children, list)
-            and _contains_math(child.children)
+            and _contains_math(child.children, display_only=display_only)
         )
         for child in children
     )
 
 
+def _split_math_runs(children: list) -> list[tuple[list, bool]]:
+    """Split at display formulas while retaining their inline wrapper context."""
+    runs: list[tuple[list, bool]] = []
+    for child in children:
+        if isinstance(child, MathData):
+            parts = [([child], child.display)]
+        elif (
+            isinstance(child, marko.inline.InlineElement)
+            and isinstance(child.children, list)
+            and _contains_math(child.children, display_only=True)
+        ):
+            parts = []
+            for nodes, display in _split_math_runs(child.children):
+                wrapper = copy(child)
+                wrapper.children = nodes
+                parts.append(([wrapper], display))
+        else:
+            parts = [([child], False)]
+        for nodes, display in parts:
+            if runs and not display and not runs[-1][1]:
+                runs[-1][0].extend(nodes)
+            else:
+                runs.append((nodes, display))
+    return runs
+
+
 def _split_display_math(children: list) -> list:
     """Split a paragraph at display formulas without consuming adjacent blocks."""
     blocks = []
-    pending = []
-
-    def flush() -> None:
-        while pending and isinstance(pending[-1], marko.inline.LineBreak):
-            pending.pop()
-        if pending:
+    for nodes, display in _split_math_runs(children):
+        if display:
+            blocks.extend(nodes)
+            continue
+        while nodes and isinstance(nodes[-1], marko.inline.LineBreak):
+            nodes.pop()
+        while nodes and isinstance(nodes[0], marko.inline.LineBreak):
+            nodes.pop(0)
+        if nodes:
             paragraph = marko.block.Paragraph([])
-            paragraph.children = pending.copy()
+            paragraph.children = nodes
             blocks.append(paragraph)
-        pending.clear()
-
-    for child in children:
-        if isinstance(child, MathData) and child.display:
-            flush()
-            blocks.append(child)
-        elif pending or not isinstance(child, marko.inline.LineBreak):
-            pending.append(child)
-    flush()
     return blocks
 
 
@@ -468,22 +488,22 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     )
                     inline_group = None
                     inline_refs: list[RefItem] = []
-                    for child in cell.children:
-                        if isinstance(child, MathData) and child.display:
+                    for children, display in _split_math_runs(cell.children):
+                        if display:
                             inline_group = None
                             child_parent = cell_group
                         else:
-                            if inline_group is None:
-                                inline_group = doc.add_inline_group(parent=cell_group)
+                            inline_group = doc.add_inline_group(parent=cell_group)
                             child_parent = inline_group
-                        self._iterate_cell_inline(
-                            element=child,
-                            doc=doc,
-                            inline_parent=child_parent,
-                            collected_refs=inline_refs,
-                            formatting=None,
-                            hyperlink=None,
-                        )
+                        for child in children:
+                            self._iterate_cell_inline(
+                                element=child,
+                                doc=doc,
+                                inline_parent=child_parent,
+                                collected_refs=inline_refs,
+                                formatting=None,
+                                hyperlink=None,
+                            )
 
                     if inline_refs:
                         doc.add_table_cell(
@@ -1173,9 +1193,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug("Some other element: %s", type(element).__name__)
 
         element_children = getattr(element, "children", [])
-        split_display = isinstance(element, marko.block.Paragraph) and any(
-            isinstance(child, MathData) and child.display for child in element_children
-        )
+        split_display = isinstance(
+            element,
+            marko.block.Paragraph | marko.block.Heading | marko.block.SetextHeading,
+        ) and _contains_math(element_children, display_only=True)
         if split_display:
             element_children = _split_display_math(element_children)
         if (
@@ -1386,6 +1407,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     options=html_options,
                     picture_refs=html_payload.picture_refs,
                     formula_refs=html_payload.formula_refs,
+                    line_break_ref=html_payload.line_break_ref,
                 )
                 doc = html_backend_obj.convert()
         else:

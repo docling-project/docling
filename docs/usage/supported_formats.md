@@ -85,6 +85,18 @@ print(result.document.export_to_markdown())
 The option defaults to `False` for Markdown input. `VlmPipeline` enables it
 automatically for responses with `ResponseFormat.MARKDOWN`.
 
+GFM tables remove one pipe-escape backslash before inline parsing. To retain a
+LaTeX `\|` inside a table cell, write `\\|` in the Markdown source:
+
+```text
+| Norm |
+| --- |
+| $\\|x_i\\|$ |
+```
+
+Outside tables, write the usual `$\|x_i\|$`. This option keeps the GFM table
+escaping rules for prose and code as well as math.
+
 ## Supported output formats
 
 | Format | Description |

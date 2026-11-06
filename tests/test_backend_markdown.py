@@ -419,6 +419,142 @@ def test_math_html_references_do_not_replace_other_formula_indices():
     assert cell.text == "$b$"
 
 
+@pytest.mark.parametrize("wrapper", ["**{}**", "[{}](https://example.org/)"])
+@pytest.mark.parametrize("prefix", ["", "## "])
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_nested_display_math_keeps_scope(wrapper: str, prefix: str, html_suffix: str):
+    doc = _convert_markdown(
+        prefix
+        + "Before "
+        + wrapper.format("left $$x_i$$ right")
+        + " after."
+        + html_suffix,
+        MarkdownBackendOptions(enable_latex_math=True),
+    )
+    formula = next(item for item in doc.texts if isinstance(item, FormulaItem))
+    assert formula.text == "x_i"
+    assert not isinstance(formula.parent.resolve(doc), InlineGroup)
+    if prefix:
+        assert formula.parent.resolve(doc).label == DocItemLabel.SECTION_HEADER
+    if wrapper.startswith("**"):
+        assert formula.formatting is not None and formula.formatting.bold
+    else:
+        assert str(formula.hyperlink) == "https://example.org/"
+    assert "$$x_i$$" in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize("wrapper", ["**{}**", "[{}](https://example.org/)"])
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_nested_cell_display_math_keeps_order(wrapper: str, html_suffix: str):
+    doc = _convert_markdown(
+        "| Value |\n| --- |\n| "
+        + wrapper.format("left $$x_i$$ right")
+        + " |"
+        + html_suffix,
+        MarkdownBackendOptions(enable_latex_math=True),
+    )
+    cell = doc.tables[0].data.table_cells[1]
+    assert isinstance(cell, RichTableCell)
+    items = [item for item, _ in doc.iterate_items(root=cell.ref.resolve(doc))]
+    assert [item.text.strip() for item in items] == ["left", "x_i", "right"]
+    assert isinstance(items[1], FormulaItem)
+    assert not isinstance(items[1].parent.resolve(doc), InlineGroup)
+
+
+@pytest.mark.parametrize("body", ["$$x_i$$", "Before $$x_i$$ after."])
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_list_display_math_keeps_scope(body: str, html_suffix: str):
+    doc = _convert_markdown(
+        "- " + body + "\n\nAfter." + html_suffix,
+        MarkdownBackendOptions(enable_latex_math=True),
+    )
+    formula = next(item for item in doc.texts if isinstance(item, FormulaItem))
+    assert isinstance(formula.parent.resolve(doc), ListItem)
+    assert "$$x_i$$" in doc.export_to_markdown()
+    after = next(item for item in doc.texts if item.text == "After.")
+    assert not isinstance(after.parent.resolve(doc), ListItem | InlineGroup)
+
+
+@pytest.mark.parametrize(
+    "source", ["$x_i$  \n$y_i$", "Before  \n$x_i$", "$x_i$  \nafter."]
+)
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_math_html_transport_keeps_hard_break(source: str, html_suffix: str):
+    doc = _convert_markdown(
+        source + html_suffix, MarkdownBackendOptions(enable_latex_math=True)
+    )
+    assert source in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize("tag", ["strong", 'a href="https://example.org/"'])
+def test_math_inherits_raw_html_container_metadata(tag: str):
+    closing = tag.split()[0]
+    doc = _convert_markdown(
+        f"<{tag}>\n\nBefore $x_i$ after\n\n</{closing}>",
+        MarkdownBackendOptions(enable_latex_math=True),
+    )
+    formula = next(item for item in doc.texts if isinstance(item, FormulaItem))
+    if closing == "strong":
+        assert formula.formatting is not None and formula.formatting.bold
+        assert "**$x_i$**" in doc.export_to_markdown()
+    else:
+        assert str(formula.hyperlink) == "https://example.org/"
+        assert "[$x_i$](https://example.org/)" in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize(
+    "code",
+    ['<code title="a > b">x_i</code>', '<code><span class="n">x_i</span></code>'],
+)
+@pytest.mark.parametrize("table", [False, True])
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_literal_html_code_keeps_text_content(code: str, table: bool, html_suffix: str):
+    source = f"Before {code} $y$."
+    if table:
+        source = f"| Value |\n| --- |\n| {source} |"
+    doc = _convert_markdown(
+        source + html_suffix, MarkdownBackendOptions(enable_latex_math=True)
+    )
+    assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["x_i"]
+    assert "`x_i`" in doc.export_to_markdown()
+
+
+@pytest.mark.parametrize("delimiter", ["$", "$$"])
+@pytest.mark.parametrize(
+    "html_suffix", ["", "\n\n<table><tr><td>HTML</td></tr></table>"]
+)
+def test_math_table_applies_gfm_pipe_escaping(delimiter: str, html_suffix: str):
+    doc = _convert_markdown(
+        "| Value |\n| --- |\n| "
+        + delimiter
+        + r"\\|x_i\\|"
+        + delimiter
+        + " |\n"
+        + r"| prose a\|b and `a\|b` |"
+        + html_suffix,
+        MarkdownBackendOptions(enable_latex_math=True),
+    )
+    formula = next(item for item in doc.texts if isinstance(item, FormulaItem))
+    assert formula.text == r"\|x_i\|"
+    assert formula.orig == delimiter + r"\|x_i\|" + delimiter
+    assert isinstance(formula.parent.resolve(doc), InlineGroup) == (delimiter == "$")
+    assert doc.tables[0].data.num_cols == 1
+    assert [item.text for item in doc.texts if isinstance(item, CodeItem)] == ["a|b"]
+    markdown = doc.export_to_markdown()
+    assert delimiter + r"\&#124;x_i\&#124;" + delimiter in markdown
+    assert "prose a&#124;b" in markdown
+
+
 def test_convert_embedded_base64_image():
     """Embedded base64 image data must be decoded when fetch_images is enabled."""
     markdown = f"# Title\n\n![alt]({_png_data_uri(7, 5)})\n"

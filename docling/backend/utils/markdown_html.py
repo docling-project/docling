@@ -23,11 +23,13 @@ from docling_core.transforms.serializer.html import (
     HTMLTextSerializer,
 )
 from docling_core.types.doc import (
+    CodeItem,
     DoclingDocument,
     FormulaItem,
     ImageRef,
     InlineGroup,
     ListItem,
+    NodeItem,
     PictureItem,
     RefItem,
     SectionHeaderItem,
@@ -36,15 +38,15 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.common.constants import DOCUMENT_TOKENS_EXPORT_LABELS
 from docling_core.types.doc.common.content_layer import DEFAULT_CONTENT_LAYERS
-from pydantic import Field
+from pydantic import AnyUrl, Field
 from typing_extensions import override
 
-from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.html_backend import AnnotatedTextList, HTMLDocumentBackend
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.document import InputDocument
 
 if TYPE_CHECKING:
-    from bs4 import Tag
+    from bs4 import PageElement, Tag
 
 
 @dataclass(frozen=True)
@@ -58,10 +60,12 @@ class MarkdownHTMLPayload:
     text: str
     picture_refs: dict[str, ImageRef | None]
     formula_refs: dict[str, _FormulaReference]
+    line_break_ref: str
 
 
 class _MarkdownTextSerializer(HTMLTextSerializer):
     reference_prefix: str
+    line_break_ref: str
     formula_refs: dict[str, _FormulaReference] = Field(default_factory=dict)
 
     @override
@@ -75,6 +79,12 @@ class _MarkdownTextSerializer(HTMLTextSerializer):
         **kwargs: Any,
     ) -> SerializationResult:
         if not isinstance(item, FormulaItem):
+            if not isinstance(item, CodeItem) and "\n" in item.text:
+                # A newline-only run next to a formula must survive HTML's
+                # boundary-whitespace normalization as an explicit hard break.
+                item = item.model_copy(
+                    update={"text": item.text.replace("\n", self.line_break_ref)}
+                )
             return super().serialize(
                 item=item,
                 doc_serializer=doc_serializer,
@@ -85,11 +95,12 @@ class _MarkdownTextSerializer(HTMLTextSerializer):
         reference = self.reference_prefix + item.self_ref + ":"
         self.formula_refs[reference] = _FormulaReference(item, is_inline_scope)
         escaped = html.escape(reference, quote=True)
-        # Distinct links keep adjacent formulas/code from merging in the HTML
-        # text buffer. These document-local URNs are removed after parsing.
-        text = f'<code><a href="{escaped}">{escaped}</a></code>'
+        text = f'<code data-docling-md-formula="{escaped}">{escaped}</code>'
         if not is_inline_scope:
             text = f"<pre>{text}</pre>"
+        text = doc_serializer.post_process(
+            text=text, formatting=item.formatting, hyperlink=item.hyperlink
+        )
         return create_ser_result(text=text, span_source=item)
 
 
@@ -148,12 +159,38 @@ class MarkdownHTMLDocumentBackend(HTMLDocumentBackend):
         options: HTMLBackendOptions | None,
         picture_refs: dict[str, ImageRef | None] | None = None,
         formula_refs: dict[str, _FormulaReference] | None = None,
+        line_break_ref: str | None = None,
     ) -> None:
         # InputDocument constructs a backend to inspect it before conversion;
         # that instance does not yet need the already parsed Markdown pictures.
         super().__init__(in_doc=in_doc, path_or_stream=path_or_stream, options=options)
         self._picture_refs = picture_refs if picture_refs is not None else {}
         self._formula_refs = formula_refs if formula_refs is not None else {}
+        self._formula_hyperlinks: dict[str, AnyUrl | Path | None] = {}
+        self._line_break_ref = line_break_ref
+
+    @override
+    def _extract_text_and_hyperlink_recursively(
+        self,
+        item: "PageElement",
+        ignore_list=False,
+        find_parent_annotation=False,
+        keep_newlines=False,
+    ) -> AnnotatedTextList:
+        from bs4 import Tag
+
+        parts = super()._extract_text_and_hyperlink_recursively(
+            item, ignore_list, find_parent_annotation, keep_newlines
+        )
+        if isinstance(item, Tag):
+            reference = item.get("data-docling-md-formula")
+            if isinstance(reference, str) and reference in self._formula_refs:
+                # Distinct temporary links prevent adjacent formula/code runs
+                # from merging. Keep real links outside this internal buffer.
+                for part in parts:
+                    self._formula_hyperlinks[reference] = part.hyperlink
+                    part.hyperlink = AnyUrl(reference)
+        return parts
 
     @override
     def _handle_heading(self, tag: "Tag", doc: DoclingDocument) -> list[RefItem]:
@@ -181,18 +218,21 @@ class MarkdownHTMLDocumentBackend(HTMLDocumentBackend):
     @override
     def convert(self) -> DoclingDocument:
         doc = super().convert()
+        display_refs: set[str] = set()
         for index, item in enumerate(list(doc.texts)):
             reference = self._formula_refs.get(item.text)
             if reference is None:
                 continue
+            formatting = item.formatting
+            hyperlink = self._formula_hyperlinks.get(item.text)
             if isinstance(item, TitleItem | SectionHeaderItem | ListItem):
                 # A formula-only heading/list item may have been folded into
                 # its owner's text by the HTML backend. Keep that owner.
                 item.text = item.orig = ""
                 item.hyperlink = None
                 item.formatting = None
-                group = doc.add_inline_group(parent=item)
-                item = doc.add_formula(text="", parent=group)
+                parent = doc.add_inline_group(parent=item) if reference.inline else item
+                item = doc.add_formula(text="", parent=parent)
                 index = len(doc.texts) - 1
             elif reference.inline and item.parent is not None:
                 parent = item.parent.resolve(doc)
@@ -211,12 +251,55 @@ class MarkdownHTMLDocumentBackend(HTMLDocumentBackend):
                     "self_ref": item.self_ref,
                     "parent": item.parent,
                     "children": item.children,
+                    "formatting": formatting,
+                    "hyperlink": hyperlink,
                 },
             )
+            if not reference.inline:
+                display_refs.add(item.self_ref)
+        # The HTML list path folds all runs into one InlineGroup, including
+        # <pre> placeholders. Split that group around each display formula.
+        empty_groups: list[NodeItem] = []
+        for group in list(doc.groups):
+            if (
+                not isinstance(group, InlineGroup)
+                or group.parent is None
+                or not any(ref.cref in display_refs for ref in group.children)
+            ):
+                continue
+            owner = group.parent.resolve(doc)
+            position = owner.children.index(group.get_ref())
+            replacement: list[RefItem] = []
+            inline_group = None
+            for ref in group.children:
+                child = ref.resolve(doc)
+                if ref.cref in display_refs:
+                    child.parent = owner.get_ref()
+                    replacement.append(ref)
+                    inline_group = None
+                else:
+                    if inline_group is None:
+                        inline_group = doc.add_inline_group(
+                            parent=owner, content_layer=group.content_layer
+                        )
+                        owner.children.remove(inline_group.get_ref())
+                        replacement.append(inline_group.get_ref())
+                    inline_group.children.append(ref)
+                    child.parent = inline_group.get_ref()
+            owner.children[position:position] = replacement
+            group.children = []
+            empty_groups.append(group)
+        doc.delete_items(node_items=empty_groups)
+        if self._line_break_ref is not None:
+            for text in doc.texts:
+                text.text = text.text.replace(self._line_break_ref, "\n")
+                text.orig = text.orig.replace(self._line_break_ref, "\n")
         for table in doc.tables:
             for cell in table.data.table_cells:
                 for key, reference in self._formula_refs.items():
                     cell.text = cell.text.replace(key, reference.formula.orig)
+                if self._line_break_ref is not None:
+                    cell.text = cell.text.replace(self._line_break_ref, "\n")
         return doc
 
     @override
@@ -237,7 +320,8 @@ def serialize_markdown_for_html(
         prefix + picture.self_ref: picture.image for picture in doc.pictures
     }
     text_serializer = _MarkdownTextSerializer(
-        reference_prefix=f"urn:docling:md-formula:{source_hash}:"
+        reference_prefix=f"urn:docling:md-formula:{source_hash}:",
+        line_break_ref=f"urn:docling:md-break:{source_hash}:",
     )
     serializer = HTMLDocSerializer(
         doc=doc,
@@ -250,5 +334,8 @@ def serialize_markdown_for_html(
         inline_serializer=_MarkdownInlineSerializer(),
     )
     return MarkdownHTMLPayload(
-        serializer.serialize().text, picture_refs, text_serializer.formula_refs
+        serializer.serialize().text,
+        picture_refs,
+        text_serializer.formula_refs,
+        text_serializer.line_break_ref,
     )

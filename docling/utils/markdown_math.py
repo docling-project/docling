@@ -9,6 +9,7 @@ import html
 import re
 from dataclasses import dataclass
 from threading import local
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -48,8 +49,7 @@ class LiteralCodeData:
     code: str
 
 
-def create_math_extension() -> MarkoExtension:
-    """Create the shared math extension without selecting a Markdown dialect."""
+def _require_marko() -> ModuleType:
     # Markdown is an optional dependency for slim installations.
     try:
         import marko
@@ -57,6 +57,12 @@ def create_math_extension() -> MarkoExtension:
         raise ImportError(
             "Markdown parsing requires `pip install 'docling-slim[format-markdown]'`."
         ) from exc
+    return marko
+
+
+def create_math_extension() -> MarkoExtension:
+    """Create the shared math extension without selecting a Markdown dialect."""
+    marko = _require_marko()
     from marko.helpers import MarkoExtension
 
     class Math(MathData, marko.inline.InlineElement):
@@ -83,10 +89,13 @@ def create_math_extension() -> MarkoExtension:
         parse_group = 0
 
         def __init__(self, match: re.Match[str]) -> None:
+            # Load the HTML text extractor only when an HTML code span is used.
+            from docling.utils.chandra_utils import _HTMLTreeParser
+
             raw = match.group(0)
             super().__init__(
                 children=raw,
-                code=html.unescape(raw.split(">", 1)[1].rsplit("</", 1)[0]),
+                code=_HTMLTreeParser(raw).root.text(),
             )
 
     class MathRenderer:
@@ -110,11 +119,10 @@ def create_markdown_parser(*, inline_only: bool = False) -> marko.Markdown:
 
     Reuse one parser per mode and thread: Marko instances are not thread-safe.
     """
+    marko = _require_marko()
     if inline_only in _parsers.by_mode:
         return _parsers.by_mode[inline_only]
     extension = create_math_extension()
-    # The extension checks the optional dependency before these imports.
-    import marko
     from marko.helpers import MarkoExtension
 
     class Paragraph(marko.block.Paragraph):

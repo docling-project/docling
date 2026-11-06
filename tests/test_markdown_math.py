@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -40,6 +41,17 @@ def test_full_markdown_still_parses_tables_with_math() -> None:
     rendered = create_markdown_parser().convert("| A | B |\n| --- | --- |\n| $x$ | y |")
     assert "<table>" in rendered
     assert "<td><math>x</math></td>" in rendered
+
+
+@pytest.mark.parametrize("inline_only", [False, True])
+def test_cached_parser_checks_optional_dependency(
+    inline_only: bool, monkeypatch
+) -> None:
+    parser = create_markdown_parser(inline_only=inline_only)
+    assert "<math>x</math>" in parser.convert("$x$")
+    monkeypatch.setitem(sys.modules, "marko", None)
+    with pytest.raises(ImportError, match="format-markdown"):
+        create_markdown_parser(inline_only=inline_only)
 
 
 def test_reused_parsers_do_not_leak_document_state() -> None:
