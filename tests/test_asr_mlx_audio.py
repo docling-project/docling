@@ -173,6 +173,22 @@ def test_low_max_time_chunk_stays_valid_for_a_family_without_windows(family):
     assert transformers.max_time_chunk == 5.0
 
 
+def test_max_new_tokens_reaches_the_transformers_fallback():
+    options = _options("granite").model_copy(
+        update={
+            "max_new_tokens": 2048,
+            "transformers_fallback": InlineAsrTransformersOptions(
+                repo_id="r", model_family="granite"
+            ),
+        }
+    )
+
+    fallback = options.transformers_fallback_options()
+
+    assert fallback is not None
+    assert fallback.max_new_tokens == 2048
+
+
 # ---------------------------------------------------------------- windows
 
 

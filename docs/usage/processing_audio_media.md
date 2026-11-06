@@ -406,7 +406,7 @@ A cut goes to the longest pause within the search range. With the defaults, wind
 |--------|---------|---------|
 | `max_time_chunk` | `30.0` | Target window length in seconds |
 | `chunk_search_window` | `10.0` | Seconds that a cut can move from the target to reach a pause. For the Granite families, it must be smaller than `max_time_chunk` |
-| `max_new_tokens` | `1024` | Token limit for each window on Transformers. A low value silently cuts text. `mlx-audio` always uses `1024` |
+| `max_new_tokens` | `1024` | Token limit for each window. Only the Transformers backend uses it, also when it is the fallback of an `mlx-audio` preset. A low value silently cuts text. `mlx-audio` ignores this option and uses at least `1024` tokens for each window |
 
 ```python
 from docling.datamodel import asr_model_specs

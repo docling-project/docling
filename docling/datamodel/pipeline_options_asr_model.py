@@ -414,9 +414,17 @@ class InlineAsrTransformersOptions(_WindowedAsrOptions):
     prompt: str | None = None
     language: str | None = None
     task: Literal["transcribe", "translate"] = "transcribe"
-    # Only the Granite family uses this limit. It applies to each window, and 256 can
-    # cut the speech of a long window.
-    max_new_tokens: int = 1024
+    max_new_tokens: Annotated[
+        int,
+        Field(
+            description=(
+                "Maximum number of tokens to generate for each window. Only the "
+                "`granite` and `granite_plus` families use it. For `granite_plus`, "
+                "it is a minimum, because long windows get more tokens. A value "
+                "that is too low silently cuts the text of a long window."
+            )
+        ),
+    ] = 1024
     supported_devices: list[AcceleratorDevice] = [
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
@@ -585,6 +593,16 @@ class InlineAsrMlxAudioOptions(_WindowedAsrOptions):
             examples=["en", "fr", "de"],
         ),
     ] = None
+    max_new_tokens: Annotated[
+        int,
+        Field(
+            description=(
+                "Token limit for each window, used only by the Transformers "
+                "fallback. mlx-audio ignores it: the `granite` and `granite_plus` "
+                "families use a fixed minimum of 1024 tokens for each window."
+            )
+        ),
+    ] = 1024
     task: Annotated[
         Literal["transcribe", "translate"],
         Field(
@@ -637,6 +655,7 @@ class InlineAsrMlxAudioOptions(_WindowedAsrOptions):
                 "task": self.task,
                 "prompt": self.prompt,
                 "temperature": self.temperature,
+                "max_new_tokens": self.max_new_tokens,
                 "verbose": self.verbose,
                 "timestamps": self.timestamps,
                 "max_time_chunk": self.max_time_chunk,
