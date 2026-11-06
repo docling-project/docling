@@ -693,6 +693,30 @@ class TesseractCliOcrOptions(OcrOptions):
             )
         ),
     ] = None
+    convert_to_grayscale: Annotated[
+        bool,
+        Field(
+            description=(
+                "Convert each OCR region to grayscale before orientation detection and recognition. Tesseract "
+                "binarizes a colour image channel by channel, which can turn a highlighter mark into a black "
+                "block that hides its text. Grayscale lowers the contrast of light text on a strongly coloured "
+                "background, such as white labels on coloured bands; set `False` to keep the colour image."
+            )
+        ),
+    ] = True
+    orientation_confidence_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "Minimum orientation confidence from Tesseract's orientation and script detection (OSD) for an "
+                "OCR region to be rotated before recognition. OSD reports it as the margin between its best and "
+                "second-best orientation scores, so values near 0 are close calls. Below the threshold the region "
+                "is read as rendered; `0` rotates on every detection."
+            ),
+            examples=[0.0, 1.0, 14.0],
+            ge=0.0,
+        ),
+    ] = 1.0
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -737,6 +761,30 @@ class TesseractOcrOptions(OcrOptions):
             )
         ),
     ] = None
+    convert_to_grayscale: Annotated[
+        bool,
+        Field(
+            description=(
+                "Convert each OCR region to grayscale before orientation detection and recognition. Tesseract "
+                "binarizes a colour image channel by channel, which can turn a highlighter mark into a black "
+                "block that hides its text. Grayscale lowers the contrast of light text on a strongly coloured "
+                "background, such as white labels on coloured bands; set `False` to keep the colour image."
+            )
+        ),
+    ] = True
+    orientation_confidence_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "Minimum orientation confidence from Tesseract's orientation and script detection (OSD) for an "
+                "OCR region to be rotated before recognition. OSD reports it as the margin between its best and "
+                "second-best orientation scores, so values near 0 are close calls. Below the threshold the region "
+                "is read as rendered; `0` rotates on every detection."
+            ),
+            examples=[0.0, 1.0, 14.0],
+            ge=0.0,
+        ),
+    ] = 1.0
     model_config = ConfigDict(
         extra="forbid",
     )
