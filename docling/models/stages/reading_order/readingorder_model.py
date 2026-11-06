@@ -296,6 +296,77 @@ class ReadingOrderModel:
             orientation=element.orientation,
         )
 
+    def _order_siblings(
+        self,
+        siblings: list[ReadingOrderPageElement],
+        assembled_by_ref: dict[str, PageElement],
+        page_separators: list[SeparatorElement] | None = None,
+    ) -> list[ReadingOrderPageElement]:
+        """Order one sibling group: supplied order per page, predictor elsewhere.
+
+        A page whose every sibling carries ``Cluster.reading_order`` is sorted
+        by that index; an upstream stage (a layout model that predicts reading
+        order, the tagged-PDF structure tree) already knows the order and the
+        predictor would only second-guess it. A page with any sibling lacking
+        an index goes through the predictor together with the other such
+        pages, exactly as before. Pages are then concatenated in page order,
+        which is also how the predictor lays out its result. Page separators
+        go to the predictor for the pages it orders.
+        """
+        if len(siblings) <= 1:
+            return siblings
+
+        def supplied_index(element: ReadingOrderPageElement) -> int | None:
+            return assembled_by_ref[element.ref.cref].cluster.reading_order
+
+        by_page: dict[int, list[ReadingOrderPageElement]] = {}
+        for element in siblings:
+            by_page.setdefault(element.page_no, []).append(element)
+        supplied_pages = {
+            page_no
+            for page_no, elements in by_page.items()
+            if all(supplied_index(element) is not None for element in elements)
+        }
+        if not supplied_pages:
+            return self.ro_model.predict_reading_order(
+                page_elements=siblings, page_separators=page_separators
+            )
+
+        predicted = [
+            element for element in siblings if element.page_no not in supplied_pages
+        ]
+        if len(predicted) > 1:
+            predicted_pages = {element.page_no for element in predicted}
+            predicted = self.ro_model.predict_reading_order(
+                page_elements=predicted,
+                page_separators=(
+                    None
+                    if page_separators is None
+                    else [
+                        separator
+                        for separator in page_separators
+                        if separator.page_no in predicted_pages
+                    ]
+                ),
+            )
+        predicted_by_page: dict[int, list[ReadingOrderPageElement]] = {}
+        for element in predicted:
+            predicted_by_page.setdefault(element.page_no, []).append(element)
+
+        ordered: list[ReadingOrderPageElement] = []
+        for page_no in sorted(by_page):
+            if page_no in supplied_pages:
+                # cid (assembled order) breaks ties between equal indices.
+                ordered.extend(
+                    sorted(
+                        by_page[page_no],
+                        key=lambda element: (supplied_index(element), element.cid),
+                    )
+                )
+            else:
+                ordered.extend(predicted_by_page.get(page_no, []))
+        return ordered
+
     @staticmethod
     def _element_ref(element: BasePageElement) -> str:
         return f"#/{element.page_no}/{element.cluster.id}"
@@ -1173,15 +1244,10 @@ class ReadingOrderModel:
                 )
 
             ordered_siblings = {
-                parent_ref: (
-                    self.ro_model.predict_reading_order(
-                        page_elements=siblings,
-                        page_separators=(
-                            page_separators if parent_ref is None else None
-                        ),
-                    )
-                    if len(siblings) > 1
-                    else siblings
+                parent_ref: self._order_siblings(
+                    siblings,
+                    assembled_by_ref,
+                    page_separators=page_separators if parent_ref is None else None,
                 )
                 for parent_ref, siblings in siblings_by_parent.items()
             }
