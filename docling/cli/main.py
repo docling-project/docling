@@ -292,6 +292,25 @@ def _is_http_url(source: str) -> bool:
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
 
 
+DEFAULT_VLM_PRESET = "granite_docling"
+DEFAULT_ASR_MODEL = AsrModelType.WHISPER_TINY
+
+
+def _resolve_pipeline(
+    pipeline: ProcessingPipeline | None, vlm_model: str | None
+) -> ProcessingPipeline:
+    """Select the pipeline from the --pipeline and --vlm-model options."""
+    if vlm_model is None:
+        return pipeline if pipeline is not None else ProcessingPipeline.STANDARD
+    if pipeline is not None and pipeline != ProcessingPipeline.VLM:
+        raise typer.BadParameter(
+            f"--vlm-model selects the vlm pipeline. It cannot be combined with "
+            f"--pipeline {pipeline.value}.",
+            param_hint="--vlm-model",
+        )
+    return ProcessingPipeline.VLM
+
+
 def _name_matches_format(name: str, format: InputFormat) -> bool:
     name_lower = name.lower()
     return any(
@@ -1034,20 +1053,28 @@ def convert(  # noqa: C901
         ),
     ] = HtmlImageFetchMode.NONE,
     pipeline: Annotated[
-        ProcessingPipeline,
-        typer.Option(..., help="Choose the pipeline to process PDF or image files."),
-    ] = ProcessingPipeline.STANDARD,
+        ProcessingPipeline | None,
+        typer.Option(
+            ...,
+            help=(
+                "Choose the pipeline to process PDF or image files. The default is "
+                "standard, or vlm when --vlm-model is given. The asr pipeline accepts "
+                "only audio and video files."
+            ),
+        ),
+    ] = None,
     vlm_model: Annotated[
-        str,
+        str | None,
         typer.Option(
             ...,
             metavar="NAME",
             help=(
-                "Choose the VLM preset to use with PDF or image files. "
+                "Choose the VLM preset to use with PDF or image files. This selects "
+                f"the vlm pipeline. With --pipeline vlm, the default is {DEFAULT_VLM_PRESET}. "
                 "Run 'docling models --vlm' to list the presets."
             ),
         ),
-    ] = "granite_docling",
+    ] = None,
     vlm_max_new_tokens: Annotated[
         int | None,
         typer.Option(
@@ -1077,16 +1104,17 @@ def convert(  # noqa: C901
         ),
     ] = False,
     asr_model: Annotated[
-        AsrModelType,
+        AsrModelType | None,
         typer.Option(
             ...,
             metavar="NAME",
             help=(
-                "Choose the ASR model to use with audio/video files. "
+                "Choose the ASR model to use with audio/video files. These files use "
+                f"the ASR model without --pipeline. The default is {DEFAULT_ASR_MODEL.value}. "
                 "Run 'docling models --asr' to list the models."
             ),
         ),
-    ] = AsrModelType.WHISPER_TINY,
+    ] = None,
     asr_language: Annotated[
         str | None,
         typer.Option(
@@ -1651,6 +1679,19 @@ def convert(  # noqa: C901
     requested_from_formats = from_formats
     from_formats = _expand_from_formats(from_formats)
 
+    pipeline = _resolve_pipeline(pipeline, vlm_model)
+
+    if pipeline == ProcessingPipeline.ASR:
+        # Only audio and video have a transcription route. Other formats would
+        # otherwise fall through to their default pipelines without notice.
+        if requested_from_formats is None:
+            from_formats = [InputFormat.AUDIO, InputFormat.VIDEO]
+        elif not set(from_formats) <= {InputFormat.AUDIO, InputFormat.VIDEO}:
+            raise typer.BadParameter(
+                "--pipeline asr is only available for --from audio and --from video.",
+                param_hint="--pipeline",
+            )
+
     if pipeline == ProcessingPipeline.NATIVE:
         # The native pipeline reads the native content of a PDF; it has nothing to
         # offer for the other input formats, so it never silently handles them.
@@ -2105,6 +2146,9 @@ def convert(  # noqa: C901
                 pipeline_options.generate_picture_images = True
                 pipeline_options.images_scale = 2
 
+            if vlm_model is None:
+                vlm_model = DEFAULT_VLM_PRESET
+
             # Use the new preset system
             try:
                 pipeline_options.vlm_options = VlmConvertOptions.from_preset(vlm_model)
@@ -2161,8 +2205,20 @@ def convert(  # noqa: C901
             # artifacts_path = artifacts_path
         )
 
+        if asr_model is not None and not any(
+            _name_matches_format(str(path), input_format)
+            for path in input_doc_paths
+            for input_format in (InputFormat.AUDIO, InputFormat.VIDEO)
+        ):
+            _log.warning(
+                "--asr-model has no effect because no input has an audio or "
+                "video file extension."
+            )
+
         # Auto-selecting models (choose best implementation for hardware)
-        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model, device)
+        asr_pipeline_options.asr_options = _resolve_asr_options(
+            asr_model if asr_model is not None else DEFAULT_ASR_MODEL, device
+        )
         if isinstance(
             asr_pipeline_options.asr_options,
             (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions),
@@ -2240,7 +2296,9 @@ def convert(  # noqa: C901
 
         # Common options for all pipelines
         if artifacts_path is not None:
-            pipeline_options.artifacts_path = artifacts_path
+            # The asr pipeline has only asr_pipeline_options.
+            if pipeline != ProcessingPipeline.ASR:
+                pipeline_options.artifacts_path = artifacts_path
             asr_pipeline_options.artifacts_path = artifacts_path
 
         doc_converter = DocumentConverter(

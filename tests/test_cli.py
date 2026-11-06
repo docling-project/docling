@@ -565,6 +565,172 @@ def test_cli_vlm_max_new_tokens(
     )
 
 
+def _invoke_cli_with_fake_converter(
+    monkeypatch: pytest.MonkeyPatch, args: list[str]
+) -> tuple[Any, dict[str, Any]]:
+    """Run `docling convert` and capture what it passes to the converter."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options) -> None:
+            captured["allowed_formats"] = allowed_formats
+            captured["format_options"] = format_options
+
+        def convert_all(
+            self,
+            input_doc_paths,
+            headers=None,
+            raises_on_error=False,
+            page_range=DEFAULT_PAGE_RANGE,
+        ) -> list[Any]:
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    return runner.invoke(app, args), captured
+
+
+def test_cli_vlm_model_selects_vlm_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from docling.datamodel.pipeline_options import VlmConvertOptions
+    from docling.pipeline.vlm_pipeline import VlmPipeline
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [source, "--vlm-model", "surya_ocr2_5", "--output", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    pdf_option = captured["format_options"][InputFormat.PDF]
+    assert pdf_option.pipeline_cls is VlmPipeline
+    assert (
+        pdf_option.pipeline_options.vlm_options.model_spec
+        == VlmConvertOptions.from_preset("surya_ocr2_5").model_spec
+    )
+
+
+@pytest.mark.parametrize("pipeline", ["standard", "legacy", "native", "asr"])
+def test_cli_vlm_model_rejects_conflicting_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pipeline: str
+) -> None:
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [
+            source,
+            "--pipeline",
+            pipeline,
+            "--vlm-model",
+            "surya_ocr2_5",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "format_options" not in captured
+
+
+def test_cli_vlm_and_asr_models_route_mixed_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from docling.pipeline.asr_pipeline import AsrPipeline
+    from docling.pipeline.vlm_pipeline import VlmPipeline
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [
+            source,
+            "--vlm-model",
+            "surya_ocr2_5",
+            "--asr-model",
+            "whisper_base",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    format_options = captured["format_options"]
+    assert format_options[InputFormat.PDF].pipeline_cls is VlmPipeline
+    assert format_options[InputFormat.AUDIO].pipeline_cls is AsrPipeline
+
+
+def test_cli_default_pipeline_stays_standard_without_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch, [source, "--output", str(tmp_path)]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert (
+        captured["format_options"][InputFormat.PDF].pipeline_cls is StandardPdfPipeline
+    )
+
+
+def test_cli_asr_pipeline_accepts_only_audio_and_video(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    audio_file = tmp_path / "recording.mp3"
+    audio_file.write_bytes(b"audio")
+    artifacts_path = tmp_path / "models"
+    artifacts_path.mkdir()
+
+    result, captured = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [
+            str(audio_file),
+            "--pipeline",
+            "asr",
+            "--artifacts-path",
+            str(artifacts_path),
+            "--output",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert set(captured["allowed_formats"]) == {InputFormat.AUDIO, InputFormat.VIDEO}
+    audio_options = captured["format_options"][InputFormat.AUDIO].pipeline_options
+    assert audio_options.artifacts_path == artifacts_path
+
+    result, _ = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [str(audio_file), "--pipeline", "asr", "--from", "pdf"],
+    )
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize(
+    ("file_name", "expect_warning"), [("doc.pdf", True), ("recording.mp3", False)]
+)
+def test_cli_asr_model_warns_when_no_input_can_use_it(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    file_name: str,
+    expect_warning: bool,
+) -> None:
+    source = tmp_path / file_name
+    source.write_bytes(b"content")
+
+    result, _ = _invoke_cli_with_fake_converter(
+        monkeypatch,
+        [str(source), "--asr-model", "whisper_base", "--output", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert ("--asr-model has no effect" in caplog.text) is expect_warning
+
+
 def test_cli_html_fetches_local_images_per_input(tmp_path):
     first_png = _png_bytes((255, 0, 0))
     second_png = _png_bytes((0, 0, 255))

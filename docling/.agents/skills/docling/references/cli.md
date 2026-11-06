@@ -60,6 +60,9 @@ XML flavors. Restrict/force detection with `--from` (repeatable), e.g.
 ## Picking a pipeline (PDF / images)
 
 Docling has three pipeline families for PDFs and images. Choose with `--pipeline`.
+`--vlm-model NAME` selects the VLM pipeline, so `--pipeline vlm` is not necessary
+with it. Combining `--vlm-model` with a different `--pipeline` value is an error.
+Audio and video files use `--asr-model` without `--pipeline`.
 
 | Pipeline | Flag | Best for | Tradeoff |
 |---|---|---|---|
@@ -69,14 +72,14 @@ Docling has three pipeline families for PDFs and images. Choose with `--pipeline
 
 ```bash
 docling report.pdf --pipeline vlm --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model lightonocr3_08b --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model lightonocr3_4b --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model surya_ocr2_5 --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model minicpm_ocr --output /tmp/
+docling report.pdf --vlm-model granite_docling --output /tmp/
+docling report.pdf --vlm-model smoldocling --output /tmp/
+docling report.pdf --vlm-model nemotron_parse_v2 --output /tmp/
+docling report.pdf --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
+docling report.pdf --vlm-model lightonocr3_08b --output /tmp/
+docling report.pdf --vlm-model lightonocr3_4b --output /tmp/
+docling report.pdf --vlm-model surya_ocr2_5 --output /tmp/
+docling report.pdf --vlm-model minicpm_ocr --output /tmp/
 docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
