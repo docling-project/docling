@@ -953,11 +953,15 @@ GRANITE_SPEECH_4_1_2B_PLUS_PRESET = AsrModelPreset(
         name="Granite Speech 4.1 2B Plus",
         default_repo_id="ibm-granite/granite-speech-4.1-2b-plus",
         revision="e69efe37f97b6283c61f5a8dadda2b3eb67765d6",
-        model_family="granite",
-        supported_engines={InferenceAsrFramework.TRANSFORMERS},
+        model_family="granite_plus",
+        supported_engines={
+            InferenceAsrFramework.TRANSFORMERS,
+            InferenceAsrFramework.MLX_AUDIO,
+        },
     ),
 )
-GRANITE_SPEECH_4_1_2B_PLUS = GRANITE_SPEECH_4_1_2B_PLUS_PRESET.to_options()
+GRANITE_SPEECH_4_1_2B_PLUS = GRANITE_SPEECH_4_1_2B_PLUS_PRESET.to_auto_options()
+
 
 NEMOTRON_SPEECH_STREAMING_EN_0_6B_PRESET = AsrModelPreset(
     preset_id="nemotron_speech_streaming_en_0_6b",
@@ -1017,6 +1021,9 @@ ADDITIONAL_ASR_PRESETS: dict[str, AsrModelPreset] = {
 WHISPER_TINY_MLX_AUDIO = WHISPER_ASR_PRESETS["tiny"].to_options(
     InferenceAsrFramework.MLX_AUDIO
 )
+GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO = GRANITE_SPEECH_4_1_2B_PLUS_PRESET.to_options(
+    InferenceAsrFramework.MLX_AUDIO
+)
 GRANITE_SPEECH_5_0_2B_MLX_AUDIO = GRANITE_SPEECH_5_0_2B_PRESET.to_options(
     InferenceAsrFramework.MLX_AUDIO
 )
@@ -1034,6 +1041,9 @@ PARAKEET_CTC_1_1B_MLX_AUDIO = PARAKEET_CTC_1_1B_PRESET.to_options(
 )
 
 # Explicit Transformers presets. The names without a suffix select the engine by machine.
+GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS = GRANITE_SPEECH_4_1_2B_PLUS_PRESET.to_options(
+    InferenceAsrFramework.TRANSFORMERS
+)
 GRANITE_SPEECH_5_0_2B_TRANSFORMERS = GRANITE_SPEECH_5_0_2B_PRESET.to_options(
     InferenceAsrFramework.TRANSFORMERS
 )
@@ -1099,6 +1109,7 @@ class AsrModelType(str, Enum):
 
     # Explicit mlx-audio models (Apple Silicon, no torch)
     WHISPER_TINY_MLX_AUDIO = "whisper_tiny_mlx_audio"
+    GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO = "granite_speech_4_1_2b_plus_mlx_audio"
     GRANITE_SPEECH_5_0_2B_MLX_AUDIO = "granite_speech_5_0_2b_mlx_audio"
     GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO = (
         "granite_speech_5_0_470m_turboctc_mlx_audio"
@@ -1110,6 +1121,7 @@ class AsrModelType(str, Enum):
     PARAKEET_CTC_1_1B_MLX_AUDIO = "parakeet_ctc_1_1b_mlx_audio"
 
     # Explicit Transformers models (the names without a suffix select by machine)
+    GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS = "granite_speech_4_1_2b_plus_transformers"
     GRANITE_SPEECH_5_0_2B_TRANSFORMERS = "granite_speech_5_0_2b_transformers"
     GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS = (
         "granite_speech_5_0_470m_turboctc_transformers"

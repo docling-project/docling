@@ -10,9 +10,15 @@ Metal device. Add `_transformers` or `_mlx_audio` to the name of such a preset t
 one engine. A forced `_mlx_audio` preset gives an error when it cannot run. The same ASR
 settings apply to video.
 
+For word timing and speaker labels, select `--asr-model granite_speech_4_1_2b_plus`.
+It gives one item for each phrase, with real times and a speaker label. Each feature
+costs one decoding pass. Use `--no-asr-timestamps` or `--no-asr-speakers` to switch one
+off.
+
 To see the supported models, run `docling models` (add `--asr` or `--vlm`, or
 `--family granite`). It lists them by family, with one column for each backend, and
-marks the backend that this machine selects. Use `--format json` to read the data in
+marks the backend that this machine selects. It also shows if a model gives real
+times and speaker labels (ASR) and page boxes (VLM). Use `--format json` to read the data in
 a script.
 
 The `docling` CLI is the quickest way to understand the content of any supported

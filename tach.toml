@@ -515,6 +515,15 @@ depends_on = [
   "docling.datamodel.pipeline_options_asr_model",
   "docling.models.utils",
   "docling.pipeline.asr_conversation",
+  "docling.pipeline.asr_granite_plus",
+  "docling.pipeline.asr_windows",
+]
+
+[[modules]]
+path = "docling.pipeline.asr_granite_plus"
+layer = "pipeline"
+depends_on = [
+  "docling.pipeline.asr_conversation",
   "docling.pipeline.asr_windows",
 ]
 
@@ -527,6 +536,7 @@ depends_on = []
 path = "docling.pipeline.asr_transformers"
 layer = "pipeline"
 depends_on = [
+  "docling.pipeline.asr_granite_plus",
   "docling.datamodel.pipeline_options_asr_model",
   "docling.pipeline.asr_conversation",
   "docling.pipeline.asr_windows",

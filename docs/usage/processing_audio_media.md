@@ -275,7 +275,7 @@ Docling includes these local backends. The [Installation](#installation) table s
 |---------|---------|----------|--------|-------|
 | **Native Whisper** | `openai-whisper` (PyTorch) | CPU, CUDA | Whisper | Default; broadest compatibility |
 | **MLX Whisper** | `mlx-whisper` | Apple Silicon (MPS) | Whisper | Optimized for M-series Macs |
-| **mlx-audio** | `mlx-audio` | Apple Silicon (MPS), macOS 14 or later | Whisper tiny, Granite Speech 5.0, Parakeet, Nemotron | No PyTorch; preferred for these models on Apple Silicon |
+| **mlx-audio** | `mlx-audio` | Apple Silicon (MPS), macOS 14 or later | Whisper tiny, Granite Speech 5.0, Granite Speech 4.1 Plus, Parakeet, Nemotron | No PyTorch; preferred for these models on Apple Silicon |
 | **Transformers** | `transformers` (PyTorch) | CPU, CUDA, MPS, XPU | Whisper, Granite Speech, Parakeet, Nemotron | All speech models on all platforms |
 | **WhisperS2T** | `whisper-s2t-reborn` (CTranslate2) | CPU, CUDA | Whisper | Optional & experimental; batched decoding for high throughput |
 
@@ -361,7 +361,7 @@ These presets run on Transformers or, when the model has an export, on `mlx-audi
 | `GRANITE_SPEECH_5_0_470M_TURBOCTC` | [`ibm-granite/granite-speech-5.0-470m-turboctc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc) | Same repository |
 | `GRANITE_SPEECH_5_0_470M_TURBOCTC_NC` | [`ibm-granite/granite-speech-5.0-470m-turboctc-nc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc-nc) | None |
 | `GRANITE_SPEECH_4_1_2B` | [`ibm-granite/granite-speech-4.1-2b`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b) | None |
-| `GRANITE_SPEECH_4_1_2B_PLUS` | [`ibm-granite/granite-speech-4.1-2b-plus`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b-plus) | None |
+| `GRANITE_SPEECH_4_1_2B_PLUS` | [`ibm-granite/granite-speech-4.1-2b-plus`](https://huggingface.co/ibm-granite/granite-speech-4.1-2b-plus) | Same repository |
 | `GRANITE_4_0_1B_SPEECH` | [`ibm-granite/granite-4.0-1b-speech`](https://huggingface.co/ibm-granite/granite-4.0-1b-speech) | None |
 | `NEMOTRON_3_5_ASR_STREAMING` | [`nvidia/nemotron-3.5-asr-streaming-0.6b`](https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b) | [`mlx-community/nemotron-3.5-asr-streaming-0.6b`](https://huggingface.co/mlx-community/nemotron-3.5-asr-streaming-0.6b) |
 | `NEMOTRON_SPEECH_STREAMING_EN_0_6B` | [`nvidia/nemotron-speech-streaming-en-0.6b`](https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b) | Same repository |
@@ -392,7 +392,7 @@ More notes:
 
 - On Apple MPS with Transformers, Granite and TurboCTC load weights in FP32 to avoid a BF16 normalization failure. Allow more memory than for BF16 weights.
 - On `mlx-audio`, the tokenizer of `GRANITE_SPEECH_5_0_2B` runs remote code from its repository. The preset pins a commit. If you select a revision that is not a full commit SHA, you must also set `trust_remote_code=True`.
-- Plus uses plain transcription by default; its speaker and timestamp tags are not mapped to structured Docling tracks.
+- `GRANITE_SPEECH_4_1_2B_PLUS` uses plain transcription. Its speaker tags are not mapped to structured Docling tracks.
 - Streaming model names identify the checkpoints; this pipeline performs file transcription.
 - The `TURBOCTC_NC` preset uses CC-BY-NC-SA-4.0.
 
@@ -427,6 +427,49 @@ The backend affects time and memory. This table shows one 65-minute English reco
 
 Hardware and software: MacBook Pro with Apple M3 Max (16-core CPU), 64 GB of memory, macOS 26.6, `mlx-audio` 0.6.4, `mlx` 0.32.4, `transformers` 5.16.1, and PyTorch 2.14.1. Time is the full `docling convert` command, including model loading from a local cache. Your results can differ with other hardware and recordings.
 
+### Timestamps and speakers with Granite Speech Plus
+
+The other Granite presets give the time range of a full window. `GRANITE_SPEECH_4_1_2B_PLUS` gives one item for each phrase, with its real start and end times and a speaker label. A silence or a new speaker ends a phrase:
+
+```bash
+docling recording.mp3 --asr-model granite_speech_4_1_2b_plus --to vtt
+```
+
+```text
+00:00:00.920 --> 00:00:02.680
+<v Speaker 1>shakespeare on scenery
+
+00:00:03.290 --> 00:00:04.390
+<v Speaker 1>by oscar wilde
+```
+
+Both modes are on by default, and each one costs one decoding pass. Switch them off to get a faster conversion:
+
+| Result | CLI | SDK option |
+|--------|-----|------------|
+| No speaker labels | `--no-asr-speakers` | `speaker_attribution=False` |
+| No word timing: one item for each speaker turn, with estimated times | `--no-asr-timestamps` | `word_timestamps=False` |
+| Plain text: one item for each window | `--no-asr-speakers --no-asr-timestamps` | Both |
+
+```python
+from docling.datamodel import asr_model_specs
+
+pipeline_options.asr_options = asr_model_specs.GRANITE_SPEECH_4_1_2B_PLUS.model_copy(
+    update={"speaker_attribution": False}
+)
+```
+
+On the [hardware in the table above](#long-recordings), both modes on `mlx-audio` took about 31 minutes and 5.8 GB of memory for the same 65-minute recording. Word timing alone on Transformers took about 59 minutes and 13.4 GB. Other conversions ran during parts of these measurements, so use them only as a guide.
+
+Know these limits:
+
+- The model gives no punctuation or capitalization in most output, so a phrase is not a sentence.
+- Speaker numbers are labels, not identities. The model numbers speakers by order of appearance in each call, so Docling decodes windows of about 4 minutes with 60 seconds of overlap, and uses the overlap to keep the numbers stable. A speaker who talks through a full overlap can make a later number wrong, and a new person can get the number of a known person.
+- `DoclingDocument` keeps the time range and speaker of each phrase. It does not keep the time of each word.
+- A silence of more than 10 seconds inside a window can make the later times of that window too early, because the model reports times modulo 10 seconds.
+- `prompt` is available only when both modes are off. `task="translate"` is not available.
+- The model card recommends `repetition_penalty=2.0`. Docling does not use it, because in tests it removed the timestamp tags and the spaces.
+
 ### Languages and translation
 
 The `--asr-language` CLI flag applies to the Transformers and `mlx-audio` presets. In the SDK, set `language` and `task` on the options. Support depends on the backend and the model family:
@@ -435,6 +478,7 @@ The `--asr-language` CLI flag applies to the Transformers and `mlx-audio` preset
 |--------|----------------------------|---------------------------|--------------------|
 | Whisper | Source language | Source language | Both backends |
 | Granite (2B, 4.x) | Ignored | Source language | Both backends; the target is English |
+| Granite Speech Plus | Ignored | Ignored | An error on both backends |
 | Granite CTC (TurboCTC) | Ignored | English only | Ignored on Transformers; an error on `mlx-audio` |
 | Parakeet | Ignored | English only | Ignored on Transformers; an error on `mlx-audio` |
 | Nemotron | Ignored | Must be a language of the checkpoint | Ignored on Transformers; an error on `mlx-audio` |
@@ -551,7 +595,7 @@ Notes:
 
 ### From the command line
 
-`docling models --asr` lists the models by family, with one column for each backend. The output has a legend for its symbols, and `--format json` gives the same data for scripts:
+`docling models --asr` lists the models by family, with one column for each backend. Two more columns show if the selected backend gives real time ranges (`Times`) and speaker labels (`Spk`). The output has a legend for its symbols, and `--format json` gives the same data for scripts:
 
 ```bash
 docling models --asr
@@ -620,9 +664,9 @@ accuracy. Decoding success alone does not measure transcription accuracy.
 | Limitation | Workaround |
 |-----------|------------|
 | No SRT subtitle output | WebVTT is supported via `doc.save_as_vtt(...)`. For SRT, use the `openai-whisper` CLI instead: `whisper audio.mp3 --output_format srt` |
-| Audio-only ASR pipeline has no speaker diarization | Diarization is available for video via `VideoPipelineOptions.enable_diarization` — see [Processing video](#processing-video). For audio-only diarization, use [`pyannote-audio`](https://github.com/pyannote/pyannote-audio) as a pre- or post-processing step |
+| Audio-only ASR pipeline has no speaker diarization, except `GRANITE_SPEECH_4_1_2B_PLUS` | Diarization is available for video via `VideoPipelineOptions.enable_diarization` — see [Processing video](#processing-video). For other audio-only diarization, use [`pyannote-audio`](https://github.com/pyannote/pyannote-audio) as a pre- or post-processing step |
 | No word-level timestamps | Not available in current export formats |
-| Granite time ranges cover a full window of about 20 to 40 seconds, not a phrase | Use Whisper for finer timing, or reduce `max_time_chunk` |
+| Granite time ranges cover a full window of about 20 to 40 seconds, not a phrase | Use `GRANITE_SPEECH_4_1_2B_PLUS` or Whisper for finer timing, or reduce `max_time_chunk` |
 | A Granite window can end inside a sentence, because a pause is not always a sentence boundary | Join adjacent segments before further processing |
 
 For knowledge-retrieval use cases (RAG, search, summarization), paragraph-level Markdown is usually all you need. The limitations above matter primarily for subtitle generation workflows.

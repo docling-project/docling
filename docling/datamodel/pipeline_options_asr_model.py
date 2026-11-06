@@ -323,6 +323,7 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
 AsrModelFamily = Literal[
     "whisper",
     "granite",
+    "granite_plus",
     "granite_ctc",
     "parakeet",
     "nemotron",
@@ -352,12 +353,32 @@ class _WindowedAsrOptions(InlineAsrOptions):
             ),
         ),
     ] = 10.0
+    word_timestamps: Annotated[
+        bool,
+        Field(
+            description=(
+                "Give word timing. On the `granite_plus` family, each phrase becomes "
+                "one item with its real times, at the cost of one decoding pass. On "
+                "`mlx_audio`, the `whisper` family also uses it. Other families "
+                "ignore it."
+            )
+        ),
+    ] = True
+    speaker_attribution: Annotated[
+        bool,
+        Field(
+            description=(
+                "Add a speaker label to each item, at the cost of one decoding pass. "
+                "Only the `granite_plus` family uses it."
+            )
+        ),
+    ] = True
 
     @model_validator(mode="after")
     def _validate_chunk_search_window(self) -> "_WindowedAsrOptions":
         # The other families do not use windows, so this limit does not apply to them.
         if (
-            self.model_family in {"granite", "granite_ctc"}
+            self.model_family in {"granite", "granite_plus", "granite_ctc"}
             and self.chunk_search_window >= self.max_time_chunk
         ):
             raise ValueError(
@@ -366,6 +387,21 @@ class _WindowedAsrOptions(InlineAsrOptions):
                 f"{self.model_family} family."
             )
         return self
+
+
+def _check_granite_plus_options(options: Any) -> None:
+    """Reject the options that the structured modes of Granite Speech Plus replace."""
+    if options.model_family != "granite_plus":
+        return
+    if options.task != "transcribe":
+        raise ValueError("The granite_plus family does not support task='translate'.")
+    if options.prompt is not None and (
+        options.word_timestamps or options.speaker_attribution
+    ):
+        raise ValueError(
+            "word_timestamps and speaker_attribution select their own prompts. Switch "
+            "both off to use `prompt` with the granite_plus family."
+        )
 
 
 class InlineAsrTransformersOptions(_WindowedAsrOptions):
@@ -387,6 +423,11 @@ class InlineAsrTransformersOptions(_WindowedAsrOptions):
         AcceleratorDevice.MPS,
         AcceleratorDevice.XPU,
     ]
+
+    @model_validator(mode="after")
+    def _validate_granite_plus(self) -> "InlineAsrTransformersOptions":
+        _check_granite_plus_options(self)
+        return self
 
 
 class InlineAsrMlxWhisperOptions(InlineAsrOptions):
@@ -562,14 +603,6 @@ class InlineAsrMlxAudioOptions(_WindowedAsrOptions):
             )
         ),
     ] = None
-    word_timestamps: Annotated[
-        bool,
-        Field(
-            description=(
-                "Generate word-level timestamps. Only the `whisper` family uses it."
-            )
-        ),
-    ] = True
     trust_remote_code: Annotated[
         bool,
         Field(
@@ -608,8 +641,15 @@ class InlineAsrMlxAudioOptions(_WindowedAsrOptions):
                 "timestamps": self.timestamps,
                 "max_time_chunk": self.max_time_chunk,
                 "chunk_search_window": self.chunk_search_window,
+                "word_timestamps": self.word_timestamps,
+                "speaker_attribution": self.speaker_attribution,
             }
         )
+
+    @model_validator(mode="after")
+    def _validate_granite_plus(self) -> "InlineAsrMlxAudioOptions":
+        _check_granite_plus_options(self)
+        return self
 
 
 # English-only WhisperS2T models (cannot transcribe non-English audio)

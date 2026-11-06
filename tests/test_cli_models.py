@@ -17,6 +17,7 @@ from docling.cli.main import _resolve_asr_options, app
 from docling.cli.model_table import OTHER_FAMILY, BackendState, asr_rows, vlm_rows
 from docling.datamodel import asr_presets
 from docling.datamodel.asr_model_specs import AsrModelType
+from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 
 runner = CliRunner()
 
@@ -122,6 +123,58 @@ def test_vlm_uses_transformers_without_mlx_vlm(monkeypatch: pytest.MonkeyPatch):
     assert row.backends["mlx"] == BackendState.SUPPORTED
 
 
+@pytest.mark.parametrize(
+    ("name", "apple_silicon", "timestamps", "speakers"),
+    [
+        ("whisper_tiny_en", True, True, False),
+        # Granite Plus gives real times and speakers on every backend.
+        ("granite_speech_4_1_2b_plus", True, True, True),
+        ("granite_speech_4_1_2b_plus", False, True, True),
+        # Other Granite models only have the time range of a window.
+        ("granite_speech_5_0_2b", True, False, False),
+        # Parakeet has sentence times on mlx-audio, and one segment on Transformers.
+        ("parakeet_ctc_1_1b", True, True, False),
+        ("parakeet_ctc_1_1b", False, False, False),
+        ("nemotron_3_5_asr_streaming", True, True, False),
+        ("nemotron_3_5_asr_streaming", False, False, False),
+    ],
+)
+def test_asr_features_follow_the_selected_backend(
+    monkeypatch: pytest.MonkeyPatch, name, apple_silicon, timestamps, speakers
+):
+    _on_apple_silicon(monkeypatch, apple_silicon)
+
+    row = _row(asr_rows(_resolve_asr_options), name)
+
+    assert row.features == {"timestamps": timestamps, "speaker_labels": speakers}
+
+
+def test_every_vlm_response_format_is_classified_for_grounding():
+    assert model_table.BBOX_RESPONSE_FORMATS.isdisjoint(
+        model_table.NO_BBOX_RESPONSE_FORMATS
+    )
+    assert (
+        model_table.BBOX_RESPONSE_FORMATS | model_table.NO_BBOX_RESPONSE_FORMATS
+    ) == set(ResponseFormat)
+
+
+@pytest.mark.parametrize(
+    ("name", "grounded"),
+    [
+        ("granite_docling", True),
+        ("dots_ocr", True),
+        ("mineru2_pro", True),
+        ("lightonocr3_08b", True),
+        ("surya_ocr2_5", True),
+        ("lightonocr", False),
+        ("granite_vision", False),
+        ("qwen", False),
+    ],
+)
+def test_vlm_table_shows_bbox_grounding(name, grounded):
+    assert _row(vlm_rows(), name).features == {"bbox_grounding": grounded}
+
+
 def test_models_command_shows_rows_families_and_every_legend_entry():
     result = runner.invoke(app, ["models"], terminal_width=200)
 
@@ -138,6 +191,9 @@ def test_models_command_shows_rows_families_and_every_legend_entry():
         "allowed:",
         "default model",
         "_mlx_audio",
+        "Times",
+        "Spk",
+        "Bbox",
     ):
         assert text in result.output
 

@@ -67,7 +67,9 @@ from docling.cli.export_utils import (
 )
 from docling.cli.model_table import (
     ASR_BACKENDS,
+    ASR_FEATURES,
     VLM_BACKENDS,
+    VLM_FEATURES,
     BackendState,
     ModelTable,
     asr_rows,
@@ -77,6 +79,8 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.asr_model_specs import (
     ADDITIONAL_ASR_PRESETS,
     GRANITE_4_0_1B_SPEECH,
+    GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO,
+    GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS,
     GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
     GRANITE_SPEECH_5_0_2B_TRANSFORMERS,
     GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
@@ -479,6 +483,8 @@ def _resolve_asr_options(
         AsrModelType.WHISPER_LARGE_MLX_WHISPER: WHISPER_LARGE_MLX_WHISPER,
         AsrModelType.WHISPER_TURBO_MLX_WHISPER: WHISPER_TURBO_MLX_WHISPER,
         AsrModelType.WHISPER_TINY_MLX_AUDIO: WHISPER_TINY_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO: GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS: GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS,
         AsrModelType.GRANITE_SPEECH_5_0_2B_MLX_AUDIO: GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
         AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO: GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
         AsrModelType.NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO: NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
@@ -1088,6 +1094,26 @@ def convert(  # noqa: C901
             help="Source language for Transformers and mlx-audio ASR.",
         ),
     ] = None,
+    asr_timestamps: Annotated[
+        bool,
+        typer.Option(
+            "--asr-timestamps/--no-asr-timestamps",
+            help=(
+                "Give real phrase times with Granite Speech Plus. Each option costs one "
+                "decoding pass. Other models ignore it."
+            ),
+        ),
+    ] = True,
+    asr_speakers: Annotated[
+        bool,
+        typer.Option(
+            "--asr-speakers/--no-asr-speakers",
+            help=(
+                "Add speaker labels with Granite Speech Plus. Each option costs one "
+                "decoding pass. Other models ignore it."
+            ),
+        ),
+    ] = True,
     video_sampling_mode: Annotated[
         Literal["fixed", "scene"],
         typer.Option(..., help="frame sampling mode."),
@@ -2146,6 +2172,15 @@ def convert(  # noqa: C901
                     update={"language": asr_language}
                 )
             )
+            if asr_pipeline_options.asr_options.model_family == "granite_plus":
+                asr_pipeline_options.asr_options = (
+                    asr_pipeline_options.asr_options.model_copy(
+                        update={
+                            "word_timestamps": asr_timestamps,
+                            "speaker_attribution": asr_speakers,
+                        }
+                    )
+                )
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
@@ -2350,9 +2385,17 @@ def _backend_symbols() -> dict[BackendState, str]:
 
 def _print_model_table(model_table: ModelTable) -> None:
     symbols = _backend_symbols()
-    table = rich.table.Table(title=model_table.title, title_justify="left", box=None)
+    table = rich.table.Table(
+        title=model_table.title,
+        title_justify="left",
+        box=None,
+        pad_edge=False,
+        padding=(0, 1, 0, 0),
+    )
     table.add_column("Model", no_wrap=True)
     for label in model_table.backends.values():
+        table.add_column(label, justify="center", no_wrap=True)
+    for label in model_table.features.values():
         table.add_column(label, justify="center", no_wrap=True)
     family = None
     for row in model_table.rows:
@@ -2365,6 +2408,7 @@ def _print_model_table(model_table: ModelTable) -> None:
                 symbols[row.backends[column]] if column in row.backends else ""
                 for column in model_table.backends
             ),
+            *("yes" if row.features[key] else "-" for key in model_table.features),
         )
     console.print(table, highlight=False)
     console.print()
@@ -2401,6 +2445,7 @@ def list_models(
                 kind="asr",
                 title="ASR models",
                 backends=ASR_BACKENDS,
+                features=ASR_FEATURES,
                 rows=asr_rows(_resolve_asr_options),
                 default_model=AsrModelType.WHISPER_TINY.value,
             )
@@ -2411,6 +2456,7 @@ def list_models(
                 kind="vlm",
                 title="VLM models",
                 backends=VLM_BACKENDS,
+                features=VLM_FEATURES,
                 rows=vlm_rows(),
                 default_model="granite_docling",
             )
@@ -2438,6 +2484,7 @@ def list_models(
                         "name": row.name,
                         "family": row.family,
                         "default": row.name == table.default_model,
+                        "features": row.features,
                         "backends": {
                             column: row.backends[column].value
                             for column in table.backends
@@ -2459,6 +2506,22 @@ def list_models(
     for state, meaning in _BACKEND_LEGEND.items():
         console.print(f"{symbols[state]}  {meaning}", highlight=False)
     console.print("*  default model", highlight=False)
+    if any(table.kind == "asr" and table.rows for table in tables):
+        console.print(
+            "Times: real time ranges for speech on the selected backend. '-' gives "
+            "one range for each decoding window or for the full audio.",
+            highlight=False,
+        )
+        console.print(
+            "Spk: speaker labels from the model. The video pipeline also has "
+            "--video-diarization for every model.",
+            highlight=False,
+        )
+    if any(table.kind == "vlm" and table.rows for table in tables):
+        console.print(
+            "Bbox: each item in the document has the page box that the model gives.",
+            highlight=False,
+        )
     if any(table.kind == "asr" and table.rows for table in tables):
         console.print(
             "ASR: add a suffix to a name to force one backend: _native, _mlx_whisper "

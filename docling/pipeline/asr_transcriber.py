@@ -594,7 +594,7 @@ class _TransformersAsrModel(_LocalAudioTranscriber):
             else asr_options.repo_id
         )
         self.decoder: TransformersAsrDecoder | None = None
-        if asr_options.model_family in {"granite", "granite_ctc"}:
+        if asr_options.model_family in {"granite", "granite_plus", "granite_ctc"}:
             self.decoder = TransformersAsrDecoder(
                 asr_options, self.device, model, artifacts_path is not None
             )

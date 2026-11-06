@@ -20,6 +20,7 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrTransformersOptions,
     InlineAsrWhisperS2TOptions,
 )
+from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.datamodel.stage_model_specs import StageModelPreset
 from docling.models.inference_engines.vlm.base import VlmEngineType
 
@@ -35,6 +36,8 @@ class ModelRow:
     name: str
     family: str
     backends: dict[str, BackendState]
+    # What the model gives on the selected backend, by column key.
+    features: dict[str, bool]
 
 
 @dataclass(frozen=True)
@@ -43,6 +46,8 @@ class ModelTable:
     title: str
     # Column key, then the label in the table.
     backends: dict[str, str]
+    # Column key, then the label in the table.
+    features: dict[str, str]
     rows: list[ModelRow]
     default_model: str
 
@@ -61,6 +66,37 @@ VLM_BACKENDS: Final[dict[str, str]] = {
     "vllm": "vLLM",
     "api": "API",
 }
+
+ASR_FEATURES: Final[dict[str, str]] = {"timestamps": "Times", "speaker_labels": "Spk"}
+VLM_FEATURES: Final[dict[str, str]] = {"bbox_grounding": "Bbox"}
+
+# The formats whose parser keeps the boxes of the model in `DoclingDocument`. The others
+# go through `_convert_text_page`, which gives each item an empty box. A test fails when
+# a new format is in neither set.
+BBOX_RESPONSE_FORMATS: Final = frozenset(
+    {
+        ResponseFormat.DOCTAGS,
+        ResponseFormat.DOCLANG,
+        ResponseFormat.DEEPSEEKOCR_MARKDOWN,
+        ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+        ResponseFormat.UNLIMITED_OCR2,
+        ResponseFormat.LIGHTONOCR_MARKDOWN,
+        ResponseFormat.CHANDRA_HTML,
+        ResponseFormat.SURYA_HTML,
+        ResponseFormat.DOTS_JSON,
+        ResponseFormat.NEMOTRON_PARSE_V2,
+        ResponseFormat.NEMOTRON_PARSE_V3_5,
+        ResponseFormat.MINERU2,
+    }
+)
+NO_BBOX_RESPONSE_FORMATS: Final = frozenset(
+    {
+        ResponseFormat.MARKDOWN,
+        ResponseFormat.HTML,
+        ResponseFormat.OTSL,
+        ResponseFormat.PLAINTEXT,
+    }
+)
 
 _ASR_OPTIONS_COLUMNS: Final[dict[type[InlineAsrOptions], str]] = {
     InlineAsrNativeWhisperOptions: "native",
@@ -123,13 +159,39 @@ def _in_family_order(
     return sorted(rows, key=lambda row: order.index(row.family))
 
 
+def _asr_features(options: InlineAsrOptions) -> dict[str, bool]:
+    """Tell what the decoders of this repository give for these options.
+
+    A time range that only covers a decoding window does not count as a timestamp.
+    """
+    if not isinstance(
+        options, (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions)
+    ):
+        # The Whisper backends without a model family.
+        return {"timestamps": True, "speaker_labels": False}
+    family = options.model_family
+    if family == "granite_plus":
+        return {
+            "timestamps": options.word_timestamps,
+            "speaker_labels": options.speaker_attribution,
+        }
+    timestamps = family == "whisper" or (
+        family in {"parakeet", "nemotron"}
+        and isinstance(options, InlineAsrMlxAudioOptions)
+    )
+    return {"timestamps": timestamps, "speaker_labels": False}
+
+
 def asr_rows(resolve: Callable[[AsrModelType], InlineAsrOptions]) -> list[ModelRow]:
     """Build the rows from the presets, so that a new preset cannot be missing.
 
     A name without a backend suffix selects its backend for this machine, so its
-    resolved backend is the selected one. A name with a suffix only shows support.
+    resolved backend is the selected one. A name with a suffix only shows support. The
+    features come from the selected backend. A row without one needs a suffix, so it
+    shows what any of its backends gives.
     """
     backends_of: dict[str, dict[str, BackendState]] = {}
+    features_of: dict[str, dict[str, bool]] = {}
     for model in AsrModelType:
         base = model.value
         state = BackendState.SELECTED
@@ -138,12 +200,22 @@ def asr_rows(resolve: Callable[[AsrModelType], InlineAsrOptions]) -> list[ModelR
                 base = base.removesuffix(suffix)
                 state = BackendState.SUPPORTED
                 break
-        column = _ASR_OPTIONS_COLUMNS[type(resolve(model))]
+        options = resolve(model)
+        column = _ASR_OPTIONS_COLUMNS[type(options)]
         backends = backends_of.setdefault(base, {})
+        has_selected = BackendState.SELECTED in backends.values()
         if backends.get(column) != BackendState.SELECTED:
             backends[column] = state
+        features = _asr_features(options)
+        if state == BackendState.SELECTED:
+            features_of[base] = features
+        elif not has_selected:
+            known = features_of.get(base, {})
+            features_of[base] = {
+                key: value or known.get(key, False) for key, value in features.items()
+            }
     rows = [
-        ModelRow(name, _family(name, _ASR_FAMILIES), backends)
+        ModelRow(name, _family(name, _ASR_FAMILIES), backends, features_of[name])
         for name, backends in backends_of.items()
     ]
     return _in_family_order(rows, _ASR_FAMILIES)
@@ -202,7 +274,12 @@ def _vlm_row(preset_id: str, preset: StageModelPreset) -> ModelRow:
     selected = _selected_vlm_column(preset)
     if selected is not None:
         backends[selected] = BackendState.SELECTED
-    return ModelRow(preset_id, _family(preset_id, _VLM_FAMILIES), backends)
+    return ModelRow(
+        preset_id,
+        _family(preset_id, _VLM_FAMILIES),
+        backends,
+        {"bbox_grounding": spec.response_format in BBOX_RESPONSE_FORMATS},
+    )
 
 
 def vlm_rows() -> list[ModelRow]:

@@ -134,7 +134,7 @@ class MlxAudioAsrDecoder:
         and the caller cannot disable this.
         """
         options = self.options
-        if options.model_family != "granite":
+        if options.model_family not in {"granite", "granite_plus"}:
             return
         if not options.trust_remote_code and not is_pinned_revision(options.revision):
             raise ValueError(
@@ -152,7 +152,11 @@ class MlxAudioAsrDecoder:
         family = options.model_family
         if options.task == "translate" and family not in {"whisper", "granite"}:
             raise ValueError(f"The {family} family does not support task='translate'.")
-        if options.prompt is not None and family not in {"whisper", "granite"}:
+        if options.prompt is not None and family not in {
+            "whisper",
+            "granite",
+            "granite_plus",
+        }:
             raise ValueError(f"The {family} family does not support a prompt.")
         if (
             family in {"parakeet", "granite_ctc"}
@@ -170,6 +174,8 @@ class MlxAudioAsrDecoder:
             return self._transcribe_whisper(path)
         if family in {"granite", "granite_ctc"}:
             return self._transcribe_granite_windows(path)
+        if family == "granite_plus":
+            return self._transcribe_granite_plus(path)
         if family == "parakeet":
             with MLX_GLOBAL_LOCK:
                 return self._sentence_segments(self.model.generate(str(path)))
@@ -257,6 +263,50 @@ class MlxAudioAsrDecoder:
         elif options.language is not None:
             kwargs["source_language"] = options.language
         return kwargs
+
+    def _transcribe_granite_plus(self, path: Path) -> list[_ConversationItem]:
+        # Both need numpy, which must not reach the import path of a slim install.
+        import numpy as np
+
+        from docling.pipeline.asr_granite_plus import transcribe_plus
+
+        options = self.options
+        with MLX_GLOBAL_LOCK:
+            waveform = np.array(self._load_audio(str(path)))
+        return transcribe_plus(
+            waveform,
+            self._sample_rate,
+            options.max_time_chunk,
+            options.chunk_search_window,
+            options.word_timestamps,
+            options.speaker_attribution,
+            self._decode_plus,
+        )
+
+    def _decode_plus(self, waveform: Any, task: Any) -> str:
+        from mlx_audio.stt.models.granite_speech.granite_speech import (
+            StructuredTranscriptError,
+        )
+
+        from docling.pipeline.asr_granite_plus import PLUS_TOKENS_PER_SECOND
+
+        kwargs: dict[str, Any] = {
+            "task": task,
+            "max_tokens": max(
+                _GRANITE_MAX_TOKENS_PER_WINDOW,
+                int(PLUS_TOKENS_PER_SECOND[task] * waveform.size / self._sample_rate),
+            ),
+            "temperature": self.options.temperature,
+        }
+        if task == "asr" and self.options.prompt is not None:
+            kwargs["prompt"] = self.options.prompt
+        try:
+            with MLX_GLOBAL_LOCK:
+                return self.model.generate(self._mx.array(waveform), **kwargs).text
+        except StructuredTranscriptError as exc:
+            # Malformed tags must not lose the text of the window.
+            _log.debug(f"Granite Speech Plus gave malformed {task} output: {exc}")
+            return exc.raw_text
 
     def _transcribe_granite_windows(self, path: Path) -> list[_ConversationItem]:
         """Decode the file in windows, because the models return no timestamps.
