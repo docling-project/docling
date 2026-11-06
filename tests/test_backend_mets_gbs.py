@@ -137,6 +137,39 @@ def test_page_order_gap_keeps_later_pages_loadable(tmp_path, test_doc_path):
     doc_backend.unload()
 
 
+def test_page_with_an_absent_archive_member_is_skipped(tmp_path, test_doc_path):
+    """A page whose coordOCR member is named by the METS XML but absent from the tar
+    must be reported as invalid, the same as a page with no coordOCR fptr at all,
+    instead of raising KeyError out of load_page and failing every page with it.
+    """
+    incomplete_path = tmp_path / "absent_member.tar.gz"
+    with (
+        tarfile.open(test_doc_path, "r:gz") as tar_in,
+        tarfile.open(incomplete_path, "w:gz") as tar_out,
+    ):
+        for member in tar_in:
+            # The METS XML keeps its fptr and FLocat for this member.
+            if member.name == "00000268.html":
+                continue
+            data = tar_in.extractfile(member).read()
+            tar_out.addfile(member, BytesIO(data))
+
+    doc_backend: MetsGbsDocumentBackend = _get_backend(incomplete_path)
+    assert doc_backend.is_valid()
+    assert doc_backend.page_count() == 3
+
+    for page_index in (0, 1):
+        page_backend: MetsGbsPageBackend = doc_backend.load_page(page_index)
+        assert page_backend.is_valid()
+        page_backend.unload()
+
+    page_backend = doc_backend.load_page(2)
+    assert not page_backend.is_valid()
+
+    page_backend.unload()
+    doc_backend.unload()
+
+
 def test_max_file_bytes_limit(test_doc_path):
     """Test that max_file_bytes limit is enforced during extraction."""
 
