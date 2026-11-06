@@ -2247,7 +2247,7 @@ def show_engine_options(
         raise
     table = rich.table.Table(title=f"Options of the {stage.value} engine {engine!r}")
     table.add_column("Key", style="bold", no_wrap=True)
-    table.add_column("Type")
+    table.add_column("Type", overflow="fold")
     table.add_column("Default")
     table.add_column("Description")
     for row in describe_options_class(options_cls):

@@ -193,6 +193,30 @@ Docling cannot detect a page whose text uses the right alphabet but the wrong le
 letters in the wrong order, for example `Cartifecita` instead of `Certificate`. Such pages keep
 their PDF text. To read every page with OCR, set `mode=OcrMode.FULL_PAGE` (`--ocr-mode full_page`).
 
+## OCR only scanned pages
+
+`OcrOptions.page_bitmap_area_threshold` OCRs a page only when bitmaps cover at least that fraction
+of it (0.0-1.0). The pages below it skip OCR and keep their native text, whatever the `mode`. The
+default `None` processes every page. A page whose broken text layer `replace_broken_text_layer`
+replaces is OCR'd even below the threshold.
+
+With `mode=OcrMode.FULL_PAGE` and a high value, a mixed document gets full-page OCR on its scanned
+pages, while its programmatic pages, including the ones that carry logos or photos, are read from
+the PDF text layer:
+
+```python
+from docling.datamodel.pipeline_options import OcrMode, TesseractCliOcrOptions
+
+options = TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE, page_bitmap_area_threshold=0.97)
+```
+
+```sh
+docling convert --ocr-mode full_page --ocr-option page_bitmap_area_threshold=0.97 document.pdf
+```
+
+`bitmap_area_threshold`, the field this replaces, is still accepted with a `DeprecationWarning` and
+sets `page_bitmap_area_threshold`. It does not set the `mode`: to OCR the scanned pages in full, as
+it did before `OcrMode`, also set `mode=OcrMode.FULL_PAGE`.
 
 ## RapidOCR
 
