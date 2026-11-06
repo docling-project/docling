@@ -30,7 +30,7 @@
         "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/texts/46"
+        "$ref": "#/texts/48"
       },
       {
         "$ref": "#/groups/5"
@@ -42,7 +42,7 @@
         "$ref": "#/pictures/3"
       },
       {
-        "$ref": "#/texts/50"
+        "$ref": "#/texts/52"
       }
     ],
     "content_layer": "body",
@@ -138,16 +138,16 @@
           "$ref": "#/texts/31"
         },
         {
-          "$ref": "#/pictures/0"
-        },
-        {
           "$ref": "#/texts/32"
         },
         {
-          "$ref": "#/pictures/1"
+          "$ref": "#/pictures/0"
         },
         {
           "$ref": "#/texts/33"
+        },
+        {
+          "$ref": "#/pictures/1"
         },
         {
           "$ref": "#/texts/34"
@@ -183,10 +183,16 @@
           "$ref": "#/texts/44"
         },
         {
+          "$ref": "#/texts/45"
+        },
+        {
+          "$ref": "#/texts/46"
+        },
+        {
           "$ref": "#/pictures/2"
         },
         {
-          "$ref": "#/texts/45"
+          "$ref": "#/texts/47"
         }
       ],
       "content_layer": "body",
@@ -1197,21 +1203,75 @@
           "bbox": {
             "l": 52.56,
             "t": 84.31,
+            "r": 99.54,
+            "b": 65.64,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
+      "orig": "Tested By:",
+      "text": "Tested By:"
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 118.8,
+            "t": 84.31,
+            "r": 143.64,
+            "b": 65.64,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
+      "orig": "id /M",
+      "text": "id /M"
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 187.02,
+            "t": 84.31,
             "r": 513.18,
             "b": 65.64,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            65
+            48
           ]
         }
       ],
-      "orig": "Tested By: id /M Date: If -7-25 Approved By: D ke Date: WA OSS 2S",
-      "text": "Tested By: id /M Date: If -7-25 Approved By: D ke Date: WA OSS 2S"
+      "orig": "Date: If -7-25 Approved By: D ke Date: WA OSS 2S",
+      "text": "Date: If -7-25 Approved By: D ke Date: WA OSS 2S"
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1238,7 +1298,7 @@
       "text": "aaa-aa-000"
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1265,7 +1325,7 @@
       "text": "aaa-aa-000"
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1292,7 +1352,7 @@
       "text": "ny"
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1319,7 +1379,7 @@
       "text": "aaa-aa-000"
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1346,7 +1406,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1373,7 +1433,7 @@
       "text": "P\\s"
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1400,7 +1460,7 @@
       "text": "|"
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1427,7 +1487,7 @@
       "text": "5"
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/43",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1454,7 +1514,7 @@
       "text": "KF \u00bb"
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/44",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1481,7 +1541,7 @@
       "text": ")"
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1508,7 +1568,7 @@
       "text": "<"
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1535,7 +1595,7 @@
       "text": "~"
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -1562,7 +1622,7 @@
       "text": "Page 3 of 8"
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/body"
       },
@@ -1589,7 +1649,7 @@
       "text": "CONFIDENTIAL"
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -1616,7 +1676,7 @@
       "text": "YY"
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -1643,7 +1703,7 @@
       "text": "~!"
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -1670,7 +1730,7 @@
       "text": "AN"
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/body"
       },
@@ -1711,8 +1771,8 @@
           "page_no": 1,
           "bbox": {
             "l": 118.13,
-            "t": 90.55,
-            "r": 144.78,
+            "t": 90.56,
+            "r": 144.77,
             "b": 70.23,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -1739,10 +1799,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 444.98,
-            "t": 86.78,
+            "l": 444.97,
+            "t": 86.79,
             "r": 513.93,
-            "b": 68.33,
+            "b": 68.31,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1768,9 +1828,9 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 538.36,
-            "t": 162.04,
-            "r": 554.98,
+            "l": 538.35,
+            "t": 162.06,
+            "r": 554.99,
             "b": 135.19,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -1792,13 +1852,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/47"
-        },
-        {
-          "$ref": "#/texts/48"
-        },
-        {
           "$ref": "#/texts/49"
+        },
+        {
+          "$ref": "#/texts/50"
+        },
+        {
+          "$ref": "#/texts/51"
         }
       ],
       "content_layer": "body",
@@ -1807,10 +1867,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 568.67,
-            "t": 765.7,
-            "r": 600.95,
-            "b": 699.33,
+            "l": 568.68,
+            "t": 765.71,
+            "r": 600.98,
+            "b": 699.32,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1839,9 +1899,9 @@
           "page_no": 1,
           "bbox": {
             "l": 79.55,
-            "t": 639.58,
-            "r": 437.79,
-            "b": 524.51,
+            "t": 639.62,
+            "r": 437.71,
+            "b": 524.49,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -2498,8 +2558,8 @@
           "page_no": 1,
           "bbox": {
             "l": 77.21,
-            "t": 366.38,
-            "r": 436.22,
+            "t": 366.4,
+            "r": 436.23,
             "b": 327.34,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -2832,10 +2892,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 78.86,
+            "l": 78.85,
             "t": 289.92,
             "r": 436.7,
-            "b": 212.03,
+            "b": 212.01,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

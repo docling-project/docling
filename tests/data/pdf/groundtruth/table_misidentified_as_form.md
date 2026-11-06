@@ -70,11 +70,15 @@ aaa-aa-000 F
 
 aaaaaa: aaaaa
 
-<!-- image -->
-
-Tested By: id /M Date: If -7-25 Approved By: D ke Date: WA OSS 2S
+Tested By:
 
 <!-- image -->
+
+id /M
+
+<!-- image -->
+
+Date: If -7-25 Approved By: D ke Date: WA OSS 2S
 
 aaa-aa-000
 
