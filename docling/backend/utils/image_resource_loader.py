@@ -33,6 +33,7 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import ValidationError
 from requests.utils import get_environ_proxies, select_proxy
 
+from docling.backend.utils.image import normalize_image_for_png
 from docling.datamodel.backend_options import DEFAULT_MAX_IMAGE_PIXELS
 from docling.exceptions import OperationNotAllowed
 from docling.utils.image_utils import check_image_pixels
@@ -369,11 +370,12 @@ class ImageResourceLoader:
             if img_data:
                 img = Image.open(BytesIO(img_data))
                 # Image.open reads only the header: check the size before
-                # ImageRef.from_pil decodes the pixels.
+                # the pixels are decoded.
                 check_image_pixels(img.size, self.max_image_pixels)
+                img.load()
                 # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
                 dpi = int(img.info.get("dpi", (72,))[0]) or 72
-                return ImageRef.from_pil(img, dpi=dpi)
+                return ImageRef.from_pil(normalize_image_for_png(img), dpi=dpi)
         except (
             Image.DecompressionBombError,
             requests.RequestException,
@@ -381,6 +383,7 @@ class ImageResourceLoader:
             ValidationError,
             UnidentifiedImageError,
             OperationNotAllowed,
+            OSError,
             TypeError,
             ValueError,
         ) as e:
