@@ -13,6 +13,7 @@ from types import SimpleNamespace
 import pytest
 from docling_core.types.doc import (
     CodeItem,
+    CodeLanguageLabel,
     ContentLayer,
     DocItemLabel,
     FormulaItem,
@@ -508,9 +509,71 @@ def test_inline_code_fence_preserves_following_block(fence: str, code: str):
         (DocItemLabel.TEXT, "After code."),
     ]
     assert not doc.pictures
+    assert isinstance(doc.texts[0], CodeItem)
+    assert doc.texts[0].code_language == CodeLanguageLabel.PYTHON
     assert doc.texts[0].prov[0].bbox.b == 400
     assert doc.texts[1].prov[0].bbox.t == 400
     assert doc.export_to_markdown() == f"```\n{code}\n```\n\nAfter code."
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        'path = "../data"  # intial\nfor x in xs:\n    print("**literal**", x_i, "\\n")',
+        '    print("indented first line")',
+        "x = 1\n\nprint(x)",
+        "for x in xs:\n\tprint(x)",
+        'value = "<tag>&amp;</tag>"',
+        'python\nprint("keep the first line")',
+        "value = `![image](0,0,1000,1000)`",
+    ],
+)
+def test_unfenced_native_code_is_literal(body: str):
+    doc = parse_lightonocr_markdown(
+        f"![code](100,200,900,400)\n{body}\n![text](100,500,900,600) After code.",
+        PAGE_SIZE,
+        page_no=3,
+    )
+    code = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert len(code) == 1
+    assert code[0].text == body
+    assert len(code[0].prov) == 1
+    assert code[0].prov[0].page_no == 3
+    box = code[0].prov[0].bbox
+    assert (box.l, box.t, box.r, box.b) == (60, 160, 540, 320)
+    assert [(item.label, item.text) for item in doc.texts[1:]] == [
+        (DocItemLabel.TEXT, "After code.")
+    ]
+    assert body in doc.export_to_markdown()
+    assert not doc.pictures
+
+
+@pytest.mark.parametrize("fence", ["```", "~~~~"])
+def test_unclosed_native_code_fence_remains_literal(fence: str):
+    body = f'{fence}python\nprint("**literal**")\n![text](0,500,1000,600)'
+    doc = parse_lightonocr_markdown(
+        f"![code](100,200,900,400)\n{body}", PAGE_SIZE, page_no=3
+    )
+    assert len(doc.texts) == 1
+    assert isinstance(doc.texts[0], CodeItem)
+    assert doc.texts[0].text == body
+    assert doc.texts[0].prov[0].page_no == 3
+    assert not doc.pictures
+
+
+@pytest.mark.parametrize("fence", ["```", "~~~~"])
+@pytest.mark.parametrize("padding", ["  \n{}", "{}\n\t  "])
+def test_native_code_fence_with_blank_padding(fence: str, padding: str):
+    body = padding.format(f"{fence}python\nx = 1\n{fence}")
+    doc = parse_lightonocr_markdown(
+        f"![code](100,200,900,400)\n{body}\n![text](100,500,900,600) After.",
+        PAGE_SIZE,
+        page_no=3,
+    )
+    assert isinstance(doc.texts[0], CodeItem)
+    assert doc.texts[0].text == "x = 1"
+    assert doc.texts[0].code_language == CodeLanguageLabel.PYTHON
+    assert [item.text for item in doc.texts[1:]] == ["After."]
 
 
 @pytest.mark.parametrize("heading", ["Contract", "# Contract"])
