@@ -54,3 +54,38 @@ def test_pdf_pipeline_assigns_heading_levels_from_existing_fixture(
     assert headings["1. Introduction"] == 1
     assert headings["4.1. Model architecture."] == 2
     assert headings["5.1. Implementation Details"] == 2
+
+
+def test_style_signal_does_not_need_generate_parsed_pages() -> None:
+    """The pipeline used to drop the parsed cells before assembly, so the style signal was
+    skipped silently unless the caller also set ``generate_parsed_pages=True``."""
+    levels: dict[bool, list[tuple[str, int]]] = {}
+    for keep in (True, False):
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_ocr = False
+        pipeline_options.do_table_structure = False
+        pipeline_options.generate_parsed_pages = keep
+        pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
+        pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(
+            enabled=True, use_bookmarks=False, use_numbering=False
+        )
+        input_document = InputDocument(
+            path_or_stream=Path("tests/data/pdf/sources/2203.01017v2.pdf"),
+            format=InputFormat.PDF,
+            backend=ThreadedDoclingParseDocumentBackend,
+            limits=DocumentLimits(page_range=(1, 6)),
+        )
+
+        result = StandardPdfPipeline(pipeline_options).execute(
+            input_document, raises_on_error=True
+        )
+
+        levels[keep] = [
+            (item.text, item.level)
+            for item in result.document.texts
+            if isinstance(item, SectionHeaderItem)
+        ]
+        assert all((page.parsed_page is not None) is keep for page in result.pages)
+
+    assert levels[False] == levels[True]
+    assert len({level for _, level in levels[False]}) > 1

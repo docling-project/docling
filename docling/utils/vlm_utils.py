@@ -12,12 +12,14 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     FloatingItem,
+    ProvenanceItem,
     SectionHeaderItem,
     Size,
     TextItem,
 )
 
 _MARKDOWN_HEADING_PATTERN = re.compile(r"^(#{1,6})[ \t]+(.*?)\s*$", re.DOTALL)
+_CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 
 
 def link_adjacent_captions(
@@ -62,6 +64,26 @@ def link_adjacent_captions(
             and not owners[0].captions
         ):
             owners[0].captions.append(caption.get_ref())
+
+
+def append_text_fragment(
+    item: TextItem,
+    text: str,
+    orig: str,
+    prov: ProvenanceItem | None,
+) -> None:
+    """Join a continuation block to a text item.
+
+    The space separator is part of the new provenance range. DocLang saves only
+    the provenance ranges, so a space outside them is lost after reload.
+    """
+    separator = "" if _CJK_PATTERN.search(text) else " "
+    start = len(item.text)
+    item.text += separator + text
+    item.orig += separator + orig
+    if prov is not None:
+        prov.charspan = (start, len(item.text))
+        item.prov.append(prov)
 
 
 def parse_markdown_heading(text: str) -> tuple[str, int | None]:

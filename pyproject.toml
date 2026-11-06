@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.143.0"  # DO NOT EDIT, updated automatically
+version = "2.148.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.103.1,<3.0.0',
+  'docling-core>=2.106.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -190,13 +190,21 @@ feat-asr-transformers = [
   'torchaudio>=2.2.2,<3.0.0',
 ]
 
+# MLX Audio ASR backend. Apple Silicon only; installs nothing on other platforms and
+# needs macOS 14 or later. Keep it free of format-audio, whose mlx-whisper and
+# openai-whisper dependencies need torch: this extra must stay torch-free.
+feat-asr-mlx-audio = [
+  'mlx-audio>=0.6.4,<0.7.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'transformers>=5.16.0,<6.0.0 ; sys_platform == "darwin" and platform_machine == "arm64"',
+]
+
 # Video pipeline: transcription (format-audio) plus speaker diarization.
 format-video = [
   'docling-slim[format-audio]',
   'resemblyzer>=0.1.4,<0.2.0',
   'soundfile>=0.12.1,<1.0.0',
   'scikit-learn>=1.3.0,<2.0.0',
-  'librosa>=0.10.0,<1.0.0',
+  'librosa>=0.10.0,<2.0.0',
 ]
 
 # ============================================================================
@@ -244,7 +252,7 @@ models-local = [
   # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
   'docling-ibm-models>=4.0.2,<5',
   'accelerate>=1.0.0,<2',
-  'huggingface_hub>=0.23,<2',
+  'huggingface_hub>=0.23,<3',
   'defusedxml>=0.7.1,<0.8.0',
 ]
 
@@ -281,6 +289,13 @@ models-vlm-inline = [
   'peft>=0.18.1',
 ]
 
+# Every inline ASR engine, as models-vlm-inline is for VLM. It needs macOS 14 or later on
+# Apple Silicon. Narrower choices stay available: format-audio (Whisper only, and
+# macOS 13), and feat-asr-mlx-audio (no torch).
+models-asr-inline = [
+  'docling-slim[format-audio,feat-asr-transformers,feat-asr-mlx-audio]',
+]
+
 # ============================================================================
 # FEATURES
 # ============================================================================
@@ -288,13 +303,13 @@ models-vlm-inline = [
 feat-chunking = [
   # >=2.94.1 relaxed its transformers pin; older releases cap transformers<5.9.0
   # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
-  'docling-core[chunking]>=2.103.1,<3.0.0',
+  'docling-core[chunking]>=2.106.0,<3.0.0',
 ]
 
 service-client = [
   'httpx>=0.28,<1.0.0',
-  'websockets>=14.0,<17.0',
-  'typer>=0.19.0,<0.27.0',
+  'websockets>=14.0,<18.0',
+  'typer>=0.19.0,<0.28.0',
   'rich>=13.0.0',
   # Best-effort .env loading for `docling convert-remote`; the command still
   # works (flags + env vars) if this is absent.
@@ -302,7 +317,7 @@ service-client = [
 ]
 
 cli = [
-  'typer>=0.19.0,<0.27.0',
+  'typer>=0.19.0,<0.28.0',
   'rich>=13.0.0',
   # Best-effort .env loading for `docling convert-remote`; the command still
   # works (flags + env vars) if this is absent.
@@ -323,14 +338,14 @@ all = [
   # (Python.h) plus a C compiler to build from source. `all` must install
   # cleanly without a compiler, so speaker diarization stays opt-in via
   # docling-slim[format-video].
-  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
+  'docling-slim[standard,models-vlm-inline,models-asr-inline,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
 ]
 
 [dependency-groups]
 typecheck = [
   "ty==0.0.33",
-  "types-setuptools~=70.3",
-  "pandas-stubs~=2.1",
+  "types-setuptools>=70.3",
+  "pandas-stubs>=2.1,<4",
   "types-openpyxl~=3.1",
   "types-requests~=2.31",
   "boto3-stubs~=1.37",
@@ -340,14 +355,14 @@ typecheck = [
 ]
 pr-fast-checks = [
   { include-group = "typecheck" },
-  "docling-core[chunking] (>=2.103.1,<3.0.0)",
+  "docling-core[chunking] (>=2.106.0,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
-  "ruff==0.15.12",
+  "ruff==0.17.2",
 ]
 dev = [
   { include-group = "typecheck" },
-  "dprint-py==0.53.1.0",
+  "dprint-py==0.64.3.0",
   # Test fakes serve a real socket so both httpx and requests code paths are
   # covered by one harness; see tests/fakes/.
   "fastapi>=0.115",
@@ -355,12 +370,12 @@ dev = [
   "prek>=0.3.10",
   "tach>=0.34.0,<1",
   "coverage~=7.6",
-  "pytest~=9.0.3",
+  "pytest>=9.0.3,<10",
   "pytest-cov>=6.1.1",
   "pytest-dependency~=0.6",
-  "pytest-durations~=1.6.1",
+  "pytest-durations~=1.6",
   "pytest-xdist~=3.3",
-  "ipykernel~=6.29",
+  "ipykernel>=6.29,<8",
   "ipywidgets~=8.1",
   "nbqa~=1.9",
   "python-semantic-release~=7.32",
@@ -370,12 +385,12 @@ dev = [
 docs = [
   "zensical>=0.0.40,<0.1",
   "mkdocs-redirects~=1.2",
-  "mkdocstrings[python]~=0.27",
+  "mkdocstrings[python]>=0.27,<2",
   "griffe-pydantic~=1.1",
   # pymdown-extensions was previously a transitive dep of mkdocs-material;
   # mkdocs.yml's markdown_extensions list still relies on pymdownx.* and on
   # pymdownx.slugs.slugify, so pin it directly now that material is removed.
-  "pymdown-extensions~=10.0",
+  "pymdown-extensions>=10.0,<13",
   # Used by scripts/render_notebooks.py to convert example notebooks and
   # jupytext percent-format .py scripts to markdown at docs build time. Zensical
   # has no mkdocs-jupyter equivalent on its roadmap, so the example pages are
@@ -385,7 +400,7 @@ docs = [
 ]
 
 examples = [
-  "datasets~=2.21",
+  "datasets>=2.21,<6",
   "python-dotenv~=1.0",
   "langchain-huggingface>=0.0.3",
   "langchain-milvus~=0.1",
@@ -406,7 +421,6 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
 
 [tool.uv]
@@ -507,6 +521,8 @@ allowed-unresolved-imports = [
   "filetype.**",
   "huggingface_hub.**",
   "lxml.**",
+  "mlx.**",
+  "mlx_audio.**",
   "mlx_vlm.**",
   "nemotron_ocr.**",
   "nemotron_ocr_cpp.**",

@@ -14,6 +14,7 @@ import pytest
 import requests
 from bs4 import BeautifulSoup
 from docling_core.types.doc import (
+    CodeItem,
     DocItemLabel,
     GroupLabel,
     PictureItem,
@@ -484,6 +485,61 @@ def test_table_row_header_rowspan_keeps_the_row_cells():
     assert "$134" in doc.export_to_markdown()
 
 
+_THEAD = b"<thead><tr><th>Item</th><th>Amount</th></tr></thead>"
+_TFOOT = b"<tfoot><tr><td>Total</td><td>10</td></tr></tfoot>"
+
+
+@pytest.mark.parametrize(
+    "body,expected_grid",
+    [
+        (
+            _THEAD + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>" + _TFOOT,
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+        # HTML 4 placed tfoot before tbody; the table model still ends with it.
+        (
+            _THEAD + _TFOOT + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>",
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+        (
+            b"<tbody><tr><td>Widgets</td><td>4</td></tr></tbody>"
+            + _TFOOT
+            + b"<tbody><tr><td>Gadgets</td><td>6</td></tr></tbody>",
+            [["Widgets", "4"], ["Gadgets", "6"], ["Total", "10"]],
+        ),
+        (
+            _THEAD
+            + b'<tfoot><tr><td rowspan="2">Total</td><td>10</td></tr></tfoot>'
+            + b"<tbody><tr><td>Widgets</td><td>10</td></tr></tbody>",
+            [["Item", "Amount"], ["Widgets", "10"], ["Total", "10"]],
+        ),
+    ],
+    ids=["tfoot_last", "tfoot_first", "tfoot_between", "tfoot_first_rowspan"],
+)
+def test_table_tfoot_rows_are_kept(body, expected_grid):
+    """Regression: <tfoot> is a standard table section, but only thead/tbody
+    were unwrapped before scanning rows. Footer totals then stayed nested
+    inside <tfoot> and were dropped from the grid. Wherever the tfoot sits in
+    the source, its rows come last in the table model.
+    """
+    src = b"<table>" + body + b"</table>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 3
+    grid = [[cell.text for cell in row] for row in doc.tables[0].data.grid]
+    assert grid == expected_grid
+    if b"rowspan=" in body:
+        total = next(c for c in doc.tables[0].data.table_cells if c.text == "Total")
+        assert total.end_row_offset_idx - total.start_row_offset_idx == 1
+
+
 def test_table_inside_figure_is_parsed():
     """Regression: LaTeXML wraps tables in <figure class="ltx_table">."""
     html = (
@@ -685,8 +741,9 @@ def test_image_caption_stays_in_the_section_of_its_image(figure: str):
     ("figure", "expected"),
     [
         ("<figure>Quote text<figcaption>cap</figcaption></figure>", ["Quote text"]),
-        ("<figure>one <code>two</code> three</figure>", ["one", "two", "three"]),
-        ("<figure><em>one</em> two</figure>", ["one", "two"]),
+        # The boundary space stays on the plain neighbours, outside the code run.
+        ("<figure>one <code>two</code> three</figure>", ["one ", "two", " three"]),
+        ("<figure><em>one</em> two</figure>", ["one ", "two"]),
         ('<figure><img src="x.png"/>after</figure>', ["after"]),
     ],
 )
@@ -943,7 +1000,7 @@ def test_orig_keeps_source_text():
         paragraph.orig
         == "See §§ 3\u20135 and \u201cquoted\u201d text \u2026 it\u2019s kept."
     )
-    assert items["Item 3-5 with"].orig == "Item 3\u20135 with"
+    assert items["Item 3-5 with "].orig == "Item 3\u20135 with "
     assert items['"text"'].orig == "\u201ctext\u201d"
 
 
@@ -1412,6 +1469,75 @@ def test_code_language_hint_prefers_prefixed_class():
     assert HTMLDocumentBackend._code_language_hint(plain.pre) is None
 
 
+@pytest.mark.parametrize(
+    ("pre_html", "expected"),
+    [
+        (
+            "<pre><code>\n    if ok:\n        run()\n\n</code></pre>",
+            "    if ok:\n        run()",
+        ),
+        (
+            '<pre><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>\n    <span class="k">return</span> <span class="mi">1</span>\n</pre>',
+            "def f():\n    return 1",
+        ),
+        (
+            "<pre><code>line one</code>\n<code>line two</code>\n<code>line three</code></pre>",
+            "line one\nline two\nline three",
+        ),
+        ("<pre><code>x = 'a  b'</code> <code>y</code></pre>", "x = 'a  b' y"),
+        ("<pre>first<br>second</pre>", "first\nsecond"),
+        ("<pre>before<!-- hidden -->after</pre>", "beforeafter"),
+        ("<pre>before<?hidden instruction?>after</pre>", "beforeafter"),
+        ("<pre>before<!DOCTYPE hidden>after</pre>", "beforeafter"),
+        ("<pre>before<![CDATA[hidden]]>after</pre>", "beforeafter"),
+        ("<pre>before<script>hidden()</script>after</pre>", "beforeafter"),
+    ],
+)
+def test_preformatted_blocks_preserve_inline_whitespace(pre_html: str, expected: str):
+    raw_html = f"<html><body>{pre_html}</body></html>".encode()
+    doc = _convert_html(raw_html)
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == [expected]
+
+
+def test_preformatted_hyperlinks_keep_run_whitespace():
+    raw_html = b"<html><body><pre>See <a href='https://example.com/docs'>the docs</a> first</pre></body></html>"
+    doc = _convert_html(raw_html)
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["See ", "the docs", " first"]
+    assert str(code_items[1].hyperlink) == "https://example.com/docs"
+
+
+def test_preformatted_inherited_hyperlink_is_kept():
+    doc = _convert_html(
+        b"<html><body><a href='https://example.com/docs'><pre>read()</pre></a></body></html>"
+    )
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["read()"]
+    assert str(code_items[0].hyperlink) == "https://example.com/docs"
+
+
+def test_preformatted_styles_keep_run_whitespace():
+    doc = _convert_html(
+        b"<html><body><pre>before <b>bold</b> after</pre></body></html>"
+    )
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["before ", "bold", " after"]
+    assert code_items[0].formatting is None
+    assert code_items[1].formatting.bold
+    assert code_items[2].formatting is None
+
+
+def test_empty_preformatted_block_emits_no_code_item():
+    doc = _convert_html(b"<html><body><pre>\n\n</pre></body></html>")
+
+    assert not any(isinstance(item, CodeItem) for item in doc.texts)
+
+
 @pytest.fixture(scope="module")
 def html_paths() -> list[Path]:
     # Define the directory you want to search
@@ -1551,6 +1677,40 @@ def test_local_file_uri_source_resolves_images(tmp_path: Path):
     ]
     assert len(pictures) == 1
     assert pictures[0].get_image(doc) is not None
+
+
+def test_cmyk_picture_is_kept(tmp_path: Path):
+    # Images in modes that cannot be written as PNG (e.g. CMYK) must still
+    # make it through the conversion as normalized RGB pictures.
+    buffer = BytesIO()
+    Image.new("CMYK", (200, 100), (0, 255, 255, 0)).save(buffer, format="JPEG")
+    (tmp_path / "cmyk.jpg").write_bytes(buffer.getvalue())
+
+    source = tmp_path / "cmyk.html"
+    source.write_text('<html><body><img src="cmyk.jpg"></body></html>')
+
+    backend_options = HTMLBackendOptions(
+        enable_local_fetch=True, fetch_images=True, source_uri=str(source)
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    result = converter.convert(source)
+
+    assert result.status == ConversionStatus.SUCCESS
+    num_pic = 0
+    for element, _ in result.document.iterate_items():
+        if isinstance(element, PictureItem):
+            assert element.image
+            image = element.image.pil_image
+            assert image is not None
+            assert image.size == (200, 100)
+            assert image.convert("RGB").getpixel((0, 0)) == (255, 0, 0)
+            num_pic += 1
+    assert num_pic == 1, "The CMYK picture was not kept in the converted file"
 
 
 def test_html_furniture():
@@ -2448,7 +2608,7 @@ def test_link_and_image_outside_base_directory_keep_conversion(tmp_path: Path):
     doc = result.document
     assert doc.texts[-1].text == "End"
     links = {t.text: t.hyperlink for t in doc.texts if t.hyperlink is not None}
-    assert Path(str(links["about"])).as_posix() == "/about"
+    assert Path(str(links["about "])).as_posix() == "/about"
     assert Path(str(links["home"])).as_posix() == "../index.html"
     assert len(doc.pictures) == 2
     assert all(pic.image is None for pic in doc.pictures)
@@ -2605,8 +2765,9 @@ Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
 
 def test_html_line_break_outside_paragraphs():
     # A <br> outside a paragraph or a table cell, e.g. in a heading or a list
-    # item, left the internal sentinel (U+E000) in the text. It is now a line
-    # break, as in a paragraph. The text of a checkbox stays on one line.
+    # item, is a line break, as in a paragraph. The text of a checkbox stays on
+    # one line. A <br> between two inline runs is a "\n" run of its own: runs are
+    # joined with "", so dropping it would merge the words.
     src = (
         b"<html><body>"
         b"<h1>Title<br>line</h1>"
@@ -2633,8 +2794,9 @@ def test_html_line_break_outside_paragraphs():
         "Title\nline",
         "Heading\nline",
         "Item\nline",
-        "",  # the list item with formatting: its text is in the two runs below
+        "",  # the list item with formatting: its text is in the three runs below
         "Bold",
+        "\n",
         "italic",
         "Term\nline",
         "Definition\nline",
@@ -2642,11 +2804,87 @@ def test_html_line_break_outside_paragraphs():
         "Figure\nline",
         "Code\nline",
         "bold",
+        "\n",
         "code",
         "Task line",
     ]
     assert not any(_BR_SENTINEL in item.orig for item in doc.texts)
-    assert "## Heading line" in doc.export_to_markdown()
+    markdown = doc.export_to_markdown()
+    assert "## Heading line" in markdown
+    assert "- **Bold**  \n*italic*\n" in markdown
+    assert "**`bold`**  \n*`code`*" in markdown
+
+
+def test_block_child_of_list_item_is_a_word_boundary():
+    # The list item text and its block child are separate words; source whitespace stays single.
+    src = (
+        b"<html><body><ul>"
+        b"<li>Intro<p>more <b>x</b> y</p></li>"
+        b"<li><b>A</b> b<div>c <i>d</i></div>tail</li>"
+        b"<li>e <p>f</p> g</li>"
+        b"</ul></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert doc.export_to_markdown() == (
+        "- Intro more **x** y\n- **A** b c *d* tail\n- e f g"
+    )
+
+
+def test_html_line_break_at_list_item_edge_is_trimmed():
+    # A <br> at the start or end of a list item is a block edge, not a line break.
+    src = (
+        b"<html><body><ul>"
+        b"<li><br><b>Bold</b> <i>italic</i><br></li>"
+        b"<li>plain <b>Bold</b><br>tail<br></li>"
+        b"</ul></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    assert [item.text for item in doc.texts] == [
+        "",
+        "Bold ",
+        "italic",
+        "",
+        "plain ",
+        "Bold",
+        "\ntail",
+    ]
+    assert doc.export_to_markdown() == "- **Bold** *italic*\n- plain **Bold**  \ntail"
+
+
+def test_html_caption_collapses_whitespace_across_runs():
+    # Caption runs are joined faithfully, so boundary whitespace from several runs must
+    # collapse to one space first, as in a paragraph.
+    src = (
+        b"<html><body>"
+        b"<table><caption>A <b> table </b> caption</caption><tr><td>x</td></tr></table>"
+        b"<figure><table><tr><td>y</td></tr></table>"
+        b"<figcaption>A <b> figure </b> caption</figcaption></figure>"
+        b"</body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(src),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="t.html",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(src)).convert()
+
+    captions = [item.text for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert captions == ["A table caption", "A figure caption"]
 
 
 def test_gfm_task_list_renders_checkbox_with_text():
@@ -2690,3 +2928,55 @@ def test_task_list_item_keeps_nested_content_list_item():
     assert "details paragraph" in markdown
     # the checkbox must not be rendered as an empty extra bullet
     assert "- [x] \n" not in markdown and "- [x] \r" not in markdown
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        # An empty formatted element between two words is one boundary, not three spaces.
+        (b"<p>a <strong> </strong> b</p>", "a b"),
+        # No whitespace at the boundary in the source: none in the output.
+        (b"<p>Water is H<sub>2</sub>O here.</p>", "Water is H2O here."),
+        # Whitespace after the closing tag is significant and must survive.
+        (b"<p>x<sup>2</sup> + y<sup>3</sup> ok</p>", "x2 + y3 ok"),
+        # Whitespace inside a formatted run belongs outside the emphasis markers.
+        (b"<p><strong>bold </strong>tail</p>", "**bold** tail"),
+        # Runs of whitespace collapse (HTML spec) but the boundary is kept.
+        (b"<p>a  \n  <em>b</em>   c</p>", "a *b* c"),
+        # The block edge is trimmed exactly once.
+        (b"<p>   padded   </p>", "padded"),
+    ],
+)
+def test_inline_whitespace_boundaries(body, expected):
+    """Inline runs carry their own whitespace; nothing is invented or lost at a boundary."""
+    html = b"<html><body>" + body + b"</body></html>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+    assert doc.export_to_markdown() == expected
+
+
+def test_single_char_spans_do_not_compact_across_a_boundary():
+    """The single-char compactor must not glue words that a space separates.
+
+    Rendered span soup emits one span per character; compacting them is what turns
+    `<span>H</span><span>i</span>` into `Hi`. A span carrying edge whitespace is a word
+    boundary, so it must stop the run.
+    """
+    html = (
+        b"<html><body><p>"
+        b"<span>H</span><span>i</span><span> </span><span>t</span><span>o</span>"
+        b"</p></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    doc = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html)).convert()
+    assert doc.export_to_markdown() == "Hi to"

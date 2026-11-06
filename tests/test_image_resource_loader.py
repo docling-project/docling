@@ -331,10 +331,19 @@ def _png_header_data_uri(width: int, height: int) -> str:
     return "data:image/png;base64," + base64.b64encode(png).decode()
 
 
-def _png_data_uri(width: int, height: int) -> str:
+def _png_data_uri(width: int, height: int, dpi: tuple[int, int] | None = None) -> str:
     buffer = BytesIO()
-    Image.new("RGB", (width, height)).save(buffer, format="PNG")
+    Image.new("RGB", (width, height)).save(
+        buffer, format="PNG", **({} if dpi is None else {"dpi": dpi})
+    )
     return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
+
+def test_zero_dpi_image_defaults_to_72_dpi():
+    ref = ImageResourceLoader().create_image_ref(_png_data_uri(4, 4, dpi=(0, 0)), None)
+
+    assert ref is not None
+    assert ref.dpi == 72
 
 
 def test_image_over_pixel_limit_is_skipped():
@@ -359,3 +368,22 @@ def test_data_uri_over_size_limit_is_rejected():
     assert loader.load_image_data("data:image/png;base64,AAAAAAAAAAA=", None)
     with pytest.raises(ValueError, match="exceeds size limit of 8 bytes"):
         loader.load_image_data("data:image/png;base64,AAAAAAAAAAAAAAAA", None)
+
+
+def _jpeg_data_uri(data: bytes) -> str:
+    return "data:image/jpeg;base64," + base64.b64encode(data).decode()
+
+
+def _jpeg(image: Image.Image) -> bytes:
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+def test_create_image_ref_skips_undecodable_image():
+    # A truncated file only fails when Pillow decodes it, with an OSError.
+    data = _jpeg(Image.new("RGB", (200, 100), "red"))
+    truncated = _jpeg_data_uri(data[: len(data) // 2])
+
+    with pytest.warns(UserWarning, match="Could not process an image"):
+        assert ImageResourceLoader().create_image_ref(truncated, None) is None

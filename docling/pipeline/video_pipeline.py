@@ -37,6 +37,10 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VideoPipelineOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrMlxAudioOptions,
+    InlineAsrTransformersOptions,
+)
 from docling.pipeline.asr_transcriber import (
     _AsrModelFactory,
     _merge_into_sentences,
@@ -81,6 +85,21 @@ _VIDEO_SUFFIX_TO_MIMETYPE = {
 def _video_mimetype(filename: str) -> str:
     suffix = Path(filename).suffix.lower()
     return _VIDEO_SUFFIX_TO_MIMETYPE.get(suffix, "video/mp4")
+
+
+def _gives_finished_phrases(asr_options: object) -> bool:
+    """Tell if the items already have their final times and speakers.
+
+    Granite Speech Plus gives timed phrases with almost no punctuation. A merge to
+    sentences would join them to one item, and it would lose the speaker changes.
+    """
+    return (
+        isinstance(
+            asr_options, (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions)
+        )
+        and asr_options.model_family == "granite_plus"
+        and (asr_options.word_timestamps or asr_options.speaker_attribution)
+    )
 
 
 def _extract_audio(video_path: Path, wav_path: Path, runner: FfmpegRunner) -> bool:
@@ -155,6 +174,7 @@ class VideoPipeline(BasePipeline):
 
     def _process_video(self, conv_res: ConversionResult) -> None:
         # 1. Resolve input to a local path
+        assert conv_res.input._backend is not None
         path_or_stream = conv_res.input._backend.path_or_stream
         temp_video: Path | None = None
 
@@ -216,7 +236,8 @@ class VideoPipeline(BasePipeline):
                 audio_ok = _extract_audio(video_path, wav_path, runner)
                 if audio_ok and wav_path.exists() and wav_path.stat().st_size > 0:
                     transcript_items = self._asr_model.transcribe(wav_path)
-                    transcript_items = _merge_into_sentences(transcript_items)
+                    if not _gives_finished_phrases(self.pipeline_options.asr_options):
+                        transcript_items = _merge_into_sentences(transcript_items)
                     # Run diarization while WAV is still available
                     if self.pipeline_options.enable_diarization:
                         try:

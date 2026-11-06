@@ -19,8 +19,6 @@
 # Notes
 # - Without `HeadingHierarchyOptions(enabled=True)` every heading stays at level 1 and the
 #   Markdown export is a flat list of `#` headings.
-# - `generate_parsed_pages=True` is only needed for the font-style signal, which reads the
-#   parsed PDF cells. Bookmarks and numbering work without it.
 # - See the [PDF heading levels](../../usage/heading_levels/) guide for the full set of options.
 
 # %%
@@ -43,8 +41,6 @@ def main():
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False
     pipeline_options.do_table_structure = False
-    # Keep the parsed PDF cells around: the font-style signal is read from them.
-    pipeline_options.generate_parsed_pages = True
     pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
 
     converter = DocumentConverter(

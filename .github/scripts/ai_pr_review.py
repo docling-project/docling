@@ -41,25 +41,22 @@ from ai_pr_triage import (
     REVIEW_LABELS,
     REVIEW_MARKER,
     REVIEW_MARKER_PREFIX,
-    ZERO_WIDTH_SPACE,
     TriageContext,
     ai_reviewed_shas,
     answer_from_output,
     build_diff,
-    clean_text,
     code_segments,
     extract_answer,
     fetch_pr_commits,
     gh_api,
     gh_write,
-    markdown_code,
     markdown_inline,
-    markdown_text,
     matches_any,
     pr_files,
     read_blob,
     read_bob_output,
 )
+from safe_markdown import ZERO_WIDTH_SPACE, clean_text, markdown_code, markdown_text
 
 MAX_REVIEW_CHANGED_LINES = 2_000
 MAX_REVIEW_FILES = 60

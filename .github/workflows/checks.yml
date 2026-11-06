@@ -127,7 +127,7 @@ jobs:
               - ".github/actions/**"
               - ".pre-commit-config.yaml"
               - "pyproject.toml"
-              - "scripts/check_tach_module_coverage.py"
+              - "scripts/checks/check_tach_module_coverage.py"
               - "tach.toml"
               - "uv.lock"
               - "docling/**"
@@ -187,7 +187,7 @@ jobs:
           uv_sync_args: --frozen --only-group dev --no-install-project
 
       - name: Check module coverage
-        run: python3 scripts/check_tach_module_coverage.py
+        run: python3 scripts/checks/check_tach_module_coverage.py
 
       - name: Check module boundaries
         run: uv run --no-sync tach check
@@ -635,6 +635,24 @@ jobs:
       - name: Run docling
         run: uv run docling --help
 
+  test-slim-import:
+    needs: changes
+    if: ${{ needs.changes.outputs.run_package == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      - name: Import DocumentConverter without extras
+        run: |
+          uv venv /tmp/venv
+          uv pip install --python /tmp/venv .
+          # Run outside the checkout so the installed package is imported.
+          cd /tmp && /tmp/venv/bin/python -c "from docling.document_converter import DocumentConverter; import docling.datamodel.asr_model_specs; import docling.pipeline.asr_pipeline"
+
   check:
     if: ${{ always() }}
     needs:
@@ -650,6 +668,7 @@ jobs:
       - test-pip-install-no-dev-headers
       - build-package
       - test-package
+      - test-slim-import
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -663,7 +682,7 @@ jobs:
           ALLOWED_SKIPS: >-
             lint tach run-tests-core run-tests-ml run-examples-light run-tests-windows
             run-tests-macos test-pip-install-no-lock test-pip-install-no-dev-headers
-            build-package test-package
+            build-package test-package test-slim-import
         run: >-
           python3 .github/scripts/check_needs_results.py
           --needs-json "$NEEDS_JSON"

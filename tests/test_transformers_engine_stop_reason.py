@@ -97,7 +97,9 @@ class _ScriptedModel:
         return input_ids
 
 
-def _run(rows: list[str], stoppers: list[GenerationStopper]):
+def _run(
+    rows: list[str], stoppers: list[GenerationStopper], *, max_new_tokens: int = 128
+):
     processor = _CharProcessor(rows)
     engine = TransformersVlmEngine(
         options=TransformersVlmEngineOptions(),
@@ -114,7 +116,7 @@ def _run(rows: list[str], stoppers: list[GenerationStopper]):
             VlmEngineInput(
                 image=image,
                 prompt="Prompt",
-                max_new_tokens=128,
+                max_new_tokens=max_new_tokens,
                 extra_generation_config={
                     "transformers_prompt_style": TransformersPromptStyle.RAW,
                     "custom_stopping_criteria": stoppers,
@@ -158,3 +160,20 @@ def test_each_row_reports_the_reason_of_the_stopper_that_ended_it(
     # No stopper ended it, so the engine does not know why it ended.
     assert outputs[2].text == "plain"
     assert outputs[2].stop_reason == VlmStopReason.UNSPECIFIED.value
+
+
+@pytest.mark.parametrize("valid_end", [False, True])
+def test_stopper_at_token_limit_keeps_declared_reason(
+    repetition_stopper, valid_end: bool
+) -> None:
+    text = "</doctag>" if valid_end else "abababab"
+    stopper = _ClosingTagStopper() if valid_end else repetition_stopper
+
+    (output,) = _run([text], [stopper], max_new_tokens=len(text))
+
+    assert output.text == text
+    assert output.stop_reason == (
+        VlmStopReason.END_OF_SEQUENCE.value
+        if valid_end
+        else VlmStopReason.STOP_SEQUENCE.value
+    )

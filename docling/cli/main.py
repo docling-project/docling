@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
+import json
 import logging
 import re
 import sys
@@ -10,7 +11,7 @@ import time
 import warnings
 from collections.abc import Iterable
 from contextlib import nullcontext
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
@@ -64,15 +65,38 @@ from docling.cli.export_utils import (
     _should_generate_export_images,
     _split_list,
 )
+from docling.cli.model_table import (
+    ASR_BACKENDS,
+    ASR_FEATURES,
+    VLM_BACKENDS,
+    VLM_FEATURES,
+    BackendState,
+    ModelTable,
+    asr_rows,
+    vlm_rows,
+)
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     ADDITIONAL_ASR_PRESETS,
     GRANITE_4_0_1B_SPEECH,
-    NEMOTRON_3_5_ASR_STREAMING,
+    GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO,
+    GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS,
+    GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
+    GRANITE_SPEECH_5_0_2B_TRANSFORMERS,
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS,
+    NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
+    NEMOTRON_3_5_ASR_STREAMING_PRESET,
+    NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS,
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS,
+    PARAKEET_CTC_1_1B_MLX_AUDIO,
+    PARAKEET_CTC_1_1B_TRANSFORMERS,
     WHISPER_BASE,
     WHISPER_BASE_EN_NATIVE,
     WHISPER_BASE_EN_S2T,
     WHISPER_BASE_MLX,
+    WHISPER_BASE_MLX_WHISPER,
     WHISPER_BASE_NATIVE,
     WHISPER_BASE_S2T,
     WHISPER_BASE_TRANSFORMERS,
@@ -86,6 +110,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_DISTIL_SMALL_EN_S2T,
     WHISPER_LARGE,
     WHISPER_LARGE_MLX,
+    WHISPER_LARGE_MLX_WHISPER,
     WHISPER_LARGE_NATIVE,
     WHISPER_LARGE_TRANSFORMERS,
     WHISPER_LARGE_V3_S2T,
@@ -94,6 +119,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_MEDIUM_EN_NATIVE,
     WHISPER_MEDIUM_EN_S2T,
     WHISPER_MEDIUM_MLX,
+    WHISPER_MEDIUM_MLX_WHISPER,
     WHISPER_MEDIUM_NATIVE,
     WHISPER_MEDIUM_S2T,
     WHISPER_MEDIUM_TRANSFORMERS,
@@ -101,6 +127,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_SMALL_EN_NATIVE,
     WHISPER_SMALL_EN_S2T,
     WHISPER_SMALL_MLX,
+    WHISPER_SMALL_MLX_WHISPER,
     WHISPER_SMALL_NATIVE,
     WHISPER_SMALL_S2T,
     WHISPER_SMALL_TRANSFORMERS,
@@ -108,11 +135,14 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_TINY_EN_NATIVE,
     WHISPER_TINY_EN_S2T,
     WHISPER_TINY_MLX,
+    WHISPER_TINY_MLX_AUDIO,
+    WHISPER_TINY_MLX_WHISPER,
     WHISPER_TINY_NATIVE,
     WHISPER_TINY_S2T,
     WHISPER_TINY_TRANSFORMERS,
     WHISPER_TURBO,
     WHISPER_TURBO_MLX,
+    WHISPER_TURBO_MLX_WHISPER,
     WHISPER_TURBO_NATIVE,
     WHISPER_TURBO_TRANSFORMERS,
     AsrModelType,
@@ -139,6 +169,7 @@ from docling.datamodel.pipeline_options import (
     BaseLayoutOptions,
     BaseTableStructureOptions,
     ConvertPipelineOptions,
+    HeadingHierarchyOptions,
     LayoutObjectDetectionOptions,
     LayoutOptions,
     NativePdfPipelineOptions,
@@ -158,6 +189,7 @@ from docling.datamodel.pipeline_options import (
     normalize_pdf_backend,
 )
 from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrMlxAudioOptions,
     InlineAsrOptions,
     InlineAsrTransformersOptions,
 )
@@ -412,17 +444,20 @@ class _DefaultCommandGroup(typer.core.TyperGroup):
         return super().parse_args(ctx, args)
 
 
-def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
+def _resolve_asr_options(
+    asr_model: AsrModelType, device: AcceleratorDevice | str = AcceleratorDevice.AUTO
+) -> InlineAsrOptions:
     """Map an AsrModelType enum member to its preset InlineAsrOptions.
 
     Shared mapping so both audio and (later) video CLI setup resolve
     ASR presets the same way.
     """
+    if asr_model == AsrModelType.NEMOTRON_3_5_ASR_STREAMING:
+        return NEMOTRON_3_5_ASR_STREAMING_PRESET.to_auto_options(device)
     if asr_model.value in ADDITIONAL_ASR_PRESETS:
-        return ADDITIONAL_ASR_PRESETS[asr_model.value].to_options()
+        return ADDITIONAL_ASR_PRESETS[asr_model.value].to_auto_options(device)
     mapping: dict[AsrModelType, InlineAsrOptions] = {
         AsrModelType.GRANITE_4_0_1B_SPEECH: GRANITE_4_0_1B_SPEECH,
-        AsrModelType.NEMOTRON_3_5_ASR_STREAMING: NEMOTRON_3_5_ASR_STREAMING,
         AsrModelType.WHISPER_TINY: WHISPER_TINY,
         AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
         AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
@@ -441,6 +476,25 @@ def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
         AsrModelType.WHISPER_BASE_MLX: WHISPER_BASE_MLX,
         AsrModelType.WHISPER_LARGE_MLX: WHISPER_LARGE_MLX,
         AsrModelType.WHISPER_TURBO_MLX: WHISPER_TURBO_MLX,
+        AsrModelType.WHISPER_TINY_MLX_WHISPER: WHISPER_TINY_MLX_WHISPER,
+        AsrModelType.WHISPER_SMALL_MLX_WHISPER: WHISPER_SMALL_MLX_WHISPER,
+        AsrModelType.WHISPER_MEDIUM_MLX_WHISPER: WHISPER_MEDIUM_MLX_WHISPER,
+        AsrModelType.WHISPER_BASE_MLX_WHISPER: WHISPER_BASE_MLX_WHISPER,
+        AsrModelType.WHISPER_LARGE_MLX_WHISPER: WHISPER_LARGE_MLX_WHISPER,
+        AsrModelType.WHISPER_TURBO_MLX_WHISPER: WHISPER_TURBO_MLX_WHISPER,
+        AsrModelType.WHISPER_TINY_MLX_AUDIO: WHISPER_TINY_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO: GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS: GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS,
+        AsrModelType.GRANITE_SPEECH_5_0_2B_MLX_AUDIO: GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO: GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
+        AsrModelType.NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO: NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
+        AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO: NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
+        AsrModelType.PARAKEET_CTC_1_1B_MLX_AUDIO: PARAKEET_CTC_1_1B_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_5_0_2B_TRANSFORMERS: GRANITE_SPEECH_5_0_2B_TRANSFORMERS,
+        AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS: GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS,
+        AsrModelType.NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS: NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS,
+        AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS: NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS,
+        AsrModelType.PARAKEET_CTC_1_1B_TRANSFORMERS: PARAKEET_CTC_1_1B_TRANSFORMERS,
         AsrModelType.WHISPER_TINY_NATIVE: WHISPER_TINY_NATIVE,
         AsrModelType.WHISPER_SMALL_NATIVE: WHISPER_SMALL_NATIVE,
         AsrModelType.WHISPER_MEDIUM_NATIVE: WHISPER_MEDIUM_NATIVE,
@@ -987,8 +1041,11 @@ def convert(  # noqa: C901
         str,
         typer.Option(
             ...,
-            metavar=_choices_metavar(vlm_preset_ids),
-            help=f"Choose the VLM preset to use with PDF or image files. Available presets: {', '.join(vlm_preset_ids)}",
+            metavar="NAME",
+            help=(
+                "Choose the VLM preset to use with PDF or image files. "
+                "Run 'docling models --vlm' to list the presets."
+            ),
         ),
     ] = "granite_docling",
     vlm_max_new_tokens: Annotated[
@@ -1021,15 +1078,42 @@ def convert(  # noqa: C901
     ] = False,
     asr_model: Annotated[
         AsrModelType,
-        typer.Option(..., help="Choose the ASR model to use with audio/video files."),
+        typer.Option(
+            ...,
+            metavar="NAME",
+            help=(
+                "Choose the ASR model to use with audio/video files. "
+                "Run 'docling models --asr' to list the models."
+            ),
+        ),
     ] = AsrModelType.WHISPER_TINY,
     asr_language: Annotated[
         str | None,
         typer.Option(
             "--asr-language",
-            help="Source language for Transformers ASR.",
+            help="Source language for Transformers and mlx-audio ASR.",
         ),
     ] = None,
+    asr_timestamps: Annotated[
+        bool,
+        typer.Option(
+            "--asr-timestamps/--no-asr-timestamps",
+            help=(
+                "Give real phrase times with Granite Speech Plus. Each option costs one "
+                "decoding pass. Other models ignore it."
+            ),
+        ),
+    ] = True,
+    asr_speakers: Annotated[
+        bool,
+        typer.Option(
+            "--asr-speakers/--no-asr-speakers",
+            help=(
+                "Add speaker labels with Granite Speech Plus. Each option costs one "
+                "decoding pass. Other models ignore it."
+            ),
+        ),
+    ] = True,
     video_sampling_mode: Annotated[
         Literal["fixed", "scene"],
         typer.Option(..., help="frame sampling mode."),
@@ -1081,6 +1165,16 @@ def convert(  # noqa: C901
             help="Which document regions are fed to the OCR engine.",
         ),
     ] = OcrMode.DEFAULT,
+    replace_broken_text_layer: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Replace a page's PDF text with OCR when its text layer is broken, "
+                "e.g. from a font whose glyphs were not mapped to real characters."
+            ),
+        ),
+    ] = False,
     tables: Annotated[
         bool,
         typer.Option(
@@ -1109,6 +1203,17 @@ def convert(  # noqa: C901
             ),
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help=(
+                "Infer section-header levels for PDF and image inputs from the PDF "
+                "bookmarks, the heading numbering and the font style. Standard and "
+                "legacy pipelines only."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1697,12 +1802,18 @@ def convert(  # noqa: C901
             "mode": "--ocr-mode",
             "lang": "--ocr-lang",
             "psm": "--psm",
+            "replace_broken_text_layer": "--replace-broken-text-layer",
         }
         # `--ocr-mode` always has a value; count it as set only when it differs
         # from the default, so `--ocr-option mode=...` works on its own.
         explicit_ocr_fields = (
             {"mode"} if force_ocr or ocr_mode != OcrMode.DEFAULT else set()
         )
+        # Like `--ocr-mode`, count the flag as set only when it is on, so
+        # `--ocr-option replace_broken_text_layer=true` works on its own.
+        if replace_broken_text_layer:
+            ocr_kwargs["replace_broken_text_layer"] = True
+            explicit_ocr_fields.add("replace_broken_text_layer")
         ocr_lang_list = _split_list(ocr_lang)
         # `_split_list` returns None only when the option was not given, so an
         # explicitly empty value reaches the engine as `lang=[]`: "your default".
@@ -1802,6 +1913,9 @@ def convert(  # noqa: C901
                 do_table_structure=tables,
                 extract_form_fields=extract_form_fields,
                 use_reading_order_separators=reading_order_separators,
+                heading_hierarchy_options=HeadingHierarchyOptions(
+                    enabled=heading_hierarchy
+                ),
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
@@ -2048,13 +2162,25 @@ def convert(  # noqa: C901
         )
 
         # Auto-selecting models (choose best implementation for hardware)
-        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
-        if isinstance(asr_pipeline_options.asr_options, InlineAsrTransformersOptions):
+        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model, device)
+        if isinstance(
+            asr_pipeline_options.asr_options,
+            (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions),
+        ):
             asr_pipeline_options.asr_options = (
                 asr_pipeline_options.asr_options.model_copy(
                     update={"language": asr_language}
                 )
             )
+            if asr_pipeline_options.asr_options.model_family == "granite_plus":
+                asr_pipeline_options.asr_options = (
+                    asr_pipeline_options.asr_options.model_copy(
+                        update={
+                            "word_timestamps": asr_timestamps,
+                            "speaker_attribution": asr_speakers,
+                        }
+                    )
+                )
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
@@ -2222,6 +2348,188 @@ def show_engine_options(
     for row in describe_options_class(options_cls):
         table.add_row(*(rich.markup.escape(cell) for cell in row))
     console.print(table)
+
+
+class ModelListFormat(str, Enum):
+    TABLE = "table"
+    JSON = "json"
+
+
+# Symbols for a terminal that can show them, and for one that cannot.
+_BACKEND_SYMBOLS = {
+    BackendState.SELECTED: "◉",
+    BackendState.SUPPORTED: "●",
+    BackendState.ALLOWED: "○",
+}
+_ASCII_BACKEND_SYMBOLS = {
+    BackendState.SELECTED: "S",
+    BackendState.SUPPORTED: "+",
+    BackendState.ALLOWED: "o",
+}
+_BACKEND_LEGEND = {
+    BackendState.SELECTED: "selected on this machine when you use the name of the row",
+    BackendState.SUPPORTED: (
+        "supported: the preset declares it. It can need other hardware or an extra"
+    ),
+    BackendState.ALLOWED: (
+        "allowed: the preset does not restrict it and does not declare it. It can fail"
+    ),
+}
+
+
+def _backend_symbols() -> dict[BackendState, str]:
+    if (console.encoding or "").lower().startswith("utf"):
+        return _BACKEND_SYMBOLS
+    return _ASCII_BACKEND_SYMBOLS
+
+
+def _print_model_table(model_table: ModelTable) -> None:
+    symbols = _backend_symbols()
+    table = rich.table.Table(
+        title=model_table.title,
+        title_justify="left",
+        box=None,
+        pad_edge=False,
+        padding=(0, 1, 0, 0),
+    )
+    table.add_column("Model", no_wrap=True)
+    for label in model_table.backends.values():
+        table.add_column(label, justify="center", no_wrap=True)
+    for label in model_table.features.values():
+        table.add_column(label, justify="center", no_wrap=True)
+    family = None
+    for row in model_table.rows:
+        if row.family != family:
+            family = row.family
+            table.add_row(f"[bold]{rich.markup.escape(family)}[/bold]")
+        table.add_row(
+            f"  {row.name}{' *' if row.name == model_table.default_model else ''}",
+            *(
+                symbols[row.backends[column]] if column in row.backends else ""
+                for column in model_table.backends
+            ),
+            *("yes" if row.features[key] else "-" for key in model_table.features),
+        )
+    console.print(table, highlight=False)
+    console.print()
+
+
+@app.command("models")
+def list_models(
+    asr: Annotated[
+        bool, typer.Option("--asr", help="List only the ASR models.")
+    ] = False,
+    vlm: Annotated[
+        bool, typer.Option("--vlm", help="List only the VLM presets.")
+    ] = False,
+    family: Annotated[
+        str | None,
+        typer.Option(
+            "--family", help="List only the models of a family, for example 'granite'."
+        ),
+    ] = None,
+    output_format: Annotated[
+        ModelListFormat, typer.Option("--format", help="The output format.")
+    ] = ModelListFormat.TABLE,
+) -> None:
+    """List the VLM and ASR models, and the backends that can run them.
+
+    Use a name with `docling convert --vlm-model` or `--asr-model`. To download a
+    model, use `docling-tools models`.
+    """
+    show_all = asr == vlm
+    tables: list[ModelTable] = []
+    if asr or show_all:
+        tables.append(
+            ModelTable(
+                kind="asr",
+                title="ASR models",
+                backends=ASR_BACKENDS,
+                features=ASR_FEATURES,
+                rows=asr_rows(_resolve_asr_options),
+                default_model=AsrModelType.WHISPER_TINY.value,
+            )
+        )
+    if vlm or show_all:
+        tables.append(
+            ModelTable(
+                kind="vlm",
+                title="VLM models",
+                backends=VLM_BACKENDS,
+                features=VLM_FEATURES,
+                rows=vlm_rows(),
+                default_model="granite_docling",
+            )
+        )
+    if family is not None:
+        needle = family.lower()
+        tables = [
+            replace(
+                table,
+                rows=[row for row in table.rows if needle in row.family.lower()],
+            )
+            for table in tables
+        ]
+        if not any(table.rows for table in tables):
+            raise typer.BadParameter(
+                f"No model has the family {family!r}.", param_hint="--family"
+            )
+
+    if output_format == ModelListFormat.JSON:
+        typer.echo(
+            json.dumps(
+                [
+                    {
+                        "kind": table.kind,
+                        "name": row.name,
+                        "family": row.family,
+                        "default": row.name == table.default_model,
+                        "features": row.features,
+                        "backends": {
+                            column: row.backends[column].value
+                            for column in table.backends
+                            if column in row.backends
+                        },
+                    }
+                    for table in tables
+                    for row in table.rows
+                ],
+                indent=2,
+            )
+        )
+        return
+
+    for table in tables:
+        if table.rows:
+            _print_model_table(table)
+    symbols = _backend_symbols()
+    for state, meaning in _BACKEND_LEGEND.items():
+        console.print(f"{symbols[state]}  {meaning}", highlight=False)
+    console.print("*  default model", highlight=False)
+    if any(table.kind == "asr" and table.rows for table in tables):
+        console.print(
+            "Times: real time ranges for speech on the selected backend. '-' gives "
+            "one range for each decoding window or for the full audio.",
+            highlight=False,
+        )
+        console.print(
+            "Spk: speaker labels from the model. The video pipeline also has "
+            "--video-diarization for every model.",
+            highlight=False,
+        )
+    if any(table.kind == "vlm" and table.rows for table in tables):
+        console.print(
+            "Bbox: each item in the document has the page box that the model gives.",
+            highlight=False,
+        )
+    if any(table.kind == "asr" and table.rows for table in tables):
+        console.print(
+            "ASR: add a suffix to a name to force one backend: _native, _mlx_whisper "
+            "(or _mlx), _mlx_audio, _transformers, _s2t. For example, "
+            "granite_speech_5_0_2b_transformers. A row without the selected symbol "
+            "needs a suffix.",
+            highlight=False,
+        )
 
 
 # Register `convert-remote` only when the service-client extra is installed.

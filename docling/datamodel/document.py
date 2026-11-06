@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import codecs
 import csv
 import json
 import logging
@@ -151,7 +152,7 @@ class InputDocument(BaseModel):
     )
     page_count: int = Field(0, description="Number of pages in the input document.")
 
-    _backend: AbstractDocumentBackend
+    _backend: Optional[AbstractDocumentBackend] = None
     # Reason this input was flagged invalid, if any (transient, not serialized).
     _rejection: Optional[InputRejection] = PrivateAttr(default=None)
 
@@ -202,7 +203,7 @@ class InputDocument(BaseModel):
                 )
 
             # For paginated backends, check if the maximum page count is exceeded.
-            if self.valid and self._backend.is_valid():
+            if self.valid and self._backend is not None and self._backend.is_valid():
                 if self._backend.supports_pagination() and isinstance(
                     self._backend, PaginatedDocumentBackend
                 ):
@@ -337,6 +338,22 @@ class InputDocument(BaseModel):
                 message="The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
             )
+
+    def release(self) -> None:
+        """Release resources held by the input document's backend.
+
+        Call this after conversion and any work that requires the input backend
+        has finished. The backend is unloaded and its reference is cleared;
+        input streams owned by the backend are closed. Input metadata and the
+        converted ``DoclingDocument`` remain available.
+
+        Repeated calls, including on inputs without a backend, are safe. If
+        unloading fails, the exception is propagated and the backend reference
+        is retained so that cleanup can be retried.
+        """
+        if self._backend is not None:
+            self._backend.unload()
+            self._backend = None
 
 
 def get_input_rejection_cause(in_doc: "InputDocument") -> Optional[BaseException]:
@@ -665,6 +682,24 @@ at inside instead.
 """
 
 
+def _is_macos_archive_metadata(path: PurePosixPath) -> bool:
+    """Return True for a ZIP member that macOS adds to an archive, not a document.
+
+    Finder stores resource forks and extended attributes as AppleDouble files
+    named ``._<name>``, under a top-level ``__MACOSX/`` folder, and the view
+    settings of a folder as ``.DS_Store``. A skipped member is logged at debug
+    level.
+    """
+    is_metadata = (
+        path.parts[:1] == ("__MACOSX",)
+        or path.name.startswith("._")
+        or path.name == ".DS_Store"
+    )
+    if is_metadata:
+        _log.debug("Skipping macOS metadata member of a ZIP archive: %s", path)
+    return is_metadata
+
+
 class _DocumentConversionInput(BaseModel):
     path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream, HttpSource]]
     headers: Optional[dict[str, str]] = None
@@ -739,6 +774,9 @@ class _DocumentConversionInput(BaseModel):
                             if not info.is_dir()
                             and not PurePosixPath(info.filename).is_absolute()
                             and ".." not in PurePosixPath(info.filename).parts
+                            and not _is_macos_archive_metadata(
+                                PurePosixPath(info.filename)
+                            )
                         ]
                         if members:
                             expanded_size = 0
@@ -993,6 +1031,7 @@ class _DocumentConversionInput(BaseModel):
                 mime = detected_afp
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_latex(content, obj_ext)
+        mime = mime or _DocumentConversionInput._detect_calendar(content, obj_ext)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
         formats = MimeTypeToFormat.get(mime, [])
@@ -1213,6 +1252,8 @@ class _DocumentConversionInput(BaseModel):
                 if ext == "msg"
                 else FormatToMimeType[InputFormat.EMAIL][0]
             )
+        elif ext in FormatToExtensions[InputFormat.CALENDAR]:
+            mime = FormatToMimeType[InputFormat.CALENDAR][0]
         return mime
 
     @staticmethod
@@ -1292,6 +1333,31 @@ class _DocumentConversionInput(BaseModel):
         content_str = content.decode("utf-8", errors="ignore").lstrip("﻿")
         if re.search(r"^[ \t]*\\document(?:class|style)\b", content_str, re.MULTILINE):
             return FormatToMimeType[InputFormat.LATEX][0]
+        return None
+
+    @staticmethod
+    def _detect_calendar(content: bytes, ext: Optional[str] = None) -> Optional[str]:
+        """Guess the mime type of an iCalendar file from its first line.
+
+        Args:
+            content: A short piece of a document from its beginning.
+            ext: The file extension, if any. A plain-text extension keeps its
+              Markdown fallback.
+
+        Returns:
+            The iCalendar mime type if the first non-blank line is
+              ``BEGIN:VCALENDAR``, or None.
+        """
+        if (ext or "").lower() in FormatToExtensions[InputFormat.MD]:
+            return None
+        codec = (
+            "utf-16"
+            if content.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE))
+            else "utf-8"
+        )
+        content_str = content.decode(codec, errors="ignore").lstrip("﻿ \t\r\n")
+        if re.match(r"BEGIN:VCALENDAR\b", content_str, re.IGNORECASE):
+            return FormatToMimeType[InputFormat.CALENDAR][0]
         return None
 
     @staticmethod
