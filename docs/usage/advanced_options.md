@@ -63,8 +63,8 @@ Distil-Whisper presets:
 docling-tools models download --all --asr --output-dir /models
 ```
 
-This requires the `asr` extra and downloads OpenAI-format checkpoints. It does
-not prefetch Transformers-format, MLX, or WhisperS2T models. Prefetch a
+This requires the `audio` extra and downloads OpenAI-format checkpoints. It does
+not prefetch Transformers-format, MLX, `mlx-audio`, or WhisperS2T models. Prefetch a
 WhisperS2T preset by its name, as shown above.
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.

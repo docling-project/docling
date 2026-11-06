@@ -76,7 +76,8 @@ The following table summarizes the extras available in the `docling` package. Th
 
 | Extra | Description |
 | - | - |
-| `asr` | Installs dependencies for running the ASR pipeline. |
+| `audio` | Installs the Whisper backends for running the ASR pipeline. |
+| `asr` | Installs all inline ASR engines (Whisper, Transformers, and `mlx-audio`). Needs macOS 14 or later on Apple Silicon. See [Processing audio and video](../usage/processing_audio_media.md#installation). |
 | `vlm` | Installs dependencies for running the VLM pipeline. |
 | `easyocr` | Installs the [EasyOCR](https://github.com/JaidedAI/EasyOCR) OCR engine. |
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
