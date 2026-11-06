@@ -31,7 +31,10 @@ from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumDocumentBackend,
     ManagedPdfiumPageBackend,
 )
-from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.backend_options import (
+    PdfBackendOptions,
+    PyPdfiumBackendOptions,
+)
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
 from docling.utils.pdf_outline import _PdfOutlineItem, extract_outline_from_pdfium
@@ -852,12 +855,18 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
         options: Optional[PdfBackendOptions] = None,
     ):
         if options is None:
-            options = PdfBackendOptions()
+            options = PyPdfiumBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
 
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
+        pypdfium_options = (
+            self.options
+            if isinstance(self.options, PyPdfiumBackendOptions)
+            else PyPdfiumBackendOptions()
+        )
+        self._supersample_factor = pypdfium_options.supersample_factor
         try:
             with pypdfium2_lock:
                 self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
@@ -876,7 +885,7 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
                 self._pdoc,
                 self.document_hash,
                 page_no,
-                supersample_factor=self.options.supersample_factor,
+                supersample_factor=self._supersample_factor,
             )
 
     def is_valid(self) -> bool:

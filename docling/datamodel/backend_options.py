@@ -346,16 +346,24 @@ class PdfBackendOptions(BaseBackendOptions):
             "image backend; an image with a larger page is rejected."
         ),
     )
+
+
+class PyPdfiumBackendOptions(PdfBackendOptions):
+    """Options for the pypdfium2 PDF backend."""
+
+    kind: Literal["pypdfium"] = Field("pypdfium", exclude=True, repr=False)
     supersample_factor: Annotated[float, Field(ge=1.0)] = Field(
         1.5,
         description=(
-            "Supersampling factor for page image rendering: pages are rendered "
-            "at scale * supersample_factor and then downsized to the requested "
-            "scale, which sharpens vector content. Set to 1.0 to render at the "
-            "requested scale directly. Pages whose content is raster-only "
-            "(e.g. scanned pages) are always rendered directly, since the "
-            "supersample round-trip resamples already-rasterized pixels and "
-            "degrades OCR quality."
+            "Supersampling factor for page image rendering in the pypdfium2 "
+            "backend: pages are rendered at scale * supersample_factor and then "
+            "downsized to the requested scale, which sharpens vector content. "
+            "Set to 1.0 to render at the requested scale directly. Pages whose "
+            "content is raster-only (e.g. scanned pages) are always rendered "
+            "directly, since the supersample round-trip resamples "
+            "already-rasterized pixels and degrades OCR quality. The "
+            "docling-parse backends render through their own renderer and do "
+            "not use this option."
         ),
     )
 
@@ -949,6 +957,7 @@ BackendOptions = Annotated[
         JatsBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        PyPdfiumBackendOptions,
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
         IWorkBackendOptions,

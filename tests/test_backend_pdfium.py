@@ -14,7 +14,7 @@ from docling.backend.pypdfium2_backend import (
     PyPdfiumDocumentBackend,
     PyPdfiumPageBackend,
 )
-from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.backend_options import PyPdfiumBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -170,7 +170,7 @@ def test_vector_page_keeps_supersample(test_doc_path):
 def test_supersample_factor_option(test_doc_path):
     # supersample_factor=1.0 renders any page directly at the requested scale.
     doc_backend = _get_backend(
-        test_doc_path, backend_options=PdfBackendOptions(supersample_factor=1.0)
+        test_doc_path, backend_options=PyPdfiumBackendOptions(supersample_factor=1.0)
     )
     page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
     assert not page_backend._is_raster_only()
