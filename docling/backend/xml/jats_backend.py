@@ -84,6 +84,7 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
+_GRAPHIC_XPATH: Final[str] = "graphic | alternatives/graphic"
 # `list-type` values that number the items, from the JATS 1.3 tag library.
 _ORDERED_LIST_TYPES: Final[frozenset[str]] = frozenset(
     {"order", "alpha-lower", "alpha-upper", "roman-lower", "roman-upper"}
@@ -1025,7 +1026,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         ):
             return None
 
-        graphic_nodes = node.xpath("graphic | alternatives/graphic")
+        graphic_nodes = node.xpath(_GRAPHIC_XPATH)
         if not graphic_nodes:
             return None
 
@@ -1384,9 +1385,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         elif len(node.xpath("alternatives/table")) > 0:
             table_content_node = node.xpath("alternatives/table")[0]
         else:
-            table_content_node = None
-        if table_content_node is not None:
-            table["content"] = etree.tostring(table_content_node).decode("utf-8")
+            # A table published as an image, as PMC often does, is kept as a
+            # picture with its label and caption.
+            if node.xpath(_GRAPHIC_XPATH):
+                self._add_figure_captions(doc, parent, node)
+            return
+        table["content"] = etree.tostring(table_content_node).decode("utf-8")
 
         # Caption
         caption_node = node.xpath("caption")
