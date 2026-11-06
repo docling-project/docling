@@ -27,7 +27,11 @@ from PIL import Image as PILImage
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from docling.utils.otsl import parse_otsl_output
-from docling.utils.vlm_utils import append_text_fragment, link_adjacent_captions
+from docling.utils.vlm_utils import (
+    append_text_fragment,
+    link_adjacent_captions,
+    strip_math_delimiters,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -411,7 +415,7 @@ def parse_mineru2(
         elif region.type == "equation":
             document.add_text(
                 label=DocItemLabel.FORMULA,
-                text=text,
+                text=strip_math_delimiters(text),
                 orig=region.content or "",
                 prov=provenance,
             )
