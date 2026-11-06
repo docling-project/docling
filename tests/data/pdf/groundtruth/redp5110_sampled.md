@@ -349,7 +349,7 @@ Example 3-10 Activating RCAC on the EMPLOYEES table
 
 <!-- image -->
 
-2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR\_SCHEMA Tables, right-click the EMPLOYEES table, and click Definition.
+2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas → HR\_SCHEMA→ Tables, right-click the EMPLOYEES table, and click Definition.
 
 Figure 3-11 Selecting the EMPLOYEES table from System i Navigator
 
