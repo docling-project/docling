@@ -39,6 +39,10 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult, InputDocument, _DummyBackend
+from docling.datamodel.pipeline_options import (
+    TableStructureOptions,
+    TableStructureV2Options,
+)
 from docling.models.base_table_model import (
     degenerate_structure_reason,
     keep_table_text_as_child,
@@ -329,6 +333,7 @@ def _v2_model(
     otsl_seq: list[str], bboxes: list[list[float]] | None = None
 ) -> TableStructureModelV2:
     model = object.__new__(TableStructureModelV2)
+    model.options = TableStructureV2Options()
     model.enabled = True
     model.do_cell_matching = True
     model.scale = 2.0
@@ -457,6 +462,7 @@ class _FakePredictor:
 
 def _v1_model(rs_seq: list[str], shape: tuple[int, int], cells) -> TableStructureModel:
     model = object.__new__(TableStructureModel)
+    model.options = TableStructureOptions()
     model.enabled = True
     model.do_cell_matching = True
     model.scale = 2.0
