@@ -1131,7 +1131,8 @@ def test_list_item_without_text():
         b"<li><table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>"
         b"<li><div><img src='chart.png'></div></li>"
         b"<li><ol type='a'><li>Nested.</li></ol></li>"
-        b"<li>Fourth.</li>"
+        b"<li><dl><dt>Term</dt><dd>Definition.</dd></dl></li>"
+        b"<li>Fifth.</li>"
         b"</ol></body></html>"
     )
     in_doc = InputDocument(
@@ -1144,11 +1145,21 @@ def test_list_item_without_text():
     doc: DoclingDocument = backend.convert()
     list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
 
-    assert [item.text for item in list_items] == ["", "", "", "Nested.", "Fourth."]
+    assert [item.text for item in list_items] == [
+        "",
+        "",
+        "",
+        "Nested.",
+        "",
+        "Term",
+        "Definition.",
+        "Fifth.",
+    ]
     assert doc.tables[0].parent.cref == list_items[0].self_ref
     assert doc.pictures[0].parent.cref == list_items[1].self_ref
     assert list_items[3].parent.resolve(doc).parent.cref == list_items[2].self_ref
-    assert "4. Fourth." in doc.export_to_markdown()
+    assert list_items[5].parent.resolve(doc).parent.cref == list_items[4].self_ref
+    assert "5. Fifth." in doc.export_to_markdown()
 
 
 @pytest.mark.parametrize(
