@@ -20,8 +20,7 @@ XLINK_NS = 'xmlns:xlink="http://www.w3.org/1999/xlink"'
 
 
 def test_jats_table_published_as_image_keeps_its_caption():
-    # PMC often ships a table as a <graphic> instead of a <table>. The table
-    # must not disappear: it becomes a picture that keeps its label and caption.
+    """A <table-wrap> with a <graphic> instead of a <table> becomes a picture in place."""
     doc = convert_jats_body(
         "<sec><title>Methods</title>"
         "<p>The items are listed in Table 1.</p>"
@@ -37,7 +36,12 @@ def test_jats_table_published_as_image_keeps_its_caption():
     assert pictures[0].image is None
     caption = pictures[0].captions[0].resolve(doc)
     assert caption.text == "Table 1 Items of data extraction."
-    assert "Table 1 Items of data extraction." in doc.export_to_markdown()
+    markdown = doc.export_to_markdown()
+    before = markdown.index("The items are listed in Table 1.")
+    table_caption = markdown.index("Table 1 Items of data extraction.")
+    picture = markdown.index("<!-- image -->")
+    after = markdown.index("Text after the table.")
+    assert before < table_caption < picture < after
 
 
 def test_jats_table_published_as_alternative_images_is_one_picture():
@@ -55,8 +59,35 @@ def test_jats_table_published_as_alternative_images_is_one_picture():
     assert caption.text == "Table 1 Two renditions."
 
 
+def test_jats_table_published_as_inline_graphic_keeps_its_caption():
+    doc = convert_jats_body(
+        f'<table-wrap id="T1" {XLINK_NS}><label>Table 1</label>'
+        "<caption><p>An inline image.</p></caption>"
+        '<inline-graphic xlink:href="table1.jpg"/></table-wrap>'
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].captions[0].resolve(doc).text == "Table 1 An inline image."
+
+
+def test_jats_table_published_as_alternative_inline_graphic_is_one_picture():
+    doc = convert_jats_body(
+        f'<table-wrap id="T1" {XLINK_NS}><label>Table 1</label>'
+        "<caption><p>Inline renditions.</p></caption>"
+        '<alternatives><inline-graphic xlink:href="table1.tif"/>'
+        '<inline-graphic xlink:href="table1.jpg"/></alternatives></table-wrap>'
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].captions[0].resolve(doc).text == "Table 1 Inline renditions."
+
+
 def test_jats_table_with_cells_and_graphic_stays_a_table():
-    # The cell data wins: the table is not also added as a picture.
+    """When a <table-wrap> has both cells and a <graphic>, only the table is added."""
     doc = convert_jats_body(
         f'<table-wrap id="T1" {XLINK_NS}><label>Table 1</label>'
         "<caption><p>Cells and image.</p></caption>"
@@ -113,3 +144,29 @@ def test_jats_table_published_as_image_embeds_image_when_enabled(tmp_path: Path)
     image = pictures[0].get_image(doc)
     assert image is not None
     assert image.getpixel((0, 0)) == (0, 0, 255)
+
+
+def test_jats_table_published_as_inline_graphic_embeds_image_when_enabled(
+    tmp_path: Path,
+):
+    image_path = tmp_path / "table1.png"
+    Image.new("RGB", (7, 5), color=(0, 255, 0)).save(image_path)
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        f'<table-wrap id="T1" {XLINK_NS}><label>Table 1</label>'
+        "<caption><p>A green table.</p></caption>"
+        '<inline-graphic xlink:href="table1.png"/></table-wrap>',
+    )
+
+    doc = (
+        get_converter(JatsBackendOptions(fetch_images=True, enable_local_fetch=True))
+        .convert(jats_path)
+        .document
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.getpixel((0, 0)) == (0, 255, 0)
