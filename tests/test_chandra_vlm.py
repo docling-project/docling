@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc import (
     CodeItem,
+    CodeLanguageLabel,
     ContentLayer,
     DocItemLabel,
     DoclingDocument,
@@ -490,6 +491,21 @@ def test_chandra_inline_math_formatting_and_code_whitespace():
         == "https://example.org/"
     )
     assert doc.texts[-1].level == 2
+
+
+def test_chandra_nested_code_preserves_language_and_literal_content():
+    doc = _parse_fragment(
+        '<pre><code class="language-python">  x = "&lt;tag&gt;&amp;amp;"\n'
+        '\tprint("**literal**", x)\n</code></pre>',
+        "Code-Block",
+    )
+    assert len(doc.texts) == 1
+    code = doc.texts[0]
+    assert isinstance(code, CodeItem)
+    assert code.text == '  x = "<tag>&amp;"\n\tprint("**literal**", x)'
+    assert code.code_language == CodeLanguageLabel.PYTHON
+    assert len(code.prov) == 1
+    assert doc.export_to_markdown() == f"```\n{code.text}\n```"
 
 
 def test_chandra_nested_math_does_not_inherit_table_bbox():
