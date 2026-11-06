@@ -13,11 +13,22 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import marko
 
+# Markdown escapes literal brackets as `\[` and `\]`. Brackets that hold only
+# words, digits, and citation punctuation on one line (`\[9\]`, `\[3, 5\]`) are
+# text. Greek letters, superscripts, and math alphanumerics count as math. A
+# hyphen counts in a digit range (`\[12-14\]`) or after two letters and before
+# two characters (`\[Smith-Jones\]`, `\[RFC-2119\]`): `\[n-1\]` is math.
+_WORD_CHAR = r"[^\W_\u00b2\u00b3\u00b9\u0370-\u03ff\u2070-\u209f\U0001d400-\U0001d7ff]"
+_ESCAPED_BRACKET_TEXT = (
+    rf"(?:{_WORD_CHAR}|[ \t.,;:'&\u2013\u2014]"
+    r"|(?<=\d)-(?=\d)|(?<=[^\W\d_]{2})-(?=[^\W_]{2}))*\\\]"
+)
+
 _MATH = re.compile(
     r"(?<!\\)(?:\$\$([\s\S]*?)(?<!\\)\$\$"
     # A dollar before a digit starts an amount, not a closing math delimiter.
     r"|(?<!\$)\$(?![\s$])([^\n$]*?)(?<![\\\s])\$(?![\d$])"
-    r"|\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\])"
+    rf"|\\\(([\s\S]*?)\\\)|\\\[(?!{_ESCAPED_BRACKET_TEXT})([\s\S]*?)\\\])"
 )
 
 
