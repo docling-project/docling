@@ -264,8 +264,14 @@ Languages are given as BCP-47 tags for every engine; see
 | `lightonocr3_08b` | LightOnOCR-3-0.8B | 0.8B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 | `lightonocr3_4b` | LightOnOCR-3-4B | 4B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 | `surya_ocr2_5` | Surya-OCR-2.5 | 689M | ✅ | ✅ | OpenAI-compatible | ✅ | Native layout blocks with HTML tables and math |
+| `minicpm_ocr` | MiniCPM-OCR 1.0 | 1.3B | ✅ | ❌ | OpenAI-compatible | ❌ | Markdown |
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
+
+`minicpm_ocr` runs OpenBMB's MiniCPM-OCR 1.0 through Transformers 5.21 or later. It reads English
+and Chinese pages and asks the model for Markdown with one page image per request. The preset
+declares Transformers and OpenAI-compatible API engines; no MLX or in-process vLLM export is
+configured.
 
 `mineru2_pro` runs MinerU's native two-step flow: page-level layout detection followed by
 type-specific recognition of the detected region crops. Its Transformers and API configurations

@@ -59,6 +59,7 @@ docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v3_5 --trust-remote
 docling report.pdf --pipeline vlm --vlm-model lightonocr3_08b --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model lightonocr3_4b --output /tmp/
 docling report.pdf --pipeline vlm --vlm-model surya_ocr2_5 --output /tmp/
+docling report.pdf --pipeline vlm --vlm-model minicpm_ocr --output /tmp/
 docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
@@ -83,6 +84,10 @@ on commercial use.
 The `lightonocr3_*` presets map charts to the `other_chart` class. JSON, Markdown,
 and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raises
 `ValueError` when a document has a chart block.
+
+`minicpm_ocr` runs MiniCPM-OCR 1.0 in-process with `transformers>=5.21.0`. It
+returns Markdown. Pages that the model transcribes as plain text keep no
+word-level boxes.
 
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
 classifies pictures first and adds chart data only where the VLM has not

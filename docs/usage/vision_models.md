@@ -177,6 +177,32 @@ Local inference uses Transformers or vLLM. No MLX export is configured for these
 presets. An OpenAI-compatible server can also serve the official model
 repositories; configure its URL and engine options as described below.
 
+### MiniCPM-OCR
+
+The `minicpm_ocr` preset uses [MiniCPM-OCR 1.0](https://huggingface.co/openbmb/MiniCPM-OCR-1.0)
+at a pinned revision. It reads English and Chinese pages and returns text and Markdown.
+Local inference requires the `models-vlm-inline` extra and `transformers>=5.21.0`.
+
+```bash
+docling contract.pdf --pipeline vlm --vlm-model minicpm_ocr
+```
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("minicpm_ocr"),
+)
+```
+
+The preset sends one page image per request and asks the model for Markdown. Pages render at
+`scale=2.0`. The model returns plain text for many pages, so Docling cannot recover word-level
+boxes or table structure that the model does not emit. Use the standard pipeline when you need
+Docling's layout and table models.
+
+An OpenAI-compatible server can serve the model through the API engines. vLLM support for
+MiniCPM-OCR merged upstream after v0.32.0, so use a newer vLLM build.
+
 ### Other models
 
 Other models can be configured by directly providing the Hugging Face `repo_id`, the prompt and a few more options.
