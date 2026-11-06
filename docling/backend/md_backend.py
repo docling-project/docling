@@ -38,6 +38,7 @@ from typing_extensions import Annotated, override
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.html_backend import _FORMAT_TAG_MAP
 from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.backend.utils.markdown_html import (
     MarkdownHTMLDocumentBackend,
@@ -167,6 +168,32 @@ def _only_plain_line_breaks(children: list) -> bool:
         or isinstance(c, marko.inline.LineBreak)
         for c in children
     )
+
+
+_INLINE_HTML_TAG_PATTERN = re.compile(r"\A<(/?)([A-Za-z][A-Za-z0-9]*)(?:\s[^<>]*)?>\Z")
+
+
+def _inline_format_tag(raw: str) -> tuple[str, bool] | None:
+    """Return the name of a formatting tag and whether it closes, for `<b>` or `</b>`.
+
+    Only the tags that set a formatting in the HTML backend count. A self-closing
+    tag such as `<b/>` sets nothing and returns None.
+    """
+    match = _INLINE_HTML_TAG_PATTERN.match(raw.strip())
+    if match is None:
+        return None
+    name = match.group(2).lower()
+    if not _FORMAT_TAG_MAP.get(name):
+        return None
+    return name, match.group(1) == "/"
+
+
+def _with_tag_formatting(current: Formatting | None, tag_name: str) -> Formatting:
+    """Return a copy of `current` with the formatting of an HTML tag applied."""
+    fmt = deepcopy(current) if current else Formatting()
+    for attr, value in _FORMAT_TAG_MAP[tag_name].items():
+        setattr(fmt, attr, value)
+    return fmt
 
 
 # As in Pandoc, an opening `---` followed by a blank line is a thematic break,
@@ -1094,7 +1121,28 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if hasattr(element, "children") and not isinstance(
             element, processed_block_types
         ):
+            # Inline HTML tags such as `<b>` and `</b>` are siblings of the text
+            # they wrap, so their formatting is carried from child to child.
+            child_formatting = formatting
+            open_format_tags: list[tuple[str, Formatting | None]] = []
             for child in element.children:
+                if isinstance(child, marko.inline.InlineHTML) and (
+                    format_tag := _inline_format_tag(child.children)
+                ):
+                    tag_name, is_closing = format_tag
+                    if not is_closing:
+                        open_format_tags.append((tag_name, child_formatting))
+                        child_formatting = _with_tag_formatting(
+                            child_formatting, tag_name
+                        )
+                    else:
+                        for idx in range(len(open_format_tags) - 1, -1, -1):
+                            if open_format_tags[idx][0] == tag_name:
+                                child_formatting = open_format_tags[idx][1]
+                                del open_format_tags[idx:]
+                                break
+                    continue
+
                 if (
                     isinstance(element, marko.block.ListItem)
                     and isinstance(child, marko.block.List)
@@ -1118,7 +1166,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     list_item_counter_by_ref=list_item_counter_by_ref,
                     list_last_item_by_ref=list_last_item_by_ref,
                     parent_item=parent_item,
-                    formatting=formatting,
+                    formatting=child_formatting,
                     hyperlink=hyperlink,
                 )
 
