@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:xbrldt="http://xbrl.org/2005/xbrldt" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:t="https://example.invalid/o20/typed" targetNamespace="https://example.invalid/o20/typed" elementFormDefault="qualified">
+  <xs:import namespace="http://www.xbrl.org/2003/instance" schemaLocation="xbrl-instance-2003-12-31.xsd"/>
+  <xs:import namespace="http://xbrl.org/2006/xbrldi" schemaLocation="xbrldi-2006.xsd"/>
+  <xs:element name="Revenue" id="t_Revenue" type="xbrli:decimalItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration"/>
+  <xs:element name="RegionAxis" id="t_RegionAxis" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" abstract="true" xbrldt:typedDomainRef="typed.xsd#t_RegionDomain"/>
+  <xs:element name="RegionDomain" id="t_RegionDomain" type="xs:string"/>
+</xs:schema>

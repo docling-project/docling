@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xbrli:xbrl
+    xmlns:xbrli="http://www.xbrl.org/2003/instance"
+    xmlns:xbrldi="http://xbrl.org/2006/xbrldi"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:link="http://www.xbrl.org/2003/linkbase"
+    xmlns:t="https://example.invalid/o20/typed">
+
+  <link:schemaRef xlink:type="simple" xlink:href="typed.xsd"/>
+
+  <xbrli:context id="c1">
+    <xbrli:entity>
+      <xbrli:identifier scheme="https://example.invalid">TYPED</xbrli:identifier>
+      <xbrli:segment>
+        <xbrldi:typedMember dimension="t:RegionAxis">
+          <t:RegionDomain>North</t:RegionDomain>
+        </xbrldi:typedMember>
+      </xbrli:segment>
+    </xbrli:entity>
+    <xbrli:period>
+      <xbrli:startDate>2023-01-01</xbrli:startDate>
+      <xbrli:endDate>2023-12-31</xbrli:endDate>
+    </xbrli:period>
+  </xbrli:context>
+
+  <xbrli:unit id="u1">
+    <xbrli:measure>xbrli:pure</xbrli:measure>
+  </xbrli:unit>
+
+  <t:Revenue contextRef="c1" unitRef="u1" decimals="0">123</t:Revenue>
+
+</xbrli:xbrl>

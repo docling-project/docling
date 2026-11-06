@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- (c) 2005 XBRL International. All Rights Reserved. http://www.XBRL.org/legal/ 
+     This document may be copied and furnished to others, and derivative works that 
+     comment on or otherwise explain it or assist in its implementation may be 
+     prepared, copied, published and distributed, in whole or in part, without 
+     restriction of any kind, provided that the above copyright notice and this
+     paragraph are included on all such copies and derivative works. XBRL(r), is a
+     trademark or service mark of XBRL International, Inc., registered in the
+     United States and in other countries. -->
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xbrl.org/2006/xbrldi" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<annotation>
+		<appinfo>
+			<documentation xml:lang="en">This schema is used by XBRL instances that use dimensions to define legal segment and scenario element contents.</documentation>
+		</appinfo>
+	</annotation>
+	<element name="explicitMember">
+		<annotation>
+			<documentation xml:lang="en">This element contains the QName of an item that is a member of an explicit dimension.
+      </documentation>
+		</annotation>
+		<complexType>
+			<simpleContent>
+				<extension base="QName">
+					<attribute name="dimension" type="QName" use="required"/>
+				</extension>
+			</simpleContent>
+		</complexType>
+	</element>
+	<element name="typedMember">
+		<annotation>
+			<documentation xml:lang="en">This element constains one child of anyType.
+      </documentation>
+		</annotation>
+		<complexType>
+			<sequence>
+				<any namespace="##other"/>
+			</sequence>
+			<attribute name="dimension" type="QName" use="required"/>
+		</complexType>
+	</element>
+</schema>
