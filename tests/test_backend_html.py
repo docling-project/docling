@@ -135,6 +135,36 @@ def test_adjacent_inline_siblings_do_not_gain_a_space():
     assert doc.export_to_text() == "helloworld"
 
 
+@pytest.mark.parametrize("separator", ["", "\n", "\r\n", "\n\n"])
+def test_source_newlines_between_breaks_keep_separate_paragraphs(separator: str):
+    doc = _convert_html(
+        f"<html><body><div>foo<br>{separator}<br>bar</div><p>tail</p></body></html>".encode()
+    )
+    assert [item.text for item in doc.texts] == ["foo", "bar", "tail"]
+    assert doc.body.children == [item.get_ref() for item in doc.texts]
+    assert all(item.parent == doc.body.get_ref() for item in doc.texts)
+    assert doc.export_to_markdown() == "foo\n\nbar\n\ntail"
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        ("foo<br>\nbar", "foo\nbar"),
+        ("foo\n<br>bar", "foo\nbar"),
+        ("foo<br> <br>bar", "foo\n\nbar"),
+    ],
+)
+def test_source_whitespace_near_breaks_keeps_existing_paragraph(
+    content: str, expected: str
+):
+    doc = _convert_html(
+        f"<html><body><div>{content}</div><p>tail</p></body></html>".encode()
+    )
+    assert [item.text for item in doc.texts] == [expected, "tail"]
+    assert doc.body.children == [item.get_ref() for item in doc.texts]
+    assert all(item.parent == doc.body.get_ref() for item in doc.texts)
+
+
 def test_html_backend_options():
     options = HTMLBackendOptions()
     assert options.kind == "html"
