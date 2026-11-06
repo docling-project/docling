@@ -207,7 +207,8 @@ class _NativeWhisperModel:
                 if sys.version_info < (3, 14):
                     raise ImportError(
                         "whisper is not installed. Please install it via "
-                        "`pip install openai-whisper` or do `uv sync --extra asr`."
+                        "`pip install openai-whisper` or do "
+                        "`uv sync --extra format-audio`."
                     )
                 else:
                     raise ImportError(
@@ -465,7 +466,7 @@ class _MlxWhisperModel(_LocalAudioTranscriber):
             except ImportError:
                 raise ImportError(
                     "mlx-whisper is not installed. Please install it via "
-                    "`pip install mlx-whisper` or do `uv sync --extra asr`."
+                    "`pip install mlx-whisper` or do `uv sync --extra format-audio`."
                 )
             self.asr_options = asr_options
             self.mlx_whisper = mlx_whisper

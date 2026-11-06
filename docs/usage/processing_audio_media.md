@@ -392,7 +392,7 @@ More notes:
 
 - On Apple MPS with Transformers, Granite and TurboCTC load weights in FP32 to avoid a BF16 normalization failure. Allow more memory than for BF16 weights.
 - On `mlx-audio`, the tokenizer of `GRANITE_SPEECH_5_0_2B` runs remote code from its repository. The preset pins a commit. If you select a revision that is not a full commit SHA, you must also set `trust_remote_code=True`.
-- `GRANITE_SPEECH_4_1_2B_PLUS` uses plain transcription. Its speaker tags are not mapped to structured Docling tracks.
+- `GRANITE_SPEECH_4_1_2B_PLUS` gives phrase times and speaker labels by default. See [Timestamps and speakers with Granite Speech Plus](#timestamps-and-speakers-with-granite-speech-plus). If you switch both options off and use your own `prompt` to ask for speaker or timestamp tags, Docling does not map them to structured tracks. The tags stay in the text.
 - Streaming model names identify the checkpoints; this pipeline performs file transcription.
 - The `TURBOCTC_NC` preset uses CC-BY-NC-SA-4.0.
 
