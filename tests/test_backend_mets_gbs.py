@@ -176,9 +176,16 @@ def test_page_larger_than_max_image_pixels_is_skipped(tmp_path, test_doc_path):
     in_doc._backend.unload()
 
 
-def test_page_with_an_absent_archive_member_is_skipped(tmp_path, test_doc_path):
-    """A page whose coordOCR member is named by the METS XML but absent from the tar
-    must be reported as invalid, the same as a page with no coordOCR fptr at all,
+@pytest.mark.parametrize(
+    "absent_member",
+    ["00000268.tif", "00000268.html"],
+    ids=["image", "coordOCR"],
+)
+def test_page_with_an_absent_archive_member_is_skipped(
+    absent_member: str, tmp_path, test_doc_path
+):
+    """A page whose image or coordOCR member is named by the METS XML but absent from
+    the tar must be reported as invalid, the same as a page with no such fptr at all,
     instead of raising KeyError out of load_page and failing every page with it.
     """
     incomplete_path = tmp_path / "absent_member.tar.gz"
@@ -188,7 +195,7 @@ def test_page_with_an_absent_archive_member_is_skipped(tmp_path, test_doc_path):
     ):
         for member in tar_in:
             # The METS XML keeps its fptr and FLocat for this member.
-            if member.name == "00000268.html":
+            if member.name == absent_member:
                 continue
             data = tar_in.extractfile(member).read()
             tar_out.addfile(member, BytesIO(data))
