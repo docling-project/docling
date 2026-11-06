@@ -101,6 +101,7 @@ nav:
     - Examples: examples/index.md
     - 🔀 Conversion:
       - "Simple conversion": _generated/examples/minimal.md
+      - "Standalone PDFium and ONNX layout": _generated/examples/standalone_onnx_layout.md
       - "Custom conversion": _generated/examples/custom_convert.md
       - "Batch conversion": _generated/examples/batch_convert.md
       - "Multi-format conversion": _generated/examples/run_with_formats.md
