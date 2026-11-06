@@ -1131,6 +1131,16 @@ def convert(  # noqa: C901
             ),
         ),
     ] = False,
+    document_metadata: Annotated[
+        bool,
+        typer.Option(
+            "--document-metadata/--no-document-metadata",
+            help=(
+                "Record the PDF's declared language (/Lang) and document properties "
+                "(/Info, XMP) on the document body meta."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1833,6 +1843,7 @@ def convert(  # noqa: C901
                 heading_hierarchy_options=HeadingHierarchyOptions(
                     enabled=heading_hierarchy
                 ),
+                attach_document_metadata=document_metadata,
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
