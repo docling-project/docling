@@ -1621,6 +1621,58 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+VLM_CONVERT_MINICPM_OCR = StageModelPreset(
+    preset_id="minicpm_ocr",
+    name="MiniCPM-OCR",
+    description="OpenBMB MiniCPM-OCR 1.0 model for document conversion (1.3B parameters)",
+    model_spec=VlmModelSpec(
+        name="MiniCPM-OCR-1.0",
+        default_repo_id="openbmb/MiniCPM-OCR-1.0",
+        revision="c5833cddb363aa62f1cb60ddde48c832e8f1a92c",
+        prompt="Convert this page to markdown.",
+        response_format=ResponseFormat.MARKDOWN,
+        max_new_tokens=4096,
+        stop_strings=["<|im_end|>", "<|endoftext|>"],
+        extra_generation_config={"skip_special_tokens": True},
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.API,
+            VlmEngineType.API_OPENAI,
+            VlmEngineType.API_OLLAMA,
+            VlmEngineType.API_LMSTUDIO,
+        },
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                min_engine_version="5.21.0",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "transformers_strip_stop_strings": True,
+                    "extra_processor_kwargs": {"downsample_mode": "4x"},
+                    "extra_generation_config": {"no_repeat_ngram_size": 100},
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={"model": "minicpm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "minicpm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "minicpm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "minicpm-ocr", "max_tokens": 4096}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
 VLM_CONVERT_FALCON_OCR = StageModelPreset(
     preset_id="falcon_ocr",
     name="Falcon-OCR",
