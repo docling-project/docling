@@ -174,6 +174,7 @@ class Table(TypedDict):
 class XMLComponents(TypedDict):
     title: str
     authors: list[Author]
+    author_notes: list[etree._Element]
     abstract: list[Abstract]
 
 
@@ -547,6 +548,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         xml_components: XMLComponents = {
             "title": self._parse_title(),
             "authors": self._parse_authors(),
+            "author_notes": self.tree.xpath(
+                f"//front/article-meta[{_NOT_IN_SUB_ARTICLE}]/author-notes"
+            ),
             "abstract": self._parse_abstract(),
         }
         return xml_components
@@ -1096,6 +1100,14 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         self._add_title(doc, xml_components)
         self._add_authors(doc, xml_components)
+        if self.root is not None:
+            for author_notes in xml_components["author_notes"]:
+                self._add_footnote_group(
+                    doc,
+                    self.root,
+                    author_notes,
+                    author_notes=True,
+                )
         self._add_abstract(doc, xml_components)
 
         return
@@ -1432,11 +1444,15 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         parent: NodeItem,
         node: etree._Element,
+        *,
+        author_notes: bool = False,
     ) -> None:
         footnote_segments: list[list[InlineSegment]] = []
         for fn in node.iterchildren(tag="fn"):
             segments = JatsDocumentBackend._trim_segment_edges(
-                JatsDocumentBackend._walk_inline_formula(fn)
+                JatsDocumentBackend._walk_inline_formula(
+                    fn, resolve_ext_links=author_notes
+                )
             )
             if segments:
                 # Keep the FOOTNOTE label on plain text runs; formulas stay
@@ -1453,11 +1469,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 )
         if not footnote_segments:
             return
+        default_title = "Author Notes" if author_notes else DEFAULT_HEADER_FOOTNOTES
         title = node.xpath("title")
         title_text = (
-            JatsDocumentBackend._get_node_text(title[0]) or DEFAULT_HEADER_FOOTNOTES
+            JatsDocumentBackend._get_node_text(title[0]) or default_title
             if title
-            else DEFAULT_HEADER_FOOTNOTES
+            else default_title
         )
         hlevel: int = self.hlevel + 1
         heading = doc.add_heading(text=title_text, parent=parent, level=hlevel)
@@ -1468,7 +1485,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
         for segments in footnote_segments:
             list_item = doc.add_list_item(parent=footnote_group, text="")
-            JatsDocumentBackend._emit_inline(doc, list_item, segments)
+            # Keep a single author-note run on the same line as its list marker.
+            container = (
+                doc.add_inline_group(parent=list_item)
+                if author_notes and len(segments) == 1
+                else list_item
+            )
+            JatsDocumentBackend._emit_inline(doc, container, segments)
 
     def _add_sub_article(
         self,
