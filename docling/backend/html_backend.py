@@ -2029,7 +2029,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         A table cell can hold rich content and be parsed with a Docling RichTableCell.
         However, this requires walking through the content elements and creating
         Docling node items. If the cell holds only plain text, the parsing is simpler
-        and using a TableCell is prefered.
+        and using a TableCell is preferred.
 
         Args:
             table_cell: The HTML tag representing a table cell.
