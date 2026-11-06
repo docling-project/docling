@@ -1292,6 +1292,118 @@ def test_table_saved_by_a_recent_pages_release_is_read(tmp_path: Path, wide: boo
     assert by_position[(1, 1)] == "Cell two"
 
 
+def _tile_of_cells(rows: list[list[str]]) -> bytes:
+    """A ``TST.Tile`` holding packed cells, given as hexadecimal text, by row."""
+    payload = b""
+    for index, row in enumerate(rows):
+        buffers = [bytes.fromhex(cell) for cell in row]
+        offsets = b""
+        position = 0
+        for buffer in buffers:
+            offsets += position.to_bytes(2, "little", signed=True)
+            position += len(buffer)
+        payload += _len_field(
+            5,
+            _varint_field(1, index)
+            + _len_field(6, b"".join(buffers))
+            + _len_field(7, offsets),
+        )
+    return payload
+
+
+def test_modern_table_reads_numbers_dates_durations_and_checkboxes(tmp_path: Path):
+    """No public Pages document holds a typed cell. The fixture's own table is
+    rewritten with packed cells captured from Numbers documents, because Pages and
+    Numbers store a table in the same ``TST`` archives.
+    """
+    number = (
+        "050200000000000041300000d00700000000000000000000"
+        "00004030020000000100000003000000"
+    )
+    date = "05050000000008006490000000000000d0337a4110000000130000000300000002000000"
+    duration = (
+        "050700000000000042120100000000000075224102000000090000000400000002000000"
+    )
+    checked = "050600000000200002140400000000000000f03f010000000600000005000000"
+    source = _redefined(
+        tmp_path / "typed.pages",
+        [(4027, 6002, _tile_of_cells([[number, date, duration], [checked]]))],
+    )
+    doc = _backend(source).convert()
+
+    grid = doc.tables[0].data.grid
+    assert [cell.text for cell in grid[0]] == [
+        "2000",
+        "2001-11-15 00:00:00",
+        "7 days, 0:00:00",
+    ]
+    assert grid[1][0].text == "True"
+
+
+def _with_legacy_table(target: Path, cells: str, num_cols: int) -> Path:
+    """Write an iWork '09 Pages container whose body holds one table of one row."""
+    sf = "http://developer.apple.com/namespaces/sf"
+    sfa = "http://developer.apple.com/namespaces/sfa"
+    xml = f"""<?xml version="1.0"?>
+    <sf:document xmlns:sf="{sf}" xmlns:sfa="{sfa}">
+      <sf:text-storage>
+        <sf:text-body>
+          <sf:tabular-model>
+            <sf:grid sf:numcols="{num_cols}" sf:numrows="1">
+              <sf:datasource>{cells}</sf:datasource>
+            </sf:grid>
+          </sf:tabular-model>
+        </sf:text-body>
+      </sf:text-storage>
+    </sf:document>""".encode()
+    return _write_pages(target, {"index.xml": xml})
+
+
+@pytest.mark.parametrize(
+    ("cell", "expected"),
+    [
+        ('<sf:n sf:v="4650"/>', "4650"),
+        ('<sf:n sf:v="-97.4"/>', "-97.4"),
+        ('<sf:d sf:cell-date="276048000"/>', "2009-10-01 00:00:00"),
+        ('<sf:cb sf:v="1"/>', "True"),
+        ('<sf:f><sf:r><sf:rn sf:v="3875"/></sf:r></sf:f>', "3875"),
+        ('<sf:f><sf:r><sf:rt><sf:ct sfa:s="Sum"/></sf:rt></sf:r></sf:f>', "Sum"),
+        (
+            "<sf:pm><sf:menu-choices>"
+            '<sf:t sfa:ID="first"><sf:ct sfa:s="Deposit"/></sf:t>'
+            '<sf:t sfa:ID="second"><sf:ct sfa:s="Withdrawal"/></sf:t>'
+            '</sf:menu-choices><sf:proxied-cell-ref sfa:IDREF="second"/></sf:pm>',
+            "Withdrawal",
+        ),
+        ('<sf:t><sf:ct sfa:s="Note￼ "/></sf:t>', "Note"),
+        ("<sf:g/>", ""),
+    ],
+    ids=[
+        "number",
+        "fraction",
+        "date",
+        "checkbox",
+        "formula number",
+        "formula text",
+        "pop-up menu",
+        "text",
+        "empty",
+    ],
+)
+def test_legacy_table_reads_the_value_of_each_kind_of_cell(
+    tmp_path: Path, cell: str, expected: str
+):
+    """The element names and attributes are the ones Numbers '09 writes, which the
+    Numbers fixtures pin. The text cell after the one under test shows that a cell
+    keeps its place in the row.
+    """
+    after = '<sf:t><sf:ct sfa:s="After"/></sf:t>'
+    source = _with_legacy_table(tmp_path / "typed.pages", cell + after, 2)
+    doc = _backend(source).convert()
+
+    assert [item.text for item in doc.tables[0].data.grid[0]] == [expected, "After"]
+
+
 @pytest.mark.parametrize("source", CONVERTIBLE, ids=lambda path: path.name)
 def test_conversion_matches_the_groundtruth(source: Path):
     """Pin the whole conversion of every fixture, so a change in any part of the
