@@ -14,6 +14,7 @@ import pytest
 import requests
 from bs4 import BeautifulSoup
 from docling_core.types.doc import (
+    CodeItem,
     DocItemLabel,
     GroupLabel,
     PictureItem,
@@ -1434,6 +1435,75 @@ def test_code_language_hint_prefers_prefixed_class():
 
     plain = BeautifulSoup("<pre><code>x = 1</code></pre>", "html.parser")
     assert HTMLDocumentBackend._code_language_hint(plain.pre) is None
+
+
+@pytest.mark.parametrize(
+    ("pre_html", "expected"),
+    [
+        (
+            "<pre><code>\n    if ok:\n        run()\n\n</code></pre>",
+            "    if ok:\n        run()",
+        ),
+        (
+            '<pre><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>\n    <span class="k">return</span> <span class="mi">1</span>\n</pre>',
+            "def f():\n    return 1",
+        ),
+        (
+            "<pre><code>line one</code>\n<code>line two</code>\n<code>line three</code></pre>",
+            "line one\nline two\nline three",
+        ),
+        ("<pre><code>x = 'a  b'</code> <code>y</code></pre>", "x = 'a  b' y"),
+        ("<pre>first<br>second</pre>", "first\nsecond"),
+        ("<pre>before<!-- hidden -->after</pre>", "beforeafter"),
+        ("<pre>before<?hidden instruction?>after</pre>", "beforeafter"),
+        ("<pre>before<!DOCTYPE hidden>after</pre>", "beforeafter"),
+        ("<pre>before<![CDATA[hidden]]>after</pre>", "beforeafter"),
+        ("<pre>before<script>hidden()</script>after</pre>", "beforeafter"),
+    ],
+)
+def test_preformatted_blocks_preserve_inline_whitespace(pre_html: str, expected: str):
+    raw_html = f"<html><body>{pre_html}</body></html>".encode()
+    doc = _convert_html(raw_html)
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == [expected]
+
+
+def test_preformatted_hyperlinks_keep_run_whitespace():
+    raw_html = b"<html><body><pre>See <a href='https://example.com/docs'>the docs</a> first</pre></body></html>"
+    doc = _convert_html(raw_html)
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["See ", "the docs", " first"]
+    assert str(code_items[1].hyperlink) == "https://example.com/docs"
+
+
+def test_preformatted_inherited_hyperlink_is_kept():
+    doc = _convert_html(
+        b"<html><body><a href='https://example.com/docs'><pre>read()</pre></a></body></html>"
+    )
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["read()"]
+    assert str(code_items[0].hyperlink) == "https://example.com/docs"
+
+
+def test_preformatted_styles_keep_run_whitespace():
+    doc = _convert_html(
+        b"<html><body><pre>before <b>bold</b> after</pre></body></html>"
+    )
+
+    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
+    assert [item.text for item in code_items] == ["before ", "bold", " after"]
+    assert code_items[0].formatting is None
+    assert code_items[1].formatting.bold
+    assert code_items[2].formatting is None
+
+
+def test_empty_preformatted_block_emits_no_code_item():
+    doc = _convert_html(b"<html><body><pre>\n\n</pre></body></html>")
+
+    assert not any(isinstance(item, CodeItem) for item in doc.texts)
 
 
 @pytest.fixture(scope="module")
