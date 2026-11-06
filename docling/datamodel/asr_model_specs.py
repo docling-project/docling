@@ -3,6 +3,7 @@
 
 import logging
 from enum import Enum
+from importlib.util import find_spec
 
 from pydantic import (
     AnyUrl,
@@ -27,7 +28,7 @@ from docling.datamodel.pipeline_options_asr_model import (
 _log = logging.getLogger(__name__)
 
 
-def _detect_hardware_and_libraries():
+def _detect_hardware_and_libraries() -> tuple[bool, bool]:
     """
     Detect Apple Silicon MPS availability and whether mlx-whisper is installed.
 
@@ -44,13 +45,8 @@ def _detect_hardware_and_libraries():
     except ImportError:
         has_mps = False
 
-    # Check if mlx-whisper is available
-    try:
-        import mlx_whisper  # type: ignore
-
-        has_mlx_whisper = True
-    except ImportError:
-        has_mlx_whisper = False
+    # Importing mlx_whisper initializes Metal; only the ASR model should do that.
+    has_mlx_whisper = find_spec("mlx_whisper") is not None
 
     return has_mps, has_mlx_whisper
 

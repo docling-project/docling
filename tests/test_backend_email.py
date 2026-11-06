@@ -439,7 +439,8 @@ Content-Type: text/html; charset="utf-8"
 
     markdown = backend.convert().export_to_markdown()
 
-    assert "Hello **Bob** ," in markdown
+    # No invented separator between the bold run and the comma.
+    assert "Hello **Bob**," in markdown
     assert "This is HTML." in markdown
     assert "<strong>" not in markdown
 
@@ -710,3 +711,30 @@ def test_email_falls_back_to_html_when_the_plain_part_is_blank():
     ).document
 
     assert "Real content that should appear." in doc.export_to_markdown()
+
+
+def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
+    from oxmsg import Message as OxMsgMessage
+
+    data = Path("tests/data/email/sources/msg_with_attachment.msg").read_bytes()
+    payloads = [a.file_bytes for a in OxMsgMessage.load(data).attachments]
+    assert len(payloads) == 2
+
+    rfc822 = EmailDocumentBackend._msg_to_rfc822_bytes(data)
+    lowered = rfc822.lower()
+
+    for name, mime in (
+        (b"test.txt", b"text/plain"),
+        (b"report.pdf", b"application/pdf"),
+    ):
+        assert name in rfc822
+        assert mime in lowered
+
+    meaningful = [p for p in payloads if p and len(p) >= 16]
+    assert meaningful, (
+        "fixture must contain at least one non-trivial attachment payload"
+    )
+    flat = rfc822.replace(b"\r\n", b"").replace(b"\n", b"")
+    for payload in meaningful:
+        assert payload not in rfc822
+        assert b64encode(payload) not in flat

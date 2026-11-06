@@ -433,6 +433,37 @@ class InlineAsrMlxWhisperOptions(InlineAsrOptions):
             )
         ),
     ] = 2.4
+    condition_on_previous_text: Annotated[
+        Optional[bool],
+        Field(
+            description=(
+                "Whether to feed the model's previous output as a prompt for the next "
+                "window. When `None` (the default), mlx-whisper's default of `True` is "
+                "used. Set to `False` to reduce repetition loops on long or difficult "
+                "audio, at the risk of inconsistent text across windows."
+            )
+        ),
+    ] = None
+    hallucination_silence_threshold: Annotated[
+        Optional[float],
+        Field(
+            description=(
+                "When word timestamps are enabled, skip silent periods longer "
+                "than this threshold (in seconds) when a possible hallucination "
+                "is detected. When `None` (the default), the check is disabled."
+            )
+        ),
+    ] = None
+    initial_prompt: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Optional text to provide as a prompt for the first window. "
+                "Useful to steer spelling of names or domain terms. When `None` "
+                "(the default), no prompt is given."
+            )
+        ),
+    ] = None
 
 
 # English-only WhisperS2T models (cannot transcribe non-English audio)

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "sample",
   "origin": {
     "mimetype": "application/vnd.box.boxnote",
@@ -43,9 +43,6 @@
       },
       {
         "$ref": "#/tables/0"
-      },
-      {
-        "$ref": "#/texts/19"
       },
       {
         "$ref": "#/pictures/0"
@@ -453,7 +450,7 @@
     {
       "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/pictures/0"
       },
       "children": [],
       "content_layer": "body",
@@ -469,7 +466,11 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/19"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [],

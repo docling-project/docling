@@ -30,6 +30,12 @@ Below you can find a listing of all supported input and output formats.
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |
 | AFP | IBM Advanced Function Presentation / MO:DCA |
+| iCalendar | Calendar files |
+
+For Markdown, CSV, and AsciiDoc, a byte-order mark (BOM) selects the text encoding
+unless the backend's `encoding` option is set. If the bytes are not valid in the
+BOM-detected encoding, conversion fails with an error that names the encoding
+and retains the decoder error as its cause.
 
 PowerPoint equations stored as Office Math (OMML) in text shapes are converted to
 LaTeX formula items. Equations mixed with text or list content retain their order.

@@ -371,7 +371,9 @@ class ImageResourceLoader:
                 # Image.open reads only the header: check the size before
                 # ImageRef.from_pil decodes the pixels.
                 check_image_pixels(img.size, self.max_image_pixels)
-                return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
+                # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
+                dpi = int(img.info.get("dpi", (72,))[0]) or 72
+                return ImageRef.from_pil(img, dpi=dpi)
         except (
             Image.DecompressionBombError,
             requests.RequestException,

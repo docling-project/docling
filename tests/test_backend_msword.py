@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     CodeItem,
     ContentLayer,
     DocItemLabel,
+    Formatting,
     GroupItem,
     ListGroup,
     ListItem,
@@ -30,6 +31,7 @@ from docx.oxml.ns import qn
 from docx.shared import Inches
 from lxml import etree
 from PIL import Image
+from pydantic import AnyUrl
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
@@ -187,10 +189,12 @@ def test_text_after_image_anchors(documents):
     name = "word_image_anchors.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
     texts = {item.text for item, _ in doc.iterate_items() if isinstance(item, TextItem)}
+    # Runs keep their own whitespace, so the spaces the source puts between the two runs of a
+    # paragraph stay on the left run.
     for expected in (
-        "This is test 1",
+        "This is test 1   ",
         "0:08\nCorrect, he is not.",
-        "This is test 2",
+        "This is test 2 ",
         "0:16\nYeah, exactly.",
     ):
         assert expected in texts
@@ -1024,6 +1028,61 @@ def test_table_row_with_grid_before_is_preserved(tmp_path):
     assert b1.column_header and not b2.column_header
 
 
+@pytest.mark.parametrize("declared_cols", [0, 1, 2], ids=["missing", "one", "two"])
+def test_table_with_incomplete_grid(tmp_path: Path, declared_cols: int) -> None:
+    source = Document()
+    table = source.add_table(rows=1, cols=3)
+    table.cell(0, 0).merge(table.cell(0, 1)).text = "Merged"
+    table.cell(0, 2).text = "Last"
+
+    grid = table._tbl.tblGrid
+    if declared_cols == 0:
+        table._tbl.remove(grid)
+    else:
+        for column in list(grid)[declared_cols:]:
+            grid.remove(column)
+
+    path = tmp_path / "incomplete-grid.docx"
+    source.save(path)
+    doc = _convert(path)
+
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (1, 3)
+    assert [
+        (cell.text, cell.start_col_offset_idx, cell.end_col_offset_idx)
+        for cell in data.table_cells
+    ] == [("Merged", 0, 2), ("Last", 2, 3)]
+
+
+def test_table_with_short_grid_and_omitted_trailing_cells(tmp_path: Path) -> None:
+    source = Document()
+    table = source.add_table(rows=2, cols=3)
+    table.cell(0, 0).text = "A1"
+    table.cell(1, 0).text = "A2"
+    for row in table.rows:
+        tr = row._tr
+        grid_after = OxmlElement("w:gridAfter")
+        grid_after.set(qn("w:val"), "2")
+        tr.get_or_add_trPr().append(grid_after)
+        for cell in tr.tc_lst[1:]:
+            tr.remove(cell)
+
+    grid = table._tbl.tblGrid
+    grid.remove(grid[-1])
+    path = tmp_path / "short-grid-with-grid-after.docx"
+    source.save(path)
+
+    doc = _convert(path)
+    assert len(doc.tables) == 1
+    data = doc.tables[0].data
+    assert (data.num_rows, data.num_cols) == (2, 3)
+    assert [
+        (cell.text, cell.start_row_offset_idx, cell.start_col_offset_idx)
+        for cell in data.table_cells
+    ] == [("A1", 0, 0), ("A2", 1, 0)]
+
+
 def test_vertical_merge_survives_grid_before_row(tmp_path):
     """A vertical merge keeps its row span across a row that starts late.
 
@@ -1542,6 +1601,60 @@ def test_checkbox_labels_in_tables(documents):
     assert any(
         any(food in item.text for food in food_items) for item in checkbox_items
     ), "No checkboxes found in table cells"
+
+
+def test_checkbox_paragraph_keeps_interior_run_whitespace(tmp_path):
+    """Only the leading checkbox symbol and the block edges are stripped."""
+    document = Document()
+    para = document.add_paragraph()
+    sdt = etree.SubElement(para._p, qn("w:sdt"))
+    sdt_pr = etree.SubElement(sdt, qn("w:sdtPr"))
+    etree.SubElement(
+        sdt_pr, "{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
+    )
+    para.add_run("☐ Buy ")
+    para.add_run("milk").bold = True
+    para.add_run(" now ")
+
+    doc = _convert_built(document, tmp_path)
+
+    runs = [
+        item for item in doc.texts if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+    assert [run.text for run in runs] == ["Buy ", "milk", " now"]
+
+
+def test_skip_empty_text_keeps_interior_whitespace_runs(tmp_path):
+    """A whitespace-only run between two runs is text; only an all-empty block is skipped."""
+    document = Document()
+    document.add_paragraph("x")
+    path = tmp_path / "case.docx"
+    document.save(str(path))
+    backend = InputDocument(
+        path_or_stream=path, format=InputFormat.DOCX, backend=MsWordDocumentBackend
+    )._backend
+
+    doc = DoclingDocument(name="test")
+    elements = [
+        ("See ", None, None),
+        ("docs", None, AnyUrl("https://example.com/")),
+        (" ", None, None),
+        ("now", Formatting(bold=True), None),
+    ]
+    backend._add_body_text_items(
+        doc=doc, paragraph_elements=elements, checkbox_label=None, skip_empty_text=True
+    )
+    assert [item.text for item in doc.texts] == ["See ", "docs", " ", "now"]
+
+    empty = DoclingDocument(name="empty")
+    refs = backend._add_body_text_items(
+        doc=empty,
+        paragraph_elements=[("", None, None)],
+        checkbox_label=None,
+        skip_empty_text=True,
+    )
+    assert refs == []
+    assert empty.texts == []
 
 
 def test_text_after_drawingml_images(documents):

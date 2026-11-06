@@ -408,6 +408,14 @@ def test_multipage_access():
         assert size.height == 64
 
 
+def test_zero_dpi_defaults_to_72_dpi():
+    # A PNG pHYs chunk with zero pixels per unit: Pillow reports dpi=(0.0, 0.0).
+    stream = _make_png_stream(width=64, height=48, dpi=(0, 0))
+    page_backend = _get_backend_from_stream(stream).load_page(0)
+
+    assert page_backend.get_size().as_tuple() == (64, 48)
+
+
 def test_invalid_explicit_dpi_rejects_document():
     stream = _make_png_stream(dpi=(0, 300))
     in_doc = InputDocument(
