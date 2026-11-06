@@ -313,8 +313,12 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
                 html_doc = self._convert_html_part(part)
                 # The paragraphs become plain text items, and every export of
                 # the email escapes them, so do not escape them here as well.
+                # For the same reason, a picture placeholder would show up as
+                # literal "<!-- image -->" text, so leave it out.
                 markdown = html_doc.export_to_markdown(
-                    escape_html=False, escape_underscores=False
+                    escape_html=False,
+                    escape_underscores=False,
+                    image_placeholder="",
                 )
                 paragraphs.extend(self._split_paragraphs(markdown))
             if paragraphs:
