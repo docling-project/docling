@@ -21,19 +21,20 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.asr_model_specs import (
     GRANITE_SPEECH_4_1_2B_PRESET,
     GRANITE_SPEECH_5_0_2B_PRESET,
+    PARAKEET_CTC_1_1B_MLX_AUDIO,
     PARAKEET_CTC_1_1B_PRESET,
     WHISPER_ASR_PRESETS,
     WHISPER_TINY_MLX,
-    WHISPER_TINY_MLX_AUDIO,
     AsrModelType,
 )
 from docling.datamodel.pipeline_options_asr_model import (
     InferenceAsrFramework,
     InlineAsrMlxAudioOptions,
     InlineAsrMlxWhisperOptions,
+    InlineAsrTransformersOptions,
 )
 from docling.pipeline import asr_mlx_audio
-from docling.pipeline.asr_mlx_audio import MlxAudioAsrDecoder, _nemotron_prompt_key
+from docling.pipeline.asr_mlx_audio import MlxAudioAsrDecoder
 from docling.pipeline.asr_transcriber import _AsrModelFactory, _MlxAudioModel
 from docling.pipeline.asr_windows import split_on_pauses
 
@@ -125,21 +126,9 @@ def test_mlx_alias_keeps_the_mlx_whisper_backend_and_its_saved_value():
     assert WHISPER_TINY_MLX.repo_id == alias.repo_id
 
 
-def test_mlx_audio_uses_a_checkpoint_with_a_processor():
-    assert isinstance(WHISPER_TINY_MLX_AUDIO, InlineAsrMlxAudioOptions)
-    assert WHISPER_TINY_MLX_AUDIO.repo_id == "mlx-community/whisper-tiny-asr-fp16"
-
-
 def test_mlx_alias_on_a_model_without_mlx_whisper_names_the_supported_engine():
     with pytest.raises(ValueError, match="mlx_audio"):
         GRANITE_SPEECH_5_0_2B_PRESET.to_options(InferenceAsrFramework.MLX)
-
-
-def test_mlx_whisper_options_reject_the_mlx_audio_framework():
-    with pytest.raises(ValueError):
-        InlineAsrMlxWhisperOptions(
-            repo_id="r", inference_framework=InferenceAsrFramework.MLX_AUDIO
-        )
 
 
 @pytest.mark.parametrize(
@@ -164,9 +153,24 @@ def test_mlx_whisper_presets_resolve(model: AsrModelType):
     assert options.inference_framework == InferenceAsrFramework.MLX_WHISPER
 
 
-def test_chunk_search_window_must_be_smaller_than_the_target():
+@pytest.mark.parametrize("family", ["granite", "granite_ctc"])
+def test_chunk_search_window_must_be_smaller_than_the_target(family):
     with pytest.raises(ValueError, match="chunk_search_window"):
-        _options(max_time_chunk=10.0, chunk_search_window=10.0)
+        _options(family, max_time_chunk=10.0, chunk_search_window=10.0)
+    with pytest.raises(ValueError, match="chunk_search_window"):
+        InlineAsrTransformersOptions(
+            repo_id="r", model_family=family, max_time_chunk=10.0
+        )
+
+
+@pytest.mark.parametrize("family", ["whisper", "parakeet", "nemotron"])
+def test_low_max_time_chunk_stays_valid_for_a_family_without_windows(family):
+    # These families do not use windows. Saved options with this value must still load.
+    assert _options(family, max_time_chunk=5.0).max_time_chunk == 5.0
+    transformers = InlineAsrTransformersOptions(
+        repo_id="r", model_family=family, max_time_chunk=5.0
+    )
+    assert transformers.max_time_chunk == 5.0
 
 
 # ---------------------------------------------------------------- windows
@@ -309,14 +313,38 @@ def test_nemotron_timestamps_stay_inside_the_real_audio(fake_mlx_audio: Mock):
         ("en", [], "en"),
     ],
 )
-def test_nemotron_prompt_key_maps_a_language(language, keys, expected):
-    assert _nemotron_prompt_key(language, keys) == expected
+def test_nemotron_sends_the_prompt_key_of_the_language(
+    fake_mlx_audio: Mock, language, keys, expected
+):
+    nemotron = _Model(
+        SimpleNamespace(sentences=[]), prompt_dictionary=dict.fromkeys(keys)
+    )
+    fake_mlx_audio.return_value = nemotron
+    model = _MlxAudioModel(
+        True, None, AcceleratorOptions(), _options("nemotron", language=language)
+    )
+
+    model.transcribe(Path("a.wav"))
+
+    assert nemotron.calls[0][1]["language"] == expected
 
 
-@pytest.mark.parametrize(("language", "keys"), [("fr", ["en-US"]), ("fr", [])])
-def test_nemotron_rejects_a_language_that_it_would_silently_ignore(language, keys):
-    with pytest.raises(ValueError, match=language):
-        _nemotron_prompt_key(language, keys)
+@pytest.mark.parametrize("keys", [["en-US"], []])
+def test_nemotron_rejects_a_language_that_it_would_silently_ignore(
+    fake_mlx_audio: Mock, keys
+):
+    nemotron = _Model(
+        SimpleNamespace(sentences=[]), prompt_dictionary=dict.fromkeys(keys)
+    )
+    fake_mlx_audio.return_value = nemotron
+    model = _MlxAudioModel(
+        True, None, AcceleratorOptions(), _options("nemotron", language="fr")
+    )
+
+    with pytest.raises(ValueError, match="fr"):
+        model.transcribe(Path("a.wav"))
+
+    assert nemotron.calls == []
 
 
 def _long_recording(monkeypatch: pytest.MonkeyPatch, seconds: int) -> None:
@@ -511,10 +539,15 @@ print("BUILT")
     assert "BUILT" in result.stdout, result.stderr
 
 
-def test_factory_selects_the_backend(fake_mlx_audio: Mock):
-    transcriber = _AsrModelFactory.create(_options(), None, AcceleratorOptions())
+def test_explicit_preset_without_metal_is_an_error(
+    fake_mlx_audio: Mock, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(_Mx, "metal", SimpleNamespace(is_available=lambda: False))
 
-    assert isinstance(transcriber, _MlxAudioModel)
+    with pytest.raises(RuntimeError, match="Metal"):
+        _AsrModelFactory.create(PARAKEET_CTC_1_1B_MLX_AUDIO, None, AcceleratorOptions())
+
+    fake_mlx_audio.assert_not_called()
 
 
 # ---------------------------------------------------------------- engine selection

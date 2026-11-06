@@ -13,8 +13,12 @@ from docling.datamodel.asr_model_specs import AsrModelType
 from docling.datamodel.asr_presets import is_apple_silicon
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.datamodel.pipeline_options_asr_model import (
-    InferenceAsrFramework,
+    InlineAsrMlxAudioOptions,
+    InlineAsrMlxWhisperOptions,
+    InlineAsrNativeWhisperOptions,
     InlineAsrOptions,
+    InlineAsrTransformersOptions,
+    InlineAsrWhisperS2TOptions,
 )
 from docling.datamodel.stage_model_specs import StageModelPreset
 from docling.models.inference_engines.vlm.base import VlmEngineType
@@ -33,6 +37,16 @@ class ModelRow:
     backends: dict[str, BackendState]
 
 
+@dataclass(frozen=True)
+class ModelTable:
+    kind: str
+    title: str
+    # Column key, then the label in the table.
+    backends: dict[str, str]
+    rows: list[ModelRow]
+    default_model: str
+
+
 # Column key, then the label in the table. Two-line labels keep the table in 80 columns.
 ASR_BACKENDS: Final[dict[str, str]] = {
     "native": "Native",
@@ -48,13 +62,12 @@ VLM_BACKENDS: Final[dict[str, str]] = {
     "api": "API",
 }
 
-_ASR_FRAMEWORK_COLUMNS: Final[dict[InferenceAsrFramework, str]] = {
-    InferenceAsrFramework.WHISPER: "native",
-    InferenceAsrFramework.MLX: "mlx_whisper",
-    InferenceAsrFramework.MLX_WHISPER: "mlx_whisper",
-    InferenceAsrFramework.MLX_AUDIO: "mlx_audio",
-    InferenceAsrFramework.TRANSFORMERS: "transformers",
-    InferenceAsrFramework.WHISPER_S2T: "s2t",
+_ASR_OPTIONS_COLUMNS: Final[dict[type[InlineAsrOptions], str]] = {
+    InlineAsrNativeWhisperOptions: "native",
+    InlineAsrMlxWhisperOptions: "mlx_whisper",
+    InlineAsrMlxAudioOptions: "mlx_audio",
+    InlineAsrTransformersOptions: "transformers",
+    InlineAsrWhisperS2TOptions: "s2t",
 }
 # `_mlx` is the alias of `_mlx_whisper`.
 _ASR_SUFFIXES: Final = (
@@ -92,6 +105,7 @@ _VLM_FAMILIES: Final = (
     ("qwen", "Qwen"),
     ("unlimited_ocr", "Unlimited-OCR"),
 )
+# A new preset without an entry above goes to this group. Add an entry to name its family.
 OTHER_FAMILY: Final = "Other"
 
 
@@ -124,7 +138,7 @@ def asr_rows(resolve: Callable[[AsrModelType], InlineAsrOptions]) -> list[ModelR
                 base = base.removesuffix(suffix)
                 state = BackendState.SUPPORTED
                 break
-        column = _ASR_FRAMEWORK_COLUMNS[resolve(model).inference_framework]
+        column = _ASR_OPTIONS_COLUMNS[type(resolve(model))]
         backends = backends_of.setdefault(base, {})
         if backends.get(column) != BackendState.SELECTED:
             backends[column] = state

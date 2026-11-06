@@ -9,7 +9,9 @@ import them only inside the decoder.
 """
 
 import logging
-from dataclasses import dataclass, replace
+import math
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Final
 
@@ -20,6 +22,7 @@ from docling.models.utils.hf_model_download import (
     warn_on_unpinned_trust_remote_code,
 )
 from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
+from docling.pipeline.asr_conversation import _ConversationItem, _ConversationWord
 
 _log = logging.getLogger(__name__)
 
@@ -35,21 +38,31 @@ _NEMOTRON_TAIL_PADDING_SECONDS: Final = 2.0
 # window, and it stops a repetition loop early.
 _GRANITE_MAX_TOKENS_PER_WINDOW: Final = 1024
 _ENGLISH: Final = "en"
+_METAL_PROBE: Final = (
+    "import mlx.core as mx; raise SystemExit(0 if mx.metal.is_available() else 1)"
+)
+_METAL_PROBE_TIMEOUT_SECONDS: Final = 60
 
 
-@dataclass(frozen=True)
-class MlxAudioWord:
-    text: str
-    start_time: float | None
-    end_time: float | None
+def metal_is_usable() -> bool:
+    """Tell if this machine can import `mlx` and use a Metal device.
 
-
-@dataclass(frozen=True)
-class MlxAudioSegment:
-    text: str
-    start_time: float
-    end_time: float
-    words: list[MlxAudioWord] | None = None
+    The check runs in a child process, because the import can abort a restricted or
+    headless process, and a caller cannot catch that.
+    """
+    if not is_apple_silicon():
+        return False
+    try:
+        probe = subprocess.run(
+            [sys.executable, "-c", _METAL_PROBE],
+            capture_output=True,
+            timeout=_METAL_PROBE_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        _log.debug(f"The Metal check did not finish: {exc}")
+        return False
+    return probe.returncode == 0
 
 
 def _nemotron_prompt_key(language: str, prompt_keys: list[str]) -> str:
@@ -151,7 +164,7 @@ class MlxAudioAsrDecoder:
                 f"'{options.language}'."
             )
 
-    def transcribe(self, path: Path) -> list[MlxAudioSegment]:
+    def transcribe(self, path: Path) -> list[_ConversationItem]:
         family = self.options.model_family
         if family == "whisper":
             return self._transcribe_whisper(path)
@@ -164,7 +177,7 @@ class MlxAudioAsrDecoder:
             return self._transcribe_nemotron(path)
         raise ValueError(f"mlx-audio backend has no support for family {family}")
 
-    def _transcribe_whisper(self, path: Path) -> list[MlxAudioSegment]:
+    def _transcribe_whisper(self, path: Path) -> list[_ConversationItem]:
         options = self.options
         kwargs: dict[str, Any] = {
             "language": options.language,
@@ -179,12 +192,12 @@ class MlxAudioAsrDecoder:
         with MLX_GLOBAL_LOCK:
             result = self.model.generate(str(path), **kwargs)
         return [
-            MlxAudioSegment(
+            _ConversationItem(
                 text=segment["text"].strip(),
                 start_time=segment["start"],
                 end_time=segment["end"],
                 words=[
-                    MlxAudioWord(
+                    _ConversationWord(
                         text=word["word"],
                         start_time=word["start"],
                         end_time=word["end"],
@@ -198,17 +211,19 @@ class MlxAudioAsrDecoder:
         ]
 
     @staticmethod
-    def _sentence_segments(result: Any) -> list[MlxAudioSegment]:
+    def _sentence_segments(
+        result: Any, duration: float = math.inf
+    ) -> list[_ConversationItem]:
         return [
-            MlxAudioSegment(
+            _ConversationItem(
                 text=sentence.text.strip(),
-                start_time=sentence.start,
-                end_time=sentence.end,
+                start_time=min(sentence.start, duration),
+                end_time=min(sentence.end, duration),
             )
             for sentence in result.sentences
         ]
 
-    def _transcribe_nemotron(self, path: Path) -> list[MlxAudioSegment]:
+    def _transcribe_nemotron(self, path: Path) -> list[_ConversationItem]:
         mx = self._mx
         kwargs: dict[str, Any] = {}
         if self.options.language is not None:
@@ -222,15 +237,7 @@ class MlxAudioAsrDecoder:
             speech = self._load_audio(str(path))
             result = self.model.generate(mx.concatenate([speech, silence]), **kwargs)
         # The added silence must not extend a timestamp past the real audio.
-        duration = speech.size / self._sample_rate
-        return [
-            replace(
-                segment,
-                start_time=min(segment.start_time, duration),
-                end_time=min(segment.end_time, duration),
-            )
-            for segment in self._sentence_segments(result)
-        ]
+        return self._sentence_segments(result, speech.size / self._sample_rate)
 
     def _granite_kwargs(self) -> dict[str, Any]:
         options = self.options
@@ -251,7 +258,7 @@ class MlxAudioAsrDecoder:
             kwargs["source_language"] = options.language
         return kwargs
 
-    def _transcribe_granite_windows(self, path: Path) -> list[MlxAudioSegment]:
+    def _transcribe_granite_windows(self, path: Path) -> list[_ConversationItem]:
         """Decode the file in windows, because the models return no timestamps.
 
         Windows also stop the repetition loop that Granite shows on long audio.
@@ -272,7 +279,7 @@ class MlxAudioAsrDecoder:
             options.chunk_search_window,
         )
         kwargs = self._granite_kwargs()
-        segments: list[MlxAudioSegment] = []
+        segments: list[_ConversationItem] = []
         for start, end in windows:
             first, last = (round(edge * self._sample_rate) for edge in (start, end))
             # Take the lock for each window, so that long audio does not hold back
@@ -283,6 +290,6 @@ class MlxAudioAsrDecoder:
                 ).text.strip()
             if text:
                 segments.append(
-                    MlxAudioSegment(text=text, start_time=start, end_time=end)
+                    _ConversationItem(text=text, start_time=start, end_time=end)
                 )
         return segments

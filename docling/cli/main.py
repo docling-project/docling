@@ -11,7 +11,7 @@ import time
 import warnings
 from collections.abc import Iterable
 from contextlib import nullcontext
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
@@ -69,7 +69,7 @@ from docling.cli.model_table import (
     ASR_BACKENDS,
     VLM_BACKENDS,
     BackendState,
-    ModelRow,
+    ModelTable,
     asr_rows,
     vlm_rows,
 )
@@ -2348,24 +2348,22 @@ def _backend_symbols() -> dict[BackendState, str]:
     return _ASCII_BACKEND_SYMBOLS
 
 
-def _print_model_table(
-    title: str, backends: dict[str, str], rows: list[ModelRow], default: str
-) -> None:
+def _print_model_table(model_table: ModelTable) -> None:
     symbols = _backend_symbols()
-    table = rich.table.Table(title=title, title_justify="left", box=None)
+    table = rich.table.Table(title=model_table.title, title_justify="left", box=None)
     table.add_column("Model", no_wrap=True)
-    for label in backends.values():
+    for label in model_table.backends.values():
         table.add_column(label, justify="center", no_wrap=True)
     family = None
-    for row in rows:
+    for row in model_table.rows:
         if row.family != family:
             family = row.family
             table.add_row(f"[bold]{rich.markup.escape(family)}[/bold]")
         table.add_row(
-            f"  {row.name}{' *' if row.name == default else ''}",
+            f"  {row.name}{' *' if row.name == model_table.default_model else ''}",
             *(
                 symbols[row.backends[column]] if column in row.backends else ""
-                for column in backends
+                for column in model_table.backends
             ),
         )
     console.print(table, highlight=False)
@@ -2396,34 +2394,37 @@ def list_models(
     model, use `docling-tools models`.
     """
     show_all = asr == vlm
-    tables = []
+    tables: list[ModelTable] = []
     if asr or show_all:
         tables.append(
-            (
-                "asr",
-                "ASR models",
-                ASR_BACKENDS,
-                asr_rows(_resolve_asr_options),
-                AsrModelType.WHISPER_TINY.value,
+            ModelTable(
+                kind="asr",
+                title="ASR models",
+                backends=ASR_BACKENDS,
+                rows=asr_rows(_resolve_asr_options),
+                default_model=AsrModelType.WHISPER_TINY.value,
             )
         )
     if vlm or show_all:
         tables.append(
-            ("vlm", "VLM models", VLM_BACKENDS, vlm_rows(), "granite_docling")
+            ModelTable(
+                kind="vlm",
+                title="VLM models",
+                backends=VLM_BACKENDS,
+                rows=vlm_rows(),
+                default_model="granite_docling",
+            )
         )
     if family is not None:
         needle = family.lower()
         tables = [
-            (
-                kind,
-                title,
-                backends,
-                [row for row in rows if needle in row.family.lower()],
-                default,
+            replace(
+                table,
+                rows=[row for row in table.rows if needle in row.family.lower()],
             )
-            for kind, title, backends, rows, default in tables
+            for table in tables
         ]
-        if not any(rows for _, _, _, rows, _ in tables):
+        if not any(table.rows for table in tables):
             raise typer.BadParameter(
                 f"No model has the family {family!r}.", param_hint="--family"
             )
@@ -2433,32 +2434,32 @@ def list_models(
             json.dumps(
                 [
                     {
-                        "kind": kind,
+                        "kind": table.kind,
                         "name": row.name,
                         "family": row.family,
-                        "default": row.name == default,
+                        "default": row.name == table.default_model,
                         "backends": {
                             column: row.backends[column].value
-                            for column in backends
+                            for column in table.backends
                             if column in row.backends
                         },
                     }
-                    for kind, _, backends, rows, default in tables
-                    for row in rows
+                    for table in tables
+                    for row in table.rows
                 ],
                 indent=2,
             )
         )
         return
 
-    for _, title, backends, rows, default in tables:
-        if rows:
-            _print_model_table(title, backends, rows, default)
+    for table in tables:
+        if table.rows:
+            _print_model_table(table)
     symbols = _backend_symbols()
     for state, meaning in _BACKEND_LEGEND.items():
         console.print(f"{symbols[state]}  {meaning}", highlight=False)
     console.print("*  default model", highlight=False)
-    if any(kind == "asr" and rows for kind, _, _, rows, _ in tables):
+    if any(table.kind == "asr" and table.rows for table in tables):
         console.print(
             "ASR: add a suffix to a name to force one backend: _native, _mlx_whisper "
             "(or _mlx), _mlx_audio, _transformers, _s2t. For example, "

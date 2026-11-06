@@ -24,8 +24,8 @@ Below you can find a listing of all supported input and output formats.
 | MHTML, MHT | MIME HTML archives |
 | CSV | |
 | PNG, JPEG, TIFF, BMP, WEBP | Image formats |
-| WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
-| MP4, AVI, MOV, MKV, WEBM | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
+| WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `audio` or `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
+| MP4, AVI, MOV, MKV, WEBM | Video formats — audio track is extracted and transcribed (requires `audio` or `asr` extra, and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 | BoxNote | Box Notes collaborative note format |
 | Email | MIME (`.eml`) and Outlook (`.msg`) email messages; attachment names can optionally be listed via `EmailBackendOptions` |

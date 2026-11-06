@@ -64,9 +64,12 @@ def split_on_pauses(
 
     Each cut is at the middle of the longest pause within `target_s` +- `search_s` of
     the window start, or at `target_s` when that range has no pause. A pause is not
-    always a sentence boundary. Windows do not overlap, so no text repeats. A pause
-    that would leave a last window below `target_s - search_s` is not a cut point, so
-    that a decoder does not get a fragment of audio.
+    always a sentence boundary. Windows do not overlap, so no text repeats.
+
+    A pause that would leave a last window below `target_s - search_s` is not a cut
+    point. The cut at `target_s` has no such limit, because a recording can be too short
+    to give two windows of that length. The last window has at least
+    `search_s` seconds, so a small `search_s` can give a short last window.
     """
     if search_s >= target_s:
         raise ValueError(

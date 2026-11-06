@@ -41,10 +41,18 @@ def test_every_asr_preset_has_a_row_and_a_column():
         ), model
 
 
-def test_every_preset_has_a_family():
-    rows = [*asr_rows(_resolve_asr_options), *vlm_rows()]
+def test_preset_without_a_family_entry_is_still_listed(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        model_table,
+        "_VLM_FAMILIES",
+        tuple(f for f in model_table._VLM_FAMILIES if f[0] != "surya"),
+    )
 
-    assert [row.name for row in rows if row.family == OTHER_FAMILY] == []
+    result = runner.invoke(app, ["models", "--vlm"], terminal_width=200)
+
+    assert result.exit_code == 0, result.output
+    assert _row(vlm_rows(), "surya_ocr2_5").family == OTHER_FAMILY
+    assert "surya_ocr2_5" in result.output
 
 
 def test_families_stay_together():

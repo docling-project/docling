@@ -55,7 +55,8 @@ from docling.datamodel.pipeline_options_asr_model import (
 )
 from docling.exceptions import OperationNotAllowed
 from docling.models.utils.mlx_lock import MLX_GLOBAL_LOCK
-from docling.pipeline.asr_mlx_audio import MlxAudioAsrDecoder
+from docling.pipeline.asr_conversation import _ConversationItem, _ConversationWord
+from docling.pipeline.asr_mlx_audio import MlxAudioAsrDecoder, metal_is_usable
 from docling.pipeline.asr_transformers import TransformersAsrDecoder
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
@@ -148,55 +149,6 @@ def _process_conversation(
                     f"{e}. Skipping this item and continuing with the rest."
                 )
                 continue
-
-
-class _ConversationWord(BaseModel):
-    text: str
-    start_time: float | None = Field(
-        None, description="Start time in seconds from video start"
-    )
-    end_time: float | None = Field(
-        None, ge=0, description="End time in seconds from video start"
-    )
-
-
-class _ConversationItem(BaseModel):
-    text: str
-    start_time: float | None = Field(
-        None, description="Start time in seconds from video start"
-    )
-    end_time: float | None = Field(
-        None, ge=0, description="End time in seconds from video start"
-    )
-    speaker_id: int | None = Field(None, description="Numeric speaker identifier")
-    speaker: str | None = Field(
-        None, description="Speaker name, defaults to speaker-{speaker_id}"
-    )
-    words: list[_ConversationWord] | None = Field(
-        None, description="Individual words with time-stamps"
-    )
-
-    def __lt__(self, other):
-        if not isinstance(other, _ConversationItem):
-            return NotImplemented
-        return self.start_time < other.start_time
-
-    def __eq__(self, other):
-        if not isinstance(other, _ConversationItem):
-            return NotImplemented
-        return self.start_time == other.start_time
-
-    def to_string(self) -> str:
-        """Format the conversation entry as a string"""
-        result = ""
-        if (self.start_time is not None) and (self.end_time is not None):
-            result += f"[time: {self.start_time}-{self.end_time}] "
-
-        if self.speaker is not None:
-            result += f"[speaker:{self.speaker}] "
-
-        result += self.text
-        return result
 
 
 def _resolve_asr_artifacts(artifacts_path: Path, repo_id: str) -> Path:
@@ -691,14 +643,7 @@ class _TransformersAsrModel(_LocalAudioTranscriber):
             ]
 
         if self.decoder is not None:
-            return [
-                _ConversationItem(
-                    start_time=segment.start_time,
-                    end_time=segment.end_time,
-                    text=segment.text,
-                )
-                for segment in self.decoder.transcribe(fpath)
-            ]
+            return self.decoder.transcribe(fpath)
 
         text = self.asr_pipeline(str(fpath))["text"].strip()
         if not text:
@@ -747,24 +692,7 @@ class _MlxAudioModel(_LocalAudioTranscriber):
         self.decoder = MlxAudioAsrDecoder(asr_options, checkpoint)
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
-        return [
-            _ConversationItem(
-                start_time=segment.start_time,
-                end_time=segment.end_time,
-                text=segment.text,
-                words=None
-                if segment.words is None
-                else [
-                    _ConversationWord(
-                        start_time=word.start_time,
-                        end_time=word.end_time,
-                        text=word.text,
-                    )
-                    for word in segment.words
-                ],
-            )
-            for segment in self.decoder.transcribe(fpath)
-        ]
+        return self.decoder.transcribe(fpath)
 
 
 class _WhisperS2TModel:
@@ -1175,6 +1103,38 @@ class _AsrTranscriber(Protocol):
     def run(self, conv_res: ConversionResult) -> ConversionResult: ...
 
 
+def _with_transformers_fallback(
+    asr_options: InlineAsrMlxAudioOptions, accelerator_options: AcceleratorOptions
+) -> InlineAsrMlxAudioOptions | InlineAsrTransformersOptions:
+    """Replace an auto-selected mlx-audio backend when it cannot run here.
+
+    Options without a fallback come from an explicit choice, so they do not change.
+    """
+    fallback = asr_options.transformers_fallback_options()
+    if fallback is None:
+        return asr_options
+    if accelerator_options.device not in {
+        AcceleratorDevice.AUTO,
+        AcceleratorDevice.MPS,
+    }:
+        _log.info(
+            f"Using Transformers for {fallback.repo_id}, because mlx-audio cannot use "
+            f"device '{accelerator_options.device}'."
+        )
+        return fallback
+    if not metal_is_usable():
+        _log.warning(
+            f"Using Transformers for {fallback.repo_id}, because this process cannot "
+            "use mlx-audio with a Metal device."
+        )
+        return fallback
+    _log.info(
+        f"Using mlx-audio for {asr_options.repo_id}. Select a `_transformers` preset "
+        "to use Transformers."
+    )
+    return asr_options
+
+
 class _AsrModelFactory:
     """Builds a concrete ASR transcriber from ASR options.
 
@@ -1189,6 +1149,8 @@ class _AsrModelFactory:
         accelerator_options: AcceleratorOptions,
         enable_remote_services: bool = False,
     ) -> _AsrTranscriber:
+        if isinstance(asr_options, InlineAsrMlxAudioOptions):
+            asr_options = _with_transformers_fallback(asr_options, accelerator_options)
         if isinstance(asr_options, ApiAsrOptions):
             if not enable_remote_services:
                 raise OperationNotAllowed(

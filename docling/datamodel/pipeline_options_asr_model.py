@@ -332,6 +332,15 @@ AsrModelFamily = Literal[
 class _WindowedAsrOptions(InlineAsrOptions):
     """Settings for the backends that split a recording into windows at pauses."""
 
+    model_family: Annotated[
+        AsrModelFamily,
+        Field(
+            description=(
+                "Model family of the checkpoint. It selects the generation "
+                "arguments and how the output becomes timed text."
+            )
+        ),
+    ] = "whisper"
     chunk_search_window: Annotated[
         float,
         Field(
@@ -346,10 +355,15 @@ class _WindowedAsrOptions(InlineAsrOptions):
 
     @model_validator(mode="after")
     def _validate_chunk_search_window(self) -> "_WindowedAsrOptions":
-        if self.chunk_search_window >= self.max_time_chunk:
+        # The other families do not use windows, so this limit does not apply to them.
+        if (
+            self.model_family in {"granite", "granite_ctc"}
+            and self.chunk_search_window >= self.max_time_chunk
+        ):
             raise ValueError(
                 f"chunk_search_window ({self.chunk_search_window}) must be smaller "
-                f"than max_time_chunk ({self.max_time_chunk})."
+                f"than max_time_chunk ({self.max_time_chunk}) for the "
+                f"{self.model_family} family."
             )
         return self
 
@@ -361,7 +375,6 @@ class InlineAsrTransformersOptions(_WindowedAsrOptions):
         InferenceAsrFramework.TRANSFORMERS
     )
     revision: str = "main"
-    model_family: AsrModelFamily = "whisper"
     prompt: str | None = None
     language: str | None = None
     task: Literal["transcribe", "translate"] = "transcribe"
@@ -520,15 +533,6 @@ class InlineAsrMlxAudioOptions(_WindowedAsrOptions):
             )
         ),
     ] = "main"
-    model_family: Annotated[
-        AsrModelFamily,
-        Field(
-            description=(
-                "Model family of the checkpoint. It selects the generation "
-                "arguments and how the output becomes timed text."
-            )
-        ),
-    ] = "whisper"
     language: Annotated[
         Optional[str],
         Field(
@@ -580,6 +584,32 @@ class InlineAsrMlxAudioOptions(_WindowedAsrOptions):
         list[AcceleratorDevice],
         Field(description="Hardware accelerators supported by mlx-audio."),
     ] = [AcceleratorDevice.MPS]
+    transformers_fallback: Annotated[
+        Optional[InlineAsrTransformersOptions],
+        Field(
+            description=(
+                "The options to use when this backend cannot run. Auto-selecting "
+                "presets set it. When `None`, a failure to start is an error."
+            )
+        ),
+    ] = None
+
+    def transformers_fallback_options(self) -> InlineAsrTransformersOptions | None:
+        """Return the fallback options, with the settings that the user changed."""
+        if self.transformers_fallback is None:
+            return None
+        return self.transformers_fallback.model_copy(
+            update={
+                "language": self.language,
+                "task": self.task,
+                "prompt": self.prompt,
+                "temperature": self.temperature,
+                "verbose": self.verbose,
+                "timestamps": self.timestamps,
+                "max_time_chunk": self.max_time_chunk,
+                "chunk_search_window": self.chunk_search_window,
+            }
+        )
 
 
 # English-only WhisperS2T models (cannot transcribe non-English audio)

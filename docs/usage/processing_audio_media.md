@@ -32,17 +32,17 @@ Or with `uv`:
 uv add "docling[asr]"
 ```
 
-This installs the Whisper backends. Select another extra for the other models:
+This installs all inline ASR engines: Whisper, Transformers, and `mlx-audio`. On Apple Silicon, it needs macOS 14 or later, and the installation fails on macOS 13. Use `docling[audio]` on macOS 13. Select another extra for a smaller installation:
 
 | Goal | Install | Notes |
 |------|---------|-------|
-| Whisper only | `docling[asr]` | |
-| All inline ASR engines | `docling[asr-inline]` or `docling-slim[models-asr-inline]` | Whisper, Transformers, and `mlx-audio`. Needs macOS 14 or later on Apple Silicon |
+| All inline ASR engines | `docling[asr]` or `docling-slim[models-asr-inline]` | Whisper, Transformers, and `mlx-audio`. Needs macOS 14 or later on Apple Silicon |
+| Whisper only | `docling[audio]` or `docling-slim[format-audio]` | |
 | Granite Speech, Parakeet, and Nemotron through Transformers | `docling-slim[feat-asr-transformers]` | Includes the Whisper backends |
 | Apple Silicon without PyTorch | `docling-slim[feat-asr-mlx-audio]` | Installs nothing on other platforms. Needs macOS 14 or later |
 | Video, including optional speaker diarization | `docling-slim[format-video]` | See [Processing video](#processing-video) |
 
-`format-video` already includes everything `asr` provides (transcription), plus the frame-sampling and diarization dependencies (`resemblyzer`, `soundfile`, `scikit-learn`, `librosa`).
+`format-video` already includes everything `audio` provides (transcription), plus the frame-sampling and diarization dependencies (`resemblyzer`, `soundfile`, `scikit-learn`, `librosa`).
 
 !!! note "`feat-asr-mlx-audio` needs a selected model"
     The auto-selecting `WHISPER_*` presets, which include the CLI default, need PyTorch or `mlx-whisper`. With only `feat-asr-mlx-audio`, select an `mlx-audio` preset, such as `--asr-model granite_speech_5_0_470m_turboctc`.
@@ -307,7 +307,14 @@ pipeline_options.asr_options = asr_model_specs.WHISPER_LARGE
 
 In all other cases, the preset uses Transformers. For example, `--device cpu` selects Transformers on a Mac.
 
-The SDK constants select the backend when Python imports them, so `AcceleratorOptions(device=...)` does not change the selection. Only the CLI takes the device into account. To use another backend from the SDK, select an explicit preset.
+`docling[asr]` installs `mlx-audio` on Apple Silicon, and `mlx-vlm` can also install it. This changes the backend of these presets. The text can differ slightly between backends. Select a `_TRANSFORMERS` preset to keep one backend on all machines.
+
+When a preset selects `mlx-audio`, Docling makes a last check before it loads the model. It uses Transformers if one of these conditions is true:
+
+- The device in `AcceleratorOptions` is not `auto` or `mps`.
+- The process cannot use a Metal device, for example on a headless runner, in a virtual machine, or in a restricted process. Docling logs a warning for this condition.
+
+The fallback keeps the language, task, prompt, and window settings of the options. It needs a Transformers install. An explicit `_MLX_AUDIO` preset does not fall back, and it gives an error when it cannot run.
 
 To see the models and the backend that each one selects on your machine, run `docling models --asr`. See [From the command line](#from-the-command-line).
 
@@ -398,7 +405,7 @@ A cut goes to the longest pause within the search range. With the defaults, wind
 | Option | Default | Meaning |
 |--------|---------|---------|
 | `max_time_chunk` | `30.0` | Target window length in seconds |
-| `chunk_search_window` | `10.0` | Seconds that a cut can move from the target to reach a pause. It must be smaller than `max_time_chunk` |
+| `chunk_search_window` | `10.0` | Seconds that a cut can move from the target to reach a pause. For the Granite families, it must be smaller than `max_time_chunk` |
 | `max_new_tokens` | `1024` | Token limit for each window on Transformers. A low value silently cuts text. `mlx-audio` always uses `1024` |
 
 ```python

@@ -120,15 +120,34 @@ class AsrModelPreset(BaseModel):
 
         Select mlx-audio on Apple Silicon when it is usable, the model has an export
         for it, and the device allows Metal. Otherwise use the default engine.
+
+        This runs when a process imports the SDK constants, so it cannot know the final
+        device or test Metal. The selected options keep the default engine, and the
+        model factory uses it when mlx-audio cannot run.
         """
+        default = self.to_options()
         if (
             InferenceAsrFramework.MLX_AUDIO in self.model_spec.supported_engines
-            # A tuple, because a set does not match the plain string "auto".
-            and device in (AcceleratorDevice.AUTO, AcceleratorDevice.MPS)
+            and device in {AcceleratorDevice.AUTO, AcceleratorDevice.MPS}
             and _mlx_audio_is_usable()
         ):
-            return self.to_options(InferenceAsrFramework.MLX_AUDIO)
-        return self.to_options()
+            return self._to_mlx_audio_options(
+                default if isinstance(default, InlineAsrTransformersOptions) else None
+            )
+        return default
+
+    def _to_mlx_audio_options(
+        self, transformers_fallback: InlineAsrTransformersOptions | None = None
+    ) -> InlineAsrMlxAudioOptions:
+        config = self.model_spec.get_engine_config(InferenceAsrFramework.MLX_AUDIO)
+        if config.repo_id is None:
+            raise ValueError(f"No repository ID for {self.preset_id}")
+        return InlineAsrMlxAudioOptions(
+            repo_id=config.repo_id,
+            revision=config.revision or "main",
+            model_family=self.model_spec.model_family,
+            transformers_fallback=transformers_fallback,
+        )
 
     def to_options(
         self, engine: InferenceAsrFramework | None = None
@@ -147,12 +166,14 @@ class AsrModelPreset(BaseModel):
             )
         if resolved == InferenceAsrFramework.MLX_WHISPER:
             return InlineAsrMlxWhisperOptions(
-                repo_id=config.repo_id, inference_framework=selected
+                repo_id=config.repo_id,
+                # Keep the alias, because it is the value that saved options contain.
+                inference_framework=(
+                    InferenceAsrFramework.MLX
+                    if selected == InferenceAsrFramework.MLX
+                    else InferenceAsrFramework.MLX_WHISPER
+                ),
             )
         if resolved == InferenceAsrFramework.MLX_AUDIO:
-            return InlineAsrMlxAudioOptions(
-                repo_id=config.repo_id,
-                revision=config.revision or "main",
-                model_family=self.model_spec.model_family,
-            )
+            return self._to_mlx_audio_options()
         raise ValueError(f"{selected.value} is not configured by this ASR preset")

@@ -1964,10 +1964,10 @@ dependencies = [
 
 [package.optional-dependencies]
 asr = [
-    { name = "docling-slim", extra = ["format-audio"] },
-]
-asr-inline = [
     { name = "docling-slim", extra = ["models-asr-inline"] },
+]
+audio = [
+    { name = "docling-slim", extra = ["format-audio"] },
 ]
 easyocr = [
     { name = "docling-slim", extra = ["feat-ocr-easyocr"] },
@@ -2003,16 +2003,16 @@ requires-dist = [
     { name = "docling-slim", extras = ["feat-ocr-mac"], marker = "extra == 'ocrmac'", editable = "." },
     { name = "docling-slim", extras = ["feat-ocr-rapidocr-onnx"], marker = "extra == 'rapidocr'", editable = "." },
     { name = "docling-slim", extras = ["feat-ocr-tesserocr"], marker = "extra == 'tesserocr'", editable = "." },
-    { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'asr'", editable = "." },
+    { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'audio'", editable = "." },
     { name = "docling-slim", extras = ["format-html-render"], marker = "extra == 'htmlrender'", editable = "." },
     { name = "docling-slim", extras = ["format-xml-xbrl"], marker = "extra == 'xbrl'", editable = "." },
-    { name = "docling-slim", extras = ["models-asr-inline"], marker = "extra == 'asr-inline'", editable = "." },
+    { name = "docling-slim", extras = ["models-asr-inline"], marker = "extra == 'asr'", editable = "." },
     { name = "docling-slim", extras = ["models-onnxruntime"], marker = "extra == 'onnxruntime'", editable = "." },
     { name = "docling-slim", extras = ["models-remote"], marker = "extra == 'remote-serving'", editable = "." },
     { name = "docling-slim", extras = ["models-vlm-inline"], marker = "extra == 'vlm'", editable = "." },
     { name = "docling-slim", extras = ["standard"], editable = "." },
 ]
-provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "asr-inline", "htmlrender", "remote-serving", "onnxruntime", "xbrl"]
+provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "audio", "asr", "htmlrender", "remote-serving", "onnxruntime", "xbrl"]
 
 [[package]]
 name = "docling-client"

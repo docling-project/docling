@@ -3,11 +3,11 @@
 
 """Model-specific speech decoding through documented Transformers interfaces."""
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from docling.datamodel.pipeline_options_asr_model import InlineAsrTransformersOptions
+from docling.pipeline.asr_conversation import _ConversationItem
 
 if TYPE_CHECKING:
     import numpy as np
@@ -15,13 +15,6 @@ if TYPE_CHECKING:
     import torch
 
 _SAMPLE_RATE: Final = 16000
-
-
-@dataclass(frozen=True)
-class TransformersAsrSegment:
-    text: str
-    start_time: float
-    end_time: float
 
 
 def _expand_granite_queries(
@@ -86,7 +79,7 @@ class TransformersAsrDecoder:
                 _expand_granite_queries, with_kwargs=True
             )
 
-    def transcribe(self, path: Path) -> list[TransformersAsrSegment]:
+    def transcribe(self, path: Path) -> list[_ConversationItem]:
         """Decode the file in windows, because the models return no timestamps.
 
         Windows also stop the repetition loop that Granite shows on long audio.
@@ -102,13 +95,13 @@ class TransformersAsrDecoder:
             self.options.max_time_chunk,
             self.options.chunk_search_window,
         )
-        segments: list[TransformersAsrSegment] = []
+        segments: list[_ConversationItem] = []
         for start, end in windows:
             first, last = (round(edge * _SAMPLE_RATE) for edge in (start, end))
             text = self._decode(waveform[first:last])
             if text:
                 segments.append(
-                    TransformersAsrSegment(text=text, start_time=start, end_time=end)
+                    _ConversationItem(text=text, start_time=start, end_time=end)
                 )
         return segments
 

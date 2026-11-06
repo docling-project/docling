@@ -5,8 +5,10 @@ For Granite, Parakeet, and Nemotron ASR, select `--asr-model granite_speech_5_0_
 `docling-slim[feat-asr-transformers]` for Transformers, or
 `docling-slim[feat-asr-mlx-audio]` for mlx-audio without torch. A preset selects
 mlx-audio on Apple Silicon when it is installed and the model has an export, and
-Transformers in other cases. Add `_transformers` or `_mlx_audio` to the name of such a
-preset to force one engine. The same ASR settings apply to video.
+Transformers in other cases. It also uses Transformers when the process cannot use a
+Metal device. Add `_transformers` or `_mlx_audio` to the name of such a preset to force
+one engine. A forced `_mlx_audio` preset gives an error when it cannot run. The same ASR
+settings apply to video.
 
 To see the supported models, run `docling models` (add `--asr` or `--vlm`, or
 `--family granite`). It lists them by family, with one column for each backend, and

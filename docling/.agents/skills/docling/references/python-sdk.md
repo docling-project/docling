@@ -477,7 +477,9 @@ Docling transcribes audio (and video) into a `DoclingDocument` via an ASR
 pipeline. Whisper needs the `format-audio` (or `format-video`) extra. For Granite
 Speech, Parakeet, and Nemotron, use `models-asr-inline`, `feat-asr-transformers`, or
 `feat-asr-mlx-audio`. These presets select mlx-audio on Apple Silicon when it is
-installed and the model has an export, and Transformers in other cases.
+installed and the model has an export, and Transformers in other cases. They also use
+Transformers when `AcceleratorOptions.device` is not `auto` or `mps`, or when the process
+cannot use a Metal device. An explicit `*_MLX_AUDIO` preset gives an error in these cases.
 
 ```python
 from docling.datamodel import asr_model_specs
