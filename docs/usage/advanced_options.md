@@ -147,6 +147,48 @@ The options in this list require the explicit `enable_remote_services=True` when
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
 
+### Page backend lifetime and page images
+
+Page backends are temporary conversion resources. The internal pipeline attribute
+`keep_backend` preserves them for processing stages that still need them, such as
+enrichment. It is not a `PipelineOptions` field and does not keep backends available
+after conversion. Final pipeline cleanup unloads remaining page backends, clears
+their references, and unloads the input document backend before returning the
+conversion result. Do not use the private `page._backend` to render images after
+conversion.
+
+The threaded `StandardPdfPipeline` releases page backends after page assembly when
+`keep_backend` is false. Enrichments that require backends keep them until final
+cleanup. This early release reduces memory use, but does not guarantee constant
+memory usage: retained backends, requested images, and the converted document can
+grow with the number of pages.
+
+To use page images after PDF conversion, set `generate_page_images=True` and choose
+`images_scale` before converting:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(generate_page_images=True, images_scale=2.0)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+result = converter.convert("document.pdf")
+for page_no, page in result.document.pages.items():
+    if page.image is not None:
+        page.image.pil_image.save(f"page-{page_no}.png")
+```
+
+`images_scale=1.0` corresponds to 72 DPI; `2.0` produces 144 DPI page images.
+These are images generated during conversion. They do not provide later rendering
+at arbitrary resolutions. To request another resolution, convert the source again
+with a different `images_scale`. See the [figure export example](../examples/export_figures.py)
+for page and element image export.
+
 ### Extract native PDF form fields
 
 Set `PdfPipelineOptions(extract_form_fields=True)` (CLI: `--extract-form-fields`)
