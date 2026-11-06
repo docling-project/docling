@@ -380,6 +380,7 @@ No data was used for the research described in the article.
 - [Araújo, A.G., Perevalov, O.V., Jukov, R.A., 1988. Folha 4 da Carta Geol´ogica de Angola `a escala 1:1 000 000. República Popular de Angola. Minist´erio da Industria. Instituto Nacional de Geologia.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref4)
 - [Brilha, J., 2016. Inventory and quantitative assessment of geosites and geodiversity sites: a review. Geoheritage 8, 119-134.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref5)
 - [Brilha, J., 2018. Geoheritage: inventories and evaluation. In: Reynard, Brilha (Eds.), Geoheritage: Assessment, Protection. and Management. Elsevier, pp. 69-85.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref6)
+
 - [Brognon, G.P., Verrier, G.R., 1966. Oil and geology in Cuanza Basin of Angola. AAPG (Am. Assoc. Pet. Geol.) Bull. 50 (1), 108-158.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref7)
 - [Brownfield, M.E., Charpentier, R.R., 2006. Geology and Total Petroleum Systems of the West-Central Coastal Province (7203), West Africa, 2207-B. U.S. Geological Survey Bulletin, pp. 1-52.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref8)
 - [Buta-Neto, A., Tavares, T.S., Quesne, D., Guiraud, M., Meister, C., David, B., Morais, M.- L., 2006. Synth`ese pr´eliminaire des travaux men´es sur le bassin de Benguela (Sud Angola): implications s´edimentologiques et structurales. Afr. Geosci. Rev. 13 (3), 239-250.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref9)
@@ -431,6 +432,7 @@ No data was used for the research described in the article.
 - [Neto, K., Henriques, M.H., 2022. Geoconservation in Africa: state of the art and future challenges. Gondwana Res. 111, 1-15.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref52)
 - [Neto, M.G.M., 1961. As bacias sedimentares de Benguela e Moçˆamedes. Bol. Serv. Geol. Minas Angola 3, 63-93.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref53)
 - [Neto, M.G.M., 1964. O sedimentar costeiro de Angola. Algumas notas sobre o estado actual do seu conhecimento. Junta de Investigaç˜ao do Ultramar, pp. 1-232.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref54)
+
 - [Peres, A.M., Moreira, A.F.D., 1970. Notícia Explicativa da Folha 185 - Vila Nova Do Seles da Carta Geol´ogica de Angola, `a escala 1: 100 000. Direcç˜ao Provincial dos Serviços de Geologia e Minas, 42 p.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref55)
 - [Peres, A.M., Moreira, A.F.D., Lap˜ao, L.G.P., Galv˜ao, C.F., Sousa, J.P., Pereira, E.P., 1970. Carta Geol´ogica 185 - Vila Nova do Seles `a escala 1:100 000. Direcç˜ao Provincial dos Serviços de Geologia e Minas.](http://refhub.elsevier.com/S1464-343X%2826%2900366-3/sref56)
 - P´erez-Díaz, L., Eagles, G., 2017. South Atlantic paleobathymetry since early Cretaceous. Sci. Rep. 7, 11819. https://doi.org/10.1038/s41598-017-11959-7.

@@ -14,17 +14,18 @@
 - \_\_\_\_\_\_\_ at the regional (district) level
 - \_\_\_\_\_\_\_ at the local (municipal) level
 -   ☐There is no such limitation
+
 24. If your country has an institutional legal aid provider (e.g. public defender), do the staff lawyers coordinate to uniformly challenge common violations of national and international due process rights and human rights?
--   Yes, at the national (federal) level
--   Yes, at regional (district) level
--   Yes, at the local (municipal) level
+    -   Yes, at the national (federal) level
+    -   Yes, at regional (district) level
+    -   Yes, at the local (municipal) level
 
 
 
  No
 
 25. If your country has an institutional legal aid provider (e.g. public defender), does it have specialized providers and/or units for representing child victims, child witnesses or suspected and accused children?
-2.   Yes, at the national (federal) level
+    -   Yes, at the national (federal) level
 
 
 
@@ -37,11 +38,11 @@
  No
 
 26. If your country allows legal aid services through university-based student law clinics, are there national guidelines on how students are supervised in providing legal aid services? (Please select all that apply)
-2.   Yes, there are specific guidelines for non-lawyers providing legal aid services
-3.   Yes, there are specific guidelines on faculty/student ratios
-4.   No, it is up to the discretion of each university
-5.   Don't know
-6.   There are no university-based student law clinics
+    -   Yes, there are specific guidelines for non-lawyers providing legal aid services
+    -   Yes, there are specific guidelines on faculty/student ratios
+    -   No, it is up to the discretion of each university
+    -   Don't know
+    -   There are no university-based student law clinics
 28. Are specialized legal aid services provided focusing on specific disadvantaged population groups? If yes, please indicate to whom these services are provided, and whether they are provided by State-funded legal aid, civil society organizations, or both.
 
 | If your country allows legal aid services through university-based student law clinics, what type of legal aid services is a student authorized to undertake? (Please select all that apply) |

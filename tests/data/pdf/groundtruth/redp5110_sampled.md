@@ -320,10 +320,10 @@ RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN E
 ```
 
 2. The other column to mask in this example is the TAX\_ID information. In this example, the rules to enforce include the following ones:
-- Human Resources can see the unmasked TAX\_ID of the employees.
-- Employees can see only their own unmasked TAX\_ID.
-- Managers see a masked version of TAX\_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).
-- Any other person sees the entire TAX\_ID as masked, for example, XXX-XX-XXXX.
+    - Human Resources can see the unmasked TAX\_ID of the employees.
+    - Employees can see only their own unmasked TAX\_ID.
+    - Managers see a masked version of TAX\_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).
+    - Any other person sees the entire TAX\_ID as masked, for example, XXX-XX-XXXX.
 
 To implement this column mask, run the SQL statement that is shown in Example 3-9.
 
@@ -356,11 +356,12 @@ Figure 3-11 Selecting the EMPLOYEES table from System i Navigator
 <!-- image -->
 
 2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.
-3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
 
 Figure 4-68 Visual Explain with RCAC enabled
 
 <!-- image -->
+
+3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
 
 Figure 4-69 Index advice with no RCAC
 

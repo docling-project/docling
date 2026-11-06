@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import pytest
 from docling_core.types.doc.base import BoundingBox, CoordOrigin
 from docling_core.types.doc.document import DoclingDocument, ListItem, ProvenanceItem
 from docling_core.types.doc.labels import DocItemLabel
@@ -8,6 +9,44 @@ from docling_core.types.doc.labels import DocItemLabel
 from docling.models.postprocessing.list_marker_processor import (
     ListItemMarkerProcessor,
 )
+
+
+@pytest.mark.parametrize("separator", [" ", "\t"])
+def test_word_circle_marker_is_removed_from_list_items(separator: str) -> None:
+    doc = DoclingDocument(name="Word circle bullets")
+    group = doc.add_list_group(name="list")
+    item = doc.add_list_item(
+        text=f"o{separator}Nested item\ncontinued on another line", parent=group
+    )
+
+    ListItemMarkerProcessor().process_document(doc)
+
+    assert item.marker == "o"
+    assert item.text == "Nested item\ncontinued on another line"
+    assert item.orig == f"o{separator}Nested item\ncontinued on another line"
+    assert item.enumerated is False
+
+
+def test_letter_o_in_prose_is_not_a_list_marker() -> None:
+    doc = DoclingDocument(name="Prose")
+    item = doc.add_text(label=DocItemLabel.TEXT, text="o rings provide a seal")
+
+    processed = ListItemMarkerProcessor().process_text_item(item)
+
+    assert not isinstance(processed, ListItem)
+    assert processed.text == "o rings provide a seal"
+
+
+@pytest.mark.parametrize("text", ["other item", "o-ring seal", "O Item", "0 Item"])
+def test_words_and_similar_characters_are_not_circle_markers(text: str) -> None:
+    doc = DoclingDocument(name="Not circle bullets")
+    group = doc.add_list_group(name="list")
+    item = doc.add_list_item(text=text, parent=group)
+
+    ListItemMarkerProcessor().process_document(doc)
+
+    assert item.marker == ""
+    assert item.text == text
 
 
 # Example usage and testing
