@@ -1444,6 +1444,13 @@ def test_format_excel_value_matches_excel_display() -> None:
         (0, '"$"0;("$"0);"-"', "-"),
         (0, '"$"0;("$"0);', ""),
         (12.5, '0.00"$"', "12.50$"),
+        # Built-in number formats 1-4 and 37-40 have no currency or percent sign.
+        (2.5, "0", "3"),
+        (12.5, "0.00", "12.50"),
+        (1234567.891, "#,##0", "1,234,568"),
+        (1234.5, "#,##0.00", "1,234.50"),
+        (-1234.5, "#,##0_);[Red](#,##0)", "(1,235)"),
+        (-1234.5, "#,##0.00_);(#,##0.00)", "(1,234.50)"),
         # Unsupported formats retain the value instead of dropping format semantics.
         (timedelta(days=1, hours=2, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
         (datetime(2025, 2, 1), "[$-409]mmmm d, yyyy", "2025-02-01 00:00:00"),
@@ -1471,6 +1478,8 @@ def test_xlsx_number_formats_survive_document_conversion(tmp_path: Path) -> None
         ("Negative", -5, '"$"#,##0.00_);\\("$"#,##0.00\\)', "($5.00)"),
         ("Percent", 0.125, "0%", "13%"),
         ("Currency", 12.5, "[$$-409]#,##0", "$13"),
+        ("Thousands", 1234567.891, "#,##0", "1,234,568"),
+        ("Fixed decimals", 12.5, "0.00", "12.50"),
         ("Duration", timedelta(hours=26, minutes=7), "[h]:mm:ss", "1 day, 2:07:00"),
     ]
     sheet.append(["Format", "Value"])
