@@ -666,6 +666,15 @@ The member holds a short ASCII media type such as
 read in full.
 """
 
+_TAR_MIME = "application/x-tar"
+"""The MIME type ``filetype`` reports for a tar archive.
+
+The detection rests on the six bytes ``ustar`` at offset 257, which is a field
+of the tar header and carries no checksum, so plain text that happens to hold
+the word there is reported as an archive. A tar guess is therefore confirmed
+before it is accepted, see ``_DocumentConversionInput._resolve_tar_mime``.
+"""
+
 _ZIP_SUFFIX_MIMETYPES = {
     ".xlsx": _OFFICE_OPEN_XML_ROOT + ".spreadsheetml.sheet",
     ".docx": _OFFICE_OPEN_XML_ROOT + ".wordprocessingml.document",
@@ -971,6 +980,9 @@ class _DocumentConversionInput(BaseModel):
                     "application/octet-stream",
                     "application/xml",
                     "application/xhtml+xml",
+                    # A tar guess is confirmed against the header, so its
+                    # content is needed here as well.
+                    _TAR_MIME,
                 }
             )
             if needs_content_sniff:
@@ -1021,6 +1033,7 @@ class _DocumentConversionInput(BaseModel):
                         mime = office_mime
 
         mime = _DocumentConversionInput._resolve_ole2_mime(mime, obj_ext)
+        mime = _DocumentConversionInput._resolve_tar_mime(mime, obj_ext, content)
 
         if mime is not None and mime.lower() == "application/gzip":
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
@@ -1046,6 +1059,46 @@ class _DocumentConversionInput(BaseModel):
                 )
         else:
             return None
+
+    @staticmethod
+    def _resolve_tar_mime(
+        mime: Optional[str], ext: Optional[str], content: bytes
+    ) -> Optional[str]:
+        """Accept a tar verdict only when the header confirms it.
+
+        ``filetype`` reports a tar archive from the six bytes ``ustar`` at
+        offset 257 alone, so a text file that carries the word at that offset --
+        a German ``Neustart`` in a Markdown note is enough -- is reported as
+        ``application/x-tar``. Tar is not an input format, so such a document
+        reaches the MIME-to-format lookup without a match and is rejected as
+        unreadable, however clear its extension is.
+
+        A rejected guess falls back to the extension, and to the content probes
+        when the extension names no format, exactly as if ``filetype`` had
+        reported nothing for the document.
+        """
+        if mime is None or mime.lower() != _TAR_MIME:
+            return mime
+        if _DocumentConversionInput._is_tar(content):
+            return mime
+        return _DocumentConversionInput._mime_from_extension((ext or "").lower())
+
+    @staticmethod
+    def _is_tar(content: bytes) -> bool:
+        """Whether ``content`` starts a tar archive that ``tarfile`` can read.
+
+        Opening the archive parses the first header block, checksum included,
+        which is what ``filetype`` does not do. ``content`` is the head of the
+        document, so this reads no more than a header and never the payload.
+        """
+        if len(content) < tarfile.BLOCKSIZE:
+            return False
+        try:
+            with tarfile.open(fileobj=BytesIO(content), mode="r:") as archive:
+                archive.next()
+        except (tarfile.TarError, EOFError):
+            return False
+        return True
 
     @staticmethod
     def _resolve_ole2_mime(mime: Optional[str], ext: Optional[str]) -> Optional[str]:
