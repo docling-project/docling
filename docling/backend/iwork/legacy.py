@@ -37,6 +37,9 @@ from docling.backend.iwork.content import (
     Run,
     build_formatting,
     clean,
+    format_bool,
+    format_date,
+    format_number,
     trim,
 )
 from docling.exceptions import DocumentLoadError
@@ -214,6 +217,34 @@ SFA_ATTR_ID = f"{{{SFA_NAMESPACE}}}ID"
 SFA_ATTR_IDREF = f"{{{SFA_NAMESPACE}}}IDREF"
 """The identifier one iWork '09 element refers to another by."""
 
+TEXT_CELL = f"{{{SF_NAMESPACE}}}t"
+NUMBER_CELL = f"{{{SF_NAMESPACE}}}n"
+DATE_CELL = f"{{{SF_NAMESPACE}}}d"
+BOOL_CELL = f"{{{SF_NAMESPACE}}}b"
+CHECKBOX_CELL = f"{{{SF_NAMESPACE}}}cb"
+POPUP_CELL = f"{{{SF_NAMESPACE}}}pm"
+FORMULA_CELL = f"{{{SF_NAMESPACE}}}f"
+SPANNED_CELL = f"{{{SF_NAMESPACE}}}s"
+"""The cell elements a datasource is built from.
+
+Anything else there — ``sf:g`` for an empty cell — holds no value of its own and
+only takes up its place in the row.
+"""
+
+SF_ATTR_VALUE = f"{{{SF_NAMESPACE}}}v"
+SF_ATTR_CELL_DATE = f"{{{SF_NAMESPACE}}}cell-date"
+"""The attributes a number, a checkbox and a date cell keep their value in."""
+
+SF_RESULT = f"{{{SF_NAMESPACE}}}r"
+RESULT_NUMBER = f"{{{SF_NAMESPACE}}}rn"
+RESULT_TEXT = f"{{{SF_NAMESPACE}}}rt"
+RESULT_DATE = f"{{{SF_NAMESPACE}}}rd"
+RESULT_BOOL = f"{{{SF_NAMESPACE}}}rb"
+"""The cached results a formula cell keeps beside its expression."""
+
+SF_PROXIED_CELL = f"{{{SF_NAMESPACE}}}proxied-cell-ref"
+"""The reference a pop-up menu cell makes to the choice that is selected."""
+
 
 def parse_index(
     archive: zipfile.ZipFile,
@@ -332,6 +363,76 @@ def legacy_cell_text(cell: Element) -> str:
     if text is None:
         return ""
     return clean(text.get(SFA_ATTR_STRING) or "".join(text.itertext())).strip()
+
+
+def legacy_cell_value(cell: Element) -> str | None:
+    """Render one cell, or None when it holds nothing readable."""
+    tag = cell.tag
+    if tag == TEXT_CELL:
+        return text_value(cell)
+    if tag in (NUMBER_CELL, CHECKBOX_CELL, BOOL_CELL):
+        value = float_attr(cell, SF_ATTR_VALUE)
+        if value is None:
+            return None
+        return format_number(value) if tag == NUMBER_CELL else format_bool(value)
+    if tag == DATE_CELL:
+        seconds = float_attr(cell, SF_ATTR_CELL_DATE)
+        return format_date(seconds) if seconds is not None else None
+    if tag == POPUP_CELL:
+        return popup_text(cell)
+    if tag == FORMULA_CELL:
+        return formula_text(cell)
+    # sf:g is an empty cell; it only holds the place its column takes up.
+    return None
+
+
+def text_value(cell: Element) -> str | None:
+    """Read a text cell, whose string is an attribute or an inline run."""
+    content = cell.find(SF_CELL_TEXT)
+    if content is None:
+        return None
+    text = content.get(SFA_ATTR_STRING)
+    if text is None:
+        text = "".join(content.itertext())
+    return text.strip() or None
+
+
+def popup_text(cell: Element) -> str | None:
+    """Read a pop-up menu cell, which points at whichever choice is selected."""
+    reference = cell.find(SF_PROXIED_CELL)
+    if reference is None:
+        return None
+    chosen = reference.get(SFA_ATTR_IDREF)
+    if chosen is None:
+        return None
+    for choice in cell.iter():
+        if choice.get(SFA_ATTR_ID) == chosen:
+            return legacy_cell_value(choice)
+    return None
+
+
+def formula_text(cell: Element) -> str | None:
+    """Read a formula cell's cached result rather than its expression.
+
+    Docling records what the document shows, and what a formula cell shows is the
+    value iWork last computed for it, which it caches beside the formula.
+    """
+    result = cell.find(SF_RESULT)
+    if result is None:
+        return None
+    for value in result:
+        if value.tag == RESULT_NUMBER:
+            number = float_attr(value, SF_ATTR_VALUE)
+            return format_number(number) if number is not None else None
+        if value.tag == RESULT_TEXT:
+            return text_value(value)
+        if value.tag == RESULT_DATE:
+            seconds = float_attr(value, SF_ATTR_CELL_DATE)
+            return format_date(seconds) if seconds is not None else None
+        if value.tag == RESULT_BOOL:
+            flag = float_attr(value, SF_ATTR_VALUE)
+            return format_bool(flag) if flag is not None else None
+    return None
 
 
 def legacy_picture(media: Element, archive: zipfile.ZipFile) -> Picture | None:

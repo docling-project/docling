@@ -26,19 +26,16 @@ from docling.backend.iwork.legacy import (
     SF_ATTR_NAME,
     SF_ATTR_NUMCOLS,
     SF_ATTR_NUMROWS,
-    SF_CELL_TEXT,
     SF_DATASOURCE,
     SF_GRID,
     SF_MEDIA_ELEMENTS,
     SF_NAMESPACE,
     SF_PARAGRAPH,
     SF_TABULAR_MODEL,
-    SFA_ATTR_ID,
-    SFA_ATTR_IDREF,
-    SFA_ATTR_STRING,
     SFA_NAMESPACE,
-    float_attr,
+    SPANNED_CELL,
     int_attr,
+    legacy_cell_value,
     legacy_geometry,
     legacy_picture,
     parse_index,
@@ -51,9 +48,6 @@ from docling.backend.iwork.numbers_content import (
     PlacedPicture,
     Sheet,
     Table,
-    format_bool,
-    format_date,
-    format_number,
     sheet_order,
 )
 
@@ -73,8 +67,6 @@ SF_ROWS = f"{{{SF_NAMESPACE}}}rows"
 SF_GRID_ROW = f"{{{SF_NAMESPACE}}}grid-row"
 SF_COLUMNS = f"{{{SF_NAMESPACE}}}columns"
 SF_GRID_COLUMN = f"{{{SF_NAMESPACE}}}grid-column"
-SF_RESULT = f"{{{SF_NAMESPACE}}}r"
-SF_PROXIED_CELL = f"{{{SF_NAMESPACE}}}proxied-cell-ref"
 SF_CHART_INFO = f"{{{SF_NAMESPACE}}}chart-info"
 SF_CHART_MODEL = f"{{{SF_NAMESPACE}}}formula-chart-model"
 SF_CHART_NAME = f"{{{SF_NAMESPACE}}}chart-name"
@@ -95,8 +87,6 @@ Renditions that an image keeps below it are not read as pictures of their own.
 
 SF_ATTR_HEADER_COLS = f"{{{SF_NAMESPACE}}}num-header-columns"
 SF_ATTR_CELL_COUNT = f"{{{SF_NAMESPACE}}}nc"
-SF_ATTR_VALUE = f"{{{SF_NAMESPACE}}}v"
-SF_ATTR_CELL_DATE = f"{{{SF_NAMESPACE}}}cell-date"
 SF_ATTR_COL_SPAN = f"{{{SF_NAMESPACE}}}col-span"
 SF_ATTR_CHART_TYPE = f"{{{SF_NAMESPACE}}}chart-type"
 SF_ATTR_CHART_DIRECTION = f"{{{SF_NAMESPACE}}}chart-direction"
@@ -111,26 +101,6 @@ and is drawn with a wedge per row in the thumbnail Numbers saved beside it; the
 """
 
 SFA_ATTR_TEXT = f"{{{SFA_NAMESPACE}}}string"
-
-TEXT_CELL = f"{{{SF_NAMESPACE}}}t"
-NUMBER_CELL = f"{{{SF_NAMESPACE}}}n"
-DATE_CELL = f"{{{SF_NAMESPACE}}}d"
-BOOL_CELL = f"{{{SF_NAMESPACE}}}b"
-CHECKBOX_CELL = f"{{{SF_NAMESPACE}}}cb"
-POPUP_CELL = f"{{{SF_NAMESPACE}}}pm"
-FORMULA_CELL = f"{{{SF_NAMESPACE}}}f"
-SPANNED_CELL = f"{{{SF_NAMESPACE}}}s"
-"""The cell elements a datasource is built from.
-
-Anything else there — ``sf:g`` for an empty cell — holds no value of its own and
-only takes up its place in the row.
-"""
-
-RESULT_NUMBER = f"{{{SF_NAMESPACE}}}rn"
-RESULT_TEXT = f"{{{SF_NAMESPACE}}}rt"
-RESULT_DATE = f"{{{SF_NAMESPACE}}}rd"
-RESULT_BOOL = f"{{{SF_NAMESPACE}}}rb"
-"""The cached results a formula cell keeps beside its expression."""
 
 CHART_SHARE_SUFFIX = ".chrtshr"
 """Extension of the member holding one chart's cached data.
@@ -356,7 +326,7 @@ def place_row(
             for spanned in range(column, column + col_span):
                 quotas[spanned] -= 1
 
-        text = cell_text(entry)
+        text = legacy_cell_value(entry)
         if text:
             cells.append(Cell(row=row_index, col=column, text=text, col_span=col_span))
         column += col_span
@@ -390,76 +360,6 @@ def column_quotas(grid: Element, num_cols: int, entry_count: int) -> list[int] |
     if len(quotas) != num_cols or sum(quotas) > entry_count:
         return None
     return quotas
-
-
-def cell_text(cell: Element) -> str | None:
-    """Render one cell, or None when it holds nothing readable."""
-    tag = cell.tag
-    if tag == TEXT_CELL:
-        return text_value(cell)
-    if tag in (NUMBER_CELL, CHECKBOX_CELL, BOOL_CELL):
-        value = float_attr(cell, SF_ATTR_VALUE)
-        if value is None:
-            return None
-        return format_number(value) if tag == NUMBER_CELL else format_bool(value)
-    if tag == DATE_CELL:
-        seconds = float_attr(cell, SF_ATTR_CELL_DATE)
-        return format_date(seconds) if seconds is not None else None
-    if tag == POPUP_CELL:
-        return popup_text(cell)
-    if tag == FORMULA_CELL:
-        return formula_text(cell)
-    # sf:g is an empty cell; it only holds the place its column takes up.
-    return None
-
-
-def text_value(cell: Element) -> str | None:
-    """Read a text cell, whose string is an attribute or an inline run."""
-    content = cell.find(SF_CELL_TEXT)
-    if content is None:
-        return None
-    text = content.get(SFA_ATTR_STRING)
-    if text is None:
-        text = "".join(content.itertext())
-    return text.strip() or None
-
-
-def popup_text(cell: Element) -> str | None:
-    """Read a pop-up menu cell, which points at whichever choice is selected."""
-    reference = cell.find(SF_PROXIED_CELL)
-    if reference is None:
-        return None
-    chosen = reference.get(SFA_ATTR_IDREF)
-    if chosen is None:
-        return None
-    for choice in cell.iter():
-        if choice.get(SFA_ATTR_ID) == chosen:
-            return cell_text(choice)
-    return None
-
-
-def formula_text(cell: Element) -> str | None:
-    """Read a formula cell's cached result rather than its expression.
-
-    Docling records what the spreadsheet shows, and what a formula cell shows is
-    the value Numbers last computed for it, which it caches beside the formula.
-    """
-    result = cell.find(SF_RESULT)
-    if result is None:
-        return None
-    for value in result:
-        if value.tag == RESULT_NUMBER:
-            number = float_attr(value, SF_ATTR_VALUE)
-            return format_number(number) if number is not None else None
-        if value.tag == RESULT_TEXT:
-            return text_value(value)
-        if value.tag == RESULT_DATE:
-            seconds = float_attr(value, SF_ATTR_CELL_DATE)
-            return format_date(seconds) if seconds is not None else None
-        if value.tag == RESULT_BOOL:
-            flag = float_attr(value, SF_ATTR_VALUE)
-            return format_bool(flag) if flag is not None else None
-    return None
 
 
 def read_chart(info: Element, shares: dict[str, dict]) -> PlacedChart | None:
