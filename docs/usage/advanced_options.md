@@ -45,6 +45,16 @@ docling-tools models download whisper_distil_small_en --output-dir /models
 docling --asr-model whisper_distil_small_en_native --artifacts-path /models audio.wav
 ```
 
+The WhisperS2T presets use their `--asr-model` names. Each one downloads its
+CTranslate2 model in `float16` (for CUDA) and `float32` (for CPU), plus the
+small word-alignment model that word timestamps use if the preset needs one,
+into the output directory in the Hugging Face cache layout:
+
+```sh
+docling-tools models download whisper_small_en_s2t --output-dir /models
+docling --asr-model whisper_small_en_s2t --artifacts-path /models audio.wav
+```
+
 `docling-tools models download --all` does not include ASR models. Add `--asr`
 to prefetch all native Whisper model sizes, English-only variants, and
 Distil-Whisper presets:
@@ -54,7 +64,8 @@ docling-tools models download --all --asr --output-dir /models
 ```
 
 This requires the `asr` extra and downloads OpenAI-format checkpoints. It does
-not prefetch Transformers-format, MLX, or WhisperS2T models.
+not prefetch Transformers-format, MLX, or WhisperS2T models. Prefetch a
+WhisperS2T preset by its name, as shown above.
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
 
@@ -173,7 +184,7 @@ export.
 ### Image resolution and scale
 
 Page coordinates use 72 points per inch. For image inputs, embedded DPI metadata
-determines the physical page size; missing DPI and `(1, 1)` DPI are treated as 72 DPI.
+determines the physical page size; missing DPI, `(1, 1)` DPI and `(0, 0)` DPI are treated as 72 DPI.
 Rendering at scale `n` produces `n` pixels per document point.
 
 ### Control PDF table extraction options
@@ -333,7 +344,6 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
-pipeline_options.generate_parsed_pages = True  # required by the font-style signal
 
 doc_converter = DocumentConverter(
     format_options={
@@ -343,6 +353,37 @@ doc_converter = DocumentConverter(
 ```
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
+
+### Recover superscript and subscript in PDFs
+
+A PDF draws superscript and subscript text as smaller glyphs moved off the baseline, so by
+default "E = mc²" comes out as "E = mc 2". Docling can mark these runs with
+`formatting.script`, which the HTML export renders as `<sup>` and `<sub>`:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    ScriptPositionOptions,
+)
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.script_position_options = ScriptPositionOptions(enabled=True)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+A text item holding superscript or subscript text keeps its place, and its text moves into
+an inline group of runs that the item holds.
+
+The runs keep a space beside a script only where the PDF shows a gap, so that "On the 21 st of
+June" becomes `21<sup>st</sup> of June`. Markdown and plain text have no script marks, so they
+give "21st of June".
 
 ### PowerPoint and Excel charts
 
@@ -640,6 +681,24 @@ converter = DocumentConverter()
 result = converter.convert(source, max_num_pages=100, max_file_size=20971520)
 ```
 
+## Convert ZIP archives
+
+Docling expands generic ZIP archives into separate documents. Use
+`convert_all()` to convert every supported archive member:
+
+```python
+from docling.document_converter import DocumentConverter
+
+converter = DocumentConverter()
+results = list(converter.convert_all(["documents.zip"]))
+```
+
+`convert()` returns one result. It raises `ConversionError` when its source
+contains multiple documents. Use `convert_all()` for a ZIP archive with more
+than one member. By default, `convert_all()` raises on the first failed member.
+Pass `raises_on_error=False` to receive failure results and continue with later
+members. The configured file-size limit applies to each member and to the total
+size of successfully read members.
 For image inputs, the page count is checked against `max_num_pages` before any
 page is decoded, and each page (for example each frame of a multi-page TIFF) is
 decoded only when it is processed. The `max_image_pixels` backend option limits

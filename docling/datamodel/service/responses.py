@@ -119,6 +119,14 @@ class ZipArchiveResult(BaseModel):
 
     kind: Literal["ZipArchiveResult"] = "ZipArchiveResult"
     content: bytes
+    filename: Optional[str] = Field(
+        default=None,
+        description=(
+            "Suggested download name for the archive, e.g. derived from the "
+            "source document when the task had a single input. None when no "
+            "specific name applies."
+        ),
+    )
 
 
 class RemoteTargetResult(BaseModel):
@@ -137,6 +145,7 @@ class ArtifactRef(BaseModel):
         "doclang",
         "dclx",
         "resource_bundle",
+        "chunks",
     ]
     mime_type: str
     uri: AnyUrl

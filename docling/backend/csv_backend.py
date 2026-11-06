@@ -3,6 +3,7 @@
 
 import csv
 import logging
+import re
 import warnings
 from collections.abc import Callable
 from io import BytesIO, StringIO
@@ -24,6 +25,8 @@ _log = logging.getLogger(__name__)
 # cannot be sniffed.
 _SNIFF_SAMPLE_SIZE: Final[int] = 4096
 _DELIMITERS: Final[str] = ",;\t|:"
+# Excel reads a first line `sep=<char>` as the delimiter and does not show it.
+_SEP_LINE: Final[re.Pattern[str]] = re.compile(r"sep=(.)")
 
 
 def _sniff_dialect(head: str, read_sample: Callable[[], str]) -> type[csv.Dialect]:
@@ -176,6 +179,11 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         head = self.content.readline()
         while head in ("\n", "\r\n", "\r"):
             head = self.content.readline()
+        data_start = 0
+        sep_line = _SEP_LINE.fullmatch(head.rstrip("\r\n"))
+        if sep_line is not None:
+            data_start = self.content.tell()
+            head = self.content.readline()
         sample_start = self.content.tell() - len(head)
 
         def read_sample() -> str:
@@ -183,7 +191,16 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             return self.content.read(_SNIFF_SAMPLE_SIZE)
 
         try:
-            dialect: type[csv.Dialect] = _sniff_dialect(head, read_sample)
+            dialect: type[csv.Dialect]
+            if sep_line is not None:
+                sep = sep_line.group(1)
+
+                class _SepDialect(csv.excel):
+                    delimiter = sep
+
+                dialect = _SepDialect
+            else:
+                dialect = _sniff_dialect(head, read_sample)
             if dialect.delimiter not in _DELIMITERS:
                 raise RuntimeError(
                     f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
@@ -197,7 +214,7 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
             )
             dialect = csv.excel
 
-        self.content.seek(0)
+        self.content.seek(data_start)
         try:
             result = csv.reader(
                 self.content,

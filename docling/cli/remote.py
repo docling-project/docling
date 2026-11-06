@@ -208,6 +208,14 @@ def convert_remote(
             help="If enabled, the service extracts table structure.",
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help="If enabled, the service infers section-header levels for PDF and "
+            "image inputs.",
+        ),
+    ] = False,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(help="Pipeline the service uses to process PDF or image files."),
@@ -350,6 +358,7 @@ def convert_remote(
         "force_ocr": force_ocr,
         "ocr_lang": _canonicalize_ocr_lang(ocr_lang),
         "do_table_structure": tables,
+        "do_pdf_heading_hierarchy": heading_hierarchy,
         "pipeline": pipeline,
         "do_code_enrichment": enrich_code,
         "do_formula_enrichment": enrich_formula,

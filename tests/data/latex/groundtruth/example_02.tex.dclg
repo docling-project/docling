@@ -1,20 +1,15 @@
-<doclang version="0.8">
+<doclang version="0.9">
   <text>
     <layer value="furniture"/>
     \documentclass{article}
   </text>
   <heading level="2">Math Examples</heading>
-  <text>
-    <content>Inline math: </content>
-    <formula>E = mc^2</formula>
-  </text>
+  <text>Inline math: <formula>E = mc^2</formula></text>
   <text>Display math:</text>
   <formula>\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}</formula>
-  <formula>
-    <content>\begin{equation}
+  <formula><content>\begin{equation}
 \nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}
-\end{equation}</content>
-  </formula>
+\end{equation}</content></formula>
   <heading level="2">Table Example</heading>
   <table>
     <caption>Sample table</caption>

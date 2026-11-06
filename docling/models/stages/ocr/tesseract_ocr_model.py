@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from pathlib import Path
 from typing import Iterable, Optional, Type
 
@@ -25,13 +26,13 @@ from docling.models.stages.ocr.tesseract_utils import (
     language_to_tesseract_code,
     osd_script_to_tesseract_code,
     parse_tesseract_orientation,
-    tesseract_box_to_bounding_rectangle,
     tesseract_vocabulary,
 )
 from docling.utils.ocr_language import (
     OcrLanguage,
     OcrLanguageSupport,
 )
+from docling.utils.orientation import ocr_box_to_bounding_rectangle
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -61,6 +62,9 @@ class TesseractOcrModel(BaseOcrModel):
         self.scale = self.options.scale
         self._reader = None
         self._script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
+        # Conversions that run at the same time share this model. A tesserocr
+        # reader is not thread-safe, so only one page uses the readers at a time.
+        self._readers_lock = threading.Lock()
         self._tesseract_vocabulary: list[str] = []
         self._native_codes: list[str] = []
 
@@ -174,7 +178,7 @@ class TesseractOcrModel(BaseOcrModel):
             if not page._backend.is_valid():
                 yield page
             else:
-                with TimeRecorder(conv_res, "ocr"):
+                with self._readers_lock, TimeRecorder(conv_res, "ocr"):
                     assert self._reader is not None
                     assert self._osd_reader is not None
                     assert self._tesseract_vocabulary is not None
@@ -269,7 +273,7 @@ class TesseractOcrModel(BaseOcrModel):
                                 b=bottom,
                                 coord_origin=CoordOrigin.TOPLEFT,
                             )
-                            rect = tesseract_box_to_bounding_rectangle(
+                            rect = ocr_box_to_bounding_rectangle(
                                 bbox,
                                 original_offset=ocr_rect,
                                 scale=self.scale,

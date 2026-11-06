@@ -14,6 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal, cast
 
+import yaml
 from docling_core.types.doc import (
     CodeItem,
     DocItemLabel,
@@ -71,7 +72,11 @@ try:  # pragma: no cover - import-time guard
             if super().break_paragraph(source, lazy):
                 return True
             if "Table" in source.parser.block_elements:
+                # Paragraph.parse consumes the line through source.match, so the
+                # probe must restore it or a lazy continuation line never advances.
+                prev_match = source.match
                 matched = source.parser.block_elements["Table"].match(source)
+                source.match = prev_match
                 if matched:
                     source.reset()
                     return True
@@ -162,6 +167,26 @@ def _only_plain_line_breaks(children: list) -> bool:
         or isinstance(c, marko.inline.LineBreak)
         for c in children
     )
+
+
+# As in Pandoc, an opening `---` followed by a blank line is a thematic break,
+# not frontmatter.
+_FRONTMATTER_PATTERN = re.compile(
+    r"\A---[ \t]*\r?\n(?![ \t]*\r?\n)(.*?)^(?:---|\.\.\.)[ \t]*(?:\r?\n|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def _strip_frontmatter(text: str) -> str:
+    """Drop a leading YAML frontmatter block (a ``---`` fenced YAML mapping)."""
+    match = _FRONTMATTER_PATTERN.match(text)
+    if match is None:
+        return text
+    try:
+        meta = yaml.safe_load(match.group(1))
+    except yaml.YAMLError:
+        return text
+    return text[match.end() :] if isinstance(meta, dict) else text
 
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
@@ -276,6 +301,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # output.
         try:
             md_content = decode_text(self.path_or_stream, options.encoding)
+            md_content = _strip_frontmatter(md_content)
             # remove invalid sequences
             # very long sequences of underscores will lead to unnecessary long processing times.
             # In any proper Markdown files, underscores have to be escaped,
@@ -544,7 +570,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             raw = element.children if isinstance(element.children, str) else ""
-            text = unescape(raw.strip())
+            # Keep the raw fragment: its edge whitespace is the run boundary. Marko has
+            # already trimmed the cell edges, and whitespace-only runs are significant.
+            text = unescape(raw)
             if text:
                 item = doc.add_text(
                     label=DocItemLabel.TEXT,
@@ -881,13 +909,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             original_text = (
                 element.children if isinstance(element.children, str) else ""
             )
-            snippet_text = unescape(original_text.strip())
-            if snippet_text:
+            # Keep the raw fragment: whitespace at a `RawText` edge is the boundary between
+            # inline runs (`Foo *emph* bar` -> `"Foo "`, `"emph"`, `" bar"`) and the serializers
+            # concatenate faithfully. Marko has already trimmed the block edges for us.
+            snippet_text = unescape(original_text)
+            stripped_text = unescape(original_text.strip())
+            # A whitespace-only run is kept between runs, but never becomes a heading/list item.
+            if snippet_text and (stripped_text or not creation_stack):
                 if creation_stack:
+                    # Headings and list items become one item's own text, not a run: trim.
                     parent_item = self._flush_creation_stack(
                         doc=doc,
                         creation_stack=creation_stack,
-                        snippet_text=snippet_text,
+                        snippet_text=stripped_text,
                         parent_item=parent_item,
                         list_ordered_flag_by_ref=list_ordered_flag_by_ref,
                         list_start_by_ref=list_start_by_ref,
@@ -923,7 +957,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         doc.texts[-1].text += " " + snippet_text
                         doc.texts[-1].orig += " " + snippet_text
                     else:
-                        prefix = "\n" if self._pending_hard_line_break else ""
+                        # The break still separates the runs when they cannot merge.
+                        prefix = (
+                            "\n"
+                            if self._pending_hard_line_break
+                            else " "
+                            if self._pending_soft_line_break
+                            else ""
+                        )
                         doc.add_text(
                             label=DocItemLabel.TEXT,
                             parent=parent_item,
@@ -956,6 +997,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._pending_soft_line_break = False
                 # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
                 return
+            if self._pending_hard_line_break or self._pending_soft_line_break:
+                # The break separator never goes inside the code run: give it a plain run.
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=parent_item,
+                    text="\n" if self._pending_hard_line_break else " ",
+                )
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,
@@ -1128,7 +1176,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         base_path = (
             str(md_options.source_uri) if md_options.source_uri is not None else None
         )
-        return self._get_image_loader().load_image_ref(dest, base_path)
+        try:
+            return self._get_image_loader().load_image_ref(dest, base_path)
+        except ValueError as exc:
+            # Keep the document usable when a relative image escapes its local
+            # source directory. The image is omitted, while the loader still
+            # enforces the confinement check.
+            warnings.warn(f"Could not process an image from {dest}: {exc}")
+            return None
 
     def is_valid(self) -> bool:
         return self.valid

@@ -3,6 +3,7 @@
 
 import logging
 from enum import Enum
+from importlib.util import find_spec
 
 from pydantic import (
     AnyUrl,
@@ -27,7 +28,7 @@ from docling.datamodel.pipeline_options_asr_model import (
 _log = logging.getLogger(__name__)
 
 
-def _detect_hardware_and_libraries():
+def _detect_hardware_and_libraries() -> tuple[bool, bool]:
     """
     Detect Apple Silicon MPS availability and whether mlx-whisper is installed.
 
@@ -44,13 +45,8 @@ def _detect_hardware_and_libraries():
     except ImportError:
         has_mps = False
 
-    # Check if mlx-whisper is available
-    try:
-        import mlx_whisper  # type: ignore
-
-        has_mlx_whisper = True
-    except ImportError:
-        has_mlx_whisper = False
+    # Importing mlx_whisper initializes Metal; only the ASR model should do that.
+    has_mlx_whisper = find_spec("mlx_whisper") is not None
 
     return has_mps, has_mlx_whisper
 
@@ -717,6 +713,43 @@ WHISPER_LARGE_V3_TURBO_S2T = InlineAsrWhisperS2TOptions(
     batch_size=6,
     beam_size=1,
 )
+
+_WHISPER_S2T_PRESETS: dict[str, InlineAsrWhisperS2TOptions] = {
+    preset.repo_id: preset
+    for preset in (
+        WHISPER_TINY_S2T,
+        WHISPER_TINY_EN_S2T,
+        WHISPER_BASE_S2T,
+        WHISPER_BASE_EN_S2T,
+        WHISPER_SMALL_S2T,
+        WHISPER_SMALL_EN_S2T,
+        WHISPER_DISTIL_SMALL_EN_S2T,
+        WHISPER_MEDIUM_S2T,
+        WHISPER_MEDIUM_EN_S2T,
+        WHISPER_DISTIL_MEDIUM_EN_S2T,
+        WHISPER_LARGE_V3_S2T,
+        WHISPER_DISTIL_LARGE_V3_S2T,
+        WHISPER_DISTIL_LARGE_V3_5_S2T,
+        WHISPER_LARGE_V3_TURBO_S2T,
+    )
+}
+
+_WHISPER_S2T_COMPUTE_TYPES = ("float32", "float16", "bfloat16")
+
+
+def _whisper_s2t_compute_type(torch_dtype: str | None, device: str) -> str:
+    if (
+        device == "cpu"
+        or torch_dtype is None
+        or torch_dtype not in _WHISPER_S2T_COMPUTE_TYPES
+    ):
+        return "float32"
+    return torch_dtype
+
+
+def _whisper_s2t_prefetch_name(model_name: str) -> str:
+    return "whisper_" + model_name.replace("-", "_").replace(".", "_") + "_s2t"
+
 
 # =============================================================================
 # Note on auto-selecting models
