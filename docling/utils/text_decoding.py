@@ -7,11 +7,16 @@ import codecs
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Final, Optional, Union
 
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# The UTF-8 codec that drops a leading byte-order mark. It decodes exactly as
+# ``utf-8`` when no mark is present, so it is the codec to use wherever UTF-8
+# content may or may not carry one.
+UTF8_BOM_ENCODING: Final[str] = "utf-8-sig"
 
 # A byte-order mark states the encoding, so it settles the question before
 # anything is guessed. UTF-32 is tested first because the UTF-32 LE mark starts
@@ -19,7 +24,7 @@ _log = logging.getLogger(__name__)
 _BOM_ENCODINGS: tuple[tuple[bytes, str], ...] = (
     (codecs.BOM_UTF32_LE, "utf-32"),
     (codecs.BOM_UTF32_BE, "utf-32"),
-    (codecs.BOM_UTF8, "utf-8-sig"),
+    (codecs.BOM_UTF8, UTF8_BOM_ENCODING),
     (codecs.BOM_UTF16_LE, "utf-16"),
     (codecs.BOM_UTF16_BE, "utf-16"),
 )
@@ -94,12 +99,19 @@ def _utf8_high_byte_coverage(raw: bytes) -> float:
 def _decode_bytes(raw: bytes, encoding: Optional[str] = None) -> str:
     if encoding is not None:
         try:
-            return raw.decode(encoding)
+            text = raw.decode(encoding)
         except (UnicodeDecodeError, LookupError) as error:
             raise DocumentLoadError(
                 f"Could not decode the document with the requested encoding "
                 f"{encoding!r}: {error}"
             ) from error
+        # A leading U+FEFF is a byte-order mark, never content, so it is
+        # dropped whatever codec was asked for: ``utf-8-sig`` and the
+        # auto-detecting UTF-16/32 codecs strip it on their own, while an
+        # explicit-endianness variant such as ``utf-16-le`` keeps it (see
+        # issue #4846). Codecs that are not Unicode never decode the mark to
+        # U+FEFF -- cp1252 yields "ï»¿" -- so only a real mark is dropped.
+        return text.removeprefix("\ufeff")
 
     for bom, bom_encoding in _BOM_ENCODINGS:
         if raw.startswith(bom):
@@ -148,9 +160,10 @@ def decode_text(
     """Read a plain-text document and decode it.
 
     With ``encoding`` set, the content is decoded with it and nothing is
-    guessed. Without it, a byte-order mark is honoured, then UTF-8 is tried,
-    then cp1252; input that is none of those raises ``DocumentLoadError``
-    rather than being re-decoded into mojibake.
+    guessed; a leading byte-order mark is dropped either way, whichever
+    Unicode codec was asked for. Without it, a byte-order mark is honoured,
+    then UTF-8 is tried, then cp1252; input that is none of those raises
+    ``DocumentLoadError`` rather than being re-decoded into mojibake.
 
     Line endings are translated as text-mode ``open()`` does, so a document
     converts the same way whether it arrives as a path or as a stream.

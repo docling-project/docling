@@ -4,7 +4,6 @@
 import logging
 import re
 import struct
-import sys
 import warnings
 import zipfile
 import zlib
@@ -993,10 +992,23 @@ def test_metafile_detection(image_bytes: bytes, expected: bool):
     assert _is_metafile(image_bytes) is expected
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 11),
-    reason="Pillow 12 stores the WMF handler on the module, not the image class",
-)
+def _clear_pillow_wmf_handler(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make Pillow behave as on a platform without a metafile renderer.
+
+    The plugin registers a GDI-backed handler on Windows only; on other
+    platforms the value is already None. Pillow < 13 stores the handler on the
+    module and Pillow >= 13 on ``WmfStubImageFile``. The lock resolves Pillow 12
+    on Python 3.10, so clear both locations; ``raising=False`` lets the patch
+    create the attribute that the installed version does not define.
+    """
+    from PIL import WmfImagePlugin
+
+    monkeypatch.setattr(WmfImagePlugin, "_handler", None, raising=False)
+    monkeypatch.setattr(
+        WmfImagePlugin.WmfStubImageFile, "_handler", None, raising=False
+    )
+
+
 def test_pptx_emf_picture_survives_without_pillow_metafile_support(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ):
@@ -1010,13 +1022,9 @@ def test_pptx_emf_picture_survives_without_pillow_metafile_support(
     patching get_libreoffice_cmd to return None reproduces a machine without
     LibreOffice, so the picture has to survive on structure alone.
     """
-    from PIL import WmfImagePlugin
-
     import docling.backend.mspowerpoint_backend as _pptx_backend
 
-    # The plugin registers a GDI-backed handler on Windows only. Pillow stores
-    # it on the image class; on other platforms the value is already None.
-    monkeypatch.setattr(WmfImagePlugin.WmfStubImageFile, "_handler", None)
+    _clear_pillow_wmf_handler(monkeypatch)
     # Patch get_docx_to_pdf_converter in the pptx backend's own namespace so
     # LibreOffice is reported as unavailable regardless of PATH, environment
     # variables, or hardcoded install paths on the test machine.
@@ -1074,10 +1082,6 @@ def test_pptx_undecodable_raster_picture_is_still_skipped(tmp_path: Path):
     assert "Quarterly results" in [t.text for t in doc.texts]
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 11),
-    reason="Pillow 12 stores the WMF handler on the module, not the image class",
-)
 def test_pptx_emf_picture_rasterized_via_libreoffice(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, libreoffice_available: bool
 ):
@@ -1092,9 +1096,7 @@ def test_pptx_emf_picture_rasterized_via_libreoffice(
     if not libreoffice_available:
         pytest.skip("LibreOffice is not installed — rasterization cannot be tested")
 
-    from PIL import WmfImagePlugin
-
-    monkeypatch.setattr(WmfImagePlugin.WmfStubImageFile, "_handler", None)
+    _clear_pillow_wmf_handler(monkeypatch)
 
     deck_path = _deck_with_picture(tmp_path, _emf_bytes(drawable=True), ".emf")
     doc = get_converter().convert(deck_path).document

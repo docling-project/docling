@@ -10,9 +10,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+SCRIPTS_DIR = Path(__file__).resolve().parents[1] / ".github/scripts"
+sys.path.insert(0, str(SCRIPTS_DIR))
 SPEC = importlib.util.spec_from_file_location(
-    "groundtruth_diff",
-    Path(__file__).resolve().parents[1] / ".github/scripts/groundtruth_diff.py",
+    "groundtruth_diff", SCRIPTS_DIR / "groundtruth_diff.py"
 )
 assert SPEC is not None and SPEC.loader is not None
 gt = importlib.util.module_from_spec(SPEC)
@@ -135,3 +136,25 @@ def test_render_lists_relevant_kinds_first() -> None:
     lines = gt.render_markdown(changes).splitlines()
     assert lines[2] == "| structure | 1 |"
     assert lines[5] == "- **structure** `f2.json`: reading order changed"
+
+
+def test_render_markdown_escapes_data_from_the_pr() -> None:
+    doc = make_doc()
+    changed = copy.deepcopy(doc)
+    changed["texts"][0]["label"] = "x\n\n**safe** @org/team ![i](http://evil/p.png)"
+    change = gt.summarize_file(
+        DOC_PATH,
+        json.dumps(doc).encode(),
+        json.dumps(changed).encode(),
+        status="modified",
+    )
+    path = "tests/data/groundtruth/a` @org/team `.md"
+    rendered = gt.render_markdown(
+        [change, gt.FileChange(path, gt.ChangeKind.ADDED)]
+    ).splitlines()
+    assert len(rendered) == 7
+    detail, added = rendered[5], rendered[6]
+    assert "**safe**" not in detail
+    assert "![i](" not in detail
+    assert "@org" not in detail
+    assert added == f"- **added** ``{path}``"

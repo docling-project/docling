@@ -331,10 +331,19 @@ def _png_header_data_uri(width: int, height: int) -> str:
     return "data:image/png;base64," + base64.b64encode(png).decode()
 
 
-def _png_data_uri(width: int, height: int) -> str:
+def _png_data_uri(width: int, height: int, dpi: tuple[int, int] | None = None) -> str:
     buffer = BytesIO()
-    Image.new("RGB", (width, height)).save(buffer, format="PNG")
+    Image.new("RGB", (width, height)).save(
+        buffer, format="PNG", **({} if dpi is None else {"dpi": dpi})
+    )
     return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
+
+def test_zero_dpi_image_defaults_to_72_dpi():
+    ref = ImageResourceLoader().create_image_ref(_png_data_uri(4, 4, dpi=(0, 0)), None)
+
+    assert ref is not None
+    assert ref.dpi == 72
 
 
 def test_image_over_pixel_limit_is_skipped():

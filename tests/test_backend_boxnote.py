@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import DocItemLabel
 
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -119,6 +120,33 @@ def _linked_paragraph(href) -> dict:
     }
 
 
+def test_list_item_text_keeps_boundary_before_rich_paragraph():
+    # The item text is one more run before its leading inline group (joined with "").
+    def run(text: str, mark: str | None = None) -> dict:
+        return {
+            "type": "text",
+            "text": text,
+            **({"marks": [{"type": mark}]} if mark else {}),
+        }
+
+    item = {
+        "type": "list_item",
+        "content": [
+            {"type": "paragraph", "content": [run("Intro")]},
+            {
+                "type": "paragraph",
+                "content": [run("more "), run("x", "strong"), run(" y")],
+            },
+        ],
+    }
+    payload = {
+        "doc": {"type": "doc", "content": [{"type": "bullet_list", "content": [item]}]}
+    }
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    assert doc.export_to_markdown() == "- Intro more **x** y"
+
+
 def test_safe_hyperlink_is_kept():
     doc = (
         get_converter()
@@ -170,6 +198,46 @@ def test_utf8_bom_does_not_fail_the_load(tmp_path):
         assert doc.export_to_markdown() == expected.export_to_markdown()
 
 
+def test_image_caption_is_parented_with_its_picture():
+    # An image inside a list item: its caption must be a child of the picture
+    # itself, not a sibling at the body top level.
+    payload = {
+        "doc": {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "bullet_list",
+                    "content": [
+                        {
+                            "type": "list_item",
+                            "content": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {"type": "text", "text": "Item with picture"}
+                                    ],
+                                },
+                                {
+                                    "type": "image",
+                                    "attrs": {"alt": "A chart of revenue"},
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    (picture,) = doc.pictures
+    (caption,) = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
+    assert picture.parent.cref != "#/body"
+    assert caption.parent == picture.get_ref()
+    assert caption.get_ref() in picture.captions
+
+
 def _table_cell(text: str, **attrs: int) -> dict:
     return {
         "type": "table_cell",
@@ -215,3 +283,54 @@ def test_table_oversized_spans_clamped_to_table_size():
         ["A", "B"],
         ["A", "C"],
     ]
+
+
+def test_empty_leading_paragraph_keeps_the_following_paragraph_in_order():
+    # The first block of a list item becomes its text only when it is a
+    # paragraph. An empty one must not let a later paragraph take that place,
+    # which moved the nested list behind it.
+    payload = {
+        "doc": {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "bullet_list",
+                    "content": [
+                        {
+                            "type": "list_item",
+                            "content": [
+                                {"type": "paragraph", "content": []},
+                                {
+                                    "type": "bullet_list",
+                                    "content": [
+                                        {
+                                            "type": "list_item",
+                                            "content": [
+                                                {
+                                                    "type": "paragraph",
+                                                    "content": [
+                                                        {
+                                                            "type": "text",
+                                                            "text": "Inner",
+                                                        }
+                                                    ],
+                                                }
+                                            ],
+                                        }
+                                    ],
+                                },
+                                {
+                                    "type": "paragraph",
+                                    "content": [{"type": "text", "text": "After"}],
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    assert [text.text for text in doc.texts if text.text] == ["Inner", "After"]

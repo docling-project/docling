@@ -22,6 +22,7 @@ from docling_core.types.doc import (
     GroupLabel,
     ListItem,
     PictureItem,
+    RichTableCell,
     TextItem,
 )
 from docling_core.types.doc.document import Script
@@ -208,21 +209,45 @@ def test_jats_plain_abstract_styling_is_preserved():
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    # Each styled span remains a separate inline run.
+    # Each styled span remains a separate inline run; runs keep their boundary whitespace.
     assert [_formatting_tuple(item) for item in groups[0]] == [
-        (DocItemLabel.TEXT, "We study", None),
-        (DocItemLabel.TEXT, "Homo sapiens", F_ITALIC),
-        (DocItemLabel.TEXT, ",", None),
-        (DocItemLabel.TEXT, "key", F_BOLD),
-        (DocItemLabel.TEXT, "results", F_BOLD_ITALIC),
+        (DocItemLabel.TEXT, "We study ", None),
+        (
+            DocItemLabel.TEXT,
+            "Homo sapiens",
+            F_ITALIC,
+        ),
+        (DocItemLabel.TEXT, ", ", None),
+        (
+            DocItemLabel.TEXT,
+            "key ",
+            F_BOLD,
+        ),
+        (
+            DocItemLabel.TEXT,
+            "results",
+            F_BOLD_ITALIC,
+        ),
         (DocItemLabel.TEXT, ", H", None),
         (DocItemLabel.TEXT, "2", F_SUB),
         (DocItemLabel.TEXT, "O at 10", None),
-        (DocItemLabel.TEXT, "3", F_SUPER),
-        (DocItemLabel.TEXT, "Pa,", None),
-        (DocItemLabel.TEXT, "u", F_UNDERLINE),
-        (DocItemLabel.TEXT, ",", None),
-        (DocItemLabel.TEXT, "old", F_STRIKE),
+        (
+            DocItemLabel.TEXT,
+            "3",
+            F_SUPER,
+        ),
+        (DocItemLabel.TEXT, " Pa, ", None),
+        (
+            DocItemLabel.TEXT,
+            "u",
+            F_UNDERLINE,
+        ),
+        (DocItemLabel.TEXT, ", ", None),
+        (
+            DocItemLabel.TEXT,
+            "old",
+            F_STRIKE,
+        ),
         (DocItemLabel.TEXT, ".", None),
     ]
 
@@ -247,14 +272,14 @@ def test_jats_abstract_styling_preserves_inline_runs():
         # (source paragraph, expected inline runs)
         (
             "conditions <italic>in vitro</italic>.",
-            [(T, "conditions", None), (T, "in vitro", F_ITALIC), (T, ".", None)],
+            [(T, "conditions ", None), (T, "in vitro", F_ITALIC), (T, ".", None)],
         ),
         (
             "cultures of <italic>Y. pestis</italic>, and <italic>E. coli</italic>.",
             [
-                (T, "cultures of", None),
+                (T, "cultures of ", None),
                 (T, "Y. pestis", F_ITALIC),
-                (T, ", and", None),
+                (T, ", and ", None),
                 (T, "E. coli", F_ITALIC),
                 (T, ".", None),
             ],
@@ -264,11 +289,11 @@ def test_jats_abstract_styling_preserves_inline_runs():
             [
                 (T, "CO", None),
                 (T, "2", F_SUB),
-                (T, "and (CO", None),
+                (T, " and (CO", None),
                 (T, "2", F_SUB),
                 (T, "e) at 10", None),
                 (T, "3", F_SUPER),
-                (T, "Pa", None),
+                (T, " Pa", None),
             ],
         ),
         (
@@ -295,7 +320,7 @@ def test_jats_abstract_styling_preserves_inline_runs():
         # as authored (no collapsing, no stripping of interior blanks).
         (
             "a  <italic>b\nc</italic>\n   d.",
-            [(T, "a", None), (T, "b c", F_ITALIC), (T, "d.", None)],
+            [(T, "a  ", None), (T, "b c", F_ITALIC), (T, " d.", None)],
         ),
     ]
     for paragraph, expected in cases:
@@ -316,9 +341,9 @@ def test_jats_inline_runs_drop_xml_indentation_but_keep_same_line_whitespace():
     ]
 
     expected = [
-        (DocItemLabel.TEXT, "Alpha  beta", None),
+        (DocItemLabel.TEXT, "Alpha  beta ", None),
         (DocItemLabel.TEXT, "Yersinia pestis", F_ITALIC),
-        (DocItemLabel.TEXT, "is critical  here.", None),
+        (DocItemLabel.TEXT, " is critical  here.", None),
     ]
     for doc in documents:
         groups = _inline_group_items(doc)
@@ -363,12 +388,20 @@ def test_jats_structured_abstract_styling_is_preserved():
     groups = _inline_group_items(doc)
     assert len(groups) == 2
     assert [_formatting_tuple(item) for item in groups[0]] == [
-        (DocItemLabel.TEXT, "Bg", F_ITALIC),
-        (DocItemLabel.TEXT, "text.", None),
+        (
+            DocItemLabel.TEXT,
+            "Bg",
+            F_ITALIC,
+        ),
+        (DocItemLabel.TEXT, " text.", None),
     ]
     assert [_formatting_tuple(item) for item in groups[1]] == [
-        (DocItemLabel.TEXT, "M", F_BOLD),
-        (DocItemLabel.TEXT, "text.", None),
+        (
+            DocItemLabel.TEXT,
+            "M",
+            F_BOLD,
+        ),
+        (DocItemLabel.TEXT, " text.", None),
     ]
 
 
@@ -401,32 +434,40 @@ def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
     assert footnotes == ["Plain footnote."]
 
 
-def test_jats_footnote_styling_is_preserved():
+_FOOTNOTE = (
+    "<label>1</label>{sep}<p>See <italic>ibid</italic> for <bold>details</bold>.</p>"
+)
+
+
+@pytest.mark.parametrize("sep", ["\n              ", ""], ids=["indented", "compact"])
+def test_jats_footnote_styling_is_preserved(sep: str):
+    fn = _FOOTNOTE.format(sep=sep)
     doc = convert_jats_body(
-        """
-        <sec>
-          <title>Footnote Styling Test</title>
-          <fn-group>
-            <fn id="fn1">
-              <label>1</label>
-              <p>See <italic>ibid</italic> for <bold>details</bold>.</p>
-            </fn>
-          </fn-group>
-        </sec>
-        """
+        f"<sec><title>Footnote Styling Test</title><fn-group><fn>{fn}</fn></fn-group></sec>"
     )
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    # The punctuation after the bold run remains separate and unformatted.
+    # The punctuation after the bold run remains separate and unformatted. The label
+    # and the paragraph are separate blocks: a " " run keeps them apart.
     assert [_formatting_tuple(item) for item in groups[0]] == [
         (DocItemLabel.FOOTNOTE, "1", None),
-        (DocItemLabel.FOOTNOTE, "See", None),
-        (DocItemLabel.FOOTNOTE, "ibid", F_ITALIC),
-        (DocItemLabel.FOOTNOTE, "for", None),
-        (DocItemLabel.FOOTNOTE, "details", F_BOLD),
+        (DocItemLabel.FOOTNOTE, " ", None),
+        (DocItemLabel.FOOTNOTE, "See ", None),
+        (
+            DocItemLabel.FOOTNOTE,
+            "ibid",
+            F_ITALIC,
+        ),
+        (DocItemLabel.FOOTNOTE, " for ", None),
+        (
+            DocItemLabel.FOOTNOTE,
+            "details",
+            F_BOLD,
+        ),
         (DocItemLabel.FOOTNOTE, ".", None),
     ]
+    assert doc.export_to_markdown().endswith("- 1 See *ibid* for **details**.")
 
 
 def test_jats_nested_lists_are_preserved():
@@ -557,20 +598,20 @@ def test_jats_list_item_label_becomes_marker():
         pytest.param(
             "The mass energy relation <inline-formula><tex-math>$$E=mc^2$$</tex-math></inline-formula> is famous.",
             [
-                (DocItemLabel.TEXT, "The mass energy relation", None),
+                (DocItemLabel.TEXT, "The mass energy relation ", None),
                 (DocItemLabel.FORMULA, "E=mc^2", None),
-                (DocItemLabel.TEXT, "is famous.", None),
+                (DocItemLabel.TEXT, " is famous.", None),
             ],
             id="text-formula-text",
         ),
         pytest.param(
             "Given <inline-formula><tex-math>$$a^2$$</tex-math></inline-formula> and <inline-formula><tex-math>$$b^2$$</tex-math></inline-formula> we sum.",
             [
-                (DocItemLabel.TEXT, "Given", None),
+                (DocItemLabel.TEXT, "Given ", None),
                 (DocItemLabel.FORMULA, "a^2", None),
-                (DocItemLabel.TEXT, "and", None),
+                (DocItemLabel.TEXT, " and ", None),
                 (DocItemLabel.FORMULA, "b^2", None),
-                (DocItemLabel.TEXT, "we sum.", None),
+                (DocItemLabel.TEXT, " we sum.", None),
             ],
             id="multiple-formulas",
         ),
@@ -579,9 +620,9 @@ def test_jats_list_item_label_becomes_marker():
             # (adjacent unstyled runs are coalesced into one segment)
             "The relation <inline-formula>foo <tex-math>$$E=mc^2$$</tex-math> bar</inline-formula> holds.",
             [
-                (DocItemLabel.TEXT, "The relation foo", None),
+                (DocItemLabel.TEXT, "The relation foo ", None),
                 (DocItemLabel.FORMULA, "E=mc^2", None),
-                (DocItemLabel.TEXT, "bar holds.", None),
+                (DocItemLabel.TEXT, " bar holds.", None),
             ],
             id="text-inside-inline-formula",
         ),
@@ -589,19 +630,20 @@ def test_jats_list_item_label_becomes_marker():
             # tex-math is not always wrapped in $$...$$ in real JATS files
             "The relation <inline-formula><tex-math>E=mc^2</tex-math></inline-formula> holds.",
             [
-                (DocItemLabel.TEXT, "The relation", None),
+                (DocItemLabel.TEXT, "The relation ", None),
                 (DocItemLabel.FORMULA, "E=mc^2", None),
-                (DocItemLabel.TEXT, "holds.", None),
+                (DocItemLabel.TEXT, " holds.", None),
             ],
             id="bare-tex-math",
         ),
         pytest.param(
             "We use <inline-formula><italic>x</italic> <tex-math>$$a^2$$</tex-math></inline-formula> here.",
             [
-                (DocItemLabel.TEXT, "We use", None),
+                (DocItemLabel.TEXT, "We use ", None),
                 (DocItemLabel.TEXT, "x", F_ITALIC),
+                (DocItemLabel.TEXT, " ", None),
                 (DocItemLabel.FORMULA, "a^2", None),
-                (DocItemLabel.TEXT, "here.", None),
+                (DocItemLabel.TEXT, " here.", None),
             ],
             id="italic-inside-formula",
         ),
@@ -610,18 +652,20 @@ def test_jats_list_item_label_becomes_marker():
             [
                 (DocItemLabel.TEXT, "Index x", None),
                 (DocItemLabel.TEXT, "i", F_SUB),
+                (DocItemLabel.TEXT, " ", None),
                 (DocItemLabel.FORMULA, "x_i", None),
-                (DocItemLabel.TEXT, "shown.", None),
+                (DocItemLabel.TEXT, " shown.", None),
             ],
             id="subscript-inside-formula",
         ),
         pytest.param(
             "Take <inline-formula><bold><italic>v</italic></bold> <tex-math>$$v$$</tex-math></inline-formula> next.",
             [
-                (DocItemLabel.TEXT, "Take", None),
+                (DocItemLabel.TEXT, "Take ", None),
                 (DocItemLabel.TEXT, "v", F_BOLD_ITALIC),
+                (DocItemLabel.TEXT, " ", None),
                 (DocItemLabel.FORMULA, "v", None),
-                (DocItemLabel.TEXT, "next.", None),
+                (DocItemLabel.TEXT, " next.", None),
             ],
             id="nested-emphasis-inside-formula",
         ),
@@ -630,9 +674,9 @@ def test_jats_list_item_label_becomes_marker():
             # formula (not leaked as raw ``$$...$$`` text)
             "Val <inline-formula><italic><tex-math>$$x^2$$</tex-math></italic></inline-formula> shown.",
             [
-                (DocItemLabel.TEXT, "Val", None),
+                (DocItemLabel.TEXT, "Val ", None),
                 (DocItemLabel.FORMULA, "x^2", None),
-                (DocItemLabel.TEXT, "shown.", None),
+                (DocItemLabel.TEXT, " shown.", None),
             ],
             id="tex-math-inside-emphasis",
         ),
@@ -641,12 +685,17 @@ def test_jats_list_item_label_becomes_marker():
             # and adjacent unstyled runs are coalesced
             "Compare <italic>lhs</italic> <inline-formula><tex-math>$$a$$</tex-math> rhs</inline-formula> and <inline-formula><tex-math>$$b$$</tex-math></inline-formula> now.",
             [
-                (DocItemLabel.TEXT, "Compare", None),
-                (DocItemLabel.TEXT, "lhs", F_ITALIC),
+                (DocItemLabel.TEXT, "Compare ", None),
+                (
+                    DocItemLabel.TEXT,
+                    "lhs",
+                    F_ITALIC,
+                ),
+                (DocItemLabel.TEXT, " ", None),
                 (DocItemLabel.FORMULA, "a", None),
-                (DocItemLabel.TEXT, "rhs and", None),
+                (DocItemLabel.TEXT, " rhs and ", None),
                 (DocItemLabel.FORMULA, "b", None),
-                (DocItemLabel.TEXT, "now.", None),
+                (DocItemLabel.TEXT, " now.", None),
             ],
             id="formula-with-surrounding-elements",
         ),
@@ -701,9 +750,13 @@ def test_jats_paragraph_emphasis_is_preserved():
     groups = _inline_group_items(doc)
     assert len(groups) == 1
     assert [_formatting_tuple(item) for item in groups[0]] == [
-        (DocItemLabel.TEXT, "The species", None),
-        (DocItemLabel.TEXT, "Homo sapiens", F_ITALIC),
-        (DocItemLabel.TEXT, "is", None),
+        (DocItemLabel.TEXT, "The species ", None),
+        (
+            DocItemLabel.TEXT,
+            "Homo sapiens",
+            F_ITALIC,
+        ),
+        (DocItemLabel.TEXT, " is ", None),
         (DocItemLabel.TEXT, "common", F_BOLD),
         (DocItemLabel.TEXT, ".", None),
     ]
@@ -723,9 +776,9 @@ def test_jats_external_link_boundaries_are_preserved():
         (item.text, str(item.hyperlink) if item.hyperlink is not None else None)
         for item in groups[0]
     ] == [
-        ("Before", None),
+        ("Before ", None),
         ("linked text", "https://example.com/docs"),
-        ("after.", None),
+        (" after.", None),
     ]
 
 
@@ -816,9 +869,9 @@ def test_jats_external_link_is_preserved_on_inline_formula():
         )
         for item in groups[0]
     ] == [
-        (DocItemLabel.TEXT, "value", "https://example.com/equation"),
+        (DocItemLabel.TEXT, "value ", "https://example.com/equation"),
         (DocItemLabel.FORMULA, "x", "https://example.com/equation"),
-        (DocItemLabel.TEXT, "after.", None),
+        (DocItemLabel.TEXT, " after.", None),
     ]
 
 
@@ -831,6 +884,19 @@ def test_jats_plain_paragraph_stays_a_single_text_item():
     assert _inline_group_items(doc) == []
     texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
     assert texts == ["Plain text with a 1 citation."]
+
+
+def test_jats_inline_term_keeps_its_text():
+    # <term> marks a defined term inside running text; its words are part of the sentence.
+    doc = convert_jats_body(
+        "<sec><title>The <term>PCR</term> step</title>"
+        "<p>The <term>polymerase chain reaction</term> amplifies DNA.</p></sec>"
+    )
+
+    headings = [t.text for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert headings == ["The PCR step"]
+    assert texts == ["The polymerase chain reaction amplifies DNA."]
 
 
 @pytest.mark.parametrize(
@@ -1280,7 +1346,7 @@ def test_jats_mixed_citation_keeps_external_link_target():
 
     assert _citation_runs(doc) == [
         [
-            ("BRAVO-CITATION. A work. 2020.", None),
+            ("BRAVO-CITATION. A work. 2020. ", None),
             ("https://example.org/c2-citation", "https://example.org/c2-citation"),
         ]
     ]
@@ -1301,7 +1367,7 @@ def test_jats_mixed_citation_keeps_link_target_that_differs_from_its_text():
 
     assert _citation_runs(doc) == [
         [
-            ("Doe J. Survey data.", None),
+            ("Doe J. Survey data. ", None),
             ("doi:10.5555/survey", "https://doi.org/10.5555/survey"),
             (". Accessed 2020.", None),
         ]
@@ -1334,7 +1400,7 @@ def test_jats_mixed_citation_keeps_inline_styling():
     groups = _inline_group_items(doc)
     assert len(groups) == 1
     assert [_formatting_tuple(item) for item in groups[0]] == [
-        (DocItemLabel.TEXT, "Doe J. Growth of", None),
+        (DocItemLabel.TEXT, "Doe J. Growth of ", None),
         (
             DocItemLabel.TEXT,
             "Escherichia coli",
@@ -1471,3 +1537,101 @@ def test_jats_table_with_an_empty_label_produces_no_caption():
     )
 
     assert _caption_texts(doc) == []
+
+
+def test_jats_table_cell_keeps_scripts_and_their_whitespace():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td> H<sub>2</sub>O in km<sup>2</sup> <!-- note --></td><td>plain</td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    rich, plain = doc.tables[0].data.table_cells
+    assert not isinstance(plain, RichTableCell)
+    assert isinstance(rich, RichTableCell)
+    inline = rich.ref.resolve(doc).children[0].resolve(doc)
+    runs = [child.resolve(doc) for child in inline.children]
+    assert [run.text for run in runs] == ["H", "2", "O in km", "2"]
+    assert [run.formatting.script if run.formatting else None for run in runs] == [
+        None,
+        Script.SUB,
+        None,
+        Script.SUPER,
+    ]
+    assert "H2O in km2" in doc.export_to_markdown()
+    assert "H<sub>2</sub>O in km<sup>2</sup>" in doc.export_to_html()
+
+
+def test_jats_table_cell_is_rich_only_when_more_than_plain_text():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody><tr>
+        <td>a <bold>b</bold></td>
+        <td><ext-link xmlns:xlink="http://www.w3.org/1999/xlink"
+            xlink:href="https://example.com/">site</ext-link></td>
+        <td>a <inline-formula><alternatives><tex-math>$$x^2$$</tex-math>
+            <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mi>x</mml:mi></mml:math>
+            </alternatives></inline-formula> b</td>
+        <td>a <named-content>b</named-content></td>
+        </tr></tbody></table></table-wrap>"""
+    )
+
+    bold, link, formula, plain = doc.tables[0].data.table_cells
+    assert not isinstance(plain, RichTableCell)
+
+    assert isinstance(bold, RichTableCell)
+    inline = bold.ref.resolve(doc).children[0].resolve(doc)
+    assert inline.children[1].resolve(doc).formatting.bold
+
+    assert isinstance(link, RichTableCell)
+    run = link.ref.resolve(doc).children[0].resolve(doc)
+    assert (run.text, str(run.hyperlink)) == ("site", "https://example.com/")
+
+    assert isinstance(formula, RichTableCell)
+    inline = formula.ref.resolve(doc).children[0].resolve(doc)
+    runs = [child.resolve(doc) for child in inline.children]
+    assert [run.label for run in runs] == [
+        DocItemLabel.TEXT,
+        DocItemLabel.FORMULA,
+        DocItemLabel.TEXT,
+    ]
+    assert runs[1].text == "x^2"
+
+
+def test_jats_rich_table_cell_keeps_the_boundary_between_blocks():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td><p>x<sup>1</sup></p><p>Next</p></td>
+        <td><list><list-item><p>a<sup>2</sup></p></list-item>
+        <list-item><p>b</p></list-item></list></td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    paragraphs, items = doc.tables[0].data.table_cells
+    assert isinstance(paragraphs, RichTableCell)
+    assert isinstance(items, RichTableCell)
+    markdown = doc.export_to_markdown()
+    assert "x1 Next" in markdown
+    assert "a2 b" in markdown
+
+
+def test_jats_table_cell_with_only_a_blank_script_stays_plain():
+    doc = convert_jats_body(
+        """<table-wrap id="t1"><table><tbody>
+        <tr><td><sub> </sub></td><td> <sup> </sup>x</td></tr>
+        </tbody></table></table-wrap>"""
+    )
+
+    blank, text = doc.tables[0].data.table_cells
+    assert not isinstance(blank, RichTableCell)
+    assert not isinstance(text, RichTableCell)
+    assert doc.groups == []
+
+
+def test_jats_nested_table_is_skipped_and_keeps_no_table_item():
+    doc = convert_jats_body(
+        """<sec><p>Text.</p><table-wrap id="t1"><table><tbody><tr><td>
+        <table><tbody><tr><td>x<sub>1</sub></td></tr></tbody></table>
+        </td></tr></tbody></table></table-wrap></sec>"""
+    )
+
+    assert doc.tables == []
