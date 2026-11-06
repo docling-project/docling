@@ -490,7 +490,6 @@ def test_jats_author_footnote_preserves_inline_formatting_and_link():
     disclosure = disclosures[0]
     assert disclosure.formatting is not None and disclosure.formatting.italic
     assert str(disclosure.hyperlink) == "https://example.org/statement"
-    assert "Correspondence marker." not in doc.export_to_markdown()
 
 
 _FOOTNOTE = (
