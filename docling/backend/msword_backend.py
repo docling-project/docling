@@ -4187,7 +4187,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         A docx cell can hold rich content and be parsed with a Docling RichTableCell.
         However, this requires walking through the lxml elements and creating
         node items. If the cell holds only plain text, a TableCell, the parsing
-        is simpler and using a TableCell is prefered.
+        is simpler and using a TableCell is preferred.
 
         Plain text means:
         - The cell has only one paragraph
