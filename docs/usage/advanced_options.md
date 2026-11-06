@@ -149,30 +149,9 @@ one can adjust the conversion pipeline and features.
 
 ### Preserve LaTeX math in Markdown
 
-Set `MarkdownBackendOptions(enable_latex_math=True)` to retain delimited LaTeX
-as `FormulaItem` objects. The backend supports `$...$` and `\(...\)` for inline
-math, and `$$...$$` and `\[...\]` for display math. Code spans and fenced code
-blocks keep their literal content.
-
-```python
-from docling.datamodel.backend_options import MarkdownBackendOptions
-from docling.datamodel.base_models import InputFormat
-from docling.document_converter import DocumentConverter, MarkdownFormatOption
-
-converter = DocumentConverter(
-    allowed_formats=[InputFormat.MD],
-    format_options={
-        InputFormat.MD: MarkdownFormatOption(
-            backend_options=MarkdownBackendOptions(enable_latex_math=True)
-        )
-    },
-)
-result = converter.convert_string(r"Value $x_i^2$.", format=InputFormat.MD)
-print(result.document.export_to_markdown())
-```
-
-The option defaults to `False` for Markdown input. `VlmPipeline` enables it
-automatically for responses with `ResponseFormat.MARKDOWN`.
+Use `MarkdownBackendOptions(enable_latex_math=True)` to retain inline and display
+formulas. See [Markdown math](supported_formats.md#markdown-math) for the supported
+delimiters and a conversion example.
 
 ### Page backend lifetime and page images
 
