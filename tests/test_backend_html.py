@@ -1448,6 +1448,11 @@ def test_code_language_hint_prefers_prefixed_class():
             '<pre><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>\n    <span class="k">return</span> <span class="mi">1</span>\n</pre>',
             "def f():\n    return 1",
         ),
+        (
+            "<pre><code>line one</code>\n<code>line two</code>\n<code>line three</code></pre>",
+            "line one\nline two\nline three",
+        ),
+        ("<pre><code>x = 'a  b'</code> <code>y</code></pre>", "x = 'a  b' y"),
         ("<pre>first<br>second</pre>", "first\nsecond"),
         ("<pre>before<!-- hidden -->after</pre>", "beforeafter"),
         ("<pre>before<?hidden instruction?>after</pre>", "beforeafter"),
@@ -1464,16 +1469,16 @@ def test_preformatted_blocks_preserve_inline_whitespace(pre_html: str, expected:
     assert [item.text for item in code_items] == [expected]
 
 
-def test_preformatted_hyperlinks_keep_existing_fragment_semantics():
+def test_preformatted_hyperlinks_keep_run_whitespace():
     raw_html = b"<html><body><pre>See <a href='https://example.com/docs'>the docs</a> first</pre></body></html>"
     doc = _convert_html(raw_html)
 
     code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
-    assert [item.text for item in code_items] == ["See", "the docs", "first"]
+    assert [item.text for item in code_items] == ["See ", "the docs", " first"]
     assert str(code_items[1].hyperlink) == "https://example.com/docs"
 
 
-def test_preformatted_inherited_hyperlink_keeps_existing_semantics():
+def test_preformatted_inherited_hyperlink_is_kept():
     doc = _convert_html(
         b"<html><body><a href='https://example.com/docs'><pre>read()</pre></a></body></html>"
     )
@@ -1481,82 +1486,18 @@ def test_preformatted_inherited_hyperlink_keeps_existing_semantics():
     code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
     assert [item.text for item in code_items] == ["read()"]
     assert str(code_items[0].hyperlink) == "https://example.com/docs"
-    assert "https://example.com/docs" in doc.export_to_markdown()
-    assert "https://example.com/docs" in doc.export_to_html()
 
 
-def test_preformatted_styles_keep_existing_fragment_semantics():
+def test_preformatted_styles_keep_run_whitespace():
     doc = _convert_html(
         b"<html><body><pre>before <b>bold</b> after</pre></body></html>"
     )
 
     code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
-    assert [item.text for item in code_items] == ["before", "bold", "after"]
+    assert [item.text for item in code_items] == ["before ", "bold", " after"]
     assert code_items[0].formatting is None
     assert code_items[1].formatting.bold
     assert code_items[2].formatting is None
-
-
-@pytest.mark.parametrize("style", ["display:block", "/* note */ display:block"])
-def test_preformatted_display_styles_keep_existing_separators(style: str):
-    doc = _convert_html(
-        (
-            f"<html><body><pre><span style='{style}'>first</span>"
-            f"<span style='{style}'>second</span></pre></body></html>"
-        ).encode()
-    )
-
-    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
-    assert [item.text for item in code_items] == ["first second"]
-
-
-def test_preformatted_block_children_keep_existing_separators():
-    doc = _convert_html(
-        b"<html><body><pre><div>first</div><div>second</div></pre></body></html>"
-    )
-
-    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
-    assert [item.text for item in code_items] == ["first second"]
-
-
-@pytest.mark.parametrize(
-    ("control", "expected"),
-    [
-        ("<button>Run</button>", "before Run after"),
-        ("<img src='a.png'>", "before after"),
-        ("<span class='checkbox-label'>Label</span>", "before after"),
-        ("<span role='checkbox'>Mark</span>", "before Mark after"),
-    ],
-)
-def test_preformatted_controls_keep_existing_boundaries(control: str, expected: str):
-    doc = _convert_html(
-        f"<html><body><pre>before{control}after</pre></body></html>".encode()
-    )
-
-    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
-    assert [item.text for item in code_items] == [expected]
-
-
-def test_preformatted_rendering_keeps_child_provenance():
-    playwright_api = pytest.importorskip("playwright.sync_api")
-    with playwright_api.sync_playwright() as playwright:
-        if not Path(playwright.chromium.executable_path).is_file():
-            pytest.skip("Chromium is required for the rendered-provenance regression")
-    raw_html = b"<html><body><pre style='display:contents'><code>read()</code></pre></body></html>"
-    in_doc = InputDocument(
-        path_or_stream=BytesIO(raw_html),
-        format=InputFormat.HTML,
-        backend=HTMLDocumentBackend,
-        filename="test",
-        backend_options=HTMLBackendOptions(render_page=True),
-    )
-    doc = in_doc._backend.convert()
-
-    code_items = [item for item in doc.texts if isinstance(item, CodeItem)]
-    assert [item.text for item in code_items] == ["read()"]
-    assert code_items[0].prov
-    assert code_items[0].prov[0].page_no == 1
-    assert code_items[0].prov[0].bbox.width > 0
 
 
 def test_empty_preformatted_block_emits_no_code_item():

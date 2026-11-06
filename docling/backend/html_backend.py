@@ -3628,7 +3628,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             text_list = self._extract_text_and_hyperlink_recursively(
                 tag, find_parent_annotation=True, keep_newlines=True
             )
-            annotated_texts = text_list.simplify_text_elements()
+            # This backend maps <pre> to code, so the code mark of inner <code> tags
+            # adds nothing here; clear it so that it does not split the block into runs.
+            annotated_texts = AnnotatedTextList(
+                part.model_copy(update={"code": False}) for part in text_list
+            ).simplify_text_elements()
             # Preformatted content: every interior space is significant, so only the block
             # edges are trimmed (HTML drops the newline right after `<pre>`).
             if annotated_texts:
