@@ -133,6 +133,7 @@ class InputFormat(str, Enum):
     IWORK_NUMBERS = "iwork_numbers"
     EBCDIC = "ebcdic"
     AFP = "afp"
+    CALENDAR = "calendar"
 
 
 class OutputFormat(str, Enum):
@@ -187,6 +188,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.IWORK_NUMBERS: ["numbers"],
     InputFormat.EBCDIC: ["ebc", "ebcdic"],
     InputFormat.AFP: ["afp"],
+    InputFormat.CALENDAR: ["ics", "ical", "icalendar", "ifb"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -289,6 +291,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.EBCDIC: ["application/x-ebcdic"],
     InputFormat.AFP: ["application/vnd.ibm.modcap", "application/x-afp"],
+    InputFormat.CALENDAR: ["text/calendar"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -394,6 +397,23 @@ class VlmPredictionToken(BaseModel):
     logprob: float = -1
 
 
+class NemotronParseInference(BaseModel):
+    """Per-page model request counts, including unsuccessful crop requests."""
+
+    passes: Literal["single", "double", "triple"]
+    triple_regions: Literal["detector", "union"] | None = None
+    merge_policy: Literal["guarded"] = "guarded"
+    fullpage_requests: int = 1
+    detection_requests: int = 0
+    crop_requests: int = 0
+    rejected_crop_requests: int = 0
+
+    @computed_field
+    @property
+    def requests(self) -> int:
+        return self.fullpage_requests + self.detection_requests + self.crop_requests
+
+
 class VlmPrediction(BaseModel):
     text: str = ""
     generated_tokens: list[VlmPredictionToken] = []
@@ -403,6 +423,7 @@ class VlmPrediction(BaseModel):
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
     input_prompt: str | None = None
     error_message: str | None = None  # set when stop_reason is INFERENCE_ERROR
+    nemotron_parse: NemotronParseInference | None = None
 
 
 @dataclass(frozen=True)
@@ -581,6 +602,9 @@ class Page(BaseModel):
     # conversion results.
     _shape_lines: list[BoundingBox] | None = PrivateAttr(default=None)
     _shape_bounding_boxes: list[BoundingBox] | None = PrivateAttr(default=None)
+    # Whether the page's PDF text layer is broken; read by the OCR stage to replace
+    # it (OcrOptions.replace_broken_text_layer).
+    _broken_text_layer: bool = PrivateAttr(default=False)
     _default_image_scale: float = 1.0  # Default image scale for external usage.
     _image_cache: dict[
         float, Image

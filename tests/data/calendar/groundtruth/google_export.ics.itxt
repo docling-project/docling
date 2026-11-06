@@ -1,0 +1,43 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Platform Team
+  item-2 at level 1: text: Shared calendar of the platform team.
+  item-3 at level 1: section_header: Platform sync
+  item-4 at level 1: text: Start: 2026-10-19 09:30 Europe/Berlin
+  item-5 at level 1: text: End: 2026-10-19 10:00 Europe/Berlin
+  item-6 at level 1: text: Repeats: Weekly on Monday and Wednesday, until 2026-12-21 22:59:59 UTC
+  item-7 at level 1: text: Except: 2026-11-02 09:30 Europe/Berlin, 2026-11-04 09:30 Europe/Berlin
+  item-8 at level 1: text: Location: Room 4.12, Building B
+  item-9 at level 1: text: Organizer: Alice Example <alice@example.com>
+  item-10 at level 1: text: Status: Confirmed
+  item-11 at level 1: text: Conference: https://meet.google.com/abc-defg-hij
+  item-12 at level 1: text: Weekly sync of the platform team.
+  item-13 at level 1: text: Agenda:
+- status
+- blockers
+  item-14 at level 1: text: Join with Google Meet: https://meet.google.com/abc-defg-hij
+  item-15 at level 1: section_header: Attendees
+  item-16 at level 1: list: group attendees
+    item-17 at level 2: list_item: Alice Example <alice@example.com> (required, accepted)
+    item-18 at level 2: list_item: Bob Example <bob@example.com> (required, awaiting response)
+  item-19 at level 1: section_header: Reminders
+  item-20 at level 1: list: group reminders
+    item-21 at level 2: list_item: Display, 10 minutes before start
+  item-22 at level 1: section_header: Platform sync (moved)
+  item-23 at level 1: text: Start: 2026-10-28 11:00 Europe/Berlin
+  item-24 at level 1: text: End: 2026-10-28 11:30 Europe/Berlin
+  item-25 at level 1: text: Changes occurrence: 2026-10-28 09:30 Europe/Berlin
+  item-26 at level 1: text: Status: Confirmed
+  item-27 at level 1: section_header: Planning
+  item-28 at level 1: text: Start: 2026-11-02 08:00 Europe/Berlin
+  item-29 at level 1: text: End: 2026-11-02 08:30 Europe/Berlin
+  item-30 at level 1: text: Repeats: Monthly on the first Monday, 6 times
+  item-31 at level 1: section_header: Month-end close
+  item-32 at level 1: text: Start: 2026-10-30 16:00 Europe/Berlin
+  item-33 at level 1: text: End: 2026-10-30 17:00 Europe/Berlin
+  item-34 at level 1: text: Repeats: FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1
+  item-35 at level 1: section_header: Office closed
+  item-36 at level 1: text: Start: 2026-12-24 (all day)
+  item-37 at level 1: text: End: 2026-12-26 (all day)
+  item-38 at level 1: section_header: Release day
+  item-39 at level 1: text: Date: 2026-11-03 (all day)
+  item-40 at level 1: text: Categories: Release, Milestone

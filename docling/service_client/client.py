@@ -451,7 +451,8 @@ class _BaseDoclingServiceClient:
                 effective_range[0],
                 min(effective_range[1], max_num_pages),
             )
-        merged.page_range = effective_range
+        if effective_range != merged.page_range:
+            merged = merged.model_copy(update={"page_range": effective_range})
 
         limits = DocumentLimits(
             max_num_pages=sys.maxsize if max_num_pages is None else max_num_pages,
@@ -850,6 +851,28 @@ class _BaseDoclingServiceClient:
                 "literal_error",
                 "enum",
             )
+        )
+
+    @staticmethod
+    def _inbody_fallback_error(
+        presigned_exc: ServiceError, fallback_exc: ServiceError
+    ) -> ServiceError | None:
+        """Combine both rejections when the server refuses the InBody fallback too.
+
+        The presigned rejection is usually the actionable cause (for example,
+        artifact storage is not enabled), so the fallback error must not hide it.
+        """
+        if fallback_exc.status_code not in {400, 422}:
+            return None
+        # A FastAPI validation error has a list detail, which the client maps to None.
+        prefix = f"{fallback_exc.detail} " if fallback_exc.detail else ""
+        return ServiceError(
+            fallback_exc.message,
+            status_code=fallback_exc.status_code,
+            detail=(
+                f"{prefix}The client tried the InBody target because "
+                f"the server rejected the presigned_url target: {presigned_exc.detail}"
+            ),
         )
 
     def _url(self, path: str) -> str:
@@ -1480,19 +1503,26 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         except ServiceError as exc:
             if not self._should_fallback_from_presigned_target(exc):
                 raise
-        return self._submit_conversion_job(
-            source=source,
-            options=self._options_for_output_formats(
-                options,
-                output_formats=None,
+            presigned_exc = exc
+        try:
+            return self._submit_conversion_job(
+                source=source,
+                options=self._options_for_output_formats(
+                    options,
+                    output_formats=None,
+                    target=InBodyTarget(),
+                ),
+                limits=limits,
                 target=InBodyTarget(),
-            ),
-            limits=limits,
-            target=InBodyTarget(),
-            descriptor=descriptor,
-            request_headers=request_headers,
-            materialize_presigned=materialize_presigned,
-        )
+                descriptor=descriptor,
+                request_headers=request_headers,
+                materialize_presigned=materialize_presigned,
+            )
+        except ServiceError as fallback_exc:
+            combined = self._inbody_fallback_error(presigned_exc, fallback_exc)
+            if combined is None:
+                raise
+            raise combined from fallback_exc
 
     def _make_convert_fetch_result_handler(
         self,

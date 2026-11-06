@@ -16,6 +16,7 @@ docling/backend/html_backend.py
 docling/backend/msexcel_backend.py
 docling/backend/mspowerpoint_backend.py
 docling/backend/msword_backend.py
+docling/backend/xml/jats_backend.py
 docling/backend/xml/uspto_backend.py
 docling/backend/opendocument_backend.py
 docling/datamodel/pipeline_options.py
@@ -28,7 +29,11 @@ docling/service_client/client.py
 docling/cli/main.py
 tests/test_service_client_sdk_unit.py
 tests/test_backend_opendocument.py
+tests/test_backend_asciidoc.py
 tests/test_backend_html.py
+tests/test_backend_jats.py
+tests/test_backend_markdown.py
 tests/test_backend_msword.py
+tests/test_backend_msexcel.py
 tests/test_cli.py
 tests/test_form_extraction.py

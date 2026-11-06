@@ -52,7 +52,9 @@ def _validate_dpi(dpi: tuple[SupportsFloat, SupportsFloat]) -> tuple[float, floa
 
 def _get_frame_dpi(image: Image.Image) -> tuple[float, float]:
     dpi = image.info.get("dpi")
-    return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1)) else dpi)
+    # (1, 1) and (0, 0) carry no resolution: some writers store (1, 1) as a
+    # placeholder, and a PNG pHYs chunk with zero pixels per unit reads as (0, 0).
+    return _validate_dpi(_DEFAULT_DPI if dpi in (None, (1, 1), (0, 0)) else dpi)
 
 
 def _oriented_frame(image: Image.Image) -> tuple[Image.Image, tuple[float, float]]:

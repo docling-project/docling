@@ -248,6 +248,12 @@ def _rect_to_pdf_frame(
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
+# PDFium has no character for a hyphen that ends a line: FPDFText_GetUnicode
+# returns STX (U+0002) and FPDFText_GetText returns U+FFFE. The glyph on the page
+# is the hyphen, so the text shows it, as the docling-parse backend does.
+_LINE_FINAL_HYPHEN_TEXT = {0x02: "-", 0xFFFE: "-"}
+_LINE_FINAL_HYPHEN_UNITS = {code: ord("-") for code in _LINE_FINAL_HYPHEN_TEXT}
+
 _log = logging.getLogger(__name__)
 
 
@@ -275,7 +281,8 @@ class _PageChars:
     text with the same spacing and line-break rules as PDFium.
 
     Attributes:
-        units: UTF-16 code unit of each character, by PDFium character index.
+        units: UTF-16 code unit of each character, by PDFium character index,
+            with a line-final hyphen restored from U+0002 or U+FFFE.
         baselines: y of each character's origin, by PDFium character index.
         centres: ``(y, x, index)`` of the box centre of each character whose box
             is not empty, sorted by y.
@@ -296,7 +303,8 @@ class _PageChars:
         origin_x = ctypes.c_double()
         origin_y = ctypes.c_double()
         for char_index in range(text_page.count_chars()):
-            units.append(pdfium_c.FPDFText_GetUnicode(text_page.raw, char_index))
+            unit = pdfium_c.FPDFText_GetUnicode(text_page.raw, char_index)
+            units.append(_LINE_FINAL_HYPHEN_UNITS.get(unit, unit))
             pdfium_c.FPDFText_GetCharOrigin(
                 text_page.raw, char_index, origin_x, origin_y
             )
@@ -473,11 +481,14 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
                 for cell in cells[1:]:
                     vertical_threshold = row_height * vertical_threshold_factor
+                    bbox = cell.rect.to_bounding_box()
                     if (
-                        abs(cell.rect.to_bounding_box().t - row_top)
-                        <= vertical_threshold
-                        and abs(cell.rect.to_bounding_box().b - row_bottom)
-                        <= vertical_threshold
+                        abs(bbox.t - row_top) <= vertical_threshold
+                        and abs(bbox.b - row_bottom) <= vertical_threshold
+                    ) or (
+                        # PDFium boxes a punctuation run tightly on the baseline,
+                        # so its edges miss the row's, though it sits inside it.
+                        bbox.t >= row_top and bbox.b <= row_bottom
                     ):
                         current_row.append(cell)
                         row_top = min(row_top, cell.rect.to_bounding_box().t)
@@ -714,7 +725,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         with pypdfium2_lock:
             text_piece = self.text_page.get_text_bounded(*pdf_rect)
 
-        return text_piece
+        return text_piece.translate(_LINE_FINAL_HYPHEN_TEXT)
 
     def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
         if not self.valid:

@@ -67,6 +67,7 @@ from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils._inline_runs import trim_run_edges
 
 _ODFDO_AVAILABLE: bool = False
 _ODFDO_IMPORT_ERROR: ImportError | None = None
@@ -567,28 +568,20 @@ def _normalize_odf_text_runs(runs: list[_OdfTextRun]) -> list[_OdfTextRun]:
             merged_runs[-1].text += run.text
             continue
 
-        text = run.text
-        if merged_runs and merged_runs[-1].hyperlink != run.hyperlink:
-            # A hyperlink boundary is a hard edge: strip the whitespace right
-            # at the boundary so it doesn't double up with the separator the
-            # markdown/inline serializer already inserts between runs.
-            merged_runs[-1].text = merged_runs[-1].text.rstrip()
-            text = text.lstrip()
+        # A hyperlink boundary is not special under the whitespace contract: the
+        # boundary space stays in whichever plain run owns it, and the serializer
+        # places it outside the link markup. No stripping here.
         merged_runs.append(
-            _OdfTextRun(text=text, formatting=run.formatting, hyperlink=run.hyperlink)
+            _OdfTextRun(
+                text=run.text, formatting=run.formatting, hyperlink=run.hyperlink
+            )
         )
 
-    while merged_runs and merged_runs[0].text.strip() == "":
-        merged_runs.pop(0)
-    if merged_runs:
-        merged_runs[0].text = merged_runs[0].text.lstrip()
-
-    while merged_runs and merged_runs[-1].text.strip() == "":
-        merged_runs.pop()
-    if merged_runs:
-        merged_runs[-1].text = merged_runs[-1].text.rstrip()
-
-    return [run for run in merged_runs if run.text]
+    return trim_run_edges(
+        merged_runs,
+        get_text=lambda run: run.text,
+        with_text=lambda run, text: _OdfTextRun(text, run.formatting, run.hyperlink),
+    )
 
 
 def _odf_text_from_runs(runs: list[_OdfTextRun]) -> str:
@@ -1018,8 +1011,17 @@ def _odf_cell_has_content(cell: Any) -> bool:
     return _odf_cell_text(cell) != "" or _odf_cell_has_images(cell)
 
 
-def _odf_cell_is_rich(cell: Any) -> bool:
-    return _odf_cell_has_rich_content(cell)
+def _odf_cell_has_styled_run(cell: Any, odf_obj: OdfDocument | None) -> bool:
+    return any(
+        run.formatting is not None or run.hyperlink is not None
+        for child in cell.children
+        if isinstance(child, Paragraph)
+        for run in _odf_text_runs(child, odf_obj)
+    )
+
+
+def _odf_cell_is_rich(cell: Any, odf_obj: OdfDocument | None) -> bool:
+    return _odf_cell_has_rich_content(cell) or _odf_cell_has_styled_run(cell, odf_obj)
 
 
 def _image_ref_from_odf_image(
@@ -1629,7 +1631,7 @@ def _add_table_from_odf(
                 "row_header": False,
             }
 
-            if _odf_cell_is_rich(cell):
+            if _odf_cell_is_rich(cell, odf_obj):
                 group = doc.add_group(
                     label=GroupLabel.UNSPECIFIED,
                     name=f"rich_cell_group_{len(doc.tables) - 1}_{adjusted_col}_{adjusted_row}",
@@ -1664,6 +1666,7 @@ def _table_region_has_rich_cell(
     max_row: int,
     min_col: int,
     max_col: int,
+    odf_obj: OdfDocument | None,
 ) -> bool:
     for row_idx, row in enumerate(table.traverse()):
         if row_idx < min_row or row_idx > max_row:
@@ -1671,7 +1674,9 @@ def _table_region_has_rich_cell(
         for col_idx, cell in enumerate(row.traverse()):
             if col_idx < min_col or col_idx > max_col:
                 continue
-            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(cell):
+            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(
+                cell, odf_obj
+            ):
                 return True
     return False
 
@@ -2416,7 +2421,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             min_row, max_row, min_col, max_col = data_table["bounds"]
             table_data = data_table["data"]
             has_rich_content = _table_region_has_rich_cell(
-                table, min_row, max_row, min_col, max_col
+                table, min_row, max_row, min_col, max_col, self.odf_obj
             )
 
             # Check if this is a singleton (1x1 table)
