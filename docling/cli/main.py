@@ -1392,6 +1392,16 @@ def convert(  # noqa: C901
         bool,
         typer.Option(..., help="Enable the picture description model in the pipeline."),
     ] = False,
+    use_embedded_picture_images: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Use a directly extracted embedded PDF image when a picture region "
+                "contains one safe image. Falls back to a rendered crop otherwise."
+            ),
+        ),
+    ] = False,
     picture_description_max_new_tokens: Annotated[
         int | None,
         typer.Option(
@@ -1963,6 +1973,8 @@ def convert(  # noqa: C901
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
+                generate_picture_images=use_embedded_picture_images,
+                use_embedded_picture_images=use_embedded_picture_images,
                 do_chart_extraction=enrich_chart_extraction,
                 chart_extraction_options=chart_extraction_options,
                 document_timeout=document_timeout,

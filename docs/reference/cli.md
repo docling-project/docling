@@ -90,6 +90,7 @@ docling convert [OPTIONS] source
 | `--enrich-formula` / `--no-enrich-formula` | flag | `false` | Enable the formula enrichment model in the pipeline. |
 | `--enrich-picture-classes` / `--no-enrich-picture-classes` | flag | `false` | Enable the picture classification enrichment model in the pipeline. |
 | `--enrich-picture-description` / `--no-enrich-picture-description` | flag | `false` | Enable the picture description model in the pipeline. |
+| `--use-embedded-picture-images` / `--no-use-embedded-picture-images` | flag | `false` | Use a directly extracted embedded PDF image when a picture region contains one safe image. Falls back to a rendered crop otherwise. |
 | `--picture-description-max-new-tokens` | `integer` |  | Override max_new_tokens for picture description generation. |
 | `--enrich-chart-extraction` / `--no-enrich-chart-extraction` | flag | `false` | Enable chart data extraction from bar, pie, and line charts. |
 | `--chart-extraction-preset` | `text` | `granite_vision_v4` | Choose the chart extraction preset. Available presets: granite_vision_v3_3, granite_vision_v4, granite_vision_v4_mlx |

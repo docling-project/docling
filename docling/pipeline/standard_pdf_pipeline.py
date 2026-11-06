@@ -733,6 +733,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 self.pipeline_options.do_picture_classification,
                 self.pipeline_options.do_picture_description,
                 self.pipeline_options.do_chart_extraction,
+                self.pipeline_options.use_embedded_picture_images,
             )
         )
 
@@ -1223,17 +1224,29 @@ class StandardPdfPipeline(ConvertPipeline):
                             assert page.size is not None
                             assert page.image is not None
 
-                            crop_bbox = (
-                                element.prov[0]
-                                .bbox.scaled(scale=scale)
-                                .to_top_left_origin(
-                                    page_height=page.size.height * scale
+                            cropped_im = None
+                            embedded_image = False
+                            if (
+                                isinstance(element, PictureItem)
+                                and self.pipeline_options.use_embedded_picture_images
+                                and page._backend is not None
+                            ):
+                                cropped_im = page._backend.get_embedded_image(
+                                    element.prov[0].bbox
                                 )
-                            )
-
-                            cropped_im = page.image.crop(crop_bbox.as_tuple())
+                                embedded_image = cropped_im is not None
+                            if cropped_im is None:
+                                crop_bbox = (
+                                    element.prov[0]
+                                    .bbox.scaled(scale=scale)
+                                    .to_top_left_origin(
+                                        page_height=page.size.height * scale
+                                    )
+                                )
+                                cropped_im = page.image.crop(crop_bbox.as_tuple())
                             element.image = ImageRef.from_pil(
-                                cropped_im, dpi=int(72 * scale)
+                                cropped_im,
+                                dpi=(72 if embedded_image else int(72 * scale)),
                             )
 
             # Aggregate confidence values for document:
