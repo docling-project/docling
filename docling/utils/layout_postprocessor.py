@@ -270,6 +270,25 @@ class LayoutPostprocessor:
             if prev_count == len(clusters):
                 break
             prev_count = len(clusters)
+
+            # Resolve nested section headers before adjusting their bounding
+            # boxes. Cell assignment can shrink nested headers so their original
+            # overlap is no longer detectable.
+            section_headers = [
+                cluster
+                for cluster in clusters
+                if cluster.label == DocItemLabel.SECTION_HEADER
+            ]
+            if section_headers:
+                resolved_headers = self._remove_overlapping_clusters(
+                    section_headers, "regular"
+                )
+                header_ids = {cluster.id for cluster in section_headers}
+                clusters = self._sort_clusters(
+                    [c for c in clusters if c.id not in header_ids] + resolved_headers,
+                    mode="id",
+                )
+
             clusters = self._adjust_cluster_bboxes(clusters)
             clusters = self._remove_overlapping_clusters(clusters, "regular")
 
