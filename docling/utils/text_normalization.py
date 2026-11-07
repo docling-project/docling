@@ -7,7 +7,7 @@ import re
 import unicodedata
 from collections.abc import Iterable
 
-from docling_core.types.doc.page import TextCell
+from docling_core.types.doc.page import PdfTextCell, TextCell
 
 # Typographic characters replaced by plain equivalents.
 _TYPOGRAPHIC_MAP: dict[str, str] = {
@@ -54,9 +54,9 @@ _LIGATURE_RE = re.compile(r"([ﬀ-ﬆ]|Ĳ|ĳ|)( (?=\w))?")
 # Deliberately left out:
 #  - U+F0A0, which _LIGATURE_MAP above already discards as a spurious glyph.
 #  - The eight code points list_marker_processor treats as list markers
-#    (0x6E, 0x76, 0xA7, 0xA8, 0xB7, 0xD8, 0xE0, 0xFC). These are ambiguous:
-#    Symbol reads 0x6E as nu, while a Wingdings-encoded run uses it for a
-#    bullet. Leaving them alone keeps list-marker detection unchanged.
+#    (0x6E, 0x76, 0xA7, 0xA8, 0xB7, 0xD8, 0xE0, 0xFC). Normalization runs
+#    before list_marker_processor, so claiming them would change the list
+#    detection added in #5043. Leaving them out keeps it byte-identical.
 #  - Glyphs whose own Adobe mapping is a private-use code point: the radical
 #    overbar, the arrow extenders, and the multi-part parenthesis, bracket and
 #    brace builders. They are drawing fragments with no Unicode equivalent.
@@ -176,7 +176,100 @@ _SYMBOL_ENCODING: dict[int, str] = {
 _SYMBOL_PUA_MAP: dict[str, str] = {
     chr(0xF000 + byte): char for byte, char in _SYMBOL_ENCODING.items()
 }
-_SYMBOL_PUA_RE = re.compile("[" + "".join(sorted(_SYMBOL_PUA_MAP)) + "]")
+_SYMBOL_PUA_CHARS = "".join(sorted(_SYMBOL_PUA_MAP))
+# Two alternatives: a glyph sitting where a list marker sits -- at the start of
+# a line, after optional indent, followed by whitespace or the line end -- or
+# any other mapped glyph. The marker branch is first, so it wins at a line
+# start. MULTILINE is required because a page backend can put several lines,
+# and so several bullets, inside one TextCell.
+_SYMBOL_PUA_RE = re.compile(
+    r"(?P<marker>^[^\S\n]*[" + _SYMBOL_PUA_CHARS + r"](?=\s|$))"
+    r"|(?P<glyph>[" + _SYMBOL_PUA_CHARS + r"])",
+    re.MULTILINE,
+)
+
+
+# Subset-embedded fonts are prefixed with six uppercase letters and a plus
+# (PDF 32000-1 9.6.4), as in "/AAAAAA+SymbolMT".
+_SUBSET_PREFIX = re.compile(r"^[A-Z]{6}\+")
+
+# Font families whose glyphs this fold applies to.
+_SYMBOL_FAMILIES = frozenset({"symbol", "symbolmt", "symbolps"})
+
+# Font families that draw pictures, not letters. Their glyphs occupy the same
+# private-use code points as Symbol -- both wingding.ttf and symbol.ttf name
+# the glyph for byte 0x6C "uniF06C" -- but a Wingdings U+F06C is a bullet, not
+# a lambda. Folding one would put a wrong Greek letter on the page, so text
+# drawn with these fonts is never folded.
+_PICTORIAL_FAMILIES = frozenset(
+    {
+        "wingdings",
+        "wingdings2",
+        "wingdings3",
+        "webdings",
+        "zapfdingbats",
+        "dingbats",
+        "marlett",
+    }
+)
+
+
+def _font_family(font_name: str) -> str:
+    """Reduce a PDF font name to a comparable family key.
+
+    "/AAAAAA+Wingdings-Regular" -> "wingdings". Returns "" when the name is a
+    bare resource key such as "/F1", which docling-parse falls back to when the
+    font dictionary carries no descriptive name.
+    """
+    name = _SUBSET_PREFIX.sub("", (font_name or "").lstrip("/"), count=1)
+    family = re.split(r"[-_,+ ]", name, maxsplit=1)[0].lower()
+    # A bare resource key ("F1", "C2") names no family.
+    return "" if re.fullmatch(r"[a-z]\d+", family) else family
+
+
+def _fold_symbol_pua(text: str, *, protect_markers: bool = True) -> str:
+    """Fold Symbol glyphs stranded in the Private-Use Area to real Unicode.
+
+    ``protect_markers`` keeps a glyph that sits where a list marker sits -- at
+    the start of a line, after optional indent, followed by whitespace or the
+    line end. It is used when the font behind the glyph is not known, because
+    there a leading glyph may be a bullet from a pictorial font. Leaving it
+    alone keeps the output exactly as it was before this fold existed, so a
+    bullet can never get worse, only stay unfixed.
+
+    When the font is known to be Symbol the guard is dropped, because every
+    glyph in such a cell is a Symbol glyph, including a leading one.
+
+    shortcut: with the guard on, only the first glyph on a line is protected,
+    so a nested marker pair in one line still folds the second one. Revisit if
+    a report shows a backend emitting two markers on a single line.
+    """
+
+    def replace(match: re.Match[str]) -> str:
+        if protect_markers and match.group("marker") is not None:
+            return match.group(0)
+        return _SYMBOL_PUA_MAP[match.group(0)]
+
+    return _SYMBOL_PUA_RE.sub(replace, text)
+
+
+def fold_symbol_pua_for_cell(cell: TextCell, text: str) -> str:
+    """Apply the Symbol fold to one cell's text, using the cell's font.
+
+    Three cases, because a private-use code point means different things in
+    different fonts and the backend does not always know which font drew it:
+
+    * a pictorial font (Wingdings and friends) -- never fold, the glyph is a
+      picture and has no Unicode letter behind it;
+    * the Symbol font -- fold every glyph, the font settles the meaning;
+    * anything else, including the bare resource keys docling-parse reports
+      for a line that mixes fonts -- fold, but keep list-marker positions.
+    """
+    family = _font_family(cell.font_name) if isinstance(cell, PdfTextCell) else ""
+    if family in _PICTORIAL_FAMILIES:
+        return text
+    return _fold_symbol_pua(text, protect_markers=family not in _SYMBOL_FAMILIES)
+
 
 # Arabic Presentation Forms-A (U+FB50-U+FDFF) and Forms-B (U+FE70-U+FEFF).
 # Some PDF fonts encode Arabic with these compatibility codepoints, which carry
@@ -191,9 +284,14 @@ def cell_text_lines(cells: Iterable[TextCell]) -> list[str]:
     """Return the stripped, non-empty texts of the cells.
 
     Some PDF fonts emit STX (U+0002) for the hyphen glyph; it is restored to "-".
+
+    Symbol glyphs stranded in the Private-Use Area are folded here, per cell,
+    rather than in :func:`normalize_extracted_text`. The callers join many
+    cells before normalizing, and by then the font behind each glyph is lost;
+    a cell still carries it on ``PdfTextCell.font_name``.
     """
     return [
-        cell.text.replace("\x02", "-").strip()
+        fold_symbol_pua_for_cell(cell, cell.text.replace("\x02", "-").strip())
         for cell in cells
         if len(cell.text.strip()) > 0
     ]
@@ -215,9 +313,11 @@ def normalize_extracted_text(text: str) -> str:
     """Apply all character-level normalization to text extracted from a page.
 
     Typographic characters are replaced by plain equivalents, ligatures are
-    expanded, Symbol-font glyphs stranded in the Private-Use Area are
-    folded to real Unicode, and Arabic presentation forms are folded to
-    canonical letters.
+    expanded, and Arabic presentation forms are folded to canonical letters.
+
+    This function takes a plain string, so it cannot know which font drew any
+    character. The Symbol private-use fold needs that, and runs per cell in
+    :func:`cell_text_lines` instead.
     """
     for raw, clean in _TYPOGRAPHIC_MAP.items():
         text = text.replace(raw, clean)
@@ -234,7 +334,4 @@ def normalize_extracted_text(text: str) -> str:
         ),
         text,
     )
-    # Symbol-font glyphs stranded in the Private-Use Area by a PDF with a
-    # missing or PUA-targeting /ToUnicode map are folded to real Unicode.
-    text = _SYMBOL_PUA_RE.sub(lambda m: _SYMBOL_PUA_MAP[m.group(0)], text)
     return normalize_arabic_presentation_forms(text)
