@@ -534,6 +534,30 @@ def test_patent_uspto_iso8879_sigma_entities() -> None:
     assert f"each {sigma}j is a relative prime number" in abstract
 
 
+def test_patent_uspto_grant_v2_italic_h() -> None:
+    """An italic h is the Planck constant sign, U+210E.
+
+    Unicode leaves U+1D455 in the Mathematical Italic block unassigned, because
+    the italic small h was already encoded as U+210E. The text had the
+    unassigned code point instead of the letter.
+    """
+    source = (DATA_PATH / "pg06442728.xml").read_bytes()
+    source = source.replace(
+        b"<ITALIC><PDAT>modP</PDAT></ITALIC>", b"<ITALIC><PDAT>modh</PDAT></ITALIC>"
+    )
+    converter = DocumentConverter(allowed_formats=[InputFormat.XML_USPTO])
+
+    doc = converter.convert(
+        DocumentStream(name="pg06442728.xml", stream=BytesIO(source))
+    ).document
+
+    italic_mod = "\N{MATHEMATICAL ITALIC SMALL M}\N{MATHEMATICAL ITALIC SMALL O}"
+    italic_mod += "\N{MATHEMATICAL ITALIC SMALL D}"
+    claim = next(item.text for item in doc.texts if item.text.startswith("1. "))
+    assert f"{italic_mod}\N{PLANCK CONSTANT})" in claim
+    assert "\U0001d455" not in claim
+
+
 def test_patent_uspto_app_v1(patents):
     """Test applications Full Text Data/XML Version 1.x."""
 
