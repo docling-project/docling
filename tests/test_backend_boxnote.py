@@ -285,6 +285,48 @@ def test_table_oversized_spans_clamped_to_table_size():
     ]
 
 
+def _ordered_list(attrs: dict | None, *texts: str) -> dict:
+    items = [
+        {
+            "type": "list_item",
+            "content": [
+                {"type": "paragraph", "content": [{"type": "text", "text": text}]}
+            ],
+        }
+        for text in texts
+    ]
+    node: dict = {"type": "ordered_list", "content": items}
+    if attrs is not None:
+        node["attrs"] = attrs
+    return node
+
+
+def test_ordered_list_starts_at_its_order_attribute():
+    payload = {
+        "doc": {
+            "type": "doc",
+            "content": [
+                _ordered_list({"order": 1}, "Plan"),
+                {"type": "paragraph", "content": [{"type": "text", "text": "Note"}]},
+                _ordered_list({"order": 2}, "Build", "Ship"),
+            ],
+        }
+    }
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    assert doc.export_to_markdown() == "1. Plan\n\nNote\n\n2. Build\n3. Ship"
+
+
+@pytest.mark.parametrize("attrs", [None, {}, {"order": "5"}, {"order": -2}])
+def test_ordered_list_without_valid_order_starts_at_one(attrs):
+    payload = {
+        "doc": {"type": "doc", "content": [_ordered_list(attrs, "First", "Second")]}
+    }
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    assert doc.export_to_markdown() == "1. First\n2. Second"
+
+
 def test_empty_leading_paragraph_keeps_the_following_paragraph_in_order():
     # The first block of a list item becomes its text only when it is a
     # paragraph. An empty one must not let a later paragraph take that place,
