@@ -125,7 +125,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
             raw = self._read_bytes()
             self.is_msg = raw.startswith(_MSG_MAGIC)
             if self.is_msg:
-                raw = self._msg_to_rfc822_bytes(raw)
+                raw = self._msg_to_rfc822_bytes(
+                    raw, include_attachment_content=self.options.process_attachments
+                )
             self.mail = mailparser.parse_from_bytes(raw)
 
             self.valid = self.mail is not None
@@ -176,7 +178,9 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         return " ".join(value.split())
 
     @staticmethod
-    def _msg_to_rfc822_bytes(data: bytes) -> bytes:
+    def _msg_to_rfc822_bytes(
+        data: bytes, include_attachment_content: bool = False
+    ) -> bytes:
         """Project an Outlook ``.msg`` (OLE2/CFB) onto RFC 822 bytes.
 
         python-oxmsg reads the MAPI message; we assemble a standard
@@ -237,10 +241,10 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         for attachment in message.attachments:
             mime_type = attachment.mime_type or "application/octet-stream"
             maintype, _, subtype = mime_type.partition("/")
-            # Only filename and MIME type are needed; pass an empty payload to avoid
-            # copying attachment content into the RFC 822 byte stream.
+            # Unless attachments are parsed, only filename and MIME type are needed;
+            # pass an empty payload to avoid copying content into the RFC 822 bytes.
             email_message.add_attachment(
-                b"",
+                (attachment.file_bytes or b"") if include_attachment_content else b"",
                 maintype=maintype or "application",
                 subtype=subtype or "octet-stream",
                 filename=attachment.file_name,

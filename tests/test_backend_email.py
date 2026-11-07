@@ -712,7 +712,7 @@ def test_email_falls_back_to_html_when_the_plain_part_is_blank():
 
     assert "Real content that should appear." in doc.export_to_markdown()
 
-    
+
 def _email_backend(path: Path, options: EmailBackendOptions) -> EmailDocumentBackend:
     in_doc = InputDocument(
         path_or_stream=path,
@@ -818,6 +818,8 @@ def test_email_attachments_share_one_converter():
 
     assert first is not None
     assert first is second
+
+
 def test_msg_to_rfc822_keeps_attachment_metadata_without_payload():
     from oxmsg import Message as OxMsgMessage
 
