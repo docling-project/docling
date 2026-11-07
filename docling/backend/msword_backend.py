@@ -881,6 +881,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.listIter = 0
         # Track list counters per numId and ilvl
         self.list_counters: dict[tuple[int, int], int] = {}
+        # (numId, ilvl) of the levels that a higher level reset. The next item
+        # of such a level starts again at the start value of the level
+        self.restarted_list_levels: set[tuple[int, int]] = set()
         # numIds already opened in this document. Word numbers continuously
         # per numId, so a numId that reappears is a resumed list, not a new one
         self.started_numids: set[int] = set()
@@ -1807,15 +1810,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return 1
 
     def _get_list_counter(self, numid: int, ilvl: int) -> int:
-        """Get and increment the counter for a specific numId and ilvl combination."""
+        """Get and increment the counter for a specific numId and ilvl combination.
+
+        The first item of a level gets the start value of the level. When a
+        higher level advances, the level restarts: its next item gets the start
+        value again (ECMA-376 Part 1, 17.9.26 and 17.9.27).
+        """
         key = (numid, ilvl)
-        if key not in self.list_counters:
+        if key not in self.list_counters or key in self.restarted_list_levels:
+            self.restarted_list_levels.discard(key)
             start = self._get_start_value(numid, ilvl)
             self.list_counters[key] = start - 1
         self.list_counters[key] += 1
-        # Reset sub-level counters since parent level advanced
+        # Reset sub-level counters since parent level advanced. Until its next
+        # item, a reset level shows 0 in the markers of deeper items.
         for k in [k for k in self.list_counters if k[0] == numid and k[1] > ilvl]:
             self.list_counters[k] = 0
+            self.restarted_list_levels.add(k)
         return self.list_counters[key]
 
     def _reset_list_counters_for_new_sequence(self, numid: int):
@@ -3462,6 +3473,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.list_counters[(numid, heading_ilevel)] = self.numbered_headers[
                     add_level
                 ]
+                # The next item of this level continues from the heading number.
+                self.restarted_list_levels.discard((numid, heading_ilevel))
 
                 # Restart deeper counters whose numbering templates depend on
                 # this heading level (e.g. "Tabell %1.%7"). Unrelated list
