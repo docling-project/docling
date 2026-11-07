@@ -1524,6 +1524,11 @@ class PatentUsptoAppV1(PatentUspto):
             self.text = ""
 
 
+# Script elements of the ICE, application v1 and grant v2.5 formats.
+_TABLE_SUPERSCRIPTS: Final[list[str]] = ["sup", "superscript", "SP"]
+_TABLE_SUBSCRIPTS: Final[list[str]] = ["sub", "subscript", "SB"]
+
+
 class XmlTable:
     """Provide a table parser for xml tables in USPTO patent documents.
 
@@ -1559,6 +1564,7 @@ class XmlTable:
         self.nbr_messages = 0
         self.empty_text = ""
         self._soup = BeautifulSoup(input, features="xml")
+        self._style_html = HtmlEntity()
 
     def _create_tg_range(self, tgs: list[ColInfo]) -> dict[int, ColInfoType]:
         """Create a unified range along the table groups.
@@ -1812,6 +1818,23 @@ class XmlTable:
 
         return dl_table
 
+    def _apply_scripts(self, table: Tag) -> None:
+        """Write the superscripts and subscripts of a table as the body text does.
+
+        The cell text is the plain text of an entry, so without this step
+        ``ZnSO<sub>4</sub>`` is ``ZnSO4`` in a table and ``ZnSO₄`` in a paragraph.
+
+        Args:
+            table: The table element. Its script elements are replaced in place.
+        """
+        for script in table.find_all(_TABLE_SUPERSCRIPTS + _TABLE_SUBSCRIPTS):
+            text = script.get_text()
+            if script.name in _TABLE_SUPERSCRIPTS:
+                styled = self._style_html.get_superscript(text)
+            else:
+                styled = self._style_html.get_subscript(text)
+            script.replace_with(html.unescape(styled))
+
     def parse(self) -> TableData | None:
         """Parse the first table from an xml content.
 
@@ -1820,6 +1843,7 @@ class XmlTable:
         """
         section = self._soup.find("table")
         if isinstance(section, Tag):
+            self._apply_scripts(section)
             table = self._parse_table(section)
             if table.num_rows == 0 or table.num_cols == 0:
                 _log.warning("The parsed USPTO table is empty")

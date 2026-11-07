@@ -229,6 +229,35 @@ def test_table_out_of_range_namest_does_not_crash():
     assert [cell.text for cell in ok.table_cells] == ["a", "b"]
 
 
+@pytest.mark.parametrize(
+    ("sup", "sub"),
+    [
+        ("sup", "sub"),  # ICE
+        ("superscript", "subscript"),  # application v1
+        ("SP", "SB"),  # grant v2.5
+    ],
+)
+def test_table_cell_scripts_match_the_body_text(sup: str, sub: str) -> None:
+    """A table cell writes sub- and superscripts as the paragraphs of the patent do.
+
+    The cell text came from the plain text of the entry, so ``ZnSO<sub>4</sub>``
+    became ``ZnSO4`` in a table and ``ZnSO₄`` in the body.
+    """
+    xml = (
+        '<table><tgroup cols="2">'
+        '<colspec colname="1" colwidth="1"/><colspec colname="2" colwidth="1"/>'
+        "<tbody><row>"
+        f"<entry>ZnSO<{sub}>4</{sub}></entry>"
+        f"<entry>m<{sup}>&#x2212;2 </{sup}>s<{sup}>&#x2212;1</{sup}></entry>"
+        "</row></tbody></tgroup></table>"
+    )
+
+    table = XmlTable(xml).parse()
+
+    assert table is not None
+    assert [cell.text for cell in table.table_cells] == ["ZnSO₄", "m⁻² s⁻¹"]
+
+
 def test_extract_raw_tables_matches_line_leading_tables():
     """Tables start at a line-leading ``<table `` and end at the next ``</table>``."""
     content = (
