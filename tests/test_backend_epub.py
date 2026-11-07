@@ -555,6 +555,81 @@ def test_epub_internal_links_in_either_quote_style(tmp_path: Path):
     assert hyperlinks == ["#note2", "#note2", absolute]
 
 
+def test_epub_internal_link_rewrite_leaves_text_alone(tmp_path: Path):
+    """Only a link of the markup is reduced to its anchor, not a link in text.
+
+    A book about HTML shows tags in its code listings and in its prose. Their
+    "<" is escaped, since XML text cannot hold a literal one, but the quotes of
+    an attribute need no escape, so 'href="chapter2.xhtml#note2"' can be text
+    as well as markup. Rewritten in the text, the listing shows the reader a
+    link that the book does not contain.
+    """
+    names = ["chapter1.xhtml", "chapter2.xhtml"]
+    listing = '<a href="chapter2.xhtml#note2">note 2</a>'
+    bodies = [
+        '<pre><code>&lt;a href="chapter2.xhtml#note2"&gt;note 2&lt;/a&gt;</code></pre>'
+        '<p>Write <code>href="chapter2.xhtml#note2"</code> to link it.</p>'
+        f'<p>See <a href="{names[1]}#note2">note 2</a>.</p>',
+        '<p id="note2">Note 2.</p>',
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "listing.epub", hrefs=names, names=names, bodies=bodies
+    )
+
+    doc = get_converter().convert(epub_path, raises_on_error=True).document
+
+    texts = [item.text for item in doc.texts]
+    hyperlinks = [
+        str(item.hyperlink)
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+
+    assert listing in texts
+    assert 'href="chapter2.xhtml#note2"' in texts
+    assert hyperlinks == ["#note2"]
+
+
+def test_epub_image_source_rewrite_leaves_text_alone(tmp_path: Path):
+    """Only an image src of the markup is resolved inside the archive.
+
+    With images fetched, a src becomes the path of its image in the archive.
+    The same rewrite in a code listing replaces the "../Images/logo.png" that
+    the book shows with an archive path, which the book does not contain.
+    """
+    buf = BytesIO()
+    Image.new("RGB", (4, 3), "red").save(buf, format="PNG")
+
+    bodies = [
+        '<pre><code>&lt;img src="../Images/logo.png"/&gt;</code></pre>'
+        '<img src="../Images/logo.png" alt="logo"/>'
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "listing.epub",
+        hrefs=["Text/ch1.xhtml"],
+        names=["Text/ch1.xhtml"],
+        bodies=bodies,
+    )
+    with zipfile.ZipFile(epub_path, "a") as z:
+        z.writestr("OEBPS/Images/logo.png", buf.getvalue())
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.EPUB],
+        format_options={
+            InputFormat.EPUB: EpubFormatOption(
+                backend_options=EpubBackendOptions(
+                    fetch_images=True, enable_local_fetch=True
+                )
+            )
+        },
+    )
+    doc = converter.convert(epub_path, raises_on_error=True).document
+
+    assert '<img src="../Images/logo.png"/>' in [item.text for item in doc.texts]
+    assert len(doc.pictures) == 1
+    assert doc.pictures[0].image is not None
+
+
 def test_epub_image_sources_in_either_quote_style_and_percent_escaped(
     tmp_path: Path,
 ):
