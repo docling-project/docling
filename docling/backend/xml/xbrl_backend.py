@@ -23,12 +23,13 @@ import html
 import logging
 import re
 import shutil
+import threading
 import zipfile
 from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Final
+from typing import Final
 from urllib.parse import unquote, urljoin, urlparse
 from xml.sax.saxutils import escape as xml_escape
 
@@ -49,12 +50,6 @@ from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOpt
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, OperationNotAllowed
-
-if TYPE_CHECKING:
-    from arelle import (
-        Cntlr as _ArelleCntlrModule,
-        PackageManager as _ArellePackageManagerModule,
-    )
 
 _XBRL_AVAILABLE: bool = False
 _XBRL_IMPORT_ERROR: ImportError | None = None
@@ -77,6 +72,7 @@ _log = logging.getLogger(__name__)
 
 
 _WEB_CACHE_TIMEOUT: Final[int] = 10
+_ARELLE_LOAD_LOCK: Final = threading.Lock()
 
 
 # Elements that reference schemas and linkbases of an XBRL or iXBRL document. The
@@ -169,39 +165,6 @@ def _warn_unresolved_facts(model: ModelXbrl) -> None:
         )
 
 
-def _remove_transient_packages(
-    pkg_mgr: _ArellePackageManagerModule.PackageManager,
-    ids_before: set[str],
-    cntlr: _ArelleCntlrModule.Cntlr,
-) -> None:
-    """Remove taxonomy packages added during this conversion from the singleton.
-
-    Removes only packages whose identifiers were not present in ``ids_before``,
-    then rebuilds the URL remapping table.  Standard packages already registered
-    before this conversion (e.g. US-GAAP or IFRS) are left intact.
-
-    Args:
-        pkg_mgr: The Arelle ``PackageManager`` singleton instance.
-        ids_before: Package identifiers that existed before this conversion's load.
-        cntlr: The Arelle ``Cntlr`` used for this conversion, needed by
-            ``rebuildRemappings``.
-    """
-    pkg_cfg = pkg_mgr.packagesConfig
-    if not pkg_cfg:
-        return
-    packages: list[dict] = pkg_cfg.get("packages", [])
-    kept = [p for p in packages if p.get("identifier") in ids_before]
-    removed_count = len(packages) - len(kept)
-    if removed_count:
-        packages[:] = kept
-        pkg_mgr.packagesConfigChanged = True
-        pkg_mgr.rebuildRemappings(cntlr)
-        _log.debug(
-            f"Removed {removed_count} transient taxonomy package(s) from"
-            " Arelle PackageManager singleton after conversion."
-        )
-
-
 class XBRLDocumentBackend(DeclarativeDocumentBackend):
     """Backend to parse XBRL (eXtensible Business Reporting Language) documents.
 
@@ -273,8 +236,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     instance_path = Path(shutil.copy2(path_or_stream, tmp_path))
 
-                if options.taxonomy:
-                    taxonomy: Path = options.taxonomy.resolve()
+                if self.options.taxonomy:
+                    taxonomy: Path = self.options.taxonomy.resolve()
                     if not taxonomy.is_dir():
                         raise ValueError(
                             "The 'taxonomy' backend option must be a directory"
@@ -302,42 +265,37 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                         )
                     )
 
-                cntlr = Cntlr.Cntlr()
-                # Apply the fetch options to every document that Arelle resolves.
-                # The copy of the instance and of the taxonomy folder is always
-                # readable.
-                web_cache = FetchPolicyWebCache(
-                    cntlr,
-                    enable_local_fetch=self.options.enable_local_fetch,
-                    enable_remote_fetch=self.options.enable_remote_fetch,
-                    local_roots=[tmp_path],
-                )
-                cntlr.webCache = web_cache
-                if not self.options.enable_remote_fetch:
-                    cntlr.modelManager.validateDisclosureSystem = False
-                else:
-                    # TODO: parametrize the timeout?
-                    web_cache.timeout = _WEB_CACHE_TIMEOUT
-                    # TODO: custom set cntlr.webCache.cacheDir?
-                    _log.debug(
-                        f"Web Cache for remote taxonomy is: {web_cache.cacheDir}"
+                # Arelle keeps the taxonomy packages and their URL remappings in
+                # a process-wide registry, so a package must not outlive its load.
+                with _ARELLE_LOAD_LOCK:
+                    _ArellePackageManager.reset()
+                    cntlr = Cntlr.Cntlr()
+                    # Apply the fetch options to every document that Arelle resolves.
+                    # The copy of the instance and of the taxonomy folder is always
+                    # readable.
+                    web_cache = FetchPolicyWebCache(
+                        cntlr,
+                        enable_local_fetch=self.options.enable_local_fetch,
+                        enable_remote_fetch=self.options.enable_remote_fetch,
+                        local_roots=[tmp_path],
                     )
+                    cntlr.webCache = web_cache
+                    if not self.options.enable_remote_fetch:
+                        cntlr.modelManager.validateDisclosureSystem = False
+                    else:
+                        # TODO: parametrize the timeout?
+                        web_cache.timeout = _WEB_CACHE_TIMEOUT
+                        # TODO: custom set cntlr.webCache.cacheDir?
+                        _log.debug(
+                            f"Web Cache for remote taxonomy is: {web_cache.cacheDir}"
+                        )
 
-                pkg_mgr = _ArellePackageManager.getInstance()
-                pkg_cfg = pkg_mgr.packagesConfig or {}
-                pkg_ids_before: set[str] = {
-                    p["identifier"]
-                    for p in pkg_cfg.get("packages", [])
-                    if p.get("identifier")
-                }
-
-                try:
-                    model = cntlr.modelManager.load(
-                        str(instance_path), taxonomyPackages=zip_paths
-                    )
-                finally:
-                    if zip_paths:
-                        _remove_transient_packages(pkg_mgr, pkg_ids_before, cntlr)
+                    try:
+                        model = cntlr.modelManager.load(
+                            str(instance_path), taxonomyPackages=zip_paths
+                        )
+                    finally:
+                        _ArellePackageManager.reset()
 
                 if web_cache.refused:
                     raise OperationNotAllowed(

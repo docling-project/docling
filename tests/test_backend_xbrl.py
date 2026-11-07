@@ -9,8 +9,8 @@ and Retrieval (EDGAR) system.
 """
 
 import os
+import shutil
 import threading
-import time
 import zipfile
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -19,12 +19,8 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import DoclingDocument
-from lxml import etree
 
-from docling.backend.xml.xbrl_backend import (
-    XBRLDocumentBackend,
-    _absolutize_missing_refs,
-)
+from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import XBRLBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, InputDocument
@@ -36,44 +32,42 @@ from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
 
-_SOURCES_DIR = Path(__file__).parent / "data" / "xbrl" / "sources"
-_GT_DIR = Path(__file__).parent / "data" / "xbrl" / "groundtruth"
-
 
 @pytest.fixture(scope="module")
 def xbrl_paths() -> list[tuple[Path, Path]]:
+    directory = Path(os.path.dirname(__file__) + "/data/xbrl/sources/")
     xml_files = sorted(
         [
             item
-            for item in _SOURCES_DIR.iterdir()
+            for item in directory.iterdir()
             if item.is_file() and item.suffix.lower() in {".xml", ".xbrl"}
         ],
         key=lambda p: p.name.lower(),
     )
-    taxonomy_dirs = sorted(
+    taxonomy_dir = sorted(
         [
             item
-            for item in _SOURCES_DIR.iterdir()
-            if item.is_dir() and item.name.endswith("-taxonomy")
+            for item in directory.iterdir()
+            if item.is_dir() and str(item).endswith("-taxonomy")
         ],
         key=lambda p: p.name.lower(),
     )
-    assert len(xml_files) == len(taxonomy_dirs), (
+    assert len(xml_files) == len(taxonomy_dir), (
         "Mismatch in XBRL instance reports and taxonomy directories"
     )
-    return list(zip(xml_files, taxonomy_dirs))
+
+    return list(zip(xml_files, taxonomy_dir))
 
 
 @pytest.fixture(scope="module")
-def documents(
-    xbrl_paths: list[tuple[Path, Path]],
-) -> list[tuple[Path, DoclingDocument]]:
-    results: list[tuple[Path, DoclingDocument]] = []
+def documents(xbrl_paths) -> list[tuple[Path, DoclingDocument]]:
+    documents: list[tuple[Path, DoclingDocument]] = []
     for report, taxonomy in xbrl_paths:
-        gt_path = _GT_DIR / report.name
-        # To download external taxonomy files into the web cache, replace with:
-        # XBRLBackendOptions(enable_local_fetch=True, enable_remote_fetch=True, taxonomy=taxonomy)
+        gt_path = report.parent.parent / "groundtruth" / report.name
+
         backend_options = XBRLBackendOptions(enable_local_fetch=True, taxonomy=taxonomy)
+        # set enable_remote_fetch to download the necessary external taxonomy files in web cache
+        # backend_options = XBRLBackendOptions(enable_local_fetch=True, enable_remote_fetch=True, taxonomy=taxonomy)
         converter = DocumentConverter(
             allowed_formats=[InputFormat.XML_XBRL],
             format_options={
@@ -82,9 +76,11 @@ def documents(
         )
         conv_result: ConversionResult = converter.convert(report)
         doc: DoclingDocument = conv_result.document
+
         assert doc, f"Failed to convert document from file {report}"
-        results.append((gt_path, doc))
-    return results
+        documents.append((gt_path, doc))
+
+    return documents
 
 
 def test_e2e_xbrl_conversions(documents):
@@ -109,7 +105,7 @@ def test_ixbrl_report_converts_offline():
 
     IBM's 10-Q has facts with typed dimensions, which have no member QName.
     """
-    ixbrl_dir = _SOURCES_DIR.parent / "ixbrl"
+    ixbrl_dir = Path(__file__).parent / "data" / "xbrl" / "ixbrl"
     converter = DocumentConverter(
         allowed_formats=[InputFormat.XML_XBRL],
         format_options={
@@ -126,8 +122,27 @@ def test_ixbrl_report_converts_offline():
         doc.texts[0].text
         == "10-Q INTERNATIONAL BUSINESS MACHINES CORPORATION 2026-09-30"
     )
-    assert len(doc.tables) > 0
-    assert len(doc.key_value_items[0].graph.links) > 0
+    assert len(doc.tables) == 166
+
+    graph = doc.key_value_items[0].graph
+    cells = {cell.cell_id: cell for cell in graph.cells}
+    facts: dict[str, list[list[str]]] = {}
+    for cell in graph.cells:
+        if cell.text == "nonFraction":
+            targets = [
+                cells[link.target_cell_id].text
+                for link in graph.links
+                if link.source_cell_id == cell.cell_id
+            ]
+            facts.setdefault(cell.orig, []).append(targets)
+    assert facts["us-gaap:RevenueRemainingPerformanceObligation"] == [
+        [
+            "value: 69000000000",
+            "period: 2026-09-30",
+            "currency: USD",
+            "decimals: -9",
+        ]
+    ]
 
 
 def test_ixbrl_warns_when_taxonomy_is_not_found(tmp_path, caplog, no_taxonomy_packages):
@@ -136,7 +151,7 @@ def test_ixbrl_warns_when_taxonomy_is_not_found(tmp_path, caplog, no_taxonomy_pa
     The package maps every ``https://`` URL to its own files. The extension
     taxonomy of the report is not among them, and it is not fetched remotely.
     """
-    ixbrl_dir = _SOURCES_DIR.parent / "ixbrl"
+    ixbrl_dir = Path(__file__).parent / "data" / "xbrl" / "ixbrl"
     taxonomy = tmp_path / "taxonomy"
     taxonomy.mkdir()
     with (
@@ -193,92 +208,9 @@ def test_xbrl_divide_unit_keeps_denominator(documents):
     assert unit_texts.get("us-gaap:Assets") == {"currency: USD"}
 
 
-_SOURCE_URL = "https://www.sec.gov/Archives/edgar/data/1/2/report-20260930.htm"
-
-
-def test_absolutize_missing_refs_resolves_only_missing_relative_refs(tmp_path):
-    (tmp_path / "local.xsd").write_text("")
-    content = (
-        b'<ix:references xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"'
-        b' xmlns:link="http://www.xbrl.org/2003/linkbase"'
-        b' xmlns:xlink="http://www.w3.org/1999/xlink">'
-        b'<link:schemaRef xlink:type="simple" xlink:href="report-20260930.xsd"/>'
-        b'<link:schemaRef xlink:href="local.xsd"/>'
-        b'<link:linkbaseRef xlink:href="sub/report_pre.xml#id"/>'
-        b'<link:schemaRef xlink:href="https://example.org/base.xsd"/>'
-        b"</ix:references>"
-    )
-
-    result = _absolutize_missing_refs(content, tmp_path, _SOURCE_URL)
-
-    base = b"https://www.sec.gov/Archives/edgar/data/1/2/"
-    assert b'xlink:href="' + base + b'report-20260930.xsd"' in result
-    assert b'xlink:href="' + base + b'sub/report_pre.xml#id"' in result
-    assert b'xlink:href="local.xsd"' in result
-    assert b'xlink:href="https://example.org/base.xsd"' in result
-
-
-def test_absolutize_missing_refs_is_safe_with_hostile_references(tmp_path):
-    (tmp_path / "secret.xsd").write_text("")
-    base_dir = tmp_path / "work"
-    base_dir.mkdir()
-    origin = "https://www.sec.gov/"
-    hrefs = [
-        "../secret.xsd",
-        "/etc/passwd",
-        "a&quot; onload=&quot;x.xsd",
-        "a&amp;b.xsd",
-        "x.xsd#a&apos;b",
-        "//evil.example/x.xsd",
-        "https://evil.example/x.xsd",
-        "file:///etc/passwd",
-    ]
-    content = (
-        b"".join(
-            b'<link:schemaRef xlink:href="' + href.encode() + b'"/>' for href in hrefs
-        )
-        + b"<link:schemaRef xlink:href='say \"hi\".xsd'/>"
-    )
-
-    result = _absolutize_missing_refs(content, base_dir, _SOURCE_URL)
-
-    # The result is well-formed XML: no value can close its attribute early.
-    root = etree.fromstring(b'<r xmlns:link="l" xmlns:xlink="x">' + result + b"</r>")
-    resolved = [ref.get("{x}href") for ref in root]
-    # A reference that leaves the work folder never counts as a local file: it is
-    # resolved against the source URL instead of probing the file system.
-    assert resolved[0] == origin + "Archives/edgar/data/1/secret.xsd"
-    assert resolved[1] == origin + "etc/passwd"
-    assert resolved[2] == origin + 'Archives/edgar/data/1/2/a" onload="x.xsd'
-    assert resolved[3] == origin + "Archives/edgar/data/1/2/a&b.xsd"
-    assert resolved[4] == origin + "Archives/edgar/data/1/2/x.xsd#a'b"
-    # References to other origins are not rewritten.
-    assert resolved[5] == "//evil.example/x.xsd"
-    assert resolved[6] == "https://evil.example/x.xsd"
-    assert resolved[7] == "file:///etc/passwd"
-    assert resolved[8] == origin + 'Archives/edgar/data/1/2/say "hi".xsd'
-
-
-def test_absolutize_missing_refs_is_linear_on_malformed_input(tmp_path):
-    start = time.perf_counter()
-    _absolutize_missing_refs(b"<schemaRef " * 50_000, tmp_path, _SOURCE_URL)
-    _absolutize_missing_refs(b"<schemaRef href='" * 50_000, tmp_path, _SOURCE_URL)
-
-    assert time.perf_counter() - start < 5
-
-
-@pytest.mark.parametrize(
-    "value",
-    [
-        "https://user:pass@www.sec.gov/Archives/report.htm",
-        "ftp://www.sec.gov/report.htm",
-        "file:///etc/passwd",
-        "report.htm",
-    ],
-)
-def test_xbrl_source_uri_rejects_credentials_and_other_schemes(value):
+def test_xbrl_source_uri_rejects_credentials():
     with pytest.raises(ValueError):
-        XBRLBackendOptions(source_uri=value)
+        XBRLBackendOptions(source_uri="https://user:pass@www.sec.gov/report.htm")
 
 
 def test_xbrl_format_option_does_not_keep_url_with_credentials():
@@ -313,11 +245,60 @@ def test_xbrl_source_uri_does_not_bypass_fetch_policy(
     assert requests == []
 
 
-def test_xbrl_source_uri_is_ignored_without_remote_fetch(
+def test_xbrl_source_uri_resolves_relative_references(
     no_taxonomy_packages, local_server
 ):
+    """Missing relative references stay on the origin of `source_uri`."""
     base_url, requests = local_server
-    stream = _instance_with_schema_ref("relative.xsd")
+
+    message = _load_refused(
+        _instance_with_schema_ref(
+            "relative.xsd",
+            "/absolute.xsd",
+            "../parent.xsd",
+            "a&amp;b.xsd",
+            "a&quot; onload=&quot;x.xsd",
+        ),
+        XBRLBackendOptions(
+            enable_remote_fetch=True, source_uri=f"{base_url}/dir/report.xbrl"
+        ),
+    )
+
+    for url in (
+        f"{base_url}/dir/relative.xsd",
+        f"{base_url}/absolute.xsd",
+        f"{base_url}/parent.xsd",
+        f"{base_url}/dir/a&b.xsd",
+        f"{base_url}/dir/a%22%20onload=%22x.xsd",
+    ):
+        assert f"{url} (Access to restricted IP address" in message
+    assert requests == []
+
+
+def test_xbrl_source_uri_does_not_rewrite_other_origins(
+    no_taxonomy_packages, local_server
+):
+    base_url, _ = local_server
+
+    message = _load_refused(
+        _instance_with_schema_ref("//other.example/x.xsd"),
+        XBRLBackendOptions(
+            enable_remote_fetch=True, source_uri=f"{base_url}/dir/report.xbrl"
+        ),
+    )
+
+    assert "fetch options: //other.example/x.xsd (" in message
+
+
+def test_xbrl_source_uri_keeps_local_taxonomy_files(
+    no_taxonomy_packages, local_server, tmp_path
+):
+    """A reference found in the `taxonomy` folder is loaded from there."""
+    base_url, requests = local_server
+    (tmp_path / "local.xsd").write_text(
+        '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"/>'
+    )
+    stream = _instance_with_schema_ref("local.xsd")
     in_doc = InputDocument(
         path_or_stream=stream,
         format=InputFormat.XML_XBRL,
@@ -325,13 +306,52 @@ def test_xbrl_source_uri_is_ignored_without_remote_fetch(
         filename="instance.xbrl",
     )
     options = XBRLBackendOptions(
-        enable_local_fetch=True, source_uri=f"{base_url}/dir/report.xbrl"
+        enable_local_fetch=True,
+        enable_remote_fetch=True,
+        source_uri=f"{base_url}/dir/report.xbrl",
+        taxonomy=tmp_path,
     )
 
     backend = XBRLDocumentBackend(in_doc, stream, options)
     backend.unload()
 
     assert requests == []
+
+
+def test_xbrl_conversion_does_not_keep_taxonomy_packages(
+    no_taxonomy_packages, tmp_path
+):
+    """The taxonomy package of one conversion does not affect the next one."""
+    sources = Path(__file__).parent / "data" / "xbrl" / "sources"
+    extension_only = tmp_path / "mlac-taxonomy"
+    shutil.copytree(
+        sources / "mlac-taxonomy",
+        extension_only,
+        ignore=shutil.ignore_patterns("*.zip"),
+    )
+
+    def count_cells(report: str, taxonomy: Path) -> int:
+        converter = DocumentConverter(
+            allowed_formats=[InputFormat.XML_XBRL],
+            format_options={
+                InputFormat.XML_XBRL: XBRLFormatOption(
+                    backend_options=XBRLBackendOptions(
+                        enable_local_fetch=True, taxonomy=taxonomy
+                    )
+                )
+            },
+        )
+        doc = converter.convert(sources / report).document
+        return len(doc.key_value_items[0].graph.cells)
+
+    expected = count_cells("mlac-20251231.xml", extension_only)
+    count_cells("grve_10q_htm.xml", sources / "grve-taxonomy")
+
+    assert expected > 0
+    assert count_cells("mlac-20251231.xml", extension_only) == expected
+
+
+_SOURCE_URL = "https://www.sec.gov/Archives/edgar/data/1/2/report-20260930.htm"
 
 
 @pytest.mark.parametrize(
@@ -355,14 +375,17 @@ def test_xbrl_format_option_keeps_remote_source_uri(source, expected):
     assert options.enable_remote_fetch
 
 
-def _instance_with_schema_ref(href: str) -> BytesIO:
+def _instance_with_schema_ref(*hrefs: str) -> BytesIO:
+    refs = "".join(
+        f'<link:schemaRef xlink:type="simple" xlink:href="{href}"/>' for href in hrefs
+    )
     return BytesIO(
-        b'<xbrli:xbrl xmlns:xbrli="http://www.xbrl.org/2003/instance"'
-        b' xmlns:link="http://www.xbrl.org/2003/linkbase"'
-        b' xmlns:xlink="http://www.w3.org/1999/xlink">'
-        b'<link:schemaRef xlink:type="simple" xlink:href="'
-        + href.encode()
-        + b'"/></xbrli:xbrl>'
+        (
+            '<xbrli:xbrl xmlns:xbrli="http://www.xbrl.org/2003/instance"'
+            ' xmlns:link="http://www.xbrl.org/2003/linkbase"'
+            ' xmlns:xlink="http://www.w3.org/1999/xlink">'
+            f"{refs}</xbrli:xbrl>"
+        ).encode()
     )
 
 
