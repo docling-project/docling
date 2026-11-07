@@ -186,8 +186,11 @@ def _decode_char_references(text: str) -> str:
 
     Only a reference that ends with a semicolon and names a known entity or a
     code point is decoded. `html.unescape` also decodes legacy names without a
-    semicolon (`&copy`) and the longest legacy prefix of an unknown name
-    (`&notit;`), which CommonMark keeps as literal text.
+    semicolon (`&copy`), the longest legacy prefix of an unknown name
+    (`&notit;`) and remaps some numeric references (`&#128;` to `€`, `&#1;` to
+    nothing). CommonMark keeps the first two as literal text and maps a number
+    directly to its code point, except for 0, surrogates and values out of
+    range, which give U+FFFD.
 
     Args:
         text: Text of a marko `RawText` node or of a title.
@@ -198,9 +201,15 @@ def _decode_char_references(text: str) -> str:
 
     def replace(match: re.Match[str]) -> str:
         reference = match.group(0)
-        if reference[1] != "#" and reference[1:] not in html5:
-            return reference
-        return unescape(reference)
+        if reference[1] != "#":
+            return html5.get(reference[1:], reference)
+        if reference[2] in "xX":
+            code_point = int(reference[3:-1], 16)
+        else:
+            code_point = int(reference[2:-1])
+        if code_point == 0 or code_point > 0x10FFFF or 0xD800 <= code_point <= 0xDFFF:
+            return "\ufffd"
+        return chr(code_point)
 
     return _CHAR_REFERENCE_PATTERN.sub(replace, text)
 

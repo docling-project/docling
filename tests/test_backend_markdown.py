@@ -1671,6 +1671,12 @@ def test_backslash_escape_in_rich_table_cell_stays_in_its_text_run():
             [("text", "© ∉ © © © <b> & c")],
             id="terminated",
         ),
+        # CommonMark maps a number to its code point, without the HTML5 remapping.
+        pytest.param(
+            "&#128; &#x80; &#1; &#0; &#xD800; &#x110000; &#1114111;",
+            [("text", "\x80 \x80 \x01 \ufffd \ufffd \ufffd \U0010ffff")],
+            id="numeric-code-point",
+        ),
         # CommonMark decodes only a reference that ends with a semicolon.
         pytest.param("&copy a &amp b", [("text", "&copy a &amp b")], id="no-semicolon"),
         pytest.param("&notit; a", [("text", "&notit; a")], id="legacy-prefix"),
