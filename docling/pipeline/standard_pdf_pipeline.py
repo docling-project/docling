@@ -91,6 +91,9 @@ from docling.models.stages.reading_order.readingorder_model import (
 from docling.models.stages.script_position.script_position_model import (
     ScriptPositionModel,
 )
+from docling.models.stages.table_continuation.table_continuation_model import (
+    TableContinuationModel,
+)
 from docling.pipeline.base_pipeline import (
     ConvertPipeline,
     get_expected_page_nos,
@@ -702,6 +705,9 @@ class StandardPdfPipeline(ConvertPipeline):
         self.script_position_model = ScriptPositionModel(
             options=self.pipeline_options.script_position_options
         )
+        self.table_continuation_model = TableContinuationModel(
+            options=self.pipeline_options.table_continuation_options
+        )
 
         # --- optional enrichment ------------------------------------------------
         # Create a copy to avoid mutating pipeline_options in-place,
@@ -1184,6 +1190,7 @@ class StandardPdfPipeline(ConvertPipeline):
             )
             conv_res.document = self.heading_hierarchy_model(conv_res)
             conv_res.document = self.script_position_model(conv_res)
+            conv_res.document = self.table_continuation_model(conv_res)
             if not self.pipeline_options.generate_parsed_pages:
                 for p in conv_res.pages:
                     p.parsed_page = None

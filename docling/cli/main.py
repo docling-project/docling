@@ -180,6 +180,7 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PipelineOptions,
     ProcessingPipeline,
+    TableContinuationOptions,
     TableFormerMode,
     TableStructureOptions,
     TesseractCliOcrOptions,
@@ -1242,6 +1243,16 @@ def convert(  # noqa: C901
             ),
         ),
     ] = False,
+    table_continuation: Annotated[
+        bool,
+        typer.Option(
+            "--table-continuation/--no-table-continuation",
+            help=(
+                "Merge tables that continue across a page break into one table, for PDF "
+                "and image inputs. Standard and legacy pipelines only."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
@@ -1966,6 +1977,9 @@ def convert(  # noqa: C901
                 use_reading_order_separators=reading_order_separators,
                 heading_hierarchy_options=HeadingHierarchyOptions(
                     enabled=heading_hierarchy
+                ),
+                table_continuation_options=TableContinuationOptions(
+                    enabled=table_continuation
                 ),
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,

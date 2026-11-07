@@ -2161,6 +2161,50 @@ class ScriptPositionOptions(BaseModel):
     ] = False
 
 
+class TableContinuationOptions(BaseModel):
+    """Options for merging tables that continue across a page break.
+
+    Table detection works one page at a time, so a table that runs over a page break comes out
+    as one ``TableItem`` per page. When ``enabled``, :class:`TableContinuationModel` runs right
+    after the reading-order model and joins a table into the table right before it when the two
+    are on consecutive pages with nothing in between, have the same columns, and the left edges
+    of their columns line up. The merged table has one ``prov`` entry per page, and its cells
+    keep their bounding boxes in the coordinates of the page they came from.
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Merge tables that continue across a page break into one table. When disabled "
+                "(default), each page fragment stays a separate table (unchanged behavior)."
+            )
+        ),
+    ] = False
+    max_column_shift: Annotated[
+        float,
+        Field(
+            ge=0.0,
+            le=1.0,
+            description=(
+                "Largest allowed shift of a column's left edge between two fragments, as a "
+                "fraction of the page width. Higher values merge more tables but risk joining "
+                "two different tables that happen to sit on consecutive pages."
+            ),
+        ),
+    ] = 0.02
+    repair_split_rows: Annotated[
+        bool,
+        Field(
+            description=(
+                "Join a record that the page break cut in two. The first row of a continuation "
+                "is appended to the last row of the previous fragment when its leading column "
+                "is empty and the leading column of that last row is filled."
+            )
+        ),
+    ] = True
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Configuration options for the PDF document processing pipeline.
 
@@ -2366,6 +2410,16 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = ScriptPositionOptions()
+    table_continuation_options: Annotated[
+        TableContinuationOptions,
+        Field(
+            description=(
+                "Configuration for merging tables that continue across a page break. Disabled "
+                "by default; when enabled, a table split over consecutive pages becomes one "
+                "TableItem with one provenance entry per page."
+            )
+        ),
+    ] = TableContinuationOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 
