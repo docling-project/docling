@@ -12,6 +12,7 @@ are based on open-access articles:
 4. pntd.0008301.nxml - CC0 1.0 (Burgert-Brucker et al. 2020, PMC7289444, https://doi.org/10.1371/journal.pntd.0008301)
 """
 
+import re
 from io import BytesIO
 from pathlib import Path
 
@@ -1255,6 +1256,103 @@ def test_jats_figure_image_blocks_path_traversal(
     assert "Content after the blocked figure." in doc.export_to_markdown()
 
 
+def test_jats_table_published_as_image_keeps_its_caption():
+    """A <table-wrap> with a <graphic> instead of a <table> becomes a picture in place."""
+    doc = convert_jats_body(
+        "<sec><title>Methods</title>"
+        "<p>The items are listed in Table 1.</p>"
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Items of data extraction.</p></caption>"
+        '<graphic xlink:href="table1.jpg"/></table-wrap>'
+        "<p>Text after the table.</p></sec>"
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].image is None
+    caption = pictures[0].captions[0].resolve(doc)
+    assert caption.text == "Table 1 Items of data extraction."
+    markdown = doc.export_to_markdown()
+    before = markdown.index("The items are listed in Table 1.")
+    table_caption = markdown.index("Table 1 Items of data extraction.")
+    picture = markdown.index("<!-- image -->")
+    after = markdown.index("Text after the table.")
+    assert before < table_caption < picture < after
+
+
+def test_jats_table_published_as_alternative_images_is_one_picture():
+    doc = convert_jats_body(
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Two renditions.</p></caption>"
+        '<alternatives><graphic xlink:href="table1.tif"/>'
+        '<graphic xlink:href="table1.jpg"/></alternatives></table-wrap>'
+    )
+
+    assert doc.tables == []
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    caption = pictures[0].captions[0].resolve(doc)
+    assert caption.text == "Table 1 Two renditions."
+
+
+def test_jats_table_with_cells_and_graphic_stays_a_table():
+    """When a <table-wrap> has both cells and a <graphic>, only the table is added."""
+    doc = convert_jats_body(
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>Cells and image.</p></caption>"
+        '<graphic xlink:href="table1.jpg"/>'
+        "<table><tr><td>A</td><td>B</td></tr></table></table-wrap>"
+    )
+
+    assert len(doc.tables) == 1
+    assert get_pictures(doc) == []
+    assert doc.tables[0].captions[0].resolve(doc).text == "Table 1 Cells and image."
+
+
+def test_jats_table_published_as_image_without_caption_keeps_its_label():
+    doc = convert_jats_body(
+        '<table-wrap id="T2"><label>Table 2</label>'
+        '<graphic xlink:href="table2.jpg"/></table-wrap>'
+    )
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    assert pictures[0].captions[0].resolve(doc).text == "Table 2"
+
+
+def test_jats_table_wrap_without_table_or_graphic_adds_nothing():
+    doc = convert_jats_body(
+        "<sec><title>S</title>"
+        '<table-wrap id="T3"><label>Table 3</label>'
+        "<caption><p>Only a caption.</p></caption></table-wrap></sec>"
+    )
+
+    assert doc.tables == []
+    assert get_pictures(doc) == []
+
+
+def test_jats_table_published_as_image_embeds_image_when_enabled(
+    tmp_path: Path, local_fetch_converter: DocumentConverter
+):
+    _make_test_image(tmp_path / "table1.png", color=(0, 0, 255))
+    jats_path = tmp_path / "article.nxml"
+    write_jats_body(
+        jats_path,
+        '<table-wrap id="T1"><label>Table 1</label>'
+        "<caption><p>A blue table.</p></caption>"
+        '<graphic xlink:href="table1.png"/></table-wrap>',
+    )
+
+    doc = local_fetch_converter.convert(jats_path).document
+
+    pictures = get_pictures(doc)
+    assert len(pictures) == 1
+    image = pictures[0].get_image(doc)
+    assert image is not None
+    assert image.getpixel((0, 0)) == (0, 0, 255)
+
+
 def test_jats_element_citation_surname_only_does_not_crash():
     """Citations with only a surname are rendered with that surname."""
     doc = convert_jats_body(
@@ -1493,6 +1591,11 @@ def test_e2e_jats_conversions(use_stream: bool):
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
+        )
+        # Core's hierarchy dump adds a separator space even for empty wrappers.
+        # Remove only that separator in JATS fixtures; leave text runs unchanged.
+        pred_itxt = re.sub(
+            r"(?m)^( *item-\d+ at level \d+: footnote:) $", r"\1", pred_itxt
         )
         assert verify_export(pred_itxt, str(gt_path) + ".itxt", generate=GENERATE), (
             "export to indented-text"

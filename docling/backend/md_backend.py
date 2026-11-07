@@ -148,9 +148,7 @@ def _only_plain_line_breaks(children: list) -> bool:
     by LineBreak nodes (soft or hard), with at least one break present.
 
     Such content is fully handled by the pending-line-break merge paths and does
-    not need an inline_group wrapper.  Multiple plain runs without any LineBreak
-    (e.g. `RawText + Literal + RawText` from an escaped character) return False
-    so they still use the regular inline_group path.
+    not need an inline_group wrapper.
 
     Args:
         children: Inline child nodes of a marko Paragraph, Heading, or ListItem
@@ -214,6 +212,68 @@ def _strip_frontmatter(text: str) -> str:
     except yaml.YAMLError:
         return text
     return text[match.end() :] if isinstance(meta, dict) else text
+
+
+_ENTITY_PATTERN = re.compile(r"&(?:#[0-9]+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);")
+
+
+def _text_run_piece(node: marko.inline.RawText | marko.inline.Literal) -> str:
+    """Return the final text of a run, with every `&` kept as an entity.
+
+    The text of a `RawText` is HTML-unescaped when the item is created. Each piece
+    is made final here and its `&` is escaped again, so that this later step
+    returns the merged text unchanged and an escape still protects its neighbors.
+    """
+    text = node.children if isinstance(node.children, str) else ""
+    if isinstance(node, marko.inline.RawText):
+        # Only terminated entities count, as in CommonMark: `&amp` without `;` is text.
+        text = _ENTITY_PATTERN.sub(lambda match: unescape(match.group(0)), text)
+    return text.replace("&", "&amp;")
+
+
+def _merge_run(
+    run: list[marko.inline.RawText | marko.inline.Literal],
+) -> list[marko.element.Element]:
+    """Return the nodes that replace a run of neighboring text nodes.
+
+    A run of two or more nodes becomes one RawText. A single node stays as it is.
+    """
+    if len(run) < 2:
+        return list(run)
+    return [marko.inline.RawText("".join(_text_run_piece(node) for node in run))]
+
+
+def _merge_adjacent_text_runs(root: marko.element.Element) -> None:
+    """Merge neighboring RawText and Literal nodes into one RawText node.
+
+    A backslash escape (``snake\\_case``) is a Literal node between two RawText
+    nodes. Merging them keeps the escape in the text run around it.
+
+    Args:
+        root: The root of the marko AST. Its descendants are changed in place.
+    """
+    stack: list[marko.element.Element] = [root]
+    while stack:
+        element = stack.pop()
+        if not isinstance(
+            element, marko.block.BlockElement | marko.inline.InlineElement
+        ):
+            continue
+        children = element.children
+        if not isinstance(children, list):
+            continue
+        merged: list[marko.element.Element] = []
+        run: list[marko.inline.RawText | marko.inline.Literal] = []
+        for child in children:
+            if isinstance(child, marko.inline.RawText | marko.inline.Literal):
+                run.append(child)
+                continue
+            merged.extend(_merge_run(run))
+            run = []
+            merged.append(child)
+            stack.append(child)
+        merged.extend(_merge_run(run))
+        element.children = merged
 
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
@@ -1265,6 +1325,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             # children per cell, enabling RichTableCell for formatted content.
             marko_parser = Markdown(extensions=[_GFM_EXTENSION])
             parsed_ast = marko_parser.parse(self.markdown)
+            _merge_adjacent_text_runs(parsed_ast)
             self._iterate_elements(
                 element=parsed_ast,
                 depth=0,

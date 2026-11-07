@@ -84,6 +84,7 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 _XLINK_HREF: Final[str] = "{http://www.w3.org/1999/xlink}href"
+_GRAPHIC_XPATH: Final[str] = "graphic | alternatives/graphic"
 # `list-type` values that number the items, from the JATS 1.3 tag library.
 _ORDERED_LIST_TYPES: Final[frozenset[str]] = frozenset(
     {"order", "alpha-lower", "alpha-upper", "roman-lower", "roman-upper"}
@@ -835,8 +836,19 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         node: etree._Element,
         formatting: Formatting | None = None,
         hyperlink: AnyUrl | Path | None = None,
+        *,
+        resolve_ext_links: bool = False,
     ) -> list[InlineSegment]:
+        """Walk inline content of ``node`` into text and formula segments.
+
+        With ``resolve_ext_links``, an ``ext-link`` with a valid ``xlink:href`` sets
+        the hyperlink of the runs it contains.
+        """
         current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
+        if resolve_ext_links and node.tag == "ext-link":
+            ext_link = JatsDocumentBackend._parse_ext_link_href(node.get(_XLINK_HREF))
+            if ext_link is not None:
+                hyperlink = ext_link
         segments: list[InlineSegment] = []
         if node.text:
             text = JatsDocumentBackend._normalize_xml_line_breaks(node.text)
@@ -866,7 +878,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     )
             else:
                 child_segments = JatsDocumentBackend._walk_inline_formula(
-                    child, current, hyperlink
+                    child,
+                    current,
+                    hyperlink,
+                    resolve_ext_links=resolve_ext_links,
                 )
                 if (
                     tag == "p"
@@ -1011,7 +1026,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         ):
             return None
 
-        graphic_nodes = node.xpath("graphic | alternatives/graphic")
+        graphic_nodes = node.xpath(_GRAPHIC_XPATH)
         if not graphic_nodes:
             return None
 
@@ -1290,11 +1305,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     def _add_table(
         self, doc: DoclingDocument, parent: NodeItem, table_xml_component: Table
-    ) -> None:
+    ) -> TableItem | None:
         soup = BeautifulSoup(table_xml_component["content"], "html.parser")
         table_tag = soup.find("table")
         if not isinstance(table_tag, Tag):
-            return
+            return None
 
         # TODO: format label vs caption once styling is supported
         label = table_xml_component["label"]
@@ -1314,10 +1329,50 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         data = JatsDocumentBackend.parse_table_data(table_tag, doc, table_item)
         if data is None:
             doc.delete_items(node_items=[table_item])
-        else:
-            table_item.data = data
+            return None
+        table_item.data = data
 
-        return
+        return table_item
+
+    @staticmethod
+    def _add_table_footnotes(
+        doc: DoclingDocument, table_item: TableItem, node: etree._Element
+    ) -> None:
+        """Attach each direct ``table-wrap-foot/fn`` as one table FOOTNOTE item."""
+        for fn in node.xpath("table-wrap-foot/fn"):
+            # Coalesce equivalent text runs (e.g. a literal <xref>) first.
+            merged: list[InlineSegment] = []
+            JatsDocumentBackend._extend_segments(
+                merged,
+                JatsDocumentBackend._walk_inline_formula(fn, resolve_ext_links=True),
+            )
+            segments = JatsDocumentBackend._trim_segment_edges(merged)
+            if not segments:
+                continue
+            # Keep table-note text distinguishable from body text for export
+            # filtering and chunk metadata; formulas retain their own label.
+            segments = [
+                (
+                    replace(segment, label=DocItemLabel.FOOTNOTE)
+                    if segment.label == DocItemLabel.TEXT
+                    else segment
+                )
+                for segment in segments
+            ]
+            # The note's rich content lives in inline child runs of an empty
+            # FOOTNOTE item, like the items of the article-level footnote list.
+            footnote = doc.add_text(
+                label=DocItemLabel.FOOTNOTE, text="", parent=table_item
+            )
+            # _emit_inline groups multiple runs; a single run needs the same
+            # inline scope, especially when it is a formula.
+            container = (
+                doc.add_inline_group(parent=footnote)
+                if len(segments) == 1
+                else footnote
+            )
+            JatsDocumentBackend._emit_inline(doc, container, segments)
+            table_item.footnotes.append(footnote.get_ref())
 
     def _add_tables(
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
@@ -1330,9 +1385,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         elif len(node.xpath("alternatives/table")) > 0:
             table_content_node = node.xpath("alternatives/table")[0]
         else:
-            table_content_node = None
-        if table_content_node is not None:
-            table["content"] = etree.tostring(table_content_node).decode("utf-8")
+            # A table published as an image, as PMC often does, is kept as a
+            # picture with its label and caption.
+            if node.xpath(_GRAPHIC_XPATH):
+                self._add_figure_captions(doc, parent, node)
+            return
+        table["content"] = etree.tostring(table_content_node).decode("utf-8")
 
         # Caption
         caption_node = node.xpath("caption")
@@ -1355,9 +1413,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             table["label"] = node.xpath("label")[0].text or ""
 
         try:
-            self._add_table(doc, parent, table)
+            table_item = self._add_table(doc, parent, table)
         except Exception:
             _log.warning(f"Skipping unsupported table in {self.file!s}")
+            return
+
+        if table_item is not None:
+            self._add_table_footnotes(doc, table_item, node)
 
         return
 

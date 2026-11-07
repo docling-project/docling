@@ -12,8 +12,8 @@ import pytest
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
-    NEMOTRON_3_5_ASR_STREAMING,
-    PARAKEET_CTC_1_1B,
+    NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS,
+    PARAKEET_CTC_1_1B_TRANSFORMERS,
     WHISPER_ASR_PRESETS,
 )
 from docling.datamodel.pipeline_options_asr_model import (
@@ -150,8 +150,8 @@ def test_mlx_uses_local_checkpoint(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 @pytest.mark.parametrize(
     ("options", "family"),
     [
-        (PARAKEET_CTC_1_1B, "parakeet"),
-        (NEMOTRON_3_5_ASR_STREAMING, "nemotron"),
+        (PARAKEET_CTC_1_1B_TRANSFORMERS, "parakeet"),
+        (NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS, "nemotron"),
     ],
 )
 def test_other_transformers_models_keep_text_without_segment_timestamps(
