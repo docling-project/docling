@@ -1183,9 +1183,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         return None
 
-    def _is_browser_request_allowed(self, request_url: str) -> bool:
-        return self._get_browser_request_block_reason(request_url) is None
-
     def _get_render_html_text(self) -> str:
         if self._raw_html_bytes is None:
             return ""

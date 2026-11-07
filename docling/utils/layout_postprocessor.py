@@ -605,36 +605,6 @@ class LayoutPostprocessor:
 
         return result
 
-    def _select_best_cluster(
-        self,
-        clusters: list[Cluster],
-        area_threshold: float,
-        conf_threshold: float,
-    ) -> Cluster:
-        """Iteratively select best cluster based on area and confidence thresholds."""
-        current_best = None
-        for candidate in clusters:
-            should_select = True
-            for other in clusters:
-                if other == candidate:
-                    continue
-
-                area_ratio = candidate.bbox.area() / other.bbox.area()
-                conf_diff = other.confidence - candidate.confidence
-
-                if area_ratio <= area_threshold and conf_diff > conf_threshold:
-                    should_select = False
-                    break
-
-            if should_select:
-                if current_best is None or (
-                    candidate.bbox.area() > current_best.bbox.area()
-                    and current_best.confidence - candidate.confidence <= conf_threshold
-                ):
-                    current_best = candidate
-
-        return current_best if current_best else clusters[0]
-
     def _deduplicate_cells(self, cells: list[TextCell]) -> list[TextCell]:
         """Ensure each cell appears only once, maintaining order of first appearance."""
         seen_ids = set()

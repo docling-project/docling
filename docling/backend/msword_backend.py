@@ -1080,12 +1080,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.history["numids"].append(numid)
         self.history["indents"].append(ilevel)
 
-    def _prev_name(self) -> str | None:
-        return self.history["names"][-1]
-
-    def _prev_level(self) -> int | None:
-        return self.history["levels"][-1]
-
     def _prev_numid(self) -> int | None:
         return self.history["numids"][-1]
 
@@ -3553,23 +3547,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         content_layer=self.content_layer,
                     )
         return elem_ref
-
-    def _add_list_item_with_marker(
-        self,
-        doc: DoclingDocument,
-        elements: list,
-        numid: int,
-        ilevel: int,
-        is_numbered: bool,
-        level: int,
-    ) -> None:
-        """Resolve enumeration marker and add a formatted list item."""
-        if is_numbered:
-            self._get_list_counter(numid, ilevel)
-            enum_marker = self._build_enum_marker(numid, ilevel)
-        else:
-            enum_marker = ""
-        self._add_formatted_list_item(doc, elements, enum_marker, is_numbered, level)
 
     def _add_inline_equations_to_parent(
         self,

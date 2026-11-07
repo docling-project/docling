@@ -8,7 +8,6 @@ import logging
 import re
 import warnings
 from copy import deepcopy
-from enum import Enum
 from html import unescape
 from io import BytesIO
 from pathlib import Path
@@ -116,13 +115,6 @@ _INSTALL_HINT = (
 _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
 _START_MARKER = f"#_#_{_MARKER_BODY}_START_#_#"
 _STOP_MARKER = f"#_#_{_MARKER_BODY}_STOP_#_#"
-
-
-class _PendingCreationType(str, Enum):
-    """CoordOrigin."""
-
-    HEADING = "heading"
-    LIST_ITEM = "list_item"
 
 
 class _HeadingCreationPayload(BaseModel):
