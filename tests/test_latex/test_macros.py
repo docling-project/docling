@@ -249,7 +249,13 @@ def test_latex_heading_levels():
     doc = backend.convert()
 
     headers = [t for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
-    assert len(headers) >= 3
+    assert [h.text for h in headers] == [
+        "Part One",
+        "Chapter One",
+        "Section One",
+        "Subsection One",
+        "Subsubsection One",
+    ]
 
 
 def test_latex_section_heading_and_title_keep_inline_formulas():
