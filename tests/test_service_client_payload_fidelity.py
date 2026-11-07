@@ -28,7 +28,7 @@ import pytest
 from pydantic import AnyUrl, BaseModel
 
 from docling.datamodel.base_models import ConversionStatus
-from docling.datamodel.pipeline_options import VlmConvertOptions
+from docling.datamodel.pipeline_options import ProcessingPipeline, VlmConvertOptions
 from docling.datamodel.service.options import ConvertDocumentsOptions
 from docling.datamodel.service.responses import TaskStatusResponse
 from docling.datamodel.service.targets import InBodyTarget
@@ -231,6 +231,21 @@ def test_secret_values_are_sent_unwrapped(client, recorder):
 
     assert received["headers"]["Authorization"] == "Bearer sk-not-a-real-key"
     assert "*" not in received["headers"]["Authorization"]
+
+
+@pytest.mark.parametrize(
+    ("pipeline", "expected"),
+    [(None, None), (ProcessingPipeline.VLM, "vlm")],
+)
+def test_pipeline_is_only_sent_when_set(client, recorder, pipeline, expected):
+    """An unset pipeline must stay unset, so the server applies its default."""
+    client.submit(
+        SOURCE,
+        options=ConvertDocumentsOptions(pipeline=pipeline),
+        target=InBodyTarget(),
+    )
+
+    assert _submitted_options(recorder).get("pipeline") == expected
 
 
 # -- the file-upload route uses a different encoder ----------------------
