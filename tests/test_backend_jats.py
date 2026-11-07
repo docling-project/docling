@@ -435,6 +435,61 @@ def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
     assert footnotes == ["Plain footnote."]
 
 
+@pytest.mark.parametrize(
+    "notes",
+    [
+        (),
+        ("Author contribution marker.",),
+        ("Author contribution marker.", "Conflict statement marker."),
+    ],
+    ids=["none", "single", "multiple"],
+)
+def test_jats_author_footnotes(notes: tuple[str, ...]):
+    footnotes = "".join(f"<fn><p>{note}</p></fn>" for note in notes)
+    author_notes = f"<author-notes>{footnotes}</author-notes>" if notes else ""
+    doc = convert_jats_article_meta(
+        f"""
+        <title-group><article-title>Author Footnote Test</article-title></title-group>
+        <contrib-group><contrib contrib-type="author">
+          <name><surname>Doe</surname><given-names>Jane</given-names></name>
+          <xref ref-type="aff" rid="aff1"/>
+        </contrib></contrib-group>
+        <aff id="aff1">Example University</aff>
+        {author_notes}
+        <abstract><p>Abstract text.</p></abstract>
+        """
+    )
+
+    footnote_texts = [t.text for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
+    assert footnote_texts == list(notes)
+    markdown = doc.export_to_markdown()
+    expected = ["# Author Footnote Test", "Jane Doe", "Example University"]
+    if notes:
+        expected.extend(["## Author Notes", "\n".join(f"- {note}" for note in notes)])
+    expected.extend(["## Abstract", "Abstract text."])
+    assert markdown == "\n\n".join(expected)
+
+
+def test_jats_author_footnote_preserves_inline_formatting_and_link():
+    doc = convert_jats_article_meta(
+        """
+        <title-group><article-title>Author Footnote Test</article-title></title-group>
+        <author-notes>
+          <corresp>Correspondence marker.</corresp>
+          <fn><p>See <italic><ext-link
+            xlink:href="https://example.org/statement">disclosure</ext-link></italic>.</p></fn>
+        </author-notes>
+        """
+    )
+
+    footnotes = [t for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
+    disclosures = [t for t in footnotes if t.text == "disclosure"]
+    assert len(disclosures) == 1
+    disclosure = disclosures[0]
+    assert disclosure.formatting is not None and disclosure.formatting.italic
+    assert str(disclosure.hyperlink) == "https://example.org/statement"
+
+
 _FOOTNOTE = (
     "<label>1</label>{sep}<p>See <italic>ibid</italic> for <bold>details</bold>.</p>"
 )
