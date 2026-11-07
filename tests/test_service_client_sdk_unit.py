@@ -574,6 +574,69 @@ def test_websocket_watcher_raises_after_max_reconnect_attempts(
     assert len(connection_calls) == watchers_module.WS_MAX_RECONNECT_ATTEMPTS + 1
 
 
+def test_websocket_watcher_recv_timeout_raises_task_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A silent recv timeout must surface as TaskTimeoutError, not ServiceUnavailable (#5139)."""
+
+    connect_calls: list[int] = []
+
+    class SilentWebSocket:
+        def __enter__(self) -> "SilentWebSocket":
+            return self
+
+        def __exit__(self, *exc) -> None:
+            return None
+
+        def recv(self, timeout: float | None = None) -> str:
+            # Mirror websockets: consume the wait, then raise built-in TimeoutError
+            # (an OSError subclass). Advance the watcher clock so remaining hits 0
+            # without sleeping real time.
+            if timeout is not None and timeout > 0:
+                clock.advance(timeout)
+            raise TimeoutError("timed out while waiting for a message")
+
+        def send(self, message: str) -> None:
+            pass
+
+    class Clock:
+        def __init__(self) -> None:
+            self._now = 1000.0
+
+        def monotonic(self) -> float:
+            return self._now
+
+        def advance(self, seconds: float) -> None:
+            self._now += seconds
+
+        def sleep(self, seconds: float) -> None:
+            self._now += seconds
+
+    clock = Clock()
+
+    def fake_connect(*args, **kwargs):
+        connect_calls.append(1)
+        return SilentWebSocket()
+
+    monkeypatch.setattr(watchers_module, "connect", fake_connect)
+    monkeypatch.setattr(watchers_module.time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(watchers_module.time, "sleep", clock.sleep)
+
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda task_id: f"ws://example.invalid/{task_id}",
+        poll_fallback=None,
+        fallback_to_poll=False,
+        connect_timeout=1.0,
+        default_timeout=0.5,
+    )
+
+    with pytest.raises(watchers_module.TaskTimeoutError, match="task-1"):
+        list(watcher.iter_updates(task_id="task-1"))
+
+    # Must fail on the first recv timeout, not after reconnect/OSError handling.
+    assert len(connect_calls) == 1
+
+
 @pytest.mark.anyio
 async def test_async_wait_for_terminal_enforces_minimum_client_cadence(
     monkeypatch: pytest.MonkeyPatch,

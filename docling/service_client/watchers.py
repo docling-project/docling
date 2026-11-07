@@ -241,7 +241,15 @@ class WebSocketWatcher:
                         f"Timed out waiting for task {task_id} after {timeout:.2f}s."
                     )
 
-                raw_message = websocket.recv(timeout=remaining)
+                try:
+                    raw_message = websocket.recv(timeout=remaining)
+                except TimeoutError as exc:
+                    # websockets raises built-in TimeoutError (an OSError subclass)
+                    # when recv's timeout elapses. Treat that as a task wait timeout,
+                    # not a dropped connection (see #5139).
+                    raise TaskTimeoutError(
+                        f"Timed out waiting for task {task_id} after {timeout:.2f}s."
+                    ) from exc
                 envelope = WebsocketMessage.model_validate_json(raw_message)
                 status = _process_ws_envelope(envelope, task_id)
 
