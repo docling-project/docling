@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
+import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -42,6 +43,17 @@ def test_full_markdown_still_parses_tables_with_math() -> None:
     assert "<td><math>x</math></td>" in rendered
 
 
+@pytest.mark.parametrize("inline_only", [False, True])
+def test_cached_parser_checks_optional_dependency(
+    inline_only: bool, monkeypatch
+) -> None:
+    parser = create_markdown_parser(inline_only=inline_only)
+    assert "<math>x</math>" in parser.convert("$x$")
+    monkeypatch.setitem(sys.modules, "marko", None)
+    with pytest.raises(ImportError, match="format-markdown"):
+        create_markdown_parser(inline_only=inline_only)
+
+
 def test_reused_parsers_do_not_leak_document_state() -> None:
     full = create_markdown_parser()
     inline = create_markdown_parser(inline_only=True)
@@ -66,4 +78,31 @@ def test_concurrent_conversions_keep_references_and_math_in_their_document() -> 
     assert rendered == [
         f'<p><a href="https://example.com/{index}">name</a> and <math>x_{index}</math></p>\n'
         for index in range(32)
+    ]
+
+
+def test_math_extension_composes_with_markdown_and_keeps_parser_modes_isolated() -> (
+    None
+):
+    import marko
+
+    from docling.utils.markdown_math import create_math_extension
+
+    source = r"# $x_i$ and `\(code\)`; $5-$10"
+    expected = "<h1><math>x_i</math> and <code>\\(code\\)</code>; $5-$10</h1>\n"
+    assert (
+        marko.Markdown(extensions=[create_math_extension()]).convert(source) == expected
+    )
+
+    def convert(index: int) -> str:
+        inline = index % 2 == 0
+        return create_markdown_parser(inline_only=inline).convert(source)
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        rendered = list(executor.map(convert, range(16)))
+    assert rendered == [
+        "<p># <math>x_i</math> and <code>\\(code\\)</code>; $5-$10</p>\n"
+        if index % 2 == 0
+        else expected
+        for index in range(16)
     ]
