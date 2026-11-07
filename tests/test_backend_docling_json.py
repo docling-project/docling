@@ -5,13 +5,14 @@
 
 import base64
 import re
+import sys
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import ImageRef, ImageRefMode, Size
 from PIL import Image
-from pydantic import ValidationError
+from pydantic import AnyUrl, ValidationError
 
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.datamodel.backend_options import DeclarativeBackendOptions
@@ -186,6 +187,65 @@ def test_local_image_uri_is_embedded_with_enable_local_fetch(tmp_path):
     assert pixels in _embedded_pixels(
         result.export_to_markdown(image_mode=ImageRefMode.EMBEDDED)
     )
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32",
+    reason="needs a Windows drive-letter path",
+)
+def test_drive_letter_uri_is_read_as_a_local_path(tmp_path):
+    """A Windows drive path must keep its local-file treatment.
+
+    pydantic reads ``G:\\dir\\img.png`` as a URL whose scheme is the drive
+    letter, so the URI reaches ``ImageRef.uri`` as an ``AnyUrl`` and every
+    stage treats it as remote: with ``enable_local_fetch`` the image is never
+    loaded and exports show the placeholder instead of the pixels.
+    """
+    image_file = tmp_path / "local.png"
+    pixels = _write_image(image_file)
+    doc = DoclingDocument(name="pic")
+    doc.add_picture(image=_image_ref(str(image_file)))
+    doc.add_page(
+        page_no=1, size=Size(width=7, height=5), image=_image_ref(str(image_file))
+    )
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.JSON_DOCLING: DoclingJSONFormatOption(
+                backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+            )
+        }
+    )
+
+    result = _convert(tmp_path, doc, converter)
+
+    assert pixels in _embedded_pixels(
+        result.export_to_markdown(image_mode=ImageRefMode.EMBEDDED)
+    )
+
+
+def test_drive_letter_uri_without_a_file_keeps_the_url_spelling(tmp_path):
+    """Only an existing file is rewritten back to a path.
+
+    A drive-letter URI whose file is absent (e.g. a document converted on a
+    machine that mounts no such drive) stays a URL, which the load and the
+    drop branches both already treat as "remote, never fetched".
+    """
+    uri = r"Q:\no\such\dir\img.png"
+    doc = DoclingDocument(name="pic")
+    doc.add_picture(image=_image_ref(uri))
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.JSON_DOCLING: DoclingJSONFormatOption(
+                backend_options=DeclarativeBackendOptions(enable_local_fetch=True)
+            )
+        }
+    )
+
+    result = _convert(tmp_path, doc, converter)
+
+    assert result.pictures[0].image is not None
+    kept_uri = result.pictures[0].image.uri
+    assert isinstance(kept_uri, AnyUrl) and kept_uri.scheme == "q"
 
 
 def test_data_and_remote_image_uris_are_kept(tmp_path):
