@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: The Docling Contributors
 # SPDX-License-Identifier: MIT
 
-"""Decompressed size limits of the ZIP-based DOCX, XLSX and EPUB backends."""
+"""Decompressed size limits of the ZIP-based DOCX, XLSX, EPUB and PPTX backends."""
 
 import struct
 import tracemalloc
@@ -13,6 +13,7 @@ import pytest
 
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
+from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.utils.archive_limits import (
     ArchiveLimitError,
@@ -24,6 +25,7 @@ from docling.datamodel.backend_options import (
     BaseBackendOptions,
     EpubBackendOptions,
     MsExcelBackendOptions,
+    MsPowerpointBackendOptions,
     MsWordBackendOptions,
 )
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
@@ -32,6 +34,7 @@ from docling.document_converter import (
     DocumentConverter,
     EpubFormatOption,
     ExcelFormatOption,
+    PowerpointFormatOption,
     WordFormatOption,
 )
 
@@ -45,6 +48,7 @@ _DOCX = _DATA / "docx/sources/Transitional.docx"
 _STRICT_DOCX = _DATA / "docx/sources/Strict.docx"
 _XLSX = _DATA / "xlsx/sources/xlsx_01.xlsx"
 _EPUB = _DATA / "epub/sources/epub_purvis_poetry.epub"
+_PPTX = _DATA / "pptx/sources/powerpoint_sample.pptx"
 
 _FORMATS = {
     InputFormat.DOCX: (MsWordDocumentBackend, MsWordBackendOptions, WordFormatOption),
@@ -54,6 +58,11 @@ _FORMATS = {
         ExcelFormatOption,
     ),
     InputFormat.EPUB: (EpubDocumentBackend, EpubBackendOptions, EpubFormatOption),
+    InputFormat.PPTX: (
+        MsPowerpointDocumentBackend,
+        MsPowerpointBackendOptions,
+        PowerpointFormatOption,
+    ),
 }
 
 _CASES = [
@@ -71,6 +80,7 @@ _CASES = [
     pytest.param(
         InputFormat.EPUB, _EPUB, "META-INF/container.xml", id="epub-container"
     ),
+    pytest.param(InputFormat.PPTX, _PPTX, "ppt/slides/slide1.xml", id="pptx-slide"),
 ]
 
 
@@ -136,6 +146,7 @@ def test_converter_reports_the_exceeded_limit(
         InputFormat.DOCX: (_DOCX, "word/document.xml"),
         InputFormat.XLSX: (_XLSX, "xl/worksheets/sheet1.xml"),
         InputFormat.EPUB: (_EPUB, "epub/text/poetry.xhtml"),
+        InputFormat.PPTX: (_PPTX, "ppt/slides/slide1.xml"),
     }[input_format]
     inflated = _inflate(source, member, tmp_path / f"inflated{source.suffix}")
     format_option_cls = _FORMATS[input_format][2]
