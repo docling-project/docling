@@ -277,6 +277,20 @@ class OcrOptions(BaseOptions):
         ),
     ] = False
 
+    check_indic_scripts: Annotated[
+        bool,
+        Field(
+            description=(
+                "With `replace_broken_text_layer`, also check pages in Indian scripts"
+                " (Bengali, Devanagari, Gujarati, Gurmukhi, Kannada, Malayalam,"
+                " Odia, Sinhala, Tamil, Telugu). Their broken text layers often"
+                " hold valid letters in the wrong places, such as words that start"
+                " with a vowel sign, which the default checks do not catch."
+            ),
+            examples=[False, True],
+        ),
+    ] = False
+
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,
