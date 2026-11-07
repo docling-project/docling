@@ -103,7 +103,7 @@ from docling.datamodel.service.targets import (
     Target,
     ZipTarget,
 )
-from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
+from docling.datamodel.service.tasks import TaskProcessingMeta, TaskStatus, TaskType
 
 __all__ = [
     "AnyHttpSourceRequest",
@@ -188,6 +188,7 @@ __all__ = [
     "TargetRequest",
     "TaskFailureResult",
     "TaskProcessingMeta",
+    "TaskStatus",
     "TaskStatusResponse",
     "TaskType",
     "VlmModelApi",

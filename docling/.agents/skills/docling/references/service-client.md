@@ -132,3 +132,9 @@ The client raises typed exceptions from `docling.service_client` — e.g.
 `ConversionError`, `ServiceUnavailableError`, `TaskTimeoutError`,
 `UsageLimitExceededError`, `ResultExpiredError`. Catch
 `DoclingServiceClientError` to handle any of them.
+
+`TaskCancelledError` is raised when a task is cancelled before it produces a
+result. It subclasses `TaskExecutionError` and carries the `task_id`, keeping
+cancellation distinct from failure or expiry. Status watchers treat
+`cancelled` as terminal: `watch` yields it and stops, `wait` returns it, and
+result access raises `TaskCancelledError`.
