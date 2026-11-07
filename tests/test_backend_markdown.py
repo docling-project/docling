@@ -1661,3 +1661,62 @@ def test_backslash_escape_in_rich_table_cell_stays_in_its_text_run():
     doc = _convert_markdown("| h |\n|---|\n| **z**\\* w |", MarkdownBackendOptions())
 
     assert [item.text for item in doc.texts] == ["z", "* w"]
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected_items"),
+    [
+        pytest.param("&copy; a", [("text", "© a")], id="named"),
+        pytest.param("&notin; a", [("text", "∉ a")], id="named-long"),
+        pytest.param("&#169; &#xA9; &#XA9;", [("text", "© © ©")], id="numeric"),
+        pytest.param("&lt;b&gt; &amp; c", [("text", "<b> & c")], id="markup"),
+        # CommonMark decodes only a reference that ends with a semicolon.
+        pytest.param("&copy a b", [("text", "&copy a b")], id="legacy-no-semicolon"),
+        pytest.param("&amp a", [("text", "&amp a")], id="amp-no-semicolon"),
+        pytest.param("&notit; a", [("text", "&notit; a")], id="legacy-prefix"),
+        pytest.param("&nosuch; a", [("text", "&nosuch; a")], id="unknown-name"),
+        pytest.param(
+            "&#xyz; &#; &#12345678;",
+            [("text", "&#xyz; &#; &#12345678;")],
+            id="invalid-number",
+        ),
+        pytest.param(
+            r"&copy a\_b &copy;", [("text", "&copy a_b ©")], id="in-merged-run"
+        ),
+        pytest.param("# &copy x &copy;", [("title", "&copy x ©")], id="heading"),
+        pytest.param("- &copy x &copy;", [("list_item", "&copy x ©")], id="list-item"),
+    ],
+)
+def test_character_reference_is_decoded_only_when_terminated(
+    markdown: str, expected_items: list[tuple[str, str]]
+):
+    """A character reference is decoded as in CommonMark, only if it ends with `;`."""
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert [(str(item.label), item.text) for item in doc.texts] == expected_items
+
+
+def test_character_reference_in_link_text_is_decoded_only_when_terminated():
+    doc = _convert_markdown("[&copy a &copy;](http://x.y)", MarkdownBackendOptions())
+
+    assert [item.text for item in doc.texts] == ["&copy a ©"]
+
+
+def test_character_reference_in_table_cell_is_decoded_only_when_terminated():
+    doc = _convert_markdown(
+        "| h |\n|---|\n| &copy a &copy; |", MarkdownBackendOptions()
+    )
+
+    assert [cell.text for cell in doc.tables[0].data.table_cells] == [
+        "h",
+        "&copy a ©",
+    ]
+
+
+def test_character_reference_in_image_title_is_decoded_only_when_terminated():
+    doc = _convert_markdown(
+        '![alt](http://x.y/a.png "&copy a &copy;")', MarkdownBackendOptions()
+    )
+
+    captions = [item.text for item in doc.texts if item.label == DocItemLabel.CAPTION]
+    assert captions == ["&copy a ©"]
