@@ -67,6 +67,7 @@ Useful `PdfPipelineOptions` / base fields:
 | `ocr_options` | Choose/parametrize the OCR engine (see below) |
 | `table_structure_options` | e.g. `TableFormerMode.ACCURATE` vs `FAST` |
 | `heading_hierarchy_options` | Infer section-header levels; off by default (see below) |
+| `script_position_options` | Mark superscript and subscript runs; off by default |
 | `use_reading_order_separators` | Use visible PDF rules as reading-order signals; on by default |
 | `images_scale` / `generate_page_images` | Control rasterization |
 | `accelerator_options` | Pick device / thread count |
@@ -225,6 +226,89 @@ converter = DocumentConverter(
 )
 result = converter.convert("report.pdf")
 ```
+
+For Nemotron 3.5 Parse, use the stage preset API. It defaults to single-pass:
+
+```python
+from docling.datamodel.pipeline_options import NemotronParseOptions, VlmConvertOptions
+from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
+
+vlm_options = VlmConvertOptions.from_preset(
+    "nemotron_parse_v3_5",
+    engine_options=AutoInlineVlmEngineOptions(trust_remote_code=True),
+    nemotron_parse=NemotronParseOptions(passes="double", crop_batch_size=8),
+)
+```
+
+Set `passes="triple"` to add detection. `triple_regions="union"` keeps detector
+and non-overlapping parser regions; `"detector"` uses detector regions only.
+Crops run in batches with Transformers and API engines. Guarded merging keeps the
+page result when a crop is invalid or incompatible. Document JSON records each
+page's mode and request counts in `body.meta.docling__nemotron_parse.pages`.
+These options are available through the SDK; the CLI preset keeps single-pass.
+
+For Unlimited-OCR 2, start the vendor's SGLang server first. Install the customized
+wheel from the `wheel/` folder of `baidu/Unlimited-OCR-2`, then follow the
+`python -m sglang.launch_server` command in the Docling model catalog. It needs an
+NVIDIA GPU and these flags: `--served-model-name Unlimited-OCR-2`,
+`--chat-template unlimited-ocr`, and the full CUDA Graph flags. Then use the preset:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "unlimited_ocr2",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:10000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+Docling sends one page per request, so the whole-document mode of the model is not
+used, and tables and text that continue on the next page stay split. If you set
+`params`, also set `model`, `max_tokens`, and `skip_special_tokens=False`, or tables
+lose their cells. Transformers and in-process vLLM are not supported.
+
+On Apple Silicon, use the `unlimited_ocr2_mlx` preset instead. It needs `mlx-vlm>=0.7.11`
+and runs in-process with the default MLX engine. No server is needed:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("unlimited_ocr2_mlx"),
+)
+```
+
+For Surya 2.5, use the `surya_ocr2_5` preset. Auto-inline picks MLX on Apple
+Silicon, and Transformers or vLLM elsewhere. To use a server instead, for example
+`vllm serve datalab-to/surya-ocr-2.5`, pass `ApiVlmEngineOptions`:
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
+
+pipeline_options = VlmPipelineOptions(
+    enable_remote_services=True,
+    vlm_options=VlmConvertOptions.from_preset(
+        "surya_ocr2_5",
+        engine_options=ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url="http://127.0.0.1:8000/v1/chat/completions",
+            timeout=600,
+        ),
+    ),
+)
+```
+
+The `surya-ocr` package is not needed. With `llama-server`, add `--special`, or the
+reply loses its block labels and boxes.
 
 Model presets (`docling.datamodel.vlm_model_specs`):
 
@@ -390,7 +474,12 @@ done. The callback must be thread-safe when
 ## Audio / video (ASR)
 
 Docling transcribes audio (and video) into a `DoclingDocument` via an ASR
-pipeline. Needs the `format-audio` (or `format-video`) extra.
+pipeline. Whisper needs the `format-audio` (or `format-video`) extra. For Granite
+Speech, Parakeet, and Nemotron, use `models-asr-inline`, `feat-asr-transformers`, or
+`feat-asr-mlx-audio`. These presets select mlx-audio on Apple Silicon when it is
+installed and the model has an export, and Transformers in other cases. They also use
+Transformers when `AcceleratorOptions.device` is not `auto` or `mps`, or when the process
+cannot use a Metal device. An explicit `*_MLX_AUDIO` preset gives an error in these cases.
 
 ```python
 from docling.datamodel import asr_model_specs

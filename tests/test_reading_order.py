@@ -928,6 +928,42 @@ def test_horizontal_dilation_preserves_columns_at_graph_branches() -> None:
     assert [element.cid for element in result] == [0, 1, 2, 3, 4, 30]
 
 
+def test_horizontal_dilation_skips_a_widening_that_overlaps_a_neighbour() -> None:
+    # A centred title (0) is the only element above the right column (4). The
+    # left column opens with a heading (1), and 4 starts above the first left
+    # paragraph (2). Widened to the title, 4 overlaps 2. If the dilation keeps
+    # the widened box, 4 reaches over the left column and becomes a parent of
+    # 3, so 4 is read between the two left paragraphs.
+    elements = [
+        _box(0, DocItemLabel.SECTION_HEADER, 740.0, 760.0, l=240.0, r=360.0),
+        _box(1, DocItemLabel.SECTION_HEADER, 705.0, 720.0, l=60.0, r=220.0),
+        _box(2, DocItemLabel.TEXT, 600.0, 690.0, l=40.0, r=290.0),
+        _box(3, DocItemLabel.TEXT, 500.0, 590.0, l=40.0, r=290.0),
+        _box(4, DocItemLabel.TEXT, 640.0, 730.0, l=310.0, r=560.0),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4]
+
+
+def test_horizontal_dilation_skips_a_widening_to_a_wide_caption_below() -> None:
+    # A caption (5) below the left column is wider than the column and reaches
+    # into the right one. The right column ends with an indented block (4) that
+    # stops short of the caption, so 1 is the only element directly above 5.
+    # Widened to the caption, 1 overlaps 3. If the dilation keeps the widened
+    # box, 1 reaches under the right column and 2 becomes a parent of it, so 2
+    # is read between the two left paragraphs.
+    elements = [
+        _box(0, DocItemLabel.TEXT, 600.0, 700.0, l=40.0, r=290.0),
+        _box(1, DocItemLabel.TEXT, 480.0, 590.0, l=40.0, r=290.0),
+        _box(2, DocItemLabel.TEXT, 620.0, 700.0, l=310.0, r=560.0),
+        _box(3, DocItemLabel.TEXT, 540.0, 610.0, l=310.0, r=560.0),
+        _box(4, DocItemLabel.TEXT, 450.0, 530.0, l=350.0, r=560.0),
+        _box(5, DocItemLabel.CAPTION, 420.0, 440.0, l=40.0, r=340.0),
+    ]
+
+    assert _predicted_cids(elements) == [0, 1, 2, 3, 4, 5]
+
+
 def test_graphics_continue_left_to_right_only_across_an_empty_gap() -> None:
     from docling.models.postprocessing.reading_order_rb import (
         _ReadingOrderPredictorState,

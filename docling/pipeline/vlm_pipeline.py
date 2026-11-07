@@ -24,7 +24,7 @@ from docling_core.types.doc.base import (
     BoundingBox,
     Size,
 )
-from docling_core.types.doc.document import DocTagsDocument
+from docling_core.types.doc.document import BaseMeta, DocTagsDocument
 from PIL import Image as PILImage
 from typing_extensions import override
 
@@ -76,9 +76,12 @@ _RAW_HEADING_DEPTH_FORMATS = frozenset(
         ResponseFormat.CHANDRA_HTML,
         ResponseFormat.DEEPSEEKOCR_MARKDOWN,
         ResponseFormat.DOTS_JSON,
+        ResponseFormat.LIGHTONOCR_MARKDOWN,
         ResponseFormat.NEMOTRON_PARSE_V2,
         ResponseFormat.NEMOTRON_PARSE_V3_5,
+        ResponseFormat.SURYA_HTML,
         ResponseFormat.UNLIMITED_OCR_MARKDOWN,
+        ResponseFormat.UNLIMITED_OCR2,
     }
 )
 
@@ -377,6 +380,16 @@ class VlmPipeline(PaginatedPipeline):
                 if page_no in page_documents
             ]
         )
+        nemotron_pages = {
+            str(page.page_no): page.predictions.vlm_response.nemotron_parse.model_dump()
+            for page in conv_res.pages
+            if page.predictions.vlm_response is not None
+            and page.predictions.vlm_response.nemotron_parse is not None
+        }
+        if nemotron_pages:
+            conv_res.document.body.meta = BaseMeta.model_validate(
+                {"docling__nemotron_parse": {"pages": nemotron_pages}}
+            )
         return conv_res
 
     def _join_page_documents(
@@ -564,6 +577,28 @@ class VlmPipeline(PaginatedPipeline):
                 page_image=page.image,
                 normalize_heading_levels=False,
             )
+        elif response_format == ResponseFormat.UNLIMITED_OCR2:
+            from docling.utils.unlimited_ocr2_utils import parse_unlimited_ocr2
+
+            document = parse_unlimited_ocr2(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                normalize_heading_levels=False,
+            )
+        elif response_format == ResponseFormat.LIGHTONOCR_MARKDOWN:
+            from docling.utils.lightonocr_utils import parse_lightonocr_markdown
+
+            document = parse_lightonocr_markdown(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=page.page_no,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                normalize_heading_levels=False,
+            )
         elif response_format == ResponseFormat.MARKDOWN:
             document = self._convert_text_page(
                 conv_res, page, InputFormat.MD, MarkdownDocumentBackend
@@ -590,6 +625,29 @@ class VlmPipeline(PaginatedPipeline):
                         component_type=DoclingComponentType.PIPELINE,
                         module_name=self.__class__.__name__,
                         error_message=f"Invalid Chandra response: {exc}",
+                        category=FailureCategory.INFERENCE_FAILURE,
+                        page_no=page.page_no,
+                    )
+                )
+                document = DoclingDocument(name=f"page_{page.page_no}")
+        elif response_format == ResponseFormat.SURYA_HTML:
+            from docling.utils.surya_utils import parse_surya_html
+
+            try:
+                document = parse_surya_html(
+                    content=predicted_text,
+                    original_page_size=page.size,
+                    page_no=page.page_no,
+                    filename=conv_res.input.file.name or "file",
+                    page_image=page.image,
+                    normalize_heading_levels=False,
+                )
+            except ValueError as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Invalid Surya response: {exc}",
                         category=FailureCategory.INFERENCE_FAILURE,
                         page_no=page.page_no,
                     )

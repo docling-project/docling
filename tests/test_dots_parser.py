@@ -94,7 +94,7 @@ def test_markdown_emphasis_preserves_math_code_and_html(page_size: Size):
         },
     ]
     doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
-    assert any(item.text == "Bold" and item.formatting.bold for item in doc.texts)
+    assert any(item.text == "Bold " and item.formatting.bold for item in doc.texts)
     assert any(
         item.text == "2" and item.formatting.script == Script.SUB for item in doc.texts
     )
@@ -202,6 +202,25 @@ class TestParseTableElement:
         # Table should have parsed cells
         assert item.data.num_rows == 2
         assert item.data.num_cols == 2
+
+    def test_oversized_table_keeps_the_page(self, page_size: Size):
+        # 100 x 11 is over the shared mapper's 1000-grid-cell limit.
+        rows = "".join("<tr>" + "<td>x</td>" * 11 + "</tr>" for _ in range(100))
+        data = [
+            {"bbox": [0, 0, 100, 10], "category": "Text", "text": "before"},
+            {
+                "bbox": [0, 20, 100, 90],
+                "category": "Table",
+                "text": f"<table>{rows}</table>",
+            },
+            {"bbox": [0, 95, 100, 100], "category": "Text", "text": "after"},
+        ]
+        doc = parse_dots_json(json.dumps(data), page_size, page_no=1)
+
+        assert [item.text for item in doc.texts] == ["before", "after"]
+        table = doc.tables[0]
+        assert (table.data.num_rows, table.data.num_cols) == (0, 0)
+        assert table.prov
 
     def test_rich_cells_and_caption(self, page_size: Size):
         html = (

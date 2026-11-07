@@ -1,8 +1,25 @@
 # Docling CLI reference
 
-For Transformers ASR, install `docling-slim[feat-asr-transformers]` and select
-`--asr-model granite_speech_5_0_2b` (or another speech preset). The same ASR
+For Granite, Parakeet, and Nemotron ASR, select `--asr-model granite_speech_5_0_2b`
+(or another speech preset). Install `docling-slim[models-asr-inline]` for all engines,
+`docling-slim[feat-asr-transformers]` for Transformers, or
+`docling-slim[feat-asr-mlx-audio]` for mlx-audio without torch. A preset selects
+mlx-audio on Apple Silicon when it is installed and the model has an export, and
+Transformers in other cases. It also uses Transformers when the process cannot use a
+Metal device. Add `_transformers` or `_mlx_audio` to the name of such a preset to force
+one engine. A forced `_mlx_audio` preset gives an error when it cannot run. The same ASR
 settings apply to video.
+
+For word timing and speaker labels, select `--asr-model granite_speech_4_1_2b_plus`.
+It gives one item for each phrase, with real times and a speaker label. Each feature
+costs one decoding pass. Use `--no-asr-timestamps` or `--no-asr-speakers` to switch one
+off.
+
+To see the supported models, run `docling models` (add `--asr` or `--vlm`, or
+`--family granite`). It lists them by family, with one column for each backend, and
+marks the backend that this machine selects. It also shows if a model gives real
+times and speaker labels (ASR) and page boxes (VLM). Use `--format json` to read the data in
+a script.
 
 The `docling` CLI is the quickest way to understand the content of any supported
 document. It ships with the `docling` package (`pip install docling`) and needs
@@ -43,6 +60,9 @@ XML flavors. Restrict/force detection with `--from` (repeatable), e.g.
 ## Picking a pipeline (PDF / images)
 
 Docling has three pipeline families for PDFs and images. Choose with `--pipeline`.
+`--vlm-model NAME` selects the VLM pipeline, so `--pipeline vlm` is not necessary
+with it. Combining `--vlm-model` with a different `--pipeline` value is an error.
+Audio and video files use `--asr-model` without `--pipeline`.
 
 | Pipeline | Flag | Best for | Tradeoff |
 |---|---|---|---|
@@ -52,10 +72,14 @@ Docling has three pipeline families for PDFs and images. Choose with `--pipeline
 
 ```bash
 docling report.pdf --pipeline vlm --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v2 --output /tmp/
-docling report.pdf --pipeline vlm --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
+docling report.pdf --vlm-model granite_docling --output /tmp/
+docling report.pdf --vlm-model smoldocling --output /tmp/
+docling report.pdf --vlm-model nemotron_parse_v2 --output /tmp/
+docling report.pdf --vlm-model nemotron_parse_v3_5 --trust-remote-code --output /tmp/
+docling report.pdf --vlm-model lightonocr3_08b --output /tmp/
+docling report.pdf --vlm-model lightonocr3_4b --output /tmp/
+docling report.pdf --vlm-model surya_ocr2_5 --output /tmp/
+docling report.pdf --vlm-model minicpm_ocr --output /tmp/
 docling chart.png --from image --to dclx --pipeline vlm --enrich-chart-extraction
 docling report.pdf --pipeline native --from pdf --output /tmp/
 ```
@@ -65,6 +89,25 @@ Docling refuses to load it until you add `--trust-remote-code` (SDK:
 `AutoInlineVlmEngineOptions(trust_remote_code=True)`). Review the model code
 first. For vLLM, run NVIDIA's `vllm serve` server and use the API engine; the
 in-process vLLM engine is not supported for this preset.
+
+`unlimited_ocr` and `unlimited_ocr2` need your own OpenAI-compatible server, and the
+CLI has no option for the API URL. Use the SDK for these presets. See
+[python-sdk.md](python-sdk.md).
+
+`unlimited_ocr2_mlx` runs in-process on Apple Silicon and needs `mlx-vlm>=0.7.11`.
+
+`surya_ocr2_5` runs in-process with MLX (`mlx-vlm>=0.7.6`), Transformers
+(`transformers>=5.12.1`, not on MPS), or vLLM (`vllm>=0.25.1`). It does not need the
+`surya-ocr` package. The model weights have a modified OpenRAIL-M license with limits
+on commercial use.
+
+The `lightonocr3_*` presets map charts to the `other_chart` class. JSON, Markdown,
+and HTML keep the chart data. DCLX and DocLang lose it, and DocTags export raises
+`ValueError` when a document has a chart block.
+
+`minicpm_ocr` runs MiniCPM-OCR 1.0 in-process with `transformers>=5.21.0`. It
+returns Markdown. Pages that the model transcribes as plain text keep no
+word-level boxes.
 
 VLM picture enrichment runs after conversion. `--enrich-chart-extraction`
 classifies pictures first and adds chart data only where the VLM has not

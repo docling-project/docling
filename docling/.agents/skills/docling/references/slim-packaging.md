@@ -20,6 +20,9 @@ pulling heavy packages (torch, OCR engines, VLM stacks) you won't use.
 | Scanned PDFs with a lightweight OCR engine | `docling-slim[format-pdf,feat-ocr-rapidocr]` |
 | Local layout/table/OCR ML models | `docling-slim[models-local]` |
 | Local VLM pipeline | `docling-slim[models-vlm-inline]` |
+| Whisper transcription | `docling-slim[format-audio]` |
+| All inline ASR engines | `docling-slim[models-asr-inline]` |
+| ASR on Apple Silicon without torch | `docling-slim[feat-asr-mlx-audio]` |
 | Chunking for RAG | `docling-slim[feat-chunking]` |
 | Everything the default package has | `docling-slim[standard]` |
 | The default package without RapidOCR (e.g. for the Tesseract CLI) | `docling-slim[format-pdf,models-local,format-office,format-web,format-latex,format-email,format-iwork,feat-chunking,extract-core,service-client,cli]` plus `opencv-python-headless` |
@@ -54,6 +57,8 @@ Extras compose — combine them with commas:
 **Models**
 - `models-local` — torch + docling-ibm-models (local layout/table/OCR models)
 - `models-vlm-inline` — local vision-language models
+- `models-asr-inline` — all inline ASR engines (Whisper, Transformers, mlx-audio);
+  needs macOS 14 or later on Apple Silicon
 - `models-remote` — Triton client for remote model serving
 - `models-onnxruntime` — ONNX runtime backends
 

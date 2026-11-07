@@ -287,6 +287,24 @@ to every `--rapidocr-backend-lang` pair given (or to the default pair, if none a
 docling-tools models download rapidocr --rapidocr-backend-lang onnxruntime:en --rapidocr-model-size tiny
 ```
 
+### RapidOCR page orientation
+
+RapidOCR turns a tall text line a quarter turn counter-clockwise before it reads the line, and its
+line classifier (`use_cls`) only flips single lines by 180 degrees. A scanned page that is turned
+counter-clockwise or upside down is read as garbage, or only in part.
+
+With `detect_orientation`, RapidOCR first reads each OCR region as it is. If it finds at least 3
+lines and fewer than half of them score 0.8 or more, it reads the region again at the other three
+orientations. It keeps the first orientation in which at least half of the lines score 0.8 or more
+and the text with such scores is at least twice as long. The text boxes are mapped back onto the
+page. A region that reads well is read only once, and no extra package or model is needed.
+
+```python
+from docling.datamodel.pipeline_options import RapidOcrOptions
+
+options = RapidOcrOptions(detect_orientation=True)
+```
+
 
 ## EasyOCR
 

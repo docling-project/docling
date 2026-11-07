@@ -95,6 +95,8 @@ PART I   CHAPTER 1   DIVISION I   SUBDIVISION A   ARTICLE 1     I.          1.  
 ```
 
 `DIVISION` and `SUBDIVISION` are ordinary words too, so they are read as markers only when a number, letter, or Roman numeral follows.
+The other keywords are also ordinary words. They are read as markers when they stand alone (`APPENDIX`, `Annex:`), or when the next word contains a digit (`Rule 12(b)`), is a letter or a Roman numeral, or is a number word (`CHAPTER ONE`).
+For example, `Rule Definition` and `Part-Year Method` are not markers.
 
 The default order places `part`/`title` above `division`; in codes where a `Division` sits above a `Title` (some US omnibus acts), reorder with `numbering_schemes` so `division` comes first.
 

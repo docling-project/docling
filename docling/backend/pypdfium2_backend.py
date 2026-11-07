@@ -248,6 +248,12 @@ def _rect_to_pdf_frame(
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
+# PDFium has no character for a hyphen that ends a line: FPDFText_GetUnicode
+# returns STX (U+0002) and FPDFText_GetText returns U+FFFE. The glyph on the page
+# is the hyphen, so the text shows it, as the docling-parse backend does.
+_LINE_FINAL_HYPHEN_TEXT = {0x02: "-", 0xFFFE: "-"}
+_LINE_FINAL_HYPHEN_UNITS = {code: ord("-") for code in _LINE_FINAL_HYPHEN_TEXT}
+
 _log = logging.getLogger(__name__)
 
 
@@ -275,7 +281,8 @@ class _PageChars:
     text with the same spacing and line-break rules as PDFium.
 
     Attributes:
-        units: UTF-16 code unit of each character, by PDFium character index.
+        units: UTF-16 code unit of each character, by PDFium character index,
+            with a line-final hyphen restored from U+0002 or U+FFFE.
         baselines: y of each character's origin, by PDFium character index.
         centres: ``(y, x, index)`` of the box centre of each character whose box
             is not empty, sorted by y.
@@ -296,7 +303,8 @@ class _PageChars:
         origin_x = ctypes.c_double()
         origin_y = ctypes.c_double()
         for char_index in range(text_page.count_chars()):
-            units.append(pdfium_c.FPDFText_GetUnicode(text_page.raw, char_index))
+            unit = pdfium_c.FPDFText_GetUnicode(text_page.raw, char_index)
+            units.append(_LINE_FINAL_HYPHEN_UNITS.get(unit, unit))
             pdfium_c.FPDFText_GetCharOrigin(
                 text_page.raw, char_index, origin_x, origin_y
             )
@@ -473,11 +481,14 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
                 for cell in cells[1:]:
                     vertical_threshold = row_height * vertical_threshold_factor
+                    bbox = cell.rect.to_bounding_box()
                     if (
-                        abs(cell.rect.to_bounding_box().t - row_top)
-                        <= vertical_threshold
-                        and abs(cell.rect.to_bounding_box().b - row_bottom)
-                        <= vertical_threshold
+                        abs(bbox.t - row_top) <= vertical_threshold
+                        and abs(bbox.b - row_bottom) <= vertical_threshold
+                    ) or (
+                        # PDFium boxes a punctuation run tightly on the baseline,
+                        # so its edges miss the row's, though it sits inside it.
+                        bbox.t >= row_top and bbox.b <= row_bottom
                     ):
                         current_row.append(cell)
                         row_top = min(row_top, cell.rect.to_bounding_box().t)
@@ -637,6 +648,67 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             if cropbox.area() > AREA_THRESHOLD:
                 yield cropbox.scaled(scale=scale)
 
+    def get_embedded_image(
+        self, bbox: BoundingBox, *, overlap_threshold: float = 0.8
+    ) -> Image.Image | None:
+        page_size = self.get_size()
+        probe = bbox.to_top_left_origin(page_height=page_size.height)
+
+        with pypdfium2_lock:
+            page = self._require_page()
+            image_objects = []
+            for obj in page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
+                obj_bbox = BoundingBox.from_tuple(
+                    _rect_to_display_frame(
+                        obj.get_bounds(),
+                        page.get_rotation(),
+                        page_size,
+                        page.get_bbox()[:2],
+                    ),
+                    origin=CoordOrigin.BOTTOMLEFT,
+                ).to_top_left_origin(page_height=page_size.height)
+                image_objects.append((obj_bbox, obj))
+
+            candidates = [
+                (obj_bbox, obj)
+                for obj_bbox, obj in image_objects
+                if probe.intersection_over_self(obj_bbox) >= overlap_threshold
+                and obj_bbox.intersection_over_self(probe) >= overlap_threshold
+            ]
+            if len(candidates) != 1:
+                return None
+
+            candidate_bbox, image_object = candidates[0]
+            # Reject any overlapping page object that could alter the image.
+            for obj in page.get_objects():
+                obj_bbox = BoundingBox.from_tuple(
+                    _rect_to_display_frame(
+                        obj.get_bounds(),
+                        page.get_rotation(),
+                        page_size,
+                        page.get_bbox()[:2],
+                    ),
+                    origin=CoordOrigin.BOTTOMLEFT,
+                ).to_top_left_origin(page_height=page_size.height)
+                if max(candidate_bbox.l, obj_bbox.l) < min(
+                    candidate_bbox.r, obj_bbox.r
+                ) and max(candidate_bbox.t, obj_bbox.t) < min(
+                    candidate_bbox.b, obj_bbox.b
+                ):
+                    if (
+                        obj.type != pdfium_c.FPDF_PAGEOBJ_IMAGE
+                        or obj.get_bounds() != image_object.get_bounds()
+                    ):
+                        return None
+
+            bitmap = image_object.get_bitmap(render=True, scale_to_original=True)
+            try:
+                image = bitmap.to_pil().copy()
+            finally:
+                bitmap.close()
+
+        return image
+
     def has_content_in(
         self,
         *,
@@ -714,7 +786,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         with pypdfium2_lock:
             text_piece = self.text_page.get_text_bounded(*pdf_rect)
 
-        return text_piece
+        return text_piece.translate(_LINE_FINAL_HYPHEN_TEXT)
 
     def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
         if not self.valid:

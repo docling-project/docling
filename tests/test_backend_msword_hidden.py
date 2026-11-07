@@ -127,8 +127,8 @@ def test_docx_hidden_text_next_to_equations(tmp_path: Path):
     doc = _convert(document, tmp_path)
 
     assert doc.export_to_markdown() == (
-        "Value  $x=1$\n\n"
-        "- Item  $x=1$\n\n"
+        "Value $x=1$\n\n"
+        "- Item $x=1$\n\n"
         "$$x=1$$\n\n"
         "| Cell $x=1$   | Other   |\n"
         "|--------------|---------|"

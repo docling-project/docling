@@ -19,6 +19,7 @@ from docling_core.types.doc import (
     GroupLabel,
     PictureClassificationLabel,
     PictureItem,
+    RichTableCell,
     TableItem,
     TextItem,
 )
@@ -27,6 +28,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
 from openpyxl.worksheet.merge import MergedCellRange
+from PIL import Image
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msexcel_backend import (
@@ -825,6 +827,102 @@ def test_whole_sheet_merged_range_is_clipped_to_data(tmp_path: Path) -> None:
     assert (anchor.row_span, anchor.col_span) == (3, 2)
 
 
+def _load_backend_sheet(file_path: Path):
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    return backend, backend.workbook.active
+
+
+def test_find_data_tables_does_not_materialize_empty_cells(tmp_path: Path) -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "first"
+    sheet["AD33334"] = "last"  # ~1M-position bounding rectangle
+    file_path = tmp_path / "sparse.xlsx"
+    workbook.save(file_path)
+    backend, loaded_sheet = _load_backend_sheet(file_path)
+    cells_before = len(loaded_sheet._cells)
+
+    tracemalloc.start()
+    try:
+        tables, _ = backend._find_data_tables(loaded_sheet)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert len(tables) == 2
+    found = sorted((t.anchor, [(c.row, c.col, c.text) for c in t.data]) for t in tables)
+    assert found == [
+        ((0, 0), [(0, 0, "first")]),
+        ((29, 33333), [(0, 0, "last")]),
+    ]
+    assert len(loaded_sheet._cells) == cells_before
+    assert peak < 50 * 1024 * 1024
+
+
+def test_sparse_merged_anchor_and_comment_only_cell_tables(tmp_path: Path) -> None:
+    # Coverage test: passes on main too, pins output for merges and comments.
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "head"
+    sheet["B1"] = "x"
+    sheet["A2"] = "merged"
+    sheet.merge_cells("A2:B2")
+    sheet["C2"].comment = Comment("only a note", "Codex")
+    sheet["A5000"] = "far"
+    sheet["B5000"] = "far2"
+    file_path = tmp_path / "sparse-merge-comment.xlsx"
+    workbook.save(file_path)
+    backend, loaded_sheet = _load_backend_sheet(file_path)
+
+    tables, comment_map = backend._find_data_tables(loaded_sheet)
+
+    found = sorted(
+        (
+            t.anchor,
+            t.num_rows,
+            t.num_cols,
+            sorted((c.row, c.col, c.text, c.row_span, c.col_span) for c in t.data),
+        )
+        for t in tables
+    )
+    assert found == [
+        (
+            (0, 0),
+            2,
+            2,
+            [(0, 0, "head", 1, 1), (0, 1, "x", 1, 1), (1, 0, "merged", 1, 2)],
+        ),
+        ((0, 4999), 1, 2, [(0, 0, "far", 1, 1), (0, 1, "far2", 1, 1)]),
+    ]
+    assert comment_map == {}  # comment-only cell outside any table is dropped
+
+
+def test_missing_merge_anchor_inside_table_keeps_span(tmp_path: Path) -> None:
+    # Coverage test for the contains_at fallback; main recreates the cell instead.
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "head"
+    sheet.merge_cells("A2:B2")
+    file_path = tmp_path / "missing-merge-anchor.xlsx"
+    workbook.save(file_path)
+    backend, loaded_sheet = _load_backend_sheet(file_path)
+    del loaded_sheet._cells[(2, 1)]  # force the merged-anchor fallback
+
+    tables, _ = backend._find_data_tables(loaded_sheet)
+
+    assert len(tables) == 1
+    table = tables[0]
+    assert (table.num_rows, table.num_cols) == (2, 2)
+    anchor = next(c for c in table.data if (c.row, c.col) == (1, 0))
+    assert anchor.col_span == 2
+
+
 def test_merged_range_beyond_data_is_clipped(tmp_path: Path) -> None:
     workbook = Workbook()
     sheet = workbook.active
@@ -1187,6 +1285,87 @@ def test_one_cell_anchor_image():
     assert prov.bbox.t == 1.0, f"Image top should be 1.0 (row 2), got {prov.bbox.t}"
     assert prov.bbox.r == 4.0, f"Image right should be 4.0, got {prov.bbox.r}"
     assert prov.bbox.b == 2.0, f"Image bottom should be 2.0, got {prov.bbox.b}"
+
+
+def test_images_placed_in_cells(documents) -> None:
+    """Test that images placed in cells become pictures in rich table cells.
+
+    Excel stores an image placed in a cell ("Place in Cell") as a rich value in
+    xl/richData. The cell itself only holds the fallback error value #VALUE!.
+    """
+    doc = next(doc for path, doc in documents if path.stem == "xlsx_10_place_in_cell")
+
+    table = doc.tables[0]
+    cells = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell
+        for cell in table.data.table_cells
+    }
+    for row, alt_text in ((1, "A red square"), (2, "A green square")):
+        cell = cells[(row, 1)]
+        assert isinstance(cell, RichTableCell)
+        assert cell.text == ""
+        picture = cell.ref.resolve(doc)
+        assert isinstance(picture, PictureItem)
+        assert picture.parent is not None
+        assert picture.parent.cref == table.self_ref
+        assert picture.image is not None
+        assert picture.meta is not None
+        assert picture.meta.description is not None
+        assert picture.meta.description.text == alt_text
+
+    # An error value without an image is cell content and keeps its text.
+    assert not isinstance(cells[(1, 3)], RichTableCell)
+    assert cells[(1, 3)].text == "#N/A"
+
+
+def test_image_placed_in_a_singleton_cell() -> None:
+    """Test that a lone image cell becomes a picture with treat_singleton_as_text."""
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_10_place_in_cell"
+    )
+    options = MsExcelBackendOptions(treat_singleton_as_text=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    # The "Logo" sheet (page 2) holds only one image cell.
+    assert not [table for table in doc.tables if table.prov[0].page_no == 2]
+    assert not [text for text in doc.texts if text.prov[0].page_no == 2]
+    pictures = [picture for picture in doc.pictures if picture.prov[0].page_no == 2]
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
+
+
+def test_image_cell_next_to_a_section_label(tmp_path: Path) -> None:
+    """Test that an image cell keeps a merged label in its table."""
+    xlsxwriter = pytest.importorskip("xlsxwriter")
+
+    image_path = tmp_path / "icon.png"
+    Image.new("RGB", (16, 16), "red").save(image_path)
+    file_path = tmp_path / "section_image.xlsx"
+    workbook = xlsxwriter.Workbook(str(file_path))
+    sheet = workbook.add_worksheet()
+    sheet.merge_range("A1:B1", "Fruit list")
+    sheet.embed_image("C1", str(image_path), {"description": "Section icon"})
+    sheet.write_row("A2", ["name", "qty", "note"])
+    sheet.write_row("A3", ["apple", 1, "x"])
+    sheet.write_row("A4", ["pear", 2, "y"])
+    workbook.close()
+
+    doc = DocumentConverter().convert(file_path).document
+
+    # The image is content in the first row, so the label is not split off.
+    assert not doc.texts
+    [table] = doc.tables
+    assert (table.data.num_rows, table.data.num_cols) == (4, 3)
+    [picture] = doc.pictures
+    cell = table.data.grid[0][2]
+    assert isinstance(cell, RichTableCell)
+    assert cell.ref.cref == picture.self_ref
+    assert picture.parent is not None
+    assert picture.parent.cref == table.self_ref
 
 
 def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
