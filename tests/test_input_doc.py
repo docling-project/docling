@@ -842,11 +842,25 @@ def test_guess_format(tmp_path):
     doc_path = Path("./tests/data/jats/sources/elife-56337.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
+    # XBRL instance file
     buf = BytesIO(Path("./tests/data/xbrl/sources/mlac-20251231.xml").open("rb").read())
     stream = DocumentStream(name="mlac-20251231.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_XBRL
     doc_path = Path("./tests/data/xbrl/sources/mlac-20251231.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_XBRL
+
+    # iXBRL (.htm with inline XBRL namespace markers)
+    ixbrl_head = (
+        b"<?xml version='1.0' encoding='UTF-8'?>"
+        b'<html xmlns="http://www.w3.org/1999/xhtml"'
+        b' xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">'
+        b"<head><title>Test iXBRL</title></head><body></body></html>"
+    )
+    ixbrl_path = temp_dir / "report.htm"
+    ixbrl_path.write_bytes(ixbrl_head)
+    assert dci._guess_format(ixbrl_path) == InputFormat.XML_XBRL
+    stream = DocumentStream(name="report.htm", stream=BytesIO(ixbrl_head))
+    assert dci._guess_format(stream) == InputFormat.XML_XBRL
 
     # Valid XML, non-supported flavor
     xml_content = (
