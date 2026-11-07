@@ -617,6 +617,42 @@ def test_email_keeps_furniture_from_each_html_part_once():
     assert doc.export_to_markdown() == "# Multipart HTML\n\nFirst body.\n\nSecond body."
 
 
+def test_email_backend_preserves_calendar_body_as_text():
+    """Keep another text MIME subtype as text, without parsing calendar fields."""
+    calendar_body = (
+        "BEGIN:VCALENDAR\n"
+        "VERSION:2.0\n"
+        "PRODID:-//Docling//Email fallback test//EN\n"
+        "BEGIN:VEVENT\n"
+        "UID:synthetic@example.org\n"
+        "DTSTAMP:20261107T000000Z\n"
+        "DTSTART:20261108T090000Z\n"
+        "DESCRIPTION:Review <terms> & conditions for a_b.\n"
+        "END:VEVENT\n"
+        "END:VCALENDAR"
+    )
+    message = EmailMessage()
+    message["Subject"] = "Calendar body"
+    message.set_content(calendar_body, subtype="calendar")
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(name="calendar.eml", stream=BytesIO(message.as_bytes()))
+        )
+        .document
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Calendar body", ContentLayer.BODY),
+        (calendar_body, ContentLayer.BODY),
+    ]
+    escaped_body = calendar_body.replace(
+        "<terms> & conditions for a_b.", "&lt;terms&gt; &amp; conditions for a\\_b."
+    ).replace("\n", "  \n")
+    assert doc.export_to_markdown() == f"# Calendar body\n\n{escaped_body}"
+
+
 @pytest.mark.parametrize(
     ("mime_charset", "meta", "text"),
     [
