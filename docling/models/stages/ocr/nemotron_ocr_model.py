@@ -449,7 +449,7 @@ class NemotronOcrModel(BaseOcrModel):
                 buffered_rect = _BufferedRect(
                     state=state,
                     ocr_rect=ocr_rect,
-                    image=numpy.array(high_res_image),
+                    image=numpy.asarray(high_res_image),
                     image_size=high_res_image.size,
                 )
                 recorder.pause()

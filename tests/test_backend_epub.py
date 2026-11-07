@@ -269,6 +269,60 @@ def test_epub_percent_encoded_manifest_href_is_read(tmp_path: Path):
     assert "Chapter 2 body." in text
 
 
+def test_epub_percent_encoded_package_path_is_read(tmp_path: Path):
+    """The full-path of a rootfile is a URL, so its percent-escapes are decoded.
+
+    A reference inside the container is a relative IRI reference, while the
+    archive stores the literal file name. A package document whose name holds
+    a space is therefore escaped in container.xml, and looking it up with the
+    escape still in place fails the whole conversion.
+    """
+    container = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<container version="1.0"'
+        ' xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
+        "<rootfiles>"
+        '<rootfile full-path="OEBPS/my%20book.opf"'
+        ' media-type="application/oebps-package+xml"/>'
+        "</rootfiles></container>"
+    )
+    opf = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<package xmlns="http://www.idpf.org/2007/opf" version="3.0"'
+        ' unique-identifier="uid">'
+        '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
+        "<dc:title>Escaped Package Path</dc:title></metadata>"
+        "<manifest>"
+        '<item id="c0" href="chapter-0.xhtml"'
+        ' media-type="application/xhtml+xml"/>'
+        "</manifest>"
+        '<spine><itemref idref="c0"/></spine>'
+        "</package>"
+    )
+    epub_path = tmp_path / "package-path.epub"
+    with zipfile.ZipFile(epub_path, "w", zipfile.ZIP_DEFLATED) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED
+        z.writestr(zi, "application/epub+zip")
+        z.writestr("META-INF/container.xml", container)
+        z.writestr("OEBPS/my book.opf", opf)
+        z.writestr(
+            "OEBPS/chapter-0.xhtml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<html xmlns="http://www.w3.org/1999/xhtml"><body>'
+            "<p>Chapter 0 body.</p>"
+            "</body></html>",
+        )
+
+    result = get_converter().convert(epub_path)
+
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.errors == []
+
+    doc = result.document
+    assert "Chapter 0 body." in "\n".join(item.text for item in doc.texts)
+
+
 def _build_epub_with_parent_relative_href(path: Path) -> Path:
     """Build a minimal EPUB whose spine steps out of the package directory.
 
@@ -466,6 +520,39 @@ def test_epub_internal_links_are_fixed_for_every_content_document_extension(
     ]
 
     assert hyperlinks == ["#note2", absolute, "#note3", "#note4", "#note1"]
+
+
+def test_epub_internal_links_in_either_quote_style(tmp_path: Path):
+    """A cross-document link is reduced to its anchor in either quote style.
+
+    An attribute value is as legal in single quotes as in double quotes, and
+    image sources already allow both. A link that keeps its file part points
+    at a content document that no longer exists once the spine is merged into
+    one HTML document, so it becomes a path to a missing file instead of an
+    anchor. The absolute URL is here for the opposite reason: a single quote
+    must not make its host disappear either.
+    """
+    absolute = "https://example.com/page.html#about"
+    names = ["chapter1.xhtml", "chapter2.xhtml"]
+    bodies = [
+        f"<p>See <a href='{names[1]}#note2'>single</a>.</p>"
+        f'<p>See <a href="{names[1]}#note2">double</a>.</p>'
+        f"<p>Read <a href='{absolute}'>about</a>.</p>",
+        '<p id="note2">Note 2.</p>',
+    ]
+    epub_path = _build_epub_with_hrefs(
+        tmp_path / "quotes.epub", hrefs=names, names=names, bodies=bodies
+    )
+
+    doc = get_converter().convert(epub_path, raises_on_error=True).document
+
+    hyperlinks = [
+        str(item.hyperlink)
+        for item, _ in doc.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+
+    assert hyperlinks == ["#note2", "#note2", absolute]
 
 
 def test_epub_image_sources_in_either_quote_style_and_percent_escaped(

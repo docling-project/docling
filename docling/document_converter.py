@@ -32,6 +32,7 @@ from docling.backend.abstract_backend import (
 from docling.backend.afp_backend import AfpDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.boxnote_backend import BoxNoteDocumentBackend
+from docling.backend.calendar_backend import CalendarDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
@@ -71,6 +72,7 @@ from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     AsciiDocBackendOptions,
     BackendOptions,
+    CalendarBackendOptions,
     CsvBackendOptions,
     DeclarativeBackendOptions,
     EbcdicBackendOptions,
@@ -107,6 +109,7 @@ from docling.datamodel.document import (
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     NativePdfPipelineOptions,
+    PdfPipelineOptions,
     PipelineOptions,
 )
 from docling.datamodel.progress import (
@@ -199,6 +202,21 @@ class MarkdownFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = MarkdownDocumentBackend
     backend_options: Optional[MarkdownBackendOptions] = None
 
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> MarkdownBackendOptions | None:
+        options = self.backend_options
+        if (
+            options is None
+            or options.source_uri is not None
+            or isinstance(source, DocumentStream)
+        ):
+            return options
+
+        return MarkdownBackendOptions.model_validate(
+            {**options.model_dump(), "source_uri": source}
+        )
+
 
 class AsciiDocFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
@@ -290,6 +308,21 @@ class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
+
+    @model_validator(mode="after")
+    def configure_embedded_picture_images(self) -> Self:
+        if (
+            isinstance(self.pipeline_options, PdfPipelineOptions)
+            and self.pipeline_options.use_embedded_picture_images
+            and self.backend is ThreadedDoclingParseDocumentBackend
+        ):
+            if self.backend_options is None:
+                self.backend_options = ThreadedDoclingParseBackendOptions(
+                    include_bitmap_images=True
+                )
+            elif isinstance(self.backend_options, PdfBackendOptions):
+                self.backend_options.include_bitmap_images = True
+        return self
 
 
 class IWorkPagesFormatOption(FormatOption):
@@ -407,6 +440,12 @@ class EmailFormatOption(FormatOption):
     backend_options: Optional[EmailBackendOptions] = None
 
 
+class CalendarFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = CalendarDocumentBackend
+    backend_options: Optional[CalendarBackendOptions] = None
+
+
 class EpubFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = EpubDocumentBackend
@@ -466,6 +505,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
         InputFormat.AFP: AfpFormatOption(),
+        InputFormat.CALENDAR: CalendarFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options
@@ -629,6 +669,10 @@ class DocumentConverter:
     ) -> ConversionResult:
         """Convert one document fetched from a file path, URL, or DocumentStream.
 
+        A generic ZIP archive can contain multiple documents. Use ``convert_all``
+        for such archives. This method raises ``ConversionError`` instead of
+        silently returning only the first converted member.
+
         Note: If the document content is given as a string (Markdown or HTML
         content), use the `convert_string` method.
 
@@ -676,16 +720,27 @@ class DocumentConverter:
             >>> stream = DocumentStream(name="page.html", stream=buf)
             >>> result = converter.convert(stream)
         """
-        all_res = self.convert_all(
-            source=[source],
-            raises_on_error=raises_on_error,
-            max_num_pages=max_num_pages,
-            max_file_size=max_file_size,
-            headers=headers,
-            page_range=page_range,
-            progress_callback=progress_callback,
+        all_res = iter(
+            self.convert_all(
+                source=[source],
+                raises_on_error=raises_on_error,
+                max_num_pages=max_num_pages,
+                max_file_size=max_file_size,
+                headers=headers,
+                page_range=page_range,
+                progress_callback=progress_callback,
+            )
         )
-        return next(all_res)
+        first_result = next(all_res, None)
+        if first_result is None:
+            return next(all_res)
+
+        if next(all_res, None) is not None:
+            raise ConversionError(
+                "The source contains multiple documents. Use convert_all() to "
+                "convert every document in the source."
+            )
+        return first_result
 
     @validate_call(config=ConfigDict(strict=True))
     def convert_all(

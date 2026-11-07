@@ -16,9 +16,11 @@ import numpy as np
 from packaging import version
 from PIL import Image
 
+from docling.datamodel.base_models import VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.models.utils.generation_utils import GenerationStopper
+from docling.utils.image_utils import to_rgb
 
 _log = logging.getLogger(__name__)
 
@@ -126,9 +128,8 @@ def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image
         else:
             raise ValueError(f"Unsupported numpy array shape: {image.shape}")
 
-    # Ensure RGB mode (handles RGBA, L, P, etc.)
-    if image.mode != "RGB":
-        image = image.convert("RGB")
+    # Ensure RGB mode (handles RGBA, L, P, etc.), flattening transparency onto white
+    image = to_rgb(image)
 
     return image
 
@@ -174,6 +175,17 @@ def extract_generation_stoppers(
         # Ignore other types (e.g., HF StoppingCriteria for transformers)
 
     return stoppers
+
+
+def generation_stopper_stop_reason(stopper: GenerationStopper) -> VlmStopReason:
+    """The stop reason to report when `stopper` ended the generation.
+
+    A stopper that marks the valid end of the output gives END_OF_SEQUENCE. Any
+    other stopper cut the output and gives STOP_SEQUENCE.
+    """
+    if stopper.is_valid_end():
+        return VlmStopReason.END_OF_SEQUENCE
+    return VlmStopReason.STOP_SEQUENCE
 
 
 def resolve_model_artifacts_path(

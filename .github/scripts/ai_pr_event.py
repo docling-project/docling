@@ -3,10 +3,11 @@
 
 """Resolve which PR the AI triage handles and in which mode.
 
-The workflow starts on ``pull_request_target`` (each push) and on
-``issue_comment`` (``/ai`` commands from maintainers). This module turns the
-event payload into a small, validated decision, so the jobs never read
-untrusted comment text themselves.
+The workflow starts on ``pull_request_target`` (each push), on
+``issue_comment`` (``/ai`` commands from maintainers), and on
+``workflow_dispatch`` (a manual run for one PR, for example to catch up after
+an outage). This module turns the event payload into a small, validated
+decision, so the jobs never read untrusted comment text themselves.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 MAINTAINER_ASSOCIATIONS = frozenset({"OWNER", "MEMBER", "COLLABORATOR"})
+DISPATCH_MODES = frozenset({"review", "triage"})
 COMMAND = re.compile(r"^/ai(?:\s+(?P<name>review|triage))?\s*$")
 
 
@@ -41,7 +43,14 @@ def parse_command(body: str) -> str | None:
     return match.group("name") or "review"
 
 
-def resolve(event_name: str, event: dict[str, Any]) -> Decision:
+def resolve(
+    event_name: str, event: dict[str, Any], pull: dict[str, Any] | None = None
+) -> Decision:
+    """Decide if the workflow runs, for which PR, and if it forces a review.
+
+    `pull` is the PR from the API. Only `workflow_dispatch` needs it: its
+    payload has the inputs, not the PR.
+    """
     if event_name == "pull_request_target":
         pull = event["pull_request"]
         number = int(pull["number"])
@@ -64,6 +73,20 @@ def resolve(event_name: str, event: dict[str, Any]) -> Decision:
             return Decision(number, False, False, "no /ai command")
         return Decision(number, True, command == "review", f"/ai {command}")
 
+    if event_name == "workflow_dispatch":
+        # Only users with write access can start a dispatch, so the request
+        # needs no maintainer check, and it runs for a draft or a bot PR too.
+        inputs = event["inputs"]
+        number = int(inputs["pr"])
+        mode = inputs.get("mode") or "triage"
+        if mode not in DISPATCH_MODES:
+            raise ValueError(f"unsupported mode: {mode!r}")
+        if pull is None or int(pull["number"]) != number:
+            raise ValueError(f"the PR data does not match PR #{number}")
+        if pull.get("state") != "open":
+            return Decision(number, False, False, "not an open PR")
+        return Decision(number, True, mode == "review", f"manual {mode}")
+
     raise ValueError(f"unsupported event: {event_name}")
 
 
@@ -83,10 +106,20 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--event-name", required=True)
     parser.add_argument("--event-path", type=Path, required=True)
+    parser.add_argument(
+        "--pull-request",
+        type=Path,
+        help="The PR from the API, as JSON. Required for workflow_dispatch.",
+    )
     args = parser.parse_args(argv)
 
     event = json.loads(args.event_path.read_text("utf-8"))
-    decision = resolve(args.event_name, event)
+    pull = (
+        json.loads(args.pull_request.read_text("utf-8"))
+        if args.pull_request is not None
+        else None
+    )
+    decision = resolve(args.event_name, event, pull)
     print(
         f"PR #{decision.pr}: run={decision.run},"
         f" force_review={decision.force_review} ({decision.reason})"

@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import string
+import subprocess
 import sys
 from pathlib import Path
 
@@ -191,6 +192,48 @@ def test_model_code_span_cannot_be_closed_early() -> None:
     assert triage.markdown_code("`x") == "`` `x ``"
 
 
+def test_the_answer_is_the_last_complete_object_with_the_answer_keys() -> None:
+    draft, final = answer(summary="Draft."), answer(summary="Final.")
+    message = f"{json.dumps(draft)}\nOn second thought:\n{json.dumps(final)}\nDone."
+    keys = triage.TRIAGE_ANSWER_KEYS
+    assert triage.extract_answer(message, keys)["summary"] == "Final."
+    # A broken answer must not be read from one of its nested objects.
+    broken = '{"summary": "x", "ci_safety": {"verdict": "safe", "concerns": []'
+    with pytest.raises(ValueError, match="no JSON object"):
+        triage.extract_answer(broken, keys)
+
+
+def test_comment_keeps_code_spans_and_table_cells() -> None:
+    context = make_context(
+        candidates=[{"number": 7, "title": "", "state": "open", "url": ""}]
+    )
+    result = triage.parse_triage_result(
+        answer(
+            summary="Fixes `_to_rgb` for [x](//evil.example).",
+            duplicates=[
+                {"pr": 7, "verdict": "related", "reason": "Both edit `a | b`."}
+            ],
+        ),
+        {7},
+    )
+    comment = triage.render_comment(context, result, {triage.LABEL_CI_SAFE})
+    lines = comment.splitlines()
+    assert "Fixes `_to_rgb` for \\[x\\]\\(\\/\\/evil\\.example\\)\\." in lines
+    row = next(line for line in lines if line.startswith("| #7 "))
+    assert "`a \\| b`" in row
+    assert row.count("|") - row.count("\\|") == 5
+
+
+def test_review_labels_of_an_older_commit_are_stale() -> None:
+    current = {triage.LABEL_REVIEW_LGTM, triage.LABEL_CI_SAFE}
+    head = "b" * 40
+    assert triage.stale_review_labels(current, ["a" * 40, head], head) == set()
+    assert triage.stale_review_labels(current, [head, "a" * 40], head) == {
+        triage.LABEL_REVIEW_LGTM
+    }
+    assert triage.stale_review_labels(current, [], head) == {triage.LABEL_REVIEW_LGTM}
+
+
 def test_deterministic_findings_override_a_safe_model_verdict() -> None:
     context = make_context(
         risk={"forced": [{"path": "uv.lock", "reason": "deps"}], "hints": []}
@@ -244,6 +287,27 @@ def test_comment_states_failed_analysis() -> None:
     comment = triage.render_comment(context, None, set())
     assert "did not finish" in comment
     assert "| #7 | open |" in comment
+
+
+def test_failed_reference_lookup_does_not_stop_the_triage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_gh_api(path: str, **_: object) -> object:
+        if path.endswith("/issues/99999"):
+            raise subprocess.CalledProcessError(
+                1, "gh", stderr="gh: Not Found (HTTP 404)\n"
+            )
+        if path.endswith("/issues/7"):
+            return {"number": 7, "title": "x", "state": "open", "pull_request": {}}
+        if "/pulls?" in path:
+            return []
+        if path.endswith("/pulls/7/files?per_page=100"):
+            return []
+        raise AssertionError(f"unexpected call: {path}")
+
+    monkeypatch.setattr(triage, "gh_api", fake_gh_api)
+    found = triage.find_candidates(REPO, 10, [99999, 7], [])
+    assert [candidate.number for candidate, _ in found] == [7]
 
 
 def test_model_topics_must_come_from_the_repository_label_set() -> None:

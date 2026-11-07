@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
+import json
 import logging
 import re
 import sys
@@ -10,6 +11,7 @@ import time
 import warnings
 from collections.abc import Iterable
 from contextlib import nullcontext
+from dataclasses import dataclass, replace
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
@@ -20,6 +22,7 @@ from docling.utils.ocr_language import OcrLanguageResolver
 
 # Check for CLI dependencies
 try:
+    import rich.markup
     import rich.table
     import typer
 except ImportError as e:
@@ -50,6 +53,11 @@ from pydantic import SecretStr, TypeAdapter, ValidationError
 from rich.console import Console
 from tqdm.contrib.logging import logging_redirect_tqdm
 
+from docling.cli.engine_options import (
+    create_engine_options,
+    describe_options_class,
+    find_options_class,
+)
 from docling.cli.export_utils import (
     _export_flags_from_formats,
     _is_empty_output,
@@ -57,14 +65,41 @@ from docling.cli.export_utils import (
     _should_generate_export_images,
     _split_list,
 )
+from docling.cli.model_table import (
+    ASR_BACKENDS,
+    ASR_FEATURES,
+    VLM_BACKENDS,
+    VLM_FEATURES,
+    BackendState,
+    ModelTable,
+    asr_rows,
+    vlm_rows,
+)
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
+    ADDITIONAL_ASR_PRESETS,
+    GRANITE_4_0_1B_SPEECH,
+    GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO,
+    GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS,
+    GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
+    GRANITE_SPEECH_5_0_2B_TRANSFORMERS,
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
+    GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS,
+    NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
+    NEMOTRON_3_5_ASR_STREAMING_PRESET,
+    NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS,
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
+    NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS,
+    PARAKEET_CTC_1_1B_MLX_AUDIO,
+    PARAKEET_CTC_1_1B_TRANSFORMERS,
     WHISPER_BASE,
     WHISPER_BASE_EN_NATIVE,
     WHISPER_BASE_EN_S2T,
     WHISPER_BASE_MLX,
+    WHISPER_BASE_MLX_WHISPER,
     WHISPER_BASE_NATIVE,
     WHISPER_BASE_S2T,
+    WHISPER_BASE_TRANSFORMERS,
     WHISPER_DISTIL_LARGE_V3_5_NATIVE,
     WHISPER_DISTIL_LARGE_V3_5_S2T,
     WHISPER_DISTIL_LARGE_V3_NATIVE,
@@ -75,30 +110,41 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_DISTIL_SMALL_EN_S2T,
     WHISPER_LARGE,
     WHISPER_LARGE_MLX,
+    WHISPER_LARGE_MLX_WHISPER,
     WHISPER_LARGE_NATIVE,
+    WHISPER_LARGE_TRANSFORMERS,
     WHISPER_LARGE_V3_S2T,
     WHISPER_LARGE_V3_TURBO_S2T,
     WHISPER_MEDIUM,
     WHISPER_MEDIUM_EN_NATIVE,
     WHISPER_MEDIUM_EN_S2T,
     WHISPER_MEDIUM_MLX,
+    WHISPER_MEDIUM_MLX_WHISPER,
     WHISPER_MEDIUM_NATIVE,
     WHISPER_MEDIUM_S2T,
+    WHISPER_MEDIUM_TRANSFORMERS,
     WHISPER_SMALL,
     WHISPER_SMALL_EN_NATIVE,
     WHISPER_SMALL_EN_S2T,
     WHISPER_SMALL_MLX,
+    WHISPER_SMALL_MLX_WHISPER,
     WHISPER_SMALL_NATIVE,
     WHISPER_SMALL_S2T,
+    WHISPER_SMALL_TRANSFORMERS,
     WHISPER_TINY,
     WHISPER_TINY_EN_NATIVE,
     WHISPER_TINY_EN_S2T,
     WHISPER_TINY_MLX,
+    WHISPER_TINY_MLX_AUDIO,
+    WHISPER_TINY_MLX_WHISPER,
     WHISPER_TINY_NATIVE,
     WHISPER_TINY_S2T,
+    WHISPER_TINY_TRANSFORMERS,
     WHISPER_TURBO,
     WHISPER_TURBO_MLX,
+    WHISPER_TURBO_MLX_WHISPER,
     WHISPER_TURBO_NATIVE,
+    WHISPER_TURBO_TRANSFORMERS,
     AsrModelType,
 )
 from docling.datamodel.backend_options import (
@@ -123,6 +169,7 @@ from docling.datamodel.pipeline_options import (
     BaseLayoutOptions,
     BaseTableStructureOptions,
     ConvertPipelineOptions,
+    HeadingHierarchyOptions,
     LayoutObjectDetectionOptions,
     LayoutOptions,
     NativePdfPipelineOptions,
@@ -141,15 +188,27 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
     normalize_pdf_backend,
 )
-from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrMlxAudioOptions,
+    InlineAsrOptions,
+    InlineAsrTransformersOptions,
+)
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
+from docling.datamodel.vlm_engine_options import (
+    AutoInlineVlmEngineOptions,
+    MlxVlmEngineOptions,
+    TransformersVlmEngineOptions,
+    VllmVlmEngineOptions,
+)
 from docling.utils.profiling import ProfilingItem
 from docling.utils.progress import ProgressPrinter
 
-# The local model stack (scipy, torch, …) is absent on lightweight installs
-# (docling-slim[service-client] / docling-client).  Guard these imports so the
-# CLI module — and `convert-remote` — remain importable without them.
-_local_model_stack_available: bool
+# The local model stack (scipy, torch, packaging, …) is absent on lightweight
+# installs (docling-slim[service-client] / docling-client). Importing the
+# factories is not enough to detect this: building them loads the built-in
+# plugins, which import the engine modules. Guard both steps so the CLI module
+# — and `convert-remote` — remain importable without the local model stack.
+_local_model_stack_error: ImportError | None = None
 try:
     from docling.models.factories import (
         get_layout_factory,
@@ -157,22 +216,23 @@ try:
         get_table_structure_factory,
     )
 
-    _local_model_stack_available = True
-except ImportError:
-    _local_model_stack_available = False
+    ocr_engines_enum_internal = list(
+        get_ocr_factory(allow_external_plugins=False).get_enum()
+    )
+    layout_engines_enum_internal = list(
+        get_layout_factory(allow_external_plugins=False).get_enum()
+    )
+    table_structure_engines_enum_internal = list(
+        get_table_structure_factory(allow_external_plugins=False).get_enum()
+    )
+except ImportError as exc:
+    _local_model_stack_error = exc
+    ocr_engines_enum_internal = []
+    layout_engines_enum_internal = []
+    table_structure_engines_enum_internal = []
 
 if TYPE_CHECKING:
     from docling.models.factories.base_factory import BaseFactory
-
-
-def _first_error_message(err: ValidationError) -> str:
-    """The most useful line of a pydantic error, for a typer.BadParameter."""
-    errors = err.errors()
-    if not errors:
-        return str(err)
-    message = errors[0].get("msg", "")
-    # Pydantic prefixes messages raised from a validator with "Value error, ".
-    return message.removeprefix("Value error, ") or str(err)
 
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -196,9 +256,59 @@ class ChunkerType(str, Enum):
     HIERARCHICAL = "hierarchical"
 
 
+class FailOn(str, Enum):
+    """Which conversion outcome makes the CLI exit with a non-zero code."""
+
+    NEVER = "never"  # always exit 0 once the run completes (old behaviour)
+    FAILURE = "failure"  # exit 1 if any document has status FAILURE (default)
+    PARTIAL = "partial"  # also exit 1 if any document is PARTIAL_SUCCESS
+
+
+FAIL_ON_HELP = (
+    "Which outcome makes docling exit with code 1: 'failure' (default) "
+    "if any document fails, 'partial' also if any document is only "
+    "partially converted, 'never' to always exit 0."
+)
+
+
+@dataclass(frozen=True)
+class ExportSummary:
+    """How many documents of a run were converted, partially converted or failed."""
+
+    success: int
+    partial_success: int
+    failure: int
+
+    def should_fail(self, fail_on: FailOn) -> bool:
+        if fail_on == FailOn.NEVER:
+            return False
+        if fail_on == FailOn.PARTIAL:
+            return self.failure > 0 or self.partial_success > 0
+        return self.failure > 0
+
+
 def _is_http_url(source: str) -> bool:
     parsed = urlparse(source)
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+DEFAULT_VLM_PRESET = "granite_docling"
+DEFAULT_ASR_MODEL = AsrModelType.WHISPER_TINY
+
+
+def _resolve_pipeline(
+    pipeline: ProcessingPipeline | None, vlm_model: str | None
+) -> ProcessingPipeline:
+    """Select the pipeline from the --pipeline and --vlm-model options."""
+    if vlm_model is None:
+        return pipeline if pipeline is not None else ProcessingPipeline.STANDARD
+    if pipeline is not None and pipeline != ProcessingPipeline.VLM:
+        raise typer.BadParameter(
+            f"--vlm-model selects the vlm pipeline. It cannot be combined with "
+            f"--pipeline {pipeline.value}.",
+            param_hint="--vlm-model",
+        )
+    return ProcessingPipeline.VLM
 
 
 def _name_matches_format(name: str, format: InputFormat) -> bool:
@@ -266,6 +376,11 @@ def _iter_input_paths_from_directory(
             yield path
 
 
+def _choices_metavar(choices: Iterable[str]) -> str:
+    values = list(choices)
+    return f"[{'|'.join(values)}]" if values else "TEXT"
+
+
 def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
     if from_formats is None:
         return list(InputFormat)
@@ -286,22 +401,6 @@ def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
 
     return list(dict.fromkeys(expanded_formats))
 
-
-if _local_model_stack_available:
-    ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
-    ocr_engines_enum_internal = ocr_factory_internal.get_enum()
-
-    layout_factory_internal = get_layout_factory(allow_external_plugins=False)
-    layout_engines_enum_internal = layout_factory_internal.get_enum()
-
-    table_structure_factory_internal = get_table_structure_factory(
-        allow_external_plugins=False
-    )
-    table_structure_engines_enum_internal = table_structure_factory_internal.get_enum()
-else:
-    ocr_engines_enum_internal = []
-    layout_engines_enum_internal = []
-    table_structure_engines_enum_internal = []
 
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
@@ -364,25 +463,57 @@ class _DefaultCommandGroup(typer.core.TyperGroup):
         return super().parse_args(ctx, args)
 
 
-def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
+def _resolve_asr_options(
+    asr_model: AsrModelType, device: AcceleratorDevice | str = AcceleratorDevice.AUTO
+) -> InlineAsrOptions:
     """Map an AsrModelType enum member to its preset InlineAsrOptions.
 
     Shared mapping so both audio and (later) video CLI setup resolve
     ASR presets the same way.
     """
+    if asr_model == AsrModelType.NEMOTRON_3_5_ASR_STREAMING:
+        return NEMOTRON_3_5_ASR_STREAMING_PRESET.to_auto_options(device)
+    if asr_model.value in ADDITIONAL_ASR_PRESETS:
+        return ADDITIONAL_ASR_PRESETS[asr_model.value].to_auto_options(device)
     mapping: dict[AsrModelType, InlineAsrOptions] = {
+        AsrModelType.GRANITE_4_0_1B_SPEECH: GRANITE_4_0_1B_SPEECH,
         AsrModelType.WHISPER_TINY: WHISPER_TINY,
         AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
         AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
         AsrModelType.WHISPER_BASE: WHISPER_BASE,
         AsrModelType.WHISPER_LARGE: WHISPER_LARGE,
         AsrModelType.WHISPER_TURBO: WHISPER_TURBO,
+        AsrModelType.WHISPER_TINY_TRANSFORMERS: WHISPER_TINY_TRANSFORMERS,
+        AsrModelType.WHISPER_BASE_TRANSFORMERS: WHISPER_BASE_TRANSFORMERS,
+        AsrModelType.WHISPER_SMALL_TRANSFORMERS: WHISPER_SMALL_TRANSFORMERS,
+        AsrModelType.WHISPER_MEDIUM_TRANSFORMERS: WHISPER_MEDIUM_TRANSFORMERS,
+        AsrModelType.WHISPER_LARGE_TRANSFORMERS: WHISPER_LARGE_TRANSFORMERS,
+        AsrModelType.WHISPER_TURBO_TRANSFORMERS: WHISPER_TURBO_TRANSFORMERS,
         AsrModelType.WHISPER_TINY_MLX: WHISPER_TINY_MLX,
         AsrModelType.WHISPER_SMALL_MLX: WHISPER_SMALL_MLX,
         AsrModelType.WHISPER_MEDIUM_MLX: WHISPER_MEDIUM_MLX,
         AsrModelType.WHISPER_BASE_MLX: WHISPER_BASE_MLX,
         AsrModelType.WHISPER_LARGE_MLX: WHISPER_LARGE_MLX,
         AsrModelType.WHISPER_TURBO_MLX: WHISPER_TURBO_MLX,
+        AsrModelType.WHISPER_TINY_MLX_WHISPER: WHISPER_TINY_MLX_WHISPER,
+        AsrModelType.WHISPER_SMALL_MLX_WHISPER: WHISPER_SMALL_MLX_WHISPER,
+        AsrModelType.WHISPER_MEDIUM_MLX_WHISPER: WHISPER_MEDIUM_MLX_WHISPER,
+        AsrModelType.WHISPER_BASE_MLX_WHISPER: WHISPER_BASE_MLX_WHISPER,
+        AsrModelType.WHISPER_LARGE_MLX_WHISPER: WHISPER_LARGE_MLX_WHISPER,
+        AsrModelType.WHISPER_TURBO_MLX_WHISPER: WHISPER_TURBO_MLX_WHISPER,
+        AsrModelType.WHISPER_TINY_MLX_AUDIO: WHISPER_TINY_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO: GRANITE_SPEECH_4_1_2B_PLUS_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS: GRANITE_SPEECH_4_1_2B_PLUS_TRANSFORMERS,
+        AsrModelType.GRANITE_SPEECH_5_0_2B_MLX_AUDIO: GRANITE_SPEECH_5_0_2B_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO: GRANITE_SPEECH_5_0_470M_TURBOCTC_MLX_AUDIO,
+        AsrModelType.NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO: NEMOTRON_3_5_ASR_STREAMING_MLX_AUDIO,
+        AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO: NEMOTRON_SPEECH_STREAMING_EN_0_6B_MLX_AUDIO,
+        AsrModelType.PARAKEET_CTC_1_1B_MLX_AUDIO: PARAKEET_CTC_1_1B_MLX_AUDIO,
+        AsrModelType.GRANITE_SPEECH_5_0_2B_TRANSFORMERS: GRANITE_SPEECH_5_0_2B_TRANSFORMERS,
+        AsrModelType.GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS: GRANITE_SPEECH_5_0_470M_TURBOCTC_TRANSFORMERS,
+        AsrModelType.NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS: NEMOTRON_3_5_ASR_STREAMING_TRANSFORMERS,
+        AsrModelType.NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS: NEMOTRON_SPEECH_STREAMING_EN_0_6B_TRANSFORMERS,
+        AsrModelType.PARAKEET_CTC_1_1B_TRANSFORMERS: PARAKEET_CTC_1_1B_TRANSFORMERS,
         AsrModelType.WHISPER_TINY_NATIVE: WHISPER_TINY_NATIVE,
         AsrModelType.WHISPER_SMALL_NATIVE: WHISPER_SMALL_NATIVE,
         AsrModelType.WHISPER_MEDIUM_NATIVE: WHISPER_MEDIUM_NATIVE,
@@ -440,6 +571,22 @@ app = typer.Typer(
 )
 
 
+def _require_local_model_stack(command: str) -> None:
+    """Exit with an install hint when the local model stack is missing."""
+    if _local_model_stack_error is None:
+        return
+    err_console.print(
+        f"[red]Error: `{command}` needs the local conversion stack, "
+        f"which is not installed ({_local_model_stack_error}).[/red]\n\n"
+        "Install the full docling package for local conversion:\n"
+        "    pip install docling\n\n"
+        "To convert with a Docling Serve endpoint instead, use:\n"
+        "    docling convert-remote --help",
+        highlight=False,
+    )
+    raise typer.Exit(1)
+
+
 def logo_callback(value: bool):
     if value:
         print(DOCLING_ASCII_ART)
@@ -465,6 +612,7 @@ def version_callback(value: bool):
 
 def show_external_plugins_callback(value: bool):
     if value:
+        _require_local_model_stack("--show-external-plugins")
         ocr_factory_all = get_ocr_factory(allow_external_plugins=True)
         layout_factory_all = get_layout_factory(allow_external_plugins=True)
         table_factory_all = get_table_structure_factory(allow_external_plugins=True)
@@ -533,8 +681,14 @@ def export_documents(
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
     debug_vlm_native_output: bool = False,
     output_file: Path | None = None,
-):
+) -> ExportSummary:
+    """Export the conversion results and count the documents per outcome.
+
+    ``SUCCESS`` and ``PARTIAL_SUCCESS`` documents are exported. ``SKIPPED``
+    documents count as neither a failure nor a partial success.
+    """
     success_count = 0
+    partial_success_count = 0
     failure_count = 0
 
     # Initialize chunker once for all documents
@@ -566,7 +720,14 @@ def export_documents(
         if debug_vlm_native_output:
             _write_native_vlm_output(conv_res)
 
-        doc_failed = conv_res.status != ConversionStatus.SUCCESS
+        if conv_res.status == ConversionStatus.SKIPPED:
+            _log.info(f"Document {conv_res.input.file} was skipped.")
+            continue
+
+        doc_failed = conv_res.status not in {
+            ConversionStatus.SUCCESS,
+            ConversionStatus.PARTIAL_SUCCESS,
+        }
         if not doc_failed:
             doc_filename = conv_res.input.file.stem
 
@@ -780,22 +941,47 @@ def export_documents(
 
         if doc_failed:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
-            if _log.isEnabledFor(logging.INFO):
-                for err in conv_res.errors:
-                    _log.info(
-                        f"  [Failure Detail] Component: {err.component_type}, "
-                        f"Module: {err.module_name}, Message: {err.error_message}"
-                    )
+            _log_failure_details(conv_res)
             failure_count += 1
+        elif conv_res.status == ConversionStatus.PARTIAL_SUCCESS:
+            _log.warning(
+                f"Document {conv_res.input.file} was only partially converted."
+            )
+            _log_failure_details(conv_res)
+            partial_success_count += 1
         else:
             success_count += 1
 
+    processed_count = success_count + partial_success_count + failure_count
     _log.info(
-        f"Processed {success_count + failure_count} docs, of which {failure_count} failed"
+        f"Processed {processed_count} docs, of which {failure_count} failed"
+        f" and {partial_success_count} were partially converted"
+    )
+    return ExportSummary(
+        success=success_count,
+        partial_success=partial_success_count,
+        failure=failure_count,
     )
 
 
-@app.command(no_args_is_help=True)
+def _log_failure_details(conv_res: ConversionResult) -> None:
+    if _log.isEnabledFor(logging.INFO):
+        for err in conv_res.errors:
+            _log.info(
+                f"  [Failure Detail] Component: {err.component_type}, "
+                f"Module: {err.module_name}, Message: {err.error_message}"
+            )
+
+
+_CONVERT_EPILOG = """\
+Exit codes:
+  0  success; partially converted documents are written too (see --fail-on)
+  1  a document failed to convert (see --fail-on), or another runtime error
+  2  usage error
+"""
+
+
+@app.command(no_args_is_help=True, epilog=_CONVERT_EPILOG)
 def convert(  # noqa: C901
     source: Annotated[
         list[str],
@@ -808,6 +994,7 @@ def convert(  # noqa: C901
     from_formats: list[str] = typer.Option(
         None,
         "--from",
+        metavar=_choices_metavar([*(fmt.value for fmt in InputFormat), "odf"]),
         help="Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all.",
     ),
     to_formats: list[OutputFormat] = typer.Option(
@@ -866,16 +1053,28 @@ def convert(  # noqa: C901
         ),
     ] = HtmlImageFetchMode.NONE,
     pipeline: Annotated[
-        ProcessingPipeline,
-        typer.Option(..., help="Choose the pipeline to process PDF or image files."),
-    ] = ProcessingPipeline.STANDARD,
-    vlm_model: Annotated[
-        str,
+        ProcessingPipeline | None,
         typer.Option(
             ...,
-            help=f"Choose the VLM preset to use with PDF or image files. Available presets: {', '.join(vlm_preset_ids)}",
+            help=(
+                "Choose the pipeline to process PDF or image files. The default is "
+                "standard, or vlm when --vlm-model is given. The asr pipeline accepts "
+                "only audio and video files."
+            ),
         ),
-    ] = "granite_docling",
+    ] = None,
+    vlm_model: Annotated[
+        str | None,
+        typer.Option(
+            ...,
+            metavar="NAME",
+            help=(
+                "Choose the VLM preset to use with PDF or image files. This selects "
+                f"the vlm pipeline. With --pipeline vlm, the default is {DEFAULT_VLM_PRESET}. "
+                "Run 'docling models --vlm' to list the presets."
+            ),
+        ),
+    ] = None,
     vlm_max_new_tokens: Annotated[
         int | None,
         typer.Option(
@@ -883,6 +1082,17 @@ def convert(  # noqa: C901
             help="Override max_new_tokens for VLM conversion generation.",
         ),
     ] = None,
+    trust_remote_code: Annotated[
+        bool,
+        typer.Option(
+            "--trust-remote-code",
+            help=(
+                "Allow the local VLM engine to run code from the model "
+                "repository. Some --vlm-model presets require it. Review the "
+                "model's code at the preset's pinned revision first."
+            ),
+        ),
+    ] = False,
     debug_vlm_native_output: Annotated[
         bool,
         typer.Option(
@@ -894,9 +1104,44 @@ def convert(  # noqa: C901
         ),
     ] = False,
     asr_model: Annotated[
-        AsrModelType,
-        typer.Option(..., help="Choose the ASR model to use with audio/video files."),
-    ] = AsrModelType.WHISPER_TINY,
+        AsrModelType | None,
+        typer.Option(
+            ...,
+            metavar="NAME",
+            help=(
+                "Choose the ASR model to use with audio/video files. These files use "
+                f"the ASR model without --pipeline. The default is {DEFAULT_ASR_MODEL.value}. "
+                "Run 'docling models --asr' to list the models."
+            ),
+        ),
+    ] = None,
+    asr_language: Annotated[
+        str | None,
+        typer.Option(
+            "--asr-language",
+            help="Source language for Transformers and mlx-audio ASR.",
+        ),
+    ] = None,
+    asr_timestamps: Annotated[
+        bool,
+        typer.Option(
+            "--asr-timestamps/--no-asr-timestamps",
+            help=(
+                "Give real phrase times with Granite Speech Plus. Each option costs one "
+                "decoding pass. Other models ignore it."
+            ),
+        ),
+    ] = True,
+    asr_speakers: Annotated[
+        bool,
+        typer.Option(
+            "--asr-speakers/--no-asr-speakers",
+            help=(
+                "Add speaker labels with Granite Speech Plus. Each option costs one "
+                "decoding pass. Other models ignore it."
+            ),
+        ),
+    ] = True,
     video_sampling_mode: Annotated[
         Literal["fixed", "scene"],
         typer.Option(..., help="frame sampling mode."),
@@ -948,6 +1193,16 @@ def convert(  # noqa: C901
             help="Which document regions are fed to the OCR engine.",
         ),
     ] = OcrMode.DEFAULT,
+    replace_broken_text_layer: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Replace a page's PDF text with OCR when its text layer is broken, "
+                "e.g. from a font whose glyphs were not mapped to real characters."
+            ),
+        ),
+    ] = False,
     tables: Annotated[
         bool,
         typer.Option(
@@ -955,6 +1210,17 @@ def convert(  # noqa: C901
             help="If enabled, the table structure model will be used to extract table information.",
         ),
     ] = True,
+    extract_form_fields: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "If enabled, native PDF form widgets (AcroForm) become fillable field "
+                "values with field keys from printed text. Standard and legacy pipelines "
+                "with the docling-parse backend only."
+            ),
+        ),
+    ] = False,
     reading_order_separators: Annotated[
         bool,
         typer.Option(
@@ -965,10 +1231,22 @@ def convert(  # noqa: C901
             ),
         ),
     ] = True,
+    heading_hierarchy: Annotated[
+        bool,
+        typer.Option(
+            "--heading-hierarchy/--no-heading-hierarchy",
+            help=(
+                "Infer section-header levels for PDF and image inputs from the PDF "
+                "bookmarks, the heading numbering and the font style. Standard and "
+                "legacy pipelines only."
+            ),
+        ),
+    ] = False,
     layout_engine: Annotated[
         str,
         typer.Option(
             ...,
+            metavar=_choices_metavar(o.value for o in layout_engines_enum_internal),
             help=(
                 f"The layout engine to use. When --allow-external-plugins is *not* set, the available values are: "
                 f"{', '.join(o.value for o in layout_engines_enum_internal)}. "
@@ -980,6 +1258,9 @@ def convert(  # noqa: C901
         str,
         typer.Option(
             ...,
+            metavar=_choices_metavar(
+                o.value for o in table_structure_engines_enum_internal
+            ),
             help=(
                 f"The table structure engine to use. When --allow-external-plugins is *not* set, the available values are: "
                 f"{', '.join(o.value for o in table_structure_engines_enum_internal)}. "
@@ -991,6 +1272,7 @@ def convert(  # noqa: C901
         str,
         typer.Option(
             ...,
+            metavar=_choices_metavar(o.value for o in ocr_engines_enum_internal),
             help=(
                 f"The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: "
                 f"{', '.join(o.value for o in ocr_engines_enum_internal)}. "
@@ -998,6 +1280,44 @@ def convert(  # noqa: C901
             ),
         ),
     ] = OcrAutoOptions.kind,
+    ocr_option: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--ocr-option",
+            metavar="KEY=VALUE",
+            help=(
+                "Set an option of the selected OCR engine, e.g. "
+                "'--ocr-engine rapidocr --ocr-option model_size=tiny'. Repeatable. "
+                'VALUE is read as JSON when possible (0.6, false, ["en","de"]), '
+                "else as a string. Run 'docling options ocr <engine>' to list the keys."
+            ),
+        ),
+    ] = None,
+    layout_option: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--layout-option",
+            metavar="KEY=VALUE",
+            help=(
+                "Set an option of the selected layout engine. Repeatable, same "
+                "format as --ocr-option. Run 'docling options layout <engine>' to "
+                "list the keys."
+            ),
+        ),
+    ] = None,
+    table_structure_option: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--table-structure-option",
+            metavar="KEY=VALUE",
+            help=(
+                "Set an option of the selected table structure engine, e.g. "
+                "'--table-structure-option mode=fast'. Repeatable, same format as "
+                "--ocr-option. Run 'docling options table-structure <engine>' to "
+                "list the keys."
+            ),
+        ),
+    ] = None,
     ocr_lang: Annotated[
         str | None,
         typer.Option(
@@ -1024,7 +1344,10 @@ def convert(  # noqa: C901
         int | None,
         typer.Option(
             ...,
-            help="Page Segmentation Mode for the OCR engine (0-13).",
+            help=(
+                "DEPRECATED: use `--ocr-option psm=N` instead. "
+                "Page Segmentation Mode for the Tesseract OCR engines (0-13)."
+            ),
         ),
     ] = None,
     pdf_backend: Annotated[
@@ -1068,6 +1391,16 @@ def convert(  # noqa: C901
     enrich_picture_description: Annotated[
         bool,
         typer.Option(..., help="Enable the picture description model in the pipeline."),
+    ] = False,
+    use_embedded_picture_images: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help=(
+                "Use a directly extracted embedded PDF image when a picture region "
+                "contains one safe image. Falls back to a rendered crop otherwise."
+            ),
+        ),
     ] = False,
     picture_description_max_new_tokens: Annotated[
         int | None,
@@ -1125,6 +1458,10 @@ def convert(  # noqa: C901
             help="If enabled, the processing will be aborted when the first error is encountered.",
         ),
     ] = False,
+    fail_on: Annotated[
+        FailOn,
+        typer.Option("--fail-on", help=FAIL_ON_HELP),
+    ] = FailOn.FAILURE,
     output: Annotated[
         Path, typer.Option(..., help="Output directory where results are saved.")
     ] = Path("."),
@@ -1253,6 +1590,8 @@ def convert(  # noqa: C901
         ),
     ] = None,
 ):
+    _require_local_model_stack("docling convert")
+
     # Heavy backend/converter/pipeline imports are deferred to here so the CLI
     # (and `convert-remote`) stay importable without the local PDF stack
     # (pypdfium2 / docling_parse). Only local `convert` needs them.
@@ -1350,6 +1689,19 @@ def convert(  # noqa: C901
     requested_from_formats = from_formats
     from_formats = _expand_from_formats(from_formats)
 
+    pipeline = _resolve_pipeline(pipeline, vlm_model)
+
+    if pipeline == ProcessingPipeline.ASR:
+        # Only audio and video have a transcription route. Other formats would
+        # otherwise fall through to their default pipelines without notice.
+        if requested_from_formats is None:
+            from_formats = [InputFormat.AUDIO, InputFormat.VIDEO]
+        elif not set(from_formats) <= {InputFormat.AUDIO, InputFormat.VIDEO}:
+            raise typer.BadParameter(
+                "--pipeline asr is only available for --from audio and --from video.",
+                param_hint="--pipeline",
+            )
+
     if pipeline == ProcessingPipeline.NATIVE:
         # The native pipeline reads the native content of a PDF; it has nothing to
         # offer for the other input formats, so it never silently handles them.
@@ -1392,6 +1744,18 @@ def convert(  # noqa: C901
             "[red]Error: --html-image-headers-origin requires --html-image-headers.[/red]"
         )
         raise typer.Abort()
+
+    if to_formats is None:
+        to_formats = [OutputFormat.MARKDOWN]
+    if (
+        extract_form_fields
+        and pipeline in {ProcessingPipeline.STANDARD, ProcessingPipeline.LEGACY}
+        and OutputFormat.DOCTAGS in to_formats
+    ):
+        # DocTags has no tokens for form fields; the export raises on them.
+        raise typer.BadParameter(
+            "--extract-form-fields cannot be combined with `--to doctags`."
+        )
 
     if profiling or save_profiling:
         settings.debug.profile_pipeline_timings = True
@@ -1458,9 +1822,6 @@ def convert(  # noqa: C901
                     _log.info(err)  # will print more details if verbose is activated
                     raise typer.Abort()
 
-        if to_formats is None:
-            to_formats = [OutputFormat.MARKDOWN]
-
         if output_file is not None:
             if len(input_doc_paths) != 1:
                 err_console.print(
@@ -1488,24 +1849,50 @@ def convert(  # noqa: C901
         else:
             resolved_ocr_mode = ocr_mode
         ocr_kwargs: dict[str, Any] = {"mode": resolved_ocr_mode}
+        ocr_flag_names = {
+            "mode": "--ocr-mode",
+            "lang": "--ocr-lang",
+            "psm": "--psm",
+            "replace_broken_text_layer": "--replace-broken-text-layer",
+        }
+        # `--ocr-mode` always has a value; count it as set only when it differs
+        # from the default, so `--ocr-option mode=...` works on its own.
+        explicit_ocr_fields = (
+            {"mode"} if force_ocr or ocr_mode != OcrMode.DEFAULT else set()
+        )
+        # Like `--ocr-mode`, count the flag as set only when it is on, so
+        # `--ocr-option replace_broken_text_layer=true` works on its own.
+        if replace_broken_text_layer:
+            ocr_kwargs["replace_broken_text_layer"] = True
+            explicit_ocr_fields.add("replace_broken_text_layer")
         ocr_lang_list = _split_list(ocr_lang)
         # `_split_list` returns None only when the option was not given, so an
         # explicitly empty value reaches the engine as `lang=[]`: "your default".
         if ocr_lang_list is not None:
             ocr_kwargs["lang"] = ocr_lang_list
-        try:
-            ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
-                kind=ocr_engine,
-                **ocr_kwargs,
+            explicit_ocr_fields.add("lang")
+        if psm is not None:
+            warnings.warn(
+                "`--psm` is deprecated; use `--ocr-option psm=N` instead.",
+                DeprecationWarning,
+                stacklevel=2,
             )
-        except ValidationError as err:
-            raise typer.BadParameter(
-                _first_error_message(err), param_hint="--ocr-lang"
-            ) from err
-        if psm is not None and isinstance(
-            ocr_options, TesseractOcrOptions | TesseractCliOcrOptions
-        ):
-            ocr_options.psm = psm
+            # Only the Tesseract engines know `psm`; the other engines ignore it.
+            if ocr_engine in (TesseractOcrOptions.kind, TesseractCliOcrOptions.kind):
+                ocr_kwargs["psm"] = psm
+                explicit_ocr_fields.add("psm")
+        ocr_options = cast(
+            OcrOptions,
+            create_engine_options(
+                ocr_factory,
+                ocr_engine,
+                flag_kwargs=ocr_kwargs,
+                flag_names=ocr_flag_names,
+                explicit_flag_fields=explicit_ocr_fields,
+                option_values=ocr_option,
+                param_hint="--ocr-option",
+            ),
+        )
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
         pipeline_options: PipelineOptions
         format_options: dict[InputFormat, FormatOption] = {}
@@ -1514,15 +1901,41 @@ def convert(  # noqa: C901
         layout_factory = get_layout_factory(
             allow_external_plugins=allow_external_plugins
         )
-        layout_options: BaseLayoutOptions = layout_factory.create_options(  # type: ignore
-            kind=layout_engine
+        layout_options = cast(
+            BaseLayoutOptions,
+            create_engine_options(
+                layout_factory,
+                layout_engine,
+                flag_kwargs={},
+                flag_names={},
+                explicit_flag_fields=set(),
+                option_values=layout_option,
+                param_hint="--layout-option",
+            ),
         )
 
         table_structure_factory = get_table_structure_factory(
             allow_external_plugins=allow_external_plugins
         )
-        table_structure_options: BaseTableStructureOptions = (  # type: ignore
-            table_structure_factory.create_options(kind=table_structure_engine)
+        # Only TableFormer V1 has a `mode`; the other engines ignore --table-mode.
+        table_kwargs: dict[str, Any] = (
+            {"mode": table_mode}
+            if table_structure_engine == TableStructureOptions.kind
+            else {}
+        )
+        table_structure_options = cast(
+            BaseTableStructureOptions,
+            create_engine_options(
+                table_structure_factory,
+                table_structure_engine,
+                flag_kwargs=table_kwargs,
+                flag_names={"mode": "--table-mode"},
+                explicit_flag_fields=(
+                    {"mode"} if table_mode != TableFormerMode.ACCURATE else set()
+                ),
+                option_values=table_structure_option,
+                param_hint="--table-structure-option",
+            ),
         )
 
         try:
@@ -1549,22 +1962,23 @@ def convert(  # noqa: C901
                 do_ocr=ocr,
                 ocr_options=ocr_options,
                 do_table_structure=tables,
+                extract_form_fields=extract_form_fields,
                 use_reading_order_separators=reading_order_separators,
+                heading_hierarchy_options=HeadingHierarchyOptions(
+                    enabled=heading_hierarchy
+                ),
                 layout_options=layout_options,
                 table_structure_options=table_structure_options,
                 do_code_enrichment=enrich_code,
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
+                generate_picture_images=use_embedded_picture_images,
+                use_embedded_picture_images=use_embedded_picture_images,
                 do_chart_extraction=enrich_chart_extraction,
                 chart_extraction_options=chart_extraction_options,
                 document_timeout=document_timeout,
             )
-            if isinstance(
-                pipeline_options.table_structure_options, TableStructureOptions
-            ):
-                pipeline_options.table_structure_options.do_cell_matching = True
-                pipeline_options.table_structure_options.mode = table_mode
             if picture_description_max_new_tokens is not None:
                 pipeline_options.picture_description_options.generation_config[
                     "max_new_tokens"
@@ -1744,6 +2158,9 @@ def convert(  # noqa: C901
                 pipeline_options.generate_picture_images = True
                 pipeline_options.images_scale = 2
 
+            if vlm_model is None:
+                vlm_model = DEFAULT_VLM_PRESET
+
             # Use the new preset system
             try:
                 pipeline_options.vlm_options = VlmConvertOptions.from_preset(vlm_model)
@@ -1751,6 +2168,17 @@ def convert(  # noqa: C901
                     pipeline_options.vlm_options.model_spec.max_new_tokens = (
                         vlm_max_new_tokens
                     )
+                vlm_engine_options = pipeline_options.vlm_options.engine_options
+                if trust_remote_code and isinstance(
+                    vlm_engine_options,
+                    (
+                        AutoInlineVlmEngineOptions,
+                        TransformersVlmEngineOptions,
+                        MlxVlmEngineOptions,
+                        VllmVlmEngineOptions,
+                    ),
+                ):
+                    vlm_engine_options.trust_remote_code = True
                 _log.info(f"Using VLM preset: {vlm_model}")
             except KeyError:
                 err_console.print(
@@ -1789,8 +2217,38 @@ def convert(  # noqa: C901
             # artifacts_path = artifacts_path
         )
 
+        if asr_model is not None and not any(
+            _name_matches_format(str(path), input_format)
+            for path in input_doc_paths
+            for input_format in (InputFormat.AUDIO, InputFormat.VIDEO)
+        ):
+            _log.warning(
+                "--asr-model has no effect because no input has an audio or "
+                "video file extension."
+            )
+
         # Auto-selecting models (choose best implementation for hardware)
-        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+        asr_pipeline_options.asr_options = _resolve_asr_options(
+            asr_model if asr_model is not None else DEFAULT_ASR_MODEL, device
+        )
+        if isinstance(
+            asr_pipeline_options.asr_options,
+            (InlineAsrMlxAudioOptions, InlineAsrTransformersOptions),
+        ):
+            asr_pipeline_options.asr_options = (
+                asr_pipeline_options.asr_options.model_copy(
+                    update={"language": asr_language}
+                )
+            )
+            if asr_pipeline_options.asr_options.model_family == "granite_plus":
+                asr_pipeline_options.asr_options = (
+                    asr_pipeline_options.asr_options.model_copy(
+                        update={
+                            "word_timestamps": asr_timestamps,
+                            "speaker_attribution": asr_speakers,
+                        }
+                    )
+                )
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
@@ -1824,7 +2282,9 @@ def convert(  # noqa: C901
             video_pipeline_options = VideoPipelineOptions()
             video_pipeline_options.enable_diarization = video_diarization
             video_pipeline_options.document_timeout = document_timeout
-            video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+            video_pipeline_options.asr_options = (
+                asr_pipeline_options.asr_options.model_copy(deep=True)
+            )
             if video_sampling_mode == "scene":
                 video_pipeline_options.frame_sampling_mode = (
                     VideoFrameSamplingMode.SCENE_CHANGE
@@ -1848,7 +2308,9 @@ def convert(  # noqa: C901
 
         # Common options for all pipelines
         if artifacts_path is not None:
-            pipeline_options.artifacts_path = artifacts_path
+            # The asr pipeline has only asr_pipeline_options.
+            if pipeline != ProcessingPipeline.ASR:
+                pipeline_options.artifacts_path = artifacts_path
             asr_pipeline_options.artifacts_path = artifacts_path
 
         doc_converter = DocumentConverter(
@@ -1875,7 +2337,7 @@ def convert(  # noqa: C901
                 output_file.parent if output_file is not None else output
             )
             export_output_dir.mkdir(parents=True, exist_ok=True)
-            export_documents(
+            summary = export_documents(
                 conv_results,
                 output_dir=export_output_dir,
                 **export_flags,
@@ -1893,6 +2355,251 @@ def convert(  # noqa: C901
         end_time = time.time() - start_time
 
     _log.info(f"All documents were converted in {end_time:.2f} seconds.")
+
+    if summary.should_fail(fail_on):
+        raise typer.Exit(1)
+
+
+class EngineStage(str, Enum):
+    OCR = "ocr"
+    LAYOUT = "layout"
+    TABLE_STRUCTURE = "table-structure"
+
+
+@app.command("options")
+def show_engine_options(
+    stage: Annotated[
+        EngineStage,
+        typer.Argument(help="The pipeline stage of the engine."),
+    ],
+    engine: Annotated[
+        str | None,
+        typer.Argument(
+            help="The engine to describe. Omit it to list the engines of the stage."
+        ),
+    ] = None,
+    allow_external_plugins: Annotated[
+        bool,
+        typer.Option(
+            ..., help="Must be enabled for loading modules from third-party plugins."
+        ),
+    ] = False,
+) -> None:
+    """Show the KEY=VALUE options that `docling convert` accepts for an engine.
+
+    The keys go to --ocr-option, --layout-option or --table-structure-option.
+    """
+    _require_local_model_stack("docling options")
+    factory: BaseFactory
+    if stage == EngineStage.OCR:
+        factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
+    elif stage == EngineStage.LAYOUT:
+        factory = get_layout_factory(allow_external_plugins=allow_external_plugins)
+    else:
+        factory = get_table_structure_factory(
+            allow_external_plugins=allow_external_plugins
+        )
+
+    if engine is None:
+        for kind in factory.registered_kind:
+            console.print(kind, highlight=False)
+        return
+
+    try:
+        options_cls = find_options_class(factory, engine)
+    except typer.BadParameter as err:
+        err.param_hint = "ENGINE"
+        raise
+    table = rich.table.Table(title=f"Options of the {stage.value} engine {engine!r}")
+    table.add_column("Key", style="bold", no_wrap=True)
+    table.add_column("Type")
+    table.add_column("Default")
+    table.add_column("Description")
+    for row in describe_options_class(options_cls):
+        table.add_row(*(rich.markup.escape(cell) for cell in row))
+    console.print(table)
+
+
+class ModelListFormat(str, Enum):
+    TABLE = "table"
+    JSON = "json"
+
+
+# Symbols for a terminal that can show them, and for one that cannot.
+_BACKEND_SYMBOLS = {
+    BackendState.SELECTED: "◉",
+    BackendState.SUPPORTED: "●",
+    BackendState.ALLOWED: "○",
+}
+_ASCII_BACKEND_SYMBOLS = {
+    BackendState.SELECTED: "S",
+    BackendState.SUPPORTED: "+",
+    BackendState.ALLOWED: "o",
+}
+_BACKEND_LEGEND = {
+    BackendState.SELECTED: "selected on this machine when you use the name of the row",
+    BackendState.SUPPORTED: (
+        "supported: the preset declares it. It can need other hardware or an extra"
+    ),
+    BackendState.ALLOWED: (
+        "allowed: the preset does not restrict it and does not declare it. It can fail"
+    ),
+}
+
+
+def _backend_symbols() -> dict[BackendState, str]:
+    if (console.encoding or "").lower().startswith("utf"):
+        return _BACKEND_SYMBOLS
+    return _ASCII_BACKEND_SYMBOLS
+
+
+def _print_model_table(model_table: ModelTable) -> None:
+    symbols = _backend_symbols()
+    table = rich.table.Table(
+        title=model_table.title,
+        title_justify="left",
+        box=None,
+        pad_edge=False,
+        padding=(0, 1, 0, 0),
+    )
+    table.add_column("Model", no_wrap=True)
+    for label in model_table.backends.values():
+        table.add_column(label, justify="center", no_wrap=True)
+    for label in model_table.features.values():
+        table.add_column(label, justify="center", no_wrap=True)
+    family = None
+    for row in model_table.rows:
+        if row.family != family:
+            family = row.family
+            table.add_row(f"[bold]{rich.markup.escape(family)}[/bold]")
+        table.add_row(
+            f"  {row.name}{' *' if row.name == model_table.default_model else ''}",
+            *(
+                symbols[row.backends[column]] if column in row.backends else ""
+                for column in model_table.backends
+            ),
+            *("yes" if row.features[key] else "-" for key in model_table.features),
+        )
+    console.print(table, highlight=False)
+    console.print()
+
+
+@app.command("models")
+def list_models(
+    asr: Annotated[
+        bool, typer.Option("--asr", help="List only the ASR models.")
+    ] = False,
+    vlm: Annotated[
+        bool, typer.Option("--vlm", help="List only the VLM presets.")
+    ] = False,
+    family: Annotated[
+        str | None,
+        typer.Option(
+            "--family", help="List only the models of a family, for example 'granite'."
+        ),
+    ] = None,
+    output_format: Annotated[
+        ModelListFormat, typer.Option("--format", help="The output format.")
+    ] = ModelListFormat.TABLE,
+) -> None:
+    """List the VLM and ASR models, and the backends that can run them.
+
+    Use a name with `docling convert --vlm-model` or `--asr-model`. To download a
+    model, use `docling-tools models`.
+    """
+    show_all = asr == vlm
+    tables: list[ModelTable] = []
+    if asr or show_all:
+        tables.append(
+            ModelTable(
+                kind="asr",
+                title="ASR models",
+                backends=ASR_BACKENDS,
+                features=ASR_FEATURES,
+                rows=asr_rows(_resolve_asr_options),
+                default_model=AsrModelType.WHISPER_TINY.value,
+            )
+        )
+    if vlm or show_all:
+        tables.append(
+            ModelTable(
+                kind="vlm",
+                title="VLM models",
+                backends=VLM_BACKENDS,
+                features=VLM_FEATURES,
+                rows=vlm_rows(),
+                default_model="granite_docling",
+            )
+        )
+    if family is not None:
+        needle = family.lower()
+        tables = [
+            replace(
+                table,
+                rows=[row for row in table.rows if needle in row.family.lower()],
+            )
+            for table in tables
+        ]
+        if not any(table.rows for table in tables):
+            raise typer.BadParameter(
+                f"No model has the family {family!r}.", param_hint="--family"
+            )
+
+    if output_format == ModelListFormat.JSON:
+        typer.echo(
+            json.dumps(
+                [
+                    {
+                        "kind": table.kind,
+                        "name": row.name,
+                        "family": row.family,
+                        "default": row.name == table.default_model,
+                        "features": row.features,
+                        "backends": {
+                            column: row.backends[column].value
+                            for column in table.backends
+                            if column in row.backends
+                        },
+                    }
+                    for table in tables
+                    for row in table.rows
+                ],
+                indent=2,
+            )
+        )
+        return
+
+    for table in tables:
+        if table.rows:
+            _print_model_table(table)
+    symbols = _backend_symbols()
+    for state, meaning in _BACKEND_LEGEND.items():
+        console.print(f"{symbols[state]}  {meaning}", highlight=False)
+    console.print("*  default model", highlight=False)
+    if any(table.kind == "asr" and table.rows for table in tables):
+        console.print(
+            "Times: real time ranges for speech on the selected backend. '-' gives "
+            "one range for each decoding window or for the full audio.",
+            highlight=False,
+        )
+        console.print(
+            "Spk: speaker labels from the model. The video pipeline also has "
+            "--video-diarization for every model.",
+            highlight=False,
+        )
+    if any(table.kind == "vlm" and table.rows for table in tables):
+        console.print(
+            "Bbox: each item in the document has the page box that the model gives.",
+            highlight=False,
+        )
+    if any(table.kind == "asr" and table.rows for table in tables):
+        console.print(
+            "ASR: add a suffix to a name to force one backend: _native, _mlx_whisper "
+            "(or _mlx), _mlx_audio, _transformers, _s2t. For example, "
+            "granite_speech_5_0_2b_transformers. A row without the selected symbol "
+            "needs a suffix.",
+            highlight=False,
+        )
 
 
 # Register `convert-remote` only when the service-client extra is installed.

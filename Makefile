@@ -12,12 +12,12 @@ hooks-install: ## Install git hooks via prek.
 check: check-all ## Run read-only local checks.
 
 check-all: ## Run all read-only local checks.
-	uv run ruff format --check --config=pyproject.toml docling tests docs/examples perfs
-	uv run ruff check --config=pyproject.toml docling tests docs/examples perfs
+	uv run ruff format --check --config=pyproject.toml docling tests docs/examples scripts/benchmarking scripts/tools
+	uv run ruff check --config=pyproject.toml docling tests docs/examples scripts/benchmarking scripts/tools
 	uv run --no-sync ty check
 	uv run --no-sync tach check
-	python3 scripts/check_tach_module_coverage.py
-	python3 scripts/check_max_lines.py
+	python3 scripts/checks/check_tach_module_coverage.py
+	python3 scripts/checks/check_max_lines.py
 	python3 .github/scripts/check_skill_routes.py
 	uv run --no-sync dprint check --config .github/dprint.json --config-discovery=false
 	uv lock --locked
@@ -40,8 +40,8 @@ validate-all: ## Run hooks on all files.
 	uv run prek run --all-files
 
 fix: ## Run Ruff and dprint auto-format/fixers.
-	uv run ruff format --config=pyproject.toml docling tests docs/examples perfs
-	uv run ruff check --fix --config=pyproject.toml docling tests docs/examples perfs
+	uv run ruff format --config=pyproject.toml docling tests docs/examples scripts/benchmarking scripts/tools
+	uv run ruff check --fix --config=pyproject.toml docling tests docs/examples scripts/benchmarking scripts/tools
 	uv run dprint fmt --config .github/dprint.json --config-discovery=false
 
 typecheck: ## Run ty.

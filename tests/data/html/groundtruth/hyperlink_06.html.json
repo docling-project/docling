@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "name": "hyperlink_06",
   "origin": {
     "mimetype": "text/html",
@@ -117,8 +117,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Jump to",
-      "text": "Jump to"
+      "orig": "Jump to ",
+      "text": "Jump to "
     },
     {
       "self_ref": "#/texts/3",
@@ -129,8 +129,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Section 2",
-      "text": "Section 2",
+      "orig": "Section 2 ",
+      "text": "Section 2 ",
       "hyperlink": "#section-2"
     },
     {
@@ -142,8 +142,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "or visit",
-      "text": "or visit"
+      "orig": "or visit ",
+      "text": "or visit "
     },
     {
       "self_ref": "#/texts/5",
@@ -196,8 +196,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Content for section 2 with a",
-      "text": "Content for section 2 with a"
+      "orig": "Content for section 2 with a ",
+      "text": "Content for section 2 with a "
     },
     {
       "self_ref": "#/texts/9",

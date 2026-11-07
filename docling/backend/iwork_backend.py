@@ -53,7 +53,7 @@ from docling_core.types.doc import (
     TabularChartMetaField,
 )
 from docling_core.types.doc.items.group import ListGroup
-from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.items.text import ListItem, TextItem
 from PIL import Image
 from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
@@ -430,6 +430,7 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             options = IWorkBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: IWorkBackendOptions = options
+        self.page_range = in_doc.limits.page_range
 
         self._presentation = _open_container(
             path_or_stream, self._read_document, _KEYNOTE_KIND, self.document_hash
@@ -552,7 +553,10 @@ class IWorkKeynoteDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         size = Size(width=self._presentation.width, height=self._presentation.height)
 
         render_chart = _chart_renderer(self.options)
+        start_page, end_page = self.page_range
         for index, slide in enumerate(self._presentation.slides):
+            if not start_page <= index + 1 <= end_page:
+                continue
             doc.add_page(page_no=index + 1, size=size)
             group = doc.add_group(name=f"slide-{index}", label=GroupLabel.CHAPTER)
             _add_slide(doc, slide, group, index + 1, render_chart)
@@ -602,6 +606,22 @@ class _ListStack:
         """End the list, so the next item starts a new one."""
         self._groups.clear()
 
+    def _sub_list_parent(self) -> NodeItem | None:
+        """Return the node that the next list group goes under.
+
+        A sub-list belongs to the list item above it, so it goes under the
+        last item of the innermost open group. A list group directly inside a
+        list group is not valid.
+        """
+        if not self._groups:
+            return self._parent
+        group = self._groups[-1]
+        if group.children:
+            last_child = group.children[-1].resolve(self._doc)
+            if isinstance(last_child, ListItem):
+                return last_child
+        return group
+
     def group_for(self, depth: int) -> ListGroup:
         """Return the group a list item at ``depth`` belongs in, opening it if needed.
 
@@ -614,10 +634,7 @@ class _ListStack:
         del self._groups[depth + 1 :]
         while len(self._groups) <= depth:
             self._groups.append(
-                self._doc.add_list_group(
-                    name="list",
-                    parent=self._groups[-1] if self._groups else self._parent,
-                )
+                self._doc.add_list_group(name="list", parent=self._sub_list_parent())
             )
         return self._groups[depth]
 

@@ -48,6 +48,12 @@ class PdfPageBackend(ABC):
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         """Return bitmap bounds in 72-DPI document coordinates, scaled by ``scale``."""
 
+    def get_embedded_image(
+        self, bbox: BoundingBox, *, overlap_threshold: float = 0.8
+    ) -> Optional[Image.Image]:
+        """Return a directly extracted image when ``bbox`` contains one safe image."""
+        return None
+
     def has_content_in(
         self,
         *,
@@ -85,6 +91,17 @@ class PdfPageBackend(ABC):
 
         Boxes use top-left origin. `None` means this backend cannot answer the query at
         all, as distinct from an empty list, which means it looked and found no shapes.
+        """
+        return None
+
+    def get_thin_shape_boxes(
+        self, *, max_thickness: float
+    ) -> Optional[list[BoundingBox]]:
+        """Return the boxes of painted shapes no thicker than `max_thickness`.
+
+        Rules drawn as thin filled rectangles, which `get_shape_lines` (strokes
+        only) misses. Boxes use top-left origin. `None` means this backend cannot
+        answer the query at all.
         """
         return None
 

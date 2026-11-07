@@ -20,8 +20,14 @@ For running Docling using local models with the `VlmPipeline`:
 === "CLI"
 
     ```bash
+    # Use the default VLM preset.
     docling --pipeline vlm FILE
+
+    # Use a specific preset. --vlm-model selects the VLM pipeline.
+    docling --vlm-model granite_docling FILE
     ```
+
+    Docling gives an error if you combine `--vlm-model` with a different `--pipeline` value.
 
 === "Python"
 
@@ -48,7 +54,7 @@ classifies pictures before chart extraction and skips fields already present in
 the VLM output.
 
 ```bash
-docling --from image --to dclx IMAGE.png --pipeline vlm \
+docling --from image --to dclx IMAGE.png \
     --vlm-model mineru2_pro --enrich-chart-extraction
 ```
 
@@ -120,6 +126,88 @@ converter = DocumentConverter(
 
 doc = converter.convert(source="FILE").document
 ```
+
+### LightOnOCR-3
+
+LightOnOCR-3 has two presets: `lightonocr3_08b` and `lightonocr3_4b`. They use
+the official [0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) and
+[4B](https://huggingface.co/lightonai/LightOnOCR-3-4B) models at pinned revisions.
+Local inference requires `transformers>=5.5.4` or `vllm>=0.30.0`. The existing
+`lightonocr` preset continues to use LightOnOCR-2-1B.
+
+For `docling-slim` installations, the parser also requires the Markdown extra:
+
+```bash
+pip install 'docling-slim[format-markdown]'
+```
+
+```bash
+docling contract.pdf --vlm-model lightonocr3_08b
+```
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("lightonocr3_08b"),
+)
+```
+
+Pass these options to the `PdfFormatOption` in the example above. The presets
+use the `grounding` prompt and sample at temperature 0.1, because upstream advises
+against greedy decoding, so two runs can give different text. Pages render at
+`scale=2.0` with at most 2048 pixels on the long edge. Raise
+`VlmConvertOptions.scale` to send more pixels at a higher token cost.
+
+Docling parses the block labels and normalized bounding boxes, Markdown text,
+HTML tables, image descriptions, and chart tables. A `chart` block becomes a
+picture with the `other_chart` class and its table as chart data. `header_image`
+and `footer_image` blocks become furniture pictures, and `page_number` blocks
+become page footers. Section headings use the document-wide depth normalization
+described below. LaTeX math is preserved.
+Coordinates belong to blocks; derived text and table cells do not receive
+separate boxes. Continuation blocks keep their base labels without being merged.
+Lists keep their structure, without assigning the block box to individual items.
+A caption links to a table or picture only when it has exactly one adjacent owner.
+
+The model gives no chart type, so `chart` blocks use the `other_chart` class, and
+current docling-core does not fully support that class. JSON, Markdown, and HTML
+keep the chart data. DCLX and DocLang exports lose it, and `export_to_doctags()`
+raises `ValueError` when a document has a `chart` block.
+
+For plain transcription, set `pipeline_options.vlm_options.model_spec.prompt = ""`.
+The parser also accepts that Markdown output, without bounding boxes. Use only
+the empty prompt or `grounding`, as specified in the model cards.
+
+Local inference uses Transformers or vLLM. No MLX export is configured for these
+presets. An OpenAI-compatible server can also serve the official model
+repositories; configure its URL and engine options as described below.
+
+### MiniCPM-OCR
+
+The `minicpm_ocr` preset uses [MiniCPM-OCR 1.0](https://huggingface.co/openbmb/MiniCPM-OCR-1.0)
+at a pinned revision. It reads English and Chinese pages and returns text and Markdown.
+Local inference requires the `models-vlm-inline` extra and `transformers>=5.21.0`.
+
+```bash
+docling contract.pdf --vlm-model minicpm_ocr
+```
+
+```python
+from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOptions
+
+pipeline_options = VlmPipelineOptions(
+    vlm_options=VlmConvertOptions.from_preset("minicpm_ocr"),
+)
+```
+
+The preset sends one page image per request and asks the model for Markdown. Pages render at
+`scale=2.0`. The model returns plain text for many pages, so Docling cannot recover word-level
+boxes or table structure that the model does not emit. Use the standard pipeline when you need
+Docling's layout and table models.
+
+An OpenAI-compatible server can serve the model through the API engines. vLLM support for
+MiniCPM-OCR merged upstream after v0.32.0, so use a newer vLLM build.
 
 ### Other models
 
@@ -223,3 +311,42 @@ invented coordinates. Invalid bounding boxes also produce a warning while their
 content is retained. Nonempty prose or JSON responses without HTML transcription
 produce a page-specific inference error and `PARTIAL_SUCCESS`, rather than an
 unreported empty result. An explicitly labeled `Blank-Page` may be empty.
+
+## Surya 2.5 output
+
+Use `ResponseFormat.SURYA_HTML` with `SURYA_OCR_PROMPT`, or the `surya_ocr2_5` preset.
+Surya 2.5 writes a block header as tokens, for example
+`<|Text|><|120|><|87|><|881|><|255|>`, and leaves out the closing `</div>`. A merged
+table cell is a `data-kind="parent"` cell with `data-cs` and `data-rs`, followed by
+`data-kind="ghost"` cells. Docling turns the headers into Chandra layout blocks, uses
+the `data-cs` and `data-rs` values as `colspan` and `rowspan`, removes the ghost cells,
+and then maps the page as described for Chandra. The `Picture` label is read as
+`Image`. Block output of older Surya checkpoints, with `<div data-bbox data-label>`,
+also works.
+
+The parser needs the header tokens in the reply. They are not special tokens, so
+Transformers, MLX, and vLLM keep them by default. A reply that the token limit cuts
+keeps its finished blocks, and a cut header at the end is dropped.
+
+## Heading depths in native layout output
+
+For Chandra, Surya, dots, Nemotron Parse, DeepSeek-OCR, Unlimited-OCR, Unlimited-OCR 2,
+PaddleOCR-VL, and LightOnOCR-3 output, the layout label alone decides title versus
+section header.
+LightOnOCR-3 has one exception: its `title` label covers all headings, so a `title`
+block with `##` or deeper is a section header. Docling
+exports a title as `#` and a section header one step below it. If no section
+header in the document uses depth 1 (`#` or `<h1>`), each section header exports
+with its source depth: `##` stays `##`. Otherwise each one exports one step
+deeper, so different source depths never share one section level. A section
+header without heading markup counts as `##`. Markdown has no heading deeper than
+`######`, so in a document with depth 1, source depths 5 and 6 both export as
+`######`, but their section levels stay different.
+
+Unlimited-OCR 2 has one `title` label. A `title` with `<LEVELn>` is a section header
+of depth `n`, and a `title` without a level is the title.
+
+The VLM pipeline applies this rule once to the whole document, so one depth gets
+the same level on all pages. Each mapper function applies it to its own page when
+you call it directly. `parse_paddleocr_vl_result` reads one saved PaddleOCR-VL
+page, so it always applies the rule to that page.
