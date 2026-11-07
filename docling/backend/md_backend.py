@@ -220,9 +220,10 @@ def _strip_frontmatter(text: str) -> str:
 def _text_run_piece(node: marko.inline.RawText | marko.inline.Literal) -> str:
     """Return the final text of a run, with every `&` kept as an entity.
 
-    The text of a `RawText` is HTML-unescaped when the item is created. Each piece
-    is made final here and its `&` is escaped again, so that this later step
-    returns the merged text unchanged and an escape still protects its neighbors.
+    The character references of a `RawText` are decoded when the item is created.
+    Each piece is decoded here and its `&` is escaped again, so that this later
+    step returns the merged text unchanged and an escape still protects its
+    neighbors.
     """
     text = node.children if isinstance(node.children, str) else ""
     if isinstance(node, marko.inline.RawText):
