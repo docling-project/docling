@@ -166,14 +166,22 @@ def _warn_unresolved_facts(model: ModelXbrl) -> None:
 
 
 class XBRLDocumentBackend(DeclarativeDocumentBackend):
-    """Backend to parse XBRL (eXtensible Business Reporting Language) documents.
+    """Backend to parse XBRL and iXBRL (inline XBRL) documents.
 
-    XBRL is a standard XML-based format for business and financial reporting.
+    XBRL (eXtensible Business Reporting Language) is a standard XML-based
+    format for business and financial reporting.
     It is used globally by companies and regulators for exchanging financial
     information in a structured, machine-readable format.
 
-    The backend parses an XBRL instance document (`.xml` / `.xbrl`) supplied
-    alongside a taxonomy directory via `XBRLBackendOptions.taxonomy`.
+    The backend accepts two input types:
+
+    - XBRL instance documents (`.xml` / `.xbrl`) that contain only
+      machine-readable data.
+    - Inline XBRL (iXBRL) documents (`.htm`, `.html`, `.xhtml`) that embed
+      XBRL facts in XHTML using the `ix:` namespace. This is the mandatory
+      submission format for SEC EDGAR, UK Companies House, and ESEF filings.
+
+    In both cases, the taxonomy can be supplied via `XBRLBackendOptions.taxonomy`.
 
     Refer to https://www.xbrl.org for more details on XBRL. In particular, refer to
     https://www.xbrl.org/Specification/taxonomy-package/REC-2016-04-19/taxonomy-package-REC-2016-04-19.html

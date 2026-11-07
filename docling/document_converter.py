@@ -291,6 +291,14 @@ class DoclingJSONFormatOption(FormatOption):
 
 
 class XBRLFormatOption(FormatOption):
+    """Format option for XBRL and iXBRL input.
+
+    Selects the `XBRLDocumentBackend` and accepts `XBRLBackendOptions` to
+    control taxonomy lookup and remote fetch behavior. The same options apply
+    to both traditional XBRL instance files (`.xml`, `.xbrl`) and inline XBRL
+    (iXBRL) reports (`.htm`, `.html`, `.xhtml`).
+    """
+
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
     backend_options: XBRLBackendOptions | None = None

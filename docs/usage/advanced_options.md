@@ -749,6 +749,18 @@ both, and applies them to every reference:
 
 A refused reference stops the conversion with an error that lists it.
 
+The same options apply to inline XBRL (iXBRL) reports. Docling recognizes them
+by the inline XBRL namespace that the root `html` element declares, and converts
+them with the XBRL backend instead of the HTML backend. Without the `xbrl`
+extra, converting such a report raises an error that asks you to install it.
+
+Reports from SEC EDGAR reference their company-specific extension taxonomy with
+a relative path. When you convert from a URL with `enable_remote_fetch=True`,
+Docling resolves these references against the URL of the report. For a local
+file or a stream, put the extension taxonomy in the `taxonomy` folder, or set
+`XBRLBackendOptions.source_uri` to the URL where the report was published. A
+file in the `taxonomy` folder takes precedence over a remote one.
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:
