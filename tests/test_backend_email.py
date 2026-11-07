@@ -3,16 +3,17 @@
 
 from base64 import b64encode
 from email.headerregistry import HeaderRegistry
+from email.message import EmailMessage
 from email.utils import getaddresses
 from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, TextItem
+from docling_core.types.doc import ContentLayer, DocItemLabel, TextItem
 
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.datamodel.backend_options import EmailBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.document_converter import DocumentConverter, EmailFormatOption
 
@@ -471,6 +472,149 @@ Content-Type: text/html; charset="utf-8"
         doc.export_to_markdown()
     )
     assert "Fish & chips for a<b, see my_file_name.txt" in doc.export_to_text()
+
+
+@pytest.mark.parametrize("plain_body", [None, " \n"], ids=["html-only", "blank-plain"])
+def test_email_html_body_keeps_furniture_outside_the_body(plain_body: str | None):
+    """Email furniture stays available, as it does for a standalone HTML file."""
+    html = (
+        "<html><body><p>Body: 1 &lt; 2 &amp; 3 &gt; 2, a_b.</p>"
+        "<footer>Footer: terms &amp; conditions, c_d.</footer></body></html>"
+    )
+    message = EmailMessage()
+    message["Subject"] = "HTML furniture"
+    if plain_body is None:
+        message.set_content(html, subtype="html")
+    else:
+        message.set_content(plain_body)
+        message.add_alternative(html, subtype="html")
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.EMAIL, InputFormat.HTML])
+    doc = converter.convert(
+        DocumentStream(name="furniture.eml", stream=BytesIO(message.as_bytes()))
+    ).document
+    html_doc = converter.convert(
+        DocumentStream(name="furniture.html", stream=BytesIO(html.encode("utf-8")))
+    ).document
+
+    footer = "Footer: terms & conditions, c_d."
+    for converted in (doc, html_doc):
+        footer_items = [item for item in converted.texts if item.text == footer]
+        assert len(footer_items) == 1
+        assert footer_items[0].content_layer == ContentLayer.FURNITURE
+        assert "Footer:" not in converted.export_to_markdown()
+        all_layers = converted.export_to_markdown(
+            included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+        )
+        assert all_layers.count("Footer: terms &amp; conditions, c\\_d.") == 1
+        assert "Body: 1 &lt; 2 &amp; 3 &gt; 2, a\\_b." in all_layers
+        serialized_footers = [
+            item
+            for item in converted.export_to_dict()["texts"]
+            if item["text"] == footer
+        ]
+        assert len(serialized_footers) == 1
+        assert serialized_footers[0]["content_layer"] == "furniture"
+
+
+@pytest.mark.parametrize("plain_body", [None, " \n"], ids=["html-only", "blank-plain"])
+def test_email_with_only_html_furniture_does_not_fall_back_to_raw_html(
+    plain_body: str | None,
+):
+    """A footer is content even when there are no BODY paragraphs."""
+    html = "<html><body><footer>Footer only.</footer></body></html>"
+    message = EmailMessage()
+    message["Subject"] = "Footer only email"
+    if plain_body is None:
+        message.set_content(html, subtype="html")
+    else:
+        message.set_content(plain_body)
+        message.add_alternative(html, subtype="html")
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(name="footer-only.eml", stream=BytesIO(message.as_bytes()))
+        )
+        .document
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Footer only email", ContentLayer.BODY),
+        ("Footer only.", ContentLayer.FURNITURE),
+    ]
+    assert doc.export_to_markdown() == "# Footer only email"
+    assert (
+        doc.export_to_markdown(
+            included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+        )
+        == "# Footer only email\n\nFooter only."
+    )
+
+
+def test_email_keeps_nonempty_plain_body_instead_of_html_furniture():
+    """The HTML alternative must not add a second copy of the plain body."""
+    message = EmailMessage()
+    message["Subject"] = "Plain preferred"
+    message.set_content("Plain body.\n\nShared footer.")
+    message.add_alternative(
+        "<html><body><p>HTML body.</p><footer>Shared footer.</footer></body></html>",
+        subtype="html",
+    )
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(
+                name="plain-preferred.eml", stream=BytesIO(message.as_bytes())
+            )
+        )
+        .document
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Plain preferred", ContentLayer.BODY),
+        ("Plain body.", ContentLayer.BODY),
+        ("Shared footer.", ContentLayer.BODY),
+    ]
+    assert (
+        doc.export_to_markdown(
+            included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+        )
+        == "# Plain preferred\n\nPlain body.\n\nShared footer."
+    )
+
+
+def test_email_keeps_furniture_from_each_html_part_once():
+    """Each selected HTML part contributes its body and its furniture once."""
+    message = EmailMessage()
+    message["Subject"] = "Multipart HTML"
+    message.make_mixed()
+    for html in (
+        "<html><body> </body></html>",
+        "<html><body><p>First body.</p><footer>First footer.</footer></body></html>",
+        "<html><body><p>Second body.</p><footer>Second footer.</footer></body></html>",
+    ):
+        part = EmailMessage()
+        part.set_content(html, subtype="html")
+        message.attach(part)
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.EMAIL])
+        .convert(
+            DocumentStream(name="multipart.eml", stream=BytesIO(message.as_bytes()))
+        )
+        .document
+    )
+
+    assert [(item.text, item.content_layer) for item in doc.texts] == [
+        ("Multipart HTML", ContentLayer.BODY),
+        ("First body.", ContentLayer.BODY),
+        ("First footer.", ContentLayer.FURNITURE),
+        ("Second body.", ContentLayer.BODY),
+        ("Second footer.", ContentLayer.FURNITURE),
+    ]
+    assert doc.export_to_markdown() == "# Multipart HTML\n\nFirst body.\n\nSecond body."
 
 
 @pytest.mark.parametrize(
