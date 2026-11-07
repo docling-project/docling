@@ -571,3 +571,26 @@ def test_engine_native_ocr_lang_is_accepted(
 
     assert result.exit_code == 0, result.output
     assert ocr_options.lang == expected
+
+
+@pytest.mark.parametrize(
+    "value", ["zxx-Latn", "zxx-latn", "zxx-US", "ZXX-Cyrl", "  zxx-Latn  "]
+)
+def test_no_linguistic_content_with_a_script_is_rejected(value: str) -> None:
+    """`zxx` names no recognizer whichever script it carries.
+
+    The guard reads the primary subtag, not the whole tag: `zxx-Latn` is what
+    langcodes normalizes a bare `zxx` to, so a scripted spelling is the same
+    request and skipping OCR stays a pipeline switch.
+    """
+    with pytest.raises(ValueError, match="do_ocr=False"):
+        _iso(value)
+
+
+@pytest.mark.parametrize(
+    "value", ["mul-Latn", "mul-latn", "mul-US", "MUL-Cyrl", "  mul-Latn  "]
+)
+def test_multiple_languages_with_a_script_is_rejected(value: str) -> None:
+    """`mul` is a fact about a document, not a recognizer, script or no script."""
+    with pytest.raises(ValueError, match="multiple languages"):
+        _iso(value)
