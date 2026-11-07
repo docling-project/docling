@@ -3369,9 +3369,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     )
                     if list_item is None and any(
                         not self._has_list_ancestor(elem, li)
-                        for elem in li.find_all(["table", "img"])
+                        for elem in li.find_all(["table", "img", "ul", "ol", "dl"])
                     ):
-                        # An item without text still holds its table or image
+                        # An item without text still holds its table, image or list
                         list_item = doc.add_list_item(
                             text="",
                             enumerated=is_ordered,
