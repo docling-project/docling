@@ -3,19 +3,24 @@
 
 """Tests for merging tables that continue across a page break."""
 
+from collections.abc import Callable
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 from docling_core.types.doc import (
     BoundingBox,
     CoordOrigin,
     DocItemLabel,
     DoclingDocument,
+    Orientation,
     ProvenanceItem,
     Size,
     TableCell,
     TableData,
     TableItem,
 )
+from docling_core.types.doc.document import RichTableCell
 
 from docling.datamodel.pipeline_options import TableContinuationOptions
 from docling.models.stages.table_continuation.table_continuation_model import (
@@ -248,3 +253,109 @@ def test_continued_caption_is_dropped_and_footnote_moved(tmp_path: Path):
     assert footnote.parent is not None
     assert footnote.parent.cref == reloaded.tables[0].self_ref
     assert "continued" not in reloaded.export_to_markdown()
+
+
+def _drop_provenance(doc: DoclingDocument, second: TableItem) -> None:
+    second.prov = []
+
+
+def _make_first_cell_rich(doc: DoclingDocument, second: TableItem) -> None:
+    text = doc.add_text(label=DocItemLabel.TEXT, text="2", parent=second)
+    cell = second.data.table_cells[0]
+    second.data.table_cells[0] = RichTableCell(**cell.model_dump(), ref=text.get_ref())
+
+
+def _add_other_child(doc: DoclingDocument, second: TableItem) -> None:
+    doc.add_text(label=DocItemLabel.TEXT, text="A note inside the table", parent=second)
+
+
+def _drop_last_column(doc: DoclingDocument, second: TableItem) -> None:
+    second.data.table_cells = second.data.table_cells[:-1]
+    second.data.num_cols -= 1
+
+
+def _rotate(doc: DoclingDocument, second: TableItem) -> None:
+    second.data.orientation = Orientation.ROT_90
+
+
+def _drop_page(doc: DoclingDocument, second: TableItem) -> None:
+    del doc.pages[2]
+
+
+def _drop_cell_boxes(doc: DoclingDocument, second: TableItem) -> None:
+    for cell in second.data.table_cells:
+        cell.bbox = None
+
+
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        (_drop_provenance, "missing provenance"),
+        (_make_first_cell_rich, "rich cells"),
+        (_add_other_child, "children other than captions and footnotes"),
+        (_drop_last_column, "column count differs"),
+        (_rotate, "orientation differs"),
+        (_drop_page, "missing page size"),
+        (_drop_cell_boxes, "too few columns with geometry"),
+    ],
+)
+def test_fragment_that_cannot_be_compared_is_kept_apart(
+    change: Callable[[DoclingDocument, TableItem], None], reason: str
+):
+    doc = DoclingDocument(name="kept-apart")
+    _add_table(doc, 1, [_HEADER, ["1", "a", "b"]], header_rows=1)
+    second = _add_table(doc, 2, [["2", "c", "d"]])
+    change(doc, second)
+
+    decisions = _merge(doc)
+
+    assert [d.merged for d in decisions] == [False]
+    assert reason in decisions[0].reason
+    assert len(doc.tables) == 2
+
+
+def test_header_only_fragment_takes_its_rows_without_row_repair():
+    # With no body row to continue, an empty leading column is not the tail of a record.
+    doc = DoclingDocument(name="header-only")
+    _add_table(doc, 1, [_HEADER], header_rows=1, top=700)
+    _add_table(doc, 2, [["", "c", "d"], ["2", "e", "f"]])
+
+    _merge(doc)
+
+    assert _rows(doc.tables[0]) == [_HEADER, ["", "c", "d"], ["2", "e", "f"]]
+
+
+def test_row_spanning_cell_is_not_joined_into_previous_record():
+    doc = DoclingDocument(name="spanning-tail")
+    _add_table(doc, 1, [_HEADER, ["1", "a", "b"]], header_rows=1)
+    second = _add_table(doc, 2, [["", "c", "d"], ["2", "", "f"]])
+    spanning = next(
+        c
+        for c in second.data.table_cells
+        if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 1
+    )
+    spanning.row_span = 2
+    spanning.end_row_offset_idx = 2
+    second.data.table_cells = [
+        c
+        for c in second.data.table_cells
+        if not (c.start_row_offset_idx == 1 and c.start_col_offset_idx == 1)
+    ]
+
+    _merge(doc)
+
+    assert _rows(doc.tables[0])[1] == ["1", "a", "b"]
+    assert doc.tables[0].data.num_rows == 4
+
+
+@pytest.mark.parametrize(("enabled", "tables"), [(False, 2), (True, 1)])
+def test_model_merges_only_when_enabled(enabled: bool, tables: int):
+    doc = DoclingDocument(name="option")
+    _add_table(doc, 1, [_HEADER, ["1", "a", "b"]], header_rows=1)
+    _add_table(doc, 2, [["2", "c", "d"]])
+    model = TableContinuationModel(TableContinuationOptions(enabled=enabled))
+
+    result = model(SimpleNamespace(document=doc))
+
+    assert result is doc
+    assert len(doc.tables) == tables
