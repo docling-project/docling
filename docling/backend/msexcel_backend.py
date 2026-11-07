@@ -1541,7 +1541,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         title_cell = first_row_text_cells[0]
         if (
-            title_cell.col != 0
+            title_cell.image is not None
+            or title_cell.col != 0
             or title_cell.row_span != 1
             or title_cell.col_span <= 1
             or title_cell.col_span > table.num_cols

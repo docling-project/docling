@@ -17,6 +17,7 @@ from docling_core.transforms.serializer.markdown_excel import (
 from docling_core.types.doc import (
     ContentLayer,
     GroupLabel,
+    ImageRefMode,
     PictureClassificationLabel,
     PictureItem,
     RichTableCell,
@@ -1366,6 +1367,57 @@ def test_image_cell_next_to_a_section_label(tmp_path: Path) -> None:
     assert cell.ref.cref == picture.self_ref
     assert picture.parent is not None
     assert picture.parent.cref == table.self_ref
+
+
+def test_image_in_a_merged_first_row_stays_in_the_table(tmp_path: Path) -> None:
+    """An image spanning the first row is content, not a text section label."""
+    xlsxwriter = pytest.importorskip("xlsxwriter")
+
+    image_path = tmp_path / "logo.png"
+    Image.new("RGB", (16, 16), "red").save(image_path)
+    file_path = tmp_path / "merged_logo.xlsx"
+    with xlsxwriter.Workbook(str(file_path)) as workbook:
+        sheet = workbook.add_worksheet()
+        sheet.merge_range("A1:B1", "")
+        sheet.embed_image("A1", str(image_path), {"description": "Company logo"})
+        sheet.write_row("A2", ["Product", "Quantity"])
+        sheet.write_row("A3", ["Apples", 3])
+
+    doc = (
+        DocumentConverter(allowed_formats=[InputFormat.XLSX])
+        .convert(file_path)
+        .document
+    )
+
+    [picture] = doc.pictures
+    [table] = doc.tables
+    assert not doc.texts
+    assert (table.data.num_rows, table.data.num_cols) == (3, 2)
+    cell = table.data.grid[0][0]
+    assert isinstance(cell, RichTableCell)
+    assert cell.col_span == 2
+    assert table.data.grid[0][1] is cell
+    assert cell.ref.cref == picture.self_ref
+    assert picture.parent is not None
+    assert picture.parent.cref == table.self_ref
+    assert picture.image is not None
+    assert picture.image.pil_image.getpixel((0, 0)) == (255, 0, 0)
+    assert picture.meta is not None
+    assert picture.meta.description is not None
+    assert picture.meta.description.text == "Company logo"
+    [provenance] = picture.prov
+    assert provenance.page_no == 1
+    assert provenance.bbox.as_tuple() == (0, 0, 2, 1)
+    assert [[c.text for c in row] for row in table.data.grid[1:]] == [
+        ["Product", "Quantity"],
+        ["Apples", "3"],
+    ]
+    assert "data:image/png;base64," in doc.export_to_html(
+        image_mode=ImageRefMode.EMBEDDED
+    )
+    assert "data:image/png;base64," in doc.export_to_markdown(
+        image_mode=ImageRefMode.EMBEDDED
+    )
 
 
 def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
