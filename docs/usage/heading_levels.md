@@ -70,7 +70,8 @@ Two things are worth knowing about this pass:
 
 - Layout models sometimes classify a heading as a list item. When such an item matches a bookmark
   confidently, it is **promoted** to a section header in place, keeping its text and position.
-  This is the only structural change the stage ever makes.
+  Apart from the opt-in demotion described below, this is the only structural change the stage
+  makes.
 - Bookmarks that match nothing are simply dropped. A stale or partial outline can only add
   correct levels, never take away the ones numbering and style would have found.
 
@@ -80,6 +81,40 @@ Two things are worth knowing about this pass:
     vertical position of each bookmark. An entry without a resolvable target page is matched by
     title alone, with a stricter similarity threshold to compensate. Backends with no embedded
     outline, image inputs among them, report nothing and the stage moves on to numbering.
+
+#### Demoting headings that a complete outline leaves out
+
+The layout model sometimes labels a line as a section header when it is not one: a running
+header, a bold lead-in, a theorem label. When the PDF has a complete outline, the outline already
+says which headings are real. Set `demote_unmatched_headings=True` to turn every detected heading
+that matches no bookmark into plain text in that case. Matched headings keep the bookmark level as
+usual, and standard unnumbered headings that outlines often skip (Abstract, Keywords,
+Acknowledgements, References, Bibliography, Appendix) are always kept, also when they are set with
+letter spacing (`A B S T R A C T`). A heading also counts as matched when its section number
+belongs to a bookmark that matched no heading, because a bookmark title can differ from the
+printed heading (for example, unresolved LaTeX references in the bookmark).
+
+Many outlines are partial, so Docling demotes nothing unless the outline looks complete. All of
+these must be true:
+
+- the outline has more than one level (a flat outline usually lists only the chapters);
+- every detected heading with a dotted number, such as `2.1`, matches a bookmark;
+- at least half of the detected headings match a bookmark;
+- no two of the headings to demote share a heading-like style: larger than the body text, bold,
+  or set in a font face other than the body text's (this also catches bold and italic fonts whose
+  names carry no readable style, such as the TeX font `CMBX10`). A family of such headings usually
+  means that the outline omits a level.
+
+The option is off by default and never promotes body text. Its style check compares the headings
+with the body text, so with the option on the pipeline keeps all text lines of each page (not the
+characters or words) until the stage has run. You do not need `generate_parsed_pages=True`.
+
+```python
+pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(
+    enabled=True,
+    demote_unmatched_headings=True,
+)
+```
 
 ### Numbering
 
@@ -161,8 +196,9 @@ levels at all. Levels deeper than `max_level` (6 by default) are clamped.
 ## What the stage changes
 
 It rewrites `SectionHeaderItem.level`, and — only through a confident bookmark match — promotes a
-mis-classified list item to a section header. It never adds, removes or reorders anything else,
-and a heading for which no signal applies keeps the level it already had. Enable the stage on a
+mis-classified list item to a section header. With `demote_unmatched_headings`, it also turns
+headings that a complete outline does not list into text items. It never adds, removes or reorders
+anything else, and a heading for which no signal applies keeps the level it already had. Enable the stage on a
 document where nothing is recognizable and the output is exactly what you had before.
 
 ## Options
@@ -181,6 +217,7 @@ All of these live on `HeadingHierarchyOptions`, set as
 | `numbering_schemes` | `None` | Override the scheme precedence, highest level first. |
 | `max_level` | `6` | Deepest level assigned; anything deeper is clamped. |
 | `bookmark_match_threshold` | `0.8` | Minimum title similarity (0–1) for a bookmark to claim a heading. Higher is stricter. |
+| `demote_unmatched_headings` | `False` | When the outline looks complete, demote headings that match no bookmark to text. |
 
 Signals can be switched off individually, which is worth doing when you know what your corpus
 looks like. Legal filings with immaculate numbering and erratic typography do better with
@@ -199,6 +236,8 @@ pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(
     The style fallback reads the text lines of the headings from the parsed PDF cells. The
     pipeline keeps only those lines until the heading-hierarchy stage has run, so you do not need
     `generate_parsed_pages=True`. Set it only if you want the full parsed pages in the result.
+    With `demote_unmatched_headings`, it keeps all text lines of each page instead, because the
+    demotion compares the headings with the body text.
 
 ## From the command line
 

@@ -154,6 +154,9 @@ opts = PdfPipelineOptions(
 )
 ```
 
+Set `demote_unmatched_headings=True` to also turn detected headings that match no bookmark into
+text, but only when the PDF outline looks complete.
+
 The service equivalent is `do_pdf_heading_hierarchy` plus `pdf_heading_hierarchy_options`.
 
 ### Selecting the accelerator
