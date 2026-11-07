@@ -1,0 +1,29 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: Quarterly report
+      item-3 at level 3: text: The budget workbook is embedded below.
+      item-4 at level 3: section: group embedded: Microsoft_Excel_Worksheet.xlsx
+        item-5 at level 4: picture
+        item-6 at level 4: sheet: group Budget
+          item-7 at level 5: table with [4x2]
+      item-8 at level 3: text: The roadmap slide is embedded below.
+      item-9 at level 3: section: group embedded: Microsoft_PowerPoint_Presentation.pptx
+        item-10 at level 4: picture
+        item-11 at level 4: chapter: group slide-0
+          item-12 at level 5: title: Roadmap
+          item-13 at level 5: list: group list
+            item-14 at level 6: list_item: Ship embedded object parsing
+      item-15 at level 3: text: The meeting notes document is embedded below.
+      item-16 at level 3: section: group embedded: Microsoft_Word_Document.docx
+        item-17 at level 4: picture
+        item-18 at level 4: text: Meeting notes: approve the budget.
+        item-19 at level 4: section: group embedded: Microsoft_Excel_Worksheet.xlsx
+          item-20 at level 5: picture
+          item-21 at level 5: sheet: group Actions
+            item-22 at level 6: table with [3x2]
+        item-23 at level 4: text: Next meeting is on Friday.
+        item-24 at level 4: text: 
+      item-25 at level 3: text: A text file is embedded as a package.
+      item-26 at level 3: picture
+      item-27 at level 3: text: End of report.
+      item-28 at level 3: text: 
