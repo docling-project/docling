@@ -761,6 +761,13 @@ file or a stream, put the extension taxonomy in the `taxonomy` folder, or set
 `XBRLBackendOptions.source_uri` to the URL where the report was published. A
 file in the `taxonomy` folder takes precedence over a remote one.
 
+Docling takes the value of an iXBRL fact from Arelle, which applies the inline
+XBRL transformation named in the `format` attribute of the fact. If Arelle does
+not implement the transformation (for example `ixt-sec:numwordsen`, which turns
+the text "one" into the number 1), the value of the fact is
+`(ixTransformValueError)`. The value of the same fact in the XBRL instance of the
+filing is the number.
+
 ## Impose limits on the document size
 
 You can limit the file size and number of pages which should be allowed to process per document:

@@ -11,14 +11,13 @@ and Retrieval (EDGAR) system.
 import os
 import shutil
 import threading
-import zipfile
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import DoclingDocument, GraphCellLabel, GraphLinkLabel
 
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import XBRLBackendOptions
@@ -100,67 +99,7 @@ def test_e2e_xbrl_conversions(documents):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), "export to json"
 
 
-def test_ixbrl_report_converts_offline():
-    """An iXBRL report converts offline with a taxonomy package.
-
-    IBM's 10-Q has facts with typed dimensions, which have no member QName.
-    """
-    ixbrl_dir = Path(__file__).parent / "data" / "xbrl" / "ixbrl"
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.XML_XBRL],
-        format_options={
-            InputFormat.XML_XBRL: XBRLFormatOption(
-                backend_options=XBRLBackendOptions(
-                    enable_local_fetch=True, taxonomy=ixbrl_dir / "ibm-taxonomy"
-                )
-            )
-        },
-    )
-    doc = converter.convert(ixbrl_dir / "ibm-20260930.htm").document
-
-    assert (
-        doc.texts[0].text
-        == "10-Q INTERNATIONAL BUSINESS MACHINES CORPORATION 2026-09-30"
-    )
-    assert len(doc.tables) == 166
-
-    graph = doc.key_value_items[0].graph
-    cells = {cell.cell_id: cell for cell in graph.cells}
-    facts: dict[str, list[list[str]]] = {}
-    for cell in graph.cells:
-        if cell.text == "nonFraction":
-            targets = [
-                cells[link.target_cell_id].text
-                for link in graph.links
-                if link.source_cell_id == cell.cell_id
-            ]
-            facts.setdefault(cell.orig, []).append(targets)
-    assert facts["us-gaap:RevenueRemainingPerformanceObligation"] == [
-        [
-            "value: 69000000000",
-            "period: 2026-09-30",
-            "currency: USD",
-            "decimals: -9",
-        ]
-    ]
-
-
-def test_ixbrl_warns_when_taxonomy_is_not_found(tmp_path, caplog, no_taxonomy_packages):
-    """A package without the extension taxonomy leaves the facts unresolved.
-
-    The package maps every ``https://`` URL to its own files. The extension
-    taxonomy of the report is not among them, and it is not fetched remotely.
-    """
-    ixbrl_dir = Path(__file__).parent / "data" / "xbrl" / "ixbrl"
-    taxonomy = tmp_path / "taxonomy"
-    taxonomy.mkdir()
-    with (
-        zipfile.ZipFile(ixbrl_dir / "ibm-taxonomy" / "taxonomy_package.zip") as src,
-        zipfile.ZipFile(taxonomy / "taxonomy_package.zip", "w") as dst,
-    ):
-        for item in src.infolist():
-            if "/www.sec.gov/" not in item.filename:
-                dst.writestr(item, src.read(item))
+def _convert_with_taxonomy(report: Path, taxonomy: Path) -> DoclingDocument:
     converter = DocumentConverter(
         allowed_formats=[InputFormat.XML_XBRL],
         format_options={
@@ -171,12 +110,92 @@ def test_ixbrl_warns_when_taxonomy_is_not_found(tmp_path, caplog, no_taxonomy_pa
             )
         },
     )
+    return converter.convert(report).document
+
+
+def _fact_rows(doc: DoclingDocument) -> list[tuple[str, str, list[str]]]:
+    """Return the key, its concept and the texts of its value cells, for each fact."""
+    assert doc.key_value_items, "document has no key_value_items"
+    graph = doc.key_value_items[0].graph
+    cells = {cell.cell_id: cell for cell in graph.cells}
+    targets: dict[int, list[str]] = {}
+    for link in graph.links:
+        if link.label == GraphLinkLabel.TO_VALUE:
+            targets.setdefault(link.source_cell_id, []).append(
+                cells[link.target_cell_id].text
+            )
+    return [
+        (cell.text, cell.orig, targets[cell.cell_id])
+        for cell in graph.cells
+        if cell.cell_id in targets
+        and cells[cell.cell_id].label == GraphCellLabel.KEY
+        and targets[cell.cell_id][0].startswith("value: ")
+    ]
+
+
+def test_ixbrl_report_matches_xbrl_instance_of_same_filing():
+    """The iXBRL report and the XBRL instance of one filing convert alike.
+
+    `mlac-20251231.htm` is the inline XBRL report of the filing whose XBRL
+    instance is `sources/mlac-20251231.xml`. The text is the same, and the facts
+    are the same. Only the values that need an inline transformation that Arelle
+    does not implement (`ixt-sec:numwordsen`, "one") differ.
+    """
+    data_dir = Path(__file__).parent / "data" / "xbrl"
+    taxonomy = data_dir / "sources" / "mlac-taxonomy"
+
+    xbrl_doc = _convert_with_taxonomy(
+        data_dir / "sources" / "mlac-20251231.xml", taxonomy
+    )
+    ixbrl_doc = _convert_with_taxonomy(
+        data_dir / "ixbrl" / "mlac-20251231.htm", taxonomy
+    )
+
+    assert ixbrl_doc.export_to_markdown(
+        compact_tables=True
+    ) == xbrl_doc.export_to_markdown(compact_tables=True)
+    assert len(ixbrl_doc.tables) == len(xbrl_doc.tables) == 23
+
+    xbrl_rows = _fact_rows(xbrl_doc)
+    ixbrl_rows = _fact_rows(ixbrl_doc)
+    assert len(ixbrl_rows) == len(xbrl_rows) == 319
+    assert [row[:2] for row in ixbrl_rows] == [row[:2] for row in xbrl_rows]
+    differences = [
+        (xbrl_row[1], xbrl_row[2][0], ixbrl_row[2][0])
+        for xbrl_row, ixbrl_row in zip(xbrl_rows, ixbrl_rows)
+        if xbrl_row != ixbrl_row
+    ]
+    assert [(concept, xbrl) for concept, xbrl, _ in differences] == [
+        ("us-gaap:StockIssuedDuringPeriodSharesConversionOfUnits", "value: 1"),
+        ("mlac:NumberOfOrdinaryShares", "value: 1"),
+        ("us-gaap:NumberOfReportableSegments", "value: 1"),
+    ]
+    assert {ixbrl for _, _, ixbrl in differences} == {"value: (ixTransformValueError)"}
+
+    entity_float = next(row for row in ixbrl_rows if row[1] == "dei:EntityPublicFloat")
+    assert entity_float == (
+        "EntityPublicFloat",
+        "dei:EntityPublicFloat",
+        ["value: 239160600", "period: 2025-06-30", "currency: USD", "decimals: 0"],
+    )
+
+
+def test_ixbrl_warns_when_taxonomy_is_not_found(tmp_path, caplog, no_taxonomy_packages):
+    """A package without the extension taxonomy leaves the facts unresolved.
+
+    The package maps every ``https://`` URL to its own files. The extension
+    taxonomy of the report is not among them, and it is not fetched remotely.
+    """
+    data_dir = Path(__file__).parent / "data" / "xbrl"
+    shutil.copy(
+        data_dir / "sources" / "mlac-taxonomy" / "taxonomy_package.zip", tmp_path
+    )
 
     with caplog.at_level("WARNING", logger="docling.backend.xml.xbrl_backend"):
-        doc = converter.convert(ixbrl_dir / "ibm-20260930.htm").document
+        doc = _convert_with_taxonomy(data_dir / "ixbrl" / "mlac-20251231.htm", tmp_path)
 
     assert len(doc.tables) == 0
-    assert "could not be linked to a concept" in caplog.text
+    assert "480 of 480 facts could not be linked to a concept" in caplog.text
 
 
 def test_xbrl_divide_unit_keeps_denominator(documents):

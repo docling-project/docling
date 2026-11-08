@@ -596,7 +596,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                     GraphCell(
                         label=GraphCellLabel.KEY,
                         cell_id=key_id,
-                        text=str(fact.localName),
+                        text=fact.qname.localName,
                         orig=str(fact.qname),
                     )
                 )
