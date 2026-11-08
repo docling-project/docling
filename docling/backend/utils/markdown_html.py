@@ -60,12 +60,12 @@ class MarkdownHTMLPayload:
     text: str
     picture_refs: dict[str, ImageRef | None]
     formula_refs: dict[str, _FormulaReference]
-    line_break_ref: str
+    line_break_ref: str | None
 
 
 class _MarkdownTextSerializer(HTMLTextSerializer):
     reference_prefix: str
-    line_break_ref: str
+    line_break_ref: str | None
     formula_refs: dict[str, _FormulaReference] = Field(default_factory=dict)
 
     @override
@@ -79,7 +79,11 @@ class _MarkdownTextSerializer(HTMLTextSerializer):
         **kwargs: Any,
     ) -> SerializationResult:
         if not isinstance(item, FormulaItem):
-            if not isinstance(item, CodeItem) and "\n" in item.text:
+            if (
+                self.line_break_ref is not None
+                and not isinstance(item, CodeItem)
+                and "\n" in item.text
+            ):
                 # A newline-only run next to a formula must survive HTML's
                 # boundary-whitespace normalization as an explicit hard break.
                 item = item.model_copy(
@@ -321,7 +325,11 @@ def serialize_markdown_for_html(
     }
     text_serializer = _MarkdownTextSerializer(
         reference_prefix=f"urn:docling:md-formula:{source_hash}:",
-        line_break_ref=f"urn:docling:md-break:{source_hash}:",
+        line_break_ref=(
+            f"urn:docling:md-break:{source_hash}:"
+            if any(isinstance(item, FormulaItem) for item in doc.texts)
+            else None
+        ),
     )
     serializer = HTMLDocSerializer(
         doc=doc,

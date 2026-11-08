@@ -494,6 +494,27 @@ def test_math_html_transport_keeps_hard_break(source: str, html_suffix: str):
     assert source in doc.export_to_markdown()
 
 
+@pytest.mark.parametrize("enable_math", [False, True])
+@pytest.mark.parametrize(
+    "source,texts,export",
+    [
+        ("Intro  \nmore", ["Intro\nmore"], "Intro  \nmore"),
+        ("`left`  \n`right`", ["left", " ", "right"], "`left` `right`"),
+        ("**left**  \n**right**", ["left\nright"], "**left  \nright**"),
+    ],
+)
+def test_math_free_html_transport_keeps_existing_break_handling(
+    source: str, texts: list[str], export: str, enable_math: bool
+):
+    doc = _convert_markdown(
+        source + "\n\n<table><tr><td>HTML</td></tr></table>",
+        MarkdownBackendOptions(enable_latex_math=enable_math),
+    )
+    assert [item.text for item in doc.texts] == texts
+    assert [item.orig for item in doc.texts] == texts
+    assert doc.export_to_markdown() == export + "\n\n| HTML   |\n|--------|"
+
+
 @pytest.mark.parametrize("tag", ["strong", 'a href="https://example.org/"'])
 def test_math_inherits_raw_html_container_metadata(tag: str):
     closing = tag.split()[0]
