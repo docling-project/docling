@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: The Docling Contributors
+# SPDX-License-Identifier: MIT
+
 """Perform memory profile with memray to compare TableCell and FastTableCell. Usage examples:
 1. `python3 perfs/simplexlsx_profiling.py --cell "TableCell" -o "./perfs/data/profiles/profiling_table_cell"`
 2. `python3 perfs/simplexlsx_profiling.py --cell "FastTableCell" -o "./perfs/data/profiles/profiling_fast_table_cell"`

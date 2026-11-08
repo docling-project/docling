@@ -10,9 +10,9 @@ import re
 import shutil
 import warnings
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 from decimal import ROUND_HALF_UP, Decimal, localcontext
-from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
