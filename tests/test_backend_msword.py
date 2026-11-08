@@ -1692,6 +1692,42 @@ def test_invisible_spacer_logic():
     )  # coloured
 
 
+@pytest.mark.parametrize(
+    "address, fragment, expected",
+    [
+        (
+            "https://example.org/guide",
+            "installation",
+            "https://example.org/guide#installation",
+        ),
+        ("manual.docx", "Installation", "manual.docx#Installation"),
+        (
+            "https://example.org/guide#installation",
+            "",
+            "https://example.org/guide#installation",
+        ),
+    ],
+)
+def test_hyperlink_preserves_external_fragment(
+    tmp_path: Path, address: str, fragment: str, expected: str
+):
+    source = Document()
+    paragraph = source.add_paragraph()
+    rel_id = source.part.relate_to(address, RT.HYPERLINK, is_external=True)
+    hyperlink = etree.SubElement(paragraph._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), rel_id)
+    hyperlink.set(qn("w:anchor"), fragment)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "Install"
+
+    doc = _convert_built(source, tmp_path)
+
+    assert [(item.text, str(item.hyperlink)) for item in doc.texts] == [
+        ("Install", expected)
+    ]
+    assert doc.export_to_markdown() == f"[Install]({expected})"
+
+
 def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
     """A single malformed hyperlink address (e.g. containing a space) must not
     raise a pydantic ValidationError that aborts the whole DOCX conversion.

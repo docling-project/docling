@@ -2415,7 +2415,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             hyperlink's relationship has been removed from the part.
         """
         try:
-            address = hyperlink.address
+            # Word can store the URL fragment separately in w:anchor.
+            address = hyperlink.url
         except KeyError:
             # Relationship removed from the part (e.g. by _sanitize_docx); drop target.
             return None
