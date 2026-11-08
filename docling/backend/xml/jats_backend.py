@@ -176,9 +176,8 @@ class Table(TypedDict):
 class XMLComponents(TypedDict):
     title: str
     authors: list[Author]
-    author_notes: list[etree._Element]
     abstract: list[Abstract]
-    # Copyright, license and funding statement nodes, walked at emit time.
+    # Author footnotes, copyright, license and funding nodes, walked at emit time.
     statements: list[etree._Element]
 
 
@@ -320,7 +319,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if self.root:
                 for sub_article in sub_articles:
                     self._add_sub_article(doc, self.root, sub_article)
-            # add the copyright, license and funding statements as furniture
+            # add author footnotes and article statements as furniture
             self._add_statements(doc, xml_components)
         except Exception:
             _log.error(traceback.format_exc())
@@ -550,7 +549,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return text
 
     def _parse_statements(self) -> list[etree._Element]:
-        """Return the copyright, license and funding statements of the metadata."""
+        """Return author footnotes and article statements in source order."""
         meta: etree._Element | None = self._find_metadata()
         if meta is None:
             return []
@@ -559,6 +558,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             "permissions/copyright-statement"
             "|permissions/license/license-p"
             "|funding-group/funding-statement"
+            "|author-notes/fn"
         )
 
     def _parse_metadata(self) -> XMLComponents:
@@ -566,9 +566,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         xml_components: XMLComponents = {
             "title": self._parse_title(),
             "authors": self._parse_authors(),
-            "author_notes": self.tree.xpath(
-                f"//front/article-meta[{_NOT_IN_SUB_ARTICLE}]/author-notes"
-            ),
             "abstract": self._parse_abstract(),
             "statements": self._parse_statements(),
         }
@@ -614,7 +611,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _add_statements(
         self, doc: DoclingDocument, xml_components: XMLComponents
     ) -> None:
-        """Add the copyright, license and funding statements of the metadata.
+        """Add author footnotes and article statements as metadata.
 
         Like page headers and footers in other backends, the statements go into
         the furniture layer: available on request, but out of the reading order.
@@ -622,10 +619,21 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         if self.root is None:
             return
         for statement in xml_components["statements"]:
+            if statement.tag == "fn":
+                segments = [
+                    replace(segment, label=DocItemLabel.FOOTNOTE)
+                    if segment.label == DocItemLabel.TEXT
+                    else segment
+                    for segment in JatsDocumentBackend._walk_inline_formula(
+                        statement, resolve_ext_links=True
+                    )
+                ]
+            else:
+                segments = self._walk_linear(doc, self.root, statement)
             JatsDocumentBackend._emit_inline(
                 doc,
                 self.root,
-                self._walk_linear(doc, self.root, statement),
+                segments,
                 content_layer=ContentLayer.FURNITURE,
             )
 
@@ -1145,14 +1153,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         self._add_title(doc, xml_components)
         self._add_authors(doc, xml_components)
-        if self.root is not None:
-            for author_notes in xml_components["author_notes"]:
-                self._add_footnote_group(
-                    doc,
-                    self.root,
-                    author_notes,
-                    author_notes=True,
-                )
         self._add_abstract(doc, xml_components)
 
         return
@@ -1492,15 +1492,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         parent: NodeItem,
         node: etree._Element,
-        *,
-        author_notes: bool = False,
     ) -> None:
         footnote_segments: list[list[InlineSegment]] = []
         for fn in node.iterchildren(tag="fn"):
             segments = JatsDocumentBackend._trim_segment_edges(
-                JatsDocumentBackend._walk_inline_formula(
-                    fn, resolve_ext_links=author_notes
-                )
+                JatsDocumentBackend._walk_inline_formula(fn)
             )
             if segments:
                 # Keep the FOOTNOTE label on plain text runs; formulas stay
@@ -1517,12 +1513,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 )
         if not footnote_segments:
             return
-        default_title = "Author Notes" if author_notes else DEFAULT_HEADER_FOOTNOTES
         title = node.xpath("title")
         title_text = (
-            JatsDocumentBackend._get_node_text(title[0]) or default_title
+            JatsDocumentBackend._get_node_text(title[0]) or DEFAULT_HEADER_FOOTNOTES
             if title
-            else default_title
+            else DEFAULT_HEADER_FOOTNOTES
         )
         hlevel: int = self.hlevel + 1
         heading = doc.add_heading(text=title_text, parent=parent, level=hlevel)
@@ -1533,13 +1528,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
         for segments in footnote_segments:
             list_item = doc.add_list_item(parent=footnote_group, text="")
-            # Keep a single author-note run on the same line as its list marker.
-            container = (
-                doc.add_inline_group(parent=list_item)
-                if author_notes and len(segments) == 1
-                else list_item
-            )
-            JatsDocumentBackend._emit_inline(doc, container, segments)
+            JatsDocumentBackend._emit_inline(doc, list_item, segments)
 
     def _add_sub_article(
         self,

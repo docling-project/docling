@@ -1642,6 +1642,26 @@
       "content_layer": "furniture",
       "name": "group",
       "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/75",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/342"
+        },
+        {
+          "$ref": "#/texts/343"
+        },
+        {
+          "$ref": "#/texts/344"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -1700,7 +1720,10 @@
           "$ref": "#/groups/74"
         },
         {
-          "$ref": "#/texts/342"
+          "$ref": "#/groups/75"
+        },
+        {
+          "$ref": "#/texts/345"
         }
       ],
       "content_layer": "body",
@@ -6598,15 +6621,51 @@
       },
       "children": [],
       "content_layer": "furniture",
+      "label": "footnote",
+      "prov": [],
+      "orig": "†",
+      "text": "†"
+    },
+    {
+      "self_ref": "#/texts/340",
+      "parent": {
+        "$ref": "#/groups/74"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "footnote",
+      "prov": [],
+      "orig": " ",
+      "text": " "
+    },
+    {
+      "self_ref": "#/texts/341",
+      "parent": {
+        "$ref": "#/groups/74"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "footnote",
+      "prov": [],
+      "orig": "CeMM Research Center for Molecular Medicine of the Austrian Academy of Sciences, Vienna, Austria.",
+      "text": "CeMM Research Center for Molecular Medicine of the Austrian Academy of Sciences, Vienna, Austria."
+    },
+    {
+      "self_ref": "#/texts/342",
+      "parent": {
+        "$ref": "#/groups/75"
+      },
+      "children": [],
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": "This is an open-access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the ",
       "text": "This is an open-access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the "
     },
     {
-      "self_ref": "#/texts/340",
+      "self_ref": "#/texts/343",
       "parent": {
-        "$ref": "#/groups/74"
+        "$ref": "#/groups/75"
       },
       "children": [],
       "content_layer": "furniture",
@@ -6617,9 +6676,9 @@
       "hyperlink": "http://creativecommons.org/publicdomain/zero/1.0/"
     },
     {
-      "self_ref": "#/texts/341",
+      "self_ref": "#/texts/344",
       "parent": {
-        "$ref": "#/groups/74"
+        "$ref": "#/groups/75"
       },
       "children": [],
       "content_layer": "furniture",
@@ -6629,7 +6688,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/342",
+      "self_ref": "#/texts/345",
       "parent": {
         "$ref": "#/texts/0"
       },

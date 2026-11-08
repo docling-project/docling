@@ -446,9 +446,9 @@ def test_jats_plain_footnote_without_styling_stays_a_single_text_item():
     ],
     ids=["none", "single", "multiple"],
 )
-def test_jats_author_footnotes(notes: tuple[str, ...]):
-    footnotes = "".join(f"<fn><p>{note}</p></fn>" for note in notes)
-    author_notes = f"<author-notes>{footnotes}</author-notes>" if notes else ""
+def test_jats_author_footnotes_are_furniture(notes: tuple[str, ...]):
+    footnote_xml = "".join(f"<fn><p>{note}</p></fn>" for note in notes)
+    author_notes = f"<author-notes>{footnote_xml}</author-notes>" if notes else ""
     doc = convert_jats_article_meta(
         f"""
         <title-group><article-title>Author Footnote Test</article-title></title-group>
@@ -459,27 +459,38 @@ def test_jats_author_footnotes(notes: tuple[str, ...]):
         <aff id="aff1">Example University</aff>
         {author_notes}
         <abstract><p>Abstract text.</p></abstract>
-        """
+        """,
+        "<p>Body text.</p>",
     )
 
-    footnote_texts = [t.text for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
-    assert footnote_texts == list(notes)
-    markdown = doc.export_to_markdown()
-    expected = ["# Author Footnote Test", "Jane Doe", "Example University"]
-    if notes:
-        expected.extend(["## Author Notes", "\n".join(f"- {note}" for note in notes)])
-    expected.extend(["## Abstract", "Abstract text."])
-    assert markdown == "\n\n".join(expected)
+    footnotes = [t for t in doc.texts if t.label == DocItemLabel.FOOTNOTE]
+    assert [t.text for t in footnotes] == list(notes)
+    assert all(t.content_layer == ContentLayer.FURNITURE for t in footnotes)
+    assert _furniture_statements(doc) == [[(note, None)] for note in notes]
+    expected = [
+        "# Author Footnote Test",
+        "Jane Doe",
+        "Example University",
+        "## Abstract",
+        "Abstract text.",
+        "Body text.",
+    ]
+    assert doc.export_to_markdown() == "\n\n".join(expected)
+    assert doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    ) == "\n\n".join([*expected, *notes])
 
 
-def test_jats_author_footnote_preserves_inline_formatting_and_link():
+def test_jats_author_footnote_preserves_formatting_link_formula_and_paragraphs():
     doc = convert_jats_article_meta(
         """
         <title-group><article-title>Author Footnote Test</article-title></title-group>
         <author-notes>
           <corresp>Correspondence marker.</corresp>
-          <fn><p>See <italic><ext-link
-            xlink:href="https://example.org/statement">disclosure</ext-link></italic>.</p></fn>
+          <fn><label>1</label><p>See <italic><ext-link
+            xlink:href="https://example.org/statement">disclosure</ext-link></italic>
+            and <inline-formula><tex-math>x+1</tex-math></inline-formula>.</p>
+            <p>Further details.</p></fn>
         </author-notes>
         """
     )
@@ -490,6 +501,50 @@ def test_jats_author_footnote_preserves_inline_formatting_and_link():
     disclosure = disclosures[0]
     assert disclosure.formatting is not None and disclosure.formatting.italic
     assert str(disclosure.hyperlink) == "https://example.org/statement"
+    assert all(t.content_layer == ContentLayer.FURNITURE for t in footnotes)
+    formula = next(t for t in doc.texts if t.label == DocItemLabel.FORMULA)
+    assert formula.text == "x+1"
+    assert formula.content_layer == ContentLayer.FURNITURE
+    assert disclosure.parent is not None and disclosure.parent == formula.parent
+    group = disclosure.parent.resolve(doc)
+    assert group.label == GroupLabel.INLINE
+    assert group.content_layer == ContentLayer.FURNITURE
+    assert doc.export_to_markdown() == "# Author Footnote Test"
+    markdown = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert "Author Notes" not in markdown
+    assert "1 See" in markdown
+    assert "https://example.org/statement" in markdown
+    assert "$x+1$. Further details." in markdown
+
+
+def test_jats_author_footnotes_share_furniture_with_article_statements():
+    doc = convert_jats_article_meta(
+        """
+        <title-group><article-title>Article metadata</article-title></title-group>
+        <author-notes>
+          <fn><p>First author note.</p></fn>
+          <fn><p>Second author note.</p></fn>
+        </author-notes>
+        <permissions><license><license-p>License statement.</license-p></license></permissions>
+        <funding-group><funding-statement>Funding statement.</funding-statement></funding-group>
+        """,
+        "<p>Body text.</p><fn-group><fn><p>Body footnote.</p></fn></fn-group>",
+    )
+
+    assert _furniture_statements(doc) == [
+        [("First author note.", None)],
+        [("Second author note.", None)],
+        [("License statement.", None)],
+        [("Funding statement.", None)],
+    ]
+    body_footnote = next(t for t in doc.texts if t.text == "Body footnote.")
+    assert body_footnote.label == DocItemLabel.FOOTNOTE
+    assert body_footnote.content_layer == ContentLayer.BODY
+    assert doc.export_to_markdown() == (
+        "# Article metadata\n\nBody text.\n\n## Footnotes\n\n- \nBody footnote."
+    )
 
 
 _FOOTNOTE = (

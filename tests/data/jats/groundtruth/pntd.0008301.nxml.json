@@ -1219,13 +1219,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/254"
-        },
-        {
           "$ref": "#/texts/255"
         },
         {
           "$ref": "#/texts/256"
+        },
+        {
+          "$ref": "#/texts/257"
         }
       ],
       "content_layer": "furniture",
@@ -1239,13 +1239,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/257"
-        },
-        {
           "$ref": "#/texts/258"
         },
         {
           "$ref": "#/texts/259"
+        },
+        {
+          "$ref": "#/texts/260"
         }
       ],
       "content_layer": "furniture",
@@ -1289,6 +1289,9 @@
         },
         {
           "$ref": "#/texts/194"
+        },
+        {
+          "$ref": "#/texts/254"
         },
         {
           "$ref": "#/groups/50"
@@ -5191,6 +5194,18 @@
     {
       "self_ref": "#/texts/254",
       "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "footnote",
+      "prov": [],
+      "orig": "The authors have declared that no competing interests exist.",
+      "text": "The authors have declared that no competing interests exist."
+    },
+    {
+      "self_ref": "#/texts/255",
+      "parent": {
         "$ref": "#/groups/50"
       },
       "children": [],
@@ -5201,7 +5216,7 @@
       "text": "This is an open access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the "
     },
     {
-      "self_ref": "#/texts/255",
+      "self_ref": "#/texts/256",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -5214,7 +5229,7 @@
       "hyperlink": "https://creativecommons.org/publicdomain/zero/1.0/"
     },
     {
-      "self_ref": "#/texts/256",
+      "self_ref": "#/texts/257",
       "parent": {
         "$ref": "#/groups/50"
       },
@@ -5226,7 +5241,7 @@
       "text": " public domain dedication."
     },
     {
-      "self_ref": "#/texts/257",
+      "self_ref": "#/texts/258",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -5238,7 +5253,7 @@
       "text": "This work was made possible thanks to the generous support of the American People through the United States Agency for International Development ("
     },
     {
-      "self_ref": "#/texts/258",
+      "self_ref": "#/texts/259",
       "parent": {
         "$ref": "#/groups/51"
       },
@@ -5251,7 +5266,7 @@
       "hyperlink": "https://www.usaid.gov/"
     },
     {
-      "self_ref": "#/texts/259",
+      "self_ref": "#/texts/260",
       "parent": {
         "$ref": "#/groups/51"
       },
