@@ -1,3 +1,33 @@
+## [v2.149.0](https://github.com/docling-project/docling/releases/tag/v2.149.0) - 2026-11-08
+
+### Feature
+
+* **pdf:** Add opt-in embedded PDF image extraction ([#5143](https://github.com/docling-project/docling/issues/5143)) ([`3df6c93`](https://github.com/docling-project/docling/commit/3df6c9318fc6d91fde424c90a28fc7d7e5f080dc))
+* Refactored the cli to be more intuitive ([#5214](https://github.com/docling-project/docling/issues/5214)) ([`55f21d6`](https://github.com/docling-project/docling/commit/55f21d6a439a236965542f4fd2f21d8366306b93))
+* **asr:** Add support for mlx-audio ([#5181](https://github.com/docling-project/docling/issues/5181)) ([`756059c`](https://github.com/docling-project/docling/commit/756059c2666753890e3f531ff5d6416be8b3df0e))
+* **vlm:** Add MiniCPM-OCR preset ([#5134](https://github.com/docling-project/docling/issues/5134)) ([`1282e3d`](https://github.com/docling-project/docling/commit/1282e3d9fa34f28772785177f1f330936e8df96a))
+
+### Fix
+
+* **md:** Decode only terminated character references in text ([#5231](https://github.com/docling-project/docling/issues/5231)) ([`414d669`](https://github.com/docling-project/docling/commit/414d669f81646eb4548a66dd2ec3869c56a075ca))
+* **latex:** Number the items of enumerate lists ([#4518](https://github.com/docling-project/docling/issues/4518)) ([`1d9a79c`](https://github.com/docling-project/docling/commit/1d9a79c85028d4a2917e8026de338158f5d9fa88))
+* **md:** Keep backslash escapes inside the surrounding text ([#4991](https://github.com/docling-project/docling/issues/4991)) ([`bcb3678`](https://github.com/docling-project/docling/commit/bcb3678fad7426549643f54c5eceab77925ac5c1))
+* **jats:** Keep tables published as an image ([#5078](https://github.com/docling-project/docling/issues/5078)) ([`1e26b84`](https://github.com/docling-project/docling/commit/1e26b84c5f5690128ddcd65a20a5d7ffb9e80dcd))
+* **asciidoc:** Fill a table row from the column count of the first line ([#5010](https://github.com/docling-project/docling/issues/5010)) ([`26cff4d`](https://github.com/docling-project/docling/commit/26cff4d67939ebd33f19594acdb53ad2c5a531dc))
+* **reading-order:** Skip a horizontal dilation that overlaps another element ([#5131](https://github.com/docling-project/docling/issues/5131)) ([`55df934`](https://github.com/docling-project/docling/commit/55df93475b4a5e6613aab95ede217308acf870c0))
+* **html:** Keep an image caption with its picture ([#5037](https://github.com/docling-project/docling/issues/5037)) ([`0ae7561`](https://github.com/docling-project/docling/commit/0ae75619c886106f49a9e14202ce37741e938a0f))
+* Keep pictures whose mode cannot be written as PNG ([#4683](https://github.com/docling-project/docling/issues/4683)) ([`1331d70`](https://github.com/docling-project/docling/commit/1331d70c7c09c83bc594dbb00e831fb564134e15))
+* **html:** Keep sibling code tags of pre in one code block ([#4998](https://github.com/docling-project/docling/issues/4998)) ([`ec9911e`](https://github.com/docling-project/docling/commit/ec9911e29c9c1f5309280698b0dba17d5e002c36))
+* **jats:** Preserve table footnotes ([#4818](https://github.com/docling-project/docling/issues/4818)) ([`c715294`](https://github.com/docling-project/docling/commit/c715294cd774ef0a59dd8e5c8a63ae3432cd611e))
+* **csv:** Read Excel's sep= first line as the delimiter ([#5200](https://github.com/docling-project/docling/issues/5200)) ([`1436f13`](https://github.com/docling-project/docling/commit/1436f130d254833863b2fab9ad2d97946d7a6d1a))
+* **uspto:** Map ISO 8879 &sgr; to sigma and keep &sfgr; ([#5202](https://github.com/docling-project/docling/issues/5202)) ([`4e57113`](https://github.com/docling-project/docling/commit/4e571139022e886cacc01a113ff695f2d57d790d))
+
+### Documentation
+
+* Fix VLM configuration in GPU guide ([#5102](https://github.com/docling-project/docling/issues/5102)) ([`98dfa0f`](https://github.com/docling-project/docling/commit/98dfa0f99c223d09e262e7629e2f4076482e27f7))
+* Fix spelling of 'preferred' in docstrings ([#5213](https://github.com/docling-project/docling/issues/5213)) ([`d7654f4`](https://github.com/docling-project/docling/commit/d7654f41a37f1702991557129aab6c11dde1e2f2))
+* Clarify page backend lifetime and image retention ([#5212](https://github.com/docling-project/docling/issues/5212)) ([`c173b2e`](https://github.com/docling-project/docling/commit/c173b2ebc66c96de9d0d41edbdacd2491ffb7343))
+
 ## [v2.148.0](https://github.com/docling-project/docling/releases/tag/v2.148.0) - 2026-11-05
 
 ### Feature

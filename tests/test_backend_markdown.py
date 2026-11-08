@@ -12,6 +12,7 @@ from docling_core.types.doc import (
     CodeLanguageLabel,
     DocItemLabel,
     FormulaItem,
+    GroupLabel,
     InlineGroup,
     ListItem,
     PictureItem,
@@ -1941,3 +1942,147 @@ def test_pipe_in_lazy_continuation_line_does_not_hang():
     thread.join(timeout=30)
     assert not thread.is_alive()
     assert "|x| y" in result[0].document.export_to_markdown().replace("\\", "")
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected_items"),
+    [
+        pytest.param(
+            r"snake\_case here", [("text", "snake_case here")], id="underscore"
+        ),
+        pytest.param(
+            r"Price is \$5 and 50\% off",
+            [("text", "Price is $5 and 50% off")],
+            id="dollar-and-percent",
+        ),
+        pytest.param(r"\*not emphasis\*", [("text", "*not emphasis*")], id="stars"),
+        pytest.param(r"1\. not a list", [("text", "1. not a list")], id="list-marker"),
+        pytest.param(
+            r"- item with \* star", [("list_item", "item with * star")], id="list-item"
+        ),
+        pytest.param(r"# Head \# x", [("title", "Head # x")], id="heading"),
+        pytest.param(r"> quote \* star", [("text", "quote * star")], id="quote"),
+        pytest.param(
+            r"Use `x` and snake\_case",
+            [("text", "Use "), ("code", "x"), ("text", " and snake_case")],
+            id="inline-code-stays-separate",
+        ),
+        pytest.param(
+            r"**bold \* star** plain",
+            [("text", "bold * star"), ("text", " plain")],
+            id="emphasis-stays-separate",
+        ),
+        # An escape protects the entity around it: the text stays as written.
+        pytest.param(r"a \&amp; b", [("text", "a &amp; b")], id="escaped-ampersand"),
+        pytest.param(r"&\#35;x", [("text", "&#35;x")], id="entity-split-by-hash"),
+        pytest.param(
+            r"&amp\; e", [("text", "&amp; e")], id="entity-split-by-semicolon"
+        ),
+        pytest.param(
+            r"&\#169; vs &#169;",
+            [("text", "&#169; vs ©")],
+            id="escaped-and-real-entity",
+        ),
+        pytest.param(
+            r"R&D &amp; \_x &#169;",
+            [("text", "R&D & _x ©")],
+            id="entities-around-escape",
+        ),
+    ],
+)
+def test_backslash_escape_stays_in_its_text_run(
+    markdown: str, expected_items: list[tuple[str, str]]
+):
+    """A backslash escape is part of the text run around it, not a separate item."""
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert [(str(item.label), item.text) for item in doc.texts] == expected_items
+    # One run of text is one item, so no inline group wraps it.
+    if len(expected_items) == 1:
+        assert not [g for g in doc.groups if g.label == GroupLabel.INLINE]
+
+
+def test_backslash_escape_in_link_text_keeps_the_hyperlink():
+    """An escape inside link text stays in the one text item that has the link."""
+    doc = _convert_markdown(r"[a\_b](http://x.y)", MarkdownBackendOptions())
+
+    assert [item.text for item in doc.texts] == ["a_b"]
+    assert str(doc.texts[0].hyperlink) == "http://x.y/"
+
+
+def test_backslash_escape_in_rich_table_cell_stays_in_its_text_run():
+    """The runs inside a rich cell are `z` and `* w`, not `z`, `*` and `w`."""
+    doc = _convert_markdown("| h |\n|---|\n| **z**\\* w |", MarkdownBackendOptions())
+
+    assert [item.text for item in doc.texts] == ["z", "* w"]
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected_items"),
+    [
+        pytest.param(
+            "&copy; &notin; &#169; &#xA9; &#XA9; &lt;b&gt; &amp; c",
+            [("text", "© ∉ © © © <b> & c")],
+            id="terminated",
+        ),
+        # CommonMark maps a number to its code point, without the HTML5 remapping.
+        pytest.param(
+            "&#128; &#x80; &#1; &#0; &#xD800; &#x110000; &#1114111;",
+            [("text", "\x80 \x80 \x01 \ufffd \ufffd \ufffd \U0010ffff")],
+            id="numeric-code-point",
+        ),
+        # CommonMark decodes only a reference that ends with a semicolon.
+        pytest.param("&copy a &amp b", [("text", "&copy a &amp b")], id="no-semicolon"),
+        pytest.param("&notit; a", [("text", "&notit; a")], id="legacy-prefix"),
+        pytest.param("&nosuch; a", [("text", "&nosuch; a")], id="unknown-name"),
+        pytest.param(
+            "&#xyz; &#; &#12345678;",
+            [("text", "&#xyz; &#; &#12345678;")],
+            id="invalid-number",
+        ),
+        pytest.param(
+            r"&copy a\_b &copy;", [("text", "&copy a_b ©")], id="in-merged-run"
+        ),
+        pytest.param("# &copy x &copy;", [("title", "&copy x ©")], id="heading"),
+        pytest.param("- &copy x &copy;", [("list_item", "&copy x ©")], id="list-item"),
+        pytest.param(
+            "[&copy a &copy;](http://x.y)", [("text", "&copy a ©")], id="link-text"
+        ),
+        pytest.param(
+            '![alt](http://x.y/a.png "&copy a &copy;")',
+            [("caption", "&copy a ©"), ("text", "alt")],
+            id="image-title",
+        ),
+        pytest.param(
+            "| h |\n|---|\n| &copy a &copy; |",
+            [("cell", "h"), ("cell", "&copy a ©")],
+            id="table-cell",
+        ),
+        pytest.param(
+            "| h |\n|---|\n| **b** &copy a &copy; |",
+            [
+                ("text", "b"),
+                ("text", " &copy a ©"),
+                ("cell", "h"),
+                ("cell", "b &copy a ©"),
+            ],
+            id="rich-table-cell",
+        ),
+        pytest.param(
+            '| h |\n|---|\n| ![alt](http://x.y/a.png "&copy a &copy;") |',
+            [("caption", "&copy a ©"), ("cell", "h"), ("cell", "alt")],
+            id="table-cell-image-title",
+        ),
+    ],
+)
+def test_character_reference_is_decoded_only_when_terminated(
+    markdown: str, expected_items: list[tuple[str, str]]
+):
+    """A character reference is decoded as in CommonMark, only if it ends with `;`."""
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    items = [(str(item.label), item.text) for item in doc.texts]
+    items += [
+        ("cell", cell.text) for table in doc.tables for cell in table.data.table_cells
+    ]
+    assert items == expected_items

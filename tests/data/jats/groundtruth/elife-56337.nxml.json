@@ -1622,6 +1622,26 @@
       "content_layer": "body",
       "name": "group",
       "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/74",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/339"
+        },
+        {
+          "$ref": "#/texts/340"
+        },
+        {
+          "$ref": "#/texts/341"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -1675,6 +1695,12 @@
         },
         {
           "$ref": "#/texts/320"
+        },
+        {
+          "$ref": "#/groups/74"
+        },
+        {
+          "$ref": "#/texts/342"
         }
       ],
       "content_layer": "body",
@@ -6564,6 +6590,55 @@
       "prov": [],
       "orig": "We now show the data separated by matings as well as combined, and describe the data in the main text. This analysis revealed that in only one of the three matings, the difference in ETn insertions between KO/WT and KO reaches significance (p value < 0.05). We re-wrote the paragraph in the main text accordingly.",
       "text": "We now show the data separated by matings as well as combined, and describe the data in the main text. This analysis revealed that in only one of the three matings, the difference in ETn insertions between KO/WT and KO reaches significance (p value < 0.05). We re-wrote the paragraph in the main text accordingly."
+    },
+    {
+      "self_ref": "#/texts/339",
+      "parent": {
+        "$ref": "#/groups/74"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "This is an open-access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the ",
+      "text": "This is an open-access article, free of all copyright, and may be freely reproduced, distributed, transmitted, modified, built upon, or otherwise used by anyone for any lawful purpose. The work is made available under the "
+    },
+    {
+      "self_ref": "#/texts/340",
+      "parent": {
+        "$ref": "#/groups/74"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "Creative Commons CC0 public domain dedication",
+      "text": "Creative Commons CC0 public domain dedication",
+      "hyperlink": "http://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "self_ref": "#/texts/341",
+      "parent": {
+        "$ref": "#/groups/74"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/342",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "The funders had no role in study design, data collection and interpretation, or the decision to submit the work for publication.",
+      "text": "The funders had no role in study design, data collection and interpretation, or the decision to submit the work for publication."
     }
   ],
   "pictures": [
