@@ -412,7 +412,7 @@ def parse_mineru2(
             )
         elif region.type in {"chart", "image"}:
             document.add_picture(prov=provenance)
-        elif region.type == "equation":
+        elif region.type in {"equation", "formula_number"}:
             document.add_text(
                 label=DocItemLabel.FORMULA,
                 text=strip_math_delimiters(text),

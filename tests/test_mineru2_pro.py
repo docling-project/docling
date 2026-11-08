@@ -235,8 +235,10 @@ def test_mineru_equation_normalizes_delimiters_preserving_orig(
     assert document.export_to_markdown() == f"$${body}$$"
 
 
-def test_mineru_formula_number_keeps_delimiters() -> None:
-    raw = " $(3)$ "
+@pytest.mark.parametrize(
+    "raw", [" (3) ", " $(3)$ ", " $$(3)$$ ", r" \((3)\) ", r" \[(3)\] "]
+)
+def test_mineru_formula_number_normalizes_delimiters_preserving_orig(raw: str) -> None:
     layout = (
         "<|box_start|>900 200 1000 400<|box_end|><|ref_start|>formula_number<|ref_end|>"
     )
@@ -247,9 +249,14 @@ def test_mineru_formula_number_keeps_delimiters() -> None:
     )
 
     number = document.texts[0]
-    assert number.label == DocItemLabel.FORMULA
-    assert number.text == "$(3)$"
+    assert isinstance(number, FormulaItem)
+    assert number.text == "(3)"
     assert number.orig == raw
+    assert number.prov[0].charspan == (0, len(raw))
+    assert number.prov[0].page_no == 3
+    box = number.prov[0].bbox
+    assert (box.l, box.t, box.r, box.b) == (540, 160, 600, 320)
+    assert document.export_to_markdown() == "$$(3)$$"
 
 
 def test_parse_mineru2_merges_text_continuations() -> None:
