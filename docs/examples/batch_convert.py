@@ -29,7 +29,6 @@ import time
 from collections.abc import Iterable
 from pathlib import Path
 
-import yaml
 from docling_core.types.doc import ImageRefMode
 
 from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
@@ -75,6 +74,8 @@ def export_documents(
             )
 
             # Export Docling document format to YAML:
+            import yaml
+
             with (output_dir / f"{doc_filename}.yaml").open("w") as fp:
                 fp.write(yaml.safe_dump(conv_res.document.export_to_dict()))
 
