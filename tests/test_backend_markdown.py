@@ -4,12 +4,14 @@
 import base64
 from io import BytesIO
 from pathlib import Path
+from threading import Thread
 
 import pytest
 from docling_core.types.doc import (
     CodeItem,
     CodeLanguageLabel,
     DocItemLabel,
+    GroupLabel,
     ListItem,
     PictureItem,
 )
@@ -900,7 +902,7 @@ def test_convert_line_breaks():
     # leading '\n' on the run that follows, since the runs cannot be merged.
     doc = _convert_markdown("Author **John**  \nUniversity XYZ", opt)
     assert len(doc.texts) == 3
-    assert doc.texts[0].text == "Author"
+    assert doc.texts[0].text == "Author "
     assert doc.texts[0].formatting is None
     assert doc.texts[1].text == "John"
     assert doc.texts[1].formatting is not None
@@ -958,24 +960,43 @@ def test_convert_line_break_next_to_code_span():
         doc = _convert_markdown(markdown, opt)
         return [(str(t.label), t.text) for t in doc.texts]
 
-    expected = [("text", "Already in"), ("code", "Reference/"), ("text", ". Done.")]
+    # Runs keep their boundary whitespace; a soft break before the code span
+    # becomes a plain " " run, never a space inside the code run.
 
     # No break: the reference behaviour
-    assert items("Already in `Reference/`. Done.") == expected
+    assert items("Already in `Reference/`. Done.") == [
+        ("text", "Already in "),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Soft break before the code span
-    assert items("Already in\n`Reference/`. Done.") == expected
+    assert items("Already in\n`Reference/`. Done.") == [
+        ("text", "Already in"),
+        ("text", " "),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Hard break before the code span
-    assert items("Already in  \n`Reference/`. Done.") == expected
+    assert items("Already in  \n`Reference/`. Done.") == [
+        ("text", "Already in"),
+        ("text", "\n"),
+        ("code", "Reference/"),
+        ("text", ". Done."),
+    ]
 
     # Soft break after the code span
-    assert items("Already in `Reference/`\n. Done.") == expected
+    assert items("Already in `Reference/`\n. Done.") == [
+        ("text", "Already in "),
+        ("code", "Reference/"),
+        ("text", " . Done."),
+    ]
 
     # Hard break after the code span: the break is kept as a leading '\\n' on
     # the run that follows, as across a formatting boundary.
     assert items("Already in `Reference/`  \n. Done.") == [
-        ("text", "Already in"),
+        ("text", "Already in "),
         ("code", "Reference/"),
         ("text", "\n. Done."),
     ]
@@ -983,8 +1004,9 @@ def test_convert_line_break_next_to_code_span():
     # Two code spans after a soft break
     assert items("Already in\n`Reference/` and `Other/`. Done.") == [
         ("text", "Already in"),
+        ("text", " "),
         ("code", "Reference/"),
-        ("text", "and"),
+        ("text", " and "),
         ("code", "Other/"),
         ("text", ". Done."),
     ]
@@ -993,6 +1015,7 @@ def test_convert_line_break_next_to_code_span():
     assert items("- Already in\n  `Reference/`. Done.") == [
         ("list_item", ""),
         ("text", "Already in"),
+        ("text", " "),
         ("code", "Reference/"),
         ("text", ". Done."),
     ]
@@ -1110,6 +1133,42 @@ def test_convert_table_cell_whitespace_around_inline_emphasis():
     ]
 
 
+def test_rich_table_cell_runs_keep_boundary_whitespace():
+    """Rich-cell runs carry their own boundary whitespace; only the cell edges are trimmed."""
+    from docling_core.types.doc import RichTableCell
+
+    markdown = (
+        "| Cell | Note |\n"
+        "|---|---|\n"
+        "| **C** Cadre | x |\n"
+        "| **A** **B** | y |\n"
+        "|  Install with `pip install x` first.  | z |\n"
+    )
+    doc = get_converter().convert_string(markdown, format=InputFormat.MD).document
+
+    runs = [
+        [
+            ref.resolve(doc).text
+            for ref in cell.ref.resolve(doc).children[0].resolve(doc).children
+        ]
+        for cell in doc.tables[0].data.table_cells
+        if isinstance(cell, RichTableCell)
+    ]
+    assert runs == [
+        ["C", " Cadre"],
+        ["A", " ", "B"],
+        ["Install with ", "pip install x", " first."],
+    ]
+    rows = [
+        line.split("|")[1].strip() for line in doc.export_to_markdown().splitlines()
+    ]
+    assert rows[2:] == [
+        "**C** Cadre",
+        "**A** **B**",
+        "Install with `pip install x` first.",
+    ]
+
+
 def test_line_break_does_not_cross_block_boundary():
     """A line break only joins runs of its own paragraph.
 
@@ -1153,6 +1212,7 @@ def test_line_break_does_not_cross_block_boundary():
     # A code span at the end of a paragraph does not take in the next paragraph
     assert items("Intro\n`code`\n\nAfter") == [
         ("text", "Intro"),
+        ("text", " "),
         ("code", "code"),
         ("text", "After"),
     ]
@@ -1407,6 +1467,37 @@ def test_rich_table_cell_no_stray_body_items():
 
 
 @pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        # A soft-wrapped paragraph renders as one line with a space at the wrap point.
+        (
+            "After the swim,\nit is time to eat\nsomething nice\n",
+            "After the swim, it is time to eat something nice",
+        ),
+        # Emphasis boundaries keep the source spacing, and none is invented.
+        ("Foo *emph* bar\n", "Foo *emph* bar"),
+        (
+            "The pipe (| or `|`) only in tables.\n",
+            "The pipe (| or `|`) only in tables.",
+        ),
+        # No space at the boundary in the source, so none in the output.
+        ("a*b*c\n", "a*b*c"),
+    ],
+)
+def test_inline_whitespace_round_trips_through_markdown(source, expected):
+    """Marko run boundaries survive: the export reproduces the source line."""
+    stream = BytesIO(source.encode())
+    in_doc = InputDocument(
+        path_or_stream=stream,
+        format=InputFormat.MD,
+        backend=MarkdownDocumentBackend,
+        filename="test.md",
+    )
+    doc = MarkdownDocumentBackend(in_doc=in_doc, path_or_stream=stream).convert()
+    assert doc.export_to_markdown() == expected
+
+
+@pytest.mark.parametrize(
     ("markdown", "expected"),
     [
         pytest.param(
@@ -1483,3 +1574,161 @@ def test_convert_frontmatter_followed_by_content_keeps_the_content():
     assert "Intro" in pred_md
     assert "Section" in pred_md
     assert "body" in pred_md
+
+
+def test_pipe_in_lazy_continuation_line_does_not_hang():
+    """The hang is an infinite loop, so a daemon thread turns it into a failure."""
+    convert = get_converter().convert_string
+    md = "- a\n  - b\n  |x| y\n"
+    result: list[ConversionResult] = []
+    thread = Thread(
+        target=lambda: result.append(convert(md, format=InputFormat.MD)), daemon=True
+    )
+    thread.start()
+    thread.join(timeout=30)
+    assert not thread.is_alive()
+    assert "|x| y" in result[0].document.export_to_markdown().replace("\\", "")
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected_items"),
+    [
+        pytest.param(
+            r"snake\_case here", [("text", "snake_case here")], id="underscore"
+        ),
+        pytest.param(
+            r"Price is \$5 and 50\% off",
+            [("text", "Price is $5 and 50% off")],
+            id="dollar-and-percent",
+        ),
+        pytest.param(r"\*not emphasis\*", [("text", "*not emphasis*")], id="stars"),
+        pytest.param(r"1\. not a list", [("text", "1. not a list")], id="list-marker"),
+        pytest.param(
+            r"- item with \* star", [("list_item", "item with * star")], id="list-item"
+        ),
+        pytest.param(r"# Head \# x", [("title", "Head # x")], id="heading"),
+        pytest.param(r"> quote \* star", [("text", "quote * star")], id="quote"),
+        pytest.param(
+            r"Use `x` and snake\_case",
+            [("text", "Use "), ("code", "x"), ("text", " and snake_case")],
+            id="inline-code-stays-separate",
+        ),
+        pytest.param(
+            r"**bold \* star** plain",
+            [("text", "bold * star"), ("text", " plain")],
+            id="emphasis-stays-separate",
+        ),
+        # An escape protects the entity around it: the text stays as written.
+        pytest.param(r"a \&amp; b", [("text", "a &amp; b")], id="escaped-ampersand"),
+        pytest.param(r"&\#35;x", [("text", "&#35;x")], id="entity-split-by-hash"),
+        pytest.param(
+            r"&amp\; e", [("text", "&amp; e")], id="entity-split-by-semicolon"
+        ),
+        pytest.param(
+            r"&\#169; vs &#169;",
+            [("text", "&#169; vs ©")],
+            id="escaped-and-real-entity",
+        ),
+        pytest.param(
+            r"R&D &amp; \_x &#169;",
+            [("text", "R&D & _x ©")],
+            id="entities-around-escape",
+        ),
+    ],
+)
+def test_backslash_escape_stays_in_its_text_run(
+    markdown: str, expected_items: list[tuple[str, str]]
+):
+    """A backslash escape is part of the text run around it, not a separate item."""
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    assert [(str(item.label), item.text) for item in doc.texts] == expected_items
+    # One run of text is one item, so no inline group wraps it.
+    if len(expected_items) == 1:
+        assert not [g for g in doc.groups if g.label == GroupLabel.INLINE]
+
+
+def test_backslash_escape_in_link_text_keeps_the_hyperlink():
+    """An escape inside link text stays in the one text item that has the link."""
+    doc = _convert_markdown(r"[a\_b](http://x.y)", MarkdownBackendOptions())
+
+    assert [item.text for item in doc.texts] == ["a_b"]
+    assert str(doc.texts[0].hyperlink) == "http://x.y/"
+
+
+def test_backslash_escape_in_rich_table_cell_stays_in_its_text_run():
+    """The runs inside a rich cell are `z` and `* w`, not `z`, `*` and `w`."""
+    doc = _convert_markdown("| h |\n|---|\n| **z**\\* w |", MarkdownBackendOptions())
+
+    assert [item.text for item in doc.texts] == ["z", "* w"]
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected_items"),
+    [
+        pytest.param(
+            "&copy; &notin; &#169; &#xA9; &#XA9; &lt;b&gt; &amp; c",
+            [("text", "© ∉ © © © <b> & c")],
+            id="terminated",
+        ),
+        # CommonMark maps a number to its code point, without the HTML5 remapping.
+        pytest.param(
+            "&#128; &#x80; &#1; &#0; &#xD800; &#x110000; &#1114111;",
+            [("text", "\x80 \x80 \x01 \ufffd \ufffd \ufffd \U0010ffff")],
+            id="numeric-code-point",
+        ),
+        # CommonMark decodes only a reference that ends with a semicolon.
+        pytest.param("&copy a &amp b", [("text", "&copy a &amp b")], id="no-semicolon"),
+        pytest.param("&notit; a", [("text", "&notit; a")], id="legacy-prefix"),
+        pytest.param("&nosuch; a", [("text", "&nosuch; a")], id="unknown-name"),
+        pytest.param(
+            "&#xyz; &#; &#12345678;",
+            [("text", "&#xyz; &#; &#12345678;")],
+            id="invalid-number",
+        ),
+        pytest.param(
+            r"&copy a\_b &copy;", [("text", "&copy a_b ©")], id="in-merged-run"
+        ),
+        pytest.param("# &copy x &copy;", [("title", "&copy x ©")], id="heading"),
+        pytest.param("- &copy x &copy;", [("list_item", "&copy x ©")], id="list-item"),
+        pytest.param(
+            "[&copy a &copy;](http://x.y)", [("text", "&copy a ©")], id="link-text"
+        ),
+        pytest.param(
+            '![alt](http://x.y/a.png "&copy a &copy;")',
+            [("caption", "&copy a ©"), ("text", "alt")],
+            id="image-title",
+        ),
+        pytest.param(
+            "| h |\n|---|\n| &copy a &copy; |",
+            [("cell", "h"), ("cell", "&copy a ©")],
+            id="table-cell",
+        ),
+        pytest.param(
+            "| h |\n|---|\n| **b** &copy a &copy; |",
+            [
+                ("text", "b"),
+                ("text", " &copy a ©"),
+                ("cell", "h"),
+                ("cell", "b &copy a ©"),
+            ],
+            id="rich-table-cell",
+        ),
+        pytest.param(
+            '| h |\n|---|\n| ![alt](http://x.y/a.png "&copy a &copy;") |',
+            [("caption", "&copy a ©"), ("cell", "h"), ("cell", "alt")],
+            id="table-cell-image-title",
+        ),
+    ],
+)
+def test_character_reference_is_decoded_only_when_terminated(
+    markdown: str, expected_items: list[tuple[str, str]]
+):
+    """A character reference is decoded as in CommonMark, only if it ends with `;`."""
+    doc = _convert_markdown(markdown, MarkdownBackendOptions())
+
+    items = [(str(item.label), item.text) for item in doc.texts]
+    items += [
+        ("cell", cell.text) for table in doc.tables for cell in table.data.table_cells
+    ]
+    assert items == expected_items

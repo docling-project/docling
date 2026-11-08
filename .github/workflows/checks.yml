@@ -127,7 +127,7 @@ jobs:
               - ".github/actions/**"
               - ".pre-commit-config.yaml"
               - "pyproject.toml"
-              - "scripts/check_tach_module_coverage.py"
+              - "scripts/checks/check_tach_module_coverage.py"
               - "tach.toml"
               - "uv.lock"
               - "docling/**"
@@ -187,7 +187,7 @@ jobs:
           uv_sync_args: --frozen --only-group dev --no-install-project
 
       - name: Check module coverage
-        run: python3 scripts/check_tach_module_coverage.py
+        run: python3 scripts/checks/check_tach_module_coverage.py
 
       - name: Check module boundaries
         run: uv run --no-sync tach check
@@ -651,7 +651,7 @@ jobs:
           uv venv /tmp/venv
           uv pip install --python /tmp/venv .
           # Run outside the checkout so the installed package is imported.
-          cd /tmp && /tmp/venv/bin/python -c "from docling.document_converter import DocumentConverter"
+          cd /tmp && /tmp/venv/bin/python -c "from docling.document_converter import DocumentConverter; import docling.datamodel.asr_model_specs; import docling.pipeline.asr_pipeline"
 
   check:
     if: ${{ always() }}

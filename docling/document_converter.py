@@ -32,6 +32,7 @@ from docling.backend.abstract_backend import (
 from docling.backend.afp_backend import AfpDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.boxnote_backend import BoxNoteDocumentBackend
+from docling.backend.calendar_backend import CalendarDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
@@ -68,6 +69,7 @@ from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     AsciiDocBackendOptions,
     BackendOptions,
+    CalendarBackendOptions,
     CsvBackendOptions,
     DeclarativeBackendOptions,
     EbcdicBackendOptions,
@@ -104,6 +106,7 @@ from docling.datamodel.document import (
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     NativePdfPipelineOptions,
+    PdfPipelineOptions,
     PipelineOptions,
 )
 from docling.datamodel.progress import (
@@ -303,6 +306,21 @@ class PdfFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
 
+    @model_validator(mode="after")
+    def configure_embedded_picture_images(self) -> Self:
+        if (
+            isinstance(self.pipeline_options, PdfPipelineOptions)
+            and self.pipeline_options.use_embedded_picture_images
+            and self.backend is ThreadedDoclingParseDocumentBackend
+        ):
+            if self.backend_options is None:
+                self.backend_options = ThreadedDoclingParseBackendOptions(
+                    include_bitmap_images=True
+                )
+            elif isinstance(self.backend_options, PdfBackendOptions):
+                self.backend_options.include_bitmap_images = True
+        return self
+
 
 class IWorkPagesFormatOption(FormatOption):
     """Format option for Apple Pages input."""
@@ -419,6 +437,12 @@ class EmailFormatOption(FormatOption):
     backend_options: Optional[EmailBackendOptions] = None
 
 
+class CalendarFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = CalendarDocumentBackend
+    backend_options: Optional[CalendarBackendOptions] = None
+
+
 class EpubFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = EpubDocumentBackend
@@ -478,6 +502,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.IWORK_NUMBERS: IWorkNumbersFormatOption(),
         InputFormat.EBCDIC: EbcdicFormatOption(),
         InputFormat.AFP: AfpFormatOption(),
+        InputFormat.CALENDAR: CalendarFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

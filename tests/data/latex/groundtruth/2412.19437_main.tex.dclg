@@ -1,11 +1,12 @@
-<doclang version="0.8">
+<doclang version="0.9">
   <text>
     <layer value="furniture"/>
     \documentclass[11pt, a4paper, logo, copyright, nonumbering]{deepseek}
   </text>
   <text>
     <layer value="furniture"/>
-<![CDATA[\usepackage[authoryear, sort&compress, round]{natbib}]]>  </text>
+    <![CDATA[\usepackage[authoryear, sort&compress, round]{natbib}]]>
+  </text>
   <text>
     <layer value="furniture"/>
     \usepackage{dblfloatfix}
@@ -364,103 +365,32 @@
   <heading level="3">Basic Architecture</heading>
   <text>The basic architecture of DeepSeek-V3 is still within the Transformer[transformer] framework. For efficient inference and economical training, DeepSeek-V3 also adopts MLA and DeepSeekMoE, which have been thoroughly validated by DeepSeek-V2. Compared with DeepSeek-V2, an exception is that we additionally introduce an auxiliary-loss-free load balancing strategy[noaux_tc] for DeepSeekMoE to mitigate the performance degradation induced by the effort to ensure load balance. Figure[fig:basic_arch] illustrates the basic architecture of DeepSeek-V3, and we will briefly review the details of MLA and DeepSeekMoE in this section.</text>
   <heading level="4">Multi-Head Latent Attention</heading>
-  <text>
-    <content>For attention, DeepSeek-V3 adopts the MLA architecture. Let </content>
-    <formula>d</formula>
-    <content> denote the embedding dimension, </content>
-    <formula>n_h</formula>
-    <content> denote the number of attention heads, </content>
-    <formula>d_h</formula>
-    <content> denote the dimension per head, and </content>
-    <formula>\mathbf{h}_{t} \in \mathbb{R}^{d}</formula>
-    <content> denote the attention input for the </content>
-    <formula>t</formula>
--th token at a given attention layer. The core of MLA is the low-rank joint compression for attention keys and values to reduce Key-Value (KV) cache during inference:
-  </text>
-  <formula>
-    <content><![CDATA[\begin{align}
+  <text>For attention, DeepSeek-V3 adopts the MLA architecture. Let <formula>d</formula> denote the embedding dimension, <formula>n_h</formula> denote the number of attention heads, <formula>d_h</formula> denote the dimension per head, and <formula>\mathbf{h}_{t} \in \mathbb{R}^{d}</formula> denote the attention input for the <formula>t</formula>-th token at a given attention layer. The core of MLA is the low-rank joint compression for attention keys and values to reduce Key-Value (KV) cache during inference:</text>
+  <formula><content><![CDATA[\begin{align}
     \boxed{\color{blue} \mathbf{c}_{t}^{KV}} &= W^{DKV} \mathbf{h}_{t}, \\
     [\mathbf{k}_{t, 1}^{C};\mathbf{k}_{t, 2}^{C};...;\mathbf{k}_{t, n_{h}}^{C}] = \mathbf{k}_{t}^{C} &= W^{UK} \mathbf{c}_{t}^{KV}, \\
     \boxed{\color{blue}\mathbf{k}_{t}^{R}} &= \operatorname{RoPE}({W^{KR}} \mathbf{h}_{t}), \\
     \mathbf{k}_{t, i} &= [\mathbf{k}_{t, i}^{C}; \mathbf{k}_{t}^{R}], \\
     [\mathbf{v}_{t, 1}^{C};\mathbf{v}_{t, 2}^{C};...;\mathbf{v}_{t, n_{h}}^{C}] = \mathbf{v}_{t}^{C} &= W^{UV} \mathbf{c}_{t}^{KV}, 
-\end{align}]]></content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>\mathbf{c}_{t}^{KV} \in \mathbb{R}^{d_c}</formula>
-    <content> is the compressed latent vector for keys and values; </content>
-    <formula>d_c (\ll d_h n_h)</formula>
-    <content> indicates the KV compression dimension; </content>
-    <formula>W^{DKV} \in \mathbb{R}^{d_c \times d}</formula>
-    <content> denotes the down-projection matrix; </content>
-    <formula>W^{UK},W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}</formula>
-    <content> are the up-projection matrices for keys and values, respectively; </content>
-    <formula>W^{KR} \in \mathbb{R}^{d_h^R \times d}</formula>
-    <content> is the matrix used to produce the decoupled key that carries Rotary Positional Embedding (RoPE)[su2024roformer]; </content>
-    <formula>\operatorname{RoPE}(\cdot)</formula>
-    <content> denotes the operation that applies RoPE matrices; and </content>
-    <formula>[\cdot;\cdot]</formula>
-    <content> denotes concatenation. Note that for MLA, only the blue-boxed vectors (i.e., </content>
-    <formula>\color{blue} \mathbf{c}_{t}^{KV}</formula>
-    <content> and </content>
-    <formula>\color{blue}\mathbf{k}_{t}^{R}</formula>
-) need to be cached during generation, which results in significantly reduced KV cache while maintaining performance comparable to standard Multi-Head Attention (MHA)[transformer].
-  </text>
+\end{align}]]></content></formula>
+  <text>where <formula>\mathbf{c}_{t}^{KV} \in \mathbb{R}^{d_c}</formula> is the compressed latent vector for keys and values; <formula>d_c (\ll d_h n_h)</formula> indicates the KV compression dimension; <formula>W^{DKV} \in \mathbb{R}^{d_c \times d}</formula> denotes the down-projection matrix; <formula>W^{UK},W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}</formula> are the up-projection matrices for keys and values, respectively; <formula>W^{KR} \in \mathbb{R}^{d_h^R \times d}</formula> is the matrix used to produce the decoupled key that carries Rotary Positional Embedding (RoPE)[su2024roformer]; <formula>\operatorname{RoPE}(\cdot)</formula> denotes the operation that applies RoPE matrices; and <formula>[\cdot;\cdot]</formula> denotes concatenation. Note that for MLA, only the blue-boxed vectors (i.e., <formula>\color{blue} \mathbf{c}_{t}^{KV}</formula> and <formula>\color{blue}\mathbf{k}_{t}^{R}</formula>) need to be cached during generation, which results in significantly reduced KV cache while maintaining performance comparable to standard Multi-Head Attention (MHA)[transformer].</text>
   <text>For the attention queries, we also perform a low-rank compression, which can reduce the activation memory during training:</text>
-  <formula>
-    <content><![CDATA[\begin{align}
+  <formula><content><![CDATA[\begin{align}
     \mathbf{c}_{t}^{Q} &= W^{DQ} \mathbf{h}_{t}, \\
     [\mathbf{q}_{t, 1}^{C};\mathbf{q}_{t, 2}^{C};...;\mathbf{q}_{t, n_{h}}^{C}] = \mathbf{q}_{t}^{C} &= W^{UQ} \mathbf{c}_{t}^{Q}, \\
     [\mathbf{q}_{t, 1}^{R};\mathbf{q}_{t, 2}^{R};...;\mathbf{q}_{t, n_{h}}^{R}] = \mathbf{q}_{t}^{R} &= \operatorname{RoPE}({W^{QR}} \mathbf{c}_{t}^{Q}), \\
     \mathbf{q}_{t, i} &= [\mathbf{q}_{t, i}^{C}; \mathbf{q}_{t, i}^{R}],
-\end{align}]]></content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>\mathbf{c}_{t}^{Q} \in \mathbb{R}^{d_c^{\prime}}</formula>
-    <content> is the compressed latent vector for queries; </content>
-    <formula>d_c^{\prime} (\ll d_h n_h)</formula>
-    <content> denotes the query compression dimension; </content>
-    <formula>W^{DQ} \in \mathbb{R}^{d_c^{\prime} \times d}, W^{UQ} \in \mathbb{R}^{d_h n_h \times d_c^{\prime}}</formula>
-    <content> are the down-projection and up-projection matrices for queries, respectively; and </content>
-    <formula>W^{QR} \in \mathbb{R}^{d_h^R n_h \times d_c^{\prime}}</formula>
-    <content> is the matrix to produce the decoupled queries that carry RoPE.</content>
-  </text>
-  <text>
-    Ultimately, the attention queries (
-    <formula>\mathbf{q}_{t, i}</formula>
-), keys (
-    <formula>\mathbf{k}_{j, i}</formula>
-), and values (
-    <formula>\mathbf{v}_{j, i}^{C}</formula>
-    <content>) are combined to yield the final attention output </content>
-    <formula>\mathbf{u}_{t}</formula>
-:
-  </text>
-  <formula>
-    <content><![CDATA[\begin{align}
+\end{align}]]></content></formula>
+  <text>where <formula>\mathbf{c}_{t}^{Q} \in \mathbb{R}^{d_c^{\prime}}</formula> is the compressed latent vector for queries; <formula>d_c^{\prime} (\ll d_h n_h)</formula> denotes the query compression dimension; <formula>W^{DQ} \in \mathbb{R}^{d_c^{\prime} \times d}, W^{UQ} \in \mathbb{R}^{d_h n_h \times d_c^{\prime}}</formula> are the down-projection and up-projection matrices for queries, respectively; and <formula>W^{QR} \in \mathbb{R}^{d_h^R n_h \times d_c^{\prime}}</formula> is the matrix to produce the decoupled queries that carry RoPE.</text>
+  <text>Ultimately, the attention queries (<formula>\mathbf{q}_{t, i}</formula>), keys (<formula>\mathbf{k}_{j, i}</formula>), and values (<formula>\mathbf{v}_{j, i}^{C}</formula>) are combined to yield the final attention output <formula>\mathbf{u}_{t}</formula>:</text>
+  <formula><content><![CDATA[\begin{align}
     \mathbf{o}_{t, i} &= \sum_{j=1}^{t} \operatorname{Softmax}_j(\frac{\mathbf{q}_{t, i}^T \mathbf{k}_{j, i}}{\sqrt{d_{h} + d_{h}^{R}}}) \mathbf{v}_{j, i}^{C}, \\
     \mathbf{u}_{t} &= W^{O} [\mathbf{o}_{t, 1};\mathbf{o}_{t, 2};...;\mathbf{o}_{t, n_{h}}],
-\end{align}]]></content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>W^{O} \in \mathbb{R}^{d \times d_h n_h}</formula>
-    <content> denotes the output projection matrix.</content>
-  </text>
+\end{align}]]></content></formula>
+  <text>where <formula>W^{O} \in \mathbb{R}^{d \times d_h n_h}</formula> denotes the output projection matrix.</text>
   <heading level="4">DeepSeekMoE with Auxiliary-Loss-Free Load Balancing</heading>
-  <text>
-    <content>Basic Architecture of DeepSeekMoE. For Feed-Forward Networks(FFNs), DeepSeek-V3 employs the DeepSeekMoE architecture[deepseekmoe]. Compared with traditional MoE architectures like GShard[gshard], DeepSeekMoE uses finer-grained experts and isolates some experts as shared ones. Let </content>
-    <formula>\mathbf{u}_{t}</formula>
-    <content> denote the FFN input of the </content>
-    <formula>t</formula>
-    <content>-th token, we compute the FFN output </content>
-    <formula>\mathbf{h}_{t}^{\prime}</formula>
-    <content> as follows:</content>
-  </text>
-  <formula>
-    <content><![CDATA[\begin{align}
+  <text>Basic Architecture of DeepSeekMoE. For Feed-Forward Networks(FFNs), DeepSeek-V3 employs the DeepSeekMoE architecture[deepseekmoe]. Compared with traditional MoE architectures like GShard[gshard], DeepSeekMoE uses finer-grained experts and isolates some experts as shared ones. Let <formula>\mathbf{u}_{t}</formula> denote the FFN input of the <formula>t</formula>-th token, we compute the FFN output <formula>\mathbf{h}_{t}^{\prime}</formula> as follows:</text>
+  <formula><content><![CDATA[\begin{align}
     \mathbf{h}_{t}^{\prime} & = \mathbf{u}_{t} + \sum_{i=1}^{N_{s}} {\operatorname{FFN}^{(s)}_{i}\left( \mathbf{u}_{t} \right)} + \sum_{i=1}^{N_r} {g_{i,t} \operatorname{FFN}^{(r)}_{i}\left( \mathbf{u}_{t} \right)}, \\
     g_{i,t} & = \frac{g^{\prime}_{i,t}}{\sum_{j=1}^{N_r} g^{\prime}_{j,t}}, \\
     g^{\prime}_{i,t} & = \begin{cases} 
@@ -468,224 +398,53 @@
     0, & \text{otherwise}, 
     \end{cases} \\
     s_{i,t} & = \operatorname{Sigmoid} \left( {\mathbf{u}_{t}}^{T} \mathbf{e}_{i} \right),
-\end{align}]]></content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>N_{s}</formula>
-    <content> and </content>
-    <formula>N_r</formula>
-    <content> denote the numbers of shared experts and routed experts, respectively; </content>
-    <formula>\operatorname{FFN}^{(s)}_{i}(\cdot)</formula>
-    <content> and </content>
-    <formula>\operatorname{FFN}^{(r)}_{i}(\cdot)</formula>
-    <content> denote the </content>
-    <formula>i</formula>
-    <content>-th shared expert and the </content>
-    <formula>i</formula>
-    <content>-th routed expert, respectively; </content>
-    <formula>K_{r}</formula>
-    <content> denotes the number of activated routed experts; </content>
-    <formula>g_{i,t}</formula>
-    <content> is the gating value for the </content>
-    <formula>i</formula>
-    <content>-th expert; </content>
-    <formula>s_{i,t}</formula>
-    <content> is the token-to-expert affinity; </content>
-    <formula>\mathbf{e}_{i}</formula>
-    <content> is the centroid vector of the </content>
-    <formula>i</formula>
-    <content>-th routed expert; and </content>
-    <formula>\operatorname{Topk}(\cdot, K)</formula>
-    <content> denotes the set comprising </content>
-    <formula>K</formula>
-    <content> highest scores among the affinity scores calculated for the </content>
-    <formula>t</formula>
--th token and all routed experts. Slightly different from DeepSeek-V2, DeepSeek-V3 uses the sigmoid function to compute the affinity scores, and applies a normalization among all selected affinity scores to produce the gating values.
-  </text>
-  <text>
-    <content>Auxiliary-Loss-Free Load Balancing. For MoE models, an unbalanced expert load will lead to routing collapse[moe] and diminish computational efficiency in scenarios with expert parallelism. Conventional solutions usually rely on the auxiliary loss[switch,gshard] to avoid unbalanced load. However, too large an auxiliary loss will impair the model performance[noaux_tc]. To achieve a better trade-off between load balance and model performance, we pioneer an auxiliary-loss-free load balancing strategy[noaux_tc] to ensure load balance. To be specific, we introduce a bias term </content>
-    <formula>b_i</formula>
-    <content> for each expert and add it to the corresponding affinity scores </content>
-    <formula>s_{i,t}</formula>
-    <content> to determine the top-K routing:</content>
-  </text>
-  <formula>
-    <content><![CDATA[\begin{align}
+\end{align}]]></content></formula>
+  <text>where <formula>N_{s}</formula> and <formula>N_r</formula> denote the numbers of shared experts and routed experts, respectively; <formula>\operatorname{FFN}^{(s)}_{i}(\cdot)</formula> and <formula>\operatorname{FFN}^{(r)}_{i}(\cdot)</formula> denote the <formula>i</formula>-th shared expert and the <formula>i</formula>-th routed expert, respectively; <formula>K_{r}</formula> denotes the number of activated routed experts; <formula>g_{i,t}</formula> is the gating value for the <formula>i</formula>-th expert; <formula>s_{i,t}</formula> is the token-to-expert affinity; <formula>\mathbf{e}_{i}</formula> is the centroid vector of the <formula>i</formula>-th routed expert; and <formula>\operatorname{Topk}(\cdot, K)</formula> denotes the set comprising <formula>K</formula> highest scores among the affinity scores calculated for the <formula>t</formula>-th token and all routed experts. Slightly different from DeepSeek-V2, DeepSeek-V3 uses the sigmoid function to compute the affinity scores, and applies a normalization among all selected affinity scores to produce the gating values.</text>
+  <text>Auxiliary-Loss-Free Load Balancing. For MoE models, an unbalanced expert load will lead to routing collapse[moe] and diminish computational efficiency in scenarios with expert parallelism. Conventional solutions usually rely on the auxiliary loss[switch,gshard] to avoid unbalanced load. However, too large an auxiliary loss will impair the model performance[noaux_tc]. To achieve a better trade-off between load balance and model performance, we pioneer an auxiliary-loss-free load balancing strategy[noaux_tc] to ensure load balance. To be specific, we introduce a bias term <formula>b_i</formula> for each expert and add it to the corresponding affinity scores <formula>s_{i,t}</formula> to determine the top-K routing:</text>
+  <formula><content><![CDATA[\begin{align}
     g^{\prime}_{i,t} & = \begin{cases} 
     s_{i,t}, & s_{i,t} + b_i \in \operatorname{Topk} (\{ s_{j, t} + b_j | 1 \leq j \leq N_r \}, K_{r}), \\
     0, & \text{otherwise}.
     \end{cases}
-\end{align}]]></content>
-  </formula>
-  <text>
-    <content>Note that the bias term is only used for routing. The gating value, which will be multiplied with the FFN output, is still derived from the original affinity score </content>
-    <formula>s_{i,t}</formula>
-    <content>. During training, we keep monitoring the expert load on the whole batch of each training step. At the end of each step, we will decrease the bias term by </content>
-    <formula>\gamma</formula>
-    <content> if its corresponding expert is overloaded, and increase it by </content>
-    <formula>\gamma</formula>
-    <content> if its corresponding expert is underloaded, where </content>
-    <formula>\gamma</formula>
-    <content> is a hyper-parameter called bias update speed. Through the dynamic adjustment, DeepSeek-V3 keeps balanced expert load during training, and achieves better performance than models that encourage load balance through pure auxiliary losses.</content>
-  </text>
+\end{align}]]></content></formula>
+  <text>Note that the bias term is only used for routing. The gating value, which will be multiplied with the FFN output, is still derived from the original affinity score <formula>s_{i,t}</formula>. During training, we keep monitoring the expert load on the whole batch of each training step. At the end of each step, we will decrease the bias term by <formula>\gamma</formula> if its corresponding expert is overloaded, and increase it by <formula>\gamma</formula> if its corresponding expert is underloaded, where <formula>\gamma</formula> is a hyper-parameter called bias update speed. Through the dynamic adjustment, DeepSeek-V3 keeps balanced expert load during training, and achieves better performance than models that encourage load balance through pure auxiliary losses.</text>
   <text>Complementary Sequence-Wise Auxiliary Loss. Although DeepSeek-V3 mainly relies on the auxiliary-loss-free strategy for load balance, to prevent extreme imbalance within any single sequence, we also employ a complementary sequence-wise balance loss:</text>
-  <formula>
-    <content><![CDATA[\begin{align}
+  <formula><content><![CDATA[\begin{align}
     \mathcal{L}_{\mathrm{Bal}} & = \alpha \sum_{i=1}^{N_r}{f_i P_i}, \\
     % f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathds{1}( \text{Expert $i$ } & \text{belongs to the Top-$K_r$ set for Token $t$} ), \\
     f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathds{1} & \left( s_{i,t} \in \operatorname{Topk} ( \{ s_{j, t} | 1 \leq j \leq N_r \}, K_{r} ) \right), \\
     s^{\prime}_{i,t} & = \frac{s_{i,t}}{\sum_{j=1}^{N_r} s_{j,t}}, \\
     P_i & = \frac{1}{T} \sum_{t=1}^{T}{s^{\prime}_{i,t}},
-\end{align}]]></content>
-  </formula>
-  <text>
-    <content>where the balance factor </content>
-    <formula>\alpha</formula>
-    <content> is a hyper-parameter, which will be assigned an extremely small value for DeepSeek-V3; </content>
-    <formula>\mathds{1}(\cdot)</formula>
-    <content> denotes the indicator function; and </content>
-    <formula>T</formula>
-    <content> denotes the number of tokens in a sequence. The sequence-wise balance loss encourages the expert load on each sequence to be balanced.</content>
-  </text>
-  <text>
-    <content>Node-Limited Routing. Like the device-limited routing used by DeepSeek-V2, DeepSeek-V3 also uses a restricted routing mechanism to limit communication costs during training. In short, we ensure that each token will be sent to at most </content>
-    <formula>M</formula>
-    <content> nodes, which are selected according to the sum of the highest </content>
-    <formula>\frac{K_r}{M}</formula>
-    <content> affinity scores of the experts distributed on each node. Under this constraint, our MoE training framework can nearly achieve full computation-communication overlap.</content>
-  </text>
+\end{align}]]></content></formula>
+  <text>where the balance factor <formula>\alpha</formula> is a hyper-parameter, which will be assigned an extremely small value for DeepSeek-V3; <formula>\mathds{1}(\cdot)</formula> denotes the indicator function; and <formula>T</formula> denotes the number of tokens in a sequence. The sequence-wise balance loss encourages the expert load on each sequence to be balanced.</text>
+  <text>Node-Limited Routing. Like the device-limited routing used by DeepSeek-V2, DeepSeek-V3 also uses a restricted routing mechanism to limit communication costs during training. In short, we ensure that each token will be sent to at most <formula>M</formula> nodes, which are selected according to the sum of the highest <formula>\frac{K_r}{M}</formula> affinity scores of the experts distributed on each node. Under this constraint, our MoE training framework can nearly achieve full computation-communication overlap.</text>
   <text>No Token-Dropping. Due to the effective load balancing strategy, DeepSeek-V3 keeps a good load balance during its full training. Therefore, DeepSeek-V3 does not drop any tokens during training. In addition, we also implement specific deployment strategies to ensure inference load balance, so DeepSeek-V3 also does not drop tokens during inference.</text>
   <picture>
     <caption>Illustration of our Multi-Token Prediction (MTP) implementation. We keep the complete causal chain for the prediction of each token at each depth.</caption>
   </picture>
   <heading level="3">Multi-Token Prediction</heading>
-  <text>
-    <content>Inspired by [meta_mtp], we investigate and set a Multi-Token Prediction (MTP) objective for DeepSeek-V3, which extends the prediction scope to multiple future tokens at each position. On the one hand, an MTP objective densifies the training signals and may improve data efficiency. On the other hand, MTP may enable the model to pre-plan its representations for better prediction of future tokens. Figure[fig:nextn] illustrates our implementation of MTP. Different from [meta_mtp], which parallelly predicts </content>
-    <formula>D</formula>
-    <content> additional tokens using independent output heads, we sequentially predict additional tokens and keep the complete causal chain at each prediction depth. We introduce the details of our MTP implementation in this section.</content>
-  </text>
-  <text>
-    <content>MTP Modules. To be specific, our MTP implementation uses </content>
-    <formula>D</formula>
-    <content> sequential modules to predict </content>
-    <formula>D</formula>
-    <content> additional tokens. The </content>
-    <formula>k</formula>
-    <content>-th MTP module consists of a shared embedding layer </content>
-    <formula>\operatorname{Emb}(\cdot)</formula>
-    <content>, a shared output head </content>
-    <formula>\operatorname{OutHead}(\cdot)</formula>
-    <content>, a Transformer block </content>
-    <formula>\operatorname{TRM}_k(\cdot)</formula>
-    <content>, and a projection matrix </content>
-    <formula>M_k \in \mathbb{R}^{d \times 2d}</formula>
-    <content>. For the </content>
-    <formula>i</formula>
-    <content>-th input token </content>
-    <formula>t_i</formula>
-    <content>, at the </content>
-    <formula>k</formula>
-    <content>-th prediction depth, we first combine the representation of the </content>
-    <formula>i</formula>
-    <content>-th token at the </content>
-    <formula>(k-1)</formula>
-    <content>-th depth </content>
-    <formula>\mathbf{h}_i^{k-1} \in \mathbb{R}^{d}</formula>
-    <content> and the embedding of the </content>
-    <formula>(i+k)</formula>
-    <content>-th token </content>
-    <formula>Emb(t_{i+k}) \in \mathbb{R}^{d}</formula>
-    <content> with the linear projection:</content>
-  </text>
-  <formula>
-    <content>\begin{equation}
+  <text>Inspired by [meta_mtp], we investigate and set a Multi-Token Prediction (MTP) objective for DeepSeek-V3, which extends the prediction scope to multiple future tokens at each position. On the one hand, an MTP objective densifies the training signals and may improve data efficiency. On the other hand, MTP may enable the model to pre-plan its representations for better prediction of future tokens. Figure[fig:nextn] illustrates our implementation of MTP. Different from [meta_mtp], which parallelly predicts <formula>D</formula> additional tokens using independent output heads, we sequentially predict additional tokens and keep the complete causal chain at each prediction depth. We introduce the details of our MTP implementation in this section.</text>
+  <text>MTP Modules. To be specific, our MTP implementation uses <formula>D</formula> sequential modules to predict <formula>D</formula> additional tokens. The <formula>k</formula>-th MTP module consists of a shared embedding layer <formula>\operatorname{Emb}(\cdot)</formula>, a shared output head <formula>\operatorname{OutHead}(\cdot)</formula>, a Transformer block <formula>\operatorname{TRM}_k(\cdot)</formula>, and a projection matrix <formula>M_k \in \mathbb{R}^{d \times 2d}</formula>. For the <formula>i</formula>-th input token <formula>t_i</formula>, at the <formula>k</formula>-th prediction depth, we first combine the representation of the <formula>i</formula>-th token at the <formula>(k-1)</formula>-th depth <formula>\mathbf{h}_i^{k-1} \in \mathbb{R}^{d}</formula> and the embedding of the <formula>(i+k)</formula>-th token <formula>Emb(t_{i+k}) \in \mathbb{R}^{d}</formula> with the linear projection:</text>
+  <formula><content>\begin{equation}
     \mathbf{h}_i^{\prime k} = M_k [\operatorname{RMSNorm}(\mathbf{h}_i^{k-1}) ; \operatorname{RMSNorm}(\operatorname{Emb}(t_{i+k}))],
-\end{equation}</content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>[\cdot ; \cdot]</formula>
-    <content> denotes concatenation. Especially, when </content>
-    <formula>k=1</formula>
-    <content>, </content>
-    <formula>\mathbf{h}_i^{k-1}</formula>
-    <content> refers to the representation given by the main model. Note that for each MTP module, its embedding layer is shared with the main model. The combined </content>
-    <formula>\mathbf{h}_i^{\prime k}</formula>
-    <content> serves as the input of the Transformer block at the </content>
-    <formula>k</formula>
-    <content>-th depth to produce the output representation at the current depth </content>
-    <formula>\mathbf{h}_{i}^{k}</formula>
-:
-  </text>
-  <formula>
-    <content>\begin{equation}
+\end{equation}</content></formula>
+  <text>where <formula>[\cdot ; \cdot]</formula> denotes concatenation. Especially, when <formula>k=1</formula>, <formula>\mathbf{h}_i^{k-1}</formula> refers to the representation given by the main model. Note that for each MTP module, its embedding layer is shared with the main model. The combined <formula>\mathbf{h}_i^{\prime k}</formula> serves as the input of the Transformer block at the <formula>k</formula>-th depth to produce the output representation at the current depth <formula>\mathbf{h}_{i}^{k}</formula>:</text>
+  <formula><content>\begin{equation}
     \mathbf{h}_{1:T-k}^{k} = \operatorname{TRM}_k(\mathbf{h}_{1:T-k}^{\prime k}),
-\end{equation}</content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>T</formula>
-    <content> represents the input sequence length and </content>
-    <formula>_{i:j}</formula>
-    <content> denotes the slicing operation (inclusive of both the left and right boundaries). Finally, taking </content>
-    <formula>\mathbf{h}_{i}^{k}</formula>
-    <content> as the input, the shared output head will compute the probability distribution for the </content>
-    <formula>k</formula>
-    <content>-th additional prediction token </content>
-    <formula>P_{i+1+k}^{k} \in \mathbb{R}^{V}</formula>
-    <content>, where </content>
-    <formula>V</formula>
-    <content> is the vocabulary size:</content>
-  </text>
-  <formula>
-    <content>\begin{equation}
+\end{equation}</content></formula>
+  <text>where <formula>T</formula> represents the input sequence length and <formula>_{i:j}</formula> denotes the slicing operation (inclusive of both the left and right boundaries). Finally, taking <formula>\mathbf{h}_{i}^{k}</formula> as the input, the shared output head will compute the probability distribution for the <formula>k</formula>-th additional prediction token <formula>P_{i+1+k}^{k} \in \mathbb{R}^{V}</formula>, where <formula>V</formula> is the vocabulary size:</text>
+  <formula><content>\begin{equation}
     P_{i+k+1}^{k} = \operatorname{OutHead}(\mathbf{h}_{i}^{k}).
-\end{equation}</content>
-  </formula>
-  <text>
-    <content>The output head </content>
-    <formula>\operatorname{OutHead}(\cdot)</formula>
-    <content> linearly maps the representation to logits and subsequently applies the </content>
-    <formula>\operatorname{Softmax}(\cdot)</formula>
-    <content> function to compute the prediction probabilities of the </content>
-    <formula>k</formula>
--th additional token. Also, for each MTP module, its output head is shared with the main model. Our principle of maintaining the causal chain of predictions is similar to that of EAGLE[eagle], but its primary objective is speculative decoding[speculative_xhm,speculative_google], whereas we utilize MTP to improve training.
-  </text>
-  <text>
-    <content>MTP Training Objective. For each prediction depth, we compute a cross-entropy loss </content>
-    <formula>\mathcal{L}_{\text{MTP}}^{k}</formula>
-:
-  </text>
-  <formula>
-    <content>\begin{equation}
+\end{equation}</content></formula>
+  <text>The output head <formula>\operatorname{OutHead}(\cdot)</formula> linearly maps the representation to logits and subsequently applies the <formula>\operatorname{Softmax}(\cdot)</formula> function to compute the prediction probabilities of the <formula>k</formula>-th additional token. Also, for each MTP module, its output head is shared with the main model. Our principle of maintaining the causal chain of predictions is similar to that of EAGLE[eagle], but its primary objective is speculative decoding[speculative_xhm,speculative_google], whereas we utilize MTP to improve training.</text>
+  <text>MTP Training Objective. For each prediction depth, we compute a cross-entropy loss <formula>\mathcal{L}_{\text{MTP}}^{k}</formula>:</text>
+  <formula><content>\begin{equation}
     \mathcal{L}_{\text{MTP}}^{k} = \operatorname{CrossEntropy}(P_{2 + k:T + 1}^{k}, t_{2 + k:T + 1}) = -\frac{1}{T} \sum_{i=2 + k}^{T + 1} \log P_i^k [t_i],
-\end{equation}</content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>T</formula>
-    <content> denotes the input sequence length, </content>
-    <formula>t_i</formula>
-    <content> denotes the ground-truth token at the </content>
-    <formula>i</formula>
-    <content>-th position, and </content>
-    <formula>P_i^k [t_i]</formula>
-    <content> denotes the corresponding prediction probability of </content>
-    <formula>t_i</formula>
-    <content>, given by the </content>
-    <formula>k</formula>
-    <content>-th MTP module. Finally, we compute the average of the MTP losses across all depths and multiply it by a weighting factor </content>
-    <formula>\lambda</formula>
-    <content> to obtain the overall MTP loss </content>
-    <formula>\mathcal{L}_{\text{MTP}}</formula>
-, which serves as an additional training objective for DeepSeek-V3:
-  </text>
-  <formula>
-    <content>\begin{equation}
+\end{equation}</content></formula>
+  <text>where <formula>T</formula> denotes the input sequence length, <formula>t_i</formula> denotes the ground-truth token at the <formula>i</formula>-th position, and <formula>P_i^k [t_i]</formula> denotes the corresponding prediction probability of <formula>t_i</formula>, given by the <formula>k</formula>-th MTP module. Finally, we compute the average of the MTP losses across all depths and multiply it by a weighting factor <formula>\lambda</formula> to obtain the overall MTP loss <formula>\mathcal{L}_{\text{MTP}}</formula>, which serves as an additional training objective for DeepSeek-V3:</text>
+  <formula><content>\begin{equation}
     \mathcal{L}_{\text{MTP}} = \frac{\lambda}{D} \sum_{k=1}^{D} \mathcal{L}_{\text{MTP}}^{k}.
-\end{equation}</content>
-  </formula>
+\end{equation}</content></formula>
   <text>MTP in Inference. Our MTP strategy mainly aims to improve the performance of the main model, so during inference, we can directly discard the MTP modules and the main model can function independently and normally. Additionally, we can also repurpose these MTP modules for speculative decoding to further improve the generation latency.</text>
   <heading level="2">Infrastructures</heading>
   <heading level="3">Compute Clusters</heading>
@@ -702,23 +461,9 @@
   <picture>
     <caption>Example DualPipe scheduling for 8 PP ranks and 20 micro-batches in two directions. The micro-batches in the reverse direction are symmetric to those in the forward direction, so we omit their batch ID for illustration simplicity. Two cells enclosed by a shared black border have mutually overlapped computation and communication.</caption>
   </picture>
-  <text>
-    <content>In addition, even in more general scenarios without a heavy communication burden, DualPipe still exhibits efficiency advantages. In Table[tab:dualpipe-bubble], we summarize the pipeline bubbles and memory usage across different PP methods. As shown in the table, compared with ZB1P[zerobubble] and 1F1B[pipedream], DualPipe significantly reduces the pipeline bubbles while only increasing the peak activation memory by </content>
-    <formula>\frac{1}{PP}</formula>
-    <content> times. Although DualPipe requires keeping two copies of the model parameters, this does not significantly increase the memory consumption since we use a large EP size during training. Compared with Chimera[chimera], DualPipe only requires that the pipeline stages and micro-batches be divisible by 2, without requiring micro-batches to be divisible by pipeline stages. In addition, for DualPipe, neither the bubbles nor activation memory will increase as the number of micro-batches grows.</content>
-  </text>
+  <text>In addition, even in more general scenarios without a heavy communication burden, DualPipe still exhibits efficiency advantages. In Table[tab:dualpipe-bubble], we summarize the pipeline bubbles and memory usage across different PP methods. As shown in the table, compared with ZB1P[zerobubble] and 1F1B[pipedream], DualPipe significantly reduces the pipeline bubbles while only increasing the peak activation memory by <formula>\frac{1}{PP}</formula> times. Although DualPipe requires keeping two copies of the model parameters, this does not significantly increase the memory consumption since we use a large EP size during training. Compared with Chimera[chimera], DualPipe only requires that the pipeline stages and micro-batches be divisible by 2, without requiring micro-batches to be divisible by pipeline stages. In addition, for DualPipe, neither the bubbles nor activation memory will increase as the number of micro-batches grows.</text>
   <table>
-    <caption>
-      <content>Comparison of pipeline bubbles and memory usage across different pipeline parallel methods. </content>
-      <formula>F</formula>
-      <content> denotes the execution time of a forward chunk, </content>
-      <formula>B</formula>
-      <content> denotes the execution time of a full backward chunk, </content>
-      <formula>W</formula>
-      <content><![CDATA[ denotes the execution time of a "backward for weights" chunk, and ]]></content>
-      <formula><![CDATA[F\&B]]></formula>
-      <content> denotes the execution time of two mutually overlapped forward and backward chunks.</content>
-    </caption>
+    <caption>Comparison of pipeline bubbles and memory usage across different pipeline parallel methods. <formula>F</formula> denotes the execution time of a forward chunk, <formula>B</formula> denotes the execution time of a full backward chunk, <formula>W</formula><![CDATA[ denotes the execution time of a "backward for weights" chunk, and ]]><formula><![CDATA[F\&B]]></formula> denotes the execution time of two mutually overlapped forward and backward chunks.</caption>
     <fcel/>
     Method
     <fcel/>
@@ -731,47 +476,29 @@
     <fcel/>
     1F1B
     <fcel/>
-    <text>
-      <formula>(PP - 1)(F + B)</formula>
-    </text>
+    <text><formula>(PP - 1)(F + B)</formula></text>
     <fcel/>
-    <text>
-      <formula>1\times</formula>
-    </text>
+    <text><formula>1\times</formula></text>
     <fcel/>
-    <text>
-      <formula>PP</formula>
-    </text>
+    <text><formula>PP</formula></text>
     <nl/>
     <fcel/>
     ZB1P
     <fcel/>
-    <text>
-      <formula>(PP - 1)(F + B - 2W)</formula>
-    </text>
+    <text><formula>(PP - 1)(F + B - 2W)</formula></text>
     <fcel/>
-    <text>
-      <formula>1\times</formula>
-    </text>
+    <text><formula>1\times</formula></text>
     <fcel/>
-    <text>
-      <formula>PP</formula>
-    </text>
+    <text><formula>PP</formula></text>
     <nl/>
     <fcel/>
     DualPipe (Ours)
     <fcel/>
-    <text>
-      <formula><![CDATA[(\frac{PP}{2} - 1)(F\&B + B - 3W)]]></formula>
-    </text>
+    <text><formula><![CDATA[(\frac{PP}{2} - 1)(F\&B + B - 3W)]]></formula></text>
     <fcel/>
-    <text>
-      <formula>2\times</formula>
-    </text>
+    <text><formula>2\times</formula></text>
     <fcel/>
-    <text>
-      <formula>PP + 1</formula>
-    </text>
+    <text><formula>PP + 1</formula></text>
     <nl/>
     <ecel/>
     <ecel/>
@@ -780,11 +507,7 @@
     <nl/>
   </table>
   <heading level="4">Efficient Implementation of Cross-Node All-to-All Communication</heading>
-  <text>
-    <content>In order to ensure sufficient computational performance for DualPipe, we customize efficient cross-node all-to-all communication kernels (including dispatching and combining) to conserve the number of SMs dedicated to communication. The implementation of the kernels is co-designed with the MoE gating algorithm and the network topology of our cluster. To be specific, in our cluster, cross-node GPUs are fully interconnected with IB, and intra-node communications are handled via NVLink. NVLink offers a bandwidth of 160 GB/s, roughly 3.2 times that of IB (50 GB/s). To effectively leverage the different bandwidths of IB and NVLink, we limit each token to be dispatched to at most 4 nodes, thereby reducing IB traffic. For each token, when its routing decision is made, it will first be transmitted via IB to the GPUs with the same in-node index on its target nodes. Once it reaches the target nodes, we will endeavor to ensure that it is instantaneously forwarded via NVLink to specific GPUs that host their target experts, without being blocked by subsequently arriving tokens. In this way, communications via IB and NVLink are fully overlapped, and each token can efficiently select an average of 3.2 experts per node without incurring additional overhead from NVLink. This implies that, although DeepSeek-V3 selects only 8 routed experts in practice, it can scale up this number to a maximum of 13 experts (4 nodes </content>
-    <formula>\times</formula>
-    <content> 3.2 experts/node) while preserving the same communication cost. Overall, under such a communication strategy, only 20 SMs are sufficient to fully utilize the bandwidths of IB and NVLink.</content>
-  </text>
+  <text>In order to ensure sufficient computational performance for DualPipe, we customize efficient cross-node all-to-all communication kernels (including dispatching and combining) to conserve the number of SMs dedicated to communication. The implementation of the kernels is co-designed with the MoE gating algorithm and the network topology of our cluster. To be specific, in our cluster, cross-node GPUs are fully interconnected with IB, and intra-node communications are handled via NVLink. NVLink offers a bandwidth of 160 GB/s, roughly 3.2 times that of IB (50 GB/s). To effectively leverage the different bandwidths of IB and NVLink, we limit each token to be dispatched to at most 4 nodes, thereby reducing IB traffic. For each token, when its routing decision is made, it will first be transmitted via IB to the GPUs with the same in-node index on its target nodes. Once it reaches the target nodes, we will endeavor to ensure that it is instantaneously forwarded via NVLink to specific GPUs that host their target experts, without being blocked by subsequently arriving tokens. In this way, communications via IB and NVLink are fully overlapped, and each token can efficiently select an average of 3.2 experts per node without incurring additional overhead from NVLink. This implies that, although DeepSeek-V3 selects only 8 routed experts in practice, it can scale up this number to a maximum of 13 experts (4 nodes <formula>\times</formula> 3.2 experts/node) while preserving the same communication cost. Overall, under such a communication strategy, only 20 SMs are sufficient to fully utilize the bandwidths of IB and NVLink.</text>
   <text>In detail, we employ the warp specialization technique[warp-spec] and partition 20 SMs into 10 communication channels. During the dispatching process, (1) IB sending, (2) IB-to-NVLink forwarding, and (3) NVLink receiving are handled by respective warps. The number of warps allocated to each communication task is dynamically adjusted according to the actual workload across all SMs. Similarly, during the combining process, (1) NVLink sending, (2) NVLink-to-IB forwarding and accumulation, and (3) IB receiving and accumulation are also handled by dynamically adjusted warps. In addition, both dispatching and combining kernels overlap with the computation stream, so we also consider their impact on other SM computation kernels. Specifically, we employ customized PTX (Parallel Thread Execution) instructions and auto-tune the communication chunk size, which significantly reduces the use of the L2 cache and the interference to other SMs.</text>
   <heading level="4">Extremely Memory Saving with Minimal Overhead</heading>
   <text>In order to reduce the memory footprint during training, we employ the following techniques.</text>
@@ -796,23 +519,13 @@
   <picture>
     <caption>The overall mixed precision framework with FP8 data format. For clarification, only the Linear operator is illustrated.</caption>
   </picture>
-  <text>
-    <content>Inspired by recent advances in low-precision training[fp8lm, llm.int8, 8-bit-numerical], we propose a fine-grained mixed precision framework utilizing the FP8 data format for training DeepSeek-V3. While low-precision training holds great promise, it is often limited by the presence of outliers in activations, weights, and gradients[massiveoutlier, understandoutlier, scalefp8train]. Although significant progress has been made in inference quantization[xiao2023smoothquant, frantar2022gptq], there are relatively few studies demonstrating successful application of low-precision techniques in large-scale language model pre-training[scalefp8train]. To address this challenge and effectively extend the dynamic range of the FP8 format, we introduce a fine-grained quantization strategy: tile-wise grouping with </content>
-    <formula>1\times N_c</formula>
-    <content> elements or block-wise grouping with </content>
-    <formula>N_c\times N_c</formula>
-    <content> elements. The associated dequantization overhead is largely mitigated under our increased-precision accumulation process, a critical aspect for achieving accurate FP8 General Matrix Multiplication(GEMM). Moreover, to further reduce memory and communication overhead in MoE training, we cache and dispatch activations in FP8, while storing low-precision optimizer states in BF16. We validate the proposed FP8 mixed precision framework on two model scales similar to DeepSeek-V2-Lite and DeepSeek-V2, training for approximately 1 trillion tokens (see more details in Appendix[app:fp8_cp_bf16]). Notably, compared with the BF16 baseline, the relative loss error of our FP8-training model remains consistently below 0.25%, a level well within the acceptable range of training randomness.</content>
-  </text>
+  <text>Inspired by recent advances in low-precision training[fp8lm, llm.int8, 8-bit-numerical], we propose a fine-grained mixed precision framework utilizing the FP8 data format for training DeepSeek-V3. While low-precision training holds great promise, it is often limited by the presence of outliers in activations, weights, and gradients[massiveoutlier, understandoutlier, scalefp8train]. Although significant progress has been made in inference quantization[xiao2023smoothquant, frantar2022gptq], there are relatively few studies demonstrating successful application of low-precision techniques in large-scale language model pre-training[scalefp8train]. To address this challenge and effectively extend the dynamic range of the FP8 format, we introduce a fine-grained quantization strategy: tile-wise grouping with <formula>1\times N_c</formula> elements or block-wise grouping with <formula>N_c\times N_c</formula> elements. The associated dequantization overhead is largely mitigated under our increased-precision accumulation process, a critical aspect for achieving accurate FP8 General Matrix Multiplication(GEMM). Moreover, to further reduce memory and communication overhead in MoE training, we cache and dispatch activations in FP8, while storing low-precision optimizer states in BF16. We validate the proposed FP8 mixed precision framework on two model scales similar to DeepSeek-V2-Lite and DeepSeek-V2, training for approximately 1 trillion tokens (see more details in Appendix[app:fp8_cp_bf16]). Notably, compared with the BF16 baseline, the relative loss error of our FP8-training model remains consistently below 0.25%, a level well within the acceptable range of training randomness.</text>
   <heading level="4">Mixed Precision Framework</heading>
   <text>Building upon widely adopted techniques in low-precision training[bf16train, fp16train], we propose a mixed precision framework for FP8 training. In this framework, most compute-density operations are conducted in FP8, while a few key operations are strategically maintained in their original data formats to balance training efficiency and numerical stability. The overall framework is illustrated in Figure[fig:fp8_framework].</text>
   <text>Firstly, in order to accelerate model training, the majority of core computation kernels, i.e., GEMM operations, are implemented in FP8 precision. These GEMM operations accept FP8 tensors as inputs and produce outputs in BF16 or FP32. As depicted in Figure[fig:fp8_framework], all three GEMMs associated with the Linear operator, namely Fprop (forward pass), Dgrad (activation backward pass), and Wgrad (weight backward pass), are executed in FP8. This design theoretically doubles the computational speed compared with the original BF16 method. Additionally, the FP8 Wgrad GEMM allows activations to be stored in FP8 for use in the backward pass. This significantly reduces memory consumption.</text>
   <text>Despite the efficiency advantage of the FP8 format, certain operators still require a higher precision due to their sensitivity to low-precision computations. Besides, some low-cost operators can also utilize a higher precision with a negligible overhead to the overall training cost. For this reason, after careful investigations, we maintain the original precision (e.g., BF16 or FP32) for the following components: the embedding module, the output head, MoE gating modules, normalization operators, and attention operators. These targeted retentions of high precision ensure stable training dynamics for DeepSeek-V3. To further guarantee numerical stability, we store the master weights, weight gradients, and optimizer states in higher precision. While these high-precision components incur some memory overheads, their impact can be minimized through efficient sharding across multiple DP ranks in our distributed training system.</text>
   <picture>
-    <caption>
-      <content>(a) We propose a fine-grained quantization method to mitigate quantization errors caused by feature outliers; for illustration simplicity, only Fprop is illustrated. (b) In conjunction with our quantization strategy, we improve the FP8 GEMM precision by promoting to CUDA Cores at an interval of </content>
-      <formula>N_C=128</formula>
-      <content> elements MMA for the high-precision accumulation.</content>
-    </caption>
+    <caption>(a) We propose a fine-grained quantization method to mitigate quantization errors caused by feature outliers; for illustration simplicity, only Fprop is illustrated. (b) In conjunction with our quantization strategy, we improve the FP8 GEMM precision by promoting to CUDA Cores at an interval of <formula>N_C=128</formula> elements MMA for the high-precision accumulation.</caption>
   </picture>
   <heading level="4">Improved Precision from Quantization and Multiplication</heading>
   <text>Based on our mixed precision FP8 framework, we introduce several strategies to enhance low-precision training accuracy, focusing on both the quantization method and the multiplication process.</text>
@@ -820,16 +533,8 @@
   <text>One key modification in our method is the introduction of per-group scaling factors along the inner dimension of GEMM operations. This functionality is not directly supported in the standard FP8 GEMM. However, combined with our precise FP32 accumulation strategy, it can be efficiently implemented.</text>
   <text>Notably, our fine-grained quantization strategy is highly consistent with the idea of microscaling formats[rouhani2023microscaling], while the Tensor Cores of NVIDIA next-generation GPUs (Blackwell series) have announced the support for microscaling formats with smaller quantization granularity[nvidia_tensor_cores]. We hope our design can serve as a reference for future work to keep pace with the latest GPU architectures.</text>
   <text>Increasing Accumulation Precision. Low-precision GEMM operations often suffer from underflow issues, and their accuracy largely depends on high-precision accumulation, which is commonly performed in an FP32 precision[bf16train, fp16train]. However, we observe that the accumulation precision of FP8 GEMM on NVIDIA H800 GPUs is limited to retaining around 14 bits, which is significantly lower than FP32 accumulation precision. This problem will become more pronounced when the inner dimension K is large[switchback], a typical scenario in large-scale model training where the batch size and model width are increased. Taking GEMM operations of two random matrices with K = 4096 for example, in our preliminary test, the limited accumulation precision in Tensor Cores results in a maximum relative error of nearly 2%. Despite these problems, the limited accumulation precision is still the default option in a few FP8 frameworks[transformerengine], severely constraining the training accuracy.</text>
-  <text>
-    <content>In order to address this issue, we adopt the strategy of promotion to CUDA Cores for higher precision[Thakkar_CUTLASS_2023]. The process is illustrated in Figure[fig:fp8_quantization] (b). To be specific, during MMA (Matrix Multiply-Accumulate) execution on Tensor Cores, intermediate results are accumulated using the limited bit width. Once an interval of </content>
-    <formula>N_C</formula>
-    <content> is reached, these partial results will be copied to FP32 registers on CUDA Cores, where full-precision FP32 accumulation is performed. As mentioned before, our fine-grained quantization applies per-group scaling factors along the inner dimension K. These scaling factors can be efficiently multiplied on the CUDA Cores as the dequantization process with minimal additional computational cost.</content>
-  </text>
-  <text>
-    <content>It is worth noting that this modification reduces the WGMMA (Warpgroup-level Matrix Multiply-Accumulate) instruction issue rate for a single warpgroup. However, on the H800 architecture, it is typical for two WGMMA to persist concurrently: while one warpgroup performs the promotion operation, the other is able to execute the MMA operation. This design enables overlapping of the two operations, maintaining high utilization of Tensor Cores. Based on our experiments, setting </content>
-    <formula>N_C=128</formula>
-    <content> elements, equivalent to 4 WGMMAs, represents the minimal accumulation interval that can significantly improve precision without introducing substantial overhead.</content>
-  </text>
+  <text>In order to address this issue, we adopt the strategy of promotion to CUDA Cores for higher precision[Thakkar_CUTLASS_2023]. The process is illustrated in Figure[fig:fp8_quantization] (b). To be specific, during MMA (Matrix Multiply-Accumulate) execution on Tensor Cores, intermediate results are accumulated using the limited bit width. Once an interval of <formula>N_C</formula> is reached, these partial results will be copied to FP32 registers on CUDA Cores, where full-precision FP32 accumulation is performed. As mentioned before, our fine-grained quantization applies per-group scaling factors along the inner dimension K. These scaling factors can be efficiently multiplied on the CUDA Cores as the dequantization process with minimal additional computational cost.</text>
+  <text>It is worth noting that this modification reduces the WGMMA (Warpgroup-level Matrix Multiply-Accumulate) instruction issue rate for a single warpgroup. However, on the H800 architecture, it is typical for two WGMMA to persist concurrently: while one warpgroup performs the promotion operation, the other is able to execute the MMA operation. This design enables overlapping of the two operations, maintaining high utilization of Tensor Cores. Based on our experiments, setting <formula>N_C=128</formula> elements, equivalent to 4 WGMMAs, represents the minimal accumulation interval that can significantly improve precision without introducing substantial overhead.</text>
   <text>Mantissa over Exponents. In contrast to the hybrid FP8 format adopted by prior work [transformerengine, fp8lm, hfp8], which uses E4M3 (4-bit exponent and 3-bit mantissa) in Fprop and E5M2 (5-bit exponent and 2-bit mantissa) in Dgrad and Wgrad, we adopt the E4M3 format on all tensors for higher precision. We attribute the feasibility of this approach to our fine-grained quantization strategy, i.e., tile and block-wise scaling. By operating on smaller element groups, our methodology effectively shares exponent bits among these grouped elements, mitigating the impact of the limited dynamic range.</text>
   <text>Online Quantization. Delayed quantization is employed in tensor-wise quantization frameworks[transformerengine, fp8lm], which maintains a history of the maximum absolute values across prior iterations to infer the current value. In order to ensure accurate scales and simplify the framework, we calculate the maximum absolute value online for each 1x128 activation tile or 128x128 weight block. Based on it, we derive the scaling factor and then quantize the activation or weight online into the FP8 format.</text>
   <heading level="4">Low-Precision Storage and Communication</heading>
@@ -867,91 +572,27 @@
   </list>
   <text>We aspire to see future vendors developing hardware that offloads these communication tasks from the valuable computation unit SM, serving as a GPU co-processor or a network co-processor like NVIDIA SHARP[nvsharp]. Furthermore, to reduce application programming complexity, we aim for this hardware to unify the IB (scale-out) and NVLink (scale-up) networks from the perspective of the computation units. With this unified interface, computation units can easily accomplish operations such as read, write, multicast, and reduce across the entire IB-NVLink-unified domain via submitting communication requests based on simple primitives.</text>
   <heading level="4">Compute Hardware</heading>
-  <text>
-    Higher FP8 GEMM Accumulation Precision in Tensor Cores. In the current Tensor Core implementation of the NVIDIA Hopper architecture, FP8 GEMM suffers from limited accumulation precision. After aligning 32 mantissa products by right-shifting based on the maximum exponent, the Tensor Core only uses the highest 14 bits of each mantissa product for addition, and truncates bits exceeding this range. The accumulation of addition results into registers also employs 14-bit precision. Our implementation partially mitigates the limitation by accumulating the addition results of 128 FP8
-    <formula>\times</formula>
-<![CDATA[FP8 multiplications into registers with FP32 precision in the CUDA core. Although helpful in achieving successful FP8 training, it is merely a compromise due to the Hopper architecture's hardware deficiency in FP8 GEMM accumulation precision. Future chips need to adopt higher precision.]]>    
-  </text>
-  <text>
-    <content>Support for Tile- and Block-Wise Quantization. Current GPUs only support per-tensor quantization, lacking the native support for fine-grained quantization like our tile- and block-wise quantization. In the current implementation, when the </content>
-    <formula>N_C</formula>
-    <content> interval is reached, the partial results will be copied from Tensor Cores to CUDA cores, multiplied by the scaling factors, and added to FP32 registers on CUDA cores. Although the dequantization overhead is significantly mitigated combined with our precise FP32 accumulation strategy, the frequent data movements between Tensor Cores and CUDA cores still limit the computational efficiency. Therefore, we recommend future chips to support fine-grained quantization by enabling Tensor Cores to receive scaling factors and implement MMA with group scaling. In this way, the whole partial sum accumulation and dequantization can be completed directly inside Tensor Cores until the final result is produced, avoiding frequent data movements.</content>
-  </text>
+  <text>Higher FP8 GEMM Accumulation Precision in Tensor Cores. In the current Tensor Core implementation of the NVIDIA Hopper architecture, FP8 GEMM suffers from limited accumulation precision. After aligning 32 mantissa products by right-shifting based on the maximum exponent, the Tensor Core only uses the highest 14 bits of each mantissa product for addition, and truncates bits exceeding this range. The accumulation of addition results into registers also employs 14-bit precision. Our implementation partially mitigates the limitation by accumulating the addition results of 128 FP8<formula>\times</formula><![CDATA[FP8 multiplications into registers with FP32 precision in the CUDA core. Although helpful in achieving successful FP8 training, it is merely a compromise due to the Hopper architecture's hardware deficiency in FP8 GEMM accumulation precision. Future chips need to adopt higher precision.]]></text>
+  <text>Support for Tile- and Block-Wise Quantization. Current GPUs only support per-tensor quantization, lacking the native support for fine-grained quantization like our tile- and block-wise quantization. In the current implementation, when the <formula>N_C</formula> interval is reached, the partial results will be copied from Tensor Cores to CUDA cores, multiplied by the scaling factors, and added to FP32 registers on CUDA cores. Although the dequantization overhead is significantly mitigated combined with our precise FP32 accumulation strategy, the frequent data movements between Tensor Cores and CUDA cores still limit the computational efficiency. Therefore, we recommend future chips to support fine-grained quantization by enabling Tensor Cores to receive scaling factors and implement MMA with group scaling. In this way, the whole partial sum accumulation and dequantization can be completed directly inside Tensor Cores until the final result is produced, avoiding frequent data movements.</text>
   <text>Support for Online Quantization. The current implementations struggle to effectively support online quantization, despite its effectiveness demonstrated in our research. In the existing process, we need to read 128 BF16 activation values (the output of the previous computation) from HBM (High Bandwidth Memory) for quantization, and the quantized FP8 values are then written back to HBM, only to be read again for MMA. To address this inefficiency, we recommend that future chips integrate FP8 cast and TMA (Tensor Memory Accelerator) access into a single fused operation, so quantization can be completed during the transfer of activations from global memory to shared memory, avoiding frequent memory reads and writes. We also recommend supporting a warp-level cast instruction for speedup, which further facilitates the better fusion of layer normalization and FP8 cast. Alternatively, a near-memory computing approach can be adopted, where compute logic is placed near the HBM. In this case, BF16 elements can be cast to FP8 directly as they are read from HBM into the GPU, reducing off-chip memory access by roughly 50%.</text>
   <text>Support for Transposed GEMM Operations. The current architecture makes it cumbersome to fuse matrix transposition with GEMM operations. In our workflow, activations during the forward pass are quantized into 1x128 FP8 tiles and stored. During the backward pass, the matrix needs to be read out, dequantized, transposed, re-quantized into 128x1 tiles, and stored in HBM. To reduce memory operations, we recommend future chips to enable direct transposed reads of matrices from shared memory before MMA operation, for those precisions required in both training and inference. Combined with the fusion of FP8 format conversion and TMA access, this enhancement will significantly streamline the quantization workflow.</text>
   <heading level="2">Pre-Training</heading>
   <heading level="3">Data Construction</heading>
   <text>Compared with DeepSeek-V2, we optimize the pre-training corpus by enhancing the ratio of mathematical and programming samples, while expanding multilingual coverage beyond English and Chinese. Also, our data processing pipeline is refined to minimize redundancy while maintaining corpus diversity. Inspired by [Ding2024FewerTI], we implement the document packing method for data integrity but do not incorporate cross-sample attention masking during training. Finally, the training corpus for DeepSeek-V3 consists of 14.8T high-quality and diverse tokens in our tokenizer.</text>
   <text>In the training process of DeepSeekCoder-V2[dscodervii], we observe that the Fill-in-Middle(FIM) strategy does not compromise the next-token prediction capability while enabling the model to accurately predict middle text based on contextual cues. In alignment with DeepSeekCoder-V2, we also incorporate the FIM strategy in the pre-training of DeepSeek-V3. To be specific, we employ the Prefix-Suffix-Middle (PSM) framework to structure data as follows:</text>
-  <formula>
-    <content><![CDATA[\begin{align}
+  <formula><content><![CDATA[\begin{align}
 \texttt{<|fim\_begin|>}f_{\text{pre}}\texttt{<|fim\_hole|>}f_{\text{suf}}\texttt{<|fim\_end|>}f_{\text{middle}}\texttt{<|eos\_token|>} . \nonumber
-\end{align}]]></content>
-  </formula>
+\end{align}]]></content></formula>
   <text>This structure is applied at the document level as a part of the pre-packing process. The FIM strategy is applied at a rate of 0.1, consistent with the PSM framework.</text>
   <text>The tokenizer for DeepSeek-V3 employs Byte-level BPE[shibata1999byte] with an extended vocabulary of 128K tokens. The pretokenizer and training data for our tokenizer are modified to optimize multilingual compression efficiency. In addition, compared with DeepSeek-V2, the new pretokenizer introduces tokens that combine punctuations and line breaks. However, this trick may introduce the token boundary bias[tokenboundary] when the model processes multi-line prompts without terminal line breaks, particularly for few-shot evaluation prompts. To address this issue, we randomly split a certain proportion of such combined tokens during training, which exposes the model to a wider array of special cases and mitigates this bias.</text>
   <heading level="3">Hyper-Parameters</heading>
-  <text>
-    <content>Model Hyper-Parameters. We set the number of Transformer layers to 61 and the hidden dimension to 7168. All learnable parameters are randomly initialized with a standard deviation of 0.006. In MLA, we set the number of attention heads </content>
-    <formula>n_h</formula>
-    <content> to 128 and the per-head dimension </content>
-    <formula>d_h</formula>
-    <content> to 128. The KV compression dimension </content>
-    <formula>d_c</formula>
-    <content> is set to 512, and the query compression dimension </content>
-    <formula>d_c^{\prime}</formula>
-    <content> is set to 1536. For the decoupled queries and key, we set the per-head dimension </content>
-    <formula>d_h^R</formula>
-    <content> to 64. We substitute all FFNs except for the first three layers with MoE layers. Each MoE layer consists of 1 shared expert and 256 routed experts, where the intermediate hidden dimension of each expert is 2048. Among the routed experts, 8 experts will be activated for each token, and each token will be ensured to be sent to at most 4 nodes. The multi-token prediction depth </content>
-    <formula>D</formula>
-    <content> is set to 1, i.e., besides the exact next token, each token will predict one additional token. As DeepSeek-V2, DeepSeek-V3 also employs additional RMSNorm layers after the compressed latent vectors, and multiplies additional scaling factors at the width bottlenecks. Under this configuration, DeepSeek-V3 comprises 671B total parameters, of which 37B are activated for each token.</content>
-  </text>
-  <text>
-    <content>Training Hyper-Parameters. We employ the AdamW optimizer[adamW] with hyper-parameters set to </content>
-    <formula>\beta_1=0.9</formula>
-    <content>, </content>
-    <formula>\beta_2=0.95</formula>
-    <content>, and </content>
-    <formula>\mathrm{weight\_decay}=0.1</formula>
-    <content>. We set the maximum sequence length to 4K during pre-training, and pre-train DeepSeek-V3 on 14.8T tokens. As for the learning rate scheduling, we first linearly increase it from 0 to </content>
-    <formula>2.2 \times 10^{-4}</formula>
-    <content> during the first 2K steps. Then, we keep a constant learning rate of </content>
-    <formula>2.2 \times 10^{-4}</formula>
-    <content> until the model consumes 10T training tokens. Subsequently, we gradually decay the learning rate to </content>
-    <formula>2.2 \times 10^{-5}</formula>
-    <content> in 4.3T tokens, following a cosine decay curve. During the training of the final 500B tokens, we keep a constant learning rate of </content>
-    <formula>2.2 \times 10^{-5}</formula>
-    <content> in the first 333B tokens, and switch to another constant learning rate of </content>
-    <formula>7.3 \times 10^{-6}</formula>
-    <content> in the remaining 167B tokens. The gradient clipping norm is set to 1.0. We employ a batch size scheduling strategy, where the batch size is gradually increased from 3072 to 15360 in the training of the first 469B tokens, and then keeps 15360 in the remaining training. We leverage pipeline parallelism to deploy different layers of a model on different GPUs, and for each layer, the routed experts will be uniformly deployed on 64 GPUs belonging to 8 nodes. As for the node-limited routing, each token will be sent to at most 4 nodes (i.e., </content>
-    <formula>M=4</formula>
-    <content>). For auxiliary-loss-free load balancing, we set the bias update speed </content>
-    <formula>\gamma</formula>
-    <content> to 0.001 for the first 14.3T tokens, and to 0.0 for the remaining 500B tokens. For the balance loss, we set </content>
-    <formula>\alpha</formula>
-    <content> to 0.0001, just to avoid extreme imbalance within any single sequence. The MTP loss weight </content>
-    <formula>\lambda</formula>
-    <content> is set to 0.3 for the first 10T tokens, and to 0.1 for the remaining 4.8T tokens.</content>
-  </text>
+  <text>Model Hyper-Parameters. We set the number of Transformer layers to 61 and the hidden dimension to 7168. All learnable parameters are randomly initialized with a standard deviation of 0.006. In MLA, we set the number of attention heads <formula>n_h</formula> to 128 and the per-head dimension <formula>d_h</formula> to 128. The KV compression dimension <formula>d_c</formula> is set to 512, and the query compression dimension <formula>d_c^{\prime}</formula> is set to 1536. For the decoupled queries and key, we set the per-head dimension <formula>d_h^R</formula> to 64. We substitute all FFNs except for the first three layers with MoE layers. Each MoE layer consists of 1 shared expert and 256 routed experts, where the intermediate hidden dimension of each expert is 2048. Among the routed experts, 8 experts will be activated for each token, and each token will be ensured to be sent to at most 4 nodes. The multi-token prediction depth <formula>D</formula> is set to 1, i.e., besides the exact next token, each token will predict one additional token. As DeepSeek-V2, DeepSeek-V3 also employs additional RMSNorm layers after the compressed latent vectors, and multiplies additional scaling factors at the width bottlenecks. Under this configuration, DeepSeek-V3 comprises 671B total parameters, of which 37B are activated for each token.</text>
+  <text>Training Hyper-Parameters. We employ the AdamW optimizer[adamW] with hyper-parameters set to <formula>\beta_1=0.9</formula>, <formula>\beta_2=0.95</formula>, and <formula>\mathrm{weight\_decay}=0.1</formula>. We set the maximum sequence length to 4K during pre-training, and pre-train DeepSeek-V3 on 14.8T tokens. As for the learning rate scheduling, we first linearly increase it from 0 to <formula>2.2 \times 10^{-4}</formula> during the first 2K steps. Then, we keep a constant learning rate of <formula>2.2 \times 10^{-4}</formula> until the model consumes 10T training tokens. Subsequently, we gradually decay the learning rate to <formula>2.2 \times 10^{-5}</formula> in 4.3T tokens, following a cosine decay curve. During the training of the final 500B tokens, we keep a constant learning rate of <formula>2.2 \times 10^{-5}</formula> in the first 333B tokens, and switch to another constant learning rate of <formula>7.3 \times 10^{-6}</formula> in the remaining 167B tokens. The gradient clipping norm is set to 1.0. We employ a batch size scheduling strategy, where the batch size is gradually increased from 3072 to 15360 in the training of the first 469B tokens, and then keeps 15360 in the remaining training. We leverage pipeline parallelism to deploy different layers of a model on different GPUs, and for each layer, the routed experts will be uniformly deployed on 64 GPUs belonging to 8 nodes. As for the node-limited routing, each token will be sent to at most 4 nodes (i.e., <formula>M=4</formula>). For auxiliary-loss-free load balancing, we set the bias update speed <formula>\gamma</formula> to 0.001 for the first 14.3T tokens, and to 0.0 for the remaining 500B tokens. For the balance loss, we set <formula>\alpha</formula> to 0.0001, just to avoid extreme imbalance within any single sequence. The MTP loss weight <formula>\lambda</formula> is set to 0.3 for the first 10T tokens, and to 0.1 for the remaining 4.8T tokens.</text>
   <picture>
     <caption>Evaluation results on the Needle In A Haystack (NIAH) tests. DeepSeek-V3 performs well across all context window lengths up to 128K.</caption>
   </picture>
   <heading level="3">Long Context Extension</heading>
-  <text>
-    <content>We adopt a similar approach to DeepSeek-V2[dsvii] to enable long context capabilities in DeepSeek-V3. After the pre-training stage, we apply YaRN[peng2023yarn] for context extension and perform two additional training phases, each comprising 1000 steps, to progressively expand the context window from 4K to 32K and then to 128K. The YaRN configuration is consistent with that used in DeepSeek-V2, being applied exclusively to the decoupled shared key </content>
-    <formula>\mathbf{k}^R_t</formula>
-    <content>. The hyper-parameters remain identical across both phases, with the scale </content>
-    <formula>s = 40</formula>
-    <content>, </content>
-    <formula>\alpha = 1</formula>
-    <content>, </content>
-    <formula>\beta = 32</formula>
-    <content>, and the scaling factor </content>
-    <formula>\sqrt{t} = 0.1 \ln{s} + 1</formula>
-    <content>. In the first phase, the sequence length is set to 32K, and the batch size is 1920. During the second phase, the sequence length is increased to 128K, and the batch size is reduced to 480. The learning rate for both phases is set to </content>
-    <formula>7.3 \times 10^{-6}</formula>
-, matching the final learning rate from the pre-training stage.
-  </text>
+  <text>We adopt a similar approach to DeepSeek-V2[dsvii] to enable long context capabilities in DeepSeek-V3. After the pre-training stage, we apply YaRN[peng2023yarn] for context extension and perform two additional training phases, each comprising 1000 steps, to progressively expand the context window from 4K to 32K and then to 128K. The YaRN configuration is consistent with that used in DeepSeek-V2, being applied exclusively to the decoupled shared key <formula>\mathbf{k}^R_t</formula>. The hyper-parameters remain identical across both phases, with the scale <formula>s = 40</formula>, <formula>\alpha = 1</formula>, <formula>\beta = 32</formula>, and the scaling factor <formula>\sqrt{t} = 0.1 \ln{s} + 1</formula>. In the first phase, the sequence length is set to 32K, and the batch size is 1920. During the second phase, the sequence length is increased to 128K, and the batch size is reduced to 480. The learning rate for both phases is set to <formula>7.3 \times 10^{-6}</formula>, matching the final learning rate from the pre-training stage.</text>
   <text><![CDATA[Through this two-phase extension training, DeepSeek-V3 is capable of handling inputs up to 128K in length while maintaining strong performance. Figure[fig:long_context] illustrates that DeepSeek-V3, following supervised fine-tuning, achieves notable performance on the "Needle In A Haystack" (NIAH) test, demonstrating consistent robustness across context window lengths up to 128K.]]></text>
   <heading level="3">Evaluations</heading>
   <heading level="4">Evaluation Benchmarks</heading>
@@ -2011,62 +1652,28 @@
   <text>The system prompt is meticulously designed to include instructions that guide the model toward producing responses enriched with mechanisms for reflection and verification. During the RL phase, the model leverages high-temperature sampling to generate responses that integrate patterns from both the R1-generated and original data, even in the absence of explicit system prompts. After hundreds of RL steps, the intermediate RL model learns to incorporate R1 patterns, thereby enhancing overall performance strategically.</text>
   <text>Upon completing the RL training phase, we implement rejection sampling to curate high-quality SFT data for the final model, where the expert models are used as data generation sources. This method ensures that the final training data retains the strengths of DeepSeek-R1 while producing responses that are concise and effective.</text>
   <text>Non-Reasoning Data. For non-reasoning data, such as creative writing, role-play, and simple question answering, we utilize DeepSeek-V2.5 to generate responses and enlist human annotators to verify the accuracy and correctness of the data.</text>
-  <text>
-    <content>SFT Settings. We fine-tune DeepSeek-V3-Base for two epochs using the SFT dataset, using the cosine decay learning rate scheduling that starts at </content>
-    <formula>5 \times 10^{-6}</formula>
-    <content> and gradually decreases to </content>
-    <formula>1 \times 10^{-6}</formula>
-. During training, each single sequence is packed from multiple samples. However, we adopt a sample masking strategy to ensure that these examples remain isolated and mutually invisible.
-  </text>
+  <text>SFT Settings. We fine-tune DeepSeek-V3-Base for two epochs using the SFT dataset, using the cosine decay learning rate scheduling that starts at <formula>5 \times 10^{-6}</formula> and gradually decreases to <formula>1 \times 10^{-6}</formula>. During training, each single sequence is packed from multiple samples. However, we adopt a sample masking strategy to ensure that these examples remain isolated and mutually invisible.</text>
   <heading level="3">Reinforcement Learning</heading>
   <heading level="4">Reward Model</heading>
   <text>We employ a rule-based Reward Model (RM) and a model-based RM in our RL process.</text>
   <text>Rule-Based RM. For questions that can be validated using specific rules, we adopt a rule-based reward system to determine the feedback. For instance, certain math problems have deterministic results, and we require the model to provide the final answer within a designated format (e.g., in a box), allowing us to apply rules to verify the correctness. Similarly, for LeetCode problems, we can utilize a compiler to generate feedback based on test cases. By leveraging rule-based validation wherever possible, we ensure a higher level of reliability, as this approach is resistant to manipulation or exploitation.</text>
   <text>Model-Based RM. For questions with free-form ground-truth answers, we rely on the reward model to determine whether the response matches the expected ground-truth. Conversely, for questions without a definitive ground-truth, such as those involving creative writing, the reward model is tasked with providing feedback based on the question and the corresponding answer as inputs. The reward model is trained from the DeepSeek-V3 SFT checkpoints. To enhance its reliability, we construct preference data that not only provides the final reward but also includes the chain-of-thought leading to the reward. This approach helps mitigate the risk of reward hacking in specific tasks.</text>
   <heading level="4">Group Relative Policy Optimization</heading>
-  <text>
-    <content>Similar to DeepSeek-V2[dsvii], we adopt Group Relative Policy Optimization(GRPO)[deepseekmath], which foregoes the critic model that is typically with the same size as the policy model, and estimates the baseline from group scores instead. Specifically, for each question </content>
-    <formula>q</formula>
-    <content>, GRPO samples a group of outputs </content>
-    <formula>\{o_1, o_2, \cdots, o_G\}</formula>
-    <content> from the old policy model </content>
-    <formula>\pi_{\theta_{old}}</formula>
-    <content> and then optimizes the policy model </content>
-    <formula>\pi_{\theta}</formula>
-    <content> by maximizing the following objective:</content>
-  </text>
-  <formula>
-    <content><![CDATA[\begin{equation}
+  <text>Similar to DeepSeek-V2[dsvii], we adopt Group Relative Policy Optimization(GRPO)[deepseekmath], which foregoes the critic model that is typically with the same size as the policy model, and estimates the baseline from group scores instead. Specifically, for each question <formula>q</formula>, GRPO samples a group of outputs <formula>\{o_1, o_2, \cdots, o_G\}</formula> from the old policy model <formula>\pi_{\theta_{old}}</formula> and then optimizes the policy model <formula>\pi_{\theta}</formula> by maximizing the following objective:</text>
+  <formula><content><![CDATA[\begin{equation}
 \begin{split}
     \mathcal{J}_{GRPO}(\theta) &= \mathbb{E}{[q \sim P(Q), \{o_i\}_{i=1}^G \sim \pi_{\theta_{old}}(O|q)]}  \\
     & \frac{1}{G}\sum_{i=1}^G \left( \min \left( \frac{\pi_\theta(o_i |q)}{\pi_{\theta_{old}}(o_i |q)} A_i, \text{clip} \left( \frac{\pi_\theta(o_i |q)}{\pi_{\theta_{old}}(o_i |q)}, 1 - \epsilon, 1 + \epsilon \right)  A_i \right) - \beta \mathbb{D}_{KL}\left(\pi_{\theta} || \pi_{ref}\right)\right) ,
 \end{split}
 
-\end{equation}]]></content>
-  </formula>
-  <formula>
-    <content>\begin{equation}
+\end{equation}]]></content></formula>
+  <formula><content>\begin{equation}
     \mathbb{D}_{KL}\left(\pi_{\theta} || \pi_{ref}\right) = \frac{\pi_{ref}(o_i|q)}{\pi_{\theta}(o_i|q)}- \log\frac{\pi_{ref}(o_i|q)}{\pi_{\theta}(o_i|q)} - 1,
-\end{equation}</content>
-  </formula>
-  <text>
-    <content>where </content>
-    <formula>\epsilon</formula>
-    <content> and </content>
-    <formula>\beta</formula>
-    <content> are hyper-parameters; </content>
-    <formula>\pi_{ref}</formula>
-    <content> is the reference model; and </content>
-    <formula>A_i</formula>
-    <content> is the advantage, derived from the rewards </content>
-    <formula>\{r_1, r_2, \ldots, r_G\}</formula>
-    <content> corresponding to the outputs within each group:</content>
-  </text>
-  <formula>
-    <content>\begin{equation}
+\end{equation}</content></formula>
+  <text>where <formula>\epsilon</formula> and <formula>\beta</formula> are hyper-parameters; <formula>\pi_{ref}</formula> is the reference model; and <formula>A_i</formula> is the advantage, derived from the rewards <formula>\{r_1, r_2, \ldots, r_G\}</formula> corresponding to the outputs within each group:</text>
+  <formula><content>\begin{equation}
     A_i = \frac{r_i - {\operatorname{mean}(\{r_1, r_2, \cdots, r_G\})}}{{\operatorname{std}(\{r_1, r_2, \cdots, r_G\})}}.
-\end{equation}</content>
-  </formula>
+\end{equation}</content></formula>
   <text>We incorporate prompts from diverse domains, such as coding, math, writing, role-playing, and question answering, during the RL process. This approach not only aligns the model more closely with human preferences but also enhances performance on benchmarks, especially in scenarios where available SFT data are limited.</text>
   <heading level="3">Evaluations</heading>
   <heading level="4">Evaluation Settings</heading>

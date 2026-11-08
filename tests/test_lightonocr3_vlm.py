@@ -235,7 +235,7 @@ def test_marker_in_inline_code_stays_code(prefix: str, quote: str):
     doc = parse_lightonocr_markdown(
         f"{prefix}The syntax is {quote}{code}{quote}.", PAGE_SIZE, page_no=1
     )
-    assert [item.text for item in doc.texts] == ["The syntax is", code, "."]
+    assert [item.text for item in doc.texts] == ["The syntax is ", code, "."]
     assert isinstance(doc.texts[1], CodeItem)
     assert not doc.pictures
 
@@ -246,7 +246,7 @@ def test_marker_after_inline_code_starts_a_block():
         PAGE_SIZE,
         page_no=1,
     )
-    assert [item.text for item in doc.texts] == ["Use", "![image](0,0,1,1)", "Next"]
+    assert [item.text for item in doc.texts] == ["Use ", "![image](0,0,1,1)", "Next"]
     assert doc.texts[-1].prov[0].bbox.l == 300
     assert not doc.pictures
 
@@ -537,7 +537,7 @@ def test_heading_with_math_keeps_its_text(heading: str, item_type: type, export:
     # Like the other mappers, the heading holds rich text in child items.
     assert isinstance(doc.texts[0], item_type)
     assert doc.texts[0].prov
-    assert [item.text for item in doc.texts[1:]] == ["Theorem", "x_1"]
+    assert [item.text for item in doc.texts[1:]] == ["Theorem ", "x_1"]
     assert isinstance(doc.texts[-1], FormulaItem)
     assert doc.export_to_markdown() == export
 

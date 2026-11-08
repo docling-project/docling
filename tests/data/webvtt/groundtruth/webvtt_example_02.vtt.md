@@ -2,8 +2,8 @@ It’s a blue apple tree!
 
 No way!
 
-Hee!   *laughter*
+Hee! *laughter*
 
 That’s awesome!
 
-Sur les  *playground* , ici à Montpellier
+Sur les *playground*, ici à Montpellier

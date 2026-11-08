@@ -263,8 +263,15 @@ Languages are given as BCP-47 tags for every engine; see
 | `unlimited_ocr2_mlx` | Unlimited-OCR 2 (MLX) | 3.34B (MoE) | ❌ | ✅ | ❌ | ❌ | Native layout blocks with HTML tables, one page per request |
 | `lightonocr3_08b` | LightOnOCR-3-0.8B | 0.8B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
 | `lightonocr3_4b` | LightOnOCR-3-4B | 4B | ✅ | ❌ | OpenAI-compatible | ✅ | Markdown with layout blocks, HTML tables, and chart data |
+| `surya_ocr2_5` | Surya-OCR-2.5 | 689M | ✅ | ✅ | OpenAI-compatible | ✅ | Native layout blocks with HTML tables and math |
+| `minicpm_ocr` | MiniCPM-OCR 1.0 | 1.3B | ✅ | ❌ | OpenAI-compatible | ❌ | Markdown |
 
 `nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
+
+`minicpm_ocr` runs OpenBMB's MiniCPM-OCR 1.0 through Transformers 5.21 or later. It reads English
+and Chinese pages and asks the model for Markdown with one page image per request. The preset
+declares Transformers and OpenAI-compatible API engines; no MLX or in-process vLLM export is
+configured.
 
 `mineru2_pro` runs MinerU's native two-step flow: page-level layout detection followed by
 type-specific recognition of the detected region crops. Its Transformers and API configurations
@@ -425,6 +432,30 @@ Limits of this preset:
 - **Your own `params`.** If you set `params`, the preset parameters are not sent, so include
   `model`, `max_tokens`, and `skip_special_tokens=False`. Without the last value, the server removes
   `<td>` and `<tr>` from tables.
+
+`surya_ocr2_5` runs [datalab-to/surya-ocr-2.5](https://huggingface.co/datalab-to/surya-ocr-2.5)
+at a pinned revision. Docling decodes the compact output of the model with its own code, so the
+`surya-ocr` package is not needed. This preset is not the `docling-surya` OCR plugin. All engines
+load the same Hugging Face repository:
+
+- **Transformers** needs `transformers>=5.12.1` for the Qwen3.5 architecture. The Docling
+  Transformers engine runs on CPU, CUDA, or XPU, not on MPS.
+- **MLX** loads the original weights and needs `mlx-vlm>=0.7.6`. Auto-inline selects it on
+  Apple Silicon. No converted MLX checkpoint is needed.
+- **vLLM** needs `vllm>=0.25.1`, the release that upstream tests. The preset sets
+  `max_model_len=24576`.
+- **OpenAI-compatible API**: any server that serves the repository, for example
+  `vllm serve datalab-to/surya-ocr-2.5` or `mlx_vlm.server --model datalab-to/surya-ocr-2.5`.
+  The default `model` parameter is the repository ID. With `llama-server` and the GGUF build
+  `datalab-to/surya-ocr-2.5-gguf`, start the server with `--special`; otherwise the block labels
+  and boxes are removed from the reply.
+
+The preset follows the upstream full-page settings: pages render at 192 DPI (`scale=192/72`,
+at most 3072 pixels on the long edge), greedy decoding, and at most 12288 new tokens. The
+upstream client also retries a page at a higher temperature when it repeats. Docling does not.
+
+The model weights use a modified OpenRAIL-M license. It is free for research, personal use, and
+organizations under USD 5M funding or revenue. Read the model card before commercial use.
 
 #### Picture Description Stage
 

@@ -412,6 +412,29 @@ def test_utf8_bom_is_not_part_of_the_first_cell(tmp_path):
         assert cells[1].text == "Age"
 
 
+@pytest.mark.parametrize(
+    "csv_text, expected",
+    [
+        ("sep=;\nName;Price\nApple;1,50\n", ["Name", "Price", "Apple", "1,50"]),
+        ("sep=,\r\nName,Price\r\nApple,1.50\r\n", ["Name", "Price", "Apple", "1.50"]),
+        ("sep=\t\nName\tPrice\nApple\t1.50\n", ["Name", "Price", "Apple", "1.50"]),
+        ("\ufeffsep=|\nName|Price\nApple|1.50\n", ["Name", "Price", "Apple", "1.50"]),
+    ],
+)
+def test_excel_sep_line_sets_the_delimiter(csv_text, expected):
+    """A first line `sep=<char>` names the delimiter and is not a row.
+
+    Excel writes and reads this line, typically for files whose values contain
+    the delimiter the sniffer would otherwise pick, such as decimal commas.
+    """
+    conv_result = get_converter().convert(
+        DocumentStream(name="sep.csv", stream=BytesIO(csv_text.encode())),
+        raises_on_error=True,
+    )
+    cells = conv_result.document.tables[0].data.table_cells
+    assert [cell.text for cell in cells] == expected
+
+
 def test_malformed_quoted_csv_is_a_load_error():
     """An unclosed quote used to escape convert() as csv.Error after sniffing."""
     conv_result = get_converter().convert(

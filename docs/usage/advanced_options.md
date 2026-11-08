@@ -63,8 +63,8 @@ Distil-Whisper presets:
 docling-tools models download --all --asr --output-dir /models
 ```
 
-This requires the `asr` extra and downloads OpenAI-format checkpoints. It does
-not prefetch Transformers-format, MLX, or WhisperS2T models. Prefetch a
+This requires the `audio` extra and downloads OpenAI-format checkpoints. It does
+not prefetch Transformers-format, MLX, `mlx-audio`, or WhisperS2T models. Prefetch a
 WhisperS2T preset by its name, as shown above.
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
@@ -146,6 +146,48 @@ The options in this list require the explicit `enable_remote_services=True` when
 
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
+
+### Page backend lifetime and page images
+
+Page backends are temporary conversion resources. The internal pipeline attribute
+`keep_backend` preserves them for processing stages that still need them, such as
+enrichment. It is not a `PipelineOptions` field and does not keep backends available
+after conversion. Final pipeline cleanup unloads remaining page backends, clears
+their references, and unloads the input document backend before returning the
+conversion result. Do not use the private `page._backend` to render images after
+conversion.
+
+The threaded `StandardPdfPipeline` releases page backends after page assembly when
+`keep_backend` is false. Enrichments that require backends keep them until final
+cleanup. This early release reduces memory use, but does not guarantee constant
+memory usage: retained backends, requested images, and the converted document can
+grow with the number of pages.
+
+To use page images after PDF conversion, set `generate_page_images=True` and choose
+`images_scale` before converting:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(generate_page_images=True, images_scale=2.0)
+converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+result = converter.convert("document.pdf")
+for page_no, page in result.document.pages.items():
+    if page.image is not None:
+        page.image.pil_image.save(f"page-{page_no}.png")
+```
+
+`images_scale=1.0` corresponds to 72 DPI; `2.0` produces 144 DPI page images.
+These are images generated during conversion. They do not provide later rendering
+at arbitrary resolutions. To request another resolution, convert the source again
+with a different `images_scale`. See the [figure export example](../examples/export_figures.py)
+for page and element image export.
 
 ### Extract native PDF form fields
 
@@ -353,6 +395,76 @@ doc_converter = DocumentConverter(
 ```
 
 See [PDF heading levels](./heading_levels.md) for the signals, their precedence and all options.
+
+### Recover superscript and subscript in PDFs
+
+A PDF draws superscript and subscript text as smaller glyphs moved off the baseline, so by
+default "E = mc²" comes out as "E = mc 2". Docling can mark these runs with
+`formatting.script`, which the HTML export renders as `<sup>` and `<sub>`:
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    ScriptPositionOptions,
+)
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions()
+pipeline_options.script_position_options = ScriptPositionOptions(enabled=True)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
+A text item holding superscript or subscript text keeps its place, and its text moves into
+an inline group of runs that the item holds.
+
+The runs keep a space beside a script only where the PDF shows a gap, so that "On the 21 st of
+June" becomes `21<sup>st</sup> of June`. Markdown and plain text have no script marks, so they
+give "21st of June".
+
+
+### Use embedded PDF images for picture items
+
+The standard PDF pipeline normally creates `PictureItem` images by cropping
+the corresponding region from the rendered page. For PDF files, enable
+`PdfPipelineOptions(use_embedded_picture_images=True)` to use the embedded
+PDF image directly when the picture region contains one safe image object.
+The extracted image keeps its native pixel dimensions.
+
+Docling uses the rendered crop as a fallback when the region contains multiple
+images, text, vector shapes, masks, or other content, or when the embedded
+image cannot be matched safely. This option affects picture images only. It
+does not change page images or the image used by the layout model.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+pipeline_options = PdfPipelineOptions(
+    generate_picture_images=True,
+    use_embedded_picture_images=True,
+)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+result = doc_converter.convert("document.pdf")
+```
+
+The equivalent CLI option is:
+
+```sh
+docling convert document.pdf --use-embedded-picture-images
+```
+
 
 ### PowerPoint and Excel charts
 

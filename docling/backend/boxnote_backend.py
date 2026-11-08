@@ -259,13 +259,12 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         The leading paragraph becomes the item text; everything else (nested
         lists, extra paragraphs) is returned to be added as children.
         """
+        content = item.get("content", [])
         text, formatting, hyperlink = "", None, None
-        nested: list[dict] = []
-        for child in item.get("content", []):
-            if not text and child.get("type") == "paragraph":
-                text, formatting, hyperlink = self._collapse(child.get("content", []))
-            else:
-                nested.append(child)
+        if content and content[0].get("type") == "paragraph":
+            text, formatting, hyperlink = self._collapse(content[0].get("content", []))
+            content = content[1:]
+        nested: list[dict] = list(content)
         return text, formatting, hyperlink, nested
 
     def _add_table(
@@ -385,11 +384,13 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
     def _add_image(
         self, attrs: dict[str, Any], doc: DoclingDocument, parent: NodeItem | None
     ) -> None:
-        caption = None
+        picture = doc.add_picture(parent=parent)
         label = attrs.get("alt") or attrs.get("fileName")
         if label:
-            caption = doc.add_text(label=DocItemLabel.CAPTION, text=label)
-        doc.add_picture(caption=caption, parent=parent)
+            caption = doc.add_text(
+                label=DocItemLabel.CAPTION, text=label, parent=picture
+            )
+            picture.captions.append(caption.get_ref())
 
     def _collapse(self, content: list[dict]) -> _Run:
         """Reduce inline content to a single run.

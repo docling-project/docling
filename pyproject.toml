@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.145.0"  # DO NOT EDIT, updated automatically
+version = "2.149.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.103.1,<3.0.0',
+  'docling-core>=2.106.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -190,6 +190,14 @@ feat-asr-transformers = [
   'torchaudio>=2.2.2,<3.0.0',
 ]
 
+# MLX Audio ASR backend. Apple Silicon only; installs nothing on other platforms and
+# needs macOS 14 or later. Keep it free of format-audio, whose mlx-whisper and
+# openai-whisper dependencies need torch: this extra must stay torch-free.
+feat-asr-mlx-audio = [
+  'mlx-audio>=0.6.4,<0.7.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'transformers>=5.16.0,<6.0.0 ; sys_platform == "darwin" and platform_machine == "arm64"',
+]
+
 # Video pipeline: transcription (format-audio) plus speaker diarization.
 format-video = [
   'docling-slim[format-audio]',
@@ -281,6 +289,13 @@ models-vlm-inline = [
   'peft>=0.18.1',
 ]
 
+# Every inline ASR engine, as models-vlm-inline is for VLM. It needs macOS 14 or later on
+# Apple Silicon. Narrower choices stay available: format-audio (Whisper only, and
+# macOS 13), and feat-asr-mlx-audio (no torch).
+models-asr-inline = [
+  'docling-slim[format-audio,feat-asr-transformers,feat-asr-mlx-audio]',
+]
+
 # ============================================================================
 # FEATURES
 # ============================================================================
@@ -288,7 +303,7 @@ models-vlm-inline = [
 feat-chunking = [
   # >=2.94.1 relaxed its transformers pin; older releases cap transformers<5.9.0
   # on macOS, which conflicts with the mlx-vlm floor in models-vlm-inline.
-  'docling-core[chunking]>=2.103.1,<3.0.0',
+  'docling-core[chunking]>=2.106.0,<3.0.0',
 ]
 
 service-client = [
@@ -323,7 +338,7 @@ all = [
   # (Python.h) plus a C compiler to build from source. `all` must install
   # cleanly without a compiler, so speaker diarization stays opt-in via
   # docling-slim[format-video].
-  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
+  'docling-slim[standard,models-vlm-inline,models-asr-inline,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
 ]
 
 [dependency-groups]
@@ -340,7 +355,7 @@ typecheck = [
 ]
 pr-fast-checks = [
   { include-group = "typecheck" },
-  "docling-core[chunking] (>=2.103.1,<3.0.0)",
+  "docling-core[chunking] (>=2.106.0,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
   "ruff==0.17.2",
@@ -406,7 +421,6 @@ members = ["packages/docling", "packages/docling-client"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 # docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", branch = "main" }
 
 [tool.uv]
@@ -507,6 +521,8 @@ allowed-unresolved-imports = [
   "filetype.**",
   "huggingface_hub.**",
   "lxml.**",
+  "mlx.**",
+  "mlx_audio.**",
   "mlx_vlm.**",
   "nemotron_ocr.**",
   "nemotron_ocr_cpp.**",

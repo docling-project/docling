@@ -10,6 +10,8 @@ from docling_core.types.doc.document import (
     DocItemLabel,
     DoclingDocument,
     Formatting,
+    InlineGroup,
+    ListItem,
     NodeItem,
 )
 
@@ -46,6 +48,14 @@ try:  # pragma: no cover - import-time guard
 except ImportError:
     pass  # guarded by LatexDocumentBackend.__init__
 
+# One or more blank lines; splitting stripped text at it gives no empty part.
+_BLANK_LINES_PATTERN = re.compile(r"\n\s*\n")
+
+# Labels of body text that can become the text, or go on the line, of a list item.
+_ITEM_TEXT_LABELS = frozenset(
+    [DocItemLabel.TEXT, DocItemLabel.PARAGRAPH, DocItemLabel.LIST_ITEM]
+)
+
 
 def iter_child_nodelists(node: Any) -> Iterator[list]:
     """Yield the node lists of ``node`` and of its group arguments."""
@@ -63,6 +73,7 @@ class TextHelperMixin:
     if TYPE_CHECKING:
         _custom_macros: dict[str, str]
         _custom_macro_num_args: dict[str, int]
+        _list_item_lines: dict[str, InlineGroup]
 
         def _process_nodes(
             self,
@@ -73,11 +84,158 @@ class TextHelperMixin:
             text_label: Any = ...,
         ) -> None: ...
         def _extract_macro_arg(self, node: Any) -> str: ...
+        def _href_link_text(self, node: Any) -> str: ...
         def _expand_macros(self, latex_str: str) -> str: ...
         def _expand_custom_macro_invocation(
             self, node: Any, following_nodes: Any
         ) -> tuple[str, int]: ...
         def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
+
+    def _add_text(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        label: DocItemLabel,
+        text: str,
+        formatting: Formatting | None,
+    ) -> None:
+        """Add ``text`` under ``parent``, or make it the text of an empty list item.
+
+        A list item is created without text and its content is added inside it.
+        The first paragraph added while it has no text, and no children other
+        than footnotes, becomes its text: from the text buffer, from a paragraph
+        between blank lines, or nested in a quote or a group. As a child, it
+        would leave an empty item, exported to Markdown as ``1. `` followed by
+        the text on its own line. In an item that starts with a formula, the text
+        goes on the line of the item (see ``_add_formula``) until a blank line.
+        Text added to a list item is split at blank lines, which would otherwise
+        end the list in a Markdown export.
+        """
+        # A footnote, or other text that is not body text, is attached to the
+        # item and does not become its text.
+        if not isinstance(parent, ListItem) or label not in _ITEM_TEXT_LABELS:
+            doc.add_text(
+                parent=parent, label=label, text=text.strip(), formatting=formatting
+            )
+            return
+
+        for i, paragraph in enumerate(_BLANK_LINES_PATTERN.split(text.rstrip())):
+            if i:
+                self._end_item_line(parent)
+            line = self._open_item_line(doc, parent)
+            if line is not None:
+                # The runs of an inline group are joined without a separator,
+                # so text that continues the line keeps one leading space.
+                stripped = paragraph.strip()
+                if stripped and paragraph[0].isspace():
+                    stripped = f" {stripped}"
+                if stripped:
+                    doc.add_text(
+                        parent=line, label=label, text=stripped, formatting=formatting
+                    )
+                continue
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+            if self._is_empty_list_item(doc, parent):
+                parent.text = paragraph
+                parent.orig = paragraph
+            else:
+                doc.add_text(
+                    parent=parent, label=label, text=paragraph, formatting=formatting
+                )
+
+    def _open_inline_group(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        label: DocItemLabel,
+        formatting: Formatting | None,
+    ) -> tuple[InlineGroup, bool]:
+        """The inline group for a paragraph with inline math under ``parent``.
+
+        In a list item, the paragraph goes on the line of the item: the open line,
+        or a new one if the item is still empty. As a paragraph child of an empty
+        item, it would be exported to Markdown as ``1. `` followed by the text on
+        its own line. Elsewhere the group is in a new text item. The second value
+        is whether the group continues an open line.
+        """
+        if isinstance(parent, ListItem) and label in _ITEM_TEXT_LABELS:
+            line = self._open_item_line(doc, parent)
+            if line is not None:
+                return line, True
+            if self._is_empty_list_item(doc, parent):
+                return self._start_item_line(doc, parent), False
+        paragraph = doc.add_text(
+            parent=parent, label=label, text="", formatting=formatting
+        )
+        return doc.add_inline_group(parent=paragraph), False
+
+    def _start_item_line(self, doc: DoclingDocument, item: ListItem) -> InlineGroup:
+        """Open the line of the empty list item ``item``."""
+        line = doc.add_inline_group(parent=item)
+        # The line comes before the footnotes attached to it; the Markdown
+        # export only puts a first inline group on the line of the item.
+        item.children.insert(0, item.children.pop())
+        self._list_item_lines[item.self_ref] = line
+        return line
+
+    def _add_formula(
+        self, doc: DoclingDocument, parent: NodeItem | None, text: str
+    ) -> None:
+        """Add a display formula under ``parent``.
+
+        A formula at the start of a list item, before any text, opens the line of
+        the item: an inline group that also takes the text that follows, up to a
+        blank line, like an equation in a paragraph of a Word list item. As a
+        block child of an item without text, it would be exported to Markdown as
+        ``1. `` followed by the formula on its own line, which a CommonMark parser
+        reads as an empty item.
+        """
+        if isinstance(parent, ListItem):
+            line = self._open_item_line(doc, parent)
+            if line is None and self._is_empty_list_item(doc, parent):
+                line = self._start_item_line(doc, parent)
+            if line is not None:
+                parent = line
+        doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=text)
+
+    @staticmethod
+    def _is_empty_list_item(doc: DoclingDocument, item: ListItem) -> bool:
+        """Whether ``item`` has no text and no children other than footnotes."""
+        return not item.text and all(
+            # A footnote is attached to the text, so it does not come before it.
+            child.resolve(doc).label == DocItemLabel.FOOTNOTE
+            for child in item.children
+        )
+
+    def _open_item_line(
+        self, doc: DoclingDocument, item: ListItem
+    ) -> InlineGroup | None:
+        """The line of ``item``, if content can still be added to it.
+
+        The line ends at a blank line, or when other content, such as a nested
+        list, is added to the item after it.
+        """
+        line = self._list_item_lines.get(item.self_ref)
+        if line is None:
+            return None
+        last_ref = next(
+            (
+                ref
+                for ref in reversed(item.children)
+                if ref.resolve(doc).label != DocItemLabel.FOOTNOTE
+            ),
+            None,
+        )
+        if last_ref is not None and last_ref.cref == line.self_ref:
+            return line
+        self._end_item_line(item)
+        return None
+
+    def _end_item_line(self, item: NodeItem | None) -> None:
+        if isinstance(item, ListItem):
+            self._list_item_lines.pop(item.self_ref, None)
 
     def _char_macro_to_text(self, node: LatexMacroNode) -> str | None:
         """Return the Unicode text of an accent or letter macro.
@@ -157,15 +315,17 @@ class TextHelperMixin:
             text_buffer.append(parts[0])
 
             flush_fn()
+            self._end_item_line(parent)
 
             for part in parts[1:-1]:
                 part_stripped = part.strip()
                 if part_stripped:
-                    doc.add_text(
-                        parent=parent,
-                        label=text_label or DocItemLabel.PARAGRAPH,
-                        text=part_stripped,
-                        formatting=formatting,
+                    self._add_text(
+                        doc,
+                        parent,
+                        text_label or DocItemLabel.PARAGRAPH,
+                        part_stripped,
+                        formatting,
                     )
 
             text_buffer.append(parts[-1])
@@ -327,6 +487,8 @@ class TextHelperMixin:
             return ("", consumed)
         if node.macroname in MACROS_CITATION:
             return (node.latex_verbatim(), consumed)
+        if node.macroname == "href":
+            return (self._href_link_text(node), consumed)
         if node.macroname == "\\":
             return ("\n", consumed)
         if node.macroname in ["~"]:

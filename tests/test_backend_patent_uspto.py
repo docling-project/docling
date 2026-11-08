@@ -512,6 +512,28 @@ def test_patent_uspto_grant_v2(patents):
     )
 
 
+def test_patent_uspto_iso8879_sigma_entities() -> None:
+    """ISO 8879 &sgr; is the small sigma and &sfgr; is the final small sigma.
+
+    &sgr; was converted to the final sigma, and &sfgr; was not known, so the
+    letter was dropped from the text.
+    """
+    source = (DATA_PATH / "pg06442728.xml").read_bytes()
+    source = source.replace(b"&agr;", b"&sgr;").replace(b"&bgr;", b"&sfgr;")
+    converter = DocumentConverter(allowed_formats=[InputFormat.XML_USPTO])
+
+    doc = converter.convert(
+        DocumentStream(name="pg06442728.xml", stream=BytesIO(source))
+    ).document
+
+    sigma = "\N{GREEK SMALL LETTER SIGMA}"
+    final_sigma = "\N{GREEK SMALL LETTER FINAL SIGMA}"
+    abstract = doc.texts[2].text
+    assert f"I(j,k)=I(j,{sigma}jk+{final_sigma}j)modP)" in abstract
+    assert f"{final_sigma}j is a constant" in abstract
+    assert f"each {sigma}j is a relative prime number" in abstract
+
+
 def test_patent_uspto_app_v1(patents):
     """Test applications Full Text Data/XML Version 1.x."""
 
