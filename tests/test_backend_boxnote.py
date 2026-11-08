@@ -327,6 +327,17 @@ def test_ordered_list_without_valid_order_starts_at_one(attrs):
     assert doc.export_to_markdown() == "1. First\n2. Second"
 
 
+@pytest.mark.parametrize("list_type", ["bullet_list", "ordered_list", "check_list"])
+def test_list_with_null_attrs_is_converted(list_type):
+    node = _ordered_list(None, "First", "Second")
+    node["type"] = list_type
+    node["attrs"] = None
+    payload = {"doc": {"type": "doc", "content": [node]}}
+    doc = get_converter().convert(_boxnote_stream(payload)).document
+
+    assert [item.text for item in doc.texts] == ["First", "Second"]
+
+
 def test_empty_leading_paragraph_keeps_the_following_paragraph_in_order():
     # The first block of a list item becomes its text only when it is a
     # paragraph. An empty one must not let a later paragraph take that place,

@@ -163,7 +163,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
         elif node_type == "paragraph":
             self._add_paragraph(content, doc, parent)
         elif node_type in ("bullet_list", "ordered_list", "check_list"):
-            self._add_list(node_type, node.get("attrs", {}), content, doc, parent)
+            self._add_list(node_type, node.get("attrs") or {}, content, doc, parent)
         elif node_type == "code_block":
             code = self._plain_text(content)
             if code:
