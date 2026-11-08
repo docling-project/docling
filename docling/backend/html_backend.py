@@ -1040,13 +1040,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             br.replace_with(NavigableString(_BR_SENTINEL))
 
         # Furniture before the first heading rule, except for headers in tables and lists
+        self._render_visibility_cache.clear()
         header = None
         # Find all headers first
         all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
         # Skip headers that become cell or list item text: they never switch the
         # layer back to body
         clean_headers = [
-            h for h in all_headers if not self._is_header_in_cell_or_item(h)
+            h
+            for h in all_headers
+            if not self._is_header_in_cell_or_item(h)
+            and not any(
+                self._is_suppressed_tag(tag)
+                for tag in (h, *h.parents)
+                if isinstance(tag, Tag)
+            )
         ]
         # Pick the first header from the remaining
         if len(clean_headers):
@@ -1059,7 +1067,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         # reset context
         self.ctx = _Context()
-        self._render_visibility_cache.clear()
         self._walk(content, doc)
         return doc
 
