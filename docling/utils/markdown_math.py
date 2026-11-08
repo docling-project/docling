@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import html
 import re
+from copy import copy
 from dataclasses import dataclass
 from threading import local
 from types import ModuleType
@@ -58,6 +59,65 @@ def _require_marko() -> ModuleType:
             "Markdown parsing requires `pip install 'docling-slim[format-markdown]'`."
         ) from exc
     return marko
+
+
+def _contains_math(children: list, *, display_only: bool = False) -> bool:
+    marko = _require_marko()
+    return any(
+        (isinstance(child, MathData) and (not display_only or child.display))
+        or (
+            isinstance(child, marko.inline.InlineElement)
+            and isinstance(child.children, list)
+            and _contains_math(child.children, display_only=display_only)
+        )
+        for child in children
+    )
+
+
+def _split_math_runs(children: list) -> list[tuple[list, bool]]:
+    """Split at display formulas while retaining their inline wrapper context."""
+    marko = _require_marko()
+    runs: list[tuple[list, bool]] = []
+    for child in children:
+        if isinstance(child, MathData):
+            parts = [([child], child.display)]
+        elif (
+            isinstance(child, marko.inline.InlineElement)
+            and isinstance(child.children, list)
+            and _contains_math(child.children, display_only=True)
+        ):
+            parts = []
+            for nodes, display in _split_math_runs(child.children):
+                wrapper = copy(child)
+                wrapper.children = nodes
+                parts.append(([wrapper], display))
+        else:
+            parts = [([child], False)]
+        for nodes, display in parts:
+            if runs and not display and not runs[-1][1]:
+                runs[-1][0].extend(nodes)
+            else:
+                runs.append((nodes, display))
+    return runs
+
+
+def _split_display_math(children: list) -> list:
+    """Split a paragraph at display formulas without consuming adjacent blocks."""
+    marko = _require_marko()
+    blocks = []
+    for nodes, display in _split_math_runs(children):
+        if display:
+            blocks.extend(nodes)
+            continue
+        while nodes and isinstance(nodes[-1], marko.inline.LineBreak):
+            nodes.pop()
+        while nodes and isinstance(nodes[0], marko.inline.LineBreak):
+            nodes.pop(0)
+        if nodes:
+            paragraph = marko.block.Paragraph([])
+            paragraph.children = nodes
+            blocks.append(paragraph)
+    return blocks
 
 
 def create_math_extension() -> MarkoExtension:

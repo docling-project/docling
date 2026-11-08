@@ -7,7 +7,7 @@ import html
 import logging
 import re
 import warnings
-from copy import copy, deepcopy
+from copy import deepcopy
 from enum import Enum
 from html import unescape
 from io import BytesIO
@@ -53,7 +53,14 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 from docling.utils.code_language import detect_code_language
-from docling.utils.markdown_math import LiteralCodeData, MathData, create_math_extension
+from docling.utils.markdown_math import (
+    LiteralCodeData,
+    MathData,
+    _contains_math,
+    _split_display_math,
+    _split_math_runs,
+    create_math_extension,
+)
 from docling.utils.text_decoding import decode_text
 
 _MARKO_AVAILABLE: bool = False
@@ -170,62 +177,6 @@ def _only_plain_line_breaks(children: list) -> bool:
         or isinstance(c, marko.inline.LineBreak)
         for c in children
     )
-
-
-def _contains_math(children: list, *, display_only: bool = False) -> bool:
-    return any(
-        (isinstance(child, MathData) and (not display_only or child.display))
-        or (
-            isinstance(child, marko.inline.InlineElement)
-            and isinstance(child.children, list)
-            and _contains_math(child.children, display_only=display_only)
-        )
-        for child in children
-    )
-
-
-def _split_math_runs(children: list) -> list[tuple[list, bool]]:
-    """Split at display formulas while retaining their inline wrapper context."""
-    runs: list[tuple[list, bool]] = []
-    for child in children:
-        if isinstance(child, MathData):
-            parts = [([child], child.display)]
-        elif (
-            isinstance(child, marko.inline.InlineElement)
-            and isinstance(child.children, list)
-            and _contains_math(child.children, display_only=True)
-        ):
-            parts = []
-            for nodes, display in _split_math_runs(child.children):
-                wrapper = copy(child)
-                wrapper.children = nodes
-                parts.append(([wrapper], display))
-        else:
-            parts = [([child], False)]
-        for nodes, display in parts:
-            if runs and not display and not runs[-1][1]:
-                runs[-1][0].extend(nodes)
-            else:
-                runs.append((nodes, display))
-    return runs
-
-
-def _split_display_math(children: list) -> list:
-    """Split a paragraph at display formulas without consuming adjacent blocks."""
-    blocks = []
-    for nodes, display in _split_math_runs(children):
-        if display:
-            blocks.extend(nodes)
-            continue
-        while nodes and isinstance(nodes[-1], marko.inline.LineBreak):
-            nodes.pop()
-        while nodes and isinstance(nodes[0], marko.inline.LineBreak):
-            nodes.pop(0)
-        if nodes:
-            paragraph = marko.block.Paragraph([])
-            paragraph.children = nodes
-            blocks.append(paragraph)
-    return blocks
 
 
 # As in Pandoc, an opening `---` followed by a blank line is a thematic break,
