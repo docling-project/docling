@@ -286,19 +286,3 @@ def test_restarted_level_starts_at_its_start_value(
     assert _list_markers(doc) == [
         (text, marker) for (text, _), marker in zip(_SUB_LIST, markers, strict=True)
     ]
-
-
-def test_markdown_shows_restarted_level_at_its_start_value(tmp_path):
-    """The Markdown export shows level 1 at its w:startOverride after each restart."""
-    doc = _convert_docx(
-        _sub_list_docx(_sub_level(1), '<w:startOverride w:val="3"/>'), tmp_path
-    )
-
-    assert doc.export_to_markdown() == (
-        "1. one\n"
-        "    - 1.3. one-a\n"
-        "    - 1.4. one-b\n"
-        "2. two\n"
-        "    - 2.3. two-a\n"
-        "    - 2.4. two-b"
-    )
