@@ -26,7 +26,11 @@ def to_rgb(image: Image.Image) -> Image.Image:
     content on a transparent background would then become a black image.
     Palette images with ``tRNS`` transparency also go through RGBA, which
     avoids the Pillow warning for transparency expressed in bytes.
+    Integer images hold 16-bit samples, which ``convert("RGB")`` clips to white
+    instead of scaling, so they are scaled to 8 bits first.
     """
+    if image.mode.startswith("I"):
+        image = image.convert("I").point(lambda value: value / 256)
     if image.mode in ("RGBA", "LA", "PA") or "transparency" in image.info:
         rgba = image.convert("RGBA")
         background = Image.new("RGBA", rgba.size, (255, 255, 255, 255))

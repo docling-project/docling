@@ -218,6 +218,28 @@ def test_transparent_background_is_flattened_onto_white(mode):
     assert image.getpixel((2, 2)) == (0, 0, 0)
 
 
+@pytest.mark.parametrize("image_format", ["PNG", "TIFF"])
+def test_16_bit_grayscale_is_scaled_to_8_bits(image_format):
+    """16-bit samples are scaled to 8 bits instead of being clipped to white.
+
+    A plain ``convert("RGB")`` clips every sample above 255, so dark text on a
+    16-bit grayscale scan became a blank white page.
+    """
+    img = Image.new("I", (64, 48), 60000)
+    img.paste(4000, (0, 0, 16, 12))
+    buf = BytesIO()
+    img.convert("I;16").save(buf, format=image_format)
+    buf.seek(0)
+
+    page_backend = _get_backend_from_stream(
+        DocumentStream(name=f"test.{image_format.lower()}", stream=buf)
+    ).load_page(0)
+    image = page_backend.get_page_image()
+
+    assert image.getpixel((63, 47)) == (234, 234, 234)
+    assert image.getpixel((2, 2)) == (15, 15, 15)
+
+
 def test_get_page_image_full():
     """Test getting full page image."""
     width, height = 100, 80
