@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from itertools import takewhile
 from pathlib import Path
 from statistics import median
+from typing import Literal
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -71,6 +72,9 @@ class ReadingOrderOptions(BaseModel):
 
     model_names: str = ""  # e.g. "language;term;reference"
     use_page_separators: bool = False
+    # Reading direction for side-by-side blocks. "auto" detects Hebrew/Arabic
+    # pages from their text; "ltr"/"rtl" force one direction for every page.
+    page_direction: Literal["auto", "ltr", "rtl"] = "ltr"
 
 
 class ReadingOrderModel:
@@ -1179,6 +1183,7 @@ class ReadingOrderModel:
                         page_separators=(
                             page_separators if parent_ref is None else None
                         ),
+                        page_direction=self.options.page_direction,
                     )
                     if len(siblings) > 1
                     else siblings

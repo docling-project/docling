@@ -6,6 +6,7 @@ import logging
 import math
 import re
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from functools import cmp_to_key
 from itertools import islice, takewhile
@@ -447,6 +448,41 @@ def _shortest_box_gap(lhs: PageElement, rhs: PageElement) -> float:
     return math.hypot(dx, dy)
 
 
+_RTL_STRONG_BIDI_CLASSES = frozenset({"R", "AL"})  # Hebrew, Arabic, ...
+_LTR_STRONG_BIDI_CLASS = "L"
+
+
+def detect_text_direction(texts: Iterable[str]) -> Literal["ltr", "rtl"]:
+    """Guess the reading direction of a page from its element texts.
+
+    Counts strong right-to-left characters (Hebrew, Arabic and related
+    scripts) against strong left-to-right ones; a page reads right-to-left
+    when RTL characters outnumber LTR ones. Pages without strong directional
+    characters (e.g. image-only pages) keep the default left-to-right order.
+    """
+    rtl = ltr = 0
+    for text in texts:
+        for char in text:
+            bidi = unicodedata.bidirectional(char)
+            if bidi in _RTL_STRONG_BIDI_CLASSES:
+                rtl += 1
+            elif bidi == _LTR_STRONG_BIDI_CLASS:
+                ltr += 1
+    return "rtl" if rtl > ltr else "ltr"
+
+
+def _mirror_element_x(elem: ReadingOrderNode) -> ReadingOrderNode:
+    """Return a copy of ``elem`` mirrored horizontally on its page.
+
+    The rule-based predictor orders side-by-side blocks by their left edge,
+    i.e. left-to-right. Mirroring the x coordinates (l, r -> W - r, W - l)
+    lets the same predictor produce the right-to-left reading order for RTL
+    pages without changing the predictor itself.
+    """
+    width = elem.page_size.width
+    return elem.model_copy(update={"l": width - elem.r, "r": width - elem.l})
+
+
 class ReadingOrderPredictor:
     r"""
     Rule based reading order for DoclingDocument
@@ -466,7 +502,32 @@ class ReadingOrderPredictor:
         self,
         page_elements: List[PageElement],
         page_separators: List[SeparatorElement] | None = None,
+        *,
+        page_direction: Literal["auto", "ltr", "rtl"] = "ltr",
     ) -> List[PageElement]:
+
+        # Pages read right-to-left (Hebrew, Arabic, ...) need the mirrored
+        # variant of the left-to-right predictor; see _mirror_element_x.
+        rtl_pages: Set[int] = set()
+        if page_direction != "ltr":
+            page_to_texts: Dict[int, List[str]] = {}
+            for elem in page_elements:
+                page_to_texts.setdefault(elem.page_no, []).append(elem.text)
+            for page_no, texts in page_to_texts.items():
+                if page_direction == "rtl" or detect_text_direction(texts) == "rtl":
+                    rtl_pages.add(page_no)
+
+        original_elements = page_elements
+        if rtl_pages:
+            page_elements = [
+                _mirror_element_x(elem) if elem.page_no in rtl_pages else elem
+                for elem in page_elements
+            ]
+            if page_separators is not None:
+                page_separators = [
+                    _mirror_element_x(sep) if sep.page_no in rtl_pages else sep
+                    for sep in page_separators
+                ]
 
         page_nos: Set[int] = set()
 
@@ -533,6 +594,20 @@ class ReadingOrderPredictor:
             sorted_elements.extend(page_to_headers[page_no])
             sorted_elements.extend(page_to_elems[page_no])
             sorted_elements.extend(page_to_footers[page_no])
+
+        if rtl_pages:
+            # Hand back the original, unmirrored elements in the RTL order.
+            originals_by_cid = {
+                elem.cid: elem
+                for elem in original_elements
+                if elem.page_no in rtl_pages
+            }
+            sorted_elements = [
+                originals_by_cid.get(elem.cid, elem)
+                if isinstance(elem, PageElement)
+                else elem
+                for elem in sorted_elements
+            ]
 
         return sorted_elements
 
