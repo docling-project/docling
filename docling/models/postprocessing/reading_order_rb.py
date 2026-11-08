@@ -483,6 +483,22 @@ def _mirror_element_x(elem: ReadingOrderNode) -> ReadingOrderNode:
     return elem.model_copy(update={"l": width - elem.r, "r": width - elem.l})
 
 
+def _resolve_rtl_pages(
+    page_elements: Iterable[PageElement], page_direction: Literal["auto", "ltr", "rtl"]
+) -> Set[int]:
+    """Return the page numbers that read right-to-left under ``page_direction``."""
+    if page_direction == "ltr":
+        return set()
+    rtl_pages: Set[int] = set()
+    page_to_texts: Dict[int, List[str]] = {}
+    for elem in page_elements:
+        page_to_texts.setdefault(elem.page_no, []).append(elem.text)
+    for page_no, texts in page_to_texts.items():
+        if page_direction == "rtl" or detect_text_direction(texts) == "rtl":
+            rtl_pages.add(page_no)
+    return rtl_pages
+
+
 class ReadingOrderPredictor:
     r"""
     Rule based reading order for DoclingDocument
@@ -508,14 +524,7 @@ class ReadingOrderPredictor:
 
         # Pages read right-to-left (Hebrew, Arabic, ...) need the mirrored
         # variant of the left-to-right predictor; see _mirror_element_x.
-        rtl_pages: Set[int] = set()
-        if page_direction != "ltr":
-            page_to_texts: Dict[int, List[str]] = {}
-            for elem in page_elements:
-                page_to_texts.setdefault(elem.page_no, []).append(elem.text)
-            for page_no, texts in page_to_texts.items():
-                if page_direction == "rtl" or detect_text_direction(texts) == "rtl":
-                    rtl_pages.add(page_no)
+        rtl_pages = _resolve_rtl_pages(page_elements, page_direction)
 
         original_elements = page_elements
         if rtl_pages:
@@ -664,10 +673,24 @@ class ReadingOrderPredictor:
         return to_footnotes
 
     def predict_merges(
-        self, sorted_elements: List[PageElement]
+        self,
+        sorted_elements: List[PageElement],
+        *,
+        page_direction: Literal["auto", "ltr", "rtl"] = "ltr",
     ) -> Dict[int, List[int]]:
 
         merges: Dict[int, List[int]] = {}
+
+        # The geometry checks below are left-to-right; mirror RTL pages so the
+        # same checks apply in reading order. Only Latin split words merge
+        # (see the regexes below), so RTL scripts are unaffected. The mirrored
+        # copies are local; callers keep their original geometry.
+        rtl_pages = _resolve_rtl_pages(sorted_elements, page_direction)
+        if rtl_pages:
+            sorted_elements = [
+                _mirror_element_x(elem) if elem.page_no in rtl_pages else elem
+                for elem in sorted_elements
+            ]
 
         skip_labels = [
             DocItemLabel.PAGE_HEADER,

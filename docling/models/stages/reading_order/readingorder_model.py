@@ -56,6 +56,7 @@ from docling.models.postprocessing.reading_order_rb import (
     ReadingOrderPredictor,
     SeparatorElement,
     build_page_separators,
+    detect_text_direction,
 )
 from docling.utils.form_fields import text_slots, without_whitespace
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -1176,6 +1177,14 @@ class ReadingOrderModel:
                     element
                 )
 
+            # Resolve "auto" once per page so every sibling group on the page
+            # reads in the same direction; see issue #5238.
+            page_direction = self.options.page_direction
+            if page_direction == "auto":
+                page_direction = detect_text_direction(
+                    element.text for element in page_elements
+                )
+
             ordered_siblings = {
                 parent_ref: (
                     self.ro_model.predict_reading_order(
@@ -1183,7 +1192,7 @@ class ReadingOrderModel:
                         page_separators=(
                             page_separators if parent_ref is None else None
                         ),
-                        page_direction=self.options.page_direction,
+                        page_direction=page_direction,
                     )
                     if len(siblings) > 1
                     else siblings
@@ -1211,7 +1220,10 @@ class ReadingOrderModel:
             for siblings in ordered_siblings.values():
                 if len(siblings) > 1:
                     el_merges_mapping.update(
-                        self.ro_model.predict_merges(sorted_elements=siblings)
+                        self.ro_model.predict_merges(
+                            sorted_elements=siblings,
+                            page_direction=page_direction,
+                        )
                     )
             host_cids = {
                 element.cid

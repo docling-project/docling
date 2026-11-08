@@ -2349,8 +2349,10 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         Field(
             description=(
                 "Reading direction for side-by-side blocks in rule-based reading order. "
-                "'auto' detects right-to-left pages (Hebrew, Arabic, ...) from their "
-                "text; 'ltr'/'rtl' force one direction for every page."
+                "'auto' detects right-to-left content (Hebrew, Arabic, ...) from the "
+                "text of each page; elements without text, such as pictures and "
+                "tables, contribute no signal. 'ltr'/'rtl' force one direction for "
+                "every page."
             )
         ),
     ] = "ltr"
