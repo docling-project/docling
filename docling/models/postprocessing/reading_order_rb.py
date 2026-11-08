@@ -10,7 +10,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from functools import cmp_to_key
 from itertools import islice, takewhile
-from typing import ClassVar, Dict, Iterable, List, Literal, Set, Tuple
+from typing import ClassVar, Dict, Iterable, List, Literal, Mapping, Set, Tuple
 
 from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.document import RefItem
@@ -484,11 +484,24 @@ def _mirror_element_x(elem: ReadingOrderNode) -> ReadingOrderNode:
 
 
 def _resolve_rtl_pages(
-    page_elements: Iterable[PageElement], page_direction: Literal["auto", "ltr", "rtl"]
+    page_elements: Iterable[PageElement],
+    page_direction: Literal["auto", "ltr", "rtl"],
+    direction_by_page: Mapping[int, Literal["ltr", "rtl"]] | None = None,
 ) -> Set[int]:
-    """Return the page numbers that read right-to-left under ``page_direction``."""
+    """Return the page numbers that read right-to-left under ``page_direction``.
+
+    ``direction_by_page`` is a precomputed per-page resolution of ``"auto"``.
+    Callers that process one document in several sibling groups pass it so
+    every group of a page uses the same direction.
+    """
     if page_direction == "ltr":
         return set()
+    if direction_by_page is not None:
+        return {
+            page_no
+            for page_no, direction in direction_by_page.items()
+            if direction == "rtl"
+        }
     rtl_pages: Set[int] = set()
     page_to_texts: Dict[int, List[str]] = {}
     for elem in page_elements:
@@ -520,11 +533,12 @@ class ReadingOrderPredictor:
         page_separators: List[SeparatorElement] | None = None,
         *,
         page_direction: Literal["auto", "ltr", "rtl"] = "ltr",
+        direction_by_page: Mapping[int, Literal["ltr", "rtl"]] | None = None,
     ) -> List[PageElement]:
 
         # Pages read right-to-left (Hebrew, Arabic, ...) need the mirrored
         # variant of the left-to-right predictor; see _mirror_element_x.
-        rtl_pages = _resolve_rtl_pages(page_elements, page_direction)
+        rtl_pages = _resolve_rtl_pages(page_elements, page_direction, direction_by_page)
 
         original_elements = page_elements
         if rtl_pages:
@@ -677,6 +691,7 @@ class ReadingOrderPredictor:
         sorted_elements: List[PageElement],
         *,
         page_direction: Literal["auto", "ltr", "rtl"] = "ltr",
+        direction_by_page: Mapping[int, Literal["ltr", "rtl"]] | None = None,
     ) -> Dict[int, List[int]]:
 
         merges: Dict[int, List[int]] = {}
@@ -685,7 +700,9 @@ class ReadingOrderPredictor:
         # same checks apply in reading order. Only Latin split words merge
         # (see the regexes below), so RTL scripts are unaffected. The mirrored
         # copies are local; callers keep their original geometry.
-        rtl_pages = _resolve_rtl_pages(sorted_elements, page_direction)
+        rtl_pages = _resolve_rtl_pages(
+            sorted_elements, page_direction, direction_by_page
+        )
         if rtl_pages:
             sorted_elements = [
                 _mirror_element_x(elem) if elem.page_no in rtl_pages else elem

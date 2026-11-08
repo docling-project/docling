@@ -368,17 +368,17 @@ def _cluster(cid: int, label: DocItemLabel, bbox: tuple) -> Cluster:
     )
 
 
-def _text_element(cid: int, bbox: tuple, text: str) -> TextElement:
+def _text_element(cid: int, bbox: tuple, text: str, page_no: int = 1) -> TextElement:
     return TextElement(
         label=DocItemLabel.TEXT,
         id=cid,
         text=text,
-        page_no=1,
+        page_no=page_no,
         cluster=_cluster(cid, DocItemLabel.TEXT, bbox),
     )
 
 
-def _conversion_result(elements: list) -> ConversionResult:
+def _conversion_result(elements: list, page_nos: tuple = (1,)) -> ConversionResult:
     input_doc = InputDocument.model_construct(
         file=PurePath("input.pdf"),
         document_hash="0" * 64,
@@ -387,7 +387,10 @@ def _conversion_result(elements: list) -> ConversionResult:
     )
     return ConversionResult(
         input=input_doc,
-        pages=[Page(page_no=1, size=Size(width=500, height=500))],
+        pages=[
+            Page(page_no=page_no, size=Size(width=500, height=500))
+            for page_no in page_nos
+        ],
         assembled=AssembledUnit(elements=elements, body=elements),
     )
 
@@ -439,3 +442,132 @@ def test_auto_ltr_page_keeps_hebrew_group_ltr() -> None:
     assert texts[1].endswith("right.")
     assert texts[2].endswith("bet.")
     assert texts[3].endswith("aleph.")
+
+
+def test_direction_by_page_overrides_group_texts() -> None:
+    # A precomputed per-page resolution binds every group: the English-only
+    # page resolved as RTL reads right-to-left, the Hebrew page resolved as
+    # LTR keeps left-to-right.
+    heb_right, heb_left = _two_columns(_HEBREW, page_no=1)
+    eng_right, eng_left = _two_columns(_ENGLISH, page_no=2)
+    ordered = ReadingOrderPredictor().predict_reading_order(
+        [heb_right, heb_left, eng_right, eng_left],
+        page_direction="auto",
+        direction_by_page={1: "ltr", 2: "rtl"},
+    )
+    assert [e.cid for e in ordered] == [
+        heb_left.cid,
+        heb_right.cid,
+        eng_right.cid,
+        eng_left.cid,
+    ]
+
+
+def _two_page_mixed_doc(hebrew_text: str, english_text: str) -> ConversionResult:
+    # Page 1: two Hebrew columns (right is read first). Page 2: two English
+    # columns (left is read first).
+    heb_right = _text_element(
+        11, (300, 100, 480, 400), hebrew_text + " aleph.", page_no=1
+    )
+    heb_left = _text_element(12, (20, 100, 200, 400), hebrew_text + " bet.", page_no=1)
+    eng_right = _text_element(
+        21, (300, 100, 480, 400), english_text + " right.", page_no=2
+    )
+    eng_left = _text_element(
+        22, (20, 100, 200, 400), english_text + " left.", page_no=2
+    )
+    return _conversion_result(
+        [heb_right, heb_left, eng_right, eng_left], page_nos=(1, 2)
+    )
+
+
+def test_auto_resolves_direction_per_page_rtl_majority() -> None:
+    # Hebrew-majority document: the English page keeps its own left-to-right
+    # direction instead of inheriting one document-wide RTL resolution.
+    conv_res = _two_page_mixed_doc(_HEBREW * 3, _ENGLISH)
+    doc = ReadingOrderModel(ReadingOrderOptions(page_direction="auto"))(conv_res)
+    texts = [item.text for item in doc.texts]
+    assert texts[0].endswith("aleph.")
+    assert texts[1].endswith("bet.")
+    assert texts[2].endswith("left.")
+    assert texts[3].endswith("right.")
+
+
+def test_auto_resolves_direction_per_page_ltr_majority() -> None:
+    # English-majority document: the Hebrew page still reads right-to-left.
+    conv_res = _two_page_mixed_doc(_HEBREW, _ENGLISH * 3)
+    doc = ReadingOrderModel(ReadingOrderOptions(page_direction="auto"))(conv_res)
+    texts = [item.text for item in doc.texts]
+    assert texts[0].endswith("aleph.")
+    assert texts[1].endswith("bet.")
+    assert texts[2].endswith("left.")
+    assert texts[3].endswith("right.")
+
+
+def test_direction_by_page_drives_merge_mirroring() -> None:
+    # A Latin split word on a pre-resolved RTL page merges even though the
+    # group's own texts are Latin-only: the supplied page direction, not the
+    # group detection, decides the mirroring.
+    first = _element(10, 300.0, 480.0, "trans-")
+    second = _element(11, 20.0, 200.0, "lation")
+    predictor = ReadingOrderPredictor()
+    merges = predictor.predict_merges(
+        [first, second], page_direction="auto", direction_by_page={1: "rtl"}
+    )
+    assert merges == {first.cid: [second.cid]}
+    assert predictor.predict_merges([first, second], page_direction="auto") == {}
+
+
+def _container_with_children(
+    container_id: int,
+    child_texts: tuple[str, str],
+    child_ids: tuple[int, int],
+    page_no: int,
+) -> list:
+    # FORM container spanning the lower half of the page, with a right and a
+    # left child.
+    right = _text_element(
+        child_ids[0], (300, 320, 480, 420), child_texts[0], page_no=page_no
+    )
+    left = _text_element(
+        child_ids[1], (20, 320, 200, 420), child_texts[1], page_no=page_no
+    )
+    container_cluster = _cluster(container_id, DocItemLabel.FORM, (0, 300, 500, 480))
+    container_cluster.children = [right.cluster, left.cluster]
+    container = ContainerElement(
+        label=DocItemLabel.FORM,
+        id=container_id,
+        page_no=page_no,
+        cluster=container_cluster,
+    )
+    return [container, right, left]
+
+
+def test_auto_per_page_direction_reaches_nested_groups() -> None:
+    # Two pages, each with top-level columns plus a FORM container with two
+    # children. Page 1 is Hebrew (reads right-to-left), page 2 is English
+    # (reads left-to-right); the document is English-majority. Nested groups
+    # follow their own page's direction, not the document's.
+    elements = [
+        _text_element(11, (300, 40, 480, 240), _HEBREW + " aleph.", page_no=1),
+        _text_element(12, (20, 40, 200, 240), _HEBREW + " bet.", page_no=1),
+        *_container_with_children(
+            13, (_HEBREW + " inner r.", _HEBREW + " inner l."), (14, 15), page_no=1
+        ),
+        _text_element(21, (300, 40, 480, 240), _ENGLISH * 3 + " right.", page_no=2),
+        _text_element(22, (20, 40, 200, 400), _ENGLISH * 3 + " left.", page_no=2),
+        *_container_with_children(
+            23, ("Inner right 2.", "Inner left 2."), (24, 25), page_no=2
+        ),
+    ]
+    conv_res = _conversion_result(elements, page_nos=(1, 2))
+    doc = ReadingOrderModel(ReadingOrderOptions(page_direction="auto"))(conv_res)
+    texts = [item.text for item in doc.texts]
+    assert texts[0].endswith("aleph.")
+    assert texts[1].endswith("bet.")
+    assert texts[2].endswith("inner r.")
+    assert texts[3].endswith("inner l.")
+    assert texts[4].endswith("left.")
+    assert texts[5].endswith("right.")
+    assert texts[6] == "Inner left 2."
+    assert texts[7] == "Inner right 2."

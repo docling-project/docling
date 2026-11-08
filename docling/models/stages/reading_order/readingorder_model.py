@@ -1177,13 +1177,19 @@ class ReadingOrderModel:
                     element
                 )
 
-            # Resolve "auto" once per page so every sibling group on the page
-            # reads in the same direction; see issue #5238.
+            # Resolve "auto" once per page, over every element on that page,
+            # so all sibling groups of a page share one direction and pages
+            # with different directions coexist; see issue #5238.
             page_direction = self.options.page_direction
+            direction_by_page: dict[int, Literal["ltr", "rtl"]] | None = None
             if page_direction == "auto":
-                page_direction = detect_text_direction(
-                    element.text for element in page_elements
-                )
+                texts_by_page: dict[int, list[str]] = {}
+                for element in page_elements:
+                    texts_by_page.setdefault(element.page_no, []).append(element.text)
+                direction_by_page = {
+                    page_no: detect_text_direction(texts)
+                    for page_no, texts in texts_by_page.items()
+                }
 
             ordered_siblings = {
                 parent_ref: (
@@ -1193,6 +1199,7 @@ class ReadingOrderModel:
                             page_separators if parent_ref is None else None
                         ),
                         page_direction=page_direction,
+                        direction_by_page=direction_by_page,
                     )
                     if len(siblings) > 1
                     else siblings
@@ -1223,6 +1230,7 @@ class ReadingOrderModel:
                         self.ro_model.predict_merges(
                             sorted_elements=siblings,
                             page_direction=page_direction,
+                            direction_by_page=direction_by_page,
                         )
                     )
             host_cids = {
