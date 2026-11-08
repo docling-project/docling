@@ -56,7 +56,7 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import Self, override
 
@@ -5506,6 +5506,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     image = Image.open(BytesIO(image_data))
                     check_image_pixels(image.size, self.options.max_image_pixels)
                     image.load()
+                    # A camera stores an orientation tag rather than rotated
+                    # pixels, and a browser shows the image turned by it.
+                    image = ImageOps.exif_transpose(image)
                     # A PNG pHYs chunk with zero pixels per unit reads as (0, 0).
                     dpi = int(image.info.get("dpi", (72,))[0]) or 72
                     return ImageRef.from_pil(
