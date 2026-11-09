@@ -72,6 +72,9 @@ _CAPTION_OWNER_LABELS = {
     "table_caption": {DocItemLabel.TABLE},
 }
 _NOISE_TEXT = {"[figure]", "[image]", "[non-text]", "[unreadable]"}
+# A page table has far fewer grid cells. A larger grid comes from a span in looping
+# model output, and its export can take gigabytes of memory.
+_MAX_TABLE_GRID_CELLS = 10_000
 
 _NUMBER = r"-?\d{1,9}"
 _LEVEL = r"</?LEVEL\d{0,9}[>}]?"
@@ -222,7 +225,7 @@ def _add_table(
         except ValueError as exc:
             # A dense page can pass the grid limit of the shared table mapper.
             _log.warning("Reading a large %s table without spans: %s", model, exc)
-    data = _parse_table_html(html)
+    data = _parse_table_html(html, max_grid_cells=_MAX_TABLE_GRID_CELLS)
     if not data.table_cells:
         return False
     doc.add_table(data=data, prov=prov)
