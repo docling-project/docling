@@ -353,6 +353,7 @@ class VllmVlmEngine(BaseVlmEngine):
                 processor=self.processor,
                 prompt_style=prompt_style,
                 repo_id=self.model_config.repo_id if self.model_config else None,
+                chat_template_kwargs=input_data.chat_template_kwargs,
             )
             prompts.append(formatted_prompt)
 

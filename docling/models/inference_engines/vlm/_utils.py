@@ -9,6 +9,7 @@ implementations to avoid code duplication and ensure consistency.
 
 import importlib.metadata
 import logging
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -244,6 +245,8 @@ def format_prompt_for_vlm(
     processor: Any,
     prompt_style: TransformersPromptStyle,
     repo_id: Optional[str] = None,
+    *,
+    chat_template_kwargs: Mapping[str, Any] | None = None,
 ) -> Optional[str]:
     """Format a prompt according to the specified style.
 
@@ -255,6 +258,8 @@ def format_prompt_for_vlm(
         processor: Model processor with apply_chat_template method
         prompt_style: Style of prompt formatting to use
         repo_id: Optional model repository ID for model-specific formatting
+        chat_template_kwargs: Keyword arguments for the chat template (CHAT
+            style only)
 
     Returns:
         Formatted prompt string, or None if prompt_style is NONE
@@ -285,7 +290,9 @@ def format_prompt_for_vlm(
                 ],
             }
         ]
-        return processor.apply_chat_template(messages, add_generation_prompt=True)
+        return processor.apply_chat_template(
+            messages, add_generation_prompt=True, **(chat_template_kwargs or {})
+        )
     else:
         raise ValueError(
             f"Unknown prompt style: {prompt_style}. "

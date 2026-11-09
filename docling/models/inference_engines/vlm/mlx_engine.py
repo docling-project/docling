@@ -253,7 +253,11 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 # Format prompt using MLX's chat template
                 with _suppressed_processor_kwargs_warning():
                     formatted_prompt = self.apply_chat_template(
-                        self.processor, self.config, input_data.prompt, num_images=1
+                        self.processor,
+                        self.config,
+                        input_data.prompt,
+                        num_images=1,
+                        **input_data.chat_template_kwargs,
                     )
 
                 # Extract custom stopping criteria

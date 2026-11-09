@@ -160,6 +160,10 @@ class VlmEngineInput(BaseModel):
     extra_generation_config: Dict[str, Any] = Field(
         default_factory=dict, description="Additional generation configuration"
     )
+    chat_template_kwargs: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Keyword arguments for the chat template (in-process engines only)",
+    )
 
 
 class VlmEngineOutput(BaseModel):

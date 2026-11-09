@@ -193,6 +193,15 @@ class VlmModelSpec(BaseModel):
         default_factory=dict, description="Additional generation configuration"
     )
 
+    chat_template_kwargs: Dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Keyword arguments for the chat template of the in-process engines "
+            "(Transformers, vLLM, MLX), for example {'enable_thinking': False}. "
+            "API engines do not use them: set request parameters in api_overrides."
+        ),
+    )
+
     _RUNTIME_INPUT_OVERRIDE_KEYS: ClassVar[Set[str]] = {
         "transformers_prompt_style",
         "extra_processor_kwargs",

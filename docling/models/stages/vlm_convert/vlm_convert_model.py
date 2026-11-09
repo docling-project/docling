@@ -168,6 +168,7 @@ class VlmConvertModel(BasePageModel):
                 max_new_tokens=model_spec.max_new_tokens,
                 stop_strings=stop_strings,
                 extra_generation_config=extra_generation_config,
+                chat_template_kwargs=model_spec.chat_template_kwargs,
             )
             for image, prompt in zip(images, prompts)
         ]

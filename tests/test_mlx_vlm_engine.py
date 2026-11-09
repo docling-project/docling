@@ -78,6 +78,35 @@ def test_mlx_engine_forwards_optional_repetition_settings(
     } == expected_repetition_kwargs
 
 
+def test_mlx_engine_passes_chat_template_kwargs() -> None:
+    # mlx-vlm passes the extra kwargs on to the chat template of the processor.
+    template_kwargs: dict[str, Any] = {}
+    engine = MlxVlmEngine(options=MlxVlmEngineOptions(), artifacts_path=None)
+    engine._initialized = True
+    engine.vlm_model = object()
+    engine.processor = object()
+    engine.config = object()
+
+    def apply_chat_template(processor, config, prompt, **kwargs):
+        template_kwargs.update(kwargs)
+        return "prompt"
+
+    engine.apply_chat_template = apply_chat_template
+    engine.stream_generate = lambda *args, **kwargs: iter([SimpleNamespace(text="ok")])
+
+    engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=Image.new("RGB", (8, 8), "white"),
+                prompt="Prompt",
+                chat_template_kwargs={"enable_thinking": False},
+            )
+        ]
+    )
+
+    assert template_kwargs == {"num_images": 1, "enable_thinking": False}
+
+
 class _ClosingTagStopper(GenerationStopper):
     """Stops when the model closes the document: a valid end of the output."""
 
