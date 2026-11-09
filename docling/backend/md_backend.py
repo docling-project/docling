@@ -322,7 +322,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return fmt
 
     @staticmethod
-    def _resolve_link_dest(dest: str) -> AnyUrl | Path | None:
+    def _resolve_link_dest(dest: str, autolink: bool = False) -> AnyUrl | Path | None:
         """Parse a link destination string into an `AnyUrl` or `Path`.
 
         Shared between the paragraph inline-element walker and the table-cell
@@ -331,14 +331,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         Args:
             dest: The raw destination string from a marko `Link` or
                 `AutoLink` element.
+            autolink: Whether `dest` comes from an autolink, whose URI is
+                taken literally.
 
         Returns:
             An `AnyUrl` or `Path` instance, or `None` when the destination
             cannot be parsed.
         """
         # marko keeps the character references of a destination; CommonMark
-        # decodes them, so `?a=1&amp;b=2` links to `?a=1&b=2`.
-        return _LINK_DEST.validate_python(_decode_char_references(dest))
+        # decodes them, so `?a=1&amp;b=2` links to `?a=1&b=2`. An autolink
+        # URI is literal, so it keeps them.
+        if not autolink:
+            dest = _decode_char_references(dest)
+        return _LINK_DEST.validate_python(dest)
 
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
         pattern = r"_+"
@@ -647,7 +652,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         elif isinstance(element, marko.inline.Link | marko.inline.AutoLink):
             # AutoLink covers <https://url> and the GFM bare-URL form (gfm_el.Url
             # subclasses AutoLink).
-            link_hyperlink = MarkdownDocumentBackend._resolve_link_dest(element.dest)
+            link_hyperlink = MarkdownDocumentBackend._resolve_link_dest(
+                element.dest, isinstance(element, marko.inline.AutoLink)
+            )
             for child in element.children:
                 self._iterate_cell_inline(
                     element=child,
@@ -1003,7 +1010,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             # AutoLink covers <https://url> and the GFM bare-URL form (gfm_el.Url
             # subclasses AutoLink).
             _log.debug(" - Link: %s", element.children)
-            hyperlink = MarkdownDocumentBackend._resolve_link_dest(element.dest)
+            hyperlink = MarkdownDocumentBackend._resolve_link_dest(
+                element.dest, isinstance(element, marko.inline.AutoLink)
+            )
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             _log.debug(" - RawText/Literal: %s", element.children)
